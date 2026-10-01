@@ -175,7 +175,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsPetIdGetQueryAfterParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/3/schema',
         root=UnionNode(members=(LeafNode(),), nullable=True),
     )
 
@@ -185,7 +185,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsPetIdGetCookieSessionParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/parameters/4/schema',
         root=LeafNode(),
     )
 
@@ -195,7 +195,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='models:Pet',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Pet',
         fields=(
             FieldBinding(
                 field_id='models:Pet.id',
@@ -230,14 +230,19 @@ def _model_3() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsPetIdGetResponse200XRateHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/responses/200/headers/X-Rate/schema',
         root=LeafNode(),
     )
 
 
 @cache
 def _model_4() -> ModelBinding:
-    return ModelBinding(symbol='models:FieldNotesPutRequest', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:FieldNotesPutRequest',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1notes/put/requestBody/content/text~1plain/schema',
+        root=LeafNode(),
+    )
 
 
 @cache
@@ -245,7 +250,7 @@ def _model_5() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldNotesPutRequest1',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1notes/put/requestBody/content/application~1json/schema',
         fields=(
             FieldBinding(
                 field_id='models:FieldNotesPutRequest1.text',

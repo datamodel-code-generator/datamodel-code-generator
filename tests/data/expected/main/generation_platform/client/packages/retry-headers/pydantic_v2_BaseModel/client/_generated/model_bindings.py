@@ -185,7 +185,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldParameterPostHeaderXRequestKeyParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1parameter/post/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -195,7 +195,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldParameterPostResponse',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1parameter/post/responses/200/content/text~1plain/schema',
         root=LeafNode(),
     )
 
@@ -205,14 +205,19 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldParameterPostResponse200XIdempotencyHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1parameter/post/responses/200/headers/X-Idempotency/schema',
         root=LeafNode(),
     )
 
 
 @cache
 def _model_3() -> ModelBinding:
-    return ModelBinding(symbol='models:FieldApiKeyPostResponse', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:FieldApiKeyPostResponse',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1api-key/post/responses/200/content/text~1plain/schema',
+        root=LeafNode(),
+    )
 
 
 @cache
@@ -220,14 +225,19 @@ def _model_4() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldApiKeyPostResponse200XIdempotencyHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1api-key/post/responses/200/headers/X-Idempotency/schema',
         root=LeafNode(),
     )
 
 
 @cache
 def _model_5() -> ModelBinding:
-    return ModelBinding(symbol='models:FieldBearerPostResponse', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:FieldBearerPostResponse',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1bearer/post/responses/200/content/text~1plain/schema',
+        root=LeafNode(),
+    )
 
 
 @cache
@@ -235,14 +245,19 @@ def _model_6() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldBearerPostResponse200XIdempotencyHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1bearer/post/responses/200/headers/X-Idempotency/schema',
         root=LeafNode(),
     )
 
 
 @cache
 def _model_7() -> ModelBinding:
-    return ModelBinding(symbol='models:FieldOauthPostResponse', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:FieldOauthPostResponse',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1oauth/post/responses/200/content/text~1plain/schema',
+        root=LeafNode(),
+    )
 
 
 @cache
@@ -250,14 +265,19 @@ def _model_8() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldOauthPostResponse200XIdempotencyHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1oauth/post/responses/200/headers/X-Idempotency/schema',
         root=LeafNode(),
     )
 
 
 @cache
 def _model_9() -> ModelBinding:
-    return ModelBinding(symbol='models:FieldOpenidPostResponse', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:FieldOpenidPostResponse',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1openid/post/responses/200/content/text~1plain/schema',
+        root=LeafNode(),
+    )
 
 
 @cache
@@ -265,14 +285,19 @@ def _model_10() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldOpenidPostResponse200XIdempotencyHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1openid/post/responses/200/headers/X-Idempotency/schema',
         root=LeafNode(),
     )
 
 
 @cache
 def _model_11() -> ModelBinding:
-    return ModelBinding(symbol='models:FieldCookiePostResponse', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:FieldCookiePostResponse',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1cookie/post/responses/200/content/text~1plain/schema',
+        root=LeafNode(),
+    )
 
 
 @cache
@@ -280,14 +305,19 @@ def _model_12() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldCookiePostResponse200XIdempotencyHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1cookie/post/responses/200/headers/X-Idempotency/schema',
         root=LeafNode(),
     )
 
 
 @cache
 def _model_13() -> ModelBinding:
-    return ModelBinding(symbol='models:FieldQueryPostResponse', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:FieldQueryPostResponse',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1query/post/responses/200/content/text~1plain/schema',
+        root=LeafNode(),
+    )
 
 
 @cache
@@ -295,14 +325,19 @@ def _model_14() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldQueryPostResponse200XIdempotencyHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1query/post/responses/200/headers/X-Idempotency/schema',
         root=LeafNode(),
     )
 
 
 @cache
 def _model_15() -> ModelBinding:
-    return ModelBinding(symbol='models:FieldIgnoredPostResponse', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:FieldIgnoredPostResponse',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1ignored/post/responses/200/content/text~1plain/schema',
+        root=LeafNode(),
+    )
 
 
 @cache
@@ -310,7 +345,7 @@ def _model_16() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldIgnoredPostResponse200XIdempotencyHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1ignored/post/responses/200/headers/X-Idempotency/schema',
         root=LeafNode(),
     )
 
@@ -320,7 +355,7 @@ def _model_17() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldDirectionPostHeaderXRetryControlParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1direction/post/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -330,7 +365,7 @@ def _model_18() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldDirectionPostResponse',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1direction/post/responses/200/content/text~1plain/schema',
         root=LeafNode(),
     )
 
@@ -340,14 +375,19 @@ def _model_19() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldDirectionPostResponse200XIdempotencyHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1direction/post/responses/200/headers/X-Idempotency/schema',
         root=LeafNode(),
     )
 
 
 @cache
 def _model_20() -> ModelBinding:
-    return ModelBinding(symbol='models:FieldUnusedPostResponse', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:FieldUnusedPostResponse',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1unused/post/responses/200/content/text~1plain/schema',
+        root=LeafNode(),
+    )
 
 
 @cache
@@ -355,7 +395,7 @@ def _model_21() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldUnusedPostResponse200XIdempotencyHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1unused/post/responses/200/headers/X-Idempotency/schema',
         root=LeafNode(),
     )
 

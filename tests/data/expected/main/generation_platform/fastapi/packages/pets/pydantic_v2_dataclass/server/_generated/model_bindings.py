@@ -235,7 +235,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:Pet',
         native_kind='dataclass',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Pet',
         fields=(
             FieldBinding(
                 field_id='models:Pet.id',
@@ -282,7 +282,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='models:Error',
         native_kind='dataclass',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Error',
         fields=(
             FieldBinding(
                 field_id='models:Error.code',

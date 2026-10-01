@@ -1,0 +1,65 @@
+# unions-legacy-schema pydantic_v2.BaseModel
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  circle schema = FieldShapesGetResponse(root=Circle(radius=1))
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  square schema = FieldShapesGetResponse(root=Square(side=2))
+  > GET https://api.example.com/holders
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  holder circle schema = RefHolder(b=1, shape=Circle(radius=1))
+  > GET https://api.example.com/holders
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  holder square schema = RefHolder(b=1, shape=Square(side=2))
+# unions-legacy-schema pydantic_v2.dataclass
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  circle schema = Circle(radius=1)
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  square schema = Square(side=2)
+  > GET https://api.example.com/holders
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  holder circle schema = RefHolder(b=1, shape=Circle(radius=1))
+  > GET https://api.example.com/holders
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  holder square schema = RefHolder(b=1, shape=Square(side=2))
+# unions-legacy-schema dataclasses.dataclass
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  circle schema = Circle(radius=1)
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  square schema = Square(side=2)
+  > GET https://api.example.com/holders
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  holder circle schema = RefHolder(b=1, shape=Circle(radius=1))
+  > GET https://api.example.com/holders
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  holder square schema = RefHolder(b=1, shape=Square(side=2))
+# unions-legacy-schema typing.TypedDict
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  circle schema = {'radius': 1}
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  square schema = {'side': 2}
+  > GET https://api.example.com/holders
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  holder circle schema = {'b': 1, 'shape': {'radius': 1}}
+  > GET https://api.example.com/holders
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  holder square schema = {'b': 1, 'shape': {'side': 2}}
+# unions-legacy-schema msgspec.Struct
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  circle schema = Circle(radius=1)
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  square schema = Square(side=2)
+  > GET https://api.example.com/holders
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  holder circle schema = RefHolder(b=1, shape=Circle(radius=1))
+  > GET https://api.example.com/holders
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  holder square schema = RefHolder(b=1, shape=Square(side=2))

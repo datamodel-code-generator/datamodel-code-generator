@@ -52,7 +52,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldInheritedPostHeaderXIdempotencyParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1inherited/post/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -62,7 +62,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldExplicitPostHeaderXIdempotencyParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1explicit/post/parameters/0/schema',
         root=LeafNode(),
     )
 

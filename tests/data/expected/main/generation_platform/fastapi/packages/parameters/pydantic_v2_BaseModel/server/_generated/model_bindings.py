@@ -188,7 +188,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldItemsItemIdPartsPartGetQueryLevelParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1items~1%7Bitem-id%7D~1parts~1%7Bpart%7D/get/parameters/9/schema',
         root=LeafNode(),
     )
 
@@ -198,7 +198,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldItemsItemIdPartsPartGetResponse',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1items~1%7Bitem-id%7D~1parts~1%7Bpart%7D/get/responses/200/content/application~1json/schema',
         root=LeafNode(),
     )
 
@@ -208,7 +208,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldAdaptersGetCookieSessionParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1adapters/get/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -218,7 +218,7 @@ def _model_3() -> ModelBinding:
     return ModelBinding(
         symbol='models:Filter',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Filter',
         fields=(
             FieldBinding(
                 field_id='models:Filter.id',
@@ -253,7 +253,7 @@ def _model_4() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldAdaptersGetQueryIdsParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1adapters/get/parameters/2/schema',
         root=ArrayNode(item=LeafNode()),
     )
 
@@ -263,14 +263,18 @@ def _model_5() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldAdaptersGetHeaderXIdsParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1adapters/get/parameters/3/schema',
         root=ArrayNode(item=LeafNode()),
     )
 
 
 @cache
 def _model_6() -> ModelBinding:
-    return ModelBinding(symbol='models:FieldAdaptersGetQueryBlobParameter', native_kind='model', schema_id=None)
+    return ModelBinding(
+        symbol='models:FieldAdaptersGetQueryBlobParameter',
+        native_kind='model',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1adapters/get/parameters/4/content/application~1json/schema',
+    )
 
 
 @cache
@@ -278,7 +282,7 @@ def _model_7() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldAdaptersGetQueryCodeParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1adapters/get/parameters/5/schema',
         root=LeafNode(),
     )
 
@@ -288,7 +292,7 @@ def _model_8() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldAdaptersGetQueryMailParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1adapters/get/parameters/6/schema',
         root=LeafNode(),
     )
 
@@ -298,7 +302,7 @@ def _model_9() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldAdaptersGetQueryOtherParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1adapters/get/parameters/7/schema',
         root=LeafNode(),
     )
 
@@ -308,7 +312,7 @@ def _model_10() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldAdaptersGetQueryCountParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1adapters/get/parameters/9/schema',
         root=LeafNode(),
     )
 
@@ -318,7 +322,7 @@ def _model_11() -> ModelBinding:
     return ModelBinding(
         symbol='models:Point',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Point',
         fields=(
             FieldBinding(
                 field_id='models:Point.x',
@@ -334,6 +338,7 @@ def _model_11() -> ModelBinding:
             ),
         ),
         extra='forbid',
+        open=False,
     )
 
 
@@ -342,7 +347,7 @@ def _model_12() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldRepeatIdAgainIdGetPathIdParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1repeat~1%7Bid%7D~1again~1%7Bid%7D/get/parameters/0/schema',
         root=LeafNode(),
     )
 

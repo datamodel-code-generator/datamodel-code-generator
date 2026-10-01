@@ -332,7 +332,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldUsersGetQueryCursorParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1users/get/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -342,7 +342,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldUsersGetQueryLimitParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1users/get/parameters/1/schema',
         root=LeafNode(),
     )
 
@@ -352,7 +352,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldUsersGetHeaderXSnapshotParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1users/get/parameters/2/schema',
         root=LeafNode(),
     )
 
@@ -362,7 +362,7 @@ def _model_3() -> ModelBinding:
     return ModelBinding(
         symbol='models:User',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/User',
         fields=(
             FieldBinding(
                 field_id='models:User.id',
@@ -397,7 +397,7 @@ def _model_4() -> ModelBinding:
     return ModelBinding(
         symbol='models:UserPage',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/UserPage',
         fields=(
             FieldBinding(
                 field_id='models:UserPage.data',
@@ -432,7 +432,7 @@ def _model_5() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldUsersGetResponse200XNextHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1users/get/responses/200/headers/X-Next/schema',
         root=LeafNode(),
     )
 
@@ -442,7 +442,7 @@ def _model_6() -> ModelBinding:
     return ModelBinding(
         symbol='models:Error',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Error',
         fields=(
             FieldBinding(
                 field_id='models:Error.message',
@@ -465,7 +465,7 @@ def _model_7() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldUsersSearchPostQueryCursorParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1users~1search/post/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -475,7 +475,7 @@ def _model_8() -> ModelBinding:
     return ModelBinding(
         symbol='models:UserQuery',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/UserQuery',
         fields=(
             FieldBinding(
                 field_id='models:UserQuery.name',
@@ -498,7 +498,7 @@ def _model_9() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldLooseGetQueryCursorParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1loose/get/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -508,7 +508,7 @@ def _model_10() -> ModelBinding:
     return ModelBinding(
         symbol='models:LoosePage',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/LoosePage',
         fields=(
             FieldBinding(
                 field_id='models:LoosePage.data',
@@ -555,7 +555,7 @@ def _model_11() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldNestedGetQueryCursorParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1nested/get/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -565,7 +565,7 @@ def _model_12() -> ModelBinding:
     return ModelBinding(
         symbol='models:NestedPage',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/NestedPage',
         fields=(
             FieldBinding(
                 field_id='models:NestedPage.result',
@@ -588,7 +588,7 @@ def _model_13() -> ModelBinding:
     return ModelBinding(
         symbol='models:NestedResult',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/NestedResult',
         fields=(
             FieldBinding(
                 field_id='models:NestedResult.items',
@@ -623,7 +623,7 @@ def _model_14() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldLabelsGetQueryAfterParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1labels/get/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -633,7 +633,7 @@ def _model_15() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldLabelsGetResponse',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1labels/get/responses/200/content/application~1json/schema',
         root=ArrayNode(item=ModelNode(symbol='models:Label')),
     )
 
@@ -643,7 +643,7 @@ def _model_16() -> ModelBinding:
     return ModelBinding(
         symbol='models:Label',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Label',
         fields=(
             FieldBinding(
                 field_id='models:Label.name',
@@ -666,7 +666,7 @@ def _model_17() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldLabelsGetResponse200XNextHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1labels/get/responses/200/headers/X-Next/schema',
         root=LeafNode(),
     )
 
@@ -676,7 +676,7 @@ def _model_18() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldLabelSetsGetQueryAfterParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1label-sets/get/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -686,7 +686,7 @@ def _model_19() -> ModelBinding:
     return ModelBinding(
         symbol='models:LabelList',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/LabelList',
         root=ArrayNode(item=ModelNode(symbol='models:Label')),
     )
 
@@ -696,7 +696,7 @@ def _model_20() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldLabelSetsGetResponse200XNextHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1label-sets/get/responses/200/headers/X-Next/schema',
         root=LeafNode(),
     )
 
@@ -706,7 +706,7 @@ def _model_21() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldArchiveCursorGetPathCursorParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1archive~1%7Bcursor%7D/get/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -716,7 +716,7 @@ def _model_22() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldStatusesGetQueryCodeParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1statuses/get/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -726,7 +726,7 @@ def _model_23() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldSecureUsersGetQueryCursorParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1secure~1users/get/parameters/0/schema',
         root=LeafNode(),
     )
 

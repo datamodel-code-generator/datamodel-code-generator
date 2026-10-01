@@ -165,12 +165,22 @@ def response_bundle() -> SchemaBundle:
 
 @cache
 def _model_0() -> ModelBinding:
-    return ModelBinding(symbol='models:FieldSafeGetResponse', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:FieldSafeGetResponse',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1safe/get/responses/200/content/text~1plain/schema',
+        root=LeafNode(),
+    )
 
 
 @cache
 def _model_1() -> ModelBinding:
-    return ModelBinding(symbol='models:FieldUnsafePostResponse', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:FieldUnsafePostResponse',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1unsafe/post/responses/200/content/text~1plain/schema',
+        root=LeafNode(),
+    )
 
 
 @cache
@@ -178,39 +188,69 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldIdempotentPostResponse',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1idempotent/post/responses/200/content/text~1plain/schema',
         root=LeafNode(),
     )
 
 
 @cache
 def _model_3() -> ModelBinding:
-    return ModelBinding(symbol='models:FieldKeyedPostResponse', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:FieldKeyedPostResponse',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1keyed/post/responses/200/content/text~1plain/schema',
+        root=LeafNode(),
+    )
 
 
 @cache
 def _model_4() -> ModelBinding:
-    return ModelBinding(symbol='models:FieldKeyOnlyPostResponse', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:FieldKeyOnlyPostResponse',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1key-only/post/responses/200/content/text~1plain/schema',
+        root=LeafNode(),
+    )
 
 
 @cache
 def _model_5() -> ModelBinding:
-    return ModelBinding(symbol='models:FieldNeverGetResponse', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:FieldNeverGetResponse',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1never/get/responses/200/content/text~1plain/schema',
+        root=LeafNode(),
+    )
 
 
 @cache
 def _model_6() -> ModelBinding:
-    return ModelBinding(symbol='models:FieldNeverPostResponse', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:FieldNeverPostResponse',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1never/post/responses/200/content/text~1plain/schema',
+        root=LeafNode(),
+    )
 
 
 @cache
 def _model_7() -> ModelBinding:
-    return ModelBinding(symbol='models:FieldVendorGetResponse', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:FieldVendorGetResponse',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1vendor/get/responses/200/content/text~1plain/schema',
+        root=LeafNode(),
+    )
 
 
 @cache
 def _model_8() -> ModelBinding:
-    return ModelBinding(symbol='models:FieldKeyedSafeGetResponse', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:FieldKeyedSafeGetResponse',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1keyed-safe/get/responses/200/content/text~1plain/schema',
+        root=LeafNode(),
+    )
 
 
 CONTEXT_0: Final = CodecContext(
