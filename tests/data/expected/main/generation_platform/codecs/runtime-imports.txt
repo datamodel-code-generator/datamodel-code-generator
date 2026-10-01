@@ -79,8 +79,9 @@ protocols/webhook_events.py: ..client.errors, ..client.operations, ..model_codec
 protocols/webhook_keys.py: ..client.errors, .records, __future__, re, typing
 protocols/webhooks.py: ..model_codecs.unset, .options, __future__, dataclasses, datetime, typing, typing_extensions
 protocols/websocket.py: ..client.bodies, ..client.client, ..client.codecs, ..client.errors, ..client.logical, ..client.operations, ..client.options, ..client.raw, ..client.responses, ..client.timing, ..client.transports, ..model_codecs.errors, ..model_codecs.media, ..model_codecs.unset, .errors, .options, .records, .references, .websocket_types, __future__, asyncio, collections.abc, dataclasses, enum, threading, types, typing, typing_extensions
+protocols/websocket_connectors.py: .websocket_native, .websocket_types, __future__, typing
 protocols/websocket_native.py: ..client.errors, ..client.responses, ..client.timing, ..client.transports, .errors, .options, .websocket_types, __future__, collections.abc, contextvars, dataclasses, functools, logging, socket, ssl, threading, typing, websockets.asyncio.client, websockets.client, websockets.datastructures, websockets.exceptions, websockets.http11, websockets.protocol, websockets.proxy, websockets.sync.client, websockets.uri
-protocols/websocket_types.py: ..client.responses, ..client.timing, ..client.transports, __future__, dataclasses, ssl, typing, typing_extensions
+protocols/websocket_types.py: ..client.responses, ..client.timing, ..client.transports, __future__, collections.abc, dataclasses, ssl, typing, typing_extensions
 protocols/writes.py: ..client.operations, ..client.options, ..client.paths, ..model_codecs.errors, ..model_codecs.wire, .records, .values, __future__, collections.abc, dataclasses, typing, typing_extensions
 server/__init__.py: -
 server/application.py: ..model_codecs.wire, .security, __future__, collections.abc, dataclasses, fastapi, fastapi.params, fastapi.routing, inspect, starlette.middleware, starlette.responses, starlette.routing, types, typing, typing_extensions

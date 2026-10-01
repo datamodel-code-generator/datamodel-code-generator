@@ -14,7 +14,10 @@ from .._runtime.client.codecs import native_value
 from .._runtime.client.operations import Encoder
 from .._runtime.protocols.references import OperationRef
 from .._runtime.protocols.websocket import ChannelPlan
-from .._runtime.protocols.websocket_native import AsyncNativeConnector, NativeConnector
+from .._runtime.protocols.websocket_connectors import (
+    async_native_connector,
+    native_connector,
+)
 from ..model_codecs import ModelValue
 
 SOCKET_0: Final[ChannelPlan[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_1]] = ChannelPlan(
@@ -22,7 +25,7 @@ SOCKET_0: Final[ChannelPlan[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_1]]
     operation=OperationRef(pointer='/paths/~1rooms~1{room}~1socket/get'),
     call=_operations.OPERATION_0,
     fingerprint='049a45f601982c55143f3607c398fc9e6a3e1804c630513568a26fe62491903f',
-    connectors=(NativeConnector, AsyncNativeConnector),
+    connectors=(native_connector, async_native_connector),
     encoder=Encoder(model_bindings.codec_4, model_bindings.CONTEXT_4),
     decoder=native_value(model_bindings.codec_5, model_bindings.CONTEXT_5),
     subprotocols=('chat.v2', 'chat.v1'),
@@ -35,7 +38,7 @@ SOCKET_1: Final[ChannelPlan[str, bytes]] = ChannelPlan(
     operation=OperationRef(pointer='/paths/~1feed~1socket/get'),
     call=_operations.OPERATION_1,
     fingerprint='1139843f41802aa1cd77a42f398b1455d9abd682e6307a99a72f997eed479f8c',
-    connectors=(NativeConnector, AsyncNativeConnector),
+    connectors=(native_connector, async_native_connector),
     send_codec='utf8',
     receive_codec='bytes',
     receive_frame='binary',
@@ -47,7 +50,7 @@ SOCKET_2: Final[ChannelPlan[bytes, str]] = ChannelPlan(
     operation=OperationRef(pointer='/paths/~1secure~1socket/get'),
     call=_operations.OPERATION_2,
     fingerprint='856093054c4e0bcd493290e65f4f1d34633225d1d01dc214e77e51b21bdbac45',
-    connectors=(NativeConnector, AsyncNativeConnector),
+    connectors=(native_connector, async_native_connector),
     send_codec='bytes',
     send_frame='binary',
     receive_codec='utf8',

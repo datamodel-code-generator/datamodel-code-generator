@@ -8,8 +8,11 @@ import json
 import logging
 import os
 import socket
+import subprocess
+import sys
 import threading
 from contextlib import contextmanager
+from pathlib import Path
 from dataclasses import asdict, is_dataclass
 from typing import TYPE_CHECKING, Any, Final
 
@@ -176,6 +179,7 @@ class _Harness:
 
 def sockets(package: ModuleType, lines: list[str]) -> None:
     """Open WebSocket sessions to local servers through the synchronous and asyncio clients of a generated package."""
+    _imports(package, lines)
     server = SocketServer()
     harness = _Harness(package, lines, server)
     try:
@@ -548,6 +552,32 @@ def _authenticated(harness: _Harness) -> None:
                 session.close()
         lines.append(f"    provider {tokens.calls}")
         harness.report(*plays)
+
+
+_IMPORT_PROBE: Final = """
+import importlib
+import sys
+sys.path.insert(0, sys.argv[1])
+package = importlib.import_module(sys.argv[2])
+plans = importlib.import_module(sys.argv[2] + '.protocols._plans')
+with package.Client(options=None) as client:
+    client.protocols.rooms.chat
+    print('library loaded before a connect=' + repr('websockets' in sys.modules))
+    connector = plans.SOCKET_0.connectors[0]()
+    print('library loaded by the native connector=' + repr('websockets' in sys.modules) + ' ' + type(connector).__name__)
+"""
+
+
+def _imports(package: ModuleType, lines: list[str]) -> None:
+    """Import a WebSocket package, its plans, and a client's helpers in a fresh process, which loads no library."""
+    location = Path(str(package.__file__)).parent.parent
+    completed = subprocess.run(
+        [sys.executable, "-I", "-c", _IMPORT_PROBE, str(location), package.__name__],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    lines.extend(f"  {line}" for line in completed.stdout.splitlines())
 
 
 class _Captured(logging.Handler):

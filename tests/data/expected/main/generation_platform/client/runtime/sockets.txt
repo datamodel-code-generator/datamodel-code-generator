@@ -1,4 +1,6 @@
 # sockets pydantic_v2.BaseModel
+  library loaded before a connect=False
+  library loaded by the native connector=True NativeConnector
   connected 101 subprotocol='chat.v2' WebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2')
     1 text ServerMessage{'kind': 'joined', 'user': 'ann'} raw=b'{"kind": "joined", "user": "ann"}'
     2 text ServerMessage{'kind': 'said', 'text': 'HI'} raw=b'{"kind": "said", "text": "HI"}'

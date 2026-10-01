@@ -2878,11 +2878,11 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         Only the settings that differ from the plan's defaults are written.
         """
         runtime = "_runtime.protocols.websocket"
-        native = "_runtime.protocols.websocket_native"
+        factories = "_runtime.protocols.websocket_connectors"
         helper = spec.helper
         tree = helper.tree
         plan = module.local(runtime, "ChannelPlan")
-        connectors = (module.local(native, "NativeConnector"), module.local(native, "AsyncNativeConnector"))
+        connectors = (module.local(factories, "native_connector"), module.local(factories, "async_native_connector"))
         entries: list[tuple[str, Doc]] = [
             ("helper_id=", repr(helper.name)),
             (
