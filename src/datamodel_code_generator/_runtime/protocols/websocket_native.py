@@ -245,8 +245,12 @@ def _condition(error: InvalidHandshake) -> HandshakeCondition:
 
 
 def _closed(error: ConnectionClosed, parsed: BaseException | None, limit: int) -> Exception:
-    """Return the client's failure of a closed connection: a message over the limit, or the closure received."""
-    if isinstance(parsed, PayloadTooBig) or (error.sent is not None and error.sent.code == _TOO_BIG):
+    """Return the client's failure of a closed connection: a message over the limit, or the closure received.
+
+    Only a limit this end detected is a size error; a server that closes with 1009 itself reports its closure.
+    """
+    sent = error.sent
+    if isinstance(parsed, PayloadTooBig) or (sent is not None and sent.code == _TOO_BIG and not error.rcvd_then_sent):
         size = parsed.size if isinstance(parsed, PayloadTooBig) and parsed.size is not None else 0
         current = parsed.current_size if isinstance(parsed, PayloadTooBig) and parsed.current_size is not None else 0
         return ProtocolSizeError(

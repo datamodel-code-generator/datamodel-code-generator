@@ -374,6 +374,7 @@ def _limits(harness: _Harness, api: Any) -> None:
         ("idle inherited", Play(), {"options": options.RequestOptions(stream_idle_timeout=0.05)}),
         ("session deadline", Play(), {"session_options": options.SessionOptions(total_timeout=1.0), "ws_options": harness.ws(idle_timeout=None)}),
         ("abnormal closure", Play(talk=_sending(code=1011, reason="boom")), {}),
+        ("server's own message limit", Play(talk=_sending(code=1009, reason="peer limit")), {}),
     ):
         server.play(play)
         session = chat.connect(room=harness.room(), **arguments)
@@ -735,6 +736,7 @@ async def _async_sockets(harness: _Harness) -> None:
             ("async idle", Play(), {"ws_options": harness.ws(idle_timeout=0.05)}),
             ("async session deadline", Play(), {"session_options": options.SessionOptions(total_timeout=1.0), "ws_options": harness.ws(idle_timeout=None)}),
             ("async abnormal closure", Play(talk=_sending(code=1011, reason="boom")), {}),
+            ("async server's own message limit", Play(talk=_sending(code=1009, reason="peer limit")), {}),
         ):
             server.play(play)
             session = await arecord(lines, f"{label} connect", lambda arguments=arguments: chat.connect(room=harness.room(), **arguments))

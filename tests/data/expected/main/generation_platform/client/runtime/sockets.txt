@@ -81,6 +81,9 @@
   abnormal closure ! WebSocketClosedError: WebSocketClosedError(operation_id='roomSocket', call_id='<call>', code=1011, clean=False) [operation_id='roomSocket'] web_socket_closed_error
   abnormal closure again ! WebSocketClosedError: WebSocketClosedError(operation_id='roomSocket', call_id='<call>', code=1011, clean=False) [operation_id='roomSocket'] web_socket_closed_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1011 'boom'
+  server's own message limit ! WebSocketClosedError: WebSocketClosedError(operation_id='roomSocket', call_id='<call>', code=1009, clean=False) [operation_id='roomSocket'] web_socket_closed_error
+  server's own message limit again ! WebSocketClosedError: WebSocketClosedError(operation_id='roomSocket', call_id='<call>', code=1009, clean=False) [operation_id='roomSocket'] web_socket_closed_error
+    server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1009 'peer limit'
   iterated 1 text ServerMessage{'kind': 'joined', 'user': 'ann'} raw=b'{"kind": "joined", "user": "ann"}'
   abnormal end of iteration code=4001 reason='kicked' clean=False
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 4001 'kicked'
@@ -206,6 +209,9 @@
   async abnormal closure connect = AsyncWebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2')
   async abnormal closure ! WebSocketClosedError: WebSocketClosedError(operation_id='roomSocket', call_id='<call>', code=1011, clean=False) [operation_id='roomSocket'] web_socket_closed_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1011 'boom'
+  async server's own message limit connect = AsyncWebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2')
+  async server's own message limit ! WebSocketClosedError: WebSocketClosedError(operation_id='roomSocket', call_id='<call>', code=1009, clean=False) [operation_id='roomSocket'] web_socket_closed_error
+    server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1009 'peer limit'
     server GET /feed/socket [] | closed 1000 ''
   async send once the server closed unread ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', code=1000, clean=True) [operation_id='feedSocket'] web_socket_closed_error
     server GET /feed/socket [] | closed 1000 ''
