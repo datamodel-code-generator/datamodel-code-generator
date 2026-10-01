@@ -1231,12 +1231,14 @@ again by shared retries once it may have reached the server, even for an operati
 | A success response | The chunk is confirmed |
 | A transport error after it may have been sent | Up to `UploadOptions.max_uncertain_probes` probes, 3 by default: an unchanged offset sends the range again as a new call, the chunk's end confirms it, and an offset inside it confirms its bytes before it only with `partial_commit: allowed`, the rest being sent next |
 | Probes that never answer | `UploadDeliveryUnknownError(phase='append')` with the delivery state, the progress, and `resume_state` |
-| Any other failure | Raised; the next step probes the server's offset before it appends |
+| Any other failure, a cancellation included | Raised; the next step probes the server's offset before it appends |
 
 A probe's offset is a JSON integer, or a header of ASCII digits; a missing one raises `ProtocolDataError` with the
-condition `missing`, a header repeated with `malformed`, and anything else with `type`, `null`, or `value`. An offset below the confirmed one, past the
-content, past the chunk sent, or inside a chunk with `partial_commit: forbidden` raises `UploadOffsetError` with the
-confirmed, expected, and remote offsets, the size, and `resume_state`.
+condition `missing`, a header repeated with `malformed`, and anything else with `type`, `null`, or `value`. An offset
+below the confirmed one, past the content, past the chunk sent, or inside a chunk with `partial_commit: forbidden`
+raises `UploadOffsetError` with the confirmed, expected, and remote offsets, the size, and `resume_state`. A handle
+`start` returned also refuses an offset past every byte it has sent; a handle `resume` returned cannot know what an
+earlier session sent, so it accepts any offset up to the size.
 
 An upload completed by `length` completes when the server holds every byte. A completion `operation` is sent once with
 its bindings; its response is the result. A completion whose outcome is unknown is never sent again: it raises

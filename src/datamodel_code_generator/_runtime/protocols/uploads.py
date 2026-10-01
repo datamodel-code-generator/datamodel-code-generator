@@ -376,6 +376,7 @@ class _Upload(Generic[T]):
         "_digests",
         "_expires_at",
         "_guard",
+        "_high",
         "_identity",
         "_limits",
         "_lock",
@@ -409,6 +410,7 @@ class _Upload(Generic[T]):
         self._delivery: DeliveryState | None = None
         self._confirmed = 0
         self._verify = False
+        self._high: int | None = 0
         self._closed = False
         self._changed = False
         self._bound: tuple[tuple[WireValue, ...], tuple[WireValue, ...], tuple[WireValue, ...]] = ((), (), ())
@@ -496,6 +498,15 @@ class _Upload(Generic[T]):
             raise self._state_error(action, "uploading")
         self._closed = True
         self._lock.release()
+
+    def _sending(self, end: int) -> None:
+        """Probe before the next append unless this one settles, and raise the end this handle ever sent to.
+
+        A handle a checkpoint restored never knows what an earlier session sent, so it keeps no such end.
+        """
+        with self._guard:
+            self._verify = True
+            self._high = None if self._high is None else max(self._high, end)
 
     def _settle(self, confirmed: int, *, verify: bool = False) -> None:
         """Confirm the server holds every byte before an offset; one completing by length completes with the last."""
@@ -629,14 +640,13 @@ class _Upload(Generic[T]):
     def _verified(self, remote: int, info: ResponseInfo) -> None:
         """Take the offset a probe gives as confirmed: never below the confirmed one, past the content, or mid-chunk.
 
-        A server may hold part of a chunk only when the helper allows partial commits.
+        A server may hold part of a chunk only when the helper allows partial commits, and never more than this handle
+        sent unless a checkpoint restored it.
         """
         confirmed, size = self._confirmed, self._identity.size
-        if (
-            remote < confirmed
-            or remote > size
-            or (remote % self._chunk and remote != size and not self._plan.partial_commit)
-        ):
+        limit = size if (high := self._high) is None else min(high, size)
+        partial = remote % self._chunk and remote != size
+        if remote < confirmed or remote > limit or (partial and not self._plan.partial_commit):
             raise self._offset_error(confirmed, remote, info)
         self._settle(remote)
 
@@ -948,6 +958,7 @@ class UploadHandle(_Upload[T]):
         buffer = self._buffer(index, start, end - start)
         while self._confirmed < end:
             payload = buffer[self._confirmed - start :]
+            self._sending(end)
             try:
                 with self._mapped():
                     self._core.execute_page(
@@ -961,10 +972,7 @@ class UploadHandle(_Upload[T]):
                         session=self._session,
                         max_page_bytes=None,
                     )
-            except SessionLimitError:
-                raise
             except Exception as error:
-                self._verify = True
                 if not isinstance(error, TransportError) or (delivery := error.delivery_state) not in _UNKNOWN:
                     raise
                 if self._uncertain(error, delivery, end):
@@ -1170,6 +1178,7 @@ class AsyncUploadHandle(_Upload[T]):
         buffer = await self._buffer(index, start, end - start)
         while self._confirmed < end:
             payload = buffer[self._confirmed - start :]
+            self._sending(end)
             try:
                 with self._mapped():
                     await self._core.execute_page(
@@ -1183,10 +1192,7 @@ class AsyncUploadHandle(_Upload[T]):
                         session=self._session,
                         max_page_bytes=None,
                     )
-            except SessionLimitError:
-                raise
             except Exception as error:
-                self._verify = True
                 if not isinstance(error, TransportError) or (delivery := error.delivery_state) not in _UNKNOWN:
                     raise
                 if await self._uncertain(error, delivery, end):
@@ -1493,6 +1499,7 @@ def _resumed(handle: _Upload[T], saved: _Saved, core: ClientCore | AsyncClientCo
     handle._bound = saved.bound  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     handle._confirmed = saved.confirmed  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     handle._verify = True  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    handle._high = None  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     handle._expires_at = saved.expires_at  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     handle._phase, handle._delivery = saved.phase, saved.delivery  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     if (result := saved.result) is None:
