@@ -113,6 +113,18 @@
       }
     }
   },
+  "multipart-split": {
+    "input": "multipart-split.yaml",
+    "model": {
+      "read_only_write_only_model_type": "request-response"
+    },
+    "config": {
+      "validation": {
+        "request": "schema",
+        "response": "schema"
+      }
+    }
+  },
   "servers": {
     "input": "servers.yaml",
     "config": {
@@ -2692,6 +2704,22 @@
         "_async_helpers.py"
       ]
     ]
+  },
+  "ndjson-split": {
+    "input": "ndjson-split.yaml",
+    "references": [
+      "protocols/ndjson-split.yaml"
+    ],
+    "model": {
+      "read_only_write_only_model_type": "request-response"
+    },
+    "config": {
+      "protocols": "protocols/ndjson-split.yaml",
+      "validation": {
+        "request": "schema",
+        "response": "schema"
+      }
+    }
   },
   "protocols-ndjson-checks": {
     "input": "ndjson.yaml",
