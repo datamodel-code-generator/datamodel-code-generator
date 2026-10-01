@@ -1,0 +1,32 @@
+schema_version: 1
+helpers:
+  finds.all:
+    kind: pagination
+    operation: /paths/~1finds/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/Item}
+    continuation:
+      kind: offset
+      write: {in: querystring, name: criteria, pointer: /start}
+      first: 0
+      step: {literal: 2}
+      has_more: {from: body, pointer: /has_more}
+    bindings:
+      - target: {in: querystring, name: criteria, pointer: /term}
+        value: {literal: null}
+  shelves.walk:
+    kind: pagination
+    operation: /paths/~1shelves~1{shelf}~1{rack}~1{slot}/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/Item}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next}
+      write: {in: path, name: rack}
+      end: [{kind: missing}, {kind: "null"}]
+      empty_string: value
+    bindings:
+      - target: {in: path, name: shelf}
+        value: {literal: "."}
+      - target: {in: path, name: slot}
+        value: {source: previous, selector: {from: body, pointer: /slot}}

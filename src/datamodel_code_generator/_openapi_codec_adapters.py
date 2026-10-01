@@ -28,6 +28,9 @@ from datamodel_code_generator._openapi_wire_plan import (
     CodecDiagnostic,
     CodecReason,
     ParameterViewPlan,
+    auth_names,
+    parameter_collisions,
+    parameter_plans,
     parameter_view,
 )
 from datamodel_code_generator._runtime.model_codecs.bindings import (
@@ -474,11 +477,13 @@ class _AdapterPlanner:
         wire: WirePlan,
         bindings: Mapping[TypeUseId, UseBinding],
         lease: SourceLease | None,
+        adapted: frozenset[TypeUseId],
     ) -> None:
         self.batch = batch
         self.wire = wire
         self.bindings = bindings
         self.lease = lease
+        self.adapted = adapted
         self.uses: dict[TypeUseId, TypeUseBinding] = {use.id: use for use in batch.type_uses}
         self.logical = dict(wire.documents)
         self.documents = {resource.uri: resource.contents for resource in wire.resources}
@@ -600,7 +605,8 @@ class _AdapterPlanner:
         operation: OperationContract,
         declaration: WireDeclaration,
     ) -> ParameterViewPlan:
-        plan = parameter_view(self.batch, self.wire.version, operation, declaration)
+        plans = parameter_plans(self.wire, (operation,), self.adapted)[operation.id].values()
+        plan = parameter_view(self.wire.version, operation, declaration, plans, auth_names(self.batch, operation))
         kinds = _kinds(self.resolved(use)[1])
         gaps = (
             plan.location not in capabilities.locations,
@@ -705,7 +711,7 @@ def plan_adapters(
     lease: SourceLease | None,
 ) -> tuple[tuple[AdapterPlan, ...], tuple[CodecDiagnostic, ...]]:
     """Check each selected adapter's capabilities against its use and build its data-only views."""
-    planner = _AdapterPlanner(batch, wire, bindings, lease)
+    planner = _AdapterPlanner(batch, wire, bindings, lease, selection.uses("parameter"))
     plans = tuple(
         plan
         for (kind, use), registration in selection.chosen.items()
@@ -715,10 +721,18 @@ def plan_adapters(
 
 
 def suppressed(
-    diagnostics: Iterable[CodecDiagnostic], wire: WirePlan, plans: tuple[AdapterPlan, ...]
+    diagnostics: Iterable[CodecDiagnostic],
+    wire: WirePlan,
+    plans: tuple[AdapterPlan, ...],
+    batch: GeneratedTypeContractBatch,
 ) -> tuple[CodecDiagnostic, ...]:
-    """Drop the diagnostics that selected parameter and schema adapters take over."""
+    """Drop the diagnostics that selected parameter and schema adapters take over.
+
+    The parameter name collisions of an operation with adapted parameters are checked again with the names the
+    adapters own, so a collision only a builtin expansion made goes, and one an adapted name makes is reported.
+    """
     parameter_uses = {plan.use for plan in plans if plan.parameter is not None}
+    replaced, collisions = _collisions(batch, wire, frozenset(parameter_uses))
     owned = {plan.use for plan in plans if plan.schema is not None}
     documents = {resource.uri: resource.contents for resource in wire.resources}
     closures = (
@@ -729,7 +743,9 @@ def suppressed(
     logical = dict(wire.documents)
     kept: list[CodecDiagnostic] = []
     for diagnostic in diagnostics:
-        if diagnostic.code == "MC_PARAMETER_ENCODING" and diagnostic.uses and set(diagnostic.uses) <= parameter_uses:
+        if diagnostic in replaced or (
+            diagnostic.code == "MC_PARAMETER_ENCODING" and diagnostic.uses and set(diagnostic.uses) <= parameter_uses
+        ):
             continue
         if diagnostic.code in SCHEMA_ADAPTER_CODES and owned:
             uri, pointer = logical.get(diagnostic.source.document, ""), diagnostic.source.pointer
@@ -737,4 +753,25 @@ def suppressed(
             if reached and reached <= owned:
                 continue
         kept.append(diagnostic)
-    return tuple(kept)
+    return (*kept, *collisions)
+
+
+def _collisions(
+    batch: GeneratedTypeContractBatch, wire: WirePlan, adapted: frozenset[TypeUseId]
+) -> tuple[frozenset[CodecDiagnostic], tuple[CodecDiagnostic, ...]]:
+    """Return the builtin collisions of the operations with adapted parameters that go, and the new ones."""
+    if not adapted:
+        return frozenset(), ()
+    owners = {use.owner for use in adapted}
+    operations = [operation for operation in batch.operations if operation.id in owners]
+    builtin = dict(wire.parameters)
+    effective = parameter_plans(wire, operations, adapted)
+    replaced: set[CodecDiagnostic] = set()
+    added: list[CodecDiagnostic] = []
+    for operation in operations:
+        auth = auth_names(batch, operation)
+        before = set(parameter_collisions(operation, builtin.get(operation.id, ()), auth))
+        after = parameter_collisions(operation, tuple(effective[operation.id].values()), auth)
+        replaced.update(before.difference(after))
+        added.extend(item for item in after if item not in before)
+    return frozenset(replaced), tuple(added)

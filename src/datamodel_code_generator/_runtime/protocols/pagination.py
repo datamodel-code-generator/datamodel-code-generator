@@ -23,8 +23,7 @@ from ..client.options import RequestOptions
 from ..client.paths import dot_segment, path_segments
 from ..client.responses import ResponseInfo
 from ..client.timing import SessionOptions
-from ..model_codecs.errors import ParameterEncodingError
-from ..model_codecs.parameters import path_text
+from ..model_codecs.errors import CodecAdapterError, ParameterEncodingError
 from ..model_codecs.unset import UNSET, Unset
 from .errors import PaginationCycleError, ProtocolDataError, ProtocolStateError, SessionLimitError
 from .options import PaginationOptions
@@ -282,7 +281,7 @@ class PaginationPlan(Generic[T, P]):
             parameters[position] = (
                 replace(spec, encoder=None)
                 if pointer is None
-                else PatchedParameter(plan=spec.plan, encoder=spec.encoder)
+                else PatchedParameter(plan=spec.plan, encoder=spec.encoder, adapter=spec.adapter)
             )
             writes.append((position, pointer))
         body = call.body
@@ -554,17 +553,18 @@ def _dotted(
 ) -> Selector | None:
     """Return the selector of a read value written to a path segment that encodes to a dot segment, or None.
 
-    The caller's own path arguments in the segment keep the texts the first page sent. The first read value whose
-    encoded text is non-empty is blamed, or else the first read value. A value its parameter cannot encode is left to
-    the request, which refuses it.
+    The caller's own path arguments in the segment keep the texts the first page sent, and each text is the request's,
+    through the parameter's registered adapter when it has one. The first read value whose encoded text is non-empty
+    is blamed, or else the first read value. A value its parameter or adapter cannot encode is left to the request,
+    which refuses it.
     """
     parameters = plan.call.parameters
     try:
         texts = {
-            name: callers()[name] if index is None else path_text(parameters[position].plan, written[index])
+            name: callers()[name] if index is None else parameters[position].path_text(written[index])
             for name, index, _, position in parts
         }
-    except ParameterEncodingError:
+    except (ParameterEncodingError, CodecAdapterError):
         return None
     if not dot_segment(segment, texts):
         return None
@@ -757,7 +757,7 @@ class _Walk(Generic[T, P]):
             plan, arguments = self.plan, self.request.arguments
             parameters = plan.call.parameters
             texts = self.paths = {
-                name: path_text(parameters[position].plan, parameters[position].encode(arguments[position], "none"))
+                name: parameters[position].path_text(parameters[position].encode(arguments[position], "none"))
                 for _, parts in plan.dotted
                 for name, index, _, position in parts
                 if index is None
@@ -887,7 +887,7 @@ class _Walk(Generic[T, P]):
             return replace(call, body=replace(body, media=media))
         parameters = list(call.parameters)
         spec = parameters[position]
-        parameters[position] = ReadParameter(plan=spec.plan, encoder=spec.encoder, read=read)
+        parameters[position] = ReadParameter(plan=spec.plan, encoder=spec.encoder, adapter=spec.adapter, read=read)
         return replace(call, parameters=tuple(parameters))
 
     def started(self, wire: WireValue) -> None:

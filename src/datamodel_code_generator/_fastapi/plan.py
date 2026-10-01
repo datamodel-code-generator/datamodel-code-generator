@@ -49,6 +49,7 @@ from datamodel_code_generator._generation_contract import (
     LiteralSequence,
     SourceLocation,
 )
+from datamodel_code_generator._openapi_wire_plan import parameter_plans
 from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, media_kind, normalize_media_type
 from datamodel_code_generator._runtime.model_codecs.unset import UNSET, Unset
 from datamodel_code_generator._runtime.model_codecs.wire import checked_wire
@@ -462,9 +463,7 @@ class Planner:  # noqa: PLR0904
             for member in reversed(request.batch.fields)
             if member.model_facts is not None
         }
-        self.parameter_plans = {
-            operation: {(plan.location, plan.name): plan for plan in plans} for operation, plans in wire.parameters
-        }
+        self.parameter_plans = parameter_plans(wire, request.operations, selection.uses("parameter"))
         self.header_plans = dict(wire.headers)
         self.scheme_declarations = {
             (declaration.use_site.document, declaration.name): declaration

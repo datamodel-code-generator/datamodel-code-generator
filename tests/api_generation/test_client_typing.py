@@ -133,26 +133,6 @@ def test_client_typing_webhooks(backend: DataModelType, tmp_path: Path) -> None:
     )
 
 
-@pytest.mark.parametrize(
-    "backend",
-    [
-        DataModelType.PydanticV2BaseModel,
-        DataModelType.PydanticV2Dataclass,
-        DataModelType.DataclassesDataclass,
-        DataModelType.TypingTypedDict,
-        DataModelType.MsgspecStruct,
-    ],
-)
-def test_client_typing_caches(backend: DataModelType, tmp_path: Path) -> None:
-    """Check cache helpers: typed results in both modes, stores, invalidation, mutations, and misuses of each."""
-    if not os.environ.get(ENABLED):
-        pytest.skip(f"{ENABLED} enables type checking generated packages")
-    assert_output(
-        client_typing_report(tmp_path, backend, "caching-typing", ("cache_helpers",)),
-        EXPECTED / f"{backend.value.replace('.', '-')}-caches.txt",
-    )
-
-
 def test_client_typing_public_keys(tmp_path: Path) -> None:
     """Check Ed25519 and RSA-PSS helpers next to an HMAC one: key wrappers, events, and misuses of each key type."""
     if not os.environ.get(ENABLED):
@@ -172,6 +152,26 @@ def test_client_typing_adapters(tmp_path: Path) -> None:
     assert_output(
         client_typing_report(tmp_path, DataModelType.PydanticV2BaseModel, "webhooks-adapters", ("adapter_helpers",)),
         EXPECTED / "pydantic_v2-BaseModel-adapters.txt",
+    )
+
+
+@pytest.mark.parametrize(
+    "backend",
+    [
+        DataModelType.PydanticV2BaseModel,
+        DataModelType.PydanticV2Dataclass,
+        DataModelType.DataclassesDataclass,
+        DataModelType.TypingTypedDict,
+        DataModelType.MsgspecStruct,
+    ],
+)
+def test_client_typing_caches(backend: DataModelType, tmp_path: Path) -> None:
+    """Check cache helpers: typed results in both modes, stores, invalidation, mutations, and misuses of each."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(
+        client_typing_report(tmp_path, backend, "caching-typing", ("cache_helpers",)),
+        EXPECTED / f"{backend.value.replace('.', '-')}-caches.txt",
     )
 
 
