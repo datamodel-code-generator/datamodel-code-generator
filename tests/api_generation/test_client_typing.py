@@ -98,3 +98,14 @@ def test_client_typing_pagination(backend: DataModelType, tmp_path: Path) -> Non
         client_typing_report(tmp_path, backend, "pagination", ("pagination",)),
         EXPECTED / f"{backend.value.replace('.', '-')}-pagination.txt",
     )
+
+
+@pytest.mark.parametrize("case", ["pagination-targets", "pagination-querystring"])
+def test_client_typing_package(case: str, tmp_path: Path) -> None:
+    """Check packages whose helpers write each kind of request target and bindings, with no samples."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(
+        client_typing_report(tmp_path, DataModelType.PydanticV2BaseModel, case, ()),
+        EXPECTED / f"pydantic_v2-BaseModel-{case}.txt",
+    )

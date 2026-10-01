@@ -6,7 +6,7 @@ import json
 from dataclasses import dataclass, replace
 from functools import cached_property, partial
 from pathlib import PurePosixPath
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
 
 from datamodel_code_generator._api_generation import RenderedFile
 from datamodel_code_generator._client._compiled_templates import client as client_template
@@ -636,6 +636,13 @@ def _call(head: str, entries: Iterable[tuple[str, Doc]]) -> Group:
     return Group(f"{head}(", tuple(entries), ")")
 
 
+def _wire(value: object) -> object:
+    """Return a JSON value as a wire value, whose arrays are tuples."""
+    if isinstance(value, list):
+        return tuple(map(_wire, value))
+    return {key: _wire(item) for key, item in value.items()} if isinstance(value, dict) else value
+
+
 def _mode(*, asynchronous: bool) -> str:
     return "async" if asynchronous else "sync"
 
@@ -1109,7 +1116,7 @@ class _Resources(_Typing):
         if (body := spec.body) is None:
             return [_Variant(())], ()
         literal = module.name("typing", "Literal")
-        unset = module.local("options", "Unset")
+        unset = "" if body.required else module.local("options", "Unset")
         groups: dict[str, list[tuple[str, str]]] = {}
         for media in body.media:
             surface = self.body_surfaces(module, media)[asynchronous]
@@ -2234,27 +2241,54 @@ class _Helpers:
         lines.append(f"    return {expression}")
         return "\n".join(lines)
 
+    @staticmethod
+    def selector(module: Module, selector: Mapping[str, Any]) -> str:
+        """Return the runtime record of a selector; a header selector names its occurrence only when it is all."""
+        records = "_runtime.protocols.records"
+        value = f"{module.local(records, 'StatusSelector')}()"
+        match selector["from"]:
+            case "body":
+                value = f"{module.local(records, 'BodySelector')}(pointer={selector['pointer']!r})"
+            case "header":
+                every = ", occurrence='all'" if selector["occurrence"] == "all" else ""
+                value = f"{module.local(records, 'HeaderSelector')}(name={selector['name']!r}{every})"
+        return value
+
+    @staticmethod
+    def target(module: Module, target: Mapping[str, Any]) -> str:
+        """Return the runtime record of a request target."""
+        records = "_runtime.protocols.records"
+        if (location := target["in"]) == "body":
+            return f"{module.local(records, 'BodyTarget')}(pointer={target['pointer']!r})"
+        if location == "querystring":
+            return (
+                f"{module.local(records, 'QuerystringTarget')}(name={target['name']!r}, pointer={target['pointer']!r})"
+            )
+        return f"{module.local(records, 'ParameterTarget')}(location={location!r}, name={target['name']!r})"
+
+    def binding(self, module: Module, binding: Mapping[str, Any]) -> Doc:
+        """Return the runtime record of a helper's binding: its target, and its literal or its source and selector."""
+        value = binding["value"]
+        entries: list[tuple[str, Doc]] = [("target=", self.target(module, binding["target"]))]
+        if "literal" in value:
+            entries.append(("literal=", repr(_wire(value["literal"]))))
+        else:
+            entries.extend((
+                ("source=", repr(value["source"])),
+                ("selector=", self.selector(module, value["selector"])),
+            ))
+        return _call(module.local("_runtime.protocols.pagination", "PageBinding"), entries)
+
     def plan(self, module: Module, index: int, spec: PaginationSpec) -> str:
-        """Return a helper's plan: its identity, operation, items, cursor continuation, and fingerprint."""
+        """Return a helper's plan: its identity, operation, items, cursor continuation, fingerprint, and bindings."""
         records = "_runtime.protocols.records"
         runtime = "_runtime.protocols.pagination"
         helper, continuation = spec.helper, spec.continuation
-        read = continuation["read"]
-        selector = f"{module.local(records, 'StatusSelector')}()"
-        match read["from"]:
-            case "body":
-                selector = f"{module.local(records, 'BodySelector')}(pointer={read['pointer']!r})"
-            case "header":
-                selector = f"{module.local(records, 'HeaderSelector')}(name={read['name']!r})"
-        write = continuation["write"]
         ends = [end["kind"] for end in continuation["end"]]
         values = [repr(end["value"]) for end in continuation["end"] if end["kind"] == "value"]
         entries: list[tuple[str, Doc]] = [
-            ("read=", selector),
-            (
-                "write=",
-                f"{module.local(records, 'ParameterTarget')}(location={write['in']!r}, name={write['name']!r})",
-            ),
+            ("read=", self.selector(module, continuation["read"])),
+            ("write=", self.target(module, continuation["write"])),
             *((("end_missing=", "True"),) if "missing" in ends else ()),
             *((("end_null=", "True"),) if "null" in ends else ()),
             *((("end_values=", _tuple(values)),) if values else ()),
@@ -2280,6 +2314,11 @@ class _Helpers:
                 ),
                 ("continuation=", _call(module.local(runtime, "CursorPlan"), entries)),
                 ("fingerprint=", repr(self.fingerprints[helper.name])),
+                *(
+                    (("bindings=", _tuple([self.binding(module, item) for item in bindings])),)
+                    if (bindings := helper.tree["bindings"])
+                    else ()
+                ),
             ),
         )
         head = (
@@ -2752,11 +2791,13 @@ another kind's options, fail construction. The session types are imported from:
 | session total timeout | 300 seconds; None removes it |
 | network sends per session | 3000; None removes it |
 
-A page's items must be a JSON array; an empty array does not end the traversal. A server's cursor is sent as it came,
-without its parameter's schema checks. The cursor ends the traversal only through the declared end conditions, and a
-missing or null cursor that no condition covers raises `ProtocolDataError`. A continuation seen earlier in the session
-ends it with `PaginationCycleError` after the repeating page. A limit reached while pages remain raises
-`SessionLimitError` with the progress so far; a pager then refuses further steps.
+A page's items must be a JSON array; an empty array does not end the traversal. A server's cursor, and each value a
+binding reads, is sent as it came, without its target's schema checks; a dot segment for a path parameter raises
+`ProtocolDataError`. The cursor ends the traversal only through the declared end conditions, and a missing or null
+cursor that no condition covers, or a missing binding value, raises `ProtocolDataError`. A continuation seen earlier in
+the session ends it with `PaginationCycleError` after the repeating page. A limit reached while pages remain raises
+`SessionLimitError` with the progress so far; a pager then refuses further steps. A call's options must not patch a
+header, the cookies, or a query parameter the helper writes.
 """
 
     def helper_files(self, resources: _Resources) -> tuple[RenderedFile, ...]:

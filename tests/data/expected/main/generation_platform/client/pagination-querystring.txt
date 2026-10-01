@@ -1,0 +1,213 @@
+# pagination-querystring
+render pydantic_v2.BaseModel
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/default/__init__.py
+  write client/resources/default/_sync.py
+  write client/resources/default/_async.py
+  write client/types/__init__.py
+  write client/types/default/__init__.py
+  write client/types/default/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/protocols/_plans.py
+  write client/protocols/_helpers.py
+  write client/protocols/_async_helpers.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['search.all', 'search.fixed', 'search.next', 'lookup.all'] bindings 5
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper search.all pagination enabled True /inputs/target_config/protocol_metadata/helpers/search.all d78f76a8ef6d2030962163ccc0ff71e05333ff63a62684877048f4c5e00270fb
+  helper search.fixed pagination enabled True /inputs/target_config/protocol_metadata/helpers/search.fixed fd3aa263845961a1310a22ab591ab6336c4dc3c5f5d81811bcb2fe654ecd12a7
+  helper search.next pagination enabled True /inputs/target_config/protocol_metadata/helpers/search.next d918ff5d905f5ab0a3b87183e17742e66b626aceed7792cc34d243f80a45be29
+  helper lookup.all pagination enabled True /inputs/target_config/protocol_metadata/helpers/lookup.all 79cf31c1c74be0f5bb01c24fb188288b408095fe07b439789b7cb116552ce8c5
+  {
+    "helpers": {
+      "lookup.all": {
+        "bindings": [
+          {
+            "target": {
+              "in": "querystring",
+              "name": "filter",
+              "pointer": "/term"
+            },
+            "value": {
+              "literal": null
+            }
+          }
+        ],
+        "continuation": {
+          "empty_string": "end",
+          "end": [
+            {
+              "kind": "value",
+              "value": 204
+            }
+          ],
+          "kind": "cursor",
+          "read": {
+            "from": "status"
+          },
+          "write": {
+            "in": "querystring",
+            "name": "filter",
+            "pointer": "/page"
+          }
+        },
+        "enabled": true,
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1lookup/get/responses/200/content/application~1json/schema/items"
+        },
+        "items": {
+          "from": "body",
+          "pointer": ""
+        },
+        "kind": "pagination",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1lookup/get"
+        }
+      },
+      "search.all": {
+        "bindings": [],
+        "continuation": {
+          "empty_string": "end",
+          "end": [
+            {
+              "kind": "value",
+              "value": 204
+            }
+          ],
+          "kind": "cursor",
+          "read": {
+            "from": "status"
+          },
+          "write": {
+            "in": "querystring",
+            "name": "criteria",
+            "pointer": "/page"
+          }
+        },
+        "enabled": true,
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1search/get/responses/200/content/application~1json/schema/items"
+        },
+        "items": {
+          "from": "body",
+          "pointer": ""
+        },
+        "kind": "pagination",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1search/get"
+        }
+      },
+      "search.fixed": {
+        "bindings": [
+          {
+            "target": {
+              "in": "querystring",
+              "name": "criteria",
+              "pointer": "/term"
+            },
+            "value": {
+              "literal": "all"
+            }
+          }
+        ],
+        "continuation": {
+          "empty_string": "end",
+          "end": [
+            {
+              "kind": "value",
+              "value": 204
+            }
+          ],
+          "kind": "cursor",
+          "read": {
+            "from": "status"
+          },
+          "write": {
+            "in": "querystring",
+            "name": "criteria",
+            "pointer": "/page"
+          }
+        },
+        "enabled": true,
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1search/get/responses/200/content/application~1json/schema/items"
+        },
+        "items": {
+          "from": "body",
+          "pointer": ""
+        },
+        "kind": "pagination",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1search/get"
+        }
+      },
+      "search.next": {
+        "bindings": [],
+        "continuation": {
+          "empty_string": "end",
+          "end": [
+            {
+              "kind": "missing"
+            }
+          ],
+          "kind": "cursor",
+          "read": {
+            "from": "header",
+            "name": "X-Next",
+            "occurrence": "single"
+          },
+          "write": {
+            "in": "querystring",
+            "name": "criteria",
+            "pointer": "/term"
+          }
+        },
+        "enabled": true,
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1search/get/responses/200/content/application~1json/schema/items"
+        },
+        "items": {
+          "from": "body",
+          "pointer": ""
+        },
+        "kind": "pagination",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1search/get"
+        }
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 default.search(querystring:criteria=criteria)
+    exports client.types.default.SearchResponse client.types.default.SearchErrorData client.types.default.SearchHTTPError
+    exports client.types.default.SearchRequestCodecs client.types.default.decode_search_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 default.lookup(querystring:filter=filter)
+    exports client.types.default.LookupResponse client.types.default.LookupErrorData client.types.default.LookupHTTPError
+    exports client.types.default.LookupRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

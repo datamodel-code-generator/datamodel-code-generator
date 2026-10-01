@@ -1,0 +1,104 @@
+# pagination-targets pydantic_v2.BaseModel
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-cursor: a] b''
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-cursor: b] b''
+  header cursor ['1', '2', '3']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-cursor: start] b''
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-cursor: a] b''
+  header cursor over the caller's ['1', '2']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cookie: page_token=a] b''
+  cookie cursor ['1', '2']
+  header patch of the cursor pager ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'headers', 'x-cursor'), condition='invalid_value'] protocol_configuration_error
+  header patch of the cursor page ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'headers', 'x-cursor'), condition='invalid_value'] protocol_configuration_error
+  cookie patch of the cursor pager ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'headers', 'Cookie'), condition='invalid_value'] protocol_configuration_error
+  cookie patch of the cursor page ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'headers', 'Cookie'), condition='invalid_value'] protocol_configuration_error
+  query patch of a binding pager ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'query', 'limit'), condition='invalid_value'] protocol_configuration_error
+  query patch of a binding page ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'query', 'limit'), condition='invalid_value'] protocol_configuration_error
+  query patch of the cursor pager ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'query', 'cursor'), condition='invalid_value'] protocol_configuration_error
+  query patch of the cursor page ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'query', 'cursor'), condition='invalid_value'] protocol_configuration_error
+  > GET https://api.example.com/users?extra=1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  page with another query = [1] continuation=Continuation(kind='cursor') status=200 sends=1
+  next page with a header patch of the cursor ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'headers', 'X-Cursor'), condition='invalid_value'] protocol_configuration_error
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-cursor: a, x-other: kept] b''
+  next page with another header = [2] continuation=None status=200 sends=1
+  > GET https://api.example.com/folders/f1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/folders/f2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  path cursor ['1', '2']
+  > GET https://api.example.com/folders/f1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  path cursor '.' [] ! ProtocolDataError: ProtocolDataError(operation_id='listFolder', call_id='<call>', condition='value') [operation_id='listFolder', condition='value', location=BodySelector(pointer='/next_cursor')] protocol_data_error
+  > GET https://api.example.com/folders/f1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  path cursor '..' [] ! ProtocolDataError: ProtocolDataError(operation_id='listFolder', call_id='<call>', condition='value') [operation_id='listFolder', condition='value', location=BodySelector(pointer='/next_cursor')] protocol_data_error
+  > GET https://api.example.com/users?tags=mine
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a&limit=5&code=200&tags=t1&tags=t2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-snapshot: s1] b''
+  > GET https://api.example.com/users?cursor=b&limit=5&code=200&tags=t3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-snapshot: s1] b''
+  bound values ['1', '2', '3']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  missing first header [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=HeaderSelector(name='x-snapshot', occurrence='single')] protocol_data_error
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  missing every header [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=HeaderSelector(name='X-Tag', occurrence='all')] protocol_data_error
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  missing values of the last page ['1']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  bound page = [1] continuation=Continuation(kind='cursor') status=200 sends=1
+  > GET https://api.example.com/users?cursor=a&limit=5&code=200&tags=t1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-snapshot: s1] b''
+  bound next page = [2] continuation=Continuation(kind='cursor') status=200 sends=1
+  > GET https://api.example.com/users?cursor=b&limit=5&code=200&tags=t2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-snapshot: s1] b''
+  bound last page = [3] continuation=None status=200 sends=1
+  > POST https://api.example.com/searches
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 13] b'{"query":"a"}'
+  > POST https://api.example.com/searches
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 108] b'{"query":"a","after":"1","size":10,"filter":{"states":["open"]},"range":{"from":"a"},"page":{"cursor":"n1"}}'
+  > POST https://api.example.com/searches
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 109] b'{"query":"a","after":null,"size":10,"filter":{"states":["open"]},"range":{"from":"a"},"page":{"cursor":"n2"}}'
+  body writes ['1', '2', '3']
+  > POST https://api.example.com/searches
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 52] b'{"query":"a","page":{"mode":"m"},"range":{"to":"z"}}'
+  > POST https://api.example.com/searches
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 128] b'{"query":"a","page":{"mode":"m","cursor":"n1"},"range":{"to":"z","from":"a"},"after":"1","size":10,"filter":{"states":["open"]}}'
+  body writes beside members ['1', '2']
+  > POST https://api.example.com/searches
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 13] b'{"query":"a"}'
+  > POST https://api.example.com/searches
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 112] b'{"query":"a","after":"1","size":10,"filter":{"states":["open"]},"range":{"from":"a"},"page":{"cursor":"longer"}}'
+  schema validation of a long server cursor ['1', '2']
+  schema validation of a long body cursor [] ! RequestEncodingError: RequestEncodingError(operation_id='search', call_id='<call>', location='body') [operation_id='search', location=('body',), cause=WireValidationError('The value does not satisfy maxLength at /page/cursor')] request_encoding_error
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-cursor: a] b''
+  async header cursor ['1', '2']
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/users?cursor=a&limit=5&code=200&tags=t1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-snapshot: s1] b''
+  async bound values ['1', '2']
+  > POST https://api.example.com/searches
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 13] b'{"query":"a"}'
+  async body page = [1] continuation=Continuation(kind='cursor') status=200 sends=1
+  > POST https://api.example.com/searches
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 108] b'{"query":"a","after":"1","size":10,"filter":{"states":["open"]},"range":{"from":"a"},"page":{"cursor":"n1"}}'
+  async body next page = [2] continuation=None status=200 sends=1
+  async header patch of the cursor ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'headers', 'X-Cursor'), condition='invalid_value'] protocol_configuration_error

@@ -21,6 +21,30 @@ paths:
       responses:
         '200':
           description: The matches.
+          headers:
+            X-Next:
+              schema: {type: string}
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {type: string}
+  /lookup:
+    get:
+      operationId: lookup
+      parameters:
+        - name: filter
+          in: querystring
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  term: {type: [string, 'null']}
+                  page: {type: integer}
+      responses:
+        '200':
+          description: The matches.
           content:
             application/json:
               schema:

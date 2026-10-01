@@ -19,12 +19,70 @@ paths:
         - name: X-Cursor
           in: header
           schema: {type: string}
+        - name: session
+          in: cookie
+          schema: {type: string}
       responses:
         '200':
           description: One page of users.
           headers:
             X-Next:
               schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /bodies:
+    post:
+      operationId: searchBodies
+      tags: [bodies]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                count: {type: integer}
+                page:
+                  type: object
+                  properties:
+                    cursor: {type: string}
+      responses:
+        '200':
+          description: One page of users.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /multi:
+    post:
+      operationId: searchMulti
+      tags: [multi]
+      requestBody:
+        content:
+          application/vnd.first+json:
+            schema: {$ref: '#/components/schemas/Position'}
+          application/vnd.second+json:
+            schema: {$ref: '#/components/schemas/Position'}
+      responses:
+        '200':
+          description: One page of users.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /folders/{folder}:
+    get:
+      operationId: listFolder
+      tags: [folders]
+      parameters:
+        - name: folder
+          in: path
+          required: true
+          schema: {type: string}
+        - name: cursor
+          in: query
+          schema: {type: string}
+      responses:
+        '200':
+          description: One page of users.
           content:
             application/json:
               schema: {$ref: '#/components/schemas/UserPage'}
@@ -91,6 +149,10 @@ paths:
                   secret: {type: string, writeOnly: true}
 components:
   schemas:
+    Position:
+      type: object
+      properties:
+        cursor: {type: string}
     User:
       type: object
       required: [id]

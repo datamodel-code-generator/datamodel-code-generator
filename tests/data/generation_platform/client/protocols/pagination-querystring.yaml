@@ -1,0 +1,52 @@
+schema_version: 1
+helpers:
+  search.all:
+    kind: pagination
+    operation: /paths/~1search/get
+    items: {from: body, pointer: ""}
+    item_schema: {pointer: /paths/~1search/get/responses/200/content/application~1json/schema/items}
+    continuation:
+      kind: cursor
+      read: {from: status}
+      write: {in: querystring, name: criteria, pointer: /page}
+      end: [{kind: value, value: 204}]
+      empty_string: end
+  search.fixed:
+    kind: pagination
+    operation: /paths/~1search/get
+    items: {from: body, pointer: ""}
+    item_schema: {pointer: /paths/~1search/get/responses/200/content/application~1json/schema/items}
+    continuation:
+      kind: cursor
+      read: {from: status}
+      write: {in: querystring, name: criteria, pointer: /page}
+      end: [{kind: value, value: 204}]
+      empty_string: end
+    bindings:
+      - target: {in: querystring, name: criteria, pointer: /term}
+        value: {literal: all}
+  search.next:
+    kind: pagination
+    operation: /paths/~1search/get
+    items: {from: body, pointer: ""}
+    item_schema: {pointer: /paths/~1search/get/responses/200/content/application~1json/schema/items}
+    continuation:
+      kind: cursor
+      read: {from: header, name: X-Next}
+      write: {in: querystring, name: criteria, pointer: /term}
+      end: [{kind: missing}]
+      empty_string: end
+  lookup.all:
+    kind: pagination
+    operation: /paths/~1lookup/get
+    items: {from: body, pointer: ""}
+    item_schema: {pointer: /paths/~1lookup/get/responses/200/content/application~1json/schema/items}
+    continuation:
+      kind: cursor
+      read: {from: status}
+      write: {in: querystring, name: filter, pointer: /page}
+      end: [{kind: value, value: 204}]
+      empty_string: end
+    bindings:
+      - target: {in: querystring, name: filter, pointer: /term}
+        value: {literal: null}

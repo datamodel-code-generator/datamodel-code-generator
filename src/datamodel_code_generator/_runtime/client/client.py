@@ -2102,7 +2102,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         self,
         plan: _PagePlan,
         operation: OperationPlan[T, object],
-        arguments: Callable[[], tuple[object, ...]],
+        request: Callable[[], tuple[tuple[object, ...], object]],
         build: Callable[[T, WireValue, ResponseInfo], R],
         *,
         body: object,
@@ -2113,7 +2113,8 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
     ) -> R:
         """Execute one page of a helper session as a child logical call, building what the page's response gives.
 
-        The page reads at most `max_page_bytes` of its body, and its arguments are taken when the call prepares.
+        The page reads at most `max_page_bytes` of its body, and its arguments and body are taken when the call
+        prepares; `body` is the caller's.
         """
         settings = self._call_settings(options, operation.operation_id)
         if page_limited := (limit := settings.max_response_bytes) is None or max_page_bytes <= limit:
@@ -2123,11 +2124,12 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         decoder = call.decoder = operation.responses
 
         def prepare() -> tuple[PreparedRequest[EncodedAttempt], object]:
+            arguments, sent = request()
             return self._prepare(
                 operation,
-                arguments(),
+                arguments,
                 call.settings,
-                body=body,
+                body=sent,
                 media_type=media_type,
                 options=options,
                 accept=decoder.accept,
@@ -2940,7 +2942,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         self,
         plan: _PagePlan,
         operation: OperationPlan[T, object],
-        arguments: Callable[[], tuple[object, ...]],
+        request: Callable[[], tuple[tuple[object, ...], object]],
         build: Callable[[T, WireValue, ResponseInfo], R],
         *,
         body: object,
@@ -2951,7 +2953,8 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
     ) -> R:
         """Execute one page of a helper session as a child logical call, building what the page's response gives.
 
-        The page reads at most `max_page_bytes` of its body, and its arguments are taken when the call prepares.
+        The page reads at most `max_page_bytes` of its body, and its arguments and body are taken when the call
+        prepares; `body` is the caller's.
         """
         settings = self._call_settings(options, operation.operation_id)
         if page_limited := (limit := settings.max_response_bytes) is None or max_page_bytes <= limit:
@@ -2962,11 +2965,12 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         decoder = call.decoder = operation.responses
 
         def prepare() -> tuple[PreparedRequest[EncodedAttempt], object]:
+            arguments, sent = request()
             return self._prepare(
                 operation,
-                arguments(),
+                arguments,
                 call.settings,
-                body=body,
+                body=sent,
                 media_type=media_type,
                 options=options,
                 accept=decoder.accept,

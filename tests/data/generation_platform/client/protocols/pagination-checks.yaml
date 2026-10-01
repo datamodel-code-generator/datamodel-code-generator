@@ -22,7 +22,7 @@ helpers:
       write: {in: query, name: cursor}
       end: [{kind: "null"}]
       empty_string: end
-  bindings.given:
+  bindings.input:
     kind: pagination
     operation: /paths/~1users/get
     items: {from: body, pointer: /data}
@@ -35,8 +35,8 @@ helpers:
       empty_string: end
     bindings:
       - target: {in: header, name: X-Cursor}
-        value: {literal: fixed}
-  write.header:
+        value: {source: input, selector: {from: body, pointer: /cursor}}
+  bindings.reads:
     kind: pagination
     operation: /paths/~1users/get
     items: {from: body, pointer: /data}
@@ -44,7 +44,131 @@ helpers:
     continuation:
       kind: cursor
       read: {from: body, pointer: /next_cursor}
-      write: {in: header, name: X-Cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: "null"}]
+      empty_string: end
+    bindings:
+      - target: {in: header, name: X-Cursor}
+        value: {source: previous, selector: {from: body, pointer: /nothing}}
+      - target: {in: query, name: size}
+        value: {source: initial, selector: {from: header, name: X-Missing}}
+      - target: {in: cookie, name: session}
+        value: {source: previous, selector: {from: body, pointer: /grouped/admins}}
+  bindings.types:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: "null"}]
+      empty_string: end
+    bindings:
+      - target: {in: header, name: X-Cursor}
+        value: {source: previous, selector: {from: status}}
+      - target: {in: query, name: size}
+        value: {literal: text}
+      - target: {in: cookie, name: session}
+        value: {source: previous, selector: {from: header, name: x-next, occurrence: all}}
+  bindings.null:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: "null"}]
+      empty_string: end
+    bindings:
+      - target: {in: header, name: X-Cursor}
+        value: {source: previous, selector: {from: body, pointer: /next_cursor}}
+      - target: {in: query, name: size}
+        value: {literal: null}
+  bindings.conflicts:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: "null"}]
+      empty_string: end
+    bindings:
+      - target: {in: query, name: cursor}
+        value: {literal: fixed}
+      - target: {in: header, name: X-Cursor}
+        value: {literal: a}
+      - target: {in: header, name: x-cursor}
+        value: {literal: b}
+  write.body_pointer:
+    kind: pagination
+    operation: /paths/~1bodies/post
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: body, pointer: /page/cursor}
+      end: [{kind: "null"}]
+      empty_string: end
+  bindings.overlaps:
+    kind: pagination
+    operation: /paths/~1bodies/post
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: body, pointer: /page/cursor}
+      end: [{kind: "null"}]
+      empty_string: end
+    bindings:
+      - target: {in: body, pointer: /page}
+        value: {literal: {}}
+      - target: {in: body, pointer: /count}
+        value: {literal: 1}
+      - target: {in: body, pointer: ""}
+        value: {literal: {}}
+  bindings.dots:
+    kind: pagination
+    operation: /paths/~1folders~1{folder}/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: "null"}]
+      empty_string: end
+    bindings:
+      - target: {in: path, name: folder}
+        value: {literal: ..}
+  write.optional_body:
+    kind: pagination
+    operation: /paths/~1multi/post
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: body, pointer: /cursor}
+      end: [{kind: "null"}]
+      empty_string: end
+  write.body_type:
+    kind: pagination
+    operation: /paths/~1bodies/post
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: body, pointer: /count}
       end: [{kind: "null"}]
       empty_string: end
   body.form:

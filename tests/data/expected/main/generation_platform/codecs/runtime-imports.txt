@@ -61,13 +61,14 @@ protocols/__init__.py: -
 protocols/errors.py: ..client.errors, ..client.responses, .records, .references, .resume, __future__, collections.abc, types, typing, typing_extensions
 protocols/names.py: .options, __future__, typing
 protocols/options.py: ..client.errors, ..client.timing, ..client.urls, ..model_codecs.unset, .records, __future__, collections.abc, dataclasses, keyword, re, sys, types, typing, typing_extensions
-protocols/pagination.py: ..client.client, ..client.errors, ..client.logical, ..client.operations, ..client.options, ..client.responses, ..client.timing, ..model_codecs.selectors, ..model_codecs.unset, ..model_codecs.wire, .errors, .options, .records, .references, .values, __future__, collections.abc, contextlib, dataclasses, enum, hashlib, threading, types, typing, typing_extensions
+protocols/pagination.py: ..client.client, ..client.errors, ..client.logical, ..client.operations, ..client.options, ..client.responses, ..client.timing, ..model_codecs.selectors, ..model_codecs.unset, ..model_codecs.wire, .errors, .options, .records, .references, .values, .writes, __future__, collections.abc, contextlib, dataclasses, enum, hashlib, threading, types, typing, typing_extensions
 protocols/records.py: ..client.responses, ..model_codecs.errors, ..model_codecs.media, ..model_codecs.wire, __future__, collections.abc, dataclasses, decimal, re, typing, typing_extensions
 protocols/references.py: __future__, dataclasses
 protocols/replay.py: ..client.errors, .options, __future__, datetime, heapq, threading, time, typing
 protocols/resume.py: ..client.errors, ..client.responses, ..model_codecs.errors, ..model_codecs.media, ..model_codecs.wire, .records, .references, __future__, base64, collections.abc, datetime, hashlib, re, typing
-protocols/values.py: ..model_codecs.wire, __future__, collections.abc, enum, typing
+protocols/values.py: ..model_codecs.unset, ..model_codecs.wire, __future__, collections.abc, dataclasses, enum, typing
 protocols/webhooks.py: ..model_codecs.unset, .options, __future__, dataclasses, datetime, typing, typing_extensions
+protocols/writes.py: ..client.operations, ..client.options, ..model_codecs.wire, .values, __future__, dataclasses, typing
 server/__init__.py: -
 server/application.py: ..model_codecs.wire, .security, __future__, collections.abc, dataclasses, fastapi, fastapi.params, fastapi.routing, inspect, starlette.middleware, starlette.responses, starlette.routing, types, typing, typing_extensions
 server/codecs.py: ..model_codecs.errors, ..model_codecs.media, __future__, collections.abc, typing, typing_extensions

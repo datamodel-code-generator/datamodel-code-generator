@@ -26,7 +26,9 @@ def users(*ids: str, cursor: object = _ABSENT, **headers: str) -> Callable[[http
 
 
 def item_id(item: object) -> str:
-    """Return the id or name of an item of any backend: a model attribute or a TypedDict key."""
+    """Return the id or name of an item of any backend: a model attribute or a TypedDict key; a string is itself."""
+    if isinstance(item, str):
+        return item
     for name in ("id", "name"):
         if isinstance(item, dict) and name in item:
             return str(item[name])

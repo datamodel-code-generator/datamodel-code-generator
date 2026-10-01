@@ -1,7 +1,8 @@
 """Plan the cursor pagination helpers of a client target: their page, items, cursor, and the checks they must pass.
 
 A helper's items are read through the page model's fields, by a typed accessor the package generates, and its cursor
-from the page's wire value, a response header, or the status; each is checked against the operation it calls.
+and binding values from the page's wire value, a response header, or the status; each is checked against the operation
+it calls and the request target it writes.
 """
 
 from __future__ import annotations
@@ -10,7 +11,7 @@ import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import TYPE_CHECKING, Any, Final, Literal
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
 
 from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._codec_declarations import OperationRef
@@ -24,6 +25,7 @@ from datamodel_code_generator._generation_contract import (
     UnionType,
 )
 from datamodel_code_generator._runtime.model_codecs.bindings import ArrayNode, MapNode, ModelNode, UnionNode
+from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._runtime.protocols.records import canonical_json
 
 if TYPE_CHECKING:
@@ -31,7 +33,7 @@ if TYPE_CHECKING:
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_types import DiagnosticStage
-    from datamodel_code_generator._client.plan import ClientPlan, OperationSpec, ResponseSpec
+    from datamodel_code_generator._client.plan import ClientPlan, HeaderSpec, OperationSpec, ResponseSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
     from datamodel_code_generator._codec_declarations import SchemaRef
@@ -41,11 +43,13 @@ if TYPE_CHECKING:
     from datamodel_code_generator._runtime.model_codecs.bindings import ModelBinding, TypeNode, UseBinding
 
 StepKind = Literal["attr", "key", "get", "root"]
-_TARGETS: Final = frozenset({"query", "path"})
 _INTEGER: Final = re.compile(r"-?[0-9]+")
 _MEMBERS: Final = ("anyOf", "oneOf")
 _NULL: Final = frozenset({"null"})
 _SEQUENCES: Final = frozenset({"list", "tuple"})
+_POINTED: Final = frozenset({"body", "querystring"})
+_DOT_SEGMENTS: Final = (".", "..")
+_Types: TypeAlias = frozenset[str] | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,6 +94,23 @@ class _Reached:
 
 def _label(spec: OperationSpec) -> str:
     return f"{spec.contract.method.upper()} {spec.contract.path}"
+
+
+def _target_key(target: Mapping[str, Any]) -> tuple[str, ...]:
+    """Return what a request target writes, a header by its case-insensitive name."""
+    if (location := target["in"]) == "body":
+        return (location, target["pointer"])
+    if location == "querystring":
+        return (location, target["name"], target["pointer"])
+    return (location, target["name"].lower() if location == "header" else target["name"])
+
+
+def _overlaps(first: tuple[str, ...], second: tuple[str, ...]) -> bool:
+    """Return whether two targets write the same value, or one a member of the other's body or querystring value."""
+    if first[0] not in _POINTED or first[:-1] != second[:-1]:
+        return first == second
+    one, other = first[-1], second[-1]
+    return one == other or other.startswith(f"{one}/") or one.startswith(f"{other}/")
 
 
 def _problem(code: str, stage: DiagnosticStage, at: str, message: str, spec: OperationSpec) -> Diagnostic:
@@ -238,11 +259,37 @@ class _Pages:
         found = [kinds for member in members if (kinds := self.types(member)) is not None]
         return frozenset().union(*found) if members and len(found) == len(members) else None
 
-    def array(self, location: SourceLocation) -> SourceLocation:
-        """Return the location of an array schema, through anyOf or oneOf members of which all but it are null."""
+    def nonnull(self, location: SourceLocation) -> SourceLocation:
+        """Return the location of a schema, through anyOf or oneOf members of which all but one are null."""
         resolved, _, members = self.members(location)
         others = [member for member in members if self.types(member) != _NULL]
-        return self.array(others[0]) if len(others) == 1 else resolved
+        return self.nonnull(others[0]) if len(others) == 1 else resolved
+
+    def properties(self, location: SourceLocation) -> dict[str, SourceLocation]:
+        """Return the schemas of an object schema's declared properties by name, its own before its allOf members'.
+
+        Nullable anyOf or oneOf members and references are followed, and allOf members merged.
+        """
+        resolved, schema, _ = self.members(self.nonnull(location))
+        found: dict[str, SourceLocation] = {}
+        if isinstance(declared := schema.get("properties"), Mapping):
+            found = {
+                name: _child(_child(resolved, "properties"), name.replace("~", "~0").replace("/", "~1"))
+                for name in declared
+            }
+        if isinstance(parts := schema.get("allOf"), tuple):
+            for index in range(len(parts)):
+                for name, member in self.properties(_child(resolved, f"allOf/{index}")).items():
+                    found.setdefault(name, member)
+        return found
+
+    def declared(self, location: SourceLocation, pointer: str) -> SourceLocation | None:
+        """Return the schema of the property a pointer names through declared object properties, or None."""
+        for token in _tokens(pointer):
+            if (member := self.properties(location).get(token)) is None:
+                return None
+            location = member
+        return location
 
     def item_schema(self, reference: SchemaRef) -> SourceLocation | None:
         """Return the location of a helper's item schema, or None when its document has no such pointer."""
@@ -258,16 +305,11 @@ class _Pages:
         tree = helper.tree
         at, name, label = helper.at, helper.name, _label(spec)
         problems: list[Diagnostic] = []
-        continuation = tree["continuation"]
-        for index, binding in enumerate(tree["bindings"]):
-            message = (
-                f"The pagination helper {name!r} with a binding to a {binding['target']['in']} target is not "
-                "supported yet"
-            )
-            problems.append(_problem("E_CLIENT_UNSUPPORTED", "target", f"{at}.bindings[{index}]", message, spec))
-        if (location := continuation["write"]["in"]) not in _TARGETS:
-            message = f"The pagination helper {name!r} writing its cursor to a {location} target is not supported yet"
-            problems.append(_problem("E_CLIENT_UNSUPPORTED", "target", f"{at}.continuation.write", message, spec))
+        for index, entry in enumerate(tree["bindings"]):
+            if entry["value"].get("source") == "input":
+                message = f"The binding {index} of {name!r} reads the helper's input, which is not supported yet"
+                where = f"{at}.bindings[{index}].value.source"
+                problems.append(_problem("E_CLIENT_UNSUPPORTED", "target", where, message, spec))
         if spec.body is not None and any(media.kind != "json" for media in spec.body.media):
             message = f"The pagination helper {name!r} sends a request body other than JSON, which is not supported yet"
             problems.append(_problem("E_CLIENT_UNSUPPORTED", "target", at, message, spec))
@@ -281,7 +323,9 @@ class _Pages:
             problems.append(_problem("E_CLIENT_UNSUPPORTED", "target", at, message, spec))
             return None, problems
         planned = self.items(helper, spec, binding, page, problems)
-        problems.extend(self.cursor(helper, spec, binding, successes[0].headers, continuation))
+        headers = successes[0].headers
+        problems.extend(self.cursor(helper, spec, binding, headers))
+        problems.extend(self.values(helper, spec, binding, headers))
         if planned is None or problems:
             return None, problems
         steps, item = planned
@@ -325,7 +369,7 @@ class _Pages:
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.item_schema", message, spec))
             return None
         array = page.schema if member is None else member.schema
-        if array is None or self.wire.schema(_child(self.array(array), "items"))[0] != expected:
+        if array is None or self.wire.schema(_child(self.nonnull(array), "items"))[0] != expected:
             message = (
                 f"The item_schema {reference.pointer!r} of {name!r} is not the item schema of the array its items "
                 "pointer selects"
@@ -334,54 +378,99 @@ class _Pages:
             return None
         return reached.steps, item
 
-    def cursor(
+    def read(  # noqa: PLR0913, PLR0917
         self,
         helper: Helper,
         spec: OperationSpec,
         binding: UseBinding,
-        headers: tuple[Any, ...],
-        continuation: Mapping[str, Any],
-    ) -> Iterator[Diagnostic]:
-        """Check that the cursor reads a declared value whose types its target accepts, and that its ends are typed."""
-        at, name, label = f"{helper.at}.continuation", helper.name, _label(spec)
-        read = continuation["read"]
-        types: frozenset[str] | None = frozenset({"integer"})
+        headers: tuple[HeaderSpec, ...],
+        read: Mapping[str, Any],
+        at: str,
+        what: str,
+    ) -> _Types | Diagnostic:
+        """Return the JSON types a selector of the page reads, every occurrence of a header being an array of them.
+
+        A body pointer must name a property of the page's models and a header one the page response declares.
+        """
+        name, label = helper.name, _label(spec)
+        types: _Types = frozenset({"integer"})
         match read["from"]:
             case "body":
                 reached = self.walk(binding, pointer := read["pointer"])
                 if reached == "unsupported":
                     message = (
-                        f"The cursor pointer {pointer!r} of {name!r} reads through a union or map, which is not "
+                        f"The {what} pointer {pointer!r} of {name!r} reads through a union or map, which is not "
                         "supported yet"
                     )
-                    yield _problem("E_CLIENT_UNSUPPORTED", "target", f"{at}.read", message, spec)
-                    return
+                    return _problem("E_CLIENT_UNSUPPORTED", "target", at, message, spec)
                 if isinstance(reached, str) or reached.member is None or reached.member.schema is None:
-                    message = f"The cursor pointer {pointer!r} of {name!r} names no property of the {label} response"
-                    yield _problem("E_CONFIG_VALUE", "config", f"{at}.read", message, spec)
-                    return
+                    message = f"The {what} pointer {pointer!r} of {name!r} names no property of the {label} response"
+                    return _problem("E_CONFIG_VALUE", "config", at, message, spec)
                 types = self.types(reached.member.schema)
             case "header":
                 if read["name"].lower() not in {header.name.lower() for header in headers}:
                     message = (
-                        f"The cursor of {name!r} reads the header {read['name']!r}, which {label} does not declare"
+                        f"The {what} of {name!r} reads the header {read['name']!r}, which {label} does not declare"
                     )
-                    yield _problem("E_CONFIG_VALUE", "config", f"{at}.read", message, spec)
-                    return
-                types = frozenset({"string"})
-        write = continuation["write"]
-        target = next(
-            (item for item in spec.parameters if (item.location, item.wire_name) == (write["in"], write["name"])), None
-        )
-        accepted = (
-            None if target is None or target.use is None or target.use.schema is None else self.types(target.use.schema)
-        )
-        if refused := sorted(kind for kind in types or () if kind != "null" and not _fits(kind, accepted)):
-            message = (
-                f"The cursor of {name!r} reads {_listed(refused)} values, which the {write['in']} parameter "
-                f"{write['name']!r} of {label} does not accept"
-            )
-            yield _problem("E_CONFIG_VALUE", "config", f"{at}.write", message, spec)
+                    return _problem("E_CONFIG_VALUE", "config", at, message, spec)
+                types = frozenset({"array" if read["occurrence"] == "all" else "string"})
+        return types
+
+    def accepted(
+        self, helper: Helper, spec: OperationSpec, target: Mapping[str, Any], at: str, what: str
+    ) -> tuple[list[_Types], str, bool] | Diagnostic:
+        """Return the JSON types each schema of a request target accepts, its description, and whether null fits it.
+
+        Only a JSON body or a querystring of JSON content carries null. A querystring or body pointer must name a
+        declared property, and every media of a body is checked; an optional body needs a media a call without one
+        sends, since a page after a call that gives none still writes it.
+        """
+        label, pointer, where = _label(spec), target.get("pointer", ""), target["in"]
+        carries = False
+        if where == "body":
+            body = spec.body
+            assert body is not None
+            place = f"the request body of {label}"
+            if not body.required and body.default is None:
+                message = (
+                    f"The {what} of {helper.name!r} writes {place}, which is optional and has no media type a call "
+                    "without one sends"
+                )
+                return _problem("E_CONFIG_VALUE", "config", at, message, spec)
+            uses, carries = [media.use for media in body.media], True
+        elif where == "querystring":
+            place = f"the querystring {target['name']!r} of {label}"
+            found = [item for item in spec.parameters if item.location == "querystring"]
+            uses = [item.use for item in found]
+            carries = all(media_kind(item.plan.content_media_type or "") == "json" for item in found)
+        else:
+            key = _target_key(target)
+            place = f"the {where} parameter {target['name']!r} of {label}"
+            uses = [
+                item.use
+                for item in spec.parameters
+                if _target_key({"in": item.location, "name": item.wire_name}) == key
+            ]
+        schemas: list[_Types] = []
+        for use in uses:
+            location = None if use is None or use.schema is None else self.declared(use.schema, pointer)
+            if location is None and pointer:
+                message = f"The {what} of {helper.name!r} writes {pointer!r}, which names no property of {place}"
+                return _problem("E_CONFIG_VALUE", "config", at, message, spec)
+            schemas.append(None if location is None else self.types(location))
+        return schemas, f"the property {pointer!r} of {place}" if pointer else place, carries
+
+    def cursor(
+        self, helper: Helper, spec: OperationSpec, binding: UseBinding, headers: tuple[HeaderSpec, ...]
+    ) -> Iterator[Diagnostic]:
+        """Check that the cursor reads a declared value whose types its target accepts, and that its ends are typed."""
+        at, name = f"{helper.at}.continuation", helper.name
+        continuation = helper.tree["continuation"]
+        types = self.read(helper, spec, binding, headers, continuation["read"], f"{at}.read", "cursor")
+        if isinstance(types, Diagnostic):
+            yield types
+            return
+        yield from self.fits(helper, spec, continuation["write"], types, f"{at}.write", "cursor", null=False)
         ends = continuation["end"]
         if types is not None and "null" in types and {"kind": "null"} not in ends:
             message = f"The cursor of {name!r} can read null, which no end condition covers"
@@ -390,6 +479,78 @@ class _Pages:
             if end["kind"] == "value" and types is not None and not _fits(kind := _json_type(end["value"]), types):
                 message = f"The end value {end['value']!r} of {name!r} is {kind}, which its cursor never reads"
                 yield _problem("E_CONFIG_VALUE", "config", f"{at}.end[{index}].value", message, spec)
+
+    def fits(  # noqa: PLR0913, PLR0917
+        self,
+        helper: Helper,
+        spec: OperationSpec,
+        target: Mapping[str, Any],
+        types: _Types,
+        at: str,
+        what: str,
+        *,
+        null: bool,
+    ) -> Iterator[Diagnostic]:
+        """Refuse a value whose JSON types, null only when it is written, a request target does not accept.
+
+        A null written where it cannot be carried is refused whatever the target's schema says.
+        """
+        accepted = self.accepted(helper, spec, target, at, what)
+        if isinstance(accepted, Diagnostic):
+            yield accepted
+            return
+        schemas, place, carries = accepted
+        if null and types is not None and "null" in types and not carries:
+            message = f"The {what} of {helper.name!r} can give null, which cannot be written to {place}"
+            yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
+            null = False
+        if refused := sorted(
+            kind for kind in types or () if (null or kind != "null") and not all(_fits(kind, item) for item in schemas)
+        ):
+            verb = "reads" if what == "cursor" else "gives"
+            message = f"The {what} of {helper.name!r} {verb} {_listed(refused)} values, which {place} does not accept"
+            yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
+
+    def values(
+        self, helper: Helper, spec: OperationSpec, binding: UseBinding, headers: tuple[HeaderSpec, ...]
+    ) -> Iterator[Diagnostic]:
+        """Check each binding's value against its target, and that no two writes overlap.
+
+        A binding's null is written, so its target must accept null too, and a literal dot segment is no path value.
+        """
+        tree = helper.tree
+        written = [(_target_key(tree["continuation"]["write"]), "its cursor")]
+        for index, item in enumerate(tree["bindings"]):
+            at, what, value, target = (
+                f"{helper.at}.bindings[{index}]",
+                f"binding {index}",
+                item["value"],
+                item["target"],
+            )
+            key = _target_key(target)
+            if (clash := next(((other, owner) for other, owner in written if _overlaps(key, other)), None)) is not None:
+                relation = "the same target as" if clash[0] == key else "a target overlapping that of"
+                message = f"The {what} of {helper.name!r} writes {relation} {clash[1]}"
+                yield _problem("E_CONFIG_CONFLICT", "config", f"{at}.target", message, spec)
+                continue
+            written.append((key, f"its {what}"))
+            if value.get("source") == "input":
+                continue
+            if "literal" in value:
+                if target["in"] == "path" and value["literal"] in _DOT_SEGMENTS:
+                    message = (
+                        f"The {what} of {helper.name!r} gives the dot segment {value['literal']!r}, which cannot be "
+                        f"written to the path parameter {target['name']!r} of {_label(spec)}"
+                    )
+                    yield _problem("E_CONFIG_VALUE", "config", f"{at}.value.literal", message, spec)
+                    continue
+                types: _Types | Diagnostic = frozenset({_json_type(value["literal"])})
+            else:
+                types = self.read(helper, spec, binding, headers, value["selector"], f"{at}.value.selector", what)
+            if isinstance(types, Diagnostic):
+                yield types
+                continue
+            yield from self.fits(helper, spec, target, types, f"{at}.target", what, null=True)
 
 
 def _page_use(successes: list[ResponseSpec]) -> TypeUseBinding | None:
