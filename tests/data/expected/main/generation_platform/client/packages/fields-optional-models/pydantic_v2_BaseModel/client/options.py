@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from ._runtime.client.options import (
     CancelToken,
     ClientOptions,
+    Clock,
     Deadline,
     HeaderPatch,
     IdempotencyKey,
@@ -30,6 +31,7 @@ __all__ = [
     "UNSET",
     "CancelToken",
     "ClientOptions",
+    "Clock",
     "Deadline",
     "HeaderPatch",
     "IdempotencyKey",

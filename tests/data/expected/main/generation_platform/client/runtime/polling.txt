@@ -244,6 +244,35 @@ server delay of a failed poll
   poll answered with a server delay ! GetJobHTTPError: GetJobHTTPError(status_code=503, operation_id='getJob', call_id='<call>', retry_stop_reason='disabled') [operation_id='getJob', status_code=503, error_decoded=False, body_bytes=b'{"message":"busy"}', truncated=False] get_job_http_error session=True
   poll before the delay ! PollWaitLimitError kind='wait' required>limit=True limit=10.0 poll_wait_limit_error session=True
   progress {'polls': 1, 'network_send_count': 2, 'network_send_budget_used': 2}
+waits and limits on the client clock
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  server delay less the clock's move ! PollWaitLimitError kind='wait' required_wait=90.0 limit=60.0
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  date delay on the client's wall clock ! PollWaitLimitError kind='wait' required_wait=120.0 limit=60.0
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  > GET https://api.example.com/jobs/j1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
+  poll once the clock passes the delay = PollSnapshot(state='queued', terminal=False, status=200, data=Job:j1)
+  delay past the session ! PollWaitLimitError kind='deadline' required_wait=30.0 limit=29.0
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  > GET https://api.example.com/jobs/j1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
+  interval on a frozen clock = PollSnapshot(state='done', terminal=True, status=200, data=Job:j1)
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  > GET https://api.example.com/jobs/j1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
+  async poll once the clock passes the delay = PollSnapshot(state='queued', terminal=False, status=200, data=Job:j1)
+  async delay past the session ! PollWaitLimitError kind='deadline' required_wait=30.0 limit=29.0
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  > GET https://api.example.com/jobs/j1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
+  async interval on a frozen clock = PollSnapshot(state='done', terminal=True, status=200, data=Job:j1)
 async lifecycle
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'

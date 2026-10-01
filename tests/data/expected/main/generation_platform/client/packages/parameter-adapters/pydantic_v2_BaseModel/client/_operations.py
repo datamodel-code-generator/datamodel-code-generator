@@ -18,6 +18,10 @@ from ._runtime.client.operations import (
 from ._runtime.model_codecs.media import FieldPlan
 from ._runtime.model_codecs.parameters import AdaptedParameterPlan, ParameterPlan
 from .types.default import (
+    CreateJobErrorData,
+    CreateJobHTTPError,
+    CreateJobRequestCodecs,
+    CreateJobResponse,
     FindErrorData,
     FindHTTPError,
     FindRequestCodecs,
@@ -25,6 +29,14 @@ from .types.default import (
     GetItemErrorData,
     GetItemHTTPError,
     GetItemResponse,
+    GetJobErrorData,
+    GetJobHTTPError,
+    GetJobRequestCodecs,
+    GetJobResponse,
+    GetReportErrorData,
+    GetReportHTTPError,
+    GetReportRequestCodecs,
+    GetReportResponse,
     GetSegmentErrorData,
     GetSegmentHTTPError,
     GetSegmentResponse,
@@ -288,4 +300,82 @@ OPERATION_6: Final[OperationPlan[ListShelfResponse, ListShelfErrorData]] = Opera
         ),
     ),
     codecs=ListShelfRequestCodecs,
+)
+
+OPERATION_7: Final[OperationPlan[CreateJobResponse, CreateJobErrorData]] = OperationPlan(
+    operation_id='createJob',
+    method='POST',
+    path='/jobs',
+    servers=_SERVERS_0,
+    responses=ResponseDecoder(
+        (
+            model_branch(
+                '202',
+                'application/json',
+                'json',
+                model_bindings.codec_18, model_bindings.CONTEXT_18,
+            ),
+        ),
+        (),
+        CreateJobHTTPError,
+    ),
+    codecs=CreateJobRequestCodecs,
+)
+
+OPERATION_8: Final[OperationPlan[GetJobResponse, GetJobErrorData]] = OperationPlan(
+    operation_id='getJob',
+    method='GET',
+    path='/jobs/{jobId}',
+    servers=_SERVERS_0,
+    responses=ResponseDecoder(
+        (
+            model_branch(
+                '200',
+                'application/json',
+                'json',
+                model_bindings.codec_20, model_bindings.CONTEXT_20,
+            ),
+        ),
+        (),
+        GetJobHTTPError,
+    ),
+    parameters=(
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='path',
+                name='jobId',
+                style='simple',
+                required=True,
+            ),
+            encoder=Encoder(model_bindings.codec_19, model_bindings.CONTEXT_19),
+        ),
+    ),
+    codecs=GetJobRequestCodecs,
+)
+
+OPERATION_9: Final[OperationPlan[GetReportResponse, GetReportErrorData]] = OperationPlan(
+    operation_id='getReport',
+    method='GET',
+    path='/reports',
+    servers=_SERVERS_0,
+    responses=ResponseDecoder(
+        (
+            model_branch(
+                '200',
+                'application/json',
+                'json',
+                model_bindings.codec_22, model_bindings.CONTEXT_22,
+            ),
+        ),
+        (),
+        GetReportHTTPError,
+    ),
+    parameters=(
+        ParameterSpec(
+            plan=AdaptedParameterPlan(location='header', name='X-Tags', style='simple'),
+            encoder=Encoder(model_bindings.codec_21, model_bindings.CONTEXT_21),
+            adapter=(model_bindings.parameter_21, model_bindings.CONTEXT_21),
+        ),
+    ),
+    codecs=GetReportRequestCodecs,
 )

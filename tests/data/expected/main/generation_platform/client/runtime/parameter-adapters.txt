@@ -53,6 +53,13 @@
   > GET https://api.example.com/shelves/%22s%22/r/%22t%22
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   shelf pages after rack 'a/b' ['1'] ! CodecAdapterError: A parameter adapter returned a path fragment outside its syntax or ownership []
+  > POST https://api.example.com/jobs
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/jobs/j1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/reports
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-tags: %5B%22a%2Cb%22%2C%22c%22%5D] b''
+  resumed fetch of an adapted header = Report(rows=3)
   > GET https://api.example.com/tags?where=%7B%22range%22%3A%7B%22min%22%3A1%7D%2C%22name%22%3A%22x%20y%22%7D
     [host: api.example.com, accept-encoding: gzip, deflate, x-labels: %5B%22l1%22%2C%22l2%22%5D, cookie: tags=%5B%22a%2Cb%22%2C%22c%22%5D] b''
   async adapted cookie, query, and header = None

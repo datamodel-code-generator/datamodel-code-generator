@@ -26,7 +26,9 @@ from .auth import AuthConfig, checked_type
 from .errors import AuthConfigurationError, ConfigurationError, is_sequence
 from .hooks import AsyncHook, AsyncLimiter, Hook, Limiter  # noqa: TC001 - Public annotations support get_type_hints().
 from .timing import (
+    SYSTEM_CLOCK,
     CancelToken,
+    Clock,
     Deadline,
     ResolvedTimeoutOptions,
     SessionOptions,
@@ -43,6 +45,7 @@ __all__ = (
     "UNSET",
     "CancelToken",
     "ClientOptions",
+    "Clock",
     "Deadline",
     "HeaderPatch",
     "IdempotencyKey",
@@ -491,7 +494,12 @@ class IdempotencyKey:
     @staticmethod
     def new() -> IdempotencyKey:
         """Create a UUID4 key whose first-use time is now in UTC."""
-        return IdempotencyKey(str(uuid4()), first_used_at=datetime.now(timezone.utc))
+        return new_key(SYSTEM_CLOCK)
+
+
+def new_key(clock: Clock) -> IdempotencyKey:
+    """Create a UUID4 key whose first-use time is now in UTC on the clock's wall time."""
+    return IdempotencyKey(str(uuid4()), first_used_at=datetime.fromtimestamp(clock.time(), timezone.utc))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -711,16 +719,18 @@ class ClientOptions(_Options):
 
     Its headers and query patch the generated ones: each name it gives replaces their values of that name, and None
     removes them. Its hooks observe every call's events, with its context. Its validation replaces the generated mode
-    of each axis it sets.
+    of each axis it sets. Its clock times every call, and no view or call changes it.
     """
 
     transport: TransportOptions | Unset = UNSET
     protocols: protocol_names.ProtocolClientOptions | Unset | None = UNSET
+    clock: Clock | Unset = UNSET
 
     def __post_init__(self) -> None:
         """Validate ordinary options and the client-only construction settings, loading protocol types only if set."""
         _Options.__post_init__(self)
         checked_instance(self.transport, (TransportOptions, Unset), ("transport",))
+        checked_instance(self.clock, (Clock, Unset), ("clock",))
         if self.protocols is not None and not isinstance(self.protocols, Unset):
             checked_instance(self.protocols, (protocol_names.ProtocolClientOptions,), ("protocols",))
 
@@ -764,6 +774,7 @@ class Settings:
     redirects: ResolvedRedirectOptions = DEFAULT_REDIRECTS
     idempotency_key: IdempotencyKey | Unset | None = UNSET
     auth: AuthConfig | None = field(default=None, repr=False)
+    clock: Clock = field(default=SYSTEM_CLOCK, repr=False)
 
 
 def network_send_limit(settings: Settings, *, exchanges: int = 0) -> int | None:
@@ -794,7 +805,7 @@ def _oauth_count(value: object, path: tuple[str, ...]) -> None:
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class OAuthProviderOptions:
-    """Fixed session limits and token transport settings of an OAuth provider or flow.
+    """Fixed session limits, token transport settings, and clock of an OAuth provider or flow.
 
     Every value is finite and explicit: omitted phase timeouts take the OAuth defaults, and None is never accepted.
     """
@@ -806,6 +817,7 @@ class OAuthProviderOptions:
     max_waiters: int = 1024
     allow_insecure_loopback: bool = False
     transport: TransportOptions = field(default_factory=TransportOptions)
+    clock: Clock = SYSTEM_CLOCK
 
     def __post_init__(self) -> None:
         """Validate every limit and resolve omitted phase timeouts before any provider uses them."""
@@ -823,3 +835,4 @@ class OAuthProviderOptions:
             _oauth_count(getattr(self, name), (name,))
         checked_type(self.allow_insecure_loopback, (bool,), ("allow_insecure_loopback",))
         checked_type(self.transport, (TransportOptions,), ("transport",))
+        checked_type(self.clock, (Clock,), ("clock",))

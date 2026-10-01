@@ -13,15 +13,23 @@ from typing import Final, Generic, Literal, TypeAlias, get_args
 from typing_extensions import TypeIs, TypeVar
 
 from ..client.errors import (
+    MAX_STATUS,
+    MIN_STATUS,
     DeliveryState,
     ProtocolConfigurationError,
     ProtocolError,
+    ProtocolStoreError,
+    ResultUnavailableError,
+    RetryStopReason,
+    TransportError,
     error_choice,
     error_count,
     error_string,
     error_time,
 )
-from ..client.responses import ResponseInfo  # noqa: TC001 - Public annotations support get_type_hints().
+from ..client.responses import HeadersView, ResponseInfo
+from ..model_codecs.unset import UNSET, Unset
+from .caches import string_tuple
 from .records import (
     PROGRESS_KEYS,
     PollSnapshot,
@@ -30,12 +38,18 @@ from .records import (
     RequestTarget,
     Selector,
 )
-from .references import OperationRef  # noqa: TC001 - Public annotations support get_type_hints().
+from .references import OperationRef
 from .resume import ResumeState, ResumeStateError, ResumeStateTooLargeError
 from .sources import UploadIdentity, UploadProgress
 
 __all__ = (
+    "CacheInvalidationError",
+    "CacheProtocolError",
+    "CacheStoreError",
+    "CacheValidatorConflictError",
+    "ConcurrentReceiveError",
     "DeliveryUnknownError",
+    "HandshakeResponse",
     "IncompleteFrameError",
     "NonResumableSourceError",
     "OperationCancelledError",
@@ -56,17 +70,29 @@ __all__ = (
     "UploadExpiredError",
     "UploadOffsetError",
     "UploadSourceChangedError",
+    "WebSocketClosedError",
+    "WebSocketHandshakeError",
+    "WebSocketProxyError",
 )
 
 E_co = TypeVar("E_co", covariant=True, default=object)
 P_co = TypeVar("P_co", covariant=True, default=object)
+T_co = TypeVar("T_co", covariant=True, default=object)
 
 _DataCondition: TypeAlias = Literal["missing", "null", "type", "value", "malformed", "inconsistent"]
 _SessionLimitKind: TypeAlias = Literal["network_sends", "pages", "items", "polls", "reconnects", "parts"]
 
+HandshakeCondition: TypeAlias = Literal[
+    "invalid_message", "invalid_header", "upgrade", "negotiation", "security", "size"
+]
+
 _DATA_CONDITIONS: Final = get_args(_DataCondition)
+_HANDSHAKE_CONDITIONS: Final = get_args(HandshakeCondition)
+_UNKNOWN_DELIVERIES: Final = (DeliveryState.MAYBE_SENT, DeliveryState.RESPONSE_STARTED)
+MAX_CLOSE_REASON: Final = 123
 _SESSION_LIMIT_KINDS: Final = get_args(_SessionLimitKind)
 _LOCATIONS: Final = (*get_args(Selector), *get_args(RequestTarget))
+_VALIDATOR_HEADERS: Final = ("If-None-Match", "If-Modified-Since")
 MAX_RAW_PREFIX: Final = 65536
 
 
@@ -107,15 +133,28 @@ def _snapshot(value: object) -> None:
         raise ValueError(msg)  # noqa: TRY004 - Exception constructors reject invalid fields with ValueError.
 
 
-def _raw_prefix(value: object) -> None:
+def _raw_prefix(value: object, field: str = "raw_prefix") -> None:
     if not isinstance(value, bytes) or len(value) > MAX_RAW_PREFIX:
-        msg = "raw_prefix must be at most 65536 bytes"
+        msg = f"{field} must be at most 65536 bytes"
         raise ValueError(msg)
 
 
-def _unknown_delivery(value: object) -> None:
-    if value not in {DeliveryState.MAYBE_SENT, DeliveryState.RESPONSE_STARTED}:
-        msg = "delivery_state must be MAYBE_SENT or RESPONSE_STARTED"
+def _headers(value: object) -> None:
+    if not isinstance(value, HeadersView):
+        msg = "headers must be a HeadersView"
+        raise ValueError(msg)  # noqa: TRY004 - Exception constructors reject invalid fields with ValueError.
+
+
+def _status(value: object, field: str) -> None:
+    if not MIN_STATUS <= error_count(value, field) <= MAX_STATUS:
+        msg = f"{field} must be an HTTP status"
+        raise ValueError(msg)
+
+
+def _context(helper_id: object, operation: object) -> None:
+    error_string(helper_id, "helper_id", optional=True)
+    if operation is not None and not isinstance(operation, OperationRef):
+        msg = "operation must be an OperationRef or None"
         raise ValueError(msg)
 
 
@@ -901,8 +940,450 @@ class StreamRemoteError(ProtocolError, Generic[E_co]):
         return self._data
 
 
+class CacheStoreError(ProtocolStoreError):
+    """A cache store operation that failed or broke the store contract; no request is sent again because of it."""
+
+
+class CacheProtocolError(ProtocolDataError):
+    """A response the cache cannot apply, such as a 304 without a usable entry; its condition is always inconsistent."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        location: Selector | RequestTarget | None = None,
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep the response's context; the condition is fixed."""
+        super().__init__(
+            condition="inconsistent",
+            location=location,
+            helper_id=helper_id,
+            operation=operation,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+
+
+class CacheValidatorConflictError(ProtocolConfigurationError):
+    """A validator header the caller gave that differs from the stored entry's; the value itself is never kept."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        header_name: Literal["If-None-Match", "If-Modified-Since"],
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        source_uri: str | None = None,
+        source_pointer: str | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+    ) -> None:
+        """Keep the header's name as the field path; the condition is fixed."""
+        error_choice(header_name, _VALIDATOR_HEADERS, "header_name")
+        super().__init__(
+            field_path=(header_name,),
+            condition="binding_mismatch",
+            helper_id=helper_id,
+            operation=operation,
+            source_uri=source_uri,
+            source_pointer=source_pointer,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+        )
+        self.header_name = header_name
+
+
+class CacheInvalidationError(CacheStoreError, Generic[T_co]):
+    """A tag invalidation the store failed; a mutation's completed result stays available and is never sent again."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        tags: tuple[str, ...],
+        completed_result: T_co | Unset = UNSET,
+        entry_id: str | None = None,
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+    ) -> None:
+        """Keep the tags and the mutation's result, if any; the store action is fixed."""
+        if not string_tuple(tags):
+            msg = "tags must be a tuple of strings"
+            raise ValueError(msg)
+        super().__init__(
+            action="invalidate",
+            entry_id=entry_id,
+            helper_id=helper_id,
+            operation=operation,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+        )
+        self.tags = tags
+        self._completed_result = completed_result
+
+    @property
+    def completed_result(self) -> T_co | Unset:
+        """Return the mutation's result, or UNSET for a manual invalidation."""
+        return self._completed_result
+
+    @property
+    def has_completed_result(self) -> bool:
+        """Return whether a mutation completed before the invalidation failed."""
+        return not isinstance(self._completed_result, Unset)
+
+    def require_result(self) -> T_co:
+        """Return the mutation's completed result, or raise ResultUnavailableError."""
+        if isinstance(result := self._completed_result, Unset):
+            raise ResultUnavailableError(operation_id=self.operation_id, call_id=self.call_id)
+        return result
+
+
+class ConcurrentReceiveError(ProtocolStateError):
+    """A receive while another receive of the same session waits; its state is receiving and its action receive."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Fix the state and the action."""
+        super().__init__(
+            state="receiving",
+            action="receive",
+            helper_id=helper_id,
+            operation=operation,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+
+
+class WebSocketClosedError(ProtocolError):
+    """A WebSocket connection that closed: the close code and reason received, and whether the closure was normal.
+
+    A normal closure ends a session's iteration; receive raises this class either way. The reason never appears in
+    messages.
+    """
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        code: int | None,
+        reason: str,
+        clean: bool,
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep the close code, at most 123 UTF-8 bytes of reason, and whether the closure was normal."""
+        if code is not None:
+            error_count(code, "code")
+        error_string(reason, "reason")
+        if len(reason.encode("utf-8", "replace")) > MAX_CLOSE_REASON:
+            msg = "reason must be at most 123 UTF-8 bytes"
+            raise ValueError(msg)
+        _flag(clean, "clean")
+        super().__init__(
+            helper_id=helper_id,
+            operation=operation,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self.code = code
+        self.reason = reason
+        self.clean = clean
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("code", self.code), ("clean", self.clean))
+
+
+class WebSocketHandshakeError(TransportError):
+    """A WebSocket handshake whose response broke the protocol, its negotiation, or a security limit; never retried."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        condition: HandshakeCondition,
+        delivery_state: DeliveryState,
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        retry_stop_reason: RetryStopReason | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep what the handshake broke; its phase is always connect."""
+        error_choice(condition, _HANDSHAKE_CONDITIONS, "condition")
+        _context(helper_id, operation)
+        super().__init__(
+            delivery_state=delivery_state,
+            phase="connect",
+            retry_stop_reason=retry_stop_reason,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self.condition: HandshakeCondition = condition
+        self.helper_id = helper_id
+        self.operation = operation
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("condition", self.condition))
+
+
+class WebSocketProxyError(TransportError):
+    """A proxy that refused or broke the tunnel to a WebSocket server; nothing reached the server and it is not retried.
+
+    Neither the proxy's credentials nor its response body are kept.
+    """
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        proxy_status_code: int | None = None,
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        retry_stop_reason: RetryStopReason | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep the proxy's status; the phase is always connect and nothing was sent."""
+        if proxy_status_code is not None:
+            _status(proxy_status_code, "proxy_status_code")
+        _context(helper_id, operation)
+        super().__init__(
+            delivery_state=DeliveryState.NOT_SENT,
+            phase="connect",
+            retry_stop_reason=retry_stop_reason,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self.proxy_status_code = proxy_status_code
+        self.helper_id = helper_id
+        self.operation = operation
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("proxy_status_code", self.proxy_status_code))
+
+
+class HandshakeResponse(ProtocolError):  # noqa: N818 - The protocol contract names this signal.
+    """A connector's signal that a handshake got an HTTP response other than 101, with at most 64 KiB of its body.
+
+    Only connectors raise it; the client turns it into the call's HTTP failure, redirect, or retry, so it never reaches
+    a caller. The headers and the body never appear in messages.
+    """
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        status_code: int,
+        headers: HeadersView,
+        body_prefix: bytes,
+        truncated: bool,
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep the status, the headers, and the body prefix."""
+        _status(status_code, "status_code")
+        _headers(headers)
+        _raw_prefix(body_prefix, "body_prefix")
+        _flag(truncated, "truncated")
+        super().__init__(
+            helper_id=helper_id,
+            operation=operation,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self.status_code = status_code
+        self.headers = headers
+        self.body_prefix = body_prefix
+        self.truncated = truncated
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("status_code", self.status_code))
+
+
 class DeliveryUnknownError(ProtocolError):
-    """A send that may have reached the server without a confirmed outcome; it is never resent automatically."""
+    """A message whose delivery is unknown: it may have reached the peer; it is never sent again automatically."""
 
     def __init__(  # noqa: PLR0913
         self,
@@ -928,8 +1409,10 @@ class DeliveryUnknownError(ProtocolError):
         auth_refresh_pending: int = 0,
         wire_send_count: int | None = None,
     ) -> None:
-        """Keep how far the send got, any resume state, and the message it concerns."""
-        _unknown_delivery(delivery_state)
+        """Keep how far the message may have got, any exportable resume state, and its declared message ID."""
+        if delivery_state not in _UNKNOWN_DELIVERIES:
+            msg = "delivery_state must be MAYBE_SENT or RESPONSE_STARTED"
+            raise ValueError(msg)
         _resume_state(resume_state)
         error_string(message_id, "message_id", optional=True)
         super().__init__(

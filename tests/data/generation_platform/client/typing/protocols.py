@@ -19,8 +19,11 @@ from pets.errors import (
 from pets.model_codecs import WireValue
 from pets.options import UNSET, ClientOptions, ProtocolClientOptions, SessionOptions, Unset
 from pets.protocols import (
+    AsyncCacheStore,
     BodySelector,
     BodyTarget,
+    CacheOptions,
+    CacheStore,
     Continuation,
     HeaderSelector,
     Origin,
@@ -39,6 +42,7 @@ from pets.protocols import (
     StatusSelector,
     StreamOptions,
     UploadOptions,
+    WSOptions,
     import_state,
 )
 from pets.responses import ResponseInfo
@@ -91,10 +95,13 @@ def options(origin: Origin) -> ClientOptions:
     security = ProtocolSecurityContext(credential_partition="tenant", allowed_origins=(origin,))
     assert_type(security.allowed_origins, tuple[Origin, ...])
     defaults = ProtocolDefaults(session=SessionOptions(max_network_sends=3), options=pagination)
-    assert_type(defaults.options, PaginationOptions | PollOptions | StreamOptions | UploadOptions | Unset)
+    assert_type(
+        defaults.options, PaginationOptions | PollOptions | StreamOptions | CacheOptions | WSOptions | UploadOptions | Unset
+    )
     protocols = ProtocolClientOptions(security=security, defaults={"users.all": defaults, "jobs": ProtocolDefaults()})
     assert_type(protocols.security, ProtocolSecurityContext | Unset | None)
     assert_type(protocols.defaults, Mapping[str, ProtocolDefaults] | Unset)
+    assert_type(protocols.cache_stores, Mapping[str, CacheStore | AsyncCacheStore] | Unset)
     client = ClientOptions(protocols=protocols)
     assert_type(client.protocols, ProtocolClientOptions | Unset | None)
     return ClientOptions(protocols=None)

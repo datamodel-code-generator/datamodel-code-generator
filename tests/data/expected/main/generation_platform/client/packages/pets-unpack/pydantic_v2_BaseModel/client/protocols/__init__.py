@@ -5,7 +5,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from .._runtime.protocols.caches import (
+    AsyncCacheStore,
+    CacheEntry,
+    CacheResult,
+    CacheStore,
+)
 from .._runtime.protocols.options import (
+    CacheOptions,
     Origin,
     PaginationOptions,
     PollOptions,
@@ -13,10 +20,13 @@ from .._runtime.protocols.options import (
     ProtocolSecurityContext,
     StreamOptions,
     UploadOptions,
+    WebSocketTransportOptions,
+    WSOptions,
 )
 from .._runtime.protocols.records import (
     BodySelector,
     BodyTarget,
+    CancelReceipt,
     Continuation,
     HeaderSelector,
     ParameterTarget,
@@ -49,8 +59,21 @@ from .._runtime.protocols.webhooks import (
     Verifier,
     WebhookOptions,
 )
+from .._runtime.protocols.websocket_types import (
+    AsyncWebSocketConnection,
+    AsyncWebSocketConnector,
+    Message,
+    PingReceipt,
+    ResolvedWebSocketTransportOptions,
+    ResolvedWSOptions,
+    WebSocketConnection,
+    WebSocketConnector,
+    WebSocketOpenRequest,
+    WSFrame,
+)
 
 if TYPE_CHECKING:
+    from .._runtime.protocols.cache_stores import AsyncMemoryCacheStore, MemoryCacheStore
     from .._runtime.protocols.pagination import AsyncPager, Page, Pager
     from .._runtime.protocols.polling import AsyncLroHandle, LroHandle
     from .._runtime.protocols.replay import AsyncMemoryReplayStore, MemoryReplayStore
@@ -67,28 +90,41 @@ if TYPE_CHECKING:
         FileUploadSource,
     )
     from .._runtime.protocols.uploads import AsyncUploadHandle, UploadHandle
+    from .._runtime.protocols.websocket import AsyncWebSocketSession, WebSocketSession
 
 __all__ = [
     "AsyncBytesUploadSource",
+    "AsyncCacheStore",
     "AsyncEventStream",
     "AsyncFileUploadSource",
     "AsyncLroHandle",
+    "AsyncMemoryCacheStore",
     "AsyncMemoryReplayStore",
     "AsyncPager",
     "AsyncRangeReader",
     "AsyncReplayStore",
     "AsyncUploadHandle",
     "AsyncUploadSource",
+    "AsyncWebSocketConnection",
+    "AsyncWebSocketConnector",
+    "AsyncWebSocketSession",
     "BodySelector",
     "BodyTarget",
     "BytesUploadSource",
+    "CacheEntry",
+    "CacheOptions",
+    "CacheResult",
+    "CacheStore",
+    "CancelReceipt",
     "Continuation",
     "EventStream",
     "FileUploadSource",
     "HeaderSelector",
     "KeySet",
     "LroHandle",
+    "MemoryCacheStore",
     "MemoryReplayStore",
+    "Message",
     "OperationRef",
     "Origin",
     "Page",
@@ -96,6 +132,7 @@ __all__ = [
     "PaginationOptions",
     "ParameterTarget",
     "PartReceipt",
+    "PingReceipt",
     "PollOptions",
     "PollSnapshot",
     "ProgressKey",
@@ -106,6 +143,8 @@ __all__ = [
     "RangeReader",
     "ReplayStore",
     "RequestTarget",
+    "ResolvedWSOptions",
+    "ResolvedWebSocketTransportOptions",
     "ResolvedWebhookOptions",
     "ResumeState",
     "Selector",
@@ -121,13 +160,20 @@ __all__ = [
     "VerifiedSignature",
     "VerifiedWebhook",
     "Verifier",
+    "WSFrame",
+    "WSOptions",
+    "WebSocketConnection",
+    "WebSocketConnector",
+    "WebSocketOpenRequest",
+    "WebSocketSession",
+    "WebSocketTransportOptions",
     "WebhookOptions",
     "import_state",
 ]
 
 
 def __getattr__(name: str) -> object:
-    """Load a memory store, a builtin upload source, or a pagination, polling, stream, or upload type on first use."""
+    """Load a memory store, a builtin upload source, or a pagination, polling, stream, upload, or session type."""
     if name in {"AsyncPager", "Page", "Pager"}:
         from .._runtime.protocols import pagination
 
@@ -136,6 +182,10 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import polling
 
         return getattr(polling, name)
+    if name in {"AsyncMemoryCacheStore", "MemoryCacheStore"}:
+        from .._runtime.protocols import cache_stores
+
+        return getattr(cache_stores, name)
     if name in {"AsyncEventStream", "EventStream", "StreamEvent", "UnknownEvent"}:
         from .._runtime.protocols import streams
 
@@ -148,6 +198,10 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import upload_sources
 
         return getattr(upload_sources, name)
+    if name in {"AsyncWebSocketSession", "WebSocketSession"}:
+        from .._runtime.protocols import websocket
+
+        return getattr(websocket, name)
     if name == "MemoryReplayStore":
         from .._runtime.protocols.replay import MemoryReplayStore
 

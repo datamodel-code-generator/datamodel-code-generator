@@ -657,6 +657,71 @@ def stream_lifetimes(package: ModuleType, lines: list[str]) -> None:
     record(lines, "client close with an open stream", api.close)
     record(lines, "after the client closed", lambda: next(stream))
     run(lambda: _async_lifetimes(harness))
+    _clocked(harness)
+
+
+class _Clock:
+    """A monotonic clock source that moves only when a stream's probe sets it."""
+
+    def __init__(self) -> None:
+        self.value = 100.0
+
+    def __call__(self) -> float:
+        return self.value
+
+    def advance(self, seconds: float) -> Callable[[], None]:
+        """Return a probe that moves the clock forward."""
+
+        def move() -> None:
+            self.value += seconds
+
+        return move
+
+    def aadvance(self, seconds: float) -> Callable[[], Any]:
+        """Return an asyncio probe that moves the clock forward."""
+
+        async def move() -> None:
+            self.value += seconds
+
+        return move
+
+
+def _clocked_limits(harness: _Harness) -> tuple[tuple[str, Any, Any], ...]:
+    """Return each stream limit to time on the client clock: by label, request options, and session options."""
+    options = harness.options
+    return (
+        ("session total on the client clock", None, options.SessionOptions(total_timeout=10.0)),
+        ("session deadline from another clock", None, options.SessionOptions(deadline=options.Deadline.after(60.0))),
+        ("stream total on the client clock", options.RequestOptions(stream_total_timeout=10.0), None),
+    )
+
+
+def _clocked(harness: _Harness) -> None:
+    """End a stream once the client's clock passes its session or stream limit between two events."""
+    lines, package, options = harness.lines, harness.package, harness.options
+    message = b'data: {"text": "a"}\n\n'
+    clock = _Clock()
+    adapter = _Feed(importlib.import_module(f"{package.__name__}.transports"), lines)
+    settings = options.ClientOptions(clock=options.Clock(monotonic=clock))
+    with package.Client(transport_adapter=adapter, options=settings) as api:
+        for label, request, session in _clocked_limits(harness):
+            adapter.replies.append(harness.reply((message, clock.advance(61.0), message), response=_Probed))
+            _drained(lines, label, api.protocols.events.messages.open(options=request, session_options=session))
+    run(lambda: _async_clocked(harness))
+
+
+async def _async_clocked(harness: _Harness) -> None:
+    """End an asyncio stream once the client's clock passes its session or stream limit between two events."""
+    lines, package, options = harness.lines, harness.package, harness.options
+    message = b'data: {"text": "a"}\n\n'
+    clock = _Clock()
+    adapter = _AsyncFeed(importlib.import_module(f"{package.__name__}.transports"), lines)
+    settings = options.ClientOptions(clock=options.Clock(monotonic=clock))
+    async with package.AsyncClient(transport_adapter=adapter, options=settings) as api:
+        for label, request, session in _clocked_limits(harness):
+            adapter.replies.append(harness.reply((message, clock.aadvance(61.0), message), response=_AsyncProbed))
+            stream = await api.protocols.events.messages.open(options=request, session_options=session)
+            await _adrained(lines, f"async {label}", stream)
 
 
 async def _async_lifetimes(harness: _Harness) -> None:

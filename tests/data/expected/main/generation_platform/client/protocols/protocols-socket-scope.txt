@@ -1,0 +1,5 @@
+# protocols-socket-scope
+render pydantic_v2.BaseModel
+  APIGenerationError
+  BND_MODEL_SCOPE_REQUIRED binding /paths/~1upload/get/requestBody: The use has no generated native type
+  BND_MODEL_SCOPE_REQUIRED binding /paths/~1upload/get/requestBody/content/application~1json/schema: The use has no generated native type

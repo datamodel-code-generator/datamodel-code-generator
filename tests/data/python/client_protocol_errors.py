@@ -38,6 +38,12 @@ _CLASSES: Final = (
     "StreamInterruptedError",
     "IncompleteFrameError",
     "StreamRemoteError",
+    "ConcurrentReceiveError",
+    "WebSocketClosedError",
+    "WebSocketHandshakeError",
+    "WebSocketProxyError",
+    "HandshakeResponse",
+    "DeliveryUnknownError",
 )
 
 
@@ -95,6 +101,23 @@ def protocol_errors(package: ModuleType, lines: list[str]) -> None:
         ("StreamInterruptedError", {"condition": "transport", "sequence": 3, "resume_state": resume}),
         ("IncompleteFrameError", {"buffered_bytes": 12, "sequence": 3, "resume_state": resume}),
         ("StreamRemoteError", {"event_type": secret, "data": data, "sequence": 9}),
+        ("ConcurrentReceiveError", {}),
+        ("WebSocketClosedError", {"code": 4001, "reason": secret, "clean": False}),
+        ("WebSocketHandshakeError", {"condition": "negotiation", "delivery_state": errors.DeliveryState.RESPONSE_STARTED}),
+        ("WebSocketProxyError", {"proxy_status_code": 407}),
+        (
+            "HandshakeResponse",
+            {
+                "status_code": 503,
+                "headers": responses.HeadersView((("retry-after", secret),)),
+                "body_prefix": secret.encode(),
+                "truncated": False,
+            },
+        ),
+        (
+            "DeliveryUnknownError",
+            {"delivery_state": errors.DeliveryState.MAYBE_SENT, "resume_state": resume, "message_id": secret},
+        ),
     )
     cause = RuntimeError(secret)
     cleanup = RuntimeError(f"{secret}-cleanup")
@@ -148,7 +171,7 @@ def protocol_errors(package: ModuleType, lines: list[str]) -> None:
     _payloads(errors, protocols, snapshot, data, lines)
     _defaults(errors, snapshot, lines)
     _choices(errors, lines)
-    _rejections(errors, protocols, operation, lines)
+    _rejections(errors, protocols, responses, operation, lines)
 
 
 def _progress(errors: ModuleType, protocols: ModuleType, resume: object, lines: list[str]) -> None:
@@ -273,7 +296,9 @@ def _choices(errors: ModuleType, lines: list[str]) -> None:
     lines.append(f"  fixed and default conditions: {fixed}")
 
 
-def _rejections(errors: ModuleType, protocols: ModuleType, operation: object, lines: list[str]) -> None:
+def _rejections(
+    errors: ModuleType, protocols: ModuleType, responses: ModuleType, operation: object, lines: list[str]
+) -> None:
     """Reject undeclared literals, wrong types, fixed fields, and positional messages without revealing values."""
     secret = _SECRET
     snapshot_info = {"status_code": 200}
@@ -345,6 +370,23 @@ def _rejections(errors: ModuleType, protocols: ModuleType, operation: object, li
         ("remote event type", lambda: errors.StreamRemoteError(event_type=1, data=None, sequence=0)),
         ("remote missing data", lambda: errors.StreamRemoteError(event_type=None, sequence=0)),
         ("remote sequence", lambda: errors.StreamRemoteError(event_type=None, data=None, sequence=1.5)),
+        ("closed reason over 123 bytes", lambda: errors.WebSocketClosedError(code=1000, reason="\u00e9" * 62, clean=True)),
+        ("closed code negative", lambda: errors.WebSocketClosedError(code=-1, reason="", clean=True)),
+        ("closed clean integer", lambda: errors.WebSocketClosedError(code=None, reason="", clean=1)),
+        ("handshake condition unknown", lambda: errors.WebSocketHandshakeError(
+            condition="tls", delivery_state=errors.DeliveryState.RESPONSE_STARTED
+        )),
+        ("handshake operation pointer", lambda: errors.WebSocketHandshakeError(
+            condition="upgrade", delivery_state=errors.DeliveryState.RESPONSE_STARTED, operation=f"/{secret}"
+        )),
+        ("proxy status", lambda: errors.WebSocketProxyError(proxy_status_code=99)),
+        ("handshake response headers", lambda: errors.HandshakeResponse(
+            status_code=503, headers={}, body_prefix=b"", truncated=False
+        )),
+        ("handshake response prefix", lambda: errors.HandshakeResponse(
+            status_code=503, headers=responses.HeadersView(()), body_prefix=b"x" * 65537, truncated=False
+        )),
+        ("delivery unknown not sent", lambda: errors.DeliveryUnknownError(delivery_state=errors.DeliveryState.NOT_SENT)),
         ("context helper", lambda: errors.ProtocolStateError(state="s", action="a", helper_id=1)),
         ("context counters", lambda: errors.ProtocolStateError(state="s", action="a", network_send_count=-1)),
         ("positional message", lambda: errors.ProtocolStateError(secret, state="s", action="a")),
