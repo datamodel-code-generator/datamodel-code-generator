@@ -329,7 +329,10 @@ class _Polls:
 
     @staticmethod
     def required(helper: Helper, spec: OperationSpec, written: list[tuple[str, ...]], at: str) -> Iterator[Diagnostic]:
-        """Refuse a required parameter or body of an operation no binding writes, and a written body other than JSON."""
+        """Refuse a required parameter or body of an operation no binding writes, and a written body other than JSON.
+
+        A written body must have a default media type, since a poll, a result fetch, or a remote cancel names none.
+        """
         label = _label(spec)
         locations = {key[0] for key in written}
         for parameter in spec.parameters:
@@ -353,6 +356,12 @@ class _Polls:
                 "supported yet"
             )
             yield _problem("E_CLIENT_UNSUPPORTED", "target", at, message, spec)
+        elif "body" in locations and body.default is None:
+            message = (
+                f"The polling helper {helper.name!r} writes a request body of {label}, which has no default media "
+                "type; set the operation's request_media_type"
+            )
+            yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
         elif body.required and "body" not in locations:
             message = f"{label} requires a request body, which no binding of {helper.name!r} writes"
             yield _problem("E_CONFIG_VALUE", "config", at, message, spec)

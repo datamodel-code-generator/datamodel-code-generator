@@ -349,6 +349,23 @@ helpers:
       statuses: [200]
       selector: {from: body, pointer: /rows}
       schema: {pointer: /components/schemas/Report}
+  checks.media:
+    kind: polling
+    create: /paths/~1jobs/post
+    accepted_statuses: [202]
+    poll: /paths/~1jobs~1{jobId}/get
+    bindings:
+      - target: {in: path, name: jobId}
+        value: {source: initial, selector: {from: body, pointer: /id}}
+    state: {from: body, pointer: /status}
+    pending: [queued]
+    succeeded: [done]
+    result:
+      kind: operation
+      operation: /paths/~1archives~1search/post
+      bindings:
+        - target: {in: body, pointer: /job}
+          value: {source: previous, selector: {from: body, pointer: /id}}
   checks.cancel:
     kind: polling
     create: /paths/~1jobs/post

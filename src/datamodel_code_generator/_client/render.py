@@ -3034,10 +3034,10 @@ reference for their limits and checkpoints."""
         polling = (
             """
 A polling helper's `start` creates the operation and returns a handle: `status` polls it once and `wait` polls until
-it settles and returns its result, each poll after the wait the last response requires; `close` stops only local
-polling. `resume` returns a handle continuing a handle's `checkpoint()` without creating the operation again, and a
-helper that declares a remote cancellation returns a handle whose `cancel_remote` sends it. See the runtime reference
-for their limits and checkpoints."""
+it settles and returns its result, each poll after the wait the last response requires; `close()` or `aclose()`
+stops only local polling. `resume` returns a handle continuing a handle's `checkpoint()` without creating the
+operation again, and a helper that declares a remote cancellation returns a handle whose `cancel_remote` sends it. See
+the runtime reference for their limits and checkpoints."""
             if "polling" in kinds
             else ""
         )
@@ -3272,10 +3272,10 @@ cancelled operation raises `OperationFailedError` or `OperationCancelledError` w
 `wait` too. An error that settles nothing, such as a transport error, a deadline, a cancellation, or a limit, leaves
 the handle as it was: pending, so a later `status` or `wait` polls again without creating the operation again, or
 succeeded with its result fetch still due, which a later `wait` retries alone. `status` and `wait` at once raise
-`ProtocolStateError`, and so does every step after `close`, which stops only local polling. A call's options must not
-fix an idempotency key or patch a header or query parameter the helper writes.
+`ProtocolStateError`, and so does every step after `close()` or `aclose()`, which stops only local polling. A call's
+options must not fix an idempotency key or patch a header or query parameter the helper writes.
 
-`checkpoint()` returns a `ResumeState` without sending, also after `close` and while another thread or task polls:
+`checkpoint()` returns a `ResumeState` without sending, also after closing and while another thread or task polls:
 the phase, the polls so far, the wait left before the next poll or result fetch, the values the next requests write,
 and a settled operation's final poll and result bodies, never model objects, the session, or the call's options. The
 helper's `resume` is never awaited and returns a handle in a session of its own that sends nothing until `status` or
@@ -3291,7 +3291,7 @@ without a valid one fails `start` with `ProtocolDataError`, though the remote op
 A helper that declares `remote_cancel` returns a handle of its own class whose `cancel_remote()` sends the cancel
 request once, while the operation is pending, and returns a `CancelReceipt` of its response; it also runs while
 another thread or task waits in `status` or `wait`. It does not change the handle, which keeps its last poll until it
-polls again; `close` sends nothing.
+polls again; closing sends nothing.
 """
 
     def pagination_runtime(self) -> str:

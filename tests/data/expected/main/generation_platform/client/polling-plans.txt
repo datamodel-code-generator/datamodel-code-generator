@@ -531,6 +531,7 @@ render pydantic_v2.dataclass
     exports client.types.reports.AddNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
   S_OPERATION_EXCLUDED selection /paths/~1archives/post: POST /archives is excluded by exclude_tags 'archives': Archives have no success response
+  S_OPERATION_EXCLUDED selection /paths/~1archives~1search/post: POST /archives/search is excluded by exclude_tags 'archives': Archives have no success response
 render dataclasses.dataclass
   write models.py
   write client/__init__.py
@@ -1063,6 +1064,7 @@ render dataclasses.dataclass
     exports client.types.reports.AddNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
   S_OPERATION_EXCLUDED selection /paths/~1archives/post: POST /archives is excluded by exclude_tags 'archives': Archives have no success response
+  S_OPERATION_EXCLUDED selection /paths/~1archives~1search/post: POST /archives/search is excluded by exclude_tags 'archives': Archives have no success response
 render typing.TypedDict
   write models.py
   write client/__init__.py
@@ -1595,6 +1597,7 @@ render typing.TypedDict
     exports client.types.reports.AddNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
   S_OPERATION_EXCLUDED selection /paths/~1archives/post: POST /archives is excluded by exclude_tags 'archives': Archives have no success response
+  S_OPERATION_EXCLUDED selection /paths/~1archives~1search/post: POST /archives/search is excluded by exclude_tags 'archives': Archives have no success response
 render msgspec.Struct
   write models.py
   write client/__init__.py
@@ -2127,3 +2130,4 @@ render msgspec.Struct
     exports client.types.reports.AddNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'msgspec>=0.18']
   S_OPERATION_EXCLUDED selection /paths/~1archives/post: POST /archives is excluded by exclude_tags 'archives': Archives have no success response
+  S_OPERATION_EXCLUDED selection /paths/~1archives~1search/post: POST /archives/search is excluded by exclude_tags 'archives': Archives have no success response
