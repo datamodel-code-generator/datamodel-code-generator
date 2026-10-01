@@ -8,7 +8,6 @@ creating the operation again.
 
 from __future__ import annotations
 
-import re
 import threading
 from collections.abc import Mapping
 from contextlib import contextmanager
@@ -54,12 +53,13 @@ from .resume import (
     ResumeState,
     helper_state,
     require_state,
+    server_expiry,
     state_array,
     state_count,
     state_fields,
     state_text,
 )
-from .values import DOT_SEGMENTS, MISSING, Missing, Patch, RepeatedValueError, resolve, selected
+from .values import DOT_SEGMENTS, MISSING, Missing, RepeatedValueError, resolve, selected, written
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterable
@@ -110,9 +110,6 @@ _PHASES: Final[Mapping[str, _Phase]] = MappingProxyType({phase.value: phase for 
 _STATE: Final = frozenset({"phase", "polls", "wait_ms", "bound", "seed", "cancel", "poll", "result"})
 _POLL_FIELDS: Final = 4
 _RESULT_FIELDS: Final = 3
-_RFC3339: Final = re.compile(
-    r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]+)?(?:Z|[+-][0-9]{2}:[0-9]{2})"
-)
 _KINDS: Final[Mapping[type, str]] = MappingProxyType({
     type(None): "null",
     bool: "boolean",
@@ -124,18 +121,6 @@ _KINDS: Final[Mapping[type, str]] = MappingProxyType({
 def _kind(value: WireValue) -> str:
     """Return the JSON type of a wire value, every number being one type."""
     return _KINDS.get(type(value)) or ("object" if isinstance(value, Mapping) else "number")
-
-
-def _expiry(value: str) -> datetime | None:
-    """Return the UTC time an RFC 3339 date-time with an offset or an HTTP date gives, or None for another value."""
-    try:
-        if _RFC3339.fullmatch(text := value.upper()) is not None:
-            return datetime.fromisoformat(text).astimezone(timezone.utc)
-        from ..client.retry import http_date  # noqa: PLC0415 - Only a helper with an expiry parses HTTP dates.
-
-        return http_date(value, time())
-    except (ValueError, OverflowError):
-        return None
 
 
 @dataclass(frozen=True, slots=True)
@@ -158,20 +143,7 @@ class _Targeted(Generic[T]):
         A parameter's value replaces its argument, and the values for a querystring or the body are patched into an
         empty object.
         """
-        arguments: list[object] = [UNSET] * len(self.call.parameters)
-        patches: dict[int | None, list[tuple[str, WireValue]]] = {}
-        for (position, pointer), value in zip(self.writes, values, strict=True):
-            if pointer is None:
-                arguments[cast("int", position)] = value
-            else:
-                patches.setdefault(position, []).append((pointer, value))
-        body: object = UNSET
-        for position, writes in patches.items():
-            if position is None:
-                body = Patch(UNSET, tuple(writes))
-            else:
-                arguments[position] = Patch(UNSET, tuple(writes))
-        return tuple(arguments), body
+        return written(self.writes, (UNSET,) * len(self.call.parameters), UNSET, values)
 
 
 def _targeted(call: OperationPlan[T, object], targets: Iterable[RequestTarget]) -> _Targeted[T]:
@@ -703,7 +675,7 @@ class _Operation(Generic[T, P]):
             raise self._error(info, _absence(value), read, plan.operation)
         if not isinstance(value, str):
             raise self._error(info, "type", read, plan.operation)
-        if (expires_at := _expiry(value)) is None:
+        if (expires_at := server_expiry(value)) is None:
             raise self._error(info, "value", read, plan.operation)
         return expires_at
 

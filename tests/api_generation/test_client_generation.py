@@ -76,6 +76,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
         "streams",
         "streams-mixed",
         "ndjson",
+        "stream-resume",
         "compatibility",
     ],
 )
@@ -130,6 +131,7 @@ def test_client_render(case: str, tmp_path: Path) -> None:
         "protocols-stream-checks",
         "protocols-stream-scope",
         "protocols-ndjson-checks",
+        "protocols-stream-resume-checks",
     ],
 )
 def test_client_protocols(case: str, tmp_path: Path) -> None:
@@ -177,6 +179,7 @@ def test_client_retry_metadata_digests(tmp_path: Path) -> None:
         "polling",
         "streams",
         "ndjson",
+        "stream-resume",
     ],
 )
 def test_client_documentation(case: str, tmp_path: Path) -> None:

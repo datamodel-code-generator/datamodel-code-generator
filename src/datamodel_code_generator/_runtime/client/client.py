@@ -1420,6 +1420,23 @@ class _Core(Generic[AdapterT, HandleT]):
         settings = replace(self._call_settings(options, operation_id), total_timeout=None)
         return _SessionWait(settings, self._scope, session, operation_id)
 
+    def reconnect_backoff(
+        self, options: RequestOptions | None, operation_id: str | None, previous_cap: float | None
+    ) -> tuple[float, float]:
+        """Return the backoff cap and the wait of a helper's next automatic reconnection, by the call's retry options.
+
+        The cap starts at the initial delay and doubles up to the maximum delay, and full jitter draws the wait below
+        it, as a retry's backoff does.
+        """
+        planned = retry_delay(
+            self._call_settings(options, operation_id).retry,
+            reason="read_error",
+            server=None,
+            timing=RetryTiming(previous_cap, 0.0, None, _draw),
+        )
+        assert not isinstance(planned, str)
+        return planned.backoff_cap, planned.delay
+
     def protocol_defaults(self, name: str) -> ProtocolDefaults | None:
         """Return the defaults the client's protocol settings give one helper, or None."""
         if (protocols := self._shared.protocols) is None or isinstance(defaults := protocols.defaults, Unset):

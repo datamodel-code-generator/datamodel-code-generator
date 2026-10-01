@@ -256,7 +256,8 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
 `client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.
 An SSE helper's `open` sends its operation in a session of its own and returns an event stream once the
 response is a declared success; the stream reads only the bytes each event needs, and `close()` or `aclose()` releases
-the response. See the runtime reference for their limits.
+the response. See the runtime reference for
+their limits.
 
 ```json
 [
@@ -490,7 +491,7 @@ The idle timeout runs only while the next step waits for bytes. An event's data 
 discriminator maps it to; data that does not decode raises `StreamDecodeError`, a declared error event raises
 `StreamRemoteError`, and a line or event over its limit raises `ProtocolSizeError`. The stream ends at its declared
 completion; an end before it raises `StreamInterruptedError`, a cut frame `IncompleteFrameError`, and a broken
-connection `StreamInterruptedError` with its transport failure as the cause. Streams never reconnect, so
-`StreamOptions(reconnect=True)` raises `ProtocolConfigurationError`. Close a stream with `with`, `async with`, or
-`close()`; leaving a loop early does not release its response, and closing the client with a stream open raises
-`CleanupError` once its cleanup timeout passes.
+connection `StreamInterruptedError` with its transport failure as the cause. A helper that does not declare `resume`
+never reconnects, and `StreamOptions(reconnect=True)` raises `ProtocolConfigurationError` for it. Close a stream with
+`with`, `async with`, or `close()`; leaving a loop early does not release its response, and closing the client with a
+stream open raises `CleanupError` once its cleanup timeout passes.

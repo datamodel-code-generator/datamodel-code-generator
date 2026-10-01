@@ -10,19 +10,19 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Final, cast
 
 from ..model_codecs.unset import Unset
 from .records import BodySelector, HeaderSelector
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterable
 
     from ..client.responses import ResponseInfo
     from ..model_codecs.wire import WireValue
     from .records import Selector
 
-__all__ = ("DOT_SEGMENTS", "MISSING", "Missing", "Patch", "RepeatedValueError", "resolve", "selected")
+__all__ = ("DOT_SEGMENTS", "MISSING", "Missing", "Patch", "RepeatedValueError", "resolve", "selected", "written")
 
 
 class Missing(Enum):
@@ -99,3 +99,29 @@ class Patch:
         for pointer, new in self.writes:
             wire = _patched(wire, _tokens(pointer), new)
         return wire
+
+
+def written(
+    writes: tuple[tuple[int | None, str | None], ...],
+    arguments: tuple[object, ...],
+    body: object,
+    values: Iterable[WireValue],
+) -> tuple[tuple[object, ...], object]:
+    """Return a request's arguments and body with each value written where its write goes, in order.
+
+    A write without a pointer replaces the argument at its position, and one with a pointer patches the argument at its
+    position, or the body without one, so the value is written into its encoded value.
+    """
+    given = list(arguments)
+    patches: dict[int | None, list[tuple[str, WireValue]]] = {}
+    for (position, pointer), value in zip(writes, values, strict=True):
+        if pointer is None:
+            given[cast("int", position)] = value
+        else:
+            patches.setdefault(position, []).append((pointer, value))
+    for position, patched in patches.items():
+        if position is None:
+            body = Patch(body, tuple(patched))
+        else:
+            given[position] = Patch(given[position], tuple(patched))
+    return tuple(given), body

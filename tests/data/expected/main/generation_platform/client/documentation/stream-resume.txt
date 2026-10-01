@@ -12,20 +12,35 @@
   write client/transports.py
   write client/protocols/__init__.py
   write client/resources/__init__.py
+  write client/resources/events/__init__.py
+  write client/resources/events/_sync.py
+  write client/resources/events/_async.py
+  write client/resources/streams/__init__.py
+  write client/resources/streams/_sync.py
+  write client/resources/streams/_async.py
+  write client/resources/replay/__init__.py
+  write client/resources/replay/_sync.py
+  write client/resources/replay/_async.py
   write client/resources/records/__init__.py
   write client/resources/records/_sync.py
   write client/resources/records/_async.py
-  write client/resources/search/__init__.py
-  write client/resources/search/_sync.py
-  write client/resources/search/_async.py
+  write client/resources/feed/__init__.py
+  write client/resources/feed/_sync.py
+  write client/resources/feed/_async.py
   write client/resources/status/__init__.py
   write client/resources/status/_sync.py
   write client/resources/status/_async.py
   write client/types/__init__.py
+  write client/types/events/__init__.py
+  write client/types/events/_operations.py
+  write client/types/streams/__init__.py
+  write client/types/streams/_operations.py
+  write client/types/replay/__init__.py
+  write client/types/replay/_operations.py
   write client/types/records/__init__.py
   write client/types/records/_operations.py
-  write client/types/search/__init__.py
-  write client/types/search/_operations.py
+  write client/types/feed/__init__.py
+  write client/types/feed/_operations.py
   write client/types/status/__init__.py
   write client/types/status/_operations.py
   write client/_generated/__init__.py
@@ -38,14 +53,211 @@
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['records.all', 'records.lenient', 'records.tagged', 'search.all'] bindings 9
+  namespace client helpers ['events.live', 'events.plain', 'events.tracked', 'records.all', 'feed.ticks'] bindings 25
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper records.all ndjson enabled True /inputs/target_config/protocol_metadata/helpers/records.all e08a809dc409a6397205f0a58c6f60003179fda3a6e995c74a4b4ffb55f233bf
-  helper records.lenient ndjson enabled True /inputs/target_config/protocol_metadata/helpers/records.lenient 6a9c73866b74cae0dcf4f235570bb56f18a7325658aaff8e416d02e9aae64fa7
-  helper records.tagged ndjson enabled True /inputs/target_config/protocol_metadata/helpers/records.tagged e48aab088550d428cfc8a3b5b2e0c23e594bba7dee87b492461ed2df63d4ad7e
-  helper search.all ndjson enabled True /inputs/target_config/protocol_metadata/helpers/search.all 8868f178172b709d45f8bb91c4c0a51560d0f13fd2fef17d7956a584cda0abb9
+  helper events.live sse enabled True /inputs/target_config/protocol_metadata/helpers/events.live fe9d46bf6146c8ad370b9e120eebaa7a97ce69791b82e42dc42fb36df7d8d89b
+  helper events.plain sse enabled True /inputs/target_config/protocol_metadata/helpers/events.plain bb4bb5c8c5cbe3809e0cde61598b05446f9667463353a95c362eae717c7baaf9
+  helper events.tracked sse enabled True /inputs/target_config/protocol_metadata/helpers/events.tracked 232c5953c24399dd4c254772dababfe778d0e461afbd363f2ad354cafe88ccaf
+  helper records.all ndjson enabled True /inputs/target_config/protocol_metadata/helpers/records.all 0be49633d4172954b6470e209d25f77bde0e1e664b68c1bc0afbc93ec6002286
+  helper feed.ticks sse enabled True /inputs/target_config/protocol_metadata/helpers/feed.ticks 25b1534b79b168ed861fcb9eb40248e67166dec73ec511b1d877f9dab321d951
   {
     "helpers": {
+      "events.live": {
+        "completion": {
+          "kind": "eof"
+        },
+        "enabled": true,
+        "error_events": {},
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Message"
+        },
+        "kind": "sse",
+        "media": "text/event-stream",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1events/get"
+        },
+        "resume": {
+          "bindings": [],
+          "cursor": "event_id",
+          "delivery": "at_least_once",
+          "enabled": true,
+          "reconnect_on": [
+            "transport_interruption"
+          ],
+          "reopen_operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1events/get"
+          },
+          "write": {
+            "in": "header",
+            "name": "Last-Event-ID"
+          }
+        },
+        "unknown": "error"
+      },
+      "events.plain": {
+        "completion": {
+          "kind": "eof"
+        },
+        "enabled": true,
+        "error_events": {},
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Message"
+        },
+        "kind": "sse",
+        "media": "text/event-stream",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1events/get"
+        },
+        "resume": {
+          "enabled": false
+        },
+        "unknown": "error"
+      },
+      "events.tracked": {
+        "completion": {
+          "kind": "event_type",
+          "value": "done"
+        },
+        "enabled": true,
+        "error_events": {
+          "error": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/StreamError"
+          }
+        },
+        "event_schema": {
+          "discriminator": {
+            "from": "event_type"
+          },
+          "mapping": {
+            "created": {
+              "document": "/inputs/root",
+              "pointer": "/components/schemas/Created"
+            }
+          }
+        },
+        "kind": "sse",
+        "media": "text/event-stream",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1events/get"
+        },
+        "resume": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "streamId"
+              },
+              "value": {
+                "selector": {
+                  "from": "header",
+                  "name": "X-Stream-Id",
+                  "occurrence": "single"
+                },
+                "source": "initial"
+              }
+            },
+            {
+              "target": {
+                "in": "query",
+                "name": "token"
+              },
+              "value": {
+                "selector": {
+                  "from": "header",
+                  "name": "X-Resume-Token",
+                  "occurrence": "single"
+                },
+                "source": "previous"
+              }
+            },
+            {
+              "target": {
+                "in": "query",
+                "name": "mode"
+              },
+              "value": {
+                "literal": "resume"
+              }
+            }
+          ],
+          "cursor": "event_id",
+          "delivery": "at_least_once",
+          "enabled": true,
+          "expires_at": {
+            "from": "header",
+            "name": "X-Stream-Expires",
+            "occurrence": "single"
+          },
+          "reconnect_on": [
+            "transport_interruption",
+            "incomplete_eof"
+          ],
+          "reopen_operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1streams~1{streamId}/get"
+          },
+          "write": {
+            "in": "header",
+            "name": "Last-Event-ID"
+          }
+        },
+        "unknown": "raw"
+      },
+      "feed.ticks": {
+        "completion": {
+          "kind": "sentinel",
+          "value": "[DONE]"
+        },
+        "enabled": true,
+        "error_events": {},
+        "event_schema": {
+          "discriminator": {
+            "from": "event_type"
+          },
+          "mapping": {
+            "tick": {
+              "document": "/inputs/root",
+              "pointer": "/components/schemas/Tick"
+            }
+          }
+        },
+        "kind": "sse",
+        "media": "text/event-stream",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1feed/post"
+        },
+        "resume": {
+          "bindings": [],
+          "cursor": {
+            "from": "body",
+            "pointer": "/seq"
+          },
+          "delivery": "at_least_once",
+          "enabled": true,
+          "missing": "error",
+          "null": "error",
+          "reconnect_on": [
+            "incomplete_eof"
+          ],
+          "reopen_operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1feed/post"
+          },
+          "write": {
+            "in": "body",
+            "pointer": "/after"
+          }
+        },
+        "unknown": "raw"
+      },
       "records.all": {
         "completion": {
           "kind": "eof"
@@ -64,105 +276,48 @@
           "pointer": "/paths/~1records/get"
         },
         "resume": {
-          "enabled": false
-        },
-        "unknown": "error"
-      },
-      "records.lenient": {
-        "completion": {
-          "kind": "eof"
-        },
-        "enabled": true,
-        "error_events": {},
-        "event_schema": {
-          "document": "/inputs/root",
-          "pointer": "/components/schemas/Record"
-        },
-        "final_line": "allow_eof",
-        "kind": "ndjson",
-        "media": "application/x-ndjson",
-        "operation": {
-          "document": "/inputs/root",
-          "pointer": "/paths/~1records/get"
-        },
-        "resume": {
-          "enabled": false
-        },
-        "unknown": "error"
-      },
-      "records.tagged": {
-        "completion": {
-          "kind": "sentinel",
-          "value": "[DONE]"
-        },
-        "enabled": true,
-        "error_events": {
-          "failed": {
-            "document": "/inputs/root",
-            "pointer": "/components/schemas/Failure"
-          }
-        },
-        "event_schema": {
-          "discriminator": {
+          "bindings": [],
+          "cursor": {
             "from": "body",
-            "pointer": "/type"
+            "pointer": "/id"
           },
-          "mapping": {
-            "created": {
-              "document": "/inputs/root",
-              "pointer": "/components/schemas/Created"
-            },
-            "deleted": {
-              "document": "/inputs/root",
-              "pointer": "/components/schemas/Deleted"
-            }
+          "delivery": "at_least_once",
+          "enabled": true,
+          "missing": "inherit",
+          "null": "clear",
+          "reconnect_on": [
+            "transport_interruption"
+          ],
+          "reopen_operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1records/get"
+          },
+          "write": {
+            "in": "query",
+            "name": "after"
           }
-        },
-        "final_line": "require_newline",
-        "kind": "ndjson",
-        "media": "application/x-ndjson",
-        "operation": {
-          "document": "/inputs/root",
-          "pointer": "/paths/~1records/get"
-        },
-        "resume": {
-          "enabled": false
-        },
-        "unknown": "raw"
-      },
-      "search.all": {
-        "completion": {
-          "kind": "sentinel",
-          "value": "[DONE]"
-        },
-        "enabled": true,
-        "error_events": {},
-        "event_schema": {
-          "document": "/inputs/root",
-          "pointer": "/components/schemas/Record"
-        },
-        "final_line": "allow_eof",
-        "kind": "ndjson",
-        "media": "application/jsonl",
-        "operation": {
-          "document": "/inputs/root",
-          "pointer": "/paths/~1search/post"
-        },
-        "resume": {
-          "enabled": false
         },
         "unknown": "error"
       }
     },
     "schema_version": 1
   }
-  /selection/selected_operations/0 records.stream_records(query:topic=topic)
+  /selection/selected_operations/0 events.stream_events(query:topic=topic, header:Last-Event-ID=last_event_id, cookie:session=session)
+    exports client.types.events.StreamEventsResponse client.types.events.StreamEventsErrorData client.types.events.StreamEventsHTTPError
+    exports client.types.events.StreamEventsRequestCodecs client.types.events.decode_stream_events_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 streams.reopen_stream(path:streamId=stream_id, header:Last-Event-ID=last_event_id, query:token=token, query:mode=mode)
+    exports client.types.streams.ReopenStreamResponse client.types.streams.ReopenStreamErrorData client.types.streams.ReopenStreamHTTPError
+    exports client.types.streams.ReopenStreamRequestCodecs client.types.streams.decode_reopen_stream_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/2 replay.replay_events(query:from=from_)
+    exports client.types.replay.ReplayEventsResponse client.types.replay.ReplayEventsErrorData client.types.replay.ReplayEventsHTTPError
+    exports client.types.replay.ReplayEventsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/3 records.stream_records(query:after=after)
     exports client.types.records.StreamRecordsResponse client.types.records.StreamRecordsErrorData client.types.records.StreamRecordsHTTPError
     exports client.types.records.StreamRecordsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/1 search.search()
-    exports client.types.search.SearchResponse client.types.search.SearchErrorData client.types.search.SearchHTTPError
-    exports client.types.search.SearchRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/2 status.get_status()
+  /selection/selected_operations/4 feed.stream_feed()
+    exports client.types.feed.StreamFeedResponse client.types.feed.StreamFeedErrorData client.types.feed.StreamFeedHTTPError
+    exports client.types.feed.StreamFeedRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/5 status.get_status()
     exports client.types.status.GetStatusResponse client.types.status.GetStatusErrorData client.types.status.GetStatusHTTPError
     exports client.types.status.GetStatusRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
@@ -203,6 +358,39 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
 ```json
 [
   {
+    "operation": "events.stream_events",
+    "method": "GET",
+    "path": "/events",
+    "retry_safety": "method_default",
+    "idempotency": null,
+    "retry_after_ms_header": null,
+    "should_retry_header": null,
+    "security": null,
+    "auth_challenge_less_401": false
+  },
+  {
+    "operation": "streams.reopen_stream",
+    "method": "GET",
+    "path": "/streams/{streamId}",
+    "retry_safety": "method_default",
+    "idempotency": null,
+    "retry_after_ms_header": null,
+    "should_retry_header": null,
+    "security": null,
+    "auth_challenge_less_401": false
+  },
+  {
+    "operation": "replay.replay_events",
+    "method": "GET",
+    "path": "/replay",
+    "retry_safety": "method_default",
+    "idempotency": null,
+    "retry_after_ms_header": null,
+    "should_retry_header": null,
+    "security": null,
+    "auth_challenge_less_401": false
+  },
+  {
     "operation": "records.stream_records",
     "method": "GET",
     "path": "/records",
@@ -214,9 +402,9 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
     "auth_challenge_less_401": false
   },
   {
-    "operation": "search.search",
+    "operation": "feed.stream_feed",
     "method": "POST",
-    "path": "/search",
+    "path": "/feed",
     "retry_safety": "method_default",
     "idempotency": null,
     "retry_after_ms_header": null,
@@ -241,13 +429,35 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
 ## Protocol helpers
 
 `client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.
-An NDJSON helper's `open` sends its operation in a session of its own and returns an event stream once the
+An SSE or NDJSON helper's `open` sends its operation in a session of its own and returns an event stream once the
 response is a declared success; the stream reads only the bytes each event needs, and `close()` or `aclose()` releases
-the response. See the runtime reference for
+the response. A helper that declares `resume` also has `resume`, which reopens a stream after its
+`checkpoint()`, and its streams reconnect when `StreamOptions(reconnect=True)`. See the runtime reference for
 their limits.
 
 ```json
 [
+  {
+    "helper": "events.live",
+    "kind": "sse",
+    "operation": "events.stream_events",
+    "method": "GET",
+    "path": "/events"
+  },
+  {
+    "helper": "events.plain",
+    "kind": "sse",
+    "operation": "events.stream_events",
+    "method": "GET",
+    "path": "/events"
+  },
+  {
+    "helper": "events.tracked",
+    "kind": "sse",
+    "operation": "events.stream_events",
+    "method": "GET",
+    "path": "/events"
+  },
   {
     "helper": "records.all",
     "kind": "ndjson",
@@ -256,25 +466,11 @@ their limits.
     "path": "/records"
   },
   {
-    "helper": "records.lenient",
-    "kind": "ndjson",
-    "operation": "records.stream_records",
-    "method": "GET",
-    "path": "/records"
-  },
-  {
-    "helper": "records.tagged",
-    "kind": "ndjson",
-    "operation": "records.stream_records",
-    "method": "GET",
-    "path": "/records"
-  },
-  {
-    "helper": "search.all",
-    "kind": "ndjson",
-    "operation": "search.search",
+    "helper": "feed.ticks",
+    "kind": "sse",
+    "operation": "feed.stream_feed",
     "method": "POST",
-    "path": "/search"
+    "path": "/feed"
   }
 ]
 ```
@@ -454,9 +650,9 @@ bounded wait, retains unfinished owned work, and preserves the primary error, at
 possible. Client/view closure refuses new work and interrupts active calls at observation points. Retrying close can
 wait for retained cleanup; it does not authorize another send or restore an expired logical deadline.
 
-## NDJSON streams
+## SSE or NDJSON streams
 
-An NDJSON helper's `open` is one session holding one logical call. The call's total timeout bounds only
+An SSE or NDJSON helper's `open` is one session holding one logical call. The call's total timeout bounds only
 acquiring the response, which must be a declared success of the helper's media type; afterward the stream's idle
 timeout, the call's `stream_total_timeout`, and the session's deadline apply. Each limit comes from the call's
 options, then `ProtocolClientOptions.defaults` for the helper, then the default below. The stream types are imported
@@ -473,6 +669,8 @@ from:
 | event data size | 1 MiB |
 | session total timeout | None |
 | network sends per session | 16; None removes it |
+| reconnections per session | 5; None removes the limit, and 0 allows none |
+| reconnection wait | 60 seconds; None removes it |
 
 The idle timeout runs only while the next step waits for bytes. An event's data is JSON decoded by the schema its
 discriminator maps it to; data that does not decode raises `StreamDecodeError`, a declared error event raises
@@ -488,3 +686,20 @@ blank line or one that is not UTF-8 or JSON raises `StreamDecodeError`. A record
 counts toward both the line and the event data size. Bytes after the last line end raise `IncompleteFrameError` unless
 the helper's `final_line` is `allow_eof`, which decodes them as the last record. A record has the empty string as its
 event type and no event ID, and a declared error record raises `StreamRemoteError` with the event type None.
+
+A helper that declares `resume` tracks the cursor of the last event it delivered: the SSE event ID, or the value its
+cursor pointer reads from an event's data, which an empty event ID or a null value clears. Once a cursor was delivered,
+a stream's `checkpoint()` returns a `ResumeState` without sending: the cursor, the event and reconnection counts, the
+last `retry` time, the bindings' values, and the caller's first request when the reopen repeats it, never events,
+responses, the session, the call's options, or a cookie or credential argument. The helper's `resume` sends the reopen
+in a session of its own, writing the cursor, and omitting a cleared one, and returns once its response is a declared
+success; it refuses another helper's state, one made under other security, an expired one, and one that does not fit
+with `ResumeStateError` before sending. `StreamInterruptedError` keeps a checkpoint as `resume_state`, and call options
+must not patch a header or query parameter a reopen writes or fix an idempotency key.
+
+With `StreamOptions(reconnect=True)` such a stream reopens itself as one more child call of its session after a
+transport interruption, or after an incomplete end when the helper declares `incomplete_eof`, once a cursor was
+delivered and after the retry backoff and at least the last `retry` time. Running out of reconnections or of the
+session's sends raises `StreamResumeExhaustedError` with a checkpoint; a wait longer than allowed or than the session
+has left raises the interruption instead. Decode, size, remote, and idle failures, the declared end, and closing never
+reconnect, and events the server sends again after a reopen are delivered again.
