@@ -10,28 +10,7 @@ from datamodel_code_generator import Error
 from datamodel_code_generator.util import load_toml
 
 if TYPE_CHECKING:
-    from collections import defaultdict
-
     from datamodel_code_generator.config import GenerateConfig
-
-
-def _extract_additional_imports(extra_template_data: defaultdict[str, dict[str, Any]]) -> list[str]:
-    """Extract additional_imports from extra_template_data entries."""
-    additional_imports: list[str] = []
-    for type_data in extra_template_data.values():
-        if "additional_imports" in type_data:
-            imports = type_data.pop("additional_imports")
-            if isinstance(imports, str):
-                if imports.strip():  # pragma: no branch
-                    additional_imports.append(imports.strip())
-            elif isinstance(imports, list):  # pragma: no branch
-                additional_imports.extend(item.strip() for item in imports if isinstance(item, str) and item.strip())
-    if not additional_imports:
-        return additional_imports
-
-    from datamodel_code_generator.base_config import _validate_additional_import_paths  # noqa: PLC0415
-
-    return _validate_additional_import_paths(additional_imports) or []
 
 
 def _resolve_profile_extends(
@@ -194,7 +173,7 @@ _GENERATE_FIELD_NAMES = {
 
 
 def load_pyproject_config(
-    path: Path | None = None,
+    path: Path | str | None = None,
     profile: str | None = None,
     *,
     overrides: GenerateConfig | Mapping[str, Any] | None = None,
@@ -208,7 +187,7 @@ def load_pyproject_config(
     paths; only explicitly set fields of a GenerateConfig override are merged.
     Without project settings, return the API defaults with any overrides applied.
     """
-    source = Path.cwd() if path is None else path.expanduser().resolve()
+    source = Path.cwd() if path is None else Path(path).expanduser().resolve()
     if path is not None and source.is_file():
         source = source.parent
     options, pyproject_path = _get_pyproject_toml_config_with_path(source, profile)

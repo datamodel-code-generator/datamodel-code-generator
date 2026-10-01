@@ -12,7 +12,6 @@ from urllib.parse import ParseResult, urlparse
 
 from datamodel_code_generator import Error, _validate_alias_generator, _validate_output_datetime_class
 from datamodel_code_generator._format_types import PythonVersion
-from datamodel_code_generator._project_config import _extract_additional_imports
 from datamodel_code_generator.deprecations import warn_deprecated
 from datamodel_code_generator.enums import (
     AllExportsScope,
@@ -60,6 +59,25 @@ _RawConfigValue: TypeAlias = (
     | Mapping[str, str]
     | Mapping[str, str | list[str]]
 )
+
+
+def _extract_additional_imports(extra_template_data: defaultdict[str, dict[str, Any]]) -> list[str]:
+    """Extract additional_imports from extra_template_data entries."""
+    additional_imports: list[str] = []
+    for type_data in extra_template_data.values():
+        if "additional_imports" in type_data:
+            imports = type_data.pop("additional_imports")
+            if isinstance(imports, str):
+                if imports.strip():  # pragma: no branch
+                    additional_imports.append(imports.strip())
+            elif isinstance(imports, list):  # pragma: no branch
+                additional_imports.extend(item.strip() for item in imports if isinstance(item, str) and item.strip())
+    if not additional_imports:
+        return additional_imports
+
+    from datamodel_code_generator.base_config import _validate_additional_import_paths  # noqa: PLC0415
+
+    return _validate_additional_import_paths(additional_imports) or []
 
 
 def is_url(ref: str) -> bool:

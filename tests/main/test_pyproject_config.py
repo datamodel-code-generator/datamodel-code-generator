@@ -46,6 +46,9 @@ def test_load_pyproject_config_generation(case: dict[str, Any], project: Path) -
         "directory": project,
         "file": project / "pyproject.toml",
         "relative": Path("..") / "pyproject.toml",
+        "string_directory": str(project),
+        "string_file": str(project / "pyproject.toml"),
+        "string_relative": "../pyproject.toml",
     }.get(case.get("path"))
     with chdir(cwd), assert_inputs_not_mutated({"overrides": overrides}):
         config = load_pyproject_config(path, case.get("profile"), overrides=overrides)

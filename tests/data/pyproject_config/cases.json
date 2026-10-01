@@ -28,6 +28,30 @@
     "expected_config": "default"
   },
   {
+    "name": "string_directory",
+    "file": "basic.toml",
+    "path": "string_directory",
+    "child": true,
+    "expected_code": "default",
+    "expected_config": "default"
+  },
+  {
+    "name": "string_file",
+    "file": "basic.toml",
+    "path": "string_file",
+    "child": true,
+    "expected_code": "default",
+    "expected_config": "default"
+  },
+  {
+    "name": "string_relative_file",
+    "file": "basic.toml",
+    "path": "string_relative",
+    "child": true,
+    "expected_code": "default",
+    "expected_config": "default"
+  },
+  {
     "name": "profile",
     "file": "profiles.toml",
     "profile": "child"

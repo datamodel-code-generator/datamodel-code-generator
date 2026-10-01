@@ -86,7 +86,7 @@ result = generate(json_schema, config=config)
 ```
 
 The loader searches upward from the working directory, stopping at a Git project
-boundary, as the CLI does. Pass `path=Path("project")` or a `pyproject.toml` path
+boundary, as the CLI does. Pass `path="project"`, a `Path`, or a `pyproject.toml` path
 to start elsewhere, and `profile="models"` to select a profile, including its
 `extends` inheritance. Without project settings, it returns the API defaults;
 a requested profile must exist.
