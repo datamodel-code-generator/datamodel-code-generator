@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import os
 import re
 import sys
 from collections import Counter
@@ -14,7 +15,13 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+import datamodel_code_generator
 from datamodel_code_generator.http import _get_httpx
+from tests.assert_helper_allowlists import (
+    ALLOWLIST_GROUP_REASONS,
+    ALLOWLISTS,
+    FROZEN_EXEMPT_FILES,
+)
 from tests.conftest import (
     HttpxGetMockFactory,
     MockHttpxResponse,
@@ -36,13 +43,16 @@ if TYPE_CHECKING:
 TESTS_ROOT = Path(__file__).parent
 DIRECT_ASSERT_EXEMPT_FILES_INI = "assert_helper_direct_assert_exempt_files"
 HELPER_ROOTS = (Path("data", "python"), Path("data", "generation_platform"))
+OUTPUT_ROOT = Path("data", "expected")
 PACKAGE = "datamodel_code_generator"
+PACKAGE_ROOT = Path(datamodel_code_generator.__file__).parent
 INTERNAL_MODULE_PREFIXES = ("parser.openapi_contract", "parser.openapi_scope", "model.binding")
 RUNTIME_SEGMENT = re.compile(r"(?:^|\.)_runtime(?:\.|$)")
 PACKAGE_PATH = re.compile(rf"^{PACKAGE}(?:\.|$)")
-ASSERTION_HELPER_NAME = re.compile(r"^_*(?:assert|check|verify|expect)_")
-ABNORMAL_PATH_MARKER = "pytest.mark.abnormal_path"
-ALLOW_DIRECT_ASSERT_MARKER = "pytest.mark.allow_direct_assert"
+ASSERTION_HELPER_NAME = re.compile(r"^_*(?:assert|check|compare|ensure|expect|validate|verify)_")
+REEXPORT_DEPTH = 4
+ABNORMAL_PATH_MARKER = ("pytest", "mark", "abnormal_path")
+ALLOW_DIRECT_ASSERT_MARKER = ("pytest", "mark", "allow_direct_assert")
 PATCH_CALLS = frozenset({
     ("mocker", "patch"),
     ("mocker", "patch", "dict"),
@@ -60,7 +70,17 @@ PATCH_CALLS = frozenset({
 })
 PATCH_TARGET_KEYWORDS = frozenset({"target", "in_dict"})
 REGISTRY_PATCH_CALLS = frozenset({("mocker", "patch", "dict"), ("unittest", "mock", "patch", "dict")})
+SETATTR_CALLS = frozenset({("builtins", "delattr"), ("builtins", "setattr"), ("delattr",), ("setattr",)})
+GETATTR_CALLS = frozenset({("builtins", "getattr"), ("getattr",)})
+IMPORT_MODULE_CALL = ("importlib", "import_module")
+IMPORT_CALLS = frozenset({IMPORT_MODULE_CALL, ("__import__",), ("builtins", "__import__")})
+GENERATED_IMPORT = "import_generated"
+SYS_MODULES = ("sys", "modules")
 PROFILE_HOOKS = frozenset({
+    ("sys", "monitoring", "register_callback"),
+    ("sys", "monitoring", "set_events"),
+    ("sys", "monitoring", "set_local_events"),
+    ("sys", "monitoring", "use_tool_id"),
     ("sys", "setprofile"),
     ("sys", "settrace"),
     ("threading", "setprofile"),
@@ -68,55 +88,84 @@ PROFILE_HOOKS = frozenset({
     ("threading", "settrace"),
     ("threading", "settrace_all_threads"),
 })
-MONKEYPATCH_CONTEXTS = frozenset({("monkeypatch", "context"), ("pytest", "MonkeyPatch", "context")})
+MONKEYPATCH_FACTORIES = frozenset({
+    ("_pytest", "monkeypatch", "MonkeyPatch"),
+    ("monkeypatch", "context"),
+    ("pytest", "MonkeyPatch"),
+    ("pytest", "MonkeyPatch", "context"),
+})
+ALIAS_ROOTS = frozenset({
+    "AssertionError",
+    "builtins",
+    "importlib",
+    "mocker",
+    "monkeypatch",
+    "pytest",
+    "sys",
+    "threading",
+    "unittest",
+})
+ASSERTION_ERRORS = frozenset({("AssertionError",), ("builtins", "AssertionError"), ("pytest", "fail", "Exception")})
 TEST_CASE_BASES = frozenset({("unittest", "IsolatedAsyncioTestCase"), ("unittest", "TestCase")})
+LEAF_NODES = (
+    ast.Constant,
+    ast.Name,
+    ast.alias,
+    ast.boolop,
+    ast.cmpop,
+    ast.expr_context,
+    ast.operator,
+    ast.unaryop,
+)
 
 DIRECT_ASSERT = "direct-assert"
 DISGUISED_ASSERT = "disguised-assert"
 ASSERTION_HELPER = "assertion-helper"
 PRIVATE_IMPORT = "private-import"
 NORMAL_PATH_MOCK = "normal-path-mock"
-ABNORMAL_PATH_REASON = "abnormal-path-reason"
-EXEMPT_TEST_RULES = frozenset({PRIVATE_IMPORT, NORMAL_PATH_MOCK, ABNORMAL_PATH_REASON})
-TEST_RULES = EXEMPT_TEST_RULES | {DIRECT_ASSERT, DISGUISED_ASSERT}
+MARKER_REASON = "marker-reason"
+SUPPORT_RULES = frozenset({PRIVATE_IMPORT, NORMAL_PATH_MOCK, MARKER_REASON})
+TEST_RULES = SUPPORT_RULES | {DIRECT_ASSERT, DISGUISED_ASSERT}
 HELPER_RULES = TEST_RULES | {ASSERTION_HELPER}
 DIRECT_ASSERT_FAILURE_MESSAGE = (
-    "Direct assert statements, raise AssertionError, pytest.fail, and unittest.TestCase assertions in guarded test "
-    "modules and report helpers require explicit permission.\n"
-    "HTTP, external-request, or similar mock assertions may be unavoidable, but generation tests should generally "
-    "be e2e tests that compare generated output through the shared assert helpers.\n"
-    "Use @pytest.mark.allow_direct_assert for a narrow exception, or add intentional legacy/unit files to "
-    f"{DIRECT_ASSERT_EXEMPT_FILES_INI}. A report helper under tests/data returns facts for the shared assert helpers "
-    "to compare; one that rejects an impossible input raises a specific exception such as ValueError."
+    "Direct assert statements, raise AssertionError, pytest.fail, and unittest.TestCase assertions in test modules "
+    "and report helpers need a stated reason.\n"
+    "Generation tests are e2e tests that compare generated output through the shared assert helpers; a report "
+    "helper returns facts for them, and raises a specific exception such as ValueError for an impossible input.\n"
+    'Mark a narrow, justified exception with @pytest.mark.allow_direct_assert("reason"). '
+    f"{DIRECT_ASSERT_EXEMPT_FILES_INI} is frozen in FROZEN_EXEMPT_FILES and only shrinks."
 )
 RULE_FAILURE_MESSAGES = {
     DIRECT_ASSERT: DIRECT_ASSERT_FAILURE_MESSAGE,
     DISGUISED_ASSERT: DIRECT_ASSERT_FAILURE_MESSAGE,
     ASSERTION_HELPER: (
-        "Report helpers under tests/data return facts and leave every comparison to the shared assert helpers in "
-        "tests/conftest.py and tests/main/conftest.py, so they define no assert_*, check_*, verify_*, or expect_* "
-        "function of their own. Extend a shared assert helper instead."
+        "Report helpers return facts and leave every comparison to the shared assert helpers in tests/conftest.py "
+        "and tests/main/conftest.py, so they define no assert_*, check_*, compare_*, ensure_*, expect_*, validate_*, "
+        "or verify_* function of their own. Extend a shared assert helper instead."
     ),
     PRIVATE_IMPORT: (
-        "Tests and report helpers reach generation through its public entry points, the command line, "
-        "datamodel_code_generator.generate, or datamodel_code_generator.fastapi, and reach generated packages through "
-        "import_generated, as the model tests reach model generation.\n"
-        "They import no private datamodel_code_generator module or name (an underscore segment at any depth) and no "
-        "binding or contract internals (parser.openapi_contract*, parser.openapi_scope, model.binding*), "
-        "statically or through importlib.import_module.\n"
-        "Patch a private function by its dotted name only to inject an abnormal path under "
+        "Tests and their helpers reach generation through its public entry points, the command line, "
+        "datamodel_code_generator.generate, or datamodel_code_generator.fastapi, as the model tests reach model "
+        "generation.\n"
+        "They reach no private datamodel_code_generator module or name (an underscore segment at any depth) and no "
+        "binding or contract internals (parser.openapi_contract*, parser.openapi_scope, model.binding*): not by "
+        "import, attribute access, getattr, sys.modules, importlib.import_module, or __import__, and not through a "
+        "test helper that re-exports them.\n"
+        "Generated packages may be imported directly, including their _runtime, since that is the generated SDK's "
+        "runtime. Patch a private function by its dotted name only to inject an abnormal path under "
         '@pytest.mark.abnormal_path("reason"). Justified exceptions are listed in JUSTIFIED_VIOLATIONS.'
     ),
     NORMAL_PATH_MOCK: (
         "Mocks and spies replace only abnormal paths that an e2e test cannot reproduce, or external services.\n"
-        "sys.setprofile, sys.settrace, and threading profile hooks, and patch, patch.object, mocker.patch, mocker.spy, "
-        "or monkeypatch.setattr on datamodel_code_generator or generated _runtime attributes pin internals on a "
-        "normal path. Drive the behavior through public entry points and generated packages instead, or mark the "
-        'enclosing test or helper with @pytest.mark.abnormal_path("why e2e cannot reproduce it").'
+        "Profile, trace, and sys.monitoring hooks, and patch, mocker.patch, mocker.spy, monkeypatch, setattr, "
+        "delattr, attribute assignment, or sys.modules entries that replace datamodel_code_generator or generated "
+        "package internals pin them on a normal path. Drive the behavior through public entry points and generated "
+        'packages instead, or mark the enclosing test or helper with @pytest.mark.abnormal_path("why e2e cannot '
+        'reproduce it").'
     ),
-    ABNORMAL_PATH_REASON: (
-        "@pytest.mark.abnormal_path takes exactly one non-empty string literal that states why an e2e test cannot "
-        "reproduce the path."
+    MARKER_REASON: (
+        "@pytest.mark.abnormal_path and @pytest.mark.allow_direct_assert take exactly one non-empty string literal "
+        "that states why the exception is needed. An abnormal_path marker without one exempts nothing."
     ),
 }
 STALE_ALLOWLIST_FAILURE_MESSAGE = (
@@ -128,280 +177,15 @@ FROZEN_ALLOWLIST_POLICY_MESSAGE = (
 MALFORMED_ALLOWLIST_FAILURE_MESSAGE = (
     "Allowlist groups are sorted, have a reason, and every entry appears in exactly one group:"
 )
-
-JUSTIFIED_VIOLATIONS: dict[str, tuple[str, ...]] = {
-    "client-coordinator": (
-        "private-import tests/data/python/client_generation.py",
-        "private-import tests/data/python/client_protocol_records.py",
-        "private-import tests/data/python/client_runtime.py",
-        "private-import tests/data/python/client_typing.py",
-    ),
-    "generated-runtime": (
-        "private-import tests/data/python/fastapi_generation.py",
-        "private-import tests/data/python/generated_packages.py",
-    ),
-    "runtime-tables": (
-        "private-import tests/data/generation_platform/codecs/typing/annotations.py",
-        "private-import tests/data/generation_platform/codecs/typing/codecs.py",
-        "private-import tests/data/generation_platform/codecs/typing/codecs_negative.py",
-        "private-import tests/data/generation_platform/codecs/typing/first_use.py",
-        "private-import tests/data/generation_platform/codecs/typing/negative.py",
-        "private-import tests/data/generation_platform/codecs/typing/positive.py",
-        "private-import tests/data/python/model_codec_reports.py",
-        "private-import tests/data/python/model_codec_suite.py",
-    ),
-}
-FROZEN_VIOLATIONS: dict[str, tuple[str, ...]] = {
-    "model-codec-e2e": (
-        "private-import tests/data/python/model_codec_adapters.py",
-        "private-import tests/data/python/model_codec_builtin.py",
-        "private-import tests/data/python/model_codec_plans.py",
-    ),
-    "binding-e2e": (
-        "normal-path-mock tests/data/python/binding_failure_inputs.py::failed_module_capture",
-        "normal-path-mock tests/data/python/binding_final_failures.py::final_type_failure",
-        "normal-path-mock tests/data/python/binding_provenance_failures.py::producer_fault",
-        "normal-path-mock tests/data/python/binding_record_failures.py::record_failure",
-        "normal-path-mock tests/main/test_generation_api_scope.py::test_api_empty_factory_requires_capability",
-        "normal-path-mock tests/main/test_generation_session.py::test_parser_dispose_preserves_primary",
-        "normal-path-mock tests/main/test_generation_session.py::test_session_release_failure",
-        "private-import tests/data/generation_platform/api_scope/typing/annotations.py",
-        "private-import tests/data/generation_platform/api_scope/typing/negative.py",
-        "private-import tests/data/generation_platform/api_scope/typing/positive.py",
-        "private-import tests/data/python/api_declaration_observer.py",
-        "private-import tests/data/python/binding_backend_failures.py",
-        "private-import tests/data/python/binding_batch_failures.py",
-        "private-import tests/data/python/binding_declaration_failures.py",
-        "private-import tests/data/python/binding_failure_inputs.py",
-        "private-import tests/data/python/binding_final_failures.py",
-        "private-import tests/data/python/binding_inherited_inputs.py",
-        "private-import tests/data/python/binding_inputs.py",
-        "private-import tests/data/python/binding_projection_failures.py",
-        "private-import tests/data/python/binding_provenance_failures.py",
-        "private-import tests/data/python/binding_record_failures.py",
-        "private-import tests/data/python/binding_type_corruptions.py",
-        "private-import tests/data/python/binding_type_snapshot.py",
-        "private-import tests/data/python/field_ownership_inputs.py",
-        "private-import tests/data/python/generation_contract_consumers.py",
-        "private-import tests/data/python/generation_session_inputs.py",
-        "private-import tests/main/test_generation_api_contract.py",
-        "private-import tests/main/test_generation_api_http.py",
-        "private-import tests/main/test_generation_api_scope.py",
-        "private-import tests/main/test_generation_bare_containers.py",
-        "private-import tests/main/test_generation_common_composition.py",
-        "private-import tests/main/test_generation_constrained_unions.py",
-        "private-import tests/main/test_generation_default_policies.py",
-        "private-import tests/main/test_generation_extra_items.py",
-        "private-import tests/main/test_generation_inherited_contract.py",
-        "private-import tests/main/test_generation_module_bindings.py",
-        "private-import tests/main/test_generation_nullable_aliases.py",
-        "private-import tests/main/test_generation_serialize_imports.py",
-        "private-import tests/main/test_generation_session.py",
-        "private-import tests/main/test_generation_split_discriminators.py",
-        "private-import tests/model/test_binding.py",
-        "private-import tests/model/test_binding_artifacts.py",
-        "private-import tests/model/test_binding_backend_failures.py",
-        "private-import tests/model/test_binding_fields.py",
-        "private-import tests/parser/test_api_reference.py",
-        "private-import tests/parser/test_openapi_contract.py",
-        "private-import tests/parser/test_openapi_contract_freeze.py",
-        "private-import tests/parser/test_openapi_scope.py",
-    ),
-    "clock-injection": (
-        "normal-path-mock tests/data/python/client_deadline_races.py::_clock",
-        "normal-path-mock tests/data/python/client_oauth_client_credentials.py::_async_renewal",
-        "normal-path-mock tests/data/python/client_oauth_client_credentials.py::_expiry",
-        "normal-path-mock tests/data/python/client_oauth_refresh.py::_expiry",
-        "normal-path-mock tests/data/python/client_retry_boundaries.py::_clock",
-        "normal-path-mock tests/data/python/client_retry_boundaries.py::_closing_wait",
-        "normal-path-mock tests/data/python/client_retry_policy.py::_retention_boundaries",
-        "normal-path-mock tests/data/python/client_retry_policy.py::_timing",
-    ),
-    "spies": (
-        "normal-path-mock tests/data/python/binding_engine_observer.py::compare_engine_runs",
-        "normal-path-mock tests/data/python/binding_inherited_inputs.py::inherited_fields",
-        "normal-path-mock tests/data/python/client_oauth_refresh.py::_faults",
-        "normal-path-mock tests/data/python/client_retry_ownership.py::_async",
-        "normal-path-mock tests/data/python/client_retry_ownership.py::retry_ownership",
-        "normal-path-mock tests/data/python/generation_session_inputs.py::_exercise_session_protocol",
-        "normal-path-mock tests/data/python/generation_session_inputs.py::compare_api_session",
-        "normal-path-mock tests/data/python/generation_session_inputs.py::generate_product",
-        "normal-path-mock tests/data/python/generation_session_inputs.py::observe_api_session",
-        "normal-path-mock tests/data/python/generation_session_inputs.py::run_generation_session",
-        "normal-path-mock tests/data/python/generation_session_inputs.py::session_cleanup_failures.exercise",
-        "normal-path-mock tests/main/test_generation_api_contract.py::test_api_declaration_frame_origins",
-        "normal-path-mock tests/main/test_generation_observation.py::test_generation_observation",
-        "normal-path-mock tests/model/test_binding.py::test_builtin_model_facts_match_adopted_settings",
-        "normal-path-mock tests/model/test_binding.py::test_emitted_meta_uses_projected_node_locations",
-        "normal-path-mock tests/model/test_binding_fields.py::test_final_declaring_field_ownership",
-        "normal-path-mock tests/model/test_binding_fields.py::test_functional_emissions_keep_declaring_slots",
-        "normal-path-mock tests/parser/test_openapi_contract.py::test_side_effect_free_type_projection",
-    ),
-    "abnormal-e2e": (
-        "normal-path-mock tests/api_generation/test_fastapi_cli.py::test_fastapi_cli_report_replaced",
-        "normal-path-mock tests/api_generation/test_target_generation.py::test_target_generate_lock_discard",
-        "normal-path-mock tests/api_generation/test_target_generation.py::test_target_generate_state_changed",
-        "private-import tests/api_generation/test_target_generation.py",
-        "private-import tests/data/python/target_generation.py",
-    ),
-    "disguised-asserts": (
-        "disguised-assert tests/data/python/generation_session_inputs.py::session_cleanup_failures.exercise",
-        "disguised-assert tests/data/python/model_codec_adapters.py::_use_keys",
-        "disguised-assert tests/data/python/target_generation.py::_Scenario.current",
-        "disguised-assert tests/data/python/target_generation.py::_Scenario.generate",
-        "disguised-assert tests/data/python/target_generation.py::_Scenario.relocate",
-        "disguised-assert tests/data/python/target_generation.py::_Scenario.render",
-    ),
-}
-LEGACY_VIOLATIONS: dict[str, tuple[str, ...]] = {
-    "pre-platform": (
-        "disguised-assert tests/cli_doc/test_cli_doc_coverage.py",
-        "disguised-assert tests/main/graphql/test_main_graphql.py",
-        "disguised-assert tests/main/jsonschema/test_main_jsonschema.py",
-        "disguised-assert tests/main/openapi/test_main_openapi.py",
-        "disguised-assert tests/main/protobuf/test_main_protobuf.py",
-        "disguised-assert tests/main/test_agent_skill.py",
-        "disguised-assert tests/main/test_error_messages.py",
-        "disguised-assert tests/main/test_generation_determinism.py",
-        "disguised-assert tests/main/test_jsonschema_suite_conformance.py",
-        "disguised-assert tests/main/test_main_general.py",
-        "disguised-assert tests/main/test_main_watch.py",
-        "disguised-assert tests/main/test_parsed_source_cache_parity.py",
-        "disguised-assert tests/main/test_payload_validation.py",
-        "disguised-assert tests/model/pydantic_v2/test_types.py",
-        "disguised-assert tests/model/test_compiled_templates.py",
-        "disguised-assert tests/parser/test_builtin_formatter_contract.py",
-        "disguised-assert tests/parser/test_default_put_dict.py",
-        "disguised-assert tests/skills/datamodel-code-generator/test_skill_flag_drift.py",
-        "disguised-assert tests/skills/datamodel-code-generator/test_skill_recipes.py",
-        "disguised-assert tests/test_build_release_benchmark_docs_script.py",
-        "disguised-assert tests/test_build_schema_docs_script.py",
-        "disguised-assert tests/test_input_model_transport.py",
-        "disguised-assert tests/test_package_metadata.py",
-        "disguised-assert tests/test_validate_release_draft_analysis_script.py",
-        "disguised-assert tests/test_yaml_fast_constructor.py",
-        "normal-path-mock tests/cli_doc/test_cli_options_sync.py",
-        "normal-path-mock tests/main/jsonschema/test_main_jsonschema.py",
-        "normal-path-mock tests/main/jsonschema/test_reference_resolution_fallback.py",
-        "normal-path-mock tests/main/jsonschema/test_reference_resolution_hardening.py",
-        "normal-path-mock tests/main/openapi/test_main_openapi.py",
-        "normal-path-mock tests/main/test_agent_skill.py",
-        "normal-path-mock tests/main/test_error_messages.py",
-        "normal-path-mock tests/main/test_gc_tuning.py",
-        "normal-path-mock tests/main/test_main_general.py",
-        "normal-path-mock tests/main/test_main_watch.py",
-        "normal-path-mock tests/main/xmlschema/test_main_xmlschema.py",
-        "normal-path-mock tests/model/test_base.py",
-        "normal-path-mock tests/model/test_compiled_templates.py",
-        "normal-path-mock tests/parser/test_base.py",
-        "normal-path-mock tests/parser/test_jsonschema.py",
-        "normal-path-mock tests/parser/test_openapi.py",
-        "normal-path-mock tests/test_deprecations.py",
-        "normal-path-mock tests/test_experimental.py",
-        "normal-path-mock tests/test_format.py",
-        "normal-path-mock tests/test_http.py",
-        "normal-path-mock tests/test_http_regressions.py",
-        "normal-path-mock tests/test_input_model.py",
-        "normal-path-mock tests/test_main_kr.py",
-        "normal-path-mock tests/test_python_type_annotation.py",
-        "normal-path-mock tests/test_remote_lock.py",
-        "normal-path-mock tests/test_yaml_backend.py",
-        "private-import tests/cli_doc/test_cli_options_sync.py",
-        "private-import tests/data/python/unique_model_sets/opaque_generator.py",
-        "private-import tests/main/jsonschema/test_external_anchor.py",
-        "private-import tests/main/jsonschema/test_main_jsonschema.py",
-        "private-import tests/main/jsonschema/test_numeric_constraint_precision.py",
-        "private-import tests/main/test_agent_skill.py",
-        "private-import tests/main/test_dynamic_models.py",
-        "private-import tests/main/test_gc_tuning.py",
-        "private-import tests/main/test_main_general.py",
-        "private-import tests/main/test_main_input_diff.py",
-        "private-import tests/main/test_main_watch.py",
-        "private-import tests/main/test_parsed_source_cache_parity.py",
-        "private-import tests/main/test_performance.py",
-        "private-import tests/main/test_public_api_signature_baseline.py",
-        "private-import tests/main/xmlschema/test_main_xmlschema.py",
-        "private-import tests/model/pydantic_v2/test_base_model.py",
-        "private-import tests/model/pydantic_v2/test_config.py",
-        "private-import tests/model/pydantic_v2/test_root_model.py",
-        "private-import tests/model/pydantic_v2/test_version.py",
-        "private-import tests/model/test_base.py",
-        "private-import tests/model/test_compiled_templates.py",
-        "private-import tests/model/test_constraints.py",
-        "private-import tests/model/test_output_model_compatibility.py",
-        "private-import tests/parser/test_backend_capabilities.py",
-        "private-import tests/parser/test_base.py",
-        "private-import tests/parser/test_builtin_formatter_contract.py",
-        "private-import tests/parser/test_default_put_dict.py",
-        "private-import tests/parser/test_generation.py",
-        "private-import tests/parser/test_graph.py",
-        "private-import tests/parser/test_jsonschema.py",
-        "private-import tests/parser/test_model_behavior_capabilities.py",
-        "private-import tests/parser/test_model_construction_capabilities.py",
-        "private-import tests/parser/test_openapi.py",
-        "private-import tests/parser/test_output_context.py",
-        "private-import tests/parser/test_python_type_imports.py",
-        "private-import tests/parser/test_scc.py",
-        "private-import tests/parser/test_schema_version.py",
-        "private-import tests/parser/test_xmlschema.py",
-        "private-import tests/test_assert_helper_usage.py",
-        "private-import tests/test_build_preset_docs_script.py",
-        "private-import tests/test_deprecations.py",
-        "private-import tests/test_enums.py",
-        "private-import tests/test_format.py",
-        "private-import tests/test_http.py",
-        "private-import tests/test_http_https.py",
-        "private-import tests/test_http_regressions.py",
-        "private-import tests/test_infer_input_type.py",
-        "private-import tests/test_input_model.py",
-        "private-import tests/test_input_model_transport.py",
-        "private-import tests/test_main_kr.py",
-        "private-import tests/test_prompt.py",
-        "private-import tests/test_python_decorator.py",
-        "private-import tests/test_python_type_annotation.py",
-        "private-import tests/test_python_type_import_registry.py",
-        "private-import tests/test_python_type_runtime.py",
-        "private-import tests/test_remote_lock.py",
-        "private-import tests/test_types.py",
-        "private-import tests/test_util.py",
-        "private-import tests/test_yaml_backend.py",
-        "private-import tests/test_yaml_fast_constructor.py",
-    ),
-}
-ALLOWLISTS = {
-    "JUSTIFIED_VIOLATIONS": JUSTIFIED_VIOLATIONS,
-    "FROZEN_VIOLATIONS": FROZEN_VIOLATIONS,
-    "LEGACY_VIOLATIONS": LEGACY_VIOLATIONS,
-}
-ALLOWLIST_GROUP_REASONS = {
-    "client-coordinator": (
-        "The client target has no public entry point yet, so its report helpers reach the coordinator directly."
-    ),
-    "generated-runtime": (
-        "Generated packages run this checkout's runtime sources, which import_generated and the runtime copy "
-        "comparison locate through datamodel_code_generator._runtime."
-    ),
-    "runtime-tables": (
-        "Combinatorial wire-rule tables, the official JSON Schema suite, and the codec type-check probes exercise "
-        "the runtime directly."
-    ),
-    "model-codec-e2e": "Drive model codecs through FastAPI target e2e tests and import_generated.",
-    "binding-e2e": (
-        "Fold binding, session, and contract tests into target scenarios after the guard reachability sweep."
-    ),
-    "clock-injection": "Give the generated client a documented clock and random injection point.",
-    "spies": "Replace profile observers and internal spies with observable effects.",
-    "abnormal-e2e": (
-        "Reproduce these abnormal paths e2e, and patch the rest by dotted name under @pytest.mark.abnormal_path."
-    ),
-    "disguised-asserts": "Move these report helper checks into report text compared with assert_output.",
-    "pre-platform": "Tests written before the generation platform keep these constructs until they are converted.",
-}
+EXEMPTION_FAILURE_MESSAGE = (
+    f"{DIRECT_ASSERT_EXEMPT_FILES_INI} matches FROZEN_EXEMPT_FILES, which only shrinks, and every exempt file still "
+    "contains a direct assert:"
+)
 
 
 @dataclass(frozen=True)
 class Finding:
-    """A guarded construct in a test module or report helper."""
+    """A guarded construct in a test module or helper."""
 
     rule: str
     path: Path
@@ -411,9 +195,9 @@ class Finding:
 
     @property
     def keys(self) -> tuple[str, str]:
-        """Allowlist entries that match this finding, by file and by enclosing scope."""
-        location = f"{self.rule} tests/{self.path.as_posix()}"
-        return location, f"{location}::{self.scope}"
+        """Allowlist entries that match this finding: the file, or the imported module or enclosing scope in it."""
+        location = f"{self.rule}:tests/{self.path.as_posix()}"
+        return location, f"{location}::{self.statement if self.rule == PRIVATE_IMPORT else self.scope}"
 
     def __str__(self) -> str:
         """Report the finding as a file:line location."""
@@ -429,6 +213,14 @@ class WholeSysModulesPatch:
     statement: str
 
 
+@dataclass(frozen=True)
+class _Analysis:
+    """Every finding and registry patch of one module, whichever rules apply to it."""
+
+    findings: tuple[Finding, ...]
+    registry_patches: tuple[WholeSysModulesPatch, ...]
+
+
 def _attribute_chain(node: ast.AST) -> tuple[str, ...]:
     if isinstance(node, ast.Name):
         return (node.id,)
@@ -437,25 +229,20 @@ def _attribute_chain(node: ast.AST) -> tuple[str, ...]:
     return (*parent, node.attr)
 
 
-def _add_import_aliases(aliases: dict[str, tuple[str, ...]], node: ast.Import | ast.ImportFrom) -> None:
+def _import_bindings(node: ast.Import | ast.ImportFrom) -> list[tuple[str, tuple[str, ...]]]:
     if isinstance(node, ast.Import):
-        aliases.update(
+        return [
             (alias.asname, tuple(alias.name.split("."))) if alias.asname else (root, (root,))
             for alias in node.names
             if (root := alias.name.split(".", 1)[0])
-        )
-    elif node.module is not None and node.level == 0:
-        aliases.update((alias.asname or alias.name, (*node.module.split("."), alias.name)) for alias in node.names)
+        ]
+    if node.module is None or node.level:
+        return []
+    return [(alias.asname or alias.name, (*node.module.split("."), alias.name)) for alias in node.names]
 
 
-def _add_context_aliases(aliases: dict[str, tuple[str, ...]], items: Iterable[ast.withitem]) -> None:
-    aliases.update(
-        (item.optional_vars.id, ("monkeypatch",))
-        for item in items
-        if isinstance(item.optional_vars, ast.Name)
-        and isinstance(item.context_expr, ast.Call)
-        and _canonical_chain(item.context_expr.func, aliases) in MONKEYPATCH_CONTEXTS
-    )
+def _canonical(attribute_chain: tuple[str, ...], aliases: Mapping[str, tuple[str, ...]]) -> tuple[str, ...]:
+    return (*aliases.get(attribute_chain[0], attribute_chain[:1]), *attribute_chain[1:])
 
 
 def _canonical_chain(node: ast.AST, aliases: Mapping[str, tuple[str, ...]]) -> tuple[str, ...]:
@@ -464,8 +251,100 @@ def _canonical_chain(node: ast.AST, aliases: Mapping[str, tuple[str, ...]]) -> t
     return _canonical(attribute_chain, aliases)
 
 
-def _canonical(attribute_chain: tuple[str, ...], aliases: Mapping[str, tuple[str, ...]]) -> tuple[str, ...]:
-    return (*aliases.get(attribute_chain[0], attribute_chain[:1]), *attribute_chain[1:])
+def _static_text(node: ast.AST | None) -> tuple[str, bool] | None:
+    """Return the statically known leading text of a string expression, and whether it is the whole string."""
+    text: tuple[str, bool] | None = None
+    match node:
+        case ast.Constant(value=str()):
+            text = node.value, True
+        case ast.JoinedStr():
+            prefix, complete = "", True
+            for value in node.values:
+                if not isinstance(value, ast.Constant):
+                    complete = False
+                    break
+                prefix += str(value.value)
+            text = prefix, complete
+        case ast.BinOp(op=ast.Add()) if (left := _static_text(node.left)) is not None:
+            right = _static_text(node.right) if left[1] else None
+            text = (left[0], False) if right is None else (left[0] + right[0], right[1])
+        case _:
+            pass
+    return text
+
+
+def _complete_text(node: ast.AST | None) -> str | None:
+    return text[0] if (text := _static_text(node)) is not None and text[1] else None
+
+
+def _private_prefix(module: str) -> str | None:
+    """Return the dotted path up to the first private or binding-internal name of a package module, if any.
+
+    A private segment counts only where its parent is a package module, so that private attributes of objects the
+    package exports, such as an argparse parser's actions, are not mistaken for private modules or names.
+    """
+    root, *parts = module.split(".")
+    if root != PACKAGE:
+        return None
+    ends = [
+        index + 2
+        for index, part in enumerate(parts)
+        if part.startswith("_")
+        and not (part.startswith("__") and part.endswith("__"))
+        and _is_package_module(tuple(parts[:index]))
+    ]
+    if ".".join(parts[:2]).startswith(INTERNAL_MODULE_PREFIXES):
+        ends.append(3)
+    return ".".join((root, *parts)[: min(ends)]) if ends else None
+
+
+@cache
+def _is_package_module(parts: tuple[str, ...]) -> bool:
+    path = PACKAGE_ROOT.joinpath(*parts)
+    return not parts or (path / "__init__.py").is_file() or path.with_suffix(".py").is_file()
+
+
+def _reaches_package_text(text: str) -> bool:
+    return bool(PACKAGE_PATH.search(text) or RUNTIME_SEGMENT.search(text))
+
+
+def _module_file(tests_root: Path, parts: tuple[str, ...]) -> Path | None:
+    base = tests_root.joinpath(*parts)
+    return next(
+        (candidate for candidate in (base.with_suffix(".py"), base / "__init__.py") if candidate.is_file()),
+        None,
+    )
+
+
+@cache
+def _module_aliases(path: Path) -> dict[str, tuple[str, ...]]:
+    aliases: dict[str, tuple[str, ...]] = {}
+    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"), filename=str(path))):
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            aliases.update(_import_bindings(node))
+    return aliases
+
+
+@cache
+def _resolve_reexports(chain: tuple[str, ...], tests_root: Path) -> tuple[str, ...]:
+    """Follow names that a module under tests/ imports and re-exports to the module they come from."""
+    resolved = chain
+    for _ in range(REEXPORT_DEPTH):
+        if resolved[:1] != ("tests",):
+            break
+        found = next(
+            (
+                (end, module)
+                for end in range(len(resolved) - 1, 1, -1)
+                if (module := _module_file(tests_root, resolved[1:end])) is not None
+            ),
+            None,
+        )
+        if found is None or (target := _module_aliases(found[1]).get(resolved[found[0]])) is None:
+            break
+        end = found[0]
+        resolved = (*target, *resolved[end + 1 :])
+    return resolved
 
 
 class _SourceLines:
@@ -488,166 +367,134 @@ class _SourceLines:
         return " ".join(text.decode().split())
 
 
-def _is_whole_sys_modules_patch(call: ast.Call, aliases: Mapping[str, tuple[str, ...]]) -> bool:
-    if _canonical_chain(call.func, aliases) not in REGISTRY_PATCH_CALLS:
-        return False
-    if (target := _patch_target(call)) is None:
-        return False
-    if isinstance(target, ast.Constant):
-        return target.value == "sys.modules"
-    return _canonical_chain(target, aliases) == ("sys", "modules")
-
-
-def _collect_whole_sys_modules_patches(path: Path, tests_root: Path = TESTS_ROOT) -> list[WholeSysModulesPatch]:
-    source = path.read_text(encoding="utf-8")
-    aliases: dict[str, tuple[str, ...]] = {}
-    calls: list[ast.Call] = []
-    for node in ast.walk(ast.parse(source, filename=str(path))):
-        match node:
-            case ast.Import() | ast.ImportFrom():
-                _add_import_aliases(aliases, node)
-            case ast.Call():
-                calls.append(node)
-            case _:
-                pass
-    lines = _SourceLines(source)
-    return [
-        WholeSysModulesPatch(path=path.relative_to(tests_root), lineno=call.lineno, statement=lines.segment(call))
-        for call in calls
-        if _is_whole_sys_modules_patch(call, aliases)
-    ]
-
-
 def _patch_target(call: ast.Call) -> ast.expr | None:
     if call.args:
         return call.args[0]
     return next((keyword.value for keyword in call.keywords if keyword.arg in PATCH_TARGET_KEYWORDS), None)
 
 
-def _marker(function: ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef, name: str) -> ast.expr | None:
-    return next(
-        (decorator for decorator in function.decorator_list if ast.unparse(decorator).split("(", 1)[0] == name),
-        None,
-    )
+def _keyword(call: ast.Call, name: str) -> ast.expr | None:
+    return next((keyword.value for keyword in call.keywords if keyword.arg == name), None)
 
 
-def _allows_direct_assert(function: ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef) -> bool:
-    return _marker(function, ALLOW_DIRECT_ASSERT_MARKER) is not None
+def _is_sys_modules(node: ast.AST, aliases: Mapping[str, tuple[str, ...]]) -> bool:
+    if isinstance(node, ast.Constant):
+        return node.value == "sys.modules"
+    return _canonical_chain(node, aliases) == SYS_MODULES
 
 
-def _has_abnormal_path_reason(marker: ast.expr) -> bool:
+def _is_whole_sys_modules_patch(call: ast.Call, aliases: Mapping[str, tuple[str, ...]]) -> bool:
+    if _canonical_chain(call.func, aliases) not in REGISTRY_PATCH_CALLS:
+        return False
+    return (target := _patch_target(call)) is not None and _is_sys_modules(target, aliases)
+
+
+def _has_reason(marker: ast.expr) -> bool:
     if not isinstance(marker, ast.Call) or marker.keywords or len(marker.args) != 1:
         return False
     reason = marker.args[0]
     return isinstance(reason, ast.Constant) and isinstance(reason.value, str) and bool(reason.value.strip())
 
 
-def _static_prefix(node: ast.AST) -> str | None:
-    if isinstance(node, ast.Constant) and isinstance(node.value, str):
-        return node.value
-    if not isinstance(node, ast.JoinedStr):
-        return None
-    prefix = ""
-    for value in node.values:
-        if not isinstance(value, ast.Constant):
-            break
-        prefix += str(value.value)
-    return prefix
-
-
-def _is_private_module(module: str) -> bool:
-    root, *parts = module.split(".")
-    if root != PACKAGE:
-        return False
-    if any(part.startswith("_") and not (part.startswith("__") and part.endswith("__")) for part in parts):
+def _is_unittest_assertion(function: tuple[str, ...]) -> bool:
+    if function == ("pytest", "fail") or function in TEST_CASE_BASES:
         return True
-    return ".".join(parts[:2]).startswith(INTERNAL_MODULE_PREFIXES)
+    return function[0] == "self" and len(function) == 2 and (function[1] == "fail" or function[1].startswith("assert"))
 
 
-def _imported_modules(node: ast.Import | ast.ImportFrom) -> list[str]:
-    if isinstance(node, ast.Import):
-        return [alias.name for alias in node.names]
-    if node.module is not None and node.level == 0:
-        return [node.module, *(f"{node.module}.{alias.name}" for alias in node.names)]
-    return []
+def _imported_name(call: ast.Call, function: tuple[str, ...]) -> str | None:
+    """Return the statically known leading text of the module an import call imports, resolving relative names."""
+    if (text := _static_text(call.args[0] if call.args else _keyword(call, "name"))) is None:
+        return None
+    name = text[0]
+    if not name.startswith(".") or function != IMPORT_MODULE_CALL:
+        return name
+    package = _complete_text(call.args[1] if len(call.args) > 1 else _keyword(call, "package"))
+    if package is None:
+        return None
+    level = len(name) - len(name.lstrip("."))
+    return f"{package.rsplit('.', level - 1)[0] if level > 1 else package}.{name[level:]}"
 
 
-def _reaches_internals(expression: ast.AST, names: set[str], aliases: Mapping[str, tuple[str, ...]]) -> bool:
-    """Whether an expression reaches datamodel_code_generator or a generated _runtime package."""
-    for node in ast.walk(expression):
-        match node:
-            case ast.Name() if node.id in names or aliases.get(node.id, ("",))[0] == PACKAGE:
-                return True
-            case ast.Attribute(attr="_runtime"):
-                return True
-            case ast.Constant(value=str()) if PACKAGE_PATH.search(node.value) or RUNTIME_SEGMENT.search(node.value):
-                return True
-            case _:
-                pass
-    return False
-
-
-def _internal_names(
-    assignments: Iterable[tuple[frozenset[str], ast.expr]], aliases: Mapping[str, tuple[str, ...]]
-) -> set[str]:
-    """Names bound, directly or through other bound names, to package or generated runtime internals."""
-    names: set[str] = set()
-    pending = list(assignments)
-    while reached := {index for index, (_, value) in enumerate(pending) if _reaches_internals(value, names, aliases)}:
-        names.update(name for index in reached for name in pending[index][0])
-        pending = [assignment for index, assignment in enumerate(pending) if index not in reached]
-    return names
-
-
-@dataclass(frozen=True)
 class _Scope:
-    """A function or class around a finding, with whether it or an enclosing scope marks an abnormal path."""
+    """A module, function, or class with the names it binds and the markers it carries."""
 
-    parent: _Scope | None
-    node: ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef
-    abnormal_path: bool
+    __slots__ = ("abnormal_path", "allows_direct_assert", "bindings", "node", "parent")
+
+    def __init__(
+        self, parent: _Scope | None, node: ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef | None
+    ) -> None:
+        self.parent = parent
+        self.node = node
+        self.bindings: dict[str, list[tuple[ast.expr | tuple[str, ...] | None, _Scope]]] = {}
+        self.abnormal_path = False
+        self.allows_direct_assert = False
 
     @property
     def name(self) -> str:
-        """Dotted name from the outermost enclosing scope."""
-        return self.node.name if self.parent is None else f"{self.parent.name}.{self.node.name}"
+        """Dotted name from the outermost enclosing function or class."""
+        names: list[str] = []
+        scope: _Scope | None = self
+        while scope is not None and scope.node is not None:
+            names.append(scope.node.name)
+            scope = scope.parent
+        return ".".join(reversed(names)) or "<module>"
+
+    def bind(self, name: str, value: ast.expr | tuple[str, ...] | None, scope: _Scope | None = None) -> None:
+        """Remember a value bound to a name, with the scope the value is evaluated in."""
+        self.bindings.setdefault(name, []).append((value, scope or self))
+
+    def owner(self, name: str) -> _Scope | None:
+        """Return the scope whose binding of a name this scope sees; class scopes are hidden from their methods."""
+        scope: _Scope | None = self
+        while scope is not None:
+            if name in scope.bindings and (scope is self or not isinstance(scope.node, ast.ClassDef)):
+                return scope
+            scope = scope.parent
+        return None
+
+    def chain(self) -> Iterable[_Scope]:
+        """Yield this scope and every enclosing scope, innermost first."""
+        scope: _Scope | None = self
+        while scope is not None:
+            yield scope
+            scope = scope.parent
+
+    def instance_owner(self) -> _Scope | None:
+        """Return the class whose methods share this scope's self attributes."""
+        scope: _Scope | None = self
+        while scope is not None and not isinstance(scope.node, ast.ClassDef):
+            scope = scope.parent
+        return scope
 
 
-class _FindingVisitor(ast.NodeVisitor):
-    """Collects findings in one pass, and decides alias-dependent calls once every import is known."""
+class _ModuleAnalyzer(ast.NodeVisitor):
+    """Collects one module's constructs in one pass, and decides them once every import and alias is known."""
 
-    def __init__(self, path: Path, source: str, rules: frozenset[str]) -> None:
+    def __init__(self, path: Path, source: str, tests_root: Path) -> None:
         self.path = path
-        self.rules = rules
+        self.tests_root = tests_root
         self.lines = _SourceLines(source)
-        self.scope: _Scope | None = None
+        self.scope = self.module = _Scope(None, None)
+        self.scopes: list[tuple[_Scope, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef]] = []
         self.aliases: dict[str, tuple[str, ...]] = {}
-        self.items: list[ast.withitem] = []
-        self.assignments: list[tuple[frozenset[str], ast.expr]] = []
-        self.calls: list[tuple[ast.Call, tuple[str, ...], _Scope | None]] = []
+        self.alias_candidates: list[tuple[str, ast.expr]] = []
+        self.calls: list[tuple[ast.Call, tuple[str, ...], _Scope]] = []
+        self.attributes: list[tuple[ast.Attribute, tuple[str, ...], _Scope]] = []
+        self.subscripts: list[tuple[ast.Subscript, _Scope]] = []
+        self.raises: list[tuple[ast.Raise, _Scope]] = []
+        self.stores: list[tuple[ast.expr, _Scope]] = []
         self.classes: list[tuple[ast.ClassDef, _Scope]] = []
-        self.findings: list[Finding] = []
-
-    def record(self, rule: str, node: ast.expr | ast.stmt, scope: _Scope | None, statement: str | None = None) -> None:
-        """Keep a finding unless its rule does not apply here or an enclosing marker allows it."""
-        if rule not in self.rules:
-            return
-        if rule in {DIRECT_ASSERT, DISGUISED_ASSERT} and scope is not None and _allows_direct_assert(scope.node):
-            return
-        if rule == NORMAL_PATH_MOCK and scope is not None and scope.abnormal_path:
-            return
-        self.findings.append(
-            Finding(
-                rule=rule,
-                path=self.path,
-                scope="<module>" if scope is None else scope.name,
-                lineno=node.lineno,
-                statement=statement or self.lines.segment(node),
-            )
-        )
+        self.records: list[tuple[str, ast.expr | ast.stmt, _Scope, str | None]] = []
+        self.reached: dict[tuple[int, str, bool], bool] = {}
+        self.functions: dict[str, ast.FunctionDef | ast.AsyncFunctionDef] = {}
+        self.function_scopes: dict[ast.FunctionDef | ast.AsyncFunctionDef, _Scope] = {}
+        self.type_checking = 0
 
     def visit(self, node: ast.AST) -> None:
-        """Inspect the node kinds the guard cares about, then visit the children of every other node."""
+        """Collect the constructs the guard decides later, then visit the children of every other node."""
+        if isinstance(node, LEAF_NODES):
+            return
         match node:
             case ast.FunctionDef() | ast.AsyncFunctionDef() | ast.ClassDef():
                 self.visit_scope(node)
@@ -655,102 +502,437 @@ class _FindingVisitor(ast.NodeVisitor):
             case ast.Import() | ast.ImportFrom():
                 self.visit_import(node)
                 return
-            case ast.Assert():
-                self.record(DIRECT_ASSERT, node, self.scope)
-            case ast.Raise(exc=ast.Call(func=ast.Name(id="AssertionError")) | ast.Name(id="AssertionError")):
-                self.record(DISGUISED_ASSERT, node, self.scope)
-            case ast.Assign() | ast.AnnAssign() | ast.NamedExpr() if node.value is not None:
-                targets = node.targets if isinstance(node, ast.Assign) else [node.target]
-                self.assignments.append((
-                    frozenset(target.id for target in targets if isinstance(target, ast.Name)),
-                    node.value,
-                ))
-            case ast.withitem():
-                self.items.append(node)
-                if isinstance(node.optional_vars, ast.Name):
-                    self.assignments.append((frozenset({node.optional_vars.id}), node.context_expr))
-            case ast.Call():
-                if function := _attribute_chain(node.func):
-                    self.calls.append((node, function, self.scope))
+            case ast.If() if _attribute_chain(node.test)[-1:] == ("TYPE_CHECKING",):
+                self.visit_type_checking(node)
+                return
+            case ast.Attribute() if attribute_chain := _attribute_chain(node):
+                self.attributes.append((node, attribute_chain, self.scope))
+                return
+            case ast.Assert() if not self.type_checking:
+                self.records.append((DIRECT_ASSERT, node, self.scope, None))
+            case ast.Raise():
+                self.raises.append((node, self.scope))
+            case ast.Call() if function := _attribute_chain(node.func):
+                self.calls.append((node, function, self.scope))
+            case ast.Subscript() if _attribute_chain(node.value):
+                self.subscripts.append((node, self.scope))
+            case _:
+                self.collect_binding(node)
+        for child in ast.iter_child_nodes(node):
+            self.visit(child)
+
+    def visit_type_checking(self, node: ast.If) -> None:
+        """Visit a typing-only block, whose asserts never run, and then its runtime branch."""
+        self.type_checking += 1
+        for statement in node.body:
+            self.visit(statement)
+        self.type_checking -= 1
+        for statement in node.orelse:
+            self.visit(statement)
+
+    def collect_binding(self, node: ast.AST) -> None:
+        """Bind the names an assignment, loop, with, or except clause introduces."""
+        match node:
+            case ast.Assign():
+                self.bind_targets(node.targets, node.value)
+            case ast.AnnAssign() | ast.NamedExpr() if node.value is not None:
+                self.bind_targets([node.target], node.value)
+            case ast.AugAssign():
+                self.bind_targets([node.target], None)
+            case ast.Delete():
+                self.bind_targets(node.targets, None)
+            case ast.For() | ast.AsyncFor() | ast.comprehension():
+                self.bind_targets([node.target], node.iter)
+            case ast.withitem() if node.optional_vars is not None:
+                self.bind_targets([node.optional_vars], node.context_expr)
+            case ast.ExceptHandler() if node.name:
+                self.scope.bind(node.name, None)
             case _:
                 pass
-        self.generic_visit(node)
+
+    def bind_targets(self, targets: Iterable[ast.expr], value: ast.expr | None) -> None:
+        """Bind assignment targets, pairing unpacked names with their values where both sides are literal tuples.
+
+        Every other target is an attribute or a subscript, which stores into an existing object.
+        """
+        for target in targets:
+            match target:
+                case ast.Name():
+                    self.scope.bind(target.id, value)
+                    if value is not None:
+                        self.alias_candidates.append((target.id, value))
+                case ast.Tuple() | ast.List():
+                    values = (
+                        value.elts
+                        if isinstance(value, (ast.Tuple, ast.List)) and len(value.elts) == len(target.elts)
+                        else [value] * len(target.elts)
+                    )
+                    for element, element_value in zip(target.elts, values, strict=True):
+                        self.bind_targets([element], element_value)
+                case ast.Starred():
+                    self.bind_targets([target.value], value)
+                case _:
+                    self.stores.append((target, self.scope))
+                    if (
+                        isinstance(target, ast.Attribute)
+                        and isinstance(target.value, ast.Name)
+                        and target.value.id == "self"
+                        and (owner := self.scope.instance_owner()) is not None
+                    ):
+                        owner.bind(f"self.{target.attr}", value, self.scope)
 
     def visit_scope(self, node: ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef) -> None:
         """Visit a function or class inside its own scope, decorators included."""
         parent = self.scope
-        marker = _marker(node, ABNORMAL_PATH_MARKER)
-        valid = marker is not None and _has_abnormal_path_reason(marker)
-        self.scope = scope = _Scope(parent, node, valid or (parent is not None and parent.abnormal_path))
-        if marker is not None and not valid:
-            self.record(ABNORMAL_PATH_REASON, marker, scope)
+        parent.bind(node.name, None)
+        self.scope = scope = _Scope(parent, node)
+        self.scopes.append((scope, node))
         if isinstance(node, ast.ClassDef):
             self.classes.append((node, scope))
-        elif ASSERTION_HELPER_NAME.match(node.name):
-            self.record(ASSERTION_HELPER, node, scope, f"def {node.name}")
+        else:
+            if ASSERTION_HELPER_NAME.match(node.name):
+                self.records.append((ASSERTION_HELPER, node, scope, f"def {node.name}"))
+            self.functions[node.name] = node
+            self.function_scopes[node] = scope
+            arguments = node.args
+            for argument in (*arguments.posonlyargs, *arguments.args, *arguments.kwonlyargs):
+                scope.bind(argument.arg, None)
+            for argument in (arguments.vararg, arguments.kwarg):
+                if argument is not None:
+                    scope.bind(argument.arg, None)
         self.generic_visit(node)
         self.scope = parent
 
     def visit_import(self, node: ast.Import | ast.ImportFrom) -> None:
-        """Record the import's aliases and its first private module."""
-        _add_import_aliases(self.aliases, node)
-        if module := next((name for name in _imported_modules(node) if _is_private_module(name)), None):
-            self.record(PRIVATE_IMPORT, node, self.scope, module)
+        """Bind the imported names and record every private module or name the import reaches."""
+        for name, target in _import_bindings(node):
+            self.aliases[name] = target
+            self.scope.bind(name, target)
+        modules: list[str] = []
+        if isinstance(node, ast.Import):
+            modules = [alias.name for alias in node.names]
+        elif node.module is not None and not node.level:
+            modules = (
+                [node.module]
+                if _private_prefix(node.module)
+                else [f"{node.module}.{alias.name}" for alias in node.names]
+            )
+        for module in modules:
+            if _private_prefix(module):
+                self.records.append((PRIVATE_IMPORT, node, self.scope, module))
 
-    def finish(self) -> list[Finding]:
-        """Decide the deferred calls and classes, and return findings in source order."""
-        _add_context_aliases(self.aliases, self.items)
-        internal_names = _internal_names(self.assignments, self.aliases)
+    def resolve(self, chain: tuple[str, ...]) -> tuple[str, ...]:
+        """Canonical dotted path of an alias chain, through test helpers that re-export package names."""
+        resolved = _canonical(chain, self.aliases)
+        return _resolve_reexports(resolved, self.tests_root) if resolved[:1] == ("tests",) else resolved
+
+    def reaches_text(self, text: str) -> bool:
+        """Whether a dotted string names package or generated runtime internals."""
+        if _reaches_package_text(text):
+            return True
+        return text.startswith("tests.") and _resolve_reexports(tuple(text.split(".")), self.tests_root)[0] == PACKAGE
+
+    def reaches(self, expression: ast.expr, scope: _Scope, *, instances: bool) -> bool:
+        """Whether an expression reaches package or generated package internals.
+
+        Without instances, values built by calling something other than an import do not count, so that assigning
+        an attribute of a configuration or model instance is not mistaken for replacing internals.
+        """
+        stack: list[ast.AST] = [expression]
+        while stack:
+            node = stack.pop()
+            if isinstance(node, ast.Call) and (call_chain := _attribute_chain(node.func)):
+                function = self.resolve(call_chain)
+                if function[-1] == GENERATED_IMPORT or (
+                    function in IMPORT_CALLS
+                    and (module := _imported_name(node, function)) is not None
+                    and self.reaches_text(module)
+                ):
+                    return True
+                if not instances and function not in IMPORT_CALLS:
+                    continue
+            elif isinstance(node, ast.Call) and not instances:
+                continue
+            elif isinstance(node, ast.Name):
+                if self.name_reaches(node.id, scope, instances=instances):
+                    return True
+                continue
+            elif isinstance(node, ast.Constant) and isinstance(node.value, str):
+                if self.reaches_text(node.value):
+                    return True
+                continue
+            elif isinstance(node, ast.Attribute) and self.attribute_reaches(node, scope, instances=instances):
+                return True
+            stack.extend(ast.iter_child_nodes(node))
+        return False
+
+    def attribute_reaches(self, node: ast.Attribute, scope: _Scope, *, instances: bool) -> bool:
+        """Whether an attribute is a generated runtime, a re-exported package name, or an internal self attribute."""
+        if node.attr == "_runtime":
+            return True
+        chain = _attribute_chain(node)
+        if chain and self.aliases.get(chain[0], ("",))[0] == "tests" and self.resolve(chain)[0] == PACKAGE:
+            return True
+        return (
+            isinstance(node.value, ast.Name)
+            and node.value.id == "self"
+            and (owner := scope.instance_owner()) is not None
+            and self.bound_reaches(owner, f"self.{node.attr}", instances=instances)
+        )
+
+    def name_reaches(self, name: str, scope: _Scope, *, instances: bool) -> bool:
+        """Whether the binding of a name visible from a scope reaches internals."""
+        if (owner := scope.owner(name)) is None:
+            return self.aliases.get(name, ("",))[0] == PACKAGE
+        return self.bound_reaches(owner, name, instances=instances)
+
+    def bound_reaches(self, owner: _Scope, name: str, *, instances: bool) -> bool:
+        """Whether any value a scope binds to a name reaches internals, deciding each binding once."""
+        key = (id(owner), name, instances)
+        if key in self.reached:
+            return self.reached[key]
+        self.reached[key] = False
+        reached = False
+        for value, value_scope in owner.bindings.get(name, ()):
+            if value is None:
+                continue
+            if isinstance(value, tuple):
+                resolved = _resolve_reexports(value, self.tests_root) if value[:1] == ("tests",) else value
+                reached = resolved[0] == PACKAGE
+            else:
+                reached = self.reaches(value, value_scope, instances=instances)
+            if reached:
+                break
+        self.reached[key] = reached
+        return reached
+
+    def replaces_internal_module_entry(self, function: tuple[str, ...], call: ast.Call, target: ast.expr) -> bool:
+        """Whether a patch of sys.modules sets or removes a package or generated runtime module."""
+        if not _is_sys_modules(target, self.aliases):
+            return False
+        keys: list[ast.expr | None] = []
+        if function[-1] in {"setitem", "delitem"}:
+            keys = call.args[1:2]
+        elif function[-1] == "dict" and isinstance(
+            values := call.args[1] if len(call.args) > 1 else _keyword(call, "values"), ast.Dict
+        ):
+            keys = values.keys
+        return any((text := _complete_text(key)) is not None and self.reaches_text(text) for key in keys)
+
+    def record_private_access(self, node: ast.expr, chain: tuple[str, ...], scope: _Scope) -> None:
+        """Record a private module or name reached by attribute access past a public import."""
+        if _private_prefix(".".join(self.resolve(chain[:1]))):
+            return
+        if module := _private_prefix(".".join(self.resolve(chain))):
+            self.records.append((PRIVATE_IMPORT, node, scope, module))
+
+    def bind_call_arguments(self) -> None:
+        """Bind the parameters of this module's functions to the arguments of this module's calls to them."""
+        for node, attribute_chain, scope in self.calls:
+            if len(attribute_chain) != 1 or (function := self.functions.get(attribute_chain[0])) is None:
+                continue
+            function_scope = self.function_scopes[function]
+            positional = [*function.args.posonlyargs, *function.args.args]
+            for parameter, argument in zip(positional, node.args, strict=False):
+                if not isinstance(argument, ast.Starred):
+                    function_scope.bind(parameter.arg, argument, scope)
+            names = {parameter.arg for parameter in (*positional, *function.args.kwonlyargs)}
+            for keyword in node.keywords:
+                if keyword.arg in names:
+                    function_scope.bind(keyword.arg, keyword.value, scope)
+
+    def decide_markers(self) -> None:
+        """Resolve each scope's markers, and record every marker that states no reason."""
+        for scope, node in self.scopes:
+            for decorator in node.decorator_list:
+                marker = _canonical_chain(
+                    decorator.func if isinstance(decorator, ast.Call) else decorator, self.aliases
+                )
+                if marker not in {ABNORMAL_PATH_MARKER, ALLOW_DIRECT_ASSERT_MARKER}:
+                    continue
+                reason = _has_reason(decorator)
+                if not reason:
+                    self.records.append((MARKER_REASON, decorator, scope, None))
+                if marker == ALLOW_DIRECT_ASSERT_MARKER:
+                    scope.allows_direct_assert = True
+                elif reason:
+                    scope.abnormal_path = True
+
+    def decide_calls(self) -> None:
+        """Decide calls that assert, hook the profiler, patch, set attributes, or import modules."""
         for node, attribute_chain, scope in self.calls:
             function = _canonical(attribute_chain, self.aliases)
-            if function == ("pytest", "fail") or (
-                function[0] == "self"
-                and len(function) == 2
-                and (function[1] == "fail" or function[1].startswith("assert"))
-            ):
-                self.record(DISGUISED_ASSERT, node, scope)
-            elif function in PROFILE_HOOKS or (
-                function in PATCH_CALLS
-                and (target := _patch_target(node)) is not None
-                and _reaches_internals(target, internal_names, self.aliases)
-            ):
-                self.record(NORMAL_PATH_MOCK, node, scope)
-            elif (
-                function == ("importlib", "import_module")
-                and node.args
-                and (module := _static_prefix(node.args[0])) is not None
-                and _is_private_module(module)
-            ):
-                self.record(PRIVATE_IMPORT, node, scope, module)
+            if _is_unittest_assertion(function):
+                self.records.append((DISGUISED_ASSERT, node, scope, None))
+            elif self.replaces_internals(function, node, scope):
+                self.records.append((NORMAL_PATH_MOCK, node, scope, None))
+            elif module := self.dynamic_private_access(function, node):
+                self.records.append((PRIVATE_IMPORT, node, scope, module))
+
+    def replaces_internals(self, function: tuple[str, ...], node: ast.Call, scope: _Scope) -> bool:
+        """Whether a call hooks the profiler, or patches or sets an attribute of internals."""
+        if function in PROFILE_HOOKS:
+            return True
+        if function in PATCH_CALLS and (target := _patch_target(node)) is not None:
+            return self.reaches(target, scope, instances=True) or self.replaces_internal_module_entry(
+                function, node, target
+            )
+        return function in SETATTR_CALLS and bool(node.args) and self.reaches(node.args[0], scope, instances=False)
+
+    def dynamic_private_access(self, function: tuple[str, ...], node: ast.Call) -> str | None:
+        """Return the private module or name an import or getattr call reaches with static strings."""
+        if function in IMPORT_CALLS:
+            module = _imported_name(node, function)
+            return None if module is None else _private_prefix(module)
+        if function not in GETATTR_CALLS or len(node.args) < 2:
+            return None
+        if (name := _complete_text(node.args[1])) is None or not (base := _attribute_chain(node.args[0])):
+            return None
+        resolved = ".".join(self.resolve(base))
+        return None if _private_prefix(resolved) else _private_prefix(f"{resolved}.{name}")
+
+    def finish(self) -> _Analysis:
+        """Decide every collected construct, and return findings in source order."""
+        for _ in range(REEXPORT_DEPTH):
+            for name, value in self.alias_candidates:
+                if isinstance(value, ast.Call) and _canonical_chain(value.func, self.aliases) in MONKEYPATCH_FACTORIES:
+                    self.aliases[name] = ("monkeypatch",)
+                elif (
+                    not isinstance(value, ast.Call)
+                    and (chain := _canonical_chain(value, self.aliases))
+                    and chain[0] in ALIAS_ROOTS
+                ):
+                    self.aliases[name] = chain
+        self.bind_call_arguments()
+        self.decide_markers()
+        self.decide_calls()
+        self.decide_assertion_errors()
+        self.decide_attribute_access()
+        self.decide_stores()
+        findings = [
+            Finding(
+                rule=rule,
+                path=self.path,
+                scope=scope.name,
+                lineno=node.lineno,
+                statement=statement or self.lines.segment(node),
+            )
+            for rule, node, scope, statement in self.records
+            if not self.allowed(rule, scope)
+        ]
+        registry_patches = [
+            WholeSysModulesPatch(path=self.path, lineno=node.lineno, statement=self.lines.segment(node))
+            for node, _, _ in self.calls
+            if _is_whole_sys_modules_patch(node, self.aliases)
+        ]
+        return _Analysis(
+            findings=tuple(sorted(findings, key=lambda finding: finding.lineno)),
+            registry_patches=tuple(registry_patches),
+        )
+
+    def decide_assertion_errors(self) -> None:
+        """Record raised assertion errors and unittest.TestCase subclasses."""
+        for node, scope in self.raises:
+            exception = node.exc.func if isinstance(node.exc, ast.Call) else node.exc
+            if exception is not None and _canonical_chain(exception, self.aliases) in ASSERTION_ERRORS:
+                self.records.append((DISGUISED_ASSERT, node, scope, None))
         for node, scope in self.classes:
             if any(_canonical_chain(base, self.aliases) in TEST_CASE_BASES for base in node.bases):
-                self.record(
-                    DISGUISED_ASSERT, node, scope, f"class {node.name}({', '.join(map(ast.unparse, node.bases))})"
-                )
-        return sorted(self.findings, key=lambda finding: finding.lineno)
+                bases = ", ".join(map(ast.unparse, node.bases))
+                self.records.append((DISGUISED_ASSERT, node, scope, f"class {node.name}({bases})"))
+
+    def decide_attribute_access(self) -> None:
+        """Record private modules reached through attributes past a public import or through sys.modules."""
+        for node, chain, scope in self.attributes:
+            if chain[0] in self.aliases:
+                self.record_private_access(node, chain, scope)
+        for node, scope in self.subscripts:
+            if (
+                isinstance(node.ctx, ast.Load)
+                and _canonical_chain(node.value, self.aliases) == SYS_MODULES
+                and (text := _complete_text(node.slice)) is not None
+                and (module := _private_prefix(text))
+            ):
+                self.records.append((PRIVATE_IMPORT, node, scope, module))
+
+    def decide_stores(self) -> None:
+        """Record assignments and deletions that replace internals or their sys.modules entries."""
+        for target, scope in self.stores:
+            replaced = (
+                _canonical_chain(target.value, self.aliases) == SYS_MODULES
+                and (text := _complete_text(target.slice)) is not None
+                and self.reaches_text(text)
+                if isinstance(target, ast.Subscript)
+                else self.reaches(target.value, scope, instances=False)
+            )
+            if replaced:
+                self.records.append((NORMAL_PATH_MOCK, target, scope, None))
+
+    def allowed(self, rule: str, scope: _Scope) -> bool:
+        """Whether a marker on the enclosing test, its class, or an enclosing helper allows the finding."""
+        if rule == NORMAL_PATH_MOCK:
+            return any(current.abnormal_path for current in scope.chain())
+        if rule not in {DIRECT_ASSERT, DISGUISED_ASSERT}:
+            return False
+        current = scope
+        while not current.allows_direct_assert:
+            if current.parent is None or not isinstance(current.parent.node, ast.ClassDef):
+                return False
+            current = current.parent
+        return True
 
 
 @cache
-def _file_findings(path: Path, tests_root: Path, rules: frozenset[str]) -> tuple[Finding, ...]:
+def _analyze(path: Path, tests_root: Path) -> _Analysis:
     source = path.read_text(encoding="utf-8")
-    visitor = _FindingVisitor(path.relative_to(tests_root), source, rules)
-    visitor.visit(ast.parse(source, filename=str(path)))
-    return tuple(visitor.finish())
+    analyzer = _ModuleAnalyzer(path.relative_to(tests_root), source, tests_root)
+    analyzer.visit(ast.parse(source, filename=str(path)))
+    return analyzer.finish()
+
+
+def _collect_whole_sys_modules_patches(path: Path, tests_root: Path = TESTS_ROOT) -> list[WholeSysModulesPatch]:
+    return list(_analyze(path, tests_root).registry_patches)
 
 
 def _is_test_file(path: Path, tests_root: Path) -> bool:
     relative_path = path.relative_to(tests_root)
-    is_test_file = False
-    match relative_path.parts:
-        case ("data", *_):
-            pass
-        case (*_, file_name) if path.suffix == ".py" and (
-            file_name.startswith("test_") or file_name.endswith("_test.py")
-        ):
-            is_test_file = True
-        case _:
-            pass
-    return is_test_file
+    return path.suffix == ".py" and relative_path.parts[:1] != ("data",) and _is_test_name(relative_path.name)
+
+
+def _is_test_name(file_name: str) -> bool:
+    return file_name.startswith("test_") or file_name.endswith("_test.py")
+
+
+def _file_rules(relative_path: Path, exempt_files: frozenset[Path]) -> frozenset[str]:
+    """Rules for a module under tests/.
+
+    Report helpers under tests/data/python and tests/data/generation_platform follow every rule. Test modules follow
+    every rule but the assertion helper one, and exempt test modules skip the assert rules too. Shared helper
+    libraries such as conftest.py hold the shared assert helpers, so they and other fixture modules under tests/data
+    follow only the private-import, mock, and marker rules.
+    """
+    rules = SUPPORT_RULES
+    if any(map(relative_path.is_relative_to, HELPER_ROOTS)):
+        rules = HELPER_RULES
+    elif relative_path.parts[:1] != ("data",) and _is_test_name(relative_path.name):
+        rules = SUPPORT_RULES if relative_path in exempt_files else TEST_RULES
+    else:
+        rules = SUPPORT_RULES
+    return rules
+
+
+def _iter_python_files(tests_root: Path) -> list[Path]:
+    paths: list[Path] = []
+    for directory, directories, files in os.walk(tests_root):
+        if Path(directory) == tests_root / OUTPUT_ROOT:
+            directories.clear()
+            continue
+        paths.extend(Path(directory, name) for name in files if name.endswith(".py"))
+    return sorted(paths)
+
+
+def _iter_test_files(tests_root: Path) -> Iterable[Path]:
+    return (path for path in _iter_python_files(tests_root) if _is_test_file(path, tests_root))
 
 
 def _normalize_exempt_file(raw_path: str) -> Path:
@@ -772,36 +954,28 @@ def _configured_exempt_files(config: pytest.Config) -> frozenset[Path]:
     )
 
 
-def _iter_test_files(tests_root: Path) -> Iterable[Path]:
-    return (path for path in sorted(tests_root.rglob("*.py")) if _is_test_file(path, tests_root))
-
-
-def _iter_helper_files(tests_root: Path) -> Iterable[Path]:
-    for helper_root in HELPER_ROOTS:
-        yield from sorted(tests_root.joinpath(helper_root).rglob("*.py"))
-
-
 def _collect_findings(tests_root: Path, exempt_files: Iterable[Path]) -> list[Finding]:
-    """Every guarded construct, before allowlists apply.
-
-    Direct and disguised asserts are guarded in test modules outside the configured exemptions and in report helpers;
-    assertion helper definitions only in report helpers; every other rule in all test modules and report helpers.
-    """
+    """Every guarded construct under tests/, before allowlists apply."""
     exempt_file_set = frozenset(exempt_files)
+    findings: list[Finding] = []
+    for path in _iter_python_files(tests_root):
+        rules = _file_rules(path.relative_to(tests_root), exempt_file_set)
+        findings.extend(finding for finding in _analyze(path, tests_root).findings if finding.rule in rules)
+    return findings
+
+
+def _exemption_problems(tests_root: Path, configured: frozenset[Path], frozen: frozenset[Path]) -> list[str]:
     return [
+        *(f"  tests/{path} is not in FROZEN_EXEMPT_FILES" for path in sorted(configured - frozen)),
+        *(f"  tests/{path} left {DIRECT_ASSERT_EXEMPT_FILES_INI}" for path in sorted(frozen - configured)),
         *(
-            finding
-            for path in _iter_test_files(tests_root)
-            for finding in _file_findings(
-                path,
-                tests_root,
-                EXEMPT_TEST_RULES if path.relative_to(tests_root) in exempt_file_set else TEST_RULES,
+            f"  tests/{path} has no direct assert left"
+            for path in sorted(configured & frozen)
+            if (tests_root / path).is_file()
+            and not any(
+                finding.rule in {DIRECT_ASSERT, DISGUISED_ASSERT}
+                for finding in _analyze(tests_root / path, tests_root).findings
             )
-        ),
-        *(
-            finding
-            for path in _iter_helper_files(tests_root)
-            for finding in _file_findings(path, tests_root, HELPER_RULES)
         ),
     ]
 
@@ -876,6 +1050,13 @@ def test_allowlists_stay_exact(pytestconfig: pytest.Config) -> None:
         )),
         pytrace=False,
     )
+
+
+def test_direct_assert_exemptions_stay_frozen(pytestconfig: pytest.Config) -> None:
+    """The direct-assert exemption list never grows, and each exempt file still needs its exemption."""
+    if not (problems := _exemption_problems(TESTS_ROOT, _configured_exempt_files(pytestconfig), FROZEN_EXEMPT_FILES)):
+        return
+    pytest.fail("\n".join((EXEMPTION_FAILURE_MESSAGE, *problems)), pytrace=False)  # pragma: no cover
 
 
 def test_modules_never_patch_the_complete_module_registry() -> None:
@@ -1360,22 +1541,29 @@ def _probe_findings(root: Path, files: Mapping[str, str], exempt_files: Iterable
     ]
 
 
-def test_collect_findings_reports_asserts_in_every_scope(tmp_path: Path) -> None:
-    """Asserts in module blocks, class bodies, and functions nested in an allowed test are all reported."""
-    source = """\
+ASSERT_SCOPES_PROBE = """\
+import typing
+from typing import TYPE_CHECKING
+
 import pytest
 
 if True:
     assert "module block"
 with open(__file__):
     assert "with block"
+if TYPE_CHECKING:
+    assert "typing only"
+if typing.TYPE_CHECKING:
+    pass
+else:
+    assert "runtime branch"
 
 
 class Holder:
     assert "class body"
 
 
-@pytest.mark.allow_direct_assert
+@pytest.mark.allow_direct_assert("compares a mock's recorded calls")
 def test_allowed():
     assert "allowed"
 
@@ -1386,23 +1574,35 @@ def test_allowed():
         assert "local class"
 
 
-def test_plain():
+@pytest.mark.allow_direct_assert("checks a mock")
+class TestAllowed:
+    def test_method(self):
+        assert "method"
+
+    class Inner:
+        def test_inner(self):
+            assert "inner method"
+
+
+@pytest.mark.allow_direct_assert
+def test_unexplained():
+    assert "legacy"
+
+
+def test_plain(value):
     for _ in ():
         assert "loop"
+    try:
+        pass
+    except ValueError:
+        assert "handler"
+    match value:
+        case 1:
+            assert "case"
 """
-    assert _probe_findings(tmp_path, {"test_scopes.py": source}) == [
-        'direct-assert test_scopes.py:4 <module>: assert "module block"',
-        'direct-assert test_scopes.py:6 <module>: assert "with block"',
-        'direct-assert test_scopes.py:10 Holder: assert "class body"',
-        'direct-assert test_scopes.py:18 test_allowed.nested: assert "nested"',
-        'direct-assert test_scopes.py:21 test_allowed.Local: assert "local class"',
-        'direct-assert test_scopes.py:26 test_plain: assert "loop"',
-    ]
 
-
-def test_collect_findings_reports_disguised_asserts(tmp_path: Path) -> None:
-    """Raising AssertionError, pytest.fail, and unittest.TestCase assertions count as direct asserts."""
-    source = """\
+DISGUISED_PROBE = """\
+import builtins
 import unittest
 from unittest import TestCase as Case
 
@@ -1416,6 +1616,19 @@ def test_raises():
 
 def test_raises_message():
     raise AssertionError("message")
+
+
+def test_builtin():
+    raise builtins.AssertionError("message")
+
+
+def test_alias():
+    error = AssertionError
+    raise error
+
+
+def test_fail_exception():
+    raise pytest.fail.Exception("message")
 
 
 def test_fails():
@@ -1434,6 +1647,15 @@ def test_reraise():
         raise
 
 
+def test_expected_failure():
+    with pytest.raises(AssertionError):
+        pass
+
+
+def test_instance():
+    unittest.TestCase().assertEqual(1, 1)
+
+
 class TestUnit(unittest.TestCase):
     def test_method(self):
         self.assertEqual(1, 1)
@@ -1448,27 +1670,9 @@ class TestAlias(Case):
 
 class Plain(object):
     pass
-
-
-@pytest.mark.allow_direct_assert
-def test_allowed():
-    pytest.fail("allowed")
 """
-    assert _probe_findings(tmp_path, {"test_disguised.py": source}) == [
-        "disguised-assert test_disguised.py:9 test_raises: raise AssertionError",
-        'disguised-assert test_disguised.py:13 test_raises_message: raise AssertionError("message")',
-        'disguised-assert test_disguised.py:17 test_fails: pytest.fail("message")',
-        'disguised-assert test_disguised.py:18 test_fails: stop("message")',
-        "disguised-assert test_disguised.py:32 TestUnit: class TestUnit(unittest.TestCase)",
-        "disguised-assert test_disguised.py:34 TestUnit.test_method: self.assertEqual(1, 1)",
-        'disguised-assert test_disguised.py:35 TestUnit.test_method: self.fail("message")',
-        "disguised-assert test_disguised.py:40 TestAlias: class TestAlias(Case)",
-    ]
 
-
-def test_collect_findings_reports_assertion_helpers_in_report_helpers(tmp_path: Path) -> None:
-    """Report helpers define no assertion helpers of their own, while test modules and other test data may."""
-    helpers = """\
+HELPER_NAMES_PROBE = """\
 def assert_report():
     pass
 
@@ -1488,77 +1692,95 @@ class Checks:
 
 def compare_report():
     pass
+
+
+def ensure_report():
+    pass
+
+
+def validate_report():
+    pass
+
+
+def comparison_report():
+    pass
 """
-    assert _probe_findings(
-        tmp_path,
-        {
-            "test_helpers.py": "def assert_local():\n    pass\n",
-            "data/python/helpers.py": helpers,
-            "data/generation_platform/probe/helpers.py": "def check_probe():\n    assert True\n",
-            "data/expected/helpers.py": "def assert_expected():\n    assert True\n",
-        },
-    ) == [
-        "assertion-helper data/python/helpers.py:1 assert_report: def assert_report",
-        "assertion-helper data/python/helpers.py:5 _check_report: def _check_report",
-        "assertion-helper data/python/helpers.py:9 verify_report: def verify_report",
-        "assertion-helper data/python/helpers.py:14 Checks.expect_value: def expect_value",
-        "assertion-helper data/generation_platform/probe/helpers.py:1 check_probe: def check_probe",
-        "direct-assert data/generation_platform/probe/helpers.py:2 check_probe: assert True",
-    ]
 
-
-def test_collect_findings_reports_private_imports(tmp_path: Path) -> None:
-    """Private modules and names, binding internals, and statically visible import_module targets are reported."""
-    source = """\
-import datamodel_code_generator._runtime.client
+PRIVATE_IMPORT_PROBE = """\
 import importlib
-import other._private
+import sys
 from importlib import import_module
 
-from datamodel_code_generator import __version__, _run_generation, generate
+import datamodel_code_generator as package
+import datamodel_code_generator._runtime.client
+import other._private
+from datamodel_code_generator import __version__, _run_generation, _source, generate, parser
+from datamodel_code_generator.arguments import arg_parser
+from datamodel_code_generator.model import binding
 from datamodel_code_generator.model.base import DataModel
-from datamodel_code_generator.model.binding import FieldSlot
 from datamodel_code_generator.parser import openapi_scope
 from datamodel_code_generator.parser.openapi import OpenAPIParser
 from datamodel_code_generator.parser.openapi_contract_store import BindingLedger
+from tests.data.python import reexport
 
 from . import sibling
 
 
-def test_dynamic(package, name):
+def test_attributes():
+    package._api_generation.render_target
+    datamodel_code_generator._runtime.client
+    parser.openapi_contract.Recipe
+    _source.Source
+    arg_parser._actions
+    package.__name__
+    reexport._api_publication.lock
+    reexport.public_helper()
+
+
+def test_getattr(name):
+    getattr(parser, "openapi_contract")
+    getattr(package, "_x")
+    getattr(_source, "_private")
+    getattr(package, name)
+    getattr(factory(), "_x")
+    getattr(package)
+
+
+def test_dynamic(package_name, name):
     importlib.import_module("datamodel_code_generator._client.target")
     import_module(f"datamodel_code_generator._runtime.{name}")
     import_module(f"datamodel_code_generator._api_types")
-    importlib.import_module(f"{package.__name__}._runtime.client")
+    import_module(name="datamodel_code_generator._api_manifest")
+    import_module("._target_config", "datamodel_code_generator")
+    import_module(".._api_publication", package="datamodel_code_generator.parser")
+    import_module("._x", package_name)
+    import_module("datamodel_code_generator" + "._publication")
+    import_module(name + "._publication")
+    import_module(f"{name}" + "._publication")
+    import_module("datamodel_code_generator" + name)
+    __import__("datamodel_code_generator._codec_declarations")
+    importlib.import_module(f"{package_name}._runtime.client")
     importlib.import_module(name)
     importlib.import_module("datamodel_code_generator.parser.openapi")
     importlib.import_module()
+    sys.modules["datamodel_code_generator._openapi_generation"]
+    sys.modules[name]
 """
-    assert _probe_findings(
-        tmp_path,
-        {
-            "test_private.py": source,
-            "data/python/helper.py": "from datamodel_code_generator._fastapi import config\n",
-            "data/generation_platform/typing/probe.py": "from datamodel_code_generator import _source\n",
-            "data/boundaries/forbidden.py": "from datamodel_code_generator._api_generation import render_target\n",
-        },
-    ) == [
-        "private-import test_private.py:1 <module>: datamodel_code_generator._runtime.client",
-        "private-import test_private.py:6 <module>: datamodel_code_generator._run_generation",
-        "private-import test_private.py:8 <module>: datamodel_code_generator.model.binding",
-        "private-import test_private.py:9 <module>: datamodel_code_generator.parser.openapi_scope",
-        "private-import test_private.py:11 <module>: datamodel_code_generator.parser.openapi_contract_store",
-        "private-import test_private.py:17 test_dynamic: datamodel_code_generator._client.target",
-        "private-import test_private.py:18 test_dynamic: datamodel_code_generator._runtime.",
-        "private-import test_private.py:19 test_dynamic: datamodel_code_generator._api_types",
-        "private-import data/python/helper.py:1 <module>: datamodel_code_generator._fastapi",
-        "private-import data/generation_platform/typing/probe.py:1 <module>: datamodel_code_generator._source",
-    ]
+
+CYCLE_PROBES = {
+    "data/python/cycle_a.py": "from tests.data.python.cycle_b import shared\n",
+    "data/python/cycle_b.py": "from tests.data.python.cycle_a import shared\n",
+}
+REEXPORT_PROBE = """\
+from datamodel_code_generator import _api_publication
 
 
-def test_collect_findings_reports_normal_path_mocks(tmp_path: Path) -> None:
-    """Profile hooks and patches of package or generated runtime internals need an abnormal_path reason."""
-    source = """\
+def public_helper():
+    pass
+"""
+
+MOCK_PROBE = """\
+import argparse
 import importlib
 import sys
 import sys as system
@@ -1568,9 +1790,13 @@ from sys import setprofile
 from unittest.mock import patch
 
 import pytest
+from pytest import mark
 
-from datamodel_code_generator import _publication
+from datamodel_code_generator import GenerateConfig, _publication
+from datamodel_code_generator.parser import openapi as oa
 from datamodel_code_generator.parser.openapi import OpenAPIParser
+from tests.data.python import reexport
+from tests.data.python.generated_packages import import_generated
 
 
 def test_profiles(observer):
@@ -1578,24 +1804,34 @@ def test_profiles(observer):
     system.settrace(observer)
     threading.setprofile(observer)
     setprofile(None)
+    sys.monitoring.register_callback(1, 1, None)
 
 
-def test_patches(mocker, monkeypatch, package):
+def test_patches(mocker, monkeypatch, package, tmp_path):
     module = importlib.import_module(f"{package.__name__}._runtime.client.timing")
     clock: object = module.monotonic
     width: int
+    generated = import_generated(tmp_path)
     patch("datamodel_code_generator.parser.openapi.OpenAPIParser.parse")
     patch.object(OpenAPIParser, "parse")
     patch.object(target=_publication, attribute="_replace_source")
     mocker.patch.object(clock, "real")
     mocker.spy(package._runtime.client, "send")
+    mocker.patch.object(getattr(package, "_runtime"), "send")
+    mocker.patch.object(generated.client, "send")
     monkeypatch.setattr("datamodel_code_generator._publication._unlink", None)
+    monkeypatch.setattr("tests.data.python.reexport._api_publication.lock", None)
+    monkeypatch.setattr("tests.data.python.reexport.public_helper", None)
+    monkeypatch.setattr(reexport._api_publication, "lock", None)
+    monkeypatch.setattr("tests.data.python.cycle_a.shared", None)
     with monkeypatch.context() as fault, open(__file__):
         fault.setattr(OpenAPIParser, "dispose", None)
     with pytest.MonkeyPatch.context() as scoped:
         scoped.setattr(sys, "argv", [])
-    if (opened := Path.open) is not None:
-        patch.object(opened, "close")
+    standalone = pytest.MonkeyPatch()
+    standalone.setattr(oa.OpenAPIParser, "parse", None)
+    patcher = mocker.patch
+    patcher("datamodel_code_generator.parser.openapi.X")
     patch.object(
         OpenAPIParser,
         "dispose",
@@ -1607,6 +1843,86 @@ def test_patches(mocker, monkeypatch, package):
     patch()
 
 
+def test_module_registry(monkeypatch, mocker, name):
+    monkeypatch.setitem(sys.modules, "datamodel_code_generator.parser.openapi", None)
+    monkeypatch.delitem(sys.modules, "datamodel_code_generator._runtime")
+    mocker.patch.dict(sys.modules, {"datamodel_code_generator._runtime": None})
+    mocker.patch.dict("sys.modules", values={"package._runtime": None})
+    mocker.patch.dict(sys.modules, {"other": None})
+    mocker.patch.dict(sys.modules, values=None)
+    monkeypatch.setitem(sys.modules, name, None)
+    monkeypatch.setitem({}, "datamodel_code_generator._runtime", None)
+    sys.modules["datamodel_code_generator._runtime"] = None
+    del sys.modules["datamodel_code_generator._client"]
+    sys.modules["other"] = None
+
+
+def test_assignments(package):
+    setattr(oa.OpenAPIParser, "parse", None)
+    delattr(oa, "OpenAPIParser")
+    oa.OpenAPIParser.parse = None
+    oa.OpenAPIParser.depth += 1
+    del oa.OpenAPIParser.parse
+    package._runtime.client.monotonic = None
+    config = GenerateConfig()
+    config.output = None
+    setattr(config, "output", None)
+    holder = argparse.Namespace()
+    holder.value = None
+    factories()().value = None
+
+
+def test_bindings(monkeypatch):
+    first, second = OpenAPIParser, argparse.ArgumentParser
+    monkeypatch.setattr(first, "parse", None)
+    monkeypatch.setattr(second, "parse_args", None)
+    *rest, last = [OpenAPIParser, oa]
+    monkeypatch.setattr(last, "x", None)
+    (unpacked,) = factory()
+    monkeypatch.setattr(unpacked, "x", None)
+    for cls in (OpenAPIParser,):
+        monkeypatch.setattr(cls, "parse", None)
+    if (found := OpenAPIParser) is not None:
+        monkeypatch.setattr(found, "parse", None)
+    targets = {"parser": OpenAPIParser}
+    monkeypatch.setattr(targets["parser"], "parse", None)
+    [monkeypatch.setattr(OpenAPIParser, name, None) for name in "ab"]
+    try:
+        pass
+    except ValueError as error:
+        monkeypatch.setattr(error, "args", ())
+
+
+def test_internal_parser():
+    parser = OpenAPIParser("source")
+    return parser
+
+
+def test_unrelated_parser(monkeypatch, fixture_object):
+    parser = argparse.ArgumentParser()
+    monkeypatch.setattr(parser, "prog", "x")
+    monkeypatch.setattr(fixture_object, "x", None)
+
+
+def _replace(monkeypatch, target, *, name):
+    monkeypatch.setattr(target, name, None)
+
+
+def test_passes_internals(monkeypatch):
+    _replace(monkeypatch, oa, name="x")
+    _replace(monkeypatch, *[oa], name="x")
+
+
+class TestSelf:
+    def setup_method(self):
+        self.parser = OpenAPIParser("source")
+        self.count = 0
+
+    def test_method(self, monkeypatch):
+        monkeypatch.setattr(self.parser, "parse", None)
+        monkeypatch.setattr(self.count, "real", None)
+
+
 @pytest.mark.abnormal_path("the disk fills only on a failing device")
 def test_marked(monkeypatch):
     monkeypatch.setattr(_publication, "_replace_source", None)
@@ -1615,7 +1931,7 @@ def test_marked(monkeypatch):
         sys.setprofile(None)
 
 
-@pytest.mark.abnormal_path("a racing process replaces the directory")
+@mark.abnormal_path("a racing process replaces the directory")
 class TestMarked:
     def test_method(self, monkeypatch):
         monkeypatch.setattr(_publication, "_rmdir", None)
@@ -1626,8 +1942,8 @@ def test_bare(monkeypatch):
     monkeypatch.setattr(_publication, "_unlink", None)
 
 
-@pytest.mark.abnormal_path("")
-def test_empty():
+@pytest.mark.abnormal_path("  ")
+def test_blank():
     pass
 
 
@@ -1639,55 +1955,216 @@ def test_keyword():
 @pytest.mark.abnormal_path(1)
 def test_number():
     pass
-"""
-    findings = _probe_findings(tmp_path, {"test_mocks.py": source})
 
-    assert [finding for finding in findings if not finding.startswith("private-import ")] == [
-        "normal-path-mock test_mocks.py:16 test_profiles: sys.setprofile(observer)",
-        "normal-path-mock test_mocks.py:17 test_profiles: system.settrace(observer)",
-        "normal-path-mock test_mocks.py:18 test_profiles: threading.setprofile(observer)",
-        "normal-path-mock test_mocks.py:19 test_profiles: setprofile(None)",
-        (
-            "normal-path-mock test_mocks.py:26 test_patches: "
-            'patch("datamodel_code_generator.parser.openapi.OpenAPIParser.parse")'
-        ),
-        'normal-path-mock test_mocks.py:27 test_patches: patch.object(OpenAPIParser, "parse")',
-        (
-            "normal-path-mock test_mocks.py:28 test_patches: "
-            'patch.object(target=_publication, attribute="_replace_source")'
-        ),
-        'normal-path-mock test_mocks.py:29 test_patches: mocker.patch.object(clock, "real")',
-        'normal-path-mock test_mocks.py:30 test_patches: mocker.spy(package._runtime.client, "send")',
-        (
-            "normal-path-mock test_mocks.py:31 test_patches: "
-            'monkeypatch.setattr("datamodel_code_generator._publication._unlink", None)'
-        ),
-        'normal-path-mock test_mocks.py:33 test_patches: fault.setattr(OpenAPIParser, "dispose", None)',
-        'normal-path-mock test_mocks.py:38 test_patches: patch.object( OpenAPIParser, "dispose", )',
-        "abnormal-path-reason test_mocks.py:63 test_bare: pytest.mark.abnormal_path",
-        'normal-path-mock test_mocks.py:65 test_bare: monkeypatch.setattr(_publication, "_unlink", None)',
-        'abnormal-path-reason test_mocks.py:68 test_empty: pytest.mark.abnormal_path("")',
-        'abnormal-path-reason test_mocks.py:73 test_keyword: pytest.mark.abnormal_path(reason="keyword")',
-        "abnormal-path-reason test_mocks.py:78 test_number: pytest.mark.abnormal_path(1)",
+
+@pytest.mark.abnormal_path("the lock file system rejects flock")
+@pytest.mark.abnormal_path("")
+def test_two_markers(monkeypatch):
+    monkeypatch.setattr(_publication, "_unlink", None)
+"""
+
+
+def test_collect_findings_reports_asserts_in_every_scope(tmp_path: Path) -> None:
+    """Asserts are found in every block and scope, outside typing-only blocks and explained allow markers."""
+    assert _probe_findings(tmp_path, {"test_scopes.py": ASSERT_SCOPES_PROBE}) == [
+        'direct-assert test_scopes.py:7 <module>: assert "module block"',
+        'direct-assert test_scopes.py:9 <module>: assert "with block"',
+        'direct-assert test_scopes.py:15 <module>: assert "runtime branch"',
+        'direct-assert test_scopes.py:19 Holder: assert "class body"',
+        'direct-assert test_scopes.py:27 test_allowed.nested: assert "nested"',
+        'direct-assert test_scopes.py:30 test_allowed.Local: assert "local class"',
+        "marker-reason test_scopes.py:43 test_unexplained: pytest.mark.allow_direct_assert",
+        'direct-assert test_scopes.py:50 test_plain: assert "loop"',
+        'direct-assert test_scopes.py:54 test_plain: assert "handler"',
+        'direct-assert test_scopes.py:57 test_plain: assert "case"',
     ]
 
 
-def test_collect_findings_limits_direct_asserts_to_guarded_files(tmp_path: Path) -> None:
-    """Exempt files and other modules skip the assert rules, while every test module keeps the other rules."""
+def test_collect_findings_reports_disguised_asserts(tmp_path: Path) -> None:
+    """Raising AssertionError in any spelling, pytest.fail, and unittest.TestCase count as direct asserts."""
+    assert _probe_findings(tmp_path, {"test_disguised.py": DISGUISED_PROBE}) == [
+        "disguised-assert test_disguised.py:10 test_raises: raise AssertionError",
+        'disguised-assert test_disguised.py:14 test_raises_message: raise AssertionError("message")',
+        'disguised-assert test_disguised.py:18 test_builtin: raise builtins.AssertionError("message")',
+        "disguised-assert test_disguised.py:23 test_alias: raise error",
+        'disguised-assert test_disguised.py:27 test_fail_exception: raise pytest.fail.Exception("message")',
+        'disguised-assert test_disguised.py:31 test_fails: pytest.fail("message")',
+        'disguised-assert test_disguised.py:32 test_fails: stop("message")',
+        "disguised-assert test_disguised.py:52 test_instance: unittest.TestCase()",
+        "disguised-assert test_disguised.py:55 TestUnit: class TestUnit(unittest.TestCase)",
+        "disguised-assert test_disguised.py:57 TestUnit.test_method: self.assertEqual(1, 1)",
+        'disguised-assert test_disguised.py:58 TestUnit.test_method: self.fail("message")',
+        "disguised-assert test_disguised.py:63 TestAlias: class TestAlias(Case)",
+    ]
+
+
+def test_collect_findings_reports_assertion_helpers_in_report_helpers(tmp_path: Path) -> None:
+    """Report helpers define no assertion helpers of their own, while test modules may."""
+    assert _probe_findings(
+        tmp_path,
+        {"data/python/helpers.py": HELPER_NAMES_PROBE, "test_helpers.py": "def assert_local():\n    pass\n"},
+    ) == [
+        "assertion-helper data/python/helpers.py:1 assert_report: def assert_report",
+        "assertion-helper data/python/helpers.py:5 _check_report: def _check_report",
+        "assertion-helper data/python/helpers.py:9 verify_report: def verify_report",
+        "assertion-helper data/python/helpers.py:14 Checks.expect_value: def expect_value",
+        "assertion-helper data/python/helpers.py:18 compare_report: def compare_report",
+        "assertion-helper data/python/helpers.py:22 ensure_report: def ensure_report",
+        "assertion-helper data/python/helpers.py:26 validate_report: def validate_report",
+    ]
+
+
+def test_collect_findings_reports_private_imports(tmp_path: Path) -> None:
+    """Private modules and names are found however they are reached, including through re-exporting helpers."""
+    assert _probe_findings(
+        tmp_path,
+        {
+            "test_private.py": PRIVATE_IMPORT_PROBE,
+            "data/python/reexport.py": REEXPORT_PROBE,
+            "data/python/__init__.py": "",
+        },
+    ) == [
+        "private-import data/python/reexport.py:1 <module>: datamodel_code_generator._api_publication",
+        "private-import test_private.py:6 <module>: datamodel_code_generator._runtime.client",
+        "private-import test_private.py:8 <module>: datamodel_code_generator._run_generation",
+        "private-import test_private.py:8 <module>: datamodel_code_generator._source",
+        "private-import test_private.py:10 <module>: datamodel_code_generator.model.binding",
+        "private-import test_private.py:12 <module>: datamodel_code_generator.parser.openapi_scope",
+        "private-import test_private.py:14 <module>: datamodel_code_generator.parser.openapi_contract_store",
+        "private-import test_private.py:21 test_attributes: datamodel_code_generator._api_generation",
+        "private-import test_private.py:22 test_attributes: datamodel_code_generator._runtime",
+        "private-import test_private.py:23 test_attributes: datamodel_code_generator.parser.openapi_contract",
+        "private-import test_private.py:27 test_attributes: datamodel_code_generator._api_publication",
+        "private-import test_private.py:32 test_getattr: datamodel_code_generator.parser.openapi_contract",
+        "private-import test_private.py:33 test_getattr: datamodel_code_generator._x",
+        "private-import test_private.py:41 test_dynamic: datamodel_code_generator._client",
+        "private-import test_private.py:42 test_dynamic: datamodel_code_generator._runtime",
+        "private-import test_private.py:43 test_dynamic: datamodel_code_generator._api_types",
+        "private-import test_private.py:44 test_dynamic: datamodel_code_generator._api_manifest",
+        "private-import test_private.py:45 test_dynamic: datamodel_code_generator._target_config",
+        "private-import test_private.py:46 test_dynamic: datamodel_code_generator._api_publication",
+        "private-import test_private.py:48 test_dynamic: datamodel_code_generator._publication",
+        "private-import test_private.py:52 test_dynamic: datamodel_code_generator._codec_declarations",
+        "private-import test_private.py:57 test_dynamic: datamodel_code_generator._openapi_generation",
+    ]
+
+
+def test_collect_findings_reports_normal_path_mocks(tmp_path: Path) -> None:
+    """Hooks, patches, setattr, assignments, and sys.modules entries that replace internals need an abnormal path."""
+    assert _probe_findings(
+        tmp_path, {"test_mocks.py": MOCK_PROBE, "data/python/reexport.py": REEXPORT_PROBE, **CYCLE_PROBES}
+    ) == [
+        "private-import data/python/reexport.py:1 <module>: datamodel_code_generator._api_publication",
+        "private-import test_mocks.py:13 <module>: datamodel_code_generator._publication",
+        "normal-path-mock test_mocks.py:21 test_profiles: sys.setprofile(observer)",
+        "normal-path-mock test_mocks.py:22 test_profiles: system.settrace(observer)",
+        "normal-path-mock test_mocks.py:23 test_profiles: threading.setprofile(observer)",
+        "normal-path-mock test_mocks.py:24 test_profiles: setprofile(None)",
+        "normal-path-mock test_mocks.py:25 test_profiles: sys.monitoring.register_callback(1, 1, None)",
+        (
+            "normal-path-mock test_mocks.py:33 test_patches: "
+            'patch("datamodel_code_generator.parser.openapi.OpenAPIParser.parse")'
+        ),
+        'normal-path-mock test_mocks.py:34 test_patches: patch.object(OpenAPIParser, "parse")',
+        (
+            "normal-path-mock test_mocks.py:35 test_patches: "
+            'patch.object(target=_publication, attribute="_replace_source")'
+        ),
+        'normal-path-mock test_mocks.py:36 test_patches: mocker.patch.object(clock, "real")',
+        'normal-path-mock test_mocks.py:37 test_patches: mocker.spy(package._runtime.client, "send")',
+        'normal-path-mock test_mocks.py:38 test_patches: mocker.patch.object(getattr(package, "_runtime"), "send")',
+        'normal-path-mock test_mocks.py:39 test_patches: mocker.patch.object(generated.client, "send")',
+        (
+            "normal-path-mock test_mocks.py:40 test_patches: "
+            'monkeypatch.setattr("datamodel_code_generator._publication._unlink", None)'
+        ),
+        (
+            "normal-path-mock test_mocks.py:41 test_patches: "
+            'monkeypatch.setattr("tests.data.python.reexport._api_publication.lock", None)'
+        ),
+        'normal-path-mock test_mocks.py:43 test_patches: monkeypatch.setattr(reexport._api_publication, "lock", None)',
+        "private-import test_mocks.py:43 test_patches: datamodel_code_generator._api_publication",
+        'normal-path-mock test_mocks.py:46 test_patches: fault.setattr(OpenAPIParser, "dispose", None)',
+        'normal-path-mock test_mocks.py:50 test_patches: standalone.setattr(oa.OpenAPIParser, "parse", None)',
+        'normal-path-mock test_mocks.py:52 test_patches: patcher("datamodel_code_generator.parser.openapi.X")',
+        'normal-path-mock test_mocks.py:53 test_patches: patch.object( OpenAPIParser, "dispose", )',
+        (
+            "normal-path-mock test_mocks.py:65 test_module_registry: "
+            'monkeypatch.setitem(sys.modules, "datamodel_code_generator.parser.openapi", None)'
+        ),
+        (
+            "normal-path-mock test_mocks.py:66 test_module_registry: "
+            'monkeypatch.delitem(sys.modules, "datamodel_code_generator._runtime")'
+        ),
+        (
+            "normal-path-mock test_mocks.py:67 test_module_registry: "
+            'mocker.patch.dict(sys.modules, {"datamodel_code_generator._runtime": None})'
+        ),
+        (
+            "normal-path-mock test_mocks.py:68 test_module_registry: "
+            'mocker.patch.dict("sys.modules", values={"package._runtime": None})'
+        ),
+        'normal-path-mock test_mocks.py:73 test_module_registry: sys.modules["datamodel_code_generator._runtime"]',
+        'normal-path-mock test_mocks.py:74 test_module_registry: sys.modules["datamodel_code_generator._client"]',
+        'normal-path-mock test_mocks.py:79 test_assignments: setattr(oa.OpenAPIParser, "parse", None)',
+        'normal-path-mock test_mocks.py:80 test_assignments: delattr(oa, "OpenAPIParser")',
+        "normal-path-mock test_mocks.py:81 test_assignments: oa.OpenAPIParser.parse",
+        "normal-path-mock test_mocks.py:82 test_assignments: oa.OpenAPIParser.depth",
+        "normal-path-mock test_mocks.py:83 test_assignments: oa.OpenAPIParser.parse",
+        "normal-path-mock test_mocks.py:84 test_assignments: package._runtime.client.monotonic",
+        'normal-path-mock test_mocks.py:95 test_bindings: monkeypatch.setattr(first, "parse", None)',
+        'normal-path-mock test_mocks.py:98 test_bindings: monkeypatch.setattr(last, "x", None)',
+        'normal-path-mock test_mocks.py:102 test_bindings: monkeypatch.setattr(cls, "parse", None)',
+        'normal-path-mock test_mocks.py:104 test_bindings: monkeypatch.setattr(found, "parse", None)',
+        'normal-path-mock test_mocks.py:106 test_bindings: monkeypatch.setattr(targets["parser"], "parse", None)',
+        "normal-path-mock test_mocks.py:107 test_bindings: monkeypatch.setattr(OpenAPIParser, name, None)",
+        "normal-path-mock test_mocks.py:126 _replace: monkeypatch.setattr(target, name, None)",
+        'normal-path-mock test_mocks.py:140 TestSelf.test_method: monkeypatch.setattr(self.parser, "parse", None)',
+        "marker-reason test_mocks.py:158 test_bare: pytest.mark.abnormal_path",
+        'normal-path-mock test_mocks.py:160 test_bare: monkeypatch.setattr(_publication, "_unlink", None)',
+        'marker-reason test_mocks.py:163 test_blank: pytest.mark.abnormal_path(" ")',
+        'marker-reason test_mocks.py:168 test_keyword: pytest.mark.abnormal_path(reason="keyword")',
+        "marker-reason test_mocks.py:173 test_number: pytest.mark.abnormal_path(1)",
+        'marker-reason test_mocks.py:179 test_two_markers: pytest.mark.abnormal_path("")',
+    ]
+
+
+def test_collect_findings_applies_rules_by_module_kind(tmp_path: Path) -> None:
+    """Exempt tests, shared helper libraries, and fixtures skip the assert rules but keep the others."""
+    module = "from datamodel_code_generator import _source\n\nassert True\n\n\ndef assert_shared():\n    pass\n"
     findings = _probe_findings(
         tmp_path,
         {
-            "test_exempt.py": "from datamodel_code_generator import _source\n\nassert True\n",
+            "test_exempt.py": module,
             "nested/example_test.py": "assert True\n",
-            "nested/helper.py": "assert True\n",
-            "data/test_fixture.py": "assert True\n",
+            "nested/conftest.py": module,
+            "nested/support.py": module,
+            "data/test_fixture.py": module,
+            "data/expected/output.py": module,
         },
         exempt_files=(Path("test_exempt.py"),),
     )
 
     assert findings == [
+        "private-import data/test_fixture.py:1 <module>: datamodel_code_generator._source",
+        "private-import nested/conftest.py:1 <module>: datamodel_code_generator._source",
         "direct-assert nested/example_test.py:1 <module>: assert True",
+        "private-import nested/support.py:1 <module>: datamodel_code_generator._source",
         "private-import test_exempt.py:1 <module>: datamodel_code_generator._source",
+    ]
+
+
+def test_exemption_problems_report_growth_removal_and_stale_files(tmp_path: Path) -> None:
+    """The exemption list matches its frozen copy, and each exempt file still needs the exemption."""
+    for name, source in {"test_asserts.py": "assert True\n", "test_clean.py": "pass\n", "test_new.py": ""}.items():
+        (tmp_path / name).write_text(source, encoding="utf-8")
+    configured = frozenset({Path("test_asserts.py"), Path("test_clean.py"), Path("test_new.py"), Path("test_gone.py")})
+    frozen = frozenset({Path("test_asserts.py"), Path("test_clean.py"), Path("test_gone.py"), Path("test_old.py")})
+
+    assert _exemption_problems(tmp_path, configured, frozen) == [
+        "  tests/test_new.py is not in FROZEN_EXEMPT_FILES",
+        f"  tests/test_old.py left {DIRECT_ASSERT_EXEMPT_FILES_INI}",
+        "  tests/test_clean.py has no direct assert left",
     ]
 
 
@@ -1716,25 +2193,28 @@ def test_guard_failure_passes_clean_modules(tmp_path: Path) -> None:
     assert _guard_failure(tmp_path, ()) is None
 
 
-def test_allowlist_entries_match_by_file_or_scope() -> None:
-    """Entries name a whole file or one enclosing scope, and entries without a violation are stale."""
+def test_allowlist_entries_match_by_file_module_or_scope() -> None:
+    """Entries name a whole file, an imported module, or one enclosing scope; entries without a violation are stale."""
     findings = [
         Finding(PRIVATE_IMPORT, Path("test_a.py"), "<module>", 1, "datamodel_code_generator._source"),
-        Finding(NORMAL_PATH_MOCK, Path("test_a.py"), "test_x", 2, "sys.setprofile(None)"),
-        Finding(NORMAL_PATH_MOCK, Path("test_a.py"), "test_y", 3, "sys.setprofile(None)"),
+        Finding(PRIVATE_IMPORT, Path("test_a.py"), "<module>", 2, "datamodel_code_generator._client"),
+        Finding(NORMAL_PATH_MOCK, Path("test_a.py"), "test_x", 3, "sys.setprofile(None)"),
+        Finding(NORMAL_PATH_MOCK, Path("test_a.py"), "test_y", 4, "sys.setprofile(None)"),
+        Finding(NORMAL_PATH_MOCK, Path("test_b.py"), "test_z", 5, "sys.setprofile(None)"),
     ]
     entries = _allowlist_entries({
         "LISTED": {
-            "files": ("private-import tests/test_a.py",),
-            "scopes": ("normal-path-mock tests/test_a.py::test_gone", "normal-path-mock tests/test_a.py::test_x"),
+            "files": ("normal-path-mock:tests/test_b.py",),
+            "modules": ("private-import:tests/test_a.py::datamodel_code_generator._source",),
+            "scopes": ("normal-path-mock:tests/test_a.py::test_gone", "normal-path-mock:tests/test_a.py::test_x"),
         }
     })
 
-    assert _unlisted_findings(findings, entries) == [findings[2]]
-    assert _stale_entries(findings, entries) == ["normal-path-mock tests/test_a.py::test_gone"]
+    assert _unlisted_findings(findings, entries) == [findings[1], findings[3]]
+    assert _stale_entries(findings, entries) == ["normal-path-mock:tests/test_a.py::test_gone"]
 
 
-def test_malformed_groups_reports_unsorted_and_duplicate_entries() -> None:
+def test_malformed_groups_reports_unsorted_duplicate_and_unexplained_groups() -> None:
     """Allowlist groups stay sorted and explained, and an entry belongs to one group only."""
     assert _malformed_groups({"FIRST": {"spies": ("b", "a")}, "SECOND": {"other": ("a",)}}) == [
         "  FIRST['spies'] is not sorted",

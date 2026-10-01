@@ -207,9 +207,6 @@ def test_target_generate_lock_discard(tmp_path: Path, monkeypatch: pytest.Monkey
 
 @pytest.mark.skipif(os.name == "nt", reason="Windows checks destinations through the lexical fallback")
 @pytest.mark.parametrize("failure", ["anchor", "staging"])
-@pytest.mark.abnormal_path(
-    "a directory replaced mid-publication and an fsync EIO need a racing process and a failing disk"
-)
 def test_target_generate_publication_checks(failure: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Stop when staging fails, and undo the journal when a destination directory is replaced while publishing."""
 
