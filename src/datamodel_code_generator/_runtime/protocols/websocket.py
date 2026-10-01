@@ -1020,6 +1020,8 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
             raise self._failed(self._unanswered()) from None
         except WebSocketClosedError as closed:
             raise self._ended(closed) from None
+        except ProtocolStateError as refused:
+            raise self._stamped(refused) from None
         except BaseException as error:  # noqa: BLE001
             raise self._failed(self._own(error)) from None
         return PingReceipt(latency=latency)
@@ -1186,6 +1188,8 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
             raise await self._failed(self._unanswered()) from None
         except WebSocketClosedError as closed:
             raise await self._end(self._peer(closed)) from None
+        except ProtocolStateError as refused:
+            raise self._stamped(refused) from None
         except BaseException as error:  # noqa: BLE001
             stopped = self._unanswered() if self._capped(error, cap) else self._own(error)
             raise await self._failed(stopped) from None

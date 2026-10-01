@@ -136,7 +136,10 @@ class WebSocketConnection(Protocol):
         ...
 
     def ping(self, payload: bytes, *, deadline: Deadline | None) -> float:
-        """Send a ping and return the seconds until its pong arrived."""
+        """Send a ping and return the seconds until its pong arrived.
+
+        An empty payload asks for a unique one; a payload another ping still waits for raises ProtocolStateError.
+        """
         ...
 
     def close(self, *, code: int = 1000, reason: str = "", timeout: float = 5) -> None:
@@ -167,7 +170,10 @@ class AsyncWebSocketConnection(Protocol):
         ...
 
     async def ping(self, payload: bytes, *, deadline: Deadline | None) -> float:
-        """Send a ping and return the seconds until its pong arrived."""
+        """Send a ping and return the seconds until its pong arrived.
+
+        An empty payload asks for a unique one; a payload another ping still waits for raises ProtocolStateError.
+        """
         ...
 
     async def aclose(self, *, code: int = 1000, reason: str = "", timeout: float = 5) -> None:

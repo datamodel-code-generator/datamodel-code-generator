@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, Any, Final, cast
 from websockets.asyncio.client import ClientConnection as _AsyncClientConnection
 from websockets.asyncio.client import connect as _aconnect
 from websockets.exceptions import (
+    ConcurrencyError,
     ConnectionClosed,
     ConnectionClosedOK,
     InvalidHandshake,
@@ -52,6 +53,7 @@ from .errors import (
     MAX_RAW_PREFIX,
     HandshakeCondition,
     HandshakeResponse,
+    ProtocolStateError,
     WebSocketClosedError,
     WebSocketHandshakeError,
     WebSocketProxyError,
@@ -265,6 +267,11 @@ def _closed(error: ConnectionClosed, parsed: BaseException | None, limit: int) -
     )
 
 
+def _pinging() -> ProtocolStateError:
+    """Return the refusal of a ping whose payload another ping still waits for."""
+    return ProtocolStateError(state="pinging", action="ping")
+
+
 def _frame(data: str | bytes) -> WSFrame:
     """Return a received message as its bytes and frame kind."""
     if isinstance(data, str):
@@ -436,12 +443,17 @@ class NativeConnection:
         return _frame(data)
 
     def ping(self, payload: bytes, *, deadline: Deadline | None) -> float:
-        """Send a ping and return the seconds until its pong, raising TimeoutError when the deadline passes first."""
+        """Send a ping and return the seconds until its pong, raising TimeoutError when the deadline passes first.
+
+        An empty payload becomes four random bytes, so pings sent at once never share one.
+        """
         connection = self._connection
         try:
-            pong = connection.ping(payload, ack_on_close=True)
+            pong = connection.ping(payload or None, ack_on_close=True)
         except ConnectionClosed as error:
             raise self._closed(error) from None
+        except ConcurrencyError:
+            raise _pinging() from None
         if not pong.wait(None if deadline is None else deadline.remaining()):
             raise TimeoutError
         if (protocol := connection.protocol).state is State.CLOSED:
@@ -499,12 +511,17 @@ class AsyncNativeConnection:
         return _frame(data)
 
     async def ping(self, payload: bytes, *, deadline: Deadline | None) -> float:
-        """Send a ping and return the seconds until its pong; the client bounds the await by the deadline itself."""
+        """Send a ping and return the seconds until its pong; the client bounds the await by the deadline itself.
+
+        An empty payload becomes four random bytes, so pings sent at once never share one.
+        """
         del deadline
         try:
-            return await (await self._connection.ping(payload))
+            return await (await self._connection.ping(payload or None))
         except ConnectionClosed as error:
             raise self._closed(error) from None
+        except ConcurrencyError:
+            raise _pinging() from None
 
     async def aclose(self, *, code: int = 1000, reason: str = "", timeout: float = 5) -> None:
         """Close with a code and a reason, waiting at most the timeout for the closing handshake."""

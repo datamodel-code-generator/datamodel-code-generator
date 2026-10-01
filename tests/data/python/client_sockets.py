@@ -640,6 +640,37 @@ def _peers(harness: _Harness) -> None:
     finally:
         peer.stop()
         hangup.stop()
+    _concurrent_pings(harness)
+
+
+def _concurrent_pings(harness: _Harness) -> None:
+    """Refuse a ping whose payload another ping waits for without failing the session, and give default pings unique
+    payloads; every ping still waiting ends when the peer hangs up.
+    """
+    lines, peer = harness.lines, RawPeer(_UPGRADE)
+    try:
+        with harness.package.Client(options=harness.client(peer.url)) as api:
+            session = api.protocols.feed.text.connect(ws_options=harness.ws(ping_interval=None, close_timeout=0.1))
+            waiting: list[str] = []
+            threads = []
+            for count, (label, payload) in enumerate(
+                (("first ping", b"same"), ("default ping", b""), ("another default ping", b"")), start=1
+            ):
+                thread = threading.Thread(
+                    target=lambda label=label, payload=payload: record(waiting, label, lambda: session.ping(payload))
+                )
+                thread.start()
+                threads.append(thread)
+                peer.wait_records(count)
+                if count == 1:
+                    record(lines, "ping with a payload another ping waits for", lambda: session.ping(b"same"))
+            lines.append(f"    pings waiting {peer.records} {session!r}")
+            peer.release.set()
+            for thread in threads:
+                thread.join(10)
+            lines.extend(sorted(waiting))
+    finally:
+        peer.stop()
 
 
 @contextmanager
@@ -783,6 +814,23 @@ async def _async_sockets(harness: _Harness) -> None:
             await arecord(lines, "async unanswered ping", session.ping)
     finally:
         peer.stop()
+    waiting = RawPeer(_UPGRADE)
+    try:
+        async with harness.package.AsyncClient(options=harness.client(waiting.url)) as api:
+            session = await api.protocols.feed.text.connect(ws_options=harness.ws(ping_interval=None, close_timeout=0.1))
+            first = asyncio.create_task(session.ping(b"same"))
+            await asyncio.to_thread(waiting.wait_records, 1)
+            await arecord(lines, "async ping with a payload another ping waits for", lambda: session.ping(b"same"))
+            second = asyncio.create_task(session.ping())
+            await asyncio.to_thread(waiting.wait_records, 2)
+            third = asyncio.create_task(session.ping())
+            await asyncio.to_thread(waiting.wait_records, 3)
+            lines.append(f"    async pings waiting {waiting.records} {session!r}")
+            waiting.release.set()
+            for label, task in (("async first ping", first), ("async default ping", second), ("async another default ping", third)):
+                await arecord(lines, label, lambda task=task: task)
+    finally:
+        waiting.stop()
     silent = RawPeer(None)
     try:
         async with harness.package.AsyncClient(options=harness.client(silent.url)) as api:

@@ -168,6 +168,11 @@
   unanswered ping ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=0.1) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout_error
   after the unanswered ping ! ProtocolStateError: ProtocolStateError(operation_id='feedSocket', call_id='<call>', state='failed', action='receive') [operation_id='feedSocket'] protocol_state_error
   unanswered keepalive ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket'] web_socket_closed_error
+  ping with a payload another ping waits for ! ProtocolStateError: ProtocolStateError(operation_id='feedSocket', call_id='<call>', state='pinging', action='ping') [operation_id='feedSocket'] protocol_state_error
+    pings waiting 3 WebSocketSession(helper_id='feed.text', state='open', subprotocol=None)
+  another default ping ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket'] web_socket_closed_error
+  default ping ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket'] web_socket_closed_error
+  first ping ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket'] web_socket_closed_error
   explicit proxy 1 binary bytesb'\x00\x01' raw=b'\x00\x01'
     server GET /feed/socket [] | closed 1000 ''
   environment proxy 1 binary bytesb'\x00\x01' raw=b'\x00\x01'
@@ -224,6 +229,11 @@
   async receive stopped by the client closing ! ClientClosedError: ClientClosedError(operation_id='roomSocket', call_id='<call>', state='CLOSING', owner='client') [operation_id='roomSocket'] client_closed_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1001 ''
   async unanswered ping ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=0.1) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout_error
+  async ping with a payload another ping waits for ! ProtocolStateError: ProtocolStateError(operation_id='feedSocket', call_id='<call>', state='pinging', action='ping') [operation_id='feedSocket'] protocol_state_error
+    async pings waiting 3 AsyncWebSocketSession(helper_id='feed.text', state='open', subprotocol=None)
+  async first ping ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket'] web_socket_closed_error
+  async default ping ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket'] web_socket_closed_error
+  async another default ping ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket'] web_socket_closed_error
   async open timeout ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT', phase='connect', effective_timeout=1.0) [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='connect', cause=TimeoutError] phase_timeout_error
   async hooked normal end
     hook call_start outcome=None status=None

@@ -152,19 +152,32 @@ class _RawHandler(BaseRequestHandler):
                 )
                 accept = base64.b64encode(hashlib.sha1(key + _GUID).digest())  # noqa: S324
                 stream.sendall(reply.replace(b"{accept}", accept))
-            while stream.recv(65536) and not self.server.hangup:
-                pass
+            threading.Thread(target=self._released, args=(stream,), daemon=True).start()
+            while stream.recv(65536):
+                self.server.arrived()
+                if self.server.hangup:
+                    break
         except OSError:
             pass
         finally:
             stream.close()
 
 
+    def _released(self, stream: socket.socket) -> None:
+        """Hang up once the peer is released, which ends the read loop; the TLS state is left to the reading thread."""
+        self.server.release.wait()
+        try:
+            socket.socket.shutdown(stream, socket.SHUT_RDWR)
+        except OSError:
+            pass
+
+
 class RawPeer(ThreadingTCPServer):
     """A TLS peer that reads a handshake request and sends a raw reply, then reads until the client leaves.
 
     Without a reply it never answers, and with an empty one it closes at once; `{accept}` in a reply becomes the
-    request key's accept value. The peer never answers a frame, not even a ping.
+    request key's accept value. The peer never answers a frame, not even a ping; it counts the records the client
+    sends, and hangs up every connection once released.
     """
 
     daemon_threads = True
@@ -175,15 +188,30 @@ class RawPeer(ThreadingTCPServer):
         self.context = _contexts()[0]
         self.reply = reply
         self.hangup = hangup
+        self.release = threading.Event()
+        self.records = 0
+        self._arrival = threading.Condition()
         self.url = f"https://localhost:{self.server_address[1]}"
         self.thread = threading.Thread(target=self.serve_forever, kwargs={"poll_interval": 0.005}, daemon=True)
         self.thread.start()
+
+    def arrived(self) -> None:
+        """Count one TLS record the client sent after the handshake, such as a ping frame."""
+        with self._arrival:
+            self.records += 1
+            self._arrival.notify_all()
+
+    def wait_records(self, count: int) -> None:
+        """Wait until the client sent at least so many records after its handshakes."""
+        with self._arrival:
+            self._arrival.wait_for(lambda: self.records >= count, 10)
 
     def handle_error(self, request: object, client_address: object) -> None:
         """Ignore a connection the client dropped."""
 
     def stop(self) -> None:
-        """Stop serving and release the port."""
+        """Hang up every connection, stop serving, and release the port."""
+        self.release.set()
         self.shutdown()
         self.server_close()
         self.thread.join(timeout=5)
