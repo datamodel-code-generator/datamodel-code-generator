@@ -288,9 +288,10 @@ class _Polls:
     ) -> Iterator[Diagnostic]:
         """Check each binding's value against its target, that no two writes overlap, and what the operation requires.
 
-        A cookie or another credential position is never written, a body written to must be JSON only, and a literal
-        dot segment is no path value. `written` are the targets the helper writes besides, which no binding overlaps,
-        and only a `complete` request, one the bindings and those writes alone make, must write every required one.
+        A cookie or another credential position is never written, a body written to must be JSON only, and literals
+        that make a path segment a dot segment are no path values. `written` are the targets the helper writes
+        besides, which no binding overlaps, and only a `complete` request, one the bindings and those writes alone
+        make, must write every required one.
         """
         name, label = helper.name, _label(spec)
         writes = list(written)
@@ -336,7 +337,10 @@ class _Polls:
     def required(
         helper: Helper, spec: OperationSpec, written: list[tuple[str, ...]], at: str, *, complete: bool = True
     ) -> Iterator[Diagnostic]:
-        """Refuse a required parameter or body of a complete request no binding writes, and a body other than JSON."""
+        """Refuse a required parameter or body of a complete request no binding writes, and a body other than JSON.
+
+        A written body must have a default media type, since a request the helper builds names none.
+        """
         label = _label(spec)
         locations = {key[0] for key in written}
         for parameter in spec.parameters if complete else ():
@@ -360,6 +364,12 @@ class _Polls:
                 "which is not supported yet"
             )
             yield _problem("E_CLIENT_UNSUPPORTED", "target", at, message, spec)
+        elif "body" in locations and body.default is None:
+            message = (
+                f"The {_KINDS[helper.kind]} helper {helper.name!r} writes a request body of {label}, which has no "
+                "default media type; set the operation's request_media_type"
+            )
+            yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
         elif complete and body.required and "body" not in locations:
             message = f"{label} requires a request body, which no binding of {helper.name!r} writes"
             yield _problem("E_CONFIG_VALUE", "config", at, message, spec)

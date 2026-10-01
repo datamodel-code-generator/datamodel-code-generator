@@ -31,7 +31,7 @@ from datamodel_code_generator._runtime.client.security import secret_names
 from datamodel_code_generator._runtime.model_codecs.bindings import ArrayNode, MapNode, ModelNode, UnionNode
 from datamodel_code_generator._runtime.model_codecs.errors import ParameterEncodingError
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
-from datamodel_code_generator._runtime.model_codecs.parameters import path_text
+from datamodel_code_generator._runtime.model_codecs.parameters import AdaptedParameterPlan, path_text
 from datamodel_code_generator._runtime.protocols.records import canonical_json
 
 if TYPE_CHECKING:
@@ -121,7 +121,8 @@ def _dot_literals(spec: OperationSpec, bindings: list[Mapping[str, Any]]) -> fro
     """Return the first literal binding of each path segment the literal bindings make `.` or `..`, by index.
 
     Only a segment whose every parameter a literal writes is judged, each literal encoded in its parameter's style; a
-    literal its parameter cannot encode is left to the type check.
+    literal its parameter cannot encode is left to the type check. A segment with a parameter a registered adapter
+    carries is left to the runtime, which checks the path the adapter's text makes.
     """
     literals: dict[str, tuple[int, WireValue]] = {}
     for index, item in enumerate(bindings):
@@ -132,7 +133,9 @@ def _dot_literals(spec: OperationSpec, bindings: list[Mapping[str, Any]]) -> fro
     plans = {item.wire_name: item.plan for item in spec.parameters if item.location == "path"}
     dotted: set[int] = set()
     for segment, names in path_segments(spec.contract.path):
-        if not all(name in literals for name in names):
+        if not all(name in literals for name in names) or any(
+            isinstance(plans[name], AdaptedParameterPlan) for name in names
+        ):
             continue
         try:
             texts = {name: path_text(plans[name], literals[name][1]) for name in names}
@@ -781,7 +784,7 @@ def plan_pagination(
 ) -> tuple[tuple[PaginationSpec, ...], dict[str, list[Diagnostic]]]:
     """Plan every enabled pagination helper, returning the planned ones and each checked helper's problems.
 
-    Helpers of other kinds are left to the caller, which refuses them.
+    Helpers of other kinds have planners of their own.
     """
     if protocols is None:
         return (), {}

@@ -1093,6 +1093,17 @@
   "failures": [
     {
       "plan": {
+        "location": "cookie",
+        "name": "tags",
+        "style": "form",
+        "adapted": true
+      },
+      "value": [
+        "a"
+      ]
+    },
+    {
+      "plan": {
         "location": "query",
         "name": "q",
         "style": "form",
@@ -1502,6 +1513,25 @@
     {
       "location": "path",
       "name": "p"
+    }
+  ],
+  "path_texts": [
+    {
+      "plan": {
+        "location": "path",
+        "name": "p",
+        "style": "simple"
+      },
+      "value": "a.b"
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "p",
+        "style": "simple",
+        "adapted": true
+      },
+      "value": "a.b"
     }
   ]
 }

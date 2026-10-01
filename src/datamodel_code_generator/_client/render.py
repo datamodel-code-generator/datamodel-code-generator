@@ -433,7 +433,7 @@ __all__ = [
 
 
 def __getattr__(name: str) -> object:
-    """Load a memory store, a pagination type, a polling handle, or a stream type only when its class is requested."""
+    """Load a memory store or a pagination, polling, or stream type only when its public class is requested."""
     if name in {"AsyncPager", "Page", "Pager"}:
         from .._runtime.protocols import pagination
 
@@ -2077,8 +2077,11 @@ class _Registry(_Typing):
     def parameter(self, module: Module, parameter: ParameterSpec) -> Group:
         """Return the ParameterSpec constructor of one parameter."""
         entries: list[tuple[str, Doc]] = [("plan=", parameter_plan(module.local, parameter.plan))]
-        if parameter.use is not None and parameter.use.id in self.accessors:
-            entries.append(("encoder=", self.encoder(module, parameter.use)))
+        if (use := parameter.use) is not None and (accessor := self.accessors.get(use.id)) is not None:
+            entries.append(("encoder=", self.encoder(module, use)))
+            if accessor.parameter is not None:
+                bindings = module.local("_generated", "model_bindings")
+                entries.append(("adapter=", f"({bindings}.{accessor.parameter}, {bindings}.{accessor.context})"))
         return _call(module.local(_RUNTIME, "ParameterSpec"), entries)
 
     def media(self, module: Module, media: MediaSpec) -> Group:
@@ -2294,7 +2297,7 @@ reconnect, and events the server sends again after a reopen are delivered again.
 """
 
 
-class _Helpers:  # noqa: PLR0904
+class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
     """Render the protocol helpers of a client package: their plans and their sync and asyncio namespaces."""
 
     def __init__(self, resources: _Resources, fingerprints: Mapping[str, str]) -> None:
@@ -2322,9 +2325,9 @@ class _Helpers:  # noqa: PLR0904
         return "None" if spec.value is None else module.types.static(spec.value)
 
     def plans(self) -> str:
-        """Return the module of every helper's accessors and plan."""
-        streams = self.streams
+        """Return the module of every helper's accessors and plan, then each stream helper's plan."""
         names = ("PLAN_{}", "CANCEL_{}", "_items_{}", "_result_{}", "_immediate_{}")
+        streams = self.streams
         module = Module(
             {
                 *(name.format(index) for index in range(len(self.helpers)) for name in names),
@@ -2340,7 +2343,7 @@ class _Helpers:  # noqa: PLR0904
             else:
                 sections.extend((self.items(module, index, spec), self.plan(module, index, spec)))
         sections.extend(self.stream_plan(module, index, spec) for index, spec in enumerate(streams))
-        kinds = sorted({spec.helper.kind for spec in self.helpers} | ({"stream"} if streams else set()))
+        kinds = sorted({*(spec.helper.kind for spec in self.helpers), *(("stream",) if streams else ())})
         return types_template.render(
             docstring=(
                 f"The plans of this package's {kinds[0] if len(kinds) == 1 else 'protocol'} helpers; regenerate them "
@@ -2627,8 +2630,8 @@ class _Helpers:  # noqa: PLR0904
             sections.append(
                 self.node(
                     name,
-                    f"the {spec.helper.name} {spec.helper.kind} helper of {spec.operation.contract.method.upper()} "
-                    f"{spec.operation.contract.path}",
+                    f"the {spec.helper.name} {_HELPER_KINDS[spec.helper.kind]} of "
+                    f"{spec.operation.contract.method.upper()} {spec.operation.contract.path}",
                     core,
                     self.start(module, index, spec, handles.get(name), asynchronous=asynchronous)
                     if isinstance(spec, PollingSpec)
@@ -3098,6 +3101,14 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
             for spec in (*self.helpers, *self.streams)
         ]
         kinds = {spec.helper.kind for spec in self.helpers}
+        streams = (
+            f"""
+An {self.stream_label} helper's `open` sends its operation in a session of its own and returns an event stream once the
+response is a declared success; the stream reads only the bytes each event needs, and `close()` or `aclose()` releases
+the response.{_RESUMES if any(spec.reopen is not None for spec in self.streams) else ""}"""
+            if self.streams
+            else ""
+        )
         pagination = (
             """
 A pagination helper's `page` fetches the first page and `next_page` the page after one it returned, each in a
@@ -3110,27 +3121,20 @@ reference for their limits and checkpoints."""
         polling = (
             """
 A polling helper's `start` creates the operation and returns a handle: `status` polls it once and `wait` polls until
-it settles and returns its result, each poll after the wait the last response requires; `close` stops only local
-polling. `resume` returns a handle continuing a handle's `checkpoint()` without creating the operation again, and a
-helper that declares a remote cancellation returns a handle whose `cancel_remote` sends it. See the runtime reference
-for their limits and checkpoints."""
+it settles and returns its result, each poll after the wait the last response requires; `close()` or `aclose()`
+stops only local polling. `resume` returns a handle continuing a handle's `checkpoint()` without creating the
+operation again, and a helper that declares a remote cancellation returns a handle whose `cancel_remote` sends it. See
+the runtime reference for their limits and checkpoints."""
             if "polling" in kinds
             else ""
         )
-        streams = (
-            f"""
-An {self.stream_label} helper's `open` sends its operation in a session of its own and returns an event stream once the
-response is a declared success; the stream reads only the bytes each event needs, and `close()` or `aclose()` releases
-the response.{_RESUMES if any(spec.reopen is not None for spec in self.streams) else ""} See the runtime reference for
-their limits."""
-            if self.streams
-            else ""
-        )
+        closing = "" if kinds else "\nSee the runtime reference for their limits."
         return f"""
 ## Protocol helpers
 
-`client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.\
-{pagination}{polling}{streams}
+`client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.{
+            streams
+        }{pagination}{polling}{closing}
 
 ```json
 {json.dumps(helpers, indent=2, ensure_ascii=True)}
@@ -3355,10 +3359,10 @@ cancelled operation raises `OperationFailedError` or `OperationCancelledError` w
 `wait` too. An error that settles nothing, such as a transport error, a deadline, a cancellation, or a limit, leaves
 the handle as it was: pending, so a later `status` or `wait` polls again without creating the operation again, or
 succeeded with its result fetch still due, which a later `wait` retries alone. `status` and `wait` at once raise
-`ProtocolStateError`, and so does every step after `close`, which stops only local polling. A call's options must not
-fix an idempotency key or patch a header or query parameter the helper writes.
+`ProtocolStateError`, and so does every step after `close()` or `aclose()`, which stops only local polling. A call's
+options must not fix an idempotency key or patch a header or query parameter the helper writes.
 
-`checkpoint()` returns a `ResumeState` without sending, also after `close` and while another thread or task polls:
+`checkpoint()` returns a `ResumeState` without sending, also after closing and while another thread or task polls:
 the phase, the polls so far, the wait left before the next poll or result fetch, the values the next requests write,
 and a settled operation's final poll and result bodies, never model objects, the session, or the call's options. The
 helper's `resume` is never awaited and returns a handle in a session of its own that sends nothing until `status` or
@@ -3374,7 +3378,7 @@ without a valid one fails `start` with `ProtocolDataError`, though the remote op
 A helper that declares `remote_cancel` returns a handle of its own class whose `cancel_remote()` sends the cancel
 request once, while the operation is pending, and returns a `CancelReceipt` of its response; it also runs while
 another thread or task waits in `status` or `wait`. It does not change the handle, which keeps its last poll until it
-polls again; `close` sends nothing.
+polls again; closing sends nothing.
 """
 
     def pagination_runtime(self) -> str:

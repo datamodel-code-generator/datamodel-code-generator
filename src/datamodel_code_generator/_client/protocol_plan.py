@@ -160,7 +160,7 @@ def helper_problems(
     """Refuse enabled helpers whose entry operation takes a reserved argument or whose name gives a taken class name.
 
     Webhook helpers send nothing, so neither applies to them. Then report each enabled helper's own problems in
-    declaration order; every kind that loads is checked, since the kinds not supported yet are refused when loading.
+    declaration order; every kind an enabled helper can have is checked, since validation refuses the later kinds.
     """
     if protocols is None:
         return

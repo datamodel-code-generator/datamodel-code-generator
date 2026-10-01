@@ -31,9 +31,8 @@ from ..client.options import RequestOptions
 from ..client.paths import dot_segment, path_segments
 from ..client.responses import ResponseInfo
 from ..client.timing import SessionOptions
-from ..model_codecs.errors import CodecError, ParameterEncodingError
+from ..model_codecs.errors import CodecError
 from ..model_codecs.media import decode_json
-from ..model_codecs.parameters import path_text
 from ..model_codecs.unset import UNSET, Unset
 from .errors import PaginationCycleError, ProtocolDataError, ProtocolStateError, ResumeStateError, SessionLimitError
 from .options import PaginationOptions, layered
@@ -62,7 +61,6 @@ from .values import MISSING, Missing, RepeatedValueError, resolve, selected, wri
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Generator, Iterator, Sequence
     from types import TracebackType
-    from typing import TypeAlias
 
     from ..client.client import AsyncClientCore, ClientCore
     from ..client.logical import OperationSession
@@ -73,8 +71,7 @@ if TYPE_CHECKING:
     from ..model_codecs.selectors import MediaSelector
     from ..model_codecs.wire import WireValue
     from .references import OperationRef
-
-    _PathPart: TypeAlias = tuple[str, int | None, Selector | None, int]
+    from .writes import ReadPaths
 
 __all__ = (
     "AsyncPager",
@@ -249,7 +246,7 @@ class PaginationPlan(Generic[T, P]):
     writes: tuple[tuple[int | None, str | None], ...] = field(init=False)
     headers: frozenset[str] = field(init=False)
     queries: frozenset[str] = field(init=False)
-    dotted: tuple[tuple[str, tuple[_PathPart, ...]], ...] = field(init=False)
+    dotted: ReadPaths = field(init=False)
     continued: OperationPlan[P, object] = field(init=False)
 
     def __post_init__(self) -> None:
@@ -258,7 +255,7 @@ class PaginationPlan(Generic[T, P]):
         A write is a parameter's argument position with no pointer, a querystring's with a pointer into its value, or
         no position with a pointer into the JSON body. Every media of a body written to is JSON.
         """
-        from .writes import targeted  # noqa: PLC0415 - Only a plan loads the operation runtime.
+        from .writes import read_paths, targeted  # noqa: PLC0415 - Only a plan loads the operation runtime.
 
         rule = self.continuation
         follows = isinstance(rule, (NextUrlPlan, LinkPlan))
@@ -270,7 +267,7 @@ class PaginationPlan(Generic[T, P]):
         object.__setattr__(self, "writes", writes)
         object.__setattr__(self, "headers", headers)
         object.__setattr__(self, "queries", queries)
-        object.__setattr__(self, "dotted", _read_paths(self.call, sources))
+        object.__setattr__(self, "dotted", read_paths(self.call, sources))
         if follows and not (isinstance(rule, NextUrlPlan) and rule.repeat_request_body):
             continued = replace(continued, method="GET", body=None, retry_safety="method_default", idempotency=None)
         object.__setattr__(self, "continued", continued)
@@ -484,58 +481,6 @@ def _selected(plan: PaginationPlan[T, P], read: Selector, wire: WireValue, info:
         raise _data_error(plan, info, "malformed", read) from None
 
 
-def _read_paths(
-    call: OperationPlan[P, object], sources: Sequence[tuple[RequestTarget, Selector | None]]
-) -> tuple[tuple[str, tuple[_PathPart, ...]], ...]:
-    """Return the path segments read values are written to, each parameter by name, write, selector, and position.
-
-    A parameter the caller's argument fills has no write.
-    """
-    from .writes import parameter_position  # noqa: PLC0415 - Only a plan loads the operation runtime.
-
-    paths: dict[str, tuple[int | None, Selector | None]] = {
-        target.name: (index, selector)
-        for index, (target, selector) in enumerate(sources)
-        if isinstance(target, ParameterTarget) and target.location == "path"
-    }
-    reads = {name for name, (_, selector) in paths.items() if selector is not None}
-    return tuple(
-        (
-            segment,
-            tuple((name, *paths.get(name, (None, None)), parameter_position(call, "path", name)) for name in names),
-        )
-        for segment, names in (path_segments(call.path) if reads else ())
-        if not reads.isdisjoint(names)
-    )
-
-
-def _dotted(
-    plan: PaginationPlan[T, P],
-    segment: str,
-    parts: tuple[_PathPart, ...],
-    written: tuple[WireValue, ...],
-    callers: Callable[[], Mapping[str, str]],
-) -> Selector | None:
-    """Return the selector of a read value written to a path segment that encodes to a dot segment, or None.
-
-    The caller's own path arguments in the segment keep the texts the first page sent. The first read value whose
-    encoded text is non-empty is blamed, or else the first read value. A value its parameter cannot encode is left to
-    the request, which refuses it.
-    """
-    parameters = plan.call.parameters
-    try:
-        texts = {
-            name: callers()[name] if index is None else path_text(parameters[position].plan, written[index])
-            for name, index, _, position in parts
-        }
-    except ParameterEncodingError:
-        return None
-    if not dot_segment(segment, texts):
-        return None
-    reads = [(name, read) for name, _, read, _ in parts if read is not None]
-    return next((read for name, read in reads if texts[name]), reads[0][1])
-
-
 def _size_error(
     plan: PaginationPlan[T, P], info: ResponseInfo | None, kind: Literal["cursor", "headers"], limit: int, size: int
 ) -> ProtocolSizeError:
@@ -747,7 +692,7 @@ class _Walk(Generic[T, P]):
             plan, arguments = self.plan, self.request.arguments
             parameters = plan.call.parameters
             texts = self.paths = {
-                name: path_text(parameters[position].plan, parameters[position].encode(arguments[position], "none"))
+                name: parameters[position].path_text(parameters[position].encode(arguments[position], "none"))
                 for _, parts in plan.dotted
                 for name, index, _, position in parts
                 if index is None
@@ -756,9 +701,12 @@ class _Walk(Generic[T, P]):
 
     def dotted(self, written: tuple[WireValue, ...], info: ResponseInfo | None) -> None:
         """Refuse a read value among those the next request writes that makes a path segment a dot segment."""
+        from .writes import dotted_read  # noqa: PLC0415 - A plan loaded the operation runtime.
+
         plan = self.plan
+        parameters = plan.call.parameters
         for segment, parts in plan.dotted:
-            if (read := _dotted(plan, segment, parts, written, self.callers)) is not None:
+            if (read := dotted_read(parameters, segment, parts, written, self.callers)) is not None:
                 raise _data_error(plan, info, "value", read)
 
     def session_id(self) -> str | None:
@@ -894,7 +842,7 @@ class _Walk(Generic[T, P]):
             return replace(call, body=replace(body, media=media))
         parameters = list(call.parameters)
         spec = parameters[position]
-        parameters[position] = ReadParameter(plan=spec.plan, encoder=spec.encoder, read=read)
+        parameters[position] = ReadParameter(plan=spec.plan, encoder=spec.encoder, adapter=spec.adapter, read=read)
         return replace(call, parameters=tuple(parameters))
 
     def started(self, wire: WireValue) -> None:
@@ -1240,27 +1188,27 @@ def resent(
         given = sent[0], cast("str", declared), concrete
     try:
         restored, restored_body, media_type = core.restored_request(call, wire, given)
+        texts = {
+            spec.plan.name: spec.path_text(value)
+            for spec, value in zip(call.parameters, wire, strict=True)
+            if spec.plan.location == "path" and not isinstance(value, Unset)
+        }
     except (SDKError, CodecError):
         raise _MalformedError from None
-    texts = {
-        spec.plan.name: path_text(spec.plan, value)
-        for spec, value in zip(call.parameters, wire, strict=True)
-        if spec.plan.location == "path" and not isinstance(value, Unset)
-    }
     _require(
         not any(texts.keys() >= {*names} and dot_segment(segment, texts) for segment, names in path_segments(call.path))
     )
     return _Request(restored, restored_body, media_type)
 
 
-def _checked(core: ClientCore | AsyncClientCore, walk: _Walk[T, P]) -> None:
+def _checked(core: ClientCore | AsyncClientCore, walk: _Walk[T, P]) -> tuple[str, HeadersView]:
     """Prepare the request a walk sends next as its call would, refusing one whose saved values cannot be sent.
 
     Only the encoding and validation of the saved values is the checkpoint's; any other refusal, such as one of the
-    resumed call's options, is raised as the call raises it.
+    resumed call's options, is raised as the call raises it. The URL and headers it would send are returned.
     """
     try:
-        core.checked_page(walk.operation(), walk.next_request, walk.request.media_type, walk.limits.options)
+        return core.checked_page(walk.operation(), walk.next_request, walk.request.media_type, walk.limits.options)
     except (RequestEncodingError, ProtocolDataError, CodecError):
         raise _MalformedError from None
 
@@ -1271,14 +1219,15 @@ def _walked(
     """Return the walk of a checkpoint's decoded state, with the items it left of its last page and their position.
 
     The next request is prepared as its call would prepare it, without sending, and so is the first one, which gives an
-    offset or page number its start, unless a followed URL replaced it without the body the checkpoint left out.
+    offset or page number its start as the first page read it, unless a followed URL replaced it without the body the
+    checkpoint left out.
     """
     _require(isinstance(state, Mapping) and frozenset(state) == _STATE)
     fields = cast("Mapping[str, WireValue]", state)
     request = resent(core, plan.call, fields["arguments"], fields["body"])
     first = _Walk(plan, request, limits, core)
     if (page := fields["page"]) is None or not plan.follows or plan.continued.body is not None:
-        _checked(core, first)
+        first.sent(*_checked(core, first))
     if page is None:
         _require(not payload)
         return first, (), 0

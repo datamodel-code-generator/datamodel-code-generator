@@ -98,7 +98,7 @@ __all__ = [
 
 
 def __getattr__(name: str) -> object:
-    """Load a memory store, a pagination type, a polling handle, or a stream type only when its class is requested."""
+    """Load a memory store or a pagination, polling, or stream type only when its public class is requested."""
     if name in {"AsyncPager", "Page", "Pager"}:
         from .._runtime.protocols import pagination
 

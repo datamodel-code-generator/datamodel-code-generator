@@ -15,11 +15,11 @@ from models import Push as _dcg_type_0
 from ..._generated import model_bindings
 from ..._runtime.protocols.signatures import HMAC_SHA256, RAW_BODY, SignatureProfile
 from ..._runtime.protocols.verification import (
-    EventDecoder,
     WebhookPlan,
     averify_webhook,
     verify_webhook,
 )
+from ..._runtime.protocols.webhook_events import EventDecoder
 from ..._runtime.protocols.webhook_keys import HmacKey
 from ..._runtime.protocols.webhooks import (
     AsyncReplayStore,

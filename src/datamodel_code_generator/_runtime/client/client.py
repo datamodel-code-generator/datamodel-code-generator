@@ -540,11 +540,13 @@ def _parameters(
             if plan.required:
                 raise _encoding_error(operation, (plan.location, plan.name))
             continue
+        bound = None if (adapter := spec.adapter) is None else (adapter[0](), adapter[1])
         try:
-            contribution = encode_parameter(plan, spec.encode(value, mode))
+            wire = spec.encode(value, mode)
+            contribution = encode_parameter(plan, wire) if bound is None else bound[0].encode(wire, bound[1])
+            request.add(contribution, plan.name)
         except (*DATA_ERRORS, ValueError, TypeError) as error:
             raise _encoding_error(operation, (plan.location, plan.name), error) from None
-        request.add(contribution, plan.name)
     return request
 
 
@@ -1926,11 +1928,14 @@ class _Core(Generic[AdapterT, HandleT]):
         request: Callable[[], tuple[tuple[object, ...], object, str | None]],
         media_type: str | MediaSelector | None,
         options: RequestOptions | None,
-    ) -> None:
-        """Prepare a helper's request as its page's call prepares it, without sending, raising what that raises."""
+    ) -> tuple[str, HeadersView]:
+        """Prepare a helper's request as its page's call prepares it, without sending, raising what that raises.
+
+        The URL and headers it would send are returned, every patch applied.
+        """
         arguments, body, url = request()
         settings = self._call_settings(options, operation.operation_id)
-        self._prepare(
+        prepared = self._prepare(
             operation,
             arguments,
             settings,
@@ -1940,7 +1945,8 @@ class _Core(Generic[AdapterT, HandleT]):
             accept=None,
             narrowed=False,
             url=url,
-        )
+        )[0]
+        return prepared.url, prepared.headers
 
     def checked_arguments(
         self, operation: OperationPlan[object, object], given: Mapping[int, WireValue], options: RequestOptions | None

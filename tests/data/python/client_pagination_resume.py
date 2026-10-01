@@ -334,6 +334,13 @@ def _starts(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
     filtered = queries.iterate(filter=harness.argument("queries", "Query", "querystring", "filter", {"term": "a"}))
     patched = options(query=(("debug", "1"),))
     record(lines, "resumed with a query patch", lambda: queries.resume(filtered.checkpoint(), options=patched))
+    defaults = harness.client_options(query=(("offset", "40"),))
+    with exchange.client() as native, type(api)(http_client=native, options=defaults) as patched_api:
+        offsets = patched_api.protocols.users.offsets
+        exchange.respond(user_page("1", "2", has_more=True), user_page("3", has_more=False))
+        pager = offsets.iterate()
+        _taken(lines, "offset from a client default taking 2", pager, 2)
+        drained(lines, "offset from a client default resumed", offsets.resume(pager.checkpoint()))
 
 
 def _body(harness: Harness, resource: str, operation: str, wire: object) -> object:

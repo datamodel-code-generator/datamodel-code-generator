@@ -203,6 +203,23 @@ paths:
       responses:
         '409':
           description: Already archived.
+  /archives/search:
+    post:
+      operationId: searchArchives
+      tags: [archives]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ReportQuery'}
+          application/merge-patch+json:
+            schema: {$ref: '#/components/schemas/ReportQuery'}
+      responses:
+        '200':
+          description: The report of an archived job.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Report'}
 components:
   securitySchemes:
     keyHeader: {type: apiKey, in: header, name: X-Api-Key}

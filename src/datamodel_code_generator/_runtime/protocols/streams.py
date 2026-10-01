@@ -60,7 +60,7 @@ from .errors import (
     StreamResumeExhaustedError,
 )
 from .options import StreamOptions, layered
-from .records import ParameterTarget, canonical_json
+from .records import canonical_json
 from .resume import (
     MalformedStateError,
     ResumeState,
@@ -71,7 +71,7 @@ from .resume import (
     state_count,
     state_fields,
 )
-from .values import DOT_SEGMENTS, MISSING, Missing, RepeatedValueError, resolve, selected, written
+from .values import MISSING, Missing, RepeatedValueError, resolve, selected, written
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterator
@@ -91,7 +91,7 @@ if TYPE_CHECKING:
     from .pagination import PageBinding
     from .records import BodySelector, HeaderSelector, ProtocolProgress, RequestTarget, Selector
     from .references import OperationRef
-    from .writes import Writes
+    from .writes import ReadPaths, Writes
 
     _Given: TypeAlias = tuple[tuple[object, ...], object, str | MediaSelector | None]
 
@@ -176,7 +176,8 @@ class StreamResumePlan:
     the helper's `own` operation repeats the caller's first request with them, and another operation sends only what is
     written. A cleared cursor's parameter is omitted. A binding reads the open response for `initial` and the latest
     open or reopen response for `previous`. `reconnect_on` names the interruptions a call that enables it reconnects
-    after, and `expires_at` the header of the open response that gives the server's expiry.
+    after, and `expires_at` the header of the open response that gives the server's expiry. `dotted` are the path
+    segments of the reopen a binding's read value is written to, which must not encode to a dot segment.
     """
 
     operation: OperationRef
@@ -194,21 +195,22 @@ class StreamResumePlan:
     writes: Writes = field(init=False)
     headers: frozenset[str] = field(init=False)
     queries: frozenset[str] = field(init=False)
+    dotted: ReadPaths = field(init=False)
 
     def __post_init__(self) -> None:
         """Derive the operation of a reopen taking the bindings' values and then the cursor as wire values.
 
         The header and query parameters it writes are those a call's options must not patch.
         """
-        from .writes import targeted  # noqa: PLC0415 - Only a plan loads the operation runtime.
+        from .writes import read_paths, targeted  # noqa: PLC0415 - Only a plan loads the operation runtime.
 
-        reopened, writes, headers, queries = targeted(
-            self.call, (*(binding.target for binding in self.bindings), self.write)
-        )
+        sources = tuple((binding.target, binding.selector) for binding in self.bindings)
+        reopened, writes, headers, queries = targeted(self.call, (*(target for target, _ in sources), self.write))
         object.__setattr__(self, "reopened", reopened)
         object.__setattr__(self, "writes", writes)
         object.__setattr__(self, "headers", headers)
         object.__setattr__(self, "queries", queries)
+        object.__setattr__(self, "dotted", read_paths(self.call, sources))
 
 
 @final
@@ -669,23 +671,47 @@ def _data_error(
     )
 
 
-def _dotted(binding: PageBinding, value: WireValue) -> bool:
-    """Return whether a binding writes a dot segment to a path parameter."""
-    target = binding.target
-    return isinstance(target, ParameterTarget) and target.location == "path" and value in DOT_SEGMENTS
+def _dotted(resume: StreamResumePlan, bound: tuple[WireValue, ...], given: _Given | None) -> Selector | None:
+    """Return the selector of a read value that makes a path segment of the reopen a dot segment once encoded, or None.
+
+    The caller's own path arguments in the segment, which only a reopen of the helper's own operation repeats, are
+    encoded again by their parameters' codecs, without validation.
+    """
+    from .writes import dotted_read  # noqa: PLC0415 - A plan loaded the operation runtime.
+
+    parameters = resume.call.parameters
+
+    def callers() -> dict[str, str]:
+        arguments = () if given is None else given[0]
+        return {
+            name: parameters[position].path_text(parameters[position].encode(arguments[position], "none"))
+            for _, parts in resume.dotted
+            for name, index, _, position in parts
+            if index is None
+        }
+
+    return next(
+        (
+            read
+            for segment, parts in resume.dotted
+            if (read := dotted_read(parameters, segment, parts, bound, callers)) is not None
+        ),
+        None,
+    )
 
 
-def _bound(
+def _bound(  # noqa: PLR0913, PLR0917
     plan: EventPlan[T],
     resume: StreamResumePlan,
     operation: OperationRef,
     info: ResponseInfo,
+    given: _Given | None,
     kept: tuple[WireValue, ...] = (),
 ) -> tuple[WireValue, ...]:
     """Return the values the bindings write: their literals, kept `initial` values, and what a response gives.
 
-    A stream response's header or status gives a value; a missing one, a header repeated where one is read, and a dot
-    segment for a path parameter are refused.
+    A stream response's header or status gives a value; a missing one, a header repeated where one is read, and read
+    values that make a path segment of the reopen a dot segment once encoded are refused.
     """
     values: list[WireValue] = []
     for index, binding in enumerate(resume.bindings):
@@ -701,10 +727,10 @@ def _bound(
             raise _data_error(plan, operation, info, "malformed", read) from None
         if value is MISSING:
             raise _data_error(plan, operation, info, "missing", read)
-        if _dotted(binding, value):
-            raise _data_error(plan, operation, info, "value", read)
         values.append(value)
-    return tuple(values)
+    if (read := _dotted(resume, bound := tuple(values), given)) is not None:
+        raise _data_error(plan, operation, info, "value", read)
+    return bound
 
 
 def _json(frame: _Frame) -> WireValue | Missing:
@@ -734,9 +760,10 @@ def _expiry(plan: EventPlan[T], read: HeaderSelector, info: ResponseInfo) -> dat
 
 def _opened(plan: EventPlan[T], resume: StreamResumePlan, given: _Given, info: ResponseInfo) -> _Position:
     """Return where a stream starts after its open response: the bindings' values and the server's expiry it gives."""
+    kept = given if resume.own else None
     return _Position(
-        given=given if resume.own else None,
-        bound=_bound(plan, resume, plan.operation, info),
+        given=kept,
+        bound=_bound(plan, resume, plan.operation, info, kept),
         expires_at=None if (read := resume.expires_at) is None else _expiry(plan, read, info),
     )
 
@@ -1026,7 +1053,7 @@ class _Events(Generic[T]):
     def _reopened(self, info: ResponseInfo) -> None:
         """Take a reopen's response: the reopen operation's identity and the bindings' values it gives."""
         resume = cast("StreamResumePlan", self._resume)
-        self._bound = _bound(self._plan, resume, resume.operation, info, self._bound)
+        self._bound = _bound(self._plan, resume, resume.operation, info, self._given, self._bound)
         self._operation, self._operation_id = resume.operation, resume.call.operation_id
 
     def _switched(self, info: ResponseInfo) -> None:
@@ -1567,7 +1594,7 @@ async def _aaccepted(response: AsyncRawResponse, take: Callable[[ResponseInfo], 
 
 def _resumed(plan: EventPlan[T], resume: StreamResumePlan, position: _Position, info: ResponseInfo) -> _Position:
     """Return where a resumed stream starts after its reopen response: the bindings' values it gives."""
-    return replace(position, bound=_bound(plan, resume, resume.operation, info, position.bound))
+    return replace(position, bound=_bound(plan, resume, resume.operation, info, position.given, position.bound))
 
 
 def _resume_error(
@@ -1636,11 +1663,6 @@ def _restore(  # noqa: PLR0913, PLR0917
         value if binding.selector is not None else binding.literal
         for binding, value in zip(resume.bindings, saved, strict=True)
     )
-    for binding, value in zip(resume.bindings, bound, strict=True):
-        if (selector := binding.selector) is not None and _dotted(binding, value):
-            raise ProtocolDataError(
-                condition="value", location=selector, helper_id=plan.helper_id, operation=resume.operation
-            )
     given: _Given | None = None
     if resume.own:
         from .pagination import resent  # noqa: PLC0415 - Only a resumed stream rebuilds a saved request.
@@ -1649,6 +1671,10 @@ def _restore(  # noqa: PLR0913, PLR0917
         given = request.arguments, request.body, request.media_type
     else:
         require_state(fields["arguments"] == () and fields["body"] == ())
+    if (selector := _dotted(resume, bound, given)) is not None:
+        raise ProtocolDataError(
+            condition="value", location=selector, helper_id=plan.helper_id, operation=resume.operation
+        )
     return _Position(
         given=given,
         cursor=cursor,
