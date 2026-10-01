@@ -143,8 +143,65 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ShelfPage"
+  /jobs:
+    post:
+      operationId: createJob
+      responses:
+        "202":
+          description: The accepted job.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+  /jobs/{jobId}:
+    get:
+      operationId: getJob
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The job.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+  /reports:
+    get:
+      operationId: getReport
+      parameters:
+        - name: X-Tags
+          in: header
+          schema:
+            $ref: "#/components/schemas/Tags"
+      responses:
+        "200":
+          description: The report of a finished job.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Report"
 components:
   schemas:
+    Job:
+      type: object
+      required: [id, status, tags]
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+        tags:
+          $ref: "#/components/schemas/Tags"
+    Report:
+      type: object
+      required: [rows]
+      properties:
+        rows:
+          type: integer
     ShelfPage:
       type: object
       required: [data]

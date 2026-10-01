@@ -7,3 +7,6 @@
   default.search same ['response', 'security', 'signature'] different ['request']
   default.spread same ['request', 'response', 'security', 'signature'] different []
   default.list_shelf same ['request', 'response', 'security', 'signature'] different []
+  default.create_job same ['request', 'response', 'security', 'signature'] different []
+  default.get_job same ['request', 'response', 'security', 'signature'] different []
+  default.get_report same ['request', 'response', 'security', 'signature'] different []

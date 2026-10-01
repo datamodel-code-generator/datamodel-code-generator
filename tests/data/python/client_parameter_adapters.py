@@ -97,8 +97,18 @@ def parameter_adapters(package: ModuleType, lines: list[str]) -> None:
         exchange.respond(_page("1", more=False))
         drained(lines, "pages without a querystring", api.protocols.finds.all.iterate())
         _shelves(api, values, exchange, lines)
+        _resumed(api, exchange, lines)
     http.close()
     run(lambda: _async_parameter_adapters(package, values, lines))
+
+
+def _resumed(api: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Resume an operation whose result fetch writes a saved value to an adapted header, checked through its adapter."""
+    helper = api.protocols.jobs.report
+    exchange.respond(json_response(202, {"id": "j1", "status": "queued", "tags": ["a,b", "c"]}))
+    state = helper.start().checkpoint()
+    exchange.respond(json_response(200, {"id": "j1", "status": "done", "tags": []}), json_response(200, {"rows": 3}))
+    record(lines, "resumed fetch of an adapted header", lambda: helper.resume(state).wait())
 
 
 def _boundaries(api: Any, values: dict[str, Any], exchange: Exchange, lines: list[str]) -> None:
