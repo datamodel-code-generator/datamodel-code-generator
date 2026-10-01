@@ -1,0 +1,110 @@
+# streams pydantic_v2.BaseModel
+  > GET https://api.example.com/events accept=text/event-stream
+  messages
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end
+  > GET https://api.example.com/events accept=text/event-stream
+  typed
+    1 created id=None retry=None data=Created{'type': 'created', 'id': '1'} raw='{"type": "created", "id": "1"}'
+    2 renamed id=None retry=None data=UnknownEvent{'discriminator': 'renamed', 'raw_data': '{"id": "2"}'} raw='{"id": "2"}'
+    3 deleted id='3' retry=None data=Deleted{'type': 'deleted', 'id': '3'} raw='{"type": "deleted", "id": "3"}'
+  < closed
+    end
+  > GET https://api.example.com/events accept=text/event-stream
+  tagged
+    1 message id=None retry=None data=Created{'type': 'created', 'id': '1'} raw='{"type": "created", "id": "1"}'
+    2 anything id=None retry=None data=Deleted{'type': 'deleted', 'id': '2'} raw='{"type": "deleted", "id": "2"}'
+  < closed
+    end
+  > GET https://api.example.com/events accept=text/event-stream
+  < closed
+  error event error {'message': 'boom'}
+# streams pydantic_v2.dataclass
+  > GET https://api.example.com/events accept=text/event-stream
+  messages
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end
+  > GET https://api.example.com/events accept=text/event-stream
+  typed
+    1 created id=None retry=None data=Created{'type': 'created', 'id': '1'} raw='{"type": "created", "id": "1"}'
+    2 renamed id=None retry=None data=UnknownEvent{'discriminator': 'renamed', 'raw_data': '{"id": "2"}'} raw='{"id": "2"}'
+    3 deleted id='3' retry=None data=Deleted{'type': 'deleted', 'id': '3'} raw='{"type": "deleted", "id": "3"}'
+  < closed
+    end
+  > GET https://api.example.com/events accept=text/event-stream
+  tagged
+    1 message id=None retry=None data=Created{'type': 'created', 'id': '1'} raw='{"type": "created", "id": "1"}'
+    2 anything id=None retry=None data=Deleted{'type': 'deleted', 'id': '2'} raw='{"type": "deleted", "id": "2"}'
+  < closed
+    end
+  > GET https://api.example.com/events accept=text/event-stream
+  < closed
+  error event error {'message': 'boom'}
+# streams dataclasses.dataclass
+  > GET https://api.example.com/events accept=text/event-stream
+  messages
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end
+  > GET https://api.example.com/events accept=text/event-stream
+  typed
+    1 created id=None retry=None data=Created{'type': 'created', 'id': '1'} raw='{"type": "created", "id": "1"}'
+    2 renamed id=None retry=None data=UnknownEvent{'discriminator': 'renamed', 'raw_data': '{"id": "2"}'} raw='{"id": "2"}'
+    3 deleted id='3' retry=None data=Deleted{'type': 'deleted', 'id': '3'} raw='{"type": "deleted", "id": "3"}'
+  < closed
+    end
+  > GET https://api.example.com/events accept=text/event-stream
+  tagged
+    1 message id=None retry=None data=Created{'type': 'created', 'id': '1'} raw='{"type": "created", "id": "1"}'
+    2 anything id=None retry=None data=Deleted{'type': 'deleted', 'id': '2'} raw='{"type": "deleted", "id": "2"}'
+  < closed
+    end
+  > GET https://api.example.com/events accept=text/event-stream
+  < closed
+  error event error {'message': 'boom'}
+# streams typing.TypedDict
+  > GET https://api.example.com/events accept=text/event-stream
+  messages
+    1 message id=None retry=None data=dict{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end
+  > GET https://api.example.com/events accept=text/event-stream
+  typed
+    1 created id=None retry=None data=dict{'type': 'created', 'id': '1'} raw='{"type": "created", "id": "1"}'
+    2 renamed id=None retry=None data=UnknownEvent{'discriminator': 'renamed', 'raw_data': '{"id": "2"}'} raw='{"id": "2"}'
+    3 deleted id='3' retry=None data=dict{'type': 'deleted', 'id': '3'} raw='{"type": "deleted", "id": "3"}'
+  < closed
+    end
+  > GET https://api.example.com/events accept=text/event-stream
+  tagged
+    1 message id=None retry=None data=dict{'type': 'created', 'id': '1'} raw='{"type": "created", "id": "1"}'
+    2 anything id=None retry=None data=dict{'type': 'deleted', 'id': '2'} raw='{"type": "deleted", "id": "2"}'
+  < closed
+    end
+  > GET https://api.example.com/events accept=text/event-stream
+  < closed
+  error event error {'message': 'boom'}
+# streams msgspec.Struct
+  > GET https://api.example.com/events accept=text/event-stream
+  messages
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end
+  > GET https://api.example.com/events accept=text/event-stream
+  typed
+    1 created id=None retry=None data=Created{'type': 'created', 'id': '1'} raw='{"type": "created", "id": "1"}'
+    2 renamed id=None retry=None data=UnknownEvent{'discriminator': 'renamed', 'raw_data': '{"id": "2"}'} raw='{"id": "2"}'
+    3 deleted id='3' retry=None data=Deleted{'type': 'deleted', 'id': '3'} raw='{"type": "deleted", "id": "3"}'
+  < closed
+    end
+  > GET https://api.example.com/events accept=text/event-stream
+  tagged
+    1 message id=None retry=None data=Created{'type': 'created', 'id': '1'} raw='{"type": "created", "id": "1"}'
+    2 anything id=None retry=None data=Deleted{'type': 'deleted', 'id': '2'} raw='{"type": "deleted", "id": "2"}'
+  < closed
+    end
+  > GET https://api.example.com/events accept=text/event-stream
+  < closed
+  error event error {'message': 'boom'}

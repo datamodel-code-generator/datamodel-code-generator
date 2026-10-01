@@ -1,0 +1,77 @@
+openapi: 3.1.0
+info:
+  title: Webhook adapters
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /events:
+    get:
+      operationId: listEvents
+      tags: [events]
+      responses:
+        '200':
+          description: Listed.
+webhooks:
+  invoice:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Invoice'}
+      responses:
+        '200':
+          description: Received.
+  customer:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Customer'}
+      responses:
+        '200':
+          description: Received.
+  message:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Message'}
+      responses:
+        '200':
+          description: Received.
+  audit:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Audit'}
+      responses:
+        '200':
+          description: Received.
+components:
+  schemas:
+    Invoice:
+      type: object
+      required: [type, id, amount]
+      properties:
+        type: {type: string}
+        id: {type: string}
+        amount: {type: integer}
+    Customer:
+      type: object
+      required: [type, id, email]
+      properties:
+        type: {type: string}
+        id: {type: string}
+        email: {type: string}
+    Message:
+      type: object
+      required: [test]
+      properties:
+        test: {type: integer}
+    Audit:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string, readOnly: true}

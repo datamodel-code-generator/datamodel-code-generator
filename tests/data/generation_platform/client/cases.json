@@ -2244,6 +2244,176 @@
       ]
     ]
   },
+  "webhooks-public-keys": {
+    "input": "webhooks.yaml",
+    "references": [
+      "protocols/webhook-public-keys.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/webhook-public-keys.yaml"
+    },
+    "modules": [
+      [
+        "client",
+        "webhooks",
+        "keys.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "rfc8032",
+        "ed25519.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "wycheproof",
+        "rsa.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "standard",
+        "ed25519.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "keyed",
+        "rsa.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "github",
+        "push.py"
+      ]
+    ]
+  },
+  "webhooks-public-keys-python": {
+    "input": "webhooks.yaml",
+    "config": {
+      "protocols": {
+        "python": "public_keys"
+      }
+    }
+  },
+  "webhooks-adapters": {
+    "input": "webhook-adapters.yaml",
+    "references": [
+      "protocols/webhook-adapters.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/webhook-adapters.yaml"
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "keys.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "stripe",
+        "event.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "adapted",
+        "message.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "adapted",
+        "plain.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "mapped",
+        "event.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "unsigned",
+        "event.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "unsigned",
+        "message.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "adapted",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "mapped",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "stripe",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "unsigned",
+        "__init__.py"
+      ]
+    ]
+  },
+  "webhooks-adapters-python": {
+    "input": "webhook-adapters.yaml",
+    "config": {
+      "protocols": {
+        "python": "adapters"
+      }
+    }
+  },
+  "webhooks-unsigned": {
+    "input": "webhook-adapters.yaml",
+    "references": [
+      "protocols/webhook-unsigned.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/webhook-unsigned.yaml"
+    },
+    "modules": [
+      [
+        "client",
+        "webhooks",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "unsigned",
+        "message.py"
+      ]
+    ]
+  },
   "unions": {
     "input": "unions.yaml",
     "config": {
@@ -2391,6 +2561,133 @@
     ],
     "config": {
       "protocols": "protocols/pagination-link-checks.yaml"
+    },
+    "modules": false
+  },
+  "streams": {
+    "input": "streams.yaml",
+    "references": [
+      "protocols/streams.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/streams.yaml",
+      "validation": {
+        "response_overrides": [
+          "schema"
+        ]
+      }
+    },
+    "modules": [
+      [
+        "client",
+        "_client.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ]
+    ]
+  },
+  "protocols-stream-checks": {
+    "input": "streams.yaml",
+    "references": [
+      "protocols/stream-checks.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/stream-checks.yaml"
+    },
+    "modules": false
+  },
+  "protocols-stream-scope": {
+    "input": "streams.yaml",
+    "references": [
+      "protocols/stream-scope.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/stream-scope.yaml"
+    },
+    "modules": false,
+    "model": {
+      "openapi_scopes": [
+        "schemas"
+      ]
+    }
+  },
+  "streams-mixed": {
+    "input": "streams-mixed.yaml",
+    "references": [
+      "protocols/streams-mixed.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/streams-mixed.yaml"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ]
+    ]
+  },
+  "ndjson": {
+    "input": "ndjson.yaml",
+    "references": [
+      "protocols/ndjson.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/ndjson.yaml",
+      "validation": {
+        "response_overrides": [
+          "schema"
+        ]
+      }
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ]
+    ]
+  },
+  "protocols-ndjson-checks": {
+    "input": "ndjson.yaml",
+    "references": [
+      "protocols/ndjson-checks.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/ndjson-checks.yaml"
     },
     "modules": false
   },

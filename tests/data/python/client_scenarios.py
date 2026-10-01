@@ -81,11 +81,20 @@ from tests.data.python.client_runtime import (
 from tests.data.python.client_selectors import selectors
 from tests.data.python.client_signatures import keywords, signatures
 from tests.data.python.client_stream_lifetimes import stream_lifetimes
+from tests.data.python.client_streams import ndjson, ndjson_backends, stream_backends, streams
+from tests.data.python.client_streams import stream_lifetimes as event_stream_lifetimes
 from tests.data.python.client_transports import lifecycle, transports
 from tests.data.python.client_unions import schema_unions, unions
 from tests.data.python.client_validation import arguments, validation
+from tests.data.python.client_webhook_adapters import (
+    webhook_adapter_imports,
+    webhook_adapters,
+    webhook_mapped_backends,
+    webhook_unsigned,
+)
 from tests.data.python.client_webhook_contracts import webhook_contracts
 from tests.data.python.client_webhook_errors import webhook_errors
+from tests.data.python.client_webhook_public_keys import webhook_public_keys
 from tests.data.python.client_webhooks import webhook_backends, webhook_replay, webhook_verification
 
 if TYPE_CHECKING:
@@ -794,6 +803,11 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "pagination-querystring": ("pagination-querystring", ("pydantic_v2.BaseModel",), pagination_querystring),
     "pagination-counts": ("pagination-counts", ("pydantic_v2.BaseModel",), pagination_counts),
     "pagination-links": ("pagination-links", ("pydantic_v2.BaseModel",), pagination_links),
+    "streams": ("streams", ("pydantic_v2.BaseModel",), streams),
+    "stream-events": ("streams", ("pydantic_v2.BaseModel",), event_stream_lifetimes),
+    "stream-backends": ("streams", BACKENDS, stream_backends),
+    "ndjson": ("ndjson", ("pydantic_v2.BaseModel",), ndjson),
+    "ndjson-backends": ("ndjson", BACKENDS, ndjson_backends),
     "protocol-errors": ("pets", ("pydantic_v2.BaseModel",), protocol_errors),
     "evolution": ("evolution", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"), evolution),
     "evolution-schema": (
@@ -819,6 +833,11 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "webhook-verification": ("webhooks", ("pydantic_v2.BaseModel",), webhook_verification),
     "webhook-backends": ("webhooks", BACKENDS, webhook_backends),
     "webhook-replay": ("webhooks", ("pydantic_v2.BaseModel",), webhook_replay),
+    "webhook-public-keys": ("webhooks-public-keys", ("pydantic_v2.BaseModel",), webhook_public_keys),
+    "webhook-adapters": ("webhooks-adapters", ("pydantic_v2.BaseModel",), webhook_adapters),
+    "webhook-unsigned": ("webhooks-adapters", ("pydantic_v2.BaseModel",), webhook_unsigned),
+    "webhook-mapped-backends": ("webhooks-adapters", BACKENDS, webhook_mapped_backends),
+    "webhook-adapter-imports": ("webhooks-unsigned", ("pydantic_v2.BaseModel",), webhook_adapter_imports),
     "unions": ("unions", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), unions),
     "unions-tagged": ("unions-tagged", ("msgspec.Struct",), unions),
     "unions-schema": ("unions-schema", BACKENDS, schema_unions),

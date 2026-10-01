@@ -40,6 +40,7 @@ if TYPE_CHECKING:
         ResponseSpec,
         ServerSpec,
     )
+    from datamodel_code_generator._client.streams import StreamSpec
     from datamodel_code_generator._generation_contract import (
         FinalPythonType,
         GeneratedTypeContractBatch,
@@ -381,14 +382,17 @@ from .._runtime.protocols.webhooks import (
 if TYPE_CHECKING:
     from .._runtime.protocols.pagination import AsyncPager, Page, Pager
     from .._runtime.protocols.replay import AsyncMemoryReplayStore, MemoryReplayStore
+    from .._runtime.protocols.streams import AsyncEventStream, EventStream, StreamEvent, UnknownEvent
 
 __all__ = [
+    "AsyncEventStream",
     "AsyncMemoryReplayStore",
     "AsyncPager",
     "AsyncReplayStore",
     "BodySelector",
     "BodyTarget",
     "Continuation",
+    "EventStream",
     "HeaderSelector",
     "KeySet",
     "MemoryReplayStore",
@@ -411,7 +415,9 @@ __all__ = [
     "ResumeState",
     "Selector",
     "StatusSelector",
+    "StreamEvent",
     "StreamOptions",
+    "UnknownEvent",
     "VerifiedSignature",
     "VerifiedWebhook",
     "Verifier",
@@ -421,11 +427,15 @@ __all__ = [
 
 
 def __getattr__(name: str) -> object:
-    """Load a memory store or a pagination type only when its public class is requested."""
+    """Load a memory store, a pagination type, or a stream type only when its public class is requested."""
     if name in {"AsyncPager", "Page", "Pager"}:
         from .._runtime.protocols import pagination
 
         return getattr(pagination, name)
+    if name in {"AsyncEventStream", "EventStream", "StreamEvent", "UnknownEvent"}:
+        from .._runtime.protocols import streams
+
+        return getattr(streams, name)
     if name == "MemoryReplayStore":
         from .._runtime.protocols.replay import MemoryReplayStore
 
@@ -965,6 +975,7 @@ class _Resources(_Typing):
         *,
         unpacked: bool = False,
         helpers: tuple[PaginationSpec, ...] = (),
+        streams: tuple[StreamSpec, ...] = (),
     ) -> None:
         """Keep the typing context, User-Agent, validation, unpacked methods' TypedDicts, and protocol helpers."""
         super().__init__(plan, codecs, accessors)
@@ -972,6 +983,7 @@ class _Resources(_Typing):
         self.validation = validation
         self.records = _Records(self) if unpacked else None
         self.helpers = helpers
+        self.streams = streams
 
     def defaults(self, module: Module) -> str:
         """Return the generated defaults of the clients, naming the validation modes that differ from the runtime's."""
@@ -991,7 +1003,7 @@ class _Resources(_Typing):
                 f"{module.local('_runtime.client.options', 'ValidationModes')}({arguments})",
             ))
         name = module.local("_runtime.client.client", "ClientDefaults")
-        if not (helpers := self.helpers):
+        if not (helpers := (*self.helpers, *self.streams)):
             return f"{name}({', '.join(f'{prefix}{value}' for prefix, value in entries)})"
         entries.append(("helpers=", _tuple(repr((spec.helper.name, spec.helper.kind)) for spec in helpers)))
         return layout(_call(name, entries), 0, len("_DEFAULTS = "), WIDTH)
@@ -1007,7 +1019,7 @@ class _Resources(_Typing):
         names = {f"{prefix}Client", f"{prefix}ClientWithStreamingResponse", f"{prefix}ProtocolHelpers", "_DEFAULTS"}
         module = Module({*names, *(name for _, name, _ in roots)}, self.symbols, level=1)
         lazy = [(name, path) for _, name, path in roots]
-        protocols = f"{prefix}ProtocolHelpers" if self.helpers else None
+        protocols = f"{prefix}ProtocolHelpers" if self.helpers or self.streams else None
         helpers_module = f".protocols.{_helpers_module(asynchronous=asynchronous)}"
         if protocols is not None:
             lazy.append((protocols, helpers_module))
@@ -2177,6 +2189,14 @@ _HELPER_OPTIONS: Final = (
     ("options", "..options", "RequestOptions"),
     ("session_options", "..options", "SessionOptions"),
 )
+_STREAM_OPTIONS: Final = (
+    ("stream_options", ".", "StreamOptions"),
+    ("options", "..options", "RequestOptions"),
+    ("session_options", "..options", "SessionOptions"),
+)
+_HELPER_KINDS: Final = {"pagination": "pagination helper", "sse": "SSE helper", "ndjson": "NDJSON helper"}
+_STREAM_KINDS: Final = {"sse": "event stream", "ndjson": "NDJSON stream"}
+_STREAM_LABELS: Final = {"sse": "SSE", "ndjson": "NDJSON"}
 _HELPER_CALLS: Final[dict[bool, tuple[str, str, str]]] = {
     False: ("first_page", "iterate_pages", "following_page"),
     True: ("afirst_page", "aiterate_pages", "afollowing_page"),
@@ -2190,6 +2210,7 @@ class _Helpers:
         """Keep the resources' typing context, its helpers, and each helper's contract fingerprint."""
         self.resources = resources
         self.helpers = resources.helpers
+        self.streams = resources.streams
         self.fingerprints = fingerprints
 
     @staticmethod
@@ -2199,17 +2220,23 @@ class _Helpers:
         return module.local(f"types.{operation.resource}", f"{operation.pascal}Response")
 
     def plans(self) -> str:
-        """Return the module of every helper's items accessor and plan."""
+        """Return the module of every helper's plan, after each pagination helper's items accessor."""
+        streams = self.streams
         module = Module(
-            {name for index in range(len(self.helpers)) for name in (f"PLAN_{index}", f"_items_{index}")},
+            {
+                *(name for index in range(len(self.helpers)) for name in (f"PLAN_{index}", f"_items_{index}")),
+                *(f"STREAM_{index}" for index in range(len(streams))),
+            },
             self.resources.symbols,
             level=2,
         )
         sections: list[str] = []
         for index, spec in enumerate(self.helpers):
             sections.extend((self.accessor(module, index, spec), self.plan(module, index, spec)))
+        sections.extend(self.stream_plan(module, index, spec) for index, spec in enumerate(streams))
+        kind = "protocol" if self.helpers and streams else "stream" if streams else "pagination"
         return types_template.render(
-            docstring="The plans of this package's pagination helpers; regenerate them instead of editing.",
+            docstring=f"The plans of this package's {kind} helpers; regenerate them instead of editing.",
             imports=module.imports(),
             sections=sections,
         )
@@ -2356,20 +2383,24 @@ class _Helpers:
         )
         return head + layout(value, 0, len(head), WIDTH)
 
-    def module(self, *, asynchronous: bool) -> str:
+    def module(self, *, asynchronous: bool) -> str:  # noqa: PLR0914
         """Return the sync or asyncio module of the helper namespaces and the helpers."""
         prefix = "Async" if asynchronous else ""
         root = f"{prefix}ProtocolHelpers"
         nodes: dict[tuple[str, ...], dict[str, tuple[str, str]]] = {(): {}}
-        leaves: dict[str, PaginationSpec] = {}
-        for spec in self.helpers:
+        named: dict[str, str] = {}
+        kinds: dict[str, str] = {}
+        for spec in (*self.helpers, *self.streams):
             helper = spec.helper
             for parts, class_name in helper_classes(helper.name, helper.kind):
                 nodes.setdefault(parts[:-1], {})[parts[-1]] = (f"{prefix}{class_name}", ".".join(parts))
                 if parts == tuple(helper.name.split(".")):
-                    leaves[f"{prefix}{class_name}"] = spec
+                    named[helper.name] = f"{prefix}{class_name}"
+                    kinds[f"{prefix}{class_name}"] = _HELPER_KINDS[helper.kind]
                 else:
                     nodes.setdefault(parts, {})
+        leaves = {named[spec.helper.name]: spec for spec in self.helpers}
+        streams = {named[spec.helper.name]: spec for spec in self.streams}
         names = {root, *(name for children in nodes.values() for name, _ in children.values())}
         module = Module(names, self.resources.symbols, level=2)
         core = module.local("_runtime.client.client", f"{prefix}ClientCore")
@@ -2379,7 +2410,7 @@ class _Helpers:
             name = f"{prefix}{''.join(map(pascal, parts))}Protocols" if parts else root
             members = [
                 f"    @{cached}\n    def {attribute}(self) -> {child}:\n"
-                f'        """The {dotted} {"pagination helper" if child in leaves else "protocol helpers"}."""\n'
+                f'        """The {dotted} {kinds.get(child, "protocol helpers")}."""\n'
                 f"        return {child}(self._core)"
                 for attribute, (child, dotted) in children.items()
             ]
@@ -2395,6 +2426,17 @@ class _Helpers:
                 leaf=True,
             )
             for index, (name, spec) in enumerate(leaves.items())
+        )
+        sections.extend(
+            self.node(
+                name,
+                f"the {spec.helper.name} {_HELPER_KINDS[spec.helper.kind]} of {spec.operation.contract.method.upper()} "
+                f"{spec.operation.contract.path}",
+                core,
+                [self.stream_method(module, index, spec, asynchronous=asynchronous)],
+                leaf=True,
+            )
+            for index, (name, spec) in enumerate(streams.items())
         )
         kind = "asyncio" if asynchronous else "synchronous"
         return types_template.render(
@@ -2486,6 +2528,105 @@ class _Helpers:
             )),
         ]
 
+    @staticmethod
+    def event_type(module: Module, spec: StreamSpec) -> str:
+        """Return the type of a stream's event data: its event types, with UnknownEvent when it keeps unknown events."""
+        types = [use.type for _, use in spec.events if use.type is not None]
+        unknown = (
+            (module.local("_runtime.protocols.streams", "UnknownEvent"),)
+            if spec.helper.tree["unknown"] == "raw"
+            else ()
+        )
+        return _union((_merged(module, types), *unknown))
+
+    def decoder(self, module: Module, use: TypeUseBinding) -> str:
+        """Return the decoder of an event or error schema's data, by its use's codec."""
+        return f"{module.local(_CODECS, 'native_value')}({self.resources.codec(module, use)})"
+
+    def stream_plan(self, module: Module, index: int, spec: StreamSpec) -> str:
+        """Return a stream helper's plan: its identity, operation, media type, event and error decoders, and end.
+
+        An NDJSON plan also names its kind, and its final line when the body may end without a line end.
+        """
+        runtime = "_runtime.protocols.streams"
+        helper = spec.helper
+        tree = helper.tree
+        plan = module.local(runtime, "EventPlan")
+        entries: list[tuple[str, Doc]] = [
+            ("helper_id=", repr(helper.name)),
+            (
+                "operation=",
+                (
+                    f"{module.local('_runtime.protocols.references', 'OperationRef')}"
+                    f"(pointer={spec.operation.contract.id.use_site.pointer!r})"
+                ),
+            ),
+            ("call=", f"{module.root('_operations')}.OPERATION_{spec.operation.index}"),
+            ("media=", repr(spec.media)),
+            ("fingerprint=", repr(self.fingerprints[helper.name])),
+        ]
+        if not isinstance(schema := tree["event_schema"], dict):
+            entries.append(("event=", self.decoder(module, spec.events[0][1])))
+        else:
+            entries.append((
+                "routes=",
+                _tuple(_tuple((repr(key), self.decoder(module, use))) for key, use in spec.events),
+            ))
+            if (selector := schema["discriminator"])["from"] == "body":
+                body = module.local("_runtime.protocols.records", "BodySelector")
+                entries.append(("discriminator=", f"{body}(pointer={selector['pointer']!r})"))
+            if tree["unknown"] == "raw":
+                entries.append(("unknown=", module.local(runtime, "unknown_event")))
+        if spec.errors:
+            entries.append((
+                "errors=",
+                _tuple(_tuple((repr(key), self.decoder(module, use))) for key, use in spec.errors),
+            ))
+        if (completion := tree["completion"])["kind"] != "eof":
+            entries.extend((("completion=", repr(completion["kind"])), ("terminal=", repr(completion["value"]))))
+        if helper.kind != "sse":
+            entries.append(("kind=", repr(helper.kind)))
+            if (final := tree["final_line"]) != "require_newline":
+                entries.append(("final_line=", repr(final)))
+        head = f"STREAM_{index}: {module.name('typing', 'Final')}[{plan}[{self.event_type(module, spec)}]] = "
+        return head + layout(_call(plan, entries), 0, len(head), WIDTH)
+
+    def stream_method(self, module: Module, index: int, spec: StreamSpec, *, asynchronous: bool) -> str:
+        """Return a stream helper's open method, which takes its operation's parameters and body."""
+        operation = replace(spec.operation, fields=())
+        resources = self.resources
+        runtime = "_runtime.protocols.streams"
+        arguments = [resources.parameter(module, parameter) for parameter in operation.parameters]
+        body = resources.requests(module, operation, asynchronous=asynchronous)[1]
+        options = [
+            _Argument(name, f"{module.namespace.name(source, kind)} | None", "none")
+            for name, source, kind in _STREAM_OPTIONS
+        ]
+        handle = module.local(runtime, "AsyncEventStream" if asynchronous else "EventStream")
+        passed = [
+            ("", "self._core"),
+            ("", f"{module.namespace.name('.', '_plans')}.STREAM_{index}"),
+            ("", _tuple(parameter.python_name for parameter in operation.parameters)),
+            *((f"{argument.name}=", argument.name) for argument in body),
+            *((f"{name}=", name) for name, _, _ in _STREAM_OPTIONS),
+        ]
+        opener = module.local(runtime, "aopen_events" if asynchronous else "open_events")
+        route = f"{operation.contract.method.upper()} {operation.contract.path}"
+        signature = tuple(argument.parameter(module) for argument in (*arguments, *body, *options))
+        wait = "await " if asynchronous else ""
+        stream = _STREAM_KINDS[spec.helper.kind]
+        return "\n".join((
+            _signature(
+                "open",
+                signature,
+                f"{handle}[{self.event_type(module, spec)}]",
+                asynchronous=asynchronous,
+                stub=False,
+            ),
+            f'        """Open the {stream} of {route}, returning once its response is a declared success."""',
+            f"        return {wait}{layout(_call(opener, passed), 8, 7 + len(wait), WIDTH)}",
+        ))
+
 
 class ClientRenderer:
     """Render every module of one client package from its plan, codec plan, and wire plan."""
@@ -2500,6 +2641,7 @@ class ClientRenderer:
         wire: WirePlan,
         codecs: CodecPlan,
         helpers: tuple[PaginationSpec, ...] = (),
+        streams: tuple[StreamSpec, ...] = (),
         fingerprints: Mapping[str, str] | None = None,
         webhooks: Callable[[Mapping[TypeUseId, UseAccessors]], tuple[tuple[PurePosixPath, str], ...]],
     ) -> None:
@@ -2514,6 +2656,7 @@ class ClientRenderer:
         self.wire = wire
         self.codecs = codecs
         self.helpers = helpers
+        self.streams = streams
         self.fingerprints = fingerprints or {}
         self.webhooks = webhooks
 
@@ -2600,7 +2743,7 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
 
     def helper_readme(self) -> str:
         """Describe the package's protocol helpers, or nothing when it has none."""
-        if not self.helpers:
+        if not (self.helpers or self.streams):
             return ""
         helpers = [
             {
@@ -2610,15 +2753,31 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
                 "method": spec.operation.contract.method.upper(),
                 "path": spec.operation.contract.path,
             }
-            for spec in self.helpers
+            for spec in (*self.helpers, *self.streams)
         ]
+        sentence = "See the runtime reference for their limits."
+        streams = (
+            f"""
+An {self.stream_label} helper's `open` sends its operation in a session of its own and returns an event stream once the
+response is a declared success; the stream reads only the bytes each event needs, and `close()` or `aclose()` releases
+the response."""
+            if self.streams
+            else ""
+        )
+        pages = (
+            f"""
+A pagination helper's `page` fetches the first page and `next_page` the page after one it returned, each in a
+session of its own; `iterate` returns a pager, which sends nothing until it is iterated and fetches each page only
+once the previous one is consumed. {sentence}"""
+            if self.helpers
+            else f"\n{sentence}"
+        )
         return f"""
 ## Protocol helpers
 
-`client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.
-A pagination helper's `page` fetches the first page and `next_page` the page after one it returned, each in a
-session of its own; `iterate` returns a pager, which sends nothing until it is iterated and fetches each page only
-once the previous one is consumed. See the runtime reference for their limits.
+`client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.{
+            streams
+        }{pages}
 
 ```json
 {json.dumps(helpers, indent=2, ensure_ascii=True)}
@@ -2799,7 +2958,7 @@ A limiter permit is acquired before opening a body and released when its respons
 bounded wait, retains unfinished owned work, and preserves the primary error, attaching secondary failures where
 possible. Client/view closure refuses new work and interrupts active calls at observation points. Retrying close can
 wait for retained cleanup; it does not authorize another send or restore an expired logical deadline.
-{self.helper_runtime()}"""  # noqa: S608
+{self.helper_runtime()}{self.stream_runtime()}"""  # noqa: S608
 
     def helper_runtime(self) -> str:
         """Describe pagination sessions and their limits, or nothing for a package without helpers.
@@ -2870,6 +3029,57 @@ the last, and an empty page with a URL continues. A URL seen earlier in the sess
 it with `PaginationCycleError` after the repeating page.
 """
 
+    @cached_property
+    def stream_label(self) -> str:
+        """Return the kinds of the package's stream helpers, as their documentation names them."""
+        return " or ".join(dict.fromkeys(_STREAM_LABELS[spec.helper.kind] for spec in self.streams))
+
+    def stream_runtime(self) -> str:
+        """Describe SSE and NDJSON streams and their limits, or nothing for a package without stream helpers."""
+        if not self.streams:
+            return ""
+        lines = (
+            """
+An NDJSON body is read one line at a time: LF or CRLF ends a line, which is one record of strict UTF-8 JSON, so a
+blank line or one that is not UTF-8 or JSON raises `StreamDecodeError`. A record, without its LF or the CR of a CRLF,
+counts toward both the line and the event data size. Bytes after the last line end raise `IncompleteFrameError` unless
+the helper's `final_line` is `allow_eof`, which decodes them as the last record. A record has the empty string as its
+event type and no event ID, and a declared error record raises `StreamRemoteError` with the event type None.
+"""
+            if any(spec.helper.kind == "ndjson" for spec in self.streams)
+            else ""
+        )
+        return f"""
+## {self.stream_label} streams
+
+An {self.stream_label} helper's `open` is one session holding one logical call. The call's total timeout bounds only
+acquiring the response, which must be a declared success of the helper's media type; afterward the stream's idle
+timeout, the call's `stream_total_timeout`, and the session's deadline apply. Each limit comes from the call's
+options, then `ProtocolClientOptions.defaults` for the helper, then the default below. The stream types are imported
+from:
+
+- `{self.config.package}.protocols`: `StreamOptions`, `EventStream`, `AsyncEventStream`, `StreamEvent`, and
+  `UnknownEvent`
+- `{self.config.package}.options`: `SessionOptions`
+
+| Limit | Effective default |
+|---|---|
+| idle timeout | the call's `stream_idle_timeout` (60 seconds); None removes it |
+| line size | 256 KiB |
+| event data size | 1 MiB |
+| session total timeout | None |
+| network sends per session | 16; None removes it |
+
+The idle timeout runs only while the next step waits for bytes. An event's data is JSON decoded by the schema its
+discriminator maps it to; data that does not decode raises `StreamDecodeError`, a declared error event raises
+`StreamRemoteError`, and a line or event over its limit raises `ProtocolSizeError`. The stream ends at its declared
+completion; an end before it raises `StreamInterruptedError`, a cut frame `IncompleteFrameError`, and a broken
+connection `StreamInterruptedError` with its transport failure as the cause. Streams never reconnect, so
+`StreamOptions(reconnect=True)` raises `ProtocolConfigurationError`. Close a stream with `with`, `async with`, or
+`close()`; leaving a loop early does not release its response, and closing the client with a stream open raises
+`CleanupError` once its cleanup timeout passes.
+{lines}"""
+
     @staticmethod
     def count_runtime(kinds: set[str]) -> str:
         """Describe offset and page-number helpers, or nothing for a package without them."""
@@ -2889,7 +3099,7 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
 
     def helper_files(self, resources: _Resources) -> tuple[RenderedFile, ...]:
         """Return the modules of the package's protocol helpers, none without helpers."""
-        if not self.helpers:
+        if not (self.helpers or self.streams):
             return ()
         helpers = _Helpers(resources, self.fingerprints)
         return (
@@ -2912,6 +3122,7 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
             config.validation,
             unpacked=config.signature_style == "unpack",
             helpers=self.helpers,
+            streams=self.streams,
         )
         types = _Types(self.plan, self.codecs, self.accessors)
         registry = _Registry(self.plan, self.codecs, self.accessors)

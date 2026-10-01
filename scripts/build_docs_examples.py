@@ -383,6 +383,54 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
+            example_id="python-client.streams.helper",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "python",
+                blocks(
+                    CLIENT_PACKAGES / "streams" / "pydantic_v2_BaseModel" / "client" / "protocols" / "_helpers.py",
+                    "    def open(",
+                    limit=1,
+                ),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.streams.diagnostics",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "text",
+                "\n".join(
+                    line.strip()
+                    for line in read_text(EXPECTED_CLIENT / "protocols" / "protocols-stream-checks.txt").splitlines()
+                    if line.lstrip().startswith("E_")
+                ),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.ndjson.helper",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "python",
+                blocks(
+                    CLIENT_PACKAGES / "ndjson" / "pydantic_v2_BaseModel" / "client" / "protocols" / "_helpers.py",
+                    "    def open(",
+                    limit=1,
+                ),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.ndjson.diagnostics",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "text",
+                "\n".join(
+                    line.strip()
+                    for line in read_text(EXPECTED_CLIENT / "protocols" / "protocols-ndjson-checks.txt").splitlines()
+                    if line.lstrip().startswith("E_")
+                ),
+            ),
+        ),
+        DocsExample(
             example_id="python-client.webhooks.usage",
             path=DOCS / "python-client.md",
             render=lambda: fenced(
@@ -416,6 +464,43 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
+            example_id="python-client.webhooks.public-keys",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "python", blocks(CLIENT_DATA / "typing" / "public_key_helpers.py", "def keys(", separator="\n\n\n")
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.webhooks.public-keys-yaml",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "yaml",
+                yaml_helpers(CLIENT_DATA / "protocols" / "webhook-public-keys.yaml", "standard.ed25519", "keyed.rsa"),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.webhooks.adapter-yaml",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "yaml",
+                yaml_helpers(CLIENT_DATA / "protocols" / "webhook-adapters.yaml", "stripe.event", "unsigned.event"),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.webhooks.adapter",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "python",
+                blocks(
+                    CLIENT_DATA / "typing" / "adapter_helpers.py",
+                    "class StripeKey:",
+                    "class StripeVerifier:",
+                    "def receive_stripe(",
+                    separator="\n\n\n",
+                ),
+            ),
+        ),
+        DocsExample(
             example_id="python-client.webhooks.diagnostics",
             path=DOCS / "python-client.md",
             render=lambda: fenced(
@@ -423,7 +508,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
                 "\n".join(
                     line.strip()
                     for line in read_text(EXPECTED_CLIENT / "protocols" / "protocols-webhook-errors.txt").splitlines()
-                    if line.lstrip().startswith("E_CONFIG_CONFLICT")
+                    if line.lstrip().startswith("E_CONFIG_CONFLICT") and ".signature" in line
                 ),
             ),
         ),

@@ -1,0 +1,7 @@
+# webhooks-adapters and webhooks-adapters-python
+  stripe.event same True
+  adapted.message same True
+  adapted.plain same True
+  mapped.event same True
+  unsigned.event same True
+  unsigned.message same True

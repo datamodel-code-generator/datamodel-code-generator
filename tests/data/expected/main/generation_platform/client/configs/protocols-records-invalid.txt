@@ -16,3 +16,5 @@ APIGenerationError
   E_CONFIG_VALUE config protocols.helpers['users.nested'].bindings[0].value.literal: protocols.helpers['users.nested'].bindings[0].value.literal nests deeper than 64 levels
   E_CONFIG_VALUE config protocols.helpers['users.nested'].bindings[1].value.literal: protocols.helpers['users.nested'].bindings[1].value.literal has text that is not UTF-8
   E_CONFIG_VALUE config protocols.helpers['jobs.run']: protocols.helpers['jobs.run'] must be a helper definition
+  E_CONFIG_VALUE config protocols.helpers['hooks.hmac'].signature: protocols.helpers['hooks.hmac'].signature must be a signature
+  E_CONFIG_VALUE config protocols.helpers['hooks.public'].signature: protocols.helpers['hooks.public'].signature must be a signature

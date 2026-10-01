@@ -1,0 +1,214 @@
+# webhooks-public-keys
+render pydantic_v2.BaseModel
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/subscriptions/__init__.py
+  write client/resources/subscriptions/_sync.py
+  write client/resources/subscriptions/_async.py
+  write client/types/__init__.py
+  write client/types/subscriptions/__init__.py
+  write client/types/subscriptions/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/webhooks/__init__.py
+  write client/webhooks/keys.py
+  write client/webhooks/github/__init__.py
+  write client/webhooks/keyed/__init__.py
+  write client/webhooks/rfc8032/__init__.py
+  write client/webhooks/standard/__init__.py
+  write client/webhooks/wycheproof/__init__.py
+  write client/webhooks/rfc8032/ed25519.py
+  write client/webhooks/wycheproof/rsa.py
+  write client/webhooks/standard/ed25519.py
+  write client/webhooks/keyed/rsa.py
+  write client/webhooks/github/push.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['rfc8032.ed25519', 'wycheproof.rsa', 'standard.ed25519', 'keyed.rsa', 'github.push'] bindings 5
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper rfc8032.ed25519 webhook enabled True /inputs/target_config/protocol_metadata/helpers/rfc8032.ed25519 8befb6939fe955a2bd8f665addce8d9a705268c1d9f4e124dd3276b6f47f5d4e
+  helper wycheproof.rsa webhook enabled True /inputs/target_config/protocol_metadata/helpers/wycheproof.rsa 37204347aa7db9ac01919c06b8594604b186a0b378b39ebda623d88f9eae3c20
+  helper standard.ed25519 webhook enabled True /inputs/target_config/protocol_metadata/helpers/standard.ed25519 122924ba7c3a6fc0d8e26d9c64c491b04c3be71005bbabcd2672e394aaf31c99
+  helper keyed.rsa webhook enabled True /inputs/target_config/protocol_metadata/helpers/keyed.rsa d53c275add719ccd967cf6fbff2a8b4f9a69d52211868b2c647351ca61a69ab6
+  helper github.push webhook enabled True /inputs/target_config/protocol_metadata/helpers/github.push db5dd04d96ec941efee24451300a154baf59aab8455fab1e755425f4e7fa8be3
+  {
+    "helpers": {
+      "github.push": {
+        "duplicates": "report",
+        "enabled": true,
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Push"
+        },
+        "kind": "webhook",
+        "signature": {
+          "delivery_id": "none",
+          "encoding": "hex",
+          "field_constraints": {},
+          "header": "X-Hub-Signature-256",
+          "key_id": "none",
+          "kind": "hmac-sha256",
+          "prefix": "sha256=",
+          "separator": "none",
+          "signed_parts": [
+            "raw-body"
+          ],
+          "timestamp": "none"
+        }
+      },
+      "keyed.rsa": {
+        "duplicates": "report",
+        "enabled": true,
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Message"
+        },
+        "kind": "webhook",
+        "signature": {
+          "delivery_id": {
+            "header": "X-Delivery"
+          },
+          "encoding": "base64url",
+          "field_constraints": {
+            "delivery-id": {
+              "ascii_bytes": "abcdefghijklmnopqrstuvwxyz0123456789-"
+            },
+            "timestamp": {
+              "ascii_bytes": "0123456789"
+            }
+          },
+          "header": "X-Signature",
+          "key_id": {
+            "header": "X-Key-Id"
+          },
+          "kind": "rsa-pss-sha256",
+          "prefix": "v1=",
+          "separator": ",",
+          "signed_parts": [
+            "timestamp",
+            {
+              "literal": "."
+            },
+            "delivery-id",
+            {
+              "literal": "."
+            },
+            "raw-body"
+          ],
+          "timestamp": {
+            "header": "X-Timestamp",
+            "unit": "milliseconds"
+          }
+        }
+      },
+      "rfc8032.ed25519": {
+        "duplicates": "report",
+        "enabled": true,
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Push"
+        },
+        "kind": "webhook",
+        "signature": {
+          "delivery_id": "none",
+          "encoding": "hex",
+          "field_constraints": {},
+          "header": "X-Signature",
+          "key_id": "none",
+          "kind": "ed25519",
+          "prefix": "",
+          "separator": "none",
+          "signed_parts": [
+            "raw-body"
+          ],
+          "timestamp": "none"
+        }
+      },
+      "standard.ed25519": {
+        "duplicates": "report",
+        "enabled": true,
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Message"
+        },
+        "kind": "webhook",
+        "signature": {
+          "delivery_id": {
+            "header": "webhook-id"
+          },
+          "encoding": "base64",
+          "field_constraints": {
+            "delivery-id": {
+              "ascii_bytes": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
+            },
+            "timestamp": {
+              "ascii_bytes": "0123456789"
+            }
+          },
+          "header": "webhook-signature",
+          "key_id": "none",
+          "kind": "ed25519",
+          "prefix": "v1a,",
+          "separator": " ",
+          "signed_parts": [
+            "delivery-id",
+            {
+              "literal": "."
+            },
+            "timestamp",
+            {
+              "literal": "."
+            },
+            "raw-body"
+          ],
+          "timestamp": {
+            "header": "webhook-timestamp",
+            "unit": "seconds"
+          }
+        }
+      },
+      "wycheproof.rsa": {
+        "duplicates": "report",
+        "enabled": true,
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Count"
+        },
+        "kind": "webhook",
+        "signature": {
+          "delivery_id": "none",
+          "encoding": "hex",
+          "field_constraints": {},
+          "header": "X-Signature",
+          "key_id": "none",
+          "kind": "rsa-pss-sha256",
+          "prefix": "",
+          "separator": "none",
+          "signed_parts": [
+            "raw-body"
+          ],
+          "timestamp": "none"
+        }
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 subscriptions.subscribe(query:dry_run=dry_run)
+    exports client.types.subscriptions.SubscribeResponse client.types.subscriptions.SubscribeErrorData client.types.subscriptions.SubscribeHTTPError
+    exports client.types.subscriptions.SubscribeRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5', 'cryptography>=50.0.0']
