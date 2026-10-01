@@ -1,0 +1,87 @@
+schema_version: 1
+helpers:
+  jobs.run:
+    kind: polling
+    create: /paths/~1jobs/post
+    accepted_statuses: [202]
+    poll: /paths/~1jobs~1{jobId}/get
+    bindings:
+      - target: {in: path, name: jobId}
+        value: {source: initial, selector: {from: body, pointer: /id}}
+      - target: {in: header, name: X-Trace}
+        value: {source: previous, selector: {from: body, pointer: /status}}
+    state: {from: body, pointer: /status}
+    pending: [queued, running]
+    succeeded: [done]
+    failed: [failed]
+    cancelled: [cancelled]
+    result:
+      kind: operation
+      operation: /paths/~1jobs~1{jobId}~1report/get
+      bindings:
+        - target: {in: path, name: jobId}
+          value: {source: initial, selector: {from: body, pointer: /id}}
+    interval: {seconds: 2, retry_after_header: Retry-After}
+  jobs.inline:
+    kind: polling
+    create: /paths/~1jobs/post
+    accepted_statuses: [202]
+    poll: /paths/~1jobs~1{jobId}/get
+    bindings:
+      - target: {in: path, name: jobId}
+        value: {source: previous, selector: {from: body, pointer: /id}}
+      - target: {in: query, name: verbose}
+        value: {literal: true}
+    state: {from: header, name: X-State}
+    pending: [pending]
+    succeeded: [done]
+    result:
+      kind: inline
+      selector: {from: body, pointer: /result}
+      schema: {pointer: /components/schemas/Report}
+    immediate_result:
+      statuses: [200]
+      selector: {from: body, pointer: /result}
+      schema: {pointer: /components/schemas/Report}
+  jobs.report:
+    kind: polling
+    create: /paths/~1jobs/post
+    accepted_statuses: [202]
+    poll: /paths/~1jobs~1{jobId}/get
+    bindings:
+      - target: {in: path, name: jobId}
+        value: {source: initial, selector: {from: body, pointer: /id}}
+      - target: {in: query, name: since}
+        value: {source: previous, selector: {from: status}}
+    state: {from: body, pointer: /status}
+    pending: [queued]
+    succeeded: [done]
+    result:
+      kind: operation
+      operation: /paths/~1reports/post
+      bindings:
+        - target: {in: body, pointer: /job}
+          value: {source: previous, selector: {from: body, pointer: /id}}
+  exports.run:
+    kind: polling
+    create: /paths/~1exports/post
+    accepted_statuses: [202]
+    poll: /paths/~1exports~1status/get
+    bindings:
+      - target: {in: querystring, name: criteria, pointer: /id}
+        value: {source: initial, selector: {from: header, name: Operation-Id}}
+    state: {from: body, pointer: /state}
+    pending: [0]
+    succeeded: [1]
+    failed: [2]
+    result: {kind: none}
+  exports.latest:
+    kind: polling
+    create: /paths/~1exports/post
+    accepted_statuses: [202]
+    poll: /paths/~1exports~1status/get
+    bindings: []
+    state: {from: body, pointer: /state}
+    pending: [0]
+    succeeded: [1]
+    result: {kind: operation, operation: /paths/~1reports~1latest/get}

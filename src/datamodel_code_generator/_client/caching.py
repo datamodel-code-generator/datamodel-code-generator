@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING, Final, TypeAlias
 from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._client.pagination import _Pages
 from datamodel_code_generator._codec_declarations import OperationRef
-from datamodel_code_generator._runtime.client.security import SecurityScheme
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
@@ -34,7 +33,6 @@ _UNSAFE: Final = frozenset({"post", "put", "patch", "delete"})
 _SCALARS: Final = frozenset({"string", "integer", "number", "boolean"})
 _TAGGED: Final = frozenset({"path", "query"})
 _MIN_SUCCESS: Final = 200
-_CREDENTIAL_HEADERS: Final = frozenset({"authorization", "proxy-authorization", "cookie", "cookie2"})
 _MAX_SUCCESS: Final = 299
 
 
@@ -85,13 +83,9 @@ class _Caches:
         self, protocols: Protocols, codecs: CodecPlan, wire: WirePlan, request: TargetRequest, plan: ClientPlan
     ) -> None:
         """Index the use bindings, the schema reader that types parameters, and the headers credentials travel in."""
-        self.pages = _Pages(protocols, codecs, wire, request)
+        self.pages = _Pages(protocols, plan, codecs, wire, request)
         self.bindings = dict(codecs.bindings)
-        self.credential_headers = _CREDENTIAL_HEADERS.union(
-            scheme.wire_name.lower()
-            for scheme in plan.security_schemes
-            if isinstance(scheme, SecurityScheme) and scheme.location == "header"
-        )
+        self.credential_headers = self.pages.secret_headers
 
     def helper(
         self, helper: Helper, spec: OperationSpec, mutations: Mapping[str, OperationSpec]

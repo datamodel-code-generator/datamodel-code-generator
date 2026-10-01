@@ -78,7 +78,7 @@ __all__ = (
     "OAuthProviderOptions",
     "RefreshTokenProvider",
     "TokenSet",
-    "grant_audience",
+    "grant_identity",
 )
 
 _VERIFIER_BYTES: Final = 32
@@ -943,10 +943,10 @@ class _SharedTokens(TokenAcquirer):
         self.close()
 
 
-def grant_audience(provider: object) -> str | None:
-    """Return the audience an OAuth token provider of the SDK requests, or None for none or any other provider."""
+def grant_identity(provider: object) -> tuple[str | None, tuple[str, ...]] | None:
+    """Return the audience and requested scopes of an OAuth token provider of the SDK, or None for any other."""
     if isinstance(provider, (_SharedTokens, _AsyncSharedTokens)):
-        return provider._tokens.audience  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+        return provider._tokens.identity()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return None
 
 
@@ -1126,7 +1126,9 @@ class RefreshTokenProvider(_SharedTokens):
         url = _endpoint(token_url, "token_url", resolved)
         key = cache_key(url, authentication.client_id, authentication.method, checked, requested)
         endpoint = TokenEndpoint(url, authentication, resolved.transport, token_transport)
-        self._rotation = SyncRotation(resolved, endpoint, initial, checked, key=key, load=load, store=store)
+        self._rotation = SyncRotation(
+            resolved, endpoint, initial, checked, scopes=requested, key=key, load=load, store=store
+        )
         super().__init__(self._rotation)
 
     def replace_token_set(self, token_set: TokenSet, *, persist: bool = True) -> None:
@@ -1188,7 +1190,9 @@ class AsyncRefreshTokenProvider(_AsyncSharedTokens):
         url = _endpoint(token_url, "token_url", resolved)
         key = cache_key(url, authentication.client_id, authentication.method, checked, requested)
         endpoint = AsyncTokenEndpoint(url, authentication, resolved.transport, token_transport)
-        self._rotation = AsyncRotation(resolved, endpoint, initial, checked, key=key, load=load, store=store)
+        self._rotation = AsyncRotation(
+            resolved, endpoint, initial, checked, scopes=requested, key=key, load=load, store=store
+        )
         super().__init__(self._rotation)
 
     async def replace_token_set(self, token_set: TokenSet, *, persist: bool = True) -> None:

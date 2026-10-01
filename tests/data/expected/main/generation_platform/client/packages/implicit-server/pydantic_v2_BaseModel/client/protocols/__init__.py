@@ -50,6 +50,7 @@ from .._runtime.protocols.webhooks import (
 if TYPE_CHECKING:
     from .._runtime.protocols.cache_stores import AsyncMemoryCacheStore, MemoryCacheStore
     from .._runtime.protocols.pagination import AsyncPager, Page, Pager
+    from .._runtime.protocols.polling import AsyncLroHandle, LroHandle
     from .._runtime.protocols.replay import AsyncMemoryReplayStore, MemoryReplayStore
     from .._runtime.protocols.streams import (
         AsyncEventStream,
@@ -60,8 +61,9 @@ if TYPE_CHECKING:
 
 __all__ = [
     "AsyncCacheStore",
-    "AsyncMemoryCacheStore",
     "AsyncEventStream",
+    "AsyncLroHandle",
+    "AsyncMemoryCacheStore",
     "AsyncMemoryReplayStore",
     "AsyncPager",
     "AsyncReplayStore",
@@ -75,6 +77,7 @@ __all__ = [
     "EventStream",
     "HeaderSelector",
     "KeySet",
+    "LroHandle",
     "MemoryCacheStore",
     "MemoryReplayStore",
     "OperationRef",
@@ -108,11 +111,15 @@ __all__ = [
 
 
 def __getattr__(name: str) -> object:
-    """Load a memory store, a pagination type, or a stream type only when its public class is requested."""
+    """Load a memory store or a pagination, polling, or stream type only when its public class is requested."""
     if name in {"AsyncPager", "Page", "Pager"}:
         from .._runtime.protocols import pagination
 
         return getattr(pagination, name)
+    if name in {"AsyncLroHandle", "LroHandle"}:
+        from .._runtime.protocols import polling
+
+        return getattr(polling, name)
     if name in {"AsyncMemoryCacheStore", "MemoryCacheStore"}:
         from .._runtime.protocols import cache_stores
 

@@ -1,0 +1,10 @@
+# protocols-pagination-resume-checks
+render pydantic_v2.BaseModel
+  APIGenerationError
+  E_CONFIG_VALUE config protocols.helpers['cookies.cursor'].continuation.write /paths/~1users/get: The cursor of 'cookies.cursor' writes the cookie 'session', which carries credentials no helper writes
+  E_CONFIG_VALUE config protocols.helpers['cookies.bound'].bindings[0].target /paths/~1users/get: The binding 0 of 'cookies.bound' writes the cookie 'session', which carries credentials no helper writes
+  E_CONFIG_VALUE config protocols.helpers['cookies.literal'].bindings[0].target /paths/~1users/get: The binding 0 of 'cookies.literal' writes the cookie 'session', which carries credentials no helper writes
+  E_CONFIG_VALUE config protocols.helpers['keyed.header'].continuation.write /paths/~1keyed~1users/get: The cursor of 'keyed.header' writes the header 'x-api-key', which carries credentials no helper writes
+  E_CONFIG_VALUE config protocols.helpers['keyed.proxy'].bindings[0].target /paths/~1keyed~1users/get: The binding 0 of 'keyed.proxy' writes the header 'Proxy-Authorization', which carries credentials no helper writes
+  E_CONFIG_VALUE config protocols.helpers['keyed.query'].continuation.write /paths/~1keyed~1users/get: The cursor of 'keyed.query' writes the query parameter 'api_key', which carries credentials no helper writes
+  E_CONFIG_VALUE config protocols.helpers['queries.key'].continuation.write /paths/~1queries/get: The cursor of 'queries.key' writes the query field 'api_key', which carries credentials no helper writes

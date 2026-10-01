@@ -25,6 +25,17 @@ def users(*ids: str, cursor: object = _ABSENT, **headers: str) -> Callable[[http
     return json_response(200, payload, **headers)
 
 
+def user_page(*ids: str, **members: object) -> Callable[[httpx2.Request], httpx2.Response]:
+    """Return a responder of one page of users with the given members."""
+    return json_response(200, {"data": [{"id": value} for value in ids], **members})
+
+
+def headed_page(*ids: str, headers: tuple[tuple[str, str], ...], **members: object) -> Callable[[httpx2.Request], Any]:
+    """Return a responder of one page of users with repeatable response headers."""
+    payload = {"data": [{"id": value} for value in ids], **members}
+    return lambda _: httpx2.Response(200, headers=list(headers), json=payload)
+
+
 def item_id(item: object) -> str:
     """Return the id or name of an item of any backend: a model attribute or a TypedDict key; a string is itself."""
     if isinstance(item, str):

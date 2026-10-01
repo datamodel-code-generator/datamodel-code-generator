@@ -9,15 +9,17 @@ from inspect import iscoroutinefunction
 from keyword import iskeyword
 from sys import float_info
 from types import MappingProxyType
-from typing import Final
+from typing import Final, cast
 
-from typing_extensions import TypeIs
+from typing_extensions import TypeIs, TypeVar
 
 from ..client.errors import ProtocolConfigurationError, is_sequence
 from ..client.timing import SessionOptions
 from ..model_codecs.unset import UNSET, Unset
 from .caches import AsyncCacheStore, CacheStore  # noqa: TC001 - Public annotations support get_type_hints().
 from .records import record_string
+
+V = TypeVar("V")
 
 _CONTROL: Final = re.compile(r"[\x00-\x1f\x7f-\x9f]")
 _PAGINATION: Final = (
@@ -49,6 +51,14 @@ WEBHOOK_LIMITS: Final = (
     ("future_tolerance", True, False, True),
     ("replay_ttl", True, False, False),
 )
+
+
+def layered(layers: tuple[object, ...], name: str, default: V) -> V:
+    """Return an option from the first layer that sets it, skipping None and UNSET layers, or its default."""
+    for layer in layers:
+        if layer is not None and not isinstance(layer, Unset) and not isinstance(value := getattr(layer, name), Unset):
+            return cast("V", value)
+    return default
 
 
 def positive_count(value: object, name: str, *, allow_zero: bool = False) -> None:

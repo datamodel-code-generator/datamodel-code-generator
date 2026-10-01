@@ -300,8 +300,16 @@ def retry_after(
         )
         if milliseconds is not None:
             return ServerDelay(milliseconds / 1000.0, received_at)
-    seconds = _maximum(headers.get_all("Retry-After"), lambda value: _seconds(value, received_wall_time))
+    seconds = header_delay(headers, "Retry-After", received_wall_time)
     return None if seconds is None else ServerDelay(seconds, received_at)
+
+
+def header_delay(headers: HeadersView, name: str, received_wall_time: float) -> float | None:
+    """Return the longest valid delay in seconds that a header gives as delta seconds or an HTTP date, or None.
+
+    A date is measured from the response's receipt wall time and never gives a negative delay.
+    """
+    return _maximum(headers.get_all(name), lambda value: _seconds(value, received_wall_time))
 
 
 @dataclass(frozen=True, slots=True)
