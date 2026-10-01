@@ -85,8 +85,8 @@ class _FullDisk(io.FileIO):
 class _Written(io.FileIO):
     """A download file that tells the scenario once a write of the body reached it."""
 
-    def __init__(self, handle: int, written: Callable[[], object]) -> None:
-        super().__init__(handle, "wb")
+    def __init__(self, handle: int, mode: str, *, written: Callable[[], object]) -> None:
+        super().__init__(handle, mode)
         self.written = written
 
     def write(self, data: Any) -> int:
@@ -594,9 +594,8 @@ async def _disk_failures(api: Any, exchange: Exchange, lines: list[str], directo
 async def _mid_body(task: asyncio.Task[None]) -> None:
     """Wait until the download wrote the body's first chunk to its temporary file, or until it ended."""
     loop, written = asyncio.get_running_loop(), asyncio.Event()
-    signal = partial(loop.call_soon_threadsafe, written.set)
     with pytest.MonkeyPatch.context() as disk:
-        disk.setattr(os, "fdopen", lambda handle, mode: _Written(handle, signal))
+        disk.setattr(os, "fdopen", partial(_Written, written=partial(loop.call_soon_threadsafe, written.set)))
         waiting = asyncio.create_task(written.wait())
         await asyncio.wait((waiting, task), return_when=asyncio.FIRST_COMPLETED)
         waiting.cancel()

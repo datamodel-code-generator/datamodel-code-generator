@@ -19,6 +19,10 @@ class _Handler(BaseRequestHandler):
     request: ssl.SSLSocket
     server: Http2Fixture
 
+    def setup(self) -> None:
+        """Finish the TLS handshake in this connection's thread, so a client abandoning it never stalls the server."""
+        self.request.do_handshake()
+
     def handle(self) -> None:
         connection = h2.connection.H2Connection(config=h2.config.H2Configuration(client_side=False))
         connection.initiate_connection()
@@ -56,7 +60,7 @@ class Http2Fixture(ThreadingTCPServer):
         self.requests = 0
         self.protocols: list[str | None] = []
         super().__init__(("127.0.0.1", 0), _Handler)
-        self.socket = context.wrap_socket(self.socket, server_side=True)
+        self.socket = context.wrap_socket(self.socket, server_side=True, do_handshake_on_connect=False)
         self.url = f"https://localhost:{self.socket.getsockname()[1]}/stream"
         self._thread = threading.Thread(target=self.serve_forever, kwargs={"poll_interval": 0.005}, daemon=True)
         self._thread.start()
