@@ -427,7 +427,7 @@ def _split(raw: bytes, delimiter: re.Pattern[bytes], *, plus: bool) -> list[str]
 
 def _decode_path(plan: ParameterPlan, raw: bytes) -> WireValue:
     prefix = _PREFIXES.get(plan.style or "", b"")
-    if prefix == b"." and raw[:3].lower() == b"%2e":
+    if prefix == b"." and raw.startswith((b"%2E", b"%2e")):
         prefix = raw[:3]
     if not raw.startswith(prefix):
         raise issue(code="parameter.syntax", message="A label or matrix path value is missing its prefix")
