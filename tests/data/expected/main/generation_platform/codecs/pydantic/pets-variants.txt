@@ -1,8 +1,6 @@
-diagnostic MC_PARAMETER_ENCODING /paths/~1pets/get/parameters/3/schema: A parameter value needs one unambiguous scalar kind
 use /paths/~1pets/get parameter query limit: native root models:FieldPetsGetQueryLimitParameter models=[('models:FieldPetsGetQueryLimitParameter', 'root', 'ignore', True)]
 use /paths/~1pets/get parameter query tags: native root models:FieldPetsGetQueryTagsParameter models=[('models:FieldPetsGetQueryTagsParameter', 'root', 'ignore', True)]
 use /paths/~1pets/get parameter query filter: native root models:FieldPetsGetQueryFilterParameter models=[('models:FieldPetsGetQueryFilterParameter', 'root', 'ignore', True)]
-use /paths/~1pets/get parameter query choice: native root models:FieldPetsGetQueryChoiceParameter models=[('models:FieldPetsGetQueryChoiceParameter', 'root', 'ignore', True)]
 use /paths/~1pets/get response_body 200: native root models:FieldPetsGetResponseResponse models=[('models:FieldPetsGetResponseResponse', 'root', 'ignore', True), ('models:OwnerResponse', 'model', 'allow', True), ('models:PetResponse', 'model', 'ignore', True)]
 use /paths/~1pets/post request_body: native model models:PetRequest models=[('models:OwnerRequest', 'model', 'allow', True), ('models:PetRequest', 'model', 'ignore', True)]
 use /paths/~1pets/post response_body 201: native model models:PetResponse models=[('models:OwnerResponse', 'model', 'allow', True), ('models:PetResponse', 'model', 'ignore', True)]
