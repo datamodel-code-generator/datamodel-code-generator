@@ -113,8 +113,8 @@ delivery IDs, namespaces, operation references, entry IDs, and causes; callers m
 
 ## Protocol contracts
 
-Generated packages also expose the shared contracts of pagination, polling, and stream helpers. Records, options,
-and resume state come from `pkg.protocols`; `ProtocolClientOptions` comes from `pkg.options`; exceptions come from
+Generated packages also expose the shared contracts of pagination, polling, stream, and cache helpers. Records,
+options, cache stores, and resume state come from `pkg.protocols`; `ProtocolClientOptions` comes from `pkg.options`; exceptions come from
 `pkg.errors`. These imports need no HTTP library and start no threads. A client that uses no protocol settings loads
 none of these definitions: `pkg.options` and `pkg.errors` load them the first time one of their names is used. The
 helpers that use these contracts are still being implemented; constructing a record or option sends nothing.
@@ -230,6 +230,8 @@ booleans. Durations are finite numbers of seconds, excluding booleans; integers 
 | | `reconnect` | `False` | `bool` |
 | | `max_reconnects` | `5` | Nonnegative integer or `None` |
 | | `max_reconnect_wait` | `60` seconds | Positive duration or `None` |
+| `CacheOptions` | `max_entry_bytes` | `2097152` | Positive integer: the largest body a fetch stores |
+| | `max_ttl` | `300` seconds | Positive duration: the cap on any entry's freshness |
 
 `ProtocolSecurityContext(*, credential_partition: str, allowed_origins: tuple[Origin, ...] = ())` names the
 nonsecret credential partition of helper state and the origins permitted in addition to the same origin. The
@@ -266,7 +268,8 @@ client = Client(options=options)
 | `ProtocolClientOptions.security` | `ProtocolSecurityContext \| None`, default `UNSET` | `None` means anonymous use. Its `allowed_origins` are the origins beyond the server's that a next-URL or Link pagination helper may follow a URL to |
 | `ProtocolClientOptions.defaults` | `Mapping[str, ProtocolDefaults]`, default `UNSET` | Keys are helper names: Python identifiers separated by dots, without keywords or empty parts. The mapping is copied into a read-only mapping, and its values keep their identity |
 | `ProtocolDefaults.session` | `SessionOptions`, default `UNSET` | Session limits of that helper |
-| `ProtocolDefaults.options` | `PaginationOptions \| PollOptions \| StreamOptions`, default `UNSET` | Kind-specific options of that helper |
+| `ProtocolDefaults.options` | `PaginationOptions \| PollOptions \| StreamOptions \| CacheOptions`, default `UNSET` | Kind-specific options of that helper; a cache helper's defaults take no `session` |
+| `ProtocolClientOptions.cache_stores` | `Mapping[str, CacheStore \| AsyncCacheStore]`, default `UNSET` | The store each [cache helper](#cache-helpers) keeps its entries in, by helper name. The mapping is copied into a read-only mapping that keeps each store's identity; the client borrows the stores and never closes them |
 
 Invalid values inside `ProtocolClientOptions` and `ProtocolDefaults` raise `ProtocolConfigurationError`. Explicit
 call options take precedence over these defaults, which take precedence over the effective defaults above.
@@ -294,23 +297,28 @@ Invalid field values raise `ValueError`.
 | `StreamInterruptedError` | `ProtocolError` | `condition: Literal['eof', 'transport']`, `sequence: int`, `resume_state: ResumeState \| None = None` |
 | `IncompleteFrameError` | `StreamInterruptedError` | `buffered_bytes: int`; `condition` is always `eof` |
 | `StreamRemoteError[E]` | `ProtocolError` | `event_type: str \| None`, `data: E`, a read-only property, `sequence: int` |
+| `CacheStoreError` | `ProtocolStoreError` | `action`, the store method that failed, and `entry_id: str \| None = None` |
+| `CacheProtocolError` | `ProtocolDataError` | No other fields; `condition` is always `inconsistent` |
+| `CacheValidatorConflictError` | `ProtocolConfigurationError` | `header_name: Literal['If-None-Match', 'If-Modified-Since']`; `field_path` is the header's name and `condition` is always `binding_mismatch` |
+| `CacheInvalidationError[T]` | `CacheStoreError` | `tags: tuple[str, ...]`, `completed_result: T \| Unset = UNSET`, a read-only property; `has_completed_result` and `require_result()`, which raises `ResultUnavailableError` without a result; `action` is always `invalidate` |
 
 A field whose value is fixed is not a constructor argument, so passing it raises `TypeError`. `progress` is
 copied into a read-only mapping. Messages and representations exclude locations, progress, resume state, snapshots,
-raw bytes, event types, and event data; read those attributes explicitly. The payload type parameters are covariant
-and default to `object`, so an unparameterized `OperationFailedError` has `object` snapshot data. Narrow the payload
+raw bytes, event types, event data, and tags; read those attributes explicitly. The payload type parameters are
+covariant and default to `object`, so an unparameterized `OperationFailedError` has `object` snapshot data. Narrow the payload
 explicitly before using it as a model.
 
 ## Protocol helper configuration
 
-Pagination, polling, and SSE or NDJSON stream helpers of an API are declared in a helper configuration, which the client
-target reads through its `protocols` setting. The helpers are still being implemented: generation validates every
-helper, resolves its references against the selected API, and records it in the target manifest. An enabled pagination
-helper generates the [pagination helper](#pagination-helpers) below, and an enabled webhook helper the
-[webhook verification helper](#webhook-verification-helpers); any other enabled helper fails with `E_CLIENT_UNSUPPORTED`.
-A disabled helper generates nothing, so the package is the same as without it. The `websocket`, `cache`,
-`resumable_upload`, `batch`, and `queue` kinds fail with `E_CLIENT_UNSUPPORTED` whether they are enabled or not, and
-their settings are not read yet.
+Pagination, polling, SSE or NDJSON stream, webhook, and cache helpers of an API are declared in a helper
+configuration, which the client target reads through its `protocols` setting. The helpers are still being implemented:
+generation validates every helper, resolves its references against the selected API, and records it in the target
+manifest. An enabled pagination helper generates the [pagination helper](#pagination-helpers) below, an enabled cache
+helper the [cache helper](#cache-helpers), and an enabled webhook helper the
+[webhook verification helper](#webhook-verification-helpers); any other enabled helper fails with
+`E_CLIENT_UNSUPPORTED`. A disabled helper generates nothing, so the package is the same as without it. The
+`websocket`, `resumable_upload`, `batch`, and `queue` kinds fail with `E_CLIENT_UNSUPPORTED` whether they are enabled
+or not, and their settings are not read yet.
 
 | Setting | Values | Default | Where |
 |---|---|---|---|
@@ -457,6 +465,7 @@ querystring, or its request body. An operation that owns a querystring takes no 
 | `polling` | `create`, `accepted_statuses`, `poll`, `bindings` (create to poll), `state`, `pending`, `succeeded`, `result` | `failed` and `cancelled` (`[]`), `interval` (`{seconds: 1, retry_after_header: null}`), `remote_cancel` (`{operation, bindings?}`), `immediate_result` (`{statuses, selector, schema}`), `expires_at` |
 | `sse`, `ndjson` | `operation`, `media`, `event_schema`, `completion`, and for `ndjson` `final_line` (`require_newline` or `allow_eof`) | `unknown` (`error`, the default, or `raw`), `error_events` (`{}`), `resume` (`{enabled: false}`) |
 | `webhook` | `event_schema`, `signature` (see [webhook verification helpers](#webhook-verification-helpers)) | `duplicates` (`report`, the default, or `reject`, which needs a signature) |
+| `cache` | `operation`, `validator` (`etag`, `last_modified`, or `both`), `authenticated` (a boolean) | `statuses` (`[200]`), `vary_allowlist` (`[]`), `tags` (`[]`), `mutations` (`{}`); see [cache helpers](#cache-helpers) |
 
 A pagination `continuation` is one of these:
 
@@ -501,14 +510,15 @@ E_SELECTOR_DEPENDENCY selection protocols.helpers['audit.all'].operation /paths/
 
 ### Python records and the manifest
 
-`ProtocolConfiguration(schema_version=1, helpers={...})` takes `PaginationHelper`, `PollingHelper`, `StreamHelper`, and
-`WebhookHelper` records, which mirror the file: their fields have the file's names, with `from_` for `from`, and they
+`ProtocolConfiguration(schema_version=1, helpers={...})` takes `PaginationHelper`, `PollingHelper`, `StreamHelper`,
+`WebhookHelper`, and `CacheHelper` records, which mirror the file: their fields have the file's names, with `from_` for `from`, and they
 take the client's `Selector` and `RequestTarget` records, `OperationRef` or a pointer string, and `SchemaRef`. A
 webhook's `HmacSignature` (`hmac-sha256` or `hmac-sha512`) or `PublicKeySignature` (`ed25519` or `rsa-pss-sha256`) has
 the same fields and takes `HeaderName`, `TimestampHeader`, `SignedLiteral`, `FixedBytes`, and `AsciiBytes` records, or
 `"none"`, and `signed_parts` entries `"raw-body"`, `"timestamp"`, and `"delivery-id"`; `AdapterSignature(timestamp=...,
 delivery_id=...)` takes `"required"` or `"none"` for each fact, and `NoSignature()` declares an unsigned webhook. An
-event mapping is an `EventMapping` with an `EventDiscriminator(from_="body", pointer=...)`. They are validated as the file
+event mapping is an `EventMapping` with an `EventDiscriminator(from_="body", pointer=...)`, and a cache mutation a
+`CacheMutation(operation=..., invalidate_tags=(...))`. They are validated as the file
 is, with the same diagnostics, when the client configuration is constructed. The later kinds have no records yet.
 
 ```python
@@ -808,6 +818,202 @@ E_CLIENT_UNSUPPORTED target protocols.helpers['cursor.map'].continuation.read /p
 
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.pagination.diagnostics -->
+
+## Cache helpers
+
+An enabled `cache` helper fetches one GET operation through a private cache that you lend it: it answers from a fresh
+stored response without sending, revalidates a stale one with its `ETag` or `Last-Modified` validator, and otherwise
+sends the request as an ordinary call. Nothing is cached for ordinary methods, and a client without a helper or a
+store keeps no cache state. The helper is generated at `client.protocols.<name>` on `Client` and `AsyncClient` alike:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.cache.yaml -->
+<!-- fmt: off -->
+
+```yaml
+schema_version: 1
+helpers:
+  users.profile:
+    kind: cache
+    operation: /paths/~1users~1{userId}/get
+    validator: both
+    authenticated: false
+    vary_allowlist: [Accept-Language]
+    tags: ["user:{userId}", users]
+    mutations:
+      rename:
+        operation: /paths/~1users~1{userId}/patch
+        invalidate_tags: ["user:{userId}"]
+      remove:
+        operation: /paths/~1users~1{userId}/delete
+        invalidate_tags: ["user:{userId}", users]
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.cache.yaml -->
+
+| Setting | Meaning |
+|---|---|
+| `operation` | The GET operation the helper fetches. It takes no request body, and each cacheable status is a declared 2xx success with one JSON body |
+| `validator` | `etag` revalidates with `If-None-Match` from `ETag`, `last_modified` with `If-Modified-Since` from `Last-Modified`, and `both` with `If-None-Match` when an `ETag` is stored and `If-Modified-Since` otherwise |
+| `authenticated` | Whether the fetch carries credentials. It must match every call: a call that the auth, a credential or cookie header, or a security scheme's field authenticates needs `true` and a credential partition, and any other call `false` |
+| `statuses` | The cacheable statuses, distinct, from 100 to 599 |
+| `vary_allowlist` | The request headers a response's `Vary` may name; a response that varies on any other header, or on `*`, is not stored |
+| `tags` | Text the stored entries carry; each `{name}` is replaced by the wire value of the required path or query parameter of that name, as text |
+| `mutations` | Method names mapped to `{operation, invalidate_tags}`: a POST, PUT, PATCH, or DELETE operation and the tags its success removes |
+
+`fetch` takes the operation's parameters as keywords, then `cache_options` and `options`, and returns a `CacheResult`;
+`invalidate(tags)` removes the entries carrying any of the tags and returns how many, and `mutations.<name>(...)` takes
+its operation's parameters and body like its method and returns its result. With asyncio, the three are coroutines:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.cache.helper -->
+<!-- fmt: off -->
+
+```python
+    def fetch(
+        self,
+        *,
+        fields: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        accept_language: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        user_id: _dcg_type_2 | ModelValue[_dcg_type_2],
+        cache_options: CacheOptions | None = None,
+        options: RequestOptions | None = None,
+    ) -> CacheResult[GetUserResponse]:
+        """Fetch GET /users/{userId} through the helper's cache, revalidating a stale entry."""
+        return fetch(
+            self._core,
+            _plans.PLAN_0,
+            (fields, accept_language, user_id),
+            cache_options=cache_options,
+            options=options,
+        )
+
+    def invalidate(self, tags: tuple[str, ...]) -> int:
+        """Remove the stored entries that carry any of the tags, returning how many."""
+        return invalidate(self._core, _plans.PLAN_0, tags)
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.cache.helper -->
+
+A helper needs the store `ProtocolClientOptions.cache_stores` lends it under its name, or `fetch`, `invalidate`, and the
+mutations raise `ProtocolConfigurationError(condition='missing_adapter')` before sending. The client checks the stores
+when it is constructed: a name that is no cache helper of the package fails with `unknown_field`, and an object without
+the five store methods, or whose methods are coroutines for a `Client` or plain functions for an `AsyncClient`, with
+`wrong_capability`. The client borrows a store: it never creates, closes, or keeps one after a call.
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.cache.usage -->
+<!-- fmt: off -->
+
+```python
+def cached_client() -> Client:
+    """Lend a bounded memory store to the users.profile helper, which keeps its entries there."""
+    store = MemoryCacheStore(max_entries=1000, max_bytes=8 * 1024 * 1024)
+    return Client(options=ClientOptions(protocols=ProtocolClientOptions(cache_stores={"users.profile": store})))
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.cache.usage -->
+
+### Results and freshness
+
+`CacheResult[T]` is immutable: `data: T`, the decoded body; `source`, `network` for a response the network sent,
+`fresh_cache` for a fresh stored response answered without sending, or `revalidated` for a stored response a 304
+confirmed; `response: ResponseInfo`; and `network_status`, the status the network returned, 304 for a revalidation and
+`None` for a fresh answer. A fresh answer's `response` has a new `call_id`, every count 0, and the elapsed time of the
+lookup and decoding; a revalidation's has the 304 call's identity, counts, and elapsed time, with the stored status and
+the merged headers, request id, and content type. A stored body is decoded again on every use, so callers never share a
+model object.
+
+An entry is fresh while its age is below its freshness lifetime and below `CacheOptions.max_ttl`. The lifetime is the
+response's `Cache-Control: max-age`, else `Expires` minus `Date`, else 0; the age follows RFC 9111 from `Age`, `Date`,
+and the times of the request and the response. There is no heuristic freshness and no stale-on-error. A response's
+`no-cache` makes every use revalidate. A fetch's own `Cache-Control` may say `no-cache` (revalidate), `no-store` (no
+stored response is read or written), or `max-age=N` (use a stored response only up to that age); any other directive,
+and a `Range`, `If-Range`, `If-Match`, or `If-Unmodified-Since` header, raises `ProtocolConfigurationError` before
+anything is looked up.
+
+A stale entry is revalidated with its validator as `validator` declares; a fetch that gives `If-None-Match` or
+`If-Modified-Since` itself sends it once, and raises `CacheValidatorConflictError` before sending when a usable entry has
+another validator. A 304 updates the entry's headers, except `Content-Type`, `Content-Encoding`, `Content-Length`, and
+hop-by-hop fields, and its freshness. A 304 without a usable entry, after a redirect, or with an `ETag` or
+`Last-Modified` other than the entry's raises `CacheProtocolError`; no request is sent again.
+
+### Storing and keys
+
+A response is stored only when its status is cacheable, its body is within `CacheOptions.max_entry_bytes`, it came
+without a redirect, it has no `Set-Cookie`, its `Cache-Control` has only RFC 9111 directives (`s-maxage` is ignored)
+and no `no-store`, its `Vary` names only allowlisted headers, and it is fresh or can be revalidated. A response that
+cannot be stored removes the entry it supersedes, and errors and decoding failures store nothing and keep the entry.
+Entries hold the body after content decoding and the headers without `Content-Encoding` or hop-by-hop fields.
+
+An entry's key is a SHA-256 digest of the method, the URL as the client interprets it, the `Accept` header, the
+credential partition, which is `anonymous` without a security context, and what identifies the credentials the call
+carries: each credential's scheme, kind, and required scopes, the audience of an SDK OAuth provider, and each signer's
+declared capabilities, never a secret. Calls with different partitions, schemes, scopes, or audiences never share an
+entry; give each tenant or permission set its own `ProtocolSecurityContext.credential_partition`. Token refreshes keep
+the key. Among the entries of one key, the store selects the one whose `Vary` fingerprints match the request's headers
+before auth; the store computes the fingerprints as keyed hashes, so header values never become keys.
+
+### Stores
+
+`CacheStore` and `AsyncCacheStore` are the store protocols: `lookup(base_key, request_headers) -> CacheEntry | None`,
+`fingerprint_vary(names, request_headers) -> tuple[bytes, ...]`, `compare_exchange(base_key, expected_version, entry)
+-> bool`, `delete(base_key, version) -> bool`, and `invalidate(tags) -> int`. `compare_exchange` stores an entry only
+when the slot of its key and Vary fingerprints holds `expected_version`, `None` for an empty slot; a fetch whose entry
+another fetch replaced first keeps the newer entry and returns its own network result. Every entry a fetch writes has a
+new `version`. A store's exception, or a result of another type, raises `CacheStoreError` with the store method as
+`action`, keeping the exception as `cause`; the request is never sent again for it.
+
+`CacheEntry` has `version`, `vary`, `vary_fingerprints`, `status_code`, `headers`, `body`, `request_time`,
+`response_time`, `stored_at`, `freshness_seconds`, `initial_age_seconds`, `tags`, and `schema_fingerprint`, the helper's
+fingerprint; a looked-up entry of another fingerprint or status is not used, and the next stored response replaces it.
+Its representation names only the status.
+
+`MemoryCacheStore(max_entries=128, max_bytes=16 MiB)` and `AsyncMemoryCacheStore` keep entries in the process, with a
+secret of their own for the fingerprints. When an entry needs room, expired entries are evicted first, then the least
+recently used ones; an entry larger than `max_bytes`, counted in body bytes and header characters, is not stored.
+
+### Invalidation
+
+Only explicit calls remove entries. A mutation runs its operation as its method does and, after it returns a success,
+removes the entries carrying its rendered `invalidate_tags`; a failed call removes nothing. When the store then fails,
+`CacheInvalidationError` keeps the mutation's result, which `require_result()` returns, and the mutation is not sent
+again. `invalidate(tags)` raises `CacheInvalidationError` without a result.
+
+### Cache generation checks
+
+The operation must be a GET without a request body; other methods fail with `E_CONFIG_VALUE`, and HEAD is not
+supported yet. Each cacheable status must be a declared 2xx success with one natively decoded JSON body, a helper
+declared anonymous cannot fetch an operation that requires credentials, a tag's placeholder must name one required
+path or query parameter whose values are strings, numbers, integers, or booleans, and a mutation's operation must be a
+POST, PUT, PATCH, or DELETE:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.cache.diagnostics -->
+<!-- fmt: off -->
+
+```text
+E_CONFIG_VALUE config protocols.helpers['users.created'].operation /paths/~1users/post: The cache helper 'users.created' fetches POST /users, which changes state; only GET is cached
+E_CONFIG_VALUE config protocols.helpers['users.created'].operation /paths/~1users/post: The cache helper 'users.created' fetches POST /users, which takes a request body
+E_CONFIG_VALUE config protocols.helpers['users.created'].statuses[0] /paths/~1users/post: The cacheable status 200 of 'users.created' is no declared 2xx success of POST /users
+E_CLIENT_UNSUPPORTED target protocols.helpers['users.checked'].operation /paths/~1users~1{userId}/head: The cache helper 'users.checked' fetches HEAD /users/{userId}, and HEAD is not supported yet
+E_CLIENT_UNSUPPORTED target protocols.helpers['users.checked'].statuses[0] /paths/~1users~1{userId}/head: The cacheable status 200 of 'users.checked' has a response other than one natively decoded JSON body, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['reports.get'].operation /paths/~1reports/get: The cache helper 'reports.get' fetches GET /reports, which takes a request body
+E_CLIENT_UNSUPPORTED target protocols.helpers['reports.get'].statuses[0] /paths/~1reports/get: The cacheable status 200 of 'reports.get' has a response other than one natively decoded JSON body, which is not supported yet
+E_CLIENT_UNSUPPORTED target protocols.helpers['reports.get'].statuses[1] /paths/~1reports/get: The cacheable status 204 of 'reports.get' has a response other than one natively decoded JSON body, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['users.statuses'].statuses[0] /paths/~1users~1{userId}/get: The cacheable status 404 of 'users.statuses' is no declared 2xx success of GET /users/{userId}
+E_CONFIG_VALUE config protocols.helpers['users.statuses'].statuses[1] /paths/~1users~1{userId}/get: The cacheable status 201 of 'users.statuses' is no declared 2xx success of GET /users/{userId}
+E_CONFIG_VALUE config protocols.helpers['secure.anonymous'].authenticated /paths/~1secure~1users~1{userId}/get: The cache helper 'secure.anonymous' is declared anonymous, but GET /secure/users/{userId} requires credentials
+E_CONFIG_VALUE config protocols.helpers['users.tagged'].tags[0] /paths/~1users/get: The tag '{fields}' of 'users.tagged' names no path or query parameter 'fields' of GET /users
+E_CONFIG_VALUE config protocols.helpers['users.tagged'].tags[1] /paths/~1users/get: The tag 'page:{page}' of 'users.tagged' names the optional parameter 'page' of GET /users
+E_CONFIG_VALUE config protocols.helpers['users.tagged'].tags[2] /paths/~1users/get: The tag '{role}' of 'users.tagged' names the optional parameter 'role' of GET /users
+E_CONFIG_VALUE config protocols.helpers['users.tagged'].mutations['refetch'].operation /paths/~1users~1{userId}/get: The mutation 'refetch' of 'users.tagged' calls GET /users/{userId}; only POST, PUT, PATCH, and DELETE invalidate
+E_CONFIG_VALUE config protocols.helpers['users.tagged'].mutations['create'].invalidate_tags[0] /paths/~1users/post: The tag '{userId}' of 'users.tagged' names no path or query parameter 'userId' of POST /users
+E_CONFIG_VALUE config protocols.helpers['items.ambiguous'].tags[0] /paths/~1items~1{id}/get: The tag 'item:{id}' of 'items.ambiguous' names more than one path or query parameter 'id' of GET /items/{id}
+E_CONFIG_VALUE config protocols.helpers['items.ambiguous'].tags[1] /paths/~1items~1{id}/get: The tag '{kinds}' of 'items.ambiguous' names the parameter 'kinds' of GET /items/{id}, which is not always a string, number, integer, or boolean
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.cache.diagnostics -->
 
 ## Signature style
 

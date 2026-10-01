@@ -1,0 +1,5 @@
+# caching and caching-python
+  users.profile same True
+  users.dated same True
+  users.listing same True
+  secure.profile same True

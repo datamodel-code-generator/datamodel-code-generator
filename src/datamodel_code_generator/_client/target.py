@@ -12,6 +12,7 @@ from typing_extensions import TypeIs
 from datamodel_code_generator._api_generation import TargetBinding, TargetRender
 from datamodel_code_generator._api_manifest import canonical_bytes, sha256
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
+from datamodel_code_generator._client.caching import plan_caches
 from datamodel_code_generator._client.config import ClientGenerationConfig
 from datamodel_code_generator._client.fields import plan_fields
 from datamodel_code_generator._client.pagination import plan_pagination
@@ -55,6 +56,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_manifest import JSONObject
     from datamodel_code_generator._api_types import TargetKind
+    from datamodel_code_generator._client.caching import CacheSpec
     from datamodel_code_generator._client.pagination import PaginationSpec
     from datamodel_code_generator._client.plan import ClientPlan, MediaSpec, OperationSpec, PartSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
@@ -127,13 +129,14 @@ class ClientTarget:
         if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
             raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
         plan, named = plan_fields(plan, codecs, batch, wire)
-        helpers, checked = plan_pagination(protocols, plan, codecs, wire, request)
+        pages, checked = plan_pagination(protocols, plan, codecs, wire, request)
+        caches, cached = plan_caches(protocols, plan, codecs, wire, request)
         webhooks = plan_webhooks(events, codecs, config, hooked)
         ordinary = replace(codecs, bindings=tuple(item for item in codecs.bindings if item[0] not in received))
         if refused := (
             *named,
             *admission_problems(config.validation, ordinary, argument_uses(plan)),
-            *helper_problems(protocols, plan, {**checked, **hooked}),
+            *helper_problems(protocols, plan, {**checked, **cached, **hooked}),
         ):
             raise APIGenerationError(
                 tuple(
@@ -143,8 +146,11 @@ class ClientTarget:
             )
         data = _TargetData(plan, config, request, codecs, wire)
         metadata = helper_metadata(protocols, request)
-        fingerprints = {spec.helper.name: data.fingerprint(spec, metadata[spec.helper.name]) for spec in helpers}
+        fingerprints = {spec.helper.name: data.fingerprint(spec, metadata[spec.helper.name]) for spec in pages}
+        fingerprints.update((spec.helper.name, data.cache(spec, metadata[spec.helper.name])) for spec in caches)
         fingerprints.update((spec.helper.name, data.webhook(spec, metadata[spec.helper.name])) for spec in webhooks)
+        order = {name: index for index, name in enumerate(metadata)}
+        helpers = tuple(sorted((*pages, *caches), key=lambda spec: order[spec.helper.name]))
         renderer = ClientRenderer(
             config=config,
             package=request.layout.package,
@@ -296,6 +302,38 @@ class _TargetData:
             "operations": [self.request.documents.operation(operation.contract.id)],
             "schemas": [spec.item_schema],
             "type_uses": [self.contract(spec.page)],
+            "adapters": [],
+        })
+
+    def cache(self, spec: CacheSpec, settings: JSONValue) -> str:
+        """Return the digest of a cache helper's contract closure: its and its mutations' signatures and operations.
+
+        The fetch's signature carries the settings, and the type use of its cacheable response closes the contract.
+        """
+
+        def signature(name: str, operation: OperationSpec) -> dict[str, object]:
+            body = operation.body
+            return {
+                "name": name,
+                "parameters": [(item.python_name, item.required, self.type(item.use)) for item in operation.parameters],
+                "body": None
+                if body is None
+                else (body.required, [(media.media_type, self.type(media.use)) for media in body.media]),
+                "responses": [
+                    (item.status, [self.type(media.use) for media in item.media]) for item in operation.responses
+                ],
+            }
+
+        operations = (spec.operation, *(mutation.operation for mutation in spec.mutations))
+        return _digest({
+            "kind": "cache",
+            "signatures": [
+                {**signature(spec.helper.name, spec.operation), "settings": settings},
+                *(signature(mutation.name, mutation.operation) for mutation in spec.mutations),
+            ],
+            "operations": [self.request.documents.operation(item.contract.id) for item in operations],
+            "schemas": [],
+            "type_uses": [self.contract(spec.response)],
             "adapters": [],
         })
 

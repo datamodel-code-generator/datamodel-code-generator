@@ -1,0 +1,189 @@
+openapi: 3.1.0
+info:
+  title: Caching
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /users/{userId}:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema: {type: integer}
+    get:
+      operationId: getUser
+      tags: [users]
+      parameters:
+        - name: fields
+          in: query
+          schema: {type: string}
+        - name: Accept-Language
+          in: header
+          schema: {type: string}
+      responses:
+        '200':
+          description: The user.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/User'}
+        '203':
+          description: The user from a mirror.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/User'}
+        '404':
+          description: No such user.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+    head:
+      operationId: checkUser
+      tags: [users]
+      responses:
+        '200':
+          description: The user exists.
+    patch:
+      operationId: renameUser
+      tags: [users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UserPatch'}
+      responses:
+        '200':
+          description: The renamed user.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/User'}
+        '409':
+          description: The name is taken.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+    delete:
+      operationId: deleteUser
+      tags: [users]
+      responses:
+        '204':
+          description: The user is gone.
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      parameters:
+        - name: page
+          in: query
+          schema: {type: integer}
+        - name: role
+          in: query
+          schema:
+            type: array
+            items: {type: string}
+      responses:
+        '200':
+          description: One page of users.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserList'}
+    post:
+      operationId: createUser
+      tags: [users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UserPatch'}
+      responses:
+        '201':
+          description: The new user.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/User'}
+  /items/{id}:
+    get:
+      operationId: getItem
+      tags: [items]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string}
+        - name: id
+          in: query
+          required: true
+          schema: {type: string}
+        - name: kinds
+          in: query
+          required: true
+          schema:
+            type: array
+            items: {type: string}
+      responses:
+        '200':
+          description: The item.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/User'}
+  /reports:
+    get:
+      operationId: getReport
+      tags: [reports]
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UserPatch'}
+      responses:
+        '200':
+          description: The report.
+          content:
+            text/plain:
+              schema: {type: string}
+        '204':
+          description: No report.
+  /secure/users/{userId}:
+    get:
+      operationId: getSecureUser
+      tags: [secure]
+      security:
+        - bearer: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: {type: integer}
+      responses:
+        '200':
+          description: The user behind a token.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/User'}
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+  schemas:
+    User:
+      type: object
+      required: [id, name]
+      properties:
+        id: {type: integer}
+        name: {type: string}
+    UserList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: {$ref: '#/components/schemas/User'}
+    UserPatch:
+      type: object
+      properties:
+        name: {type: string}
+    Error:
+      type: object
+      required: [message]
+      properties:
+        message: {type: string}

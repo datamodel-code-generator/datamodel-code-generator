@@ -199,6 +199,7 @@ _TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
 _OWNERSHIPS: Final = frozenset({"borrowed", "owned"})
 _BINARY: Final = "A body must be bytes or a file, stream, factory, or multipart body of the client's mode"
 _MIN_STATUS: Final = 200
+_NOT_MODIFIED: Final = 304
 _MAX_STATUS: Final = 599
 _ERROR_STATUS: Final = 400
 _UNAUTHORIZED: Final = 401
@@ -292,14 +293,23 @@ def _timeouts(current: ResolvedTimeoutOptions, layer: TimeoutOptions | Unset | N
     )
 
 
-def _protocol_options(options: ClientOptions | None, defaults: ClientDefaults) -> ProtocolClientOptions | None:
-    """Return the client's protocol settings, refusing defaults for a helper the package lacks or of another kind."""
+def _protocol_options(
+    options: ClientOptions | None, defaults: ClientDefaults, *, asynchronous: bool
+) -> ProtocolClientOptions | None:
+    """Return the client's protocol settings, refusing defaults or stores for a helper the package lacks.
+
+    Defaults of another kind's helper, and a cache store the client's mode cannot call, are refused too.
+    """
     if options is None or (protocols := options.protocols) is None or isinstance(protocols, Unset):
         return None
     if not isinstance(helpers := protocols.defaults, Unset) and helpers:
         from ..protocols.options import checked_defaults  # noqa: PLC0415 - Only helper defaults load the helper settings.
 
         checked_defaults(helpers, defaults.helpers)
+    if not isinstance(stores := protocols.cache_stores, Unset) and stores:
+        from ..protocols.options import checked_stores  # noqa: PLC0415 - Only cache stores load the helper settings.
+
+        checked_stores(stores, defaults.helpers, asynchronous=asynchronous)
     return protocols
 
 
@@ -681,6 +691,13 @@ def _page(  # noqa: PLR0913
 
 
 RAW_DECODER: Final[ResponseDecoder[object, object]] = ResponseDecoder((), (), HTTPStatusError)
+
+
+def stored_value(operation: OperationPlan[T, object], info: ResponseInfo, body: bytes, settings: Settings) -> T:
+    """Decode a stored success body as a call's decoder decodes a received one, under the call's validation."""
+    received = _Body(None, success=True)
+    received.add(body)
+    return _completed(operation.responses, info, received, settings, operation.operation_id).data
 
 
 def _retry_error(error: BaseException) -> TypeIs[HTTPStatusError[object] | TransportError]:
@@ -1501,26 +1518,32 @@ class _Core(Generic[AdapterT, HandleT]):
             validate_auth_mode(options.auth, asynchronous=self._asynchronous)
         return _layered(self._settings, options, self._shared.modes, operation_id)
 
-    def _bind_auth(self, call: _Call) -> None:
-        """Bind effective security once, leaving anonymous calls without authentication state."""
-        operation = call.operation
+    def _bound(
+        self, operation: OperationPlan[object, object] | None, config: AuthConfig | None
+    ) -> BoundAuth | AsyncBoundAuth | None:
+        """Select the auth a call binds without invoking callbacks, refusing missing credentials it requires."""
         security = None if operation is None else operation.security
-        config = call.settings.auth
         if config is None:
             if security is not None and security.alternatives and all(security.alternatives):
                 from .errors import AuthConfigurationError  # noqa: PLC0415
 
                 raise AuthConfigurationError(field_path=("auth",), condition="missing_credentials")
-            return
-        from .auth_policy import bind_async_auth, bind_auth, validate_ownership, validate_patches  # noqa: PLC0415
+            return None
+        from .auth_policy import bind_async_auth, bind_auth  # noqa: PLC0415
 
-        bound = (
+        return (
             bind_async_auth(config, security, self._shared.security_schemes)
             if self._asynchronous
             else bind_auth(config, security, self._shared.security_schemes)
         )
-        if bound is None:
+
+    def _bind_auth(self, call: _Call) -> None:
+        """Bind effective security once, leaving anonymous calls without authentication state."""
+        operation, config = call.operation, call.settings.auth
+        if (bound := self._bound(operation, config)) is None or config is None:
             return
+        from .auth_policy import validate_ownership, validate_patches  # noqa: PLC0415
+
         call.auth = _Authentication(bound)
         if any(binding.acquirer is not None for binding in bound.credentials):
             call.send_limit = network_send_limit(call.settings, exchanges=config.max_token_exchanges)
@@ -1646,6 +1669,73 @@ class _Core(Generic[AdapterT, HandleT]):
             return HeadersView(generated)
         _unframed((*self._settings.headers, call), media_type, accept, operation_id)
         return _headers(generated, (*self._settings.headers, params, call), media_type)
+
+    def call_settings(self, options: RequestOptions | None, operation: OperationPlan[object, object]) -> Settings:
+        """Return the settings a call of the operation runs with under these options."""
+        return self._call_settings(options, operation.operation_id)
+
+    def cache_store(self, name: str) -> object:
+        """Return the cache store the client's protocol settings lend a helper, or None without one."""
+        if (protocols := self._shared.protocols) is None or isinstance(stores := protocols.cache_stores, Unset):
+            return None
+        return stores.get(name)
+
+    def cache_request(
+        self, operation: OperationPlan[object, object], arguments: tuple[object, ...], options: RequestOptions | None
+    ) -> tuple[Settings, PreparedRequest[EncodedAttempt], str, WireValue, str | None]:
+        """Return a cache fetch's settings, request before auth, URL, credentials, and the client's partition.
+
+        A closing client refuses the fetch first. The URL is the request's own as the client interprets it. The
+        credentials are, for each credential the auth binds, its scheme, kind, and required scopes and the audience of
+        an SDK token provider, and each signer's declared capabilities; they are None for a request that carries no
+        credential, from the auth or from a credential header, a cookie, or a security scheme's header or query field.
+        """
+        if (closed := self._scope.closing()) is not None:
+            raise closed
+        settings = self._call_settings(options, operation.operation_id)
+        request, _ = self._prepare(
+            operation,
+            arguments,
+            settings,
+            body=UNSET,
+            media_type=None,
+            options=options,
+            accept=operation.responses.accept,
+            narrowed=False,
+        )
+        protocols = self._shared.protocols
+        security = None if protocols is None or isinstance(protocols.security, Unset) else protocols.security
+        partition = None if security is None else security.credential_partition
+        url = absolute_target(request.url).url
+        bound = self._bound(operation, settings.auth)
+        names, queries = _secret_names(self._shared.security_schemes)
+        if bound is None and not (
+            any(name.lower() in names for name, _ in request.headers)
+            or any(unquote_plus(pair.partition("=")[0]) in queries for pair in urlsplit(url).query.split("&") if pair)
+        ):
+            return settings, request, url, None, partition
+        from .grants import grant_audience  # noqa: PLC0415 - Only an authenticated cache fetch keys its credentials.
+
+        credentials: WireValue = (
+            ()
+            if bound is None
+            else tuple(
+                (item.scheme.name, item.scheme.kind, item.required_scopes, grant_audience(item.provider))
+                for item in bound.credentials
+            ),
+            ()
+            if bound is None
+            else tuple(
+                (
+                    tuple(sorted(capabilities.allowed_origins)),
+                    tuple(sorted(capabilities.managed_headers)),
+                    tuple(sorted(capabilities.managed_query)),
+                    capabilities.requires_body_digest,
+                )
+                for capabilities in (signer.capabilities for signer in bound.signers)
+            ),
+        )
+        return settings, request, url, credentials, partition
 
     def follow_origins(
         self, operation: OperationPlan[object, object], options: RequestOptions | None
@@ -2154,7 +2244,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             from .auth_policy import validate_auth_mode  # noqa: PLC0415
 
             validate_auth_mode(settings.auth, asynchronous=False)
-        protocols = _protocol_options(options, defaults)
+        protocols = _protocol_options(options, defaults, asynchronous=False)
         transport = _transport(options, http_client, transport_adapter)
         adapter, owned = _adapter(http_client, http_client_ownership, transport_adapter, transport)
         shared = _Shared(defaults, adapter, transport, trusted=isinstance(adapter, Httpx2Transport))
@@ -2258,6 +2348,52 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
 
         try:
             completed, result = self._run(call, body, prepare, receive, options)
+            call.check("decode")
+            if events is not None:
+                events.finish(completed)
+            call.check("decode")
+        except BaseException as error:  # noqa: BLE001
+            failure = call.stopped(error)
+            if events is not None:
+                events.ended(failure)
+            raise failure from None
+        else:
+            return result
+        finally:
+            self._scope.release()
+            call.finish()
+
+    def execute_cached(  # noqa: PLR0913, PLR0917
+        self,
+        operation: OperationPlan[T, object],
+        request: PreparedRequest[EncodedAttempt],
+        settings: Settings,
+        modified: Callable[[Response[T], bytes], tuple[Response[T], R]],
+        not_modified: Callable[[ResponseInfo], tuple[Response[T], R]],
+        options: RequestOptions | None,
+    ) -> R:
+        """Send a cache fetch's prepared request as one logical call, building what its response gives.
+
+        A 304 is built from the stored representation by `not_modified`; any other response is decoded as the
+        operation's calls decode it and given to `modified` with its body after content decoding.
+        """
+        call = _Call(settings, self._scope, operation)
+        events = call.events = self._started(call, operation.path, options)
+        decoder = call.decoder = operation.responses
+
+        def receive(response: TransportResponse, info: ResponseInfo) -> tuple[Response[T], R]:
+            received = self._read(response, info, decoder, call)
+            call.check("decode")
+            built = (
+                not_modified(info)
+                if info.status_code == _NOT_MODIFIED
+                else modified(_completed(decoder, info, received, call.settings, call.operation_id), received.content)
+            )
+            call.check("decode")
+            return built
+
+        try:
+            completed, result = self._run(call, UNSET, lambda: (request, UNSET), receive, options)
             call.check("decode")
             if events is not None:
                 events.finish(completed)
@@ -2977,7 +3113,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             from .auth_policy import validate_auth_mode  # noqa: PLC0415
 
             validate_auth_mode(settings.auth, asynchronous=True)
-        protocols = _protocol_options(options, defaults)
+        protocols = _protocol_options(options, defaults, asynchronous=True)
         transport = _transport(options, http_client, transport_adapter)
         adapter, owned = _async_adapter(http_client, http_client_ownership, transport_adapter, transport)
         shared = _Shared(defaults, adapter, transport, trusted=isinstance(adapter, AsyncHttpx2Transport))
@@ -3097,6 +3233,55 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
 
         try:
             completed, result = await call.bounded(lambda: self._run(call, body, prepare, receive, options))
+            call.check("decode")
+            if events is not None:
+                await events.afinish(completed)
+            call.check("decode")
+        except BaseException as error:  # noqa: BLE001
+            failure = call.stopped(error)
+            if events is not None:
+                await events.aended(failure)
+            raise failure from None
+        else:
+            return result
+        finally:
+            self._scope.release()
+            call.finish()
+
+    async def execute_cached(  # noqa: PLR0913, PLR0917
+        self,
+        operation: OperationPlan[T, object],
+        request: PreparedRequest[EncodedAttempt],
+        settings: Settings,
+        modified: Callable[[Response[T], bytes], tuple[Response[T], R]],
+        not_modified: Callable[[ResponseInfo], tuple[Response[T], R]],
+        options: RequestOptions | None,
+    ) -> R:
+        """Send a cache fetch's prepared request as one logical asyncio call, building what its response gives.
+
+        A 304 is built from the stored representation by `not_modified`; any other response is decoded as the
+        operation's calls decode it and given to `modified` with its body after content decoding.
+        """
+        call = _Call(settings, self._scope, operation)
+        self._running(call.operation_id, call.call_id)
+        events = call.events = await self._started(call, operation.path, options)
+        decoder = call.decoder = operation.responses
+
+        async def receive(response: AsyncTransportResponse, info: ResponseInfo) -> tuple[Response[T], R]:
+            received = await self._read(response, info, decoder, call)
+            call.check("decode")
+            built = (
+                not_modified(info)
+                if info.status_code == _NOT_MODIFIED
+                else modified(_completed(decoder, info, received, call.settings, call.operation_id), received.content)
+            )
+            call.check("decode")
+            return built
+
+        try:
+            completed, result = await call.bounded(
+                lambda: self._run(call, UNSET, lambda: (request, UNSET), receive, options)
+            )
             call.check("decode")
             if events is not None:
                 await events.afinish(completed)

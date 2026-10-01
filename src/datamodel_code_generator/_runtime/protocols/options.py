@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from inspect import iscoroutinefunction
 from keyword import iskeyword
 from sys import float_info
 from types import MappingProxyType
@@ -15,6 +16,7 @@ from typing_extensions import TypeIs
 from ..client.errors import ProtocolConfigurationError, is_sequence
 from ..client.timing import SessionOptions
 from ..model_codecs.unset import UNSET, Unset
+from .caches import AsyncCacheStore, CacheStore  # noqa: TC001 - Public annotations support get_type_hints().
 from .records import record_string
 
 _CONTROL: Final = re.compile(r"[\x00-\x1f\x7f-\x9f]")
@@ -36,6 +38,8 @@ _STREAM: Final = (
     ("max_reconnects", False, True, True),
     ("max_reconnect_wait", True, True, False),
 )
+_CACHE: Final = (("max_entry_bytes", False, False, False), ("max_ttl", True, False, False))
+_CACHE_METHODS: Final = ("lookup", "fingerprint_vary", "compare_exchange", "delete", "invalidate")
 WEBHOOK_LIMITS: Final = (
     ("max_body_bytes", False, False, False),
     ("max_header_bytes", False, False, False),
@@ -177,6 +181,18 @@ class StreamOptions:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class CacheOptions:
+    """Cache limits of one fetch: the largest body it stores and the cap on any entry's freshness."""
+
+    max_entry_bytes: int | Unset = UNSET
+    max_ttl: float | Unset = UNSET
+
+    def __post_init__(self) -> None:
+        """Reject booleans, other types, zero, and nonfinite durations."""
+        check_limits(self, _CACHE)
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class ProtocolSecurityContext:
     """The nonsecret credential partition of helper state and the origins permitted beyond the same origin."""
 
@@ -202,35 +218,49 @@ def _helper_defaults(value: object) -> Mapping[str, ProtocolDefaults]:
     return MappingProxyType(defaults)
 
 
+def _cache_stores(value: object) -> Mapping[str, object]:
+    if not _is_mapping(value):
+        raise ProtocolConfigurationError(field_path=("cache_stores",), condition="invalid_value")
+    stores: dict[str, object] = {}
+    for name, store in value.items():
+        if not _is_helper_name(name):
+            raise ProtocolConfigurationError(field_path=("cache_stores",), condition="invalid_value")
+        stores[name] = store
+    return MappingProxyType(stores)
+
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ProtocolDefaults:
     """Defaults of one helper, below its call arguments and above the kind's effective defaults."""
 
     session: SessionOptions | Unset = UNSET
-    options: PaginationOptions | PollOptions | StreamOptions | Unset = UNSET
+    options: PaginationOptions | PollOptions | StreamOptions | CacheOptions | Unset = UNSET
 
     def __post_init__(self) -> None:
         """Refuse values other than session options and one kind's options."""
         _instance(self.session, (SessionOptions, Unset), "session")
-        _instance(self.options, (PaginationOptions, PollOptions, StreamOptions, Unset), "options")
+        _instance(self.options, (PaginationOptions, PollOptions, StreamOptions, CacheOptions, Unset), "options")
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ProtocolClientOptions:
-    """Protocol helper settings of one client: its security context and each helper's defaults.
+    """Protocol helper settings of one client: its security context, each helper's defaults, and its cache stores.
 
-    None as the security context means anonymous use. The defaults are keyed by dotted helper names; the mapping is
-    copied into a read-only one that keeps each value's identity.
+    None as the security context means anonymous use. The defaults and the borrowed cache stores are keyed by dotted
+    helper names; each mapping is copied into a read-only one that keeps each value's identity.
     """
 
     security: ProtocolSecurityContext | Unset | None = UNSET
     defaults: Mapping[str, ProtocolDefaults] | Unset = UNSET
+    cache_stores: Mapping[str, CacheStore | AsyncCacheStore] | Unset = UNSET
 
     def __post_init__(self) -> None:
         """Refuse another security value, helper names that are not dotted identifiers, and other default values."""
         _instance(self.security, (ProtocolSecurityContext, Unset, type(None)), "security")
         if not isinstance(self.defaults, Unset):
             object.__setattr__(self, "defaults", _helper_defaults(self.defaults))
+        if not isinstance(self.cache_stores, Unset):
+            object.__setattr__(self, "cache_stores", _cache_stores(self.cache_stores))
 
 
 _KIND_OPTIONS: Final[Mapping[str, type]] = MappingProxyType({
@@ -238,11 +268,15 @@ _KIND_OPTIONS: Final[Mapping[str, type]] = MappingProxyType({
     "polling": PollOptions,
     "sse": StreamOptions,
     "ndjson": StreamOptions,
+    "cache": CacheOptions,
 })
 
 
 def checked_defaults(defaults: Mapping[str, ProtocolDefaults], helpers: tuple[tuple[str, str], ...]) -> None:
-    """Refuse helper defaults for a helper the package lacks, or whose options belong to another kind."""
+    """Refuse helper defaults for a helper the package lacks, or whose options belong to another kind.
+
+    A cache helper runs no session, so its defaults take no session options.
+    """
     kinds = dict(helpers)
     for name, item in defaults.items():
         if (kind := kinds.get(name)) is None:
@@ -250,4 +284,25 @@ def checked_defaults(defaults: Mapping[str, ProtocolDefaults], helpers: tuple[tu
         if not isinstance(item.options, (Unset, _KIND_OPTIONS[kind])):
             raise ProtocolConfigurationError(
                 field_path=("protocols", "defaults", name, "options"), condition="invalid_value"
+            )
+        if kind == "cache" and not isinstance(item.session, Unset):
+            raise ProtocolConfigurationError(
+                field_path=("protocols", "defaults", name, "session"), condition="invalid_value"
+            )
+
+
+def checked_stores(stores: Mapping[str, object], helpers: tuple[tuple[str, str], ...], *, asynchronous: bool) -> None:
+    """Refuse a cache store under a name that is no cache helper of the package, or one the client cannot call.
+
+    A store must have every method of the cache store contract, coroutine functions for an asyncio client and plain
+    functions for a synchronous one.
+    """
+    kinds = dict(helpers)
+    for name, store in stores.items():
+        if kinds.get(name) != "cache":
+            raise ProtocolConfigurationError(field_path=("protocols", "cache_stores", name), condition="unknown_field")
+        methods = [getattr(store, method, None) for method in _CACHE_METHODS]
+        if not all(callable(method) and iscoroutinefunction(method) == asynchronous for method in methods):
+            raise ProtocolConfigurationError(
+                field_path=("protocols", "cache_stores", name), condition="wrong_capability"
             )

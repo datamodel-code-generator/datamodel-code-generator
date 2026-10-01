@@ -5,7 +5,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from .._runtime.protocols.caches import (
+    AsyncCacheStore,
+    CacheEntry,
+    CacheResult,
+    CacheStore,
+)
 from .._runtime.protocols.options import (
+    CacheOptions,
     Origin,
     PaginationOptions,
     PollOptions,
@@ -41,18 +48,26 @@ from .._runtime.protocols.webhooks import (
 )
 
 if TYPE_CHECKING:
+    from .._runtime.protocols.cache_stores import AsyncMemoryCacheStore, MemoryCacheStore
     from .._runtime.protocols.pagination import AsyncPager, Page, Pager
     from .._runtime.protocols.replay import AsyncMemoryReplayStore, MemoryReplayStore
 
 __all__ = [
+    "AsyncCacheStore",
+    "AsyncMemoryCacheStore",
     "AsyncMemoryReplayStore",
     "AsyncPager",
     "AsyncReplayStore",
     "BodySelector",
     "BodyTarget",
+    "CacheEntry",
+    "CacheOptions",
+    "CacheResult",
+    "CacheStore",
     "Continuation",
     "HeaderSelector",
     "KeySet",
+    "MemoryCacheStore",
     "MemoryReplayStore",
     "OperationRef",
     "Origin",
@@ -88,6 +103,10 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import pagination
 
         return getattr(pagination, name)
+    if name in {"AsyncMemoryCacheStore", "MemoryCacheStore"}:
+        from .._runtime.protocols import cache_stores
+
+        return getattr(cache_stores, name)
     if name == "MemoryReplayStore":
         from .._runtime.protocols.replay import MemoryReplayStore
 

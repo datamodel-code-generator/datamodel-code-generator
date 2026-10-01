@@ -1,0 +1,21 @@
+# protocols-cache-checks
+render pydantic_v2.BaseModel
+  APIGenerationError
+  E_CONFIG_VALUE config protocols.helpers['users.created'].operation /paths/~1users/post: The cache helper 'users.created' fetches POST /users, which changes state; only GET is cached
+  E_CONFIG_VALUE config protocols.helpers['users.created'].operation /paths/~1users/post: The cache helper 'users.created' fetches POST /users, which takes a request body
+  E_CONFIG_VALUE config protocols.helpers['users.created'].statuses[0] /paths/~1users/post: The cacheable status 200 of 'users.created' is no declared 2xx success of POST /users
+  E_CLIENT_UNSUPPORTED target protocols.helpers['users.checked'].operation /paths/~1users~1{userId}/head: The cache helper 'users.checked' fetches HEAD /users/{userId}, and HEAD is not supported yet
+  E_CLIENT_UNSUPPORTED target protocols.helpers['users.checked'].statuses[0] /paths/~1users~1{userId}/head: The cacheable status 200 of 'users.checked' has a response other than one natively decoded JSON body, which is not supported yet
+  E_CONFIG_VALUE config protocols.helpers['reports.get'].operation /paths/~1reports/get: The cache helper 'reports.get' fetches GET /reports, which takes a request body
+  E_CLIENT_UNSUPPORTED target protocols.helpers['reports.get'].statuses[0] /paths/~1reports/get: The cacheable status 200 of 'reports.get' has a response other than one natively decoded JSON body, which is not supported yet
+  E_CLIENT_UNSUPPORTED target protocols.helpers['reports.get'].statuses[1] /paths/~1reports/get: The cacheable status 204 of 'reports.get' has a response other than one natively decoded JSON body, which is not supported yet
+  E_CONFIG_VALUE config protocols.helpers['users.statuses'].statuses[0] /paths/~1users~1{userId}/get: The cacheable status 404 of 'users.statuses' is no declared 2xx success of GET /users/{userId}
+  E_CONFIG_VALUE config protocols.helpers['users.statuses'].statuses[1] /paths/~1users~1{userId}/get: The cacheable status 201 of 'users.statuses' is no declared 2xx success of GET /users/{userId}
+  E_CONFIG_VALUE config protocols.helpers['secure.anonymous'].authenticated /paths/~1secure~1users~1{userId}/get: The cache helper 'secure.anonymous' is declared anonymous, but GET /secure/users/{userId} requires credentials
+  E_CONFIG_VALUE config protocols.helpers['users.tagged'].tags[0] /paths/~1users/get: The tag '{fields}' of 'users.tagged' names no path or query parameter 'fields' of GET /users
+  E_CONFIG_VALUE config protocols.helpers['users.tagged'].tags[1] /paths/~1users/get: The tag 'page:{page}' of 'users.tagged' names the optional parameter 'page' of GET /users
+  E_CONFIG_VALUE config protocols.helpers['users.tagged'].tags[2] /paths/~1users/get: The tag '{role}' of 'users.tagged' names the optional parameter 'role' of GET /users
+  E_CONFIG_VALUE config protocols.helpers['users.tagged'].mutations['refetch'].operation /paths/~1users~1{userId}/get: The mutation 'refetch' of 'users.tagged' calls GET /users/{userId}; only POST, PUT, PATCH, and DELETE invalidate
+  E_CONFIG_VALUE config protocols.helpers['users.tagged'].mutations['create'].invalidate_tags[0] /paths/~1users/post: The tag '{userId}' of 'users.tagged' names no path or query parameter 'userId' of POST /users
+  E_CONFIG_VALUE config protocols.helpers['items.ambiguous'].tags[0] /paths/~1items~1{id}/get: The tag 'item:{id}' of 'items.ambiguous' names more than one path or query parameter 'id' of GET /items/{id}
+  E_CONFIG_VALUE config protocols.helpers['items.ambiguous'].tags[1] /paths/~1items~1{id}/get: The tag '{kinds}' of 'items.ambiguous' names the parameter 'kinds' of GET /items/{id}, which is not always a string, number, integer, or boolean

@@ -78,6 +78,7 @@ __all__ = (
     "OAuthProviderOptions",
     "RefreshTokenProvider",
     "TokenSet",
+    "grant_audience",
 )
 
 _VERIFIER_BYTES: Final = 32
@@ -940,6 +941,13 @@ class _SharedTokens(TokenAcquirer):
     def __exit__(self, *exc_info: object) -> None:
         """Close the provider."""
         self.close()
+
+
+def grant_audience(provider: object) -> str | None:
+    """Return the audience an OAuth token provider of the SDK requests, or None for none or any other provider."""
+    if isinstance(provider, (_SharedTokens, _AsyncSharedTokens)):
+        return provider._tokens.audience  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    return None
 
 
 class _AsyncSharedTokens(AsyncTokenAcquirer):

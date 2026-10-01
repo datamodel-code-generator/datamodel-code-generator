@@ -1,0 +1,176 @@
+# caching
+render pydantic_v2.BaseModel
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/users/__init__.py
+  write client/resources/users/_sync.py
+  write client/resources/users/_async.py
+  write client/resources/secure/__init__.py
+  write client/resources/secure/_sync.py
+  write client/resources/secure/_async.py
+  write client/types/__init__.py
+  write client/types/users/__init__.py
+  write client/types/users/_operations.py
+  write client/types/secure/__init__.py
+  write client/types/secure/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_generated/client_checks.py
+  write client/_generated/security.py
+  write client/_operations.py
+  write client/protocols/_plans.py
+  write client/protocols/_helpers.py
+  write client/protocols/_async_helpers.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['users.profile', 'users.dated', 'users.listing', 'secure.profile'] bindings 19
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper users.profile cache enabled True /inputs/target_config/protocol_metadata/helpers/users.profile 8bc3cb12a7c197074fd9c76e454ce348b7992c59bb308418c3be811dea86f4ad
+  helper users.dated cache enabled True /inputs/target_config/protocol_metadata/helpers/users.dated 46268d7980b99b249a57f34340a625c3ae65fd090549291665170e054c80e2b9
+  helper users.listing cache enabled True /inputs/target_config/protocol_metadata/helpers/users.listing 079b1b8db9dc767c4aa5c0aabf56dd69091a3a6136a5ed23072678a7f5871ea0
+  helper secure.profile cache enabled True /inputs/target_config/protocol_metadata/helpers/secure.profile df2f60b85a0635f78272dd6bb4dc6a6efc294852f6da71cff817b806265ce047
+  {
+    "helpers": {
+      "secure.profile": {
+        "authenticated": true,
+        "enabled": true,
+        "kind": "cache",
+        "mutations": {},
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1secure~1users~1{userId}/get"
+        },
+        "statuses": [
+          200
+        ],
+        "tags": [],
+        "validator": "etag",
+        "vary_allowlist": []
+      },
+      "users.dated": {
+        "authenticated": false,
+        "enabled": true,
+        "kind": "cache",
+        "mutations": {},
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1users~1{userId}/get"
+        },
+        "statuses": [
+          200,
+          203
+        ],
+        "tags": [],
+        "validator": "last_modified",
+        "vary_allowlist": []
+      },
+      "users.listing": {
+        "authenticated": false,
+        "enabled": true,
+        "kind": "cache",
+        "mutations": {
+          "create": {
+            "invalidate_tags": [
+              "users"
+            ],
+            "operation": {
+              "document": "/inputs/root",
+              "pointer": "/paths/~1users/post"
+            }
+          }
+        },
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1users/get"
+        },
+        "statuses": [
+          200
+        ],
+        "tags": [
+          "users"
+        ],
+        "validator": "etag",
+        "vary_allowlist": []
+      },
+      "users.profile": {
+        "authenticated": false,
+        "enabled": true,
+        "kind": "cache",
+        "mutations": {
+          "remove": {
+            "invalidate_tags": [
+              "user:{userId}",
+              "users"
+            ],
+            "operation": {
+              "document": "/inputs/root",
+              "pointer": "/paths/~1users~1{userId}/delete"
+            }
+          },
+          "rename": {
+            "invalidate_tags": [
+              "user:{userId}"
+            ],
+            "operation": {
+              "document": "/inputs/root",
+              "pointer": "/paths/~1users~1{userId}/patch"
+            }
+          }
+        },
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1users~1{userId}/get"
+        },
+        "statuses": [
+          200
+        ],
+        "tags": [
+          "user:{userId}",
+          "users"
+        ],
+        "validator": "both",
+        "vary_allowlist": [
+          "Accept-Language"
+        ]
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 users.get_user(query:fields=fields, header:Accept-Language=accept_language, path:userId=user_id)
+    exports client.types.users.GetUserResponse client.types.users.GetUserErrorData client.types.users.GetUserHTTPError
+    exports client.types.users.GetUserRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 users.check_user(path:userId=user_id)
+    exports client.types.users.CheckUserResponse client.types.users.CheckUserErrorData client.types.users.CheckUserHTTPError
+    exports client.types.users.CheckUserRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/2 users.rename_user(path:userId=user_id)
+    exports client.types.users.RenameUserResponse client.types.users.RenameUserErrorData client.types.users.RenameUserHTTPError
+    exports client.types.users.RenameUserRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/3 users.delete_user(path:userId=user_id)
+    exports client.types.users.DeleteUserResponse client.types.users.DeleteUserErrorData client.types.users.DeleteUserHTTPError
+    exports client.types.users.DeleteUserRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/4 users.list_users(query:page=page, query:role=role)
+    exports client.types.users.ListUsersResponse client.types.users.ListUsersErrorData client.types.users.ListUsersHTTPError
+    exports client.types.users.ListUsersRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/5 users.create_user()
+    exports client.types.users.CreateUserResponse client.types.users.CreateUserErrorData client.types.users.CreateUserHTTPError
+    exports client.types.users.CreateUserRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/6 secure.get_secure_user(path:userId=user_id)
+    exports client.types.secure.GetSecureUserResponse client.types.secure.GetSecureUserErrorData client.types.secure.GetSecureUserHTTPError
+    exports client.types.secure.GetSecureUserRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+  S_OPERATION_EXCLUDED selection /paths/~1items~1{id}/get: GET /items/{id} is excluded by exclude_tags 'items': Checked elsewhere
+  S_OPERATION_EXCLUDED selection /paths/~1reports/get: GET /reports is excluded by exclude_tags 'reports': Checked elsewhere

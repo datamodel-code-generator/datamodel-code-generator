@@ -1107,6 +1107,11 @@ class SyncTokens(ABC):
         self._audience = audience
         self._refresh = SyncSharedRefresh(shared, self._acquire, endpoint.close)
 
+    @property
+    def audience(self) -> str | None:
+        """Return the audience the family requests, which names no secret."""
+        return self._audience
+
     @abstractmethod
     def _acquire(self, job: Job) -> Outcome:
         """Run one admitted job's exchange on a worker and return its outcome."""
@@ -1148,6 +1153,11 @@ class AsyncTokens(ABC):
         self._endpoint = endpoint
         self._audience = audience
         self._refresh = AsyncSharedRefresh(shared, self._acquire, endpoint.aclose)
+
+    @property
+    def audience(self) -> str | None:
+        """Return the audience the family requests, which names no secret."""
+        return self._audience
 
     @abstractmethod
     async def _acquire(self, job: Job) -> Outcome:

@@ -12,6 +12,7 @@ from datamodel_code_generator._api_generation import RenderedFile
 from datamodel_code_generator._client._compiled_templates import client as client_template
 from datamodel_code_generator._client._compiled_templates import resource as resource_template
 from datamodel_code_generator._client._compiled_templates import types as types_template
+from datamodel_code_generator._client.caching import CacheSpec
 from datamodel_code_generator._client.naming import helper_classes, pascal
 from datamodel_code_generator._client.plan import media_range, member_parts, reachable, success_media
 from datamodel_code_generator._client.validation import allowed
@@ -289,6 +290,10 @@ _ERROR_NAMES: Final = (
     "WebhookVerificationError",
 )
 _PROTOCOL_ERROR_NAMES: Final = (
+    "CacheInvalidationError",
+    "CacheProtocolError",
+    "CacheStoreError",
+    "CacheValidatorConflictError",
     "IncompleteFrameError",
     "OperationCancelledError",
     "OperationFailedError",
@@ -343,7 +348,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from .._runtime.protocols.caches import AsyncCacheStore, CacheEntry, CacheResult, CacheStore
 from .._runtime.protocols.options import (
+    CacheOptions,
     Origin,
     PaginationOptions,
     PollOptions,
@@ -379,18 +386,26 @@ from .._runtime.protocols.webhooks import (
 )
 
 if TYPE_CHECKING:
+    from .._runtime.protocols.cache_stores import AsyncMemoryCacheStore, MemoryCacheStore
     from .._runtime.protocols.pagination import AsyncPager, Page, Pager
     from .._runtime.protocols.replay import AsyncMemoryReplayStore, MemoryReplayStore
 
 __all__ = [
+    "AsyncCacheStore",
+    "AsyncMemoryCacheStore",
     "AsyncMemoryReplayStore",
     "AsyncPager",
     "AsyncReplayStore",
     "BodySelector",
     "BodyTarget",
+    "CacheEntry",
+    "CacheOptions",
+    "CacheResult",
+    "CacheStore",
     "Continuation",
     "HeaderSelector",
     "KeySet",
+    "MemoryCacheStore",
     "MemoryReplayStore",
     "OperationRef",
     "Origin",
@@ -426,6 +441,10 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import pagination
 
         return getattr(pagination, name)
+    if name in {"AsyncMemoryCacheStore", "MemoryCacheStore"}:
+        from .._runtime.protocols import cache_stores
+
+        return getattr(cache_stores, name)
     if name == "MemoryReplayStore":
         from .._runtime.protocols.replay import MemoryReplayStore
 
@@ -964,7 +983,7 @@ class _Resources(_Typing):
         validation: ClientValidationConfig,
         *,
         unpacked: bool = False,
-        helpers: tuple[PaginationSpec, ...] = (),
+        helpers: tuple[PaginationSpec | CacheSpec, ...] = (),
     ) -> None:
         """Keep the typing context, User-Agent, validation, unpacked methods' TypedDicts, and protocol helpers."""
         super().__init__(plan, codecs, accessors)
@@ -2178,6 +2197,9 @@ _HELPER_CALLS: Final[dict[bool, tuple[str, str, str]]] = {
     False: ("first_page", "iterate_pages", "following_page"),
     True: ("afirst_page", "aiterate_pages", "afollowing_page"),
 }
+_CACHE: Final = "_runtime.protocols.cache"
+_CACHE_OPTIONS: Final = (("cache_options", ".", "CacheOptions"), _HELPER_OPTIONS[1])
+_DEFAULT_STATUSES: Final = [200]
 
 
 class _Helpers:
@@ -2192,24 +2214,90 @@ class _Helpers:
     @staticmethod
     def page(module: Module, spec: PaginationSpec) -> str:
         """Return the type of a helper's page response: its operation's response alias."""
-        operation = spec.operation
+        return _Helpers.response(module, spec.operation)
+
+    @staticmethod
+    def response(module: Module, operation: OperationSpec) -> str:
+        """Return the response alias of an operation."""
         return module.local(f"types.{operation.resource}", f"{operation.pascal}Response")
 
-    def plans(self) -> str:
-        """Return the module of every helper's items accessor and plan."""
-        module = Module(
-            {name for index in range(len(self.helpers)) for name in (f"PLAN_{index}", f"_items_{index}")},
-            self.resources.symbols,
-            level=2,
+    @staticmethod
+    def reference(module: Module, operation: OperationSpec) -> str:
+        """Return the runtime reference of an operation."""
+        return (
+            f"{module.local('_runtime.protocols.references', 'OperationRef')}"
+            f"(pointer={operation.contract.id.use_site.pointer!r})"
         )
+
+    def plans(self) -> str:
+        """Return the module of every helper's accessors and plans."""
+        names = {
+            name
+            for index, spec in enumerate(self.helpers)
+            for name in (
+                f"PLAN_{index}",
+                f"_items_{index}",
+                *(
+                    f"MUTATION_{index}_{position}"
+                    for position in range(len(spec.mutations) if isinstance(spec, CacheSpec) else 0)
+                ),
+            )
+        }
+        module = Module(names, self.resources.symbols, level=2)
         sections: list[str] = []
         for index, spec in enumerate(self.helpers):
-            sections.extend((self.accessor(module, index, spec), self.plan(module, index, spec)))
+            if isinstance(spec, CacheSpec):
+                sections.extend(self.cache(module, index, spec))
+            else:
+                sections.extend((self.accessor(module, index, spec), self.plan(module, index, spec)))
+        kinds = sorted({spec.helper.kind for spec in self.helpers})
         return types_template.render(
-            docstring="The plans of this package's pagination helpers; regenerate them instead of editing.",
+            docstring=(
+                f"The plans of this package's {kinds[0] if len(kinds) == 1 else 'protocol'} helpers; regenerate them "
+                "instead of editing."
+            ),
             imports=module.imports(),
             sections=sections,
         )
+
+    def cache(self, module: Module, index: int, spec: CacheSpec) -> list[str]:
+        """Return a cache helper's plan and the plans of its mutations, each naming only settings it declares."""
+        helper, operations = spec.helper, module.root("_operations")
+        tree = helper.tree
+        plan = module.local(_CACHE, "CachePlan")
+        entries: list[tuple[str, Doc]] = [
+            ("helper_id=", repr(helper.name)),
+            ("operation=", self.reference(module, spec.operation)),
+            ("call=", f"{operations}.OPERATION_{spec.operation.index}"),
+            ("validator=", repr(tree["validator"])),
+            ("authenticated=", repr(tree["authenticated"])),
+            ("fingerprint=", repr(self.fingerprints[helper.name])),
+        ]
+        if (statuses := list(tree["statuses"])) != _DEFAULT_STATUSES:
+            entries.append(("statuses=", _call("frozenset", (("", _tuple(map(repr, statuses))),))))
+        if names := sorted({name.lower() for name in tree["vary_allowlist"]}):
+            entries.append(("vary_allowlist=", _call("frozenset", (("", _tuple(map(repr, names))),))))
+        if spec.tags:
+            entries.append(("tags=", _tuple(map(repr, spec.tags))))
+        head = f"PLAN_{index}: {module.name('typing', 'Final')}[{plan}[{self.response(module, spec.operation)}]] = "
+        sections = [head + layout(_call(plan, entries), 0, len(head), WIDTH)]
+        mutation = module.local(_CACHE, "CacheMutationPlan")
+        for position, item in enumerate(spec.mutations):
+            head = (
+                f"MUTATION_{index}_{position}: {module.name('typing', 'Final')}"
+                f"[{mutation}[{self.response(module, item.operation)}]] = "
+            )
+            value = _call(
+                mutation,
+                (
+                    ("helper_id=", repr(helper.name)),
+                    ("operation=", self.reference(module, item.operation)),
+                    ("call=", f"{operations}.OPERATION_{item.operation.index}"),
+                    ("tags=", _tuple(map(repr, item.tags))),
+                ),
+            )
+            sections.append(head + layout(value, 0, len(head), WIDTH))
+        return sections
 
     def accessor(self, module: Module, index: int, spec: PaginationSpec) -> str:
         """Return a helper's typed items accessor, returning None where an optional step is None."""
@@ -2358,7 +2446,7 @@ class _Helpers:
         prefix = "Async" if asynchronous else ""
         root = f"{prefix}ProtocolHelpers"
         nodes: dict[tuple[str, ...], dict[str, tuple[str, str]]] = {(): {}}
-        leaves: dict[str, PaginationSpec] = {}
+        leaves: dict[str, PaginationSpec | CacheSpec] = {}
         for spec in self.helpers:
             helper = spec.helper
             for parts, class_name in helper_classes(helper.name, helper.kind):
@@ -2367,7 +2455,11 @@ class _Helpers:
                     leaves[f"{prefix}{class_name}"] = spec
                 else:
                     nodes.setdefault(parts, {})
-        names = {root, *(name for children in nodes.values() for name, _ in children.values())}
+        names = {
+            root,
+            *(name for children in nodes.values() for name, _ in children.values()),
+            *(f"{name}Mutations" for name, spec in leaves.items() if isinstance(spec, CacheSpec) and spec.mutations),
+        }
         module = Module(names, self.resources.symbols, level=2)
         core = module.local("_runtime.client.client", f"{prefix}ClientCore")
         cached = module.name("functools", "cached_property")
@@ -2376,23 +2468,41 @@ class _Helpers:
             name = f"{prefix}{''.join(map(pascal, parts))}Protocols" if parts else root
             members = [
                 f"    @{cached}\n    def {attribute}(self) -> {child}:\n"
-                f'        """The {dotted} {"pagination helper" if child in leaves else "protocol helpers"}."""\n'
+                f'        """The {dotted} {f"{leaf.helper.kind} helper" if leaf else "protocol helpers"}."""\n'
                 f"        return {child}(self._core)"
                 for attribute, (child, dotted) in children.items()
+                for leaf in (leaves.get(child),)
             ]
             what = f"the {'.'.join(parts)} protocol helpers" if parts else "the protocol helpers of this API"
             sections.append(self.node(name, what, core, members))
-        sections.extend(
-            self.node(
-                name,
-                f"the {spec.helper.name} pagination helper of {spec.operation.contract.method.upper()} "
-                f"{spec.operation.contract.path}",
-                core,
-                self.methods(module, index, spec, asynchronous=asynchronous),
-                leaf=True,
-            )
-            for index, (name, spec) in enumerate(leaves.items())
-        )
+        for index, (name, spec) in enumerate(leaves.items()):
+            route = f"{spec.operation.contract.method.upper()} {spec.operation.contract.path}"
+            what = f"the {spec.helper.name} {spec.helper.kind} helper of {route}"
+            if not isinstance(spec, CacheSpec):
+                sections.append(
+                    self.node(name, what, core, self.methods(module, index, spec, asynchronous=asynchronous), leaf=True)
+                )
+                continue
+            members = self.fetch(module, index, spec, asynchronous=asynchronous)
+            if spec.mutations:
+                mutations = f"{name}Mutations"
+                members.append(
+                    f"    @{cached}\n    def mutations(self) -> {mutations}:\n"
+                    f'        """The mutations that invalidate entries of this helper."""\n'
+                    f"        return {mutations}(self._core)"
+                )
+                sections.extend((
+                    self.node(name, what, core, members, leaf=True),
+                    self.node(
+                        mutations,
+                        f"the mutations of the {spec.helper.name} cache helper",
+                        core,
+                        self.mutations(module, index, spec, asynchronous=asynchronous),
+                        leaf=True,
+                    ),
+                ))
+                continue
+            sections.append(self.node(name, what, core, members, leaf=True))
         kind = "asyncio" if asynchronous else "synchronous"
         return types_template.render(
             docstring=f"The {kind} protocol helpers of this package, by their dotted names.",
@@ -2483,6 +2593,73 @@ class _Helpers:
             )),
         ]
 
+    def fetch(self, module: Module, index: int, spec: CacheSpec, *, asynchronous: bool) -> list[str]:
+        """Return a cache helper's fetch and invalidate methods."""
+        operation = spec.operation
+        arguments = [self.resources.parameter(module, parameter) for parameter in operation.parameters]
+        options = [
+            _Argument(name, f"{module.namespace.name(source, kind)} | None", "none")
+            for name, source, kind in _CACHE_OPTIONS
+        ]
+        plan = f"{module.namespace.name('.', '_plans')}.PLAN_{index}"
+        passed = [
+            ("", "self._core"),
+            ("", plan),
+            ("", _tuple(parameter.python_name for parameter in operation.parameters)),
+            *((f"{name}=", name) for name, _, _ in _CACHE_OPTIONS),
+        ]
+        result = f"{module.local('_runtime.protocols.caches', 'CacheResult')}[{self.response(module, operation)}]"
+        fetch, invalidate = (
+            module.local(_CACHE, name)
+            for name in (("afetch", "ainvalidate") if asynchronous else ("fetch", "invalidate"))
+        )
+        route = f"{operation.contract.method.upper()} {operation.contract.path}"
+        signature = tuple(argument.parameter(module) for argument in (*arguments, *options))
+        wait, coroutine = ("await ", "async ") if asynchronous else ("", "")
+        return [
+            "\n".join((
+                _signature("fetch", signature, result, asynchronous=asynchronous, stub=False),
+                f'        """Fetch {route} through the helper\'s cache, revalidating a stale entry."""',
+                f"        return {wait}{layout(_call(fetch, passed), 8, 7 + len(wait), WIDTH)}",
+            )),
+            "\n".join((
+                f"    {coroutine}def invalidate(self, tags: tuple[str, ...]) -> int:",
+                '        """Remove the stored entries that carry any of the tags, returning how many."""',
+                f"        return {wait}{invalidate}(self._core, {plan}, tags)",
+            )),
+        ]
+
+    def mutations(self, module: Module, index: int, spec: CacheSpec, *, asynchronous: bool) -> list[str]:
+        """Return a method per mutation of a cache helper, taking its operation's parameters, body, and options."""
+        resources = self.resources
+        methods: list[str] = []
+        call = module.local(_CACHE, "amutate" if asynchronous else "mutate")
+        wait = "await " if asynchronous else ""
+        for position, item in enumerate(spec.mutations):
+            operation = replace(item.operation, fields=())
+            arguments = [resources.parameter(module, parameter) for parameter in operation.parameters]
+            body = resources.requests(module, operation, asynchronous=asynchronous)[1]
+            options = _Argument("options", f"{module.namespace.name('..options', 'RequestOptions')} | None", "none")
+            passed = [
+                ("", "self._core"),
+                ("", f"{module.namespace.name('.', '_plans')}.MUTATION_{index}_{position}"),
+                ("", _tuple(parameter.python_name for parameter in operation.parameters)),
+                *((f"{argument.name}=", argument.name) for argument in body),
+                ("options=", "options"),
+            ]
+            route = f"{operation.contract.method.upper()} {operation.contract.path}"
+            signature = tuple(argument.parameter(module) for argument in (*arguments, *body, options))
+            methods.append(
+                "\n".join((
+                    _signature(
+                        item.name, signature, self.response(module, operation), asynchronous=asynchronous, stub=False
+                    ),
+                    f'        """Call {route}, then remove the cached entries its tags name once it succeeds."""',
+                    f"        return {wait}{layout(_call(call, passed), 8, 7 + len(wait), WIDTH)}",
+                ))
+            )
+        return methods
+
 
 class ClientRenderer:
     """Render every module of one client package from its plan, codec plan, and wire plan."""
@@ -2496,7 +2673,7 @@ class ClientRenderer:
         batch: GeneratedTypeContractBatch,
         wire: WirePlan,
         codecs: CodecPlan,
-        helpers: tuple[PaginationSpec, ...] = (),
+        helpers: tuple[PaginationSpec | CacheSpec, ...] = (),
         fingerprints: Mapping[str, str] | None = None,
         webhooks: Callable[[Mapping[TypeUseId, UseAccessors]], tuple[tuple[PurePosixPath, str], ...]],
     ) -> None:
@@ -2609,13 +2786,26 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
             }
             for spec in self.helpers
         ]
+        kinds = {spec.helper.kind for spec in self.helpers}
+        pages = (
+            "A pagination helper's `page` fetches the first page and `next_page` the page after one it returned, each "
+            "in a\nsession of its own; `iterate` returns a pager, which sends nothing until it is iterated and fetches "
+            "each page only\nonce the previous one is consumed. "
+            if "pagination" in kinds
+            else ""
+        )
+        caches = (
+            "A cache helper's `fetch` answers from a fresh entry of the store `ProtocolClientOptions.cache_stores`\n"
+            "lends it, or sends the request, revalidating a stale entry; `invalidate` and its `mutations` remove "
+            "tagged\nentries. "
+            if "cache" in kinds
+            else ""
+        )
         return f"""
 ## Protocol helpers
 
 `client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.
-A pagination helper's `page` fetches the first page and `next_page` the page after one it returned, each in a
-session of its own; `iterate` returns a pager, which sends nothing until it is iterated and fetches each page only
-once the previous one is consumed. See the runtime reference for their limits.
+{pages}{caches}See the runtime reference for their limits.
 
 ```json
 {json.dumps(helpers, indent=2, ensure_ascii=True)}
@@ -2805,9 +2995,11 @@ wait for retained cleanup; it does not authorize another send or restore an expi
         page-number helper, and followed URLs only for one with a next-URL or Link helper; the cursor size limit
         applies to cursors and followed URLs.
         """
-        if not self.helpers:
-            return ""
-        kinds = {spec.continuation["kind"] for spec in self.helpers}
+        caches = [spec for spec in self.helpers if isinstance(spec, CacheSpec)]
+        cache = self.cache_runtime() if caches else ""
+        if not (pages := [spec for spec in self.helpers if not isinstance(spec, CacheSpec)]):
+            return cache
+        kinds = {spec.continuation["kind"] for spec in pages}
         cursors = "cursor" in kinds
         size = "| cursor size | 64 KiB |\n" if cursors or kinds & {"next_url", "link"} else ""
         rules = (
@@ -2846,7 +3038,38 @@ another kind's options, fail construction. The session types are imported from:
 | network sends per session | 3000; None removes it |
 
 {rules}
-{self.count_runtime(kinds)}{self.follow_runtime(kinds)}"""
+{self.count_runtime(kinds)}{self.follow_runtime(kinds)}{cache}"""
+
+    def cache_runtime(self) -> str:
+        """Describe cache helpers: their stores, keys, freshness, revalidation, and invalidation."""
+        return f"""
+## Cache helpers
+
+A cache helper keeps entries only in the store `ProtocolClientOptions.cache_stores` lends it under its name, a
+`MemoryCacheStore` or `AsyncMemoryCacheStore` or another implementation of `CacheStore` or `AsyncCacheStore` of the
+client's mode; a client without one refuses `fetch`, `invalidate`, and the mutations with
+`ProtocolConfigurationError` before sending. The client never creates or closes a store. The types are imported from
+`{self.config.package}.protocols`: `CacheOptions`, `CacheResult`, `CacheEntry`, the store protocols, and the memory
+stores.
+
+| Limit | Effective default |
+|---|---|
+| stored body per entry | 2 MiB |
+| freshness of any entry | 300 seconds |
+
+`fetch` returns a `CacheResult` whose `source` is `fresh_cache` for a fresh entry, answered without sending,
+`revalidated` for a stale entry a 304 confirmed, and `network` otherwise; a stored body is decoded again every time.
+An entry is keyed by the method, the URL, the Accept header, the credential partition, and the credentials the auth
+binds, and selected by the request headers its `Vary` names. A request carrying credentials needs
+`ProtocolSecurityContext.credential_partition`, and a helper declared authenticated; anything else raises
+`ProtocolConfigurationError`. Freshness comes from `max-age` or `Expires` only, capped by `max_ttl`; a stale entry
+is revalidated with its validator, and a 304 without a usable entry raises `CacheProtocolError`. A response is stored
+only when its status is cacheable, it came without a redirect, Set-Cookie, `no-store`, or an unsupported
+Cache-Control directive, and its `Vary` names only allowlisted headers; otherwise it removes the entry it supersedes.
+Store failures raise `CacheStoreError` and never resend a request. A mutation removes the entries its tags name only
+after it succeeds; a store failure then raises `CacheInvalidationError`, whose `require_result()` returns the
+mutation's result.
+"""
 
     @staticmethod
     def follow_runtime(kinds: set[str]) -> str:

@@ -266,14 +266,19 @@ def _date(value: str, received_wall_time: float) -> float | None:
     return date.timestamp() + (second == _LEAP_SECOND)
 
 
+def http_date(value: str, received_wall_time: float) -> float | None:
+    """Return the POSIX time of an RFC 9110 HTTP date, a two-digit year read near the receipt, or None for no date."""
+    try:
+        return _date(value.strip(_ASCII_WHITESPACE), received_wall_time)
+    except (ValueError, OverflowError, OSError):
+        return None
+
+
 def _seconds(value: str, received_wall_time: float) -> float | None:
     normalized = value.strip(_ASCII_WHITESPACE)
     if (integer := _integer(normalized)) is not None:
         return integer
-    try:
-        date = _date(normalized, received_wall_time)
-    except (ValueError, OverflowError, OSError):
-        return None
+    date = http_date(normalized, received_wall_time)
     return None if date is None else max(0.0, date - received_wall_time)
 
 

@@ -71,6 +71,10 @@ from ._runtime.client.errors import (
 
 if TYPE_CHECKING:
     from ._runtime.protocols.errors import (
+        CacheInvalidationError,
+        CacheProtocolError,
+        CacheStoreError,
+        CacheValidatorConflictError,
         IncompleteFrameError,
         OperationCancelledError,
         OperationFailedError,
@@ -109,6 +113,10 @@ __all__ = [
     'BodyNotReplayableError',
     'BodyProtocolError',
     'BudgetExceededError',
+    'CacheInvalidationError',
+    'CacheProtocolError',
+    'CacheStoreError',
+    'CacheValidatorConflictError',
     'CleanupError',
     'ClientClosedError',
     'ConfigurationError',
@@ -167,6 +175,10 @@ __all__ = [
     'WebhookVerificationError',
 ]
 _PROTOCOL_ERRORS = frozenset({
+    'CacheInvalidationError',
+    'CacheProtocolError',
+    'CacheStoreError',
+    'CacheValidatorConflictError',
     'IncompleteFrameError',
     'OperationCancelledError',
     'OperationFailedError',
