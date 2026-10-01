@@ -1415,8 +1415,12 @@ class _Validator:  # noqa: PLR0904
             },
             "a helper definition",
         )
-        if batch is not INVALID and batch["success"]["pointer"] == batch["error"]["pointer"]:
-            self.conflict(f"{at}.error.pointer", f"{at}.error.pointer names the member {at}.success.pointer names")
+        if batch is not INVALID and _nested(success := batch["success"]["pointer"], error := batch["error"]["pointer"]):
+            self.conflict(
+                f"{at}.error.pointer",
+                f"{at}.error.pointer {error!r} and {at}.success.pointer {success!r} name the same member or one inside "
+                "the other",
+            )
             return INVALID
         return batch
 
@@ -1530,6 +1534,11 @@ class _Validator:  # noqa: PLR0904
 
 def _printable(text: str) -> bool:
     return bool(text) and text.isascii() and text.isprintable()
+
+
+def _nested(first: str, second: str) -> bool:
+    """Return whether two pointers name the same member, or one names a member inside the other's."""
+    return f"{first}/".startswith(f"{second}/") or f"{second}/".startswith(f"{first}/")
 
 
 def _keep(value: object, _: str) -> object:

@@ -2,7 +2,7 @@
 render pydantic_v2.BaseModel
   APIGenerationError
   E_CONFIG_VALUE config protocols.helpers['users.query'].request_items.in: protocols.helpers['users.query'].request_items.in must be 'body'
-  E_CONFIG_CONFLICT config protocols.helpers['users.same'].error.pointer: protocols.helpers['users.same'].error.pointer names the member protocols.helpers['users.same'].success.pointer names
+  E_CONFIG_CONFLICT config protocols.helpers['users.same'].error.pointer: protocols.helpers['users.same'].error.pointer '/a' and protocols.helpers['users.same'].success.pointer '/a' name the same member or one inside the other
   E_CONFIG_VALUE config protocols.helpers['users.limits'].max_items: protocols.helpers['users.limits'].max_items must be a positive integer
   E_CONFIG_VALUE config protocols.helpers['users.limits'].max_request_bytes: protocols.helpers['users.limits'].max_request_bytes must be a positive integer
   E_CONFIG_VALUE config protocols.helpers['users.limits'].results.from: protocols.helpers['users.limits'].results.from must be 'body'
@@ -13,3 +13,4 @@ render pydantic_v2.BaseModel
   E_CONFIG_VALUE config protocols.helpers['users.limits'].retry_failed_subset: protocols.helpers['users.limits'].retry_failed_subset must be a boolean
   E_CONFIG_VALUE config protocols.helpers['users.ids'].correlation.input: protocols.helpers['users.ids'].correlation.input must be an RFC 6901 pointer
   E_CONFIG_VALUE config protocols.helpers['users.ids'].correlation.result: protocols.helpers['users.ids'].correlation needs 'result'
+  E_CONFIG_CONFLICT config protocols.helpers['users.nested'].error.pointer: protocols.helpers['users.nested'].error.pointer '/a' and protocols.helpers['users.nested'].success.pointer '/a/b' name the same member or one inside the other
