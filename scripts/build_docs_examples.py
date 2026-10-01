@@ -357,6 +357,32 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
+            example_id="python-client.pagination.helper",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "python",
+                blocks(
+                    CLIENT_PACKAGES / "pagination" / "pydantic_v2_BaseModel" / "client" / "protocols" / "_helpers.py",
+                    "    def page(",
+                    limit=1,
+                ),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.pagination.diagnostics",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "text",
+                "\n".join(
+                    line.strip()
+                    for line in read_text(
+                        EXPECTED_CLIENT / "protocols" / "protocols-pagination-checks.txt"
+                    ).splitlines()
+                    if line.lstrip().startswith("E_")
+                ),
+            ),
+        ),
+        DocsExample(
             example_id="python-client.signature-style.explicit",
             path=DOCS / "python-client.md",
             render=lambda: fenced(

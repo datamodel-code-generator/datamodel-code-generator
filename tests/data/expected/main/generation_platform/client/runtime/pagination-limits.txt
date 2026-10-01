@@ -1,0 +1,12 @@
+# pagination-limits pydantic_v2.BaseModel
+  > GET https://api.example.com/codes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/codes?cursor=longer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  default validation of a long server cursor ['1', '2']
+  > GET https://api.example.com/codes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/codes?cursor=longer
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  schema validation of a long server cursor ['1', '2']
+  schema validation of a long start cursor [] ! RequestEncodingError: RequestEncodingError(operation_id='listCodes', call_id='<call>', location='query.cursor') [operation_id='listCodes', location=('query', 'cursor'), cause=WireValidationError('The value does not satisfy maxLength at /')] request_encoding_error

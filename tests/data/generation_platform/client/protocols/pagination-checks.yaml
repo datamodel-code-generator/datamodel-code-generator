@@ -1,0 +1,258 @@
+schema_version: 1
+helpers:
+  users.all_items:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: "null"}]
+      empty_string: end
+  users_all.items:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: "null"}]
+      empty_string: end
+  bindings.given:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: "null"}]
+      empty_string: end
+    bindings:
+      - target: {in: header, name: X-Cursor}
+        value: {literal: fixed}
+  write.header:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: header, name: X-Cursor}
+      end: [{kind: "null"}]
+      empty_string: end
+  body.form:
+    kind: pagination
+    operation: /paths/~1forms/post
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: "null"}]
+      empty_string: end
+  responses.twice:
+    kind: pagination
+    operation: /paths/~1twice/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: "null"}]
+      empty_string: end
+  responses.hidden:
+    kind: pagination
+    operation: /paths/~1hidden/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /data}
+      write: {in: query, name: cursor}
+      end: [{kind: missing}]
+      empty_string: end
+  items.union:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /either/data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: "null"}]
+      empty_string: end
+  items.map:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /grouped/admins}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: "null"}]
+      empty_string: end
+  items.absent:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data/id}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: "null"}]
+      empty_string: end
+  items.scalar:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /count}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: "null"}]
+      empty_string: end
+  items.unknown_schema:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/Nobody}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: "null"}]
+      empty_string: end
+  items.other_schema:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/Label}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: "null"}]
+      empty_string: end
+  cursor.absent:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /nothing}
+      write: {in: query, name: cursor}
+      end: [{kind: missing}]
+      empty_string: end
+  cursor.header:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: header, name: X-Missing}
+      write: {in: query, name: cursor}
+      end: [{kind: missing}]
+      empty_string: end
+  cursor.types:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /mode}
+      write: {in: query, name: cursor}
+      end: [{kind: "null"}, {kind: value, value: 2}, {kind: value, value: 0.5}, {kind: value, value: false}]
+      empty_string: end
+  cursor.null:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: missing}, {kind: value, value: 5}]
+      empty_string: end
+  cursor.number:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /count}
+      write: {in: query, name: size}
+      end: [{kind: missing}, {kind: value, value: 2.0}]
+      empty_string: end
+  cursor.union:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /choice}
+      write: {in: query, name: cursor}
+      end: [{kind: missing}]
+      empty_string: end
+  cursor.map:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /grouped/admins}
+      write: {in: query, name: cursor}
+      end: [{kind: missing}]
+      empty_string: end
+  items.nullable:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /maybe}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: "null"}]
+      empty_string: end
+  cursor.fixed:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /fixed}
+      write: {in: query, name: cursor}
+      end: [{kind: missing}]
+      empty_string: end
+  cursor.anything:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /anything}
+      write: {in: query, name: cursor}
+      end: [{kind: missing}, {kind: value, value: 1}]
+      empty_string: end

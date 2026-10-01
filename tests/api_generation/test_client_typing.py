@@ -78,3 +78,23 @@ def test_client_typing_fields(backend: DataModelType, case: str, tmp_path: Path)
         client_typing_report(tmp_path, backend, case, ("fields",)),
         EXPECTED / f"{backend.value.replace('.', '-')}-fields{suffix}.txt",
     )
+
+
+@pytest.mark.parametrize(
+    "backend",
+    [
+        DataModelType.PydanticV2BaseModel,
+        DataModelType.PydanticV2Dataclass,
+        DataModelType.DataclassesDataclass,
+        DataModelType.TypingTypedDict,
+        DataModelType.MsgspecStruct,
+    ],
+)
+def test_client_typing_pagination(backend: DataModelType, tmp_path: Path) -> None:
+    """Check pagination helpers: typed items and pages, sync and asyncio pagers, and misuses of each."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(
+        client_typing_report(tmp_path, backend, "pagination", ("pagination",)),
+        EXPECTED / f"{backend.value.replace('.', '-')}-pagination.txt",
+    )

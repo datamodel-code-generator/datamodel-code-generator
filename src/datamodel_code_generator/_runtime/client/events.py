@@ -125,6 +125,7 @@ class CallEvents:
             operation_id=self.operation_id,
             path=self.path,
             origin=self.origin,
+            parent_session_id=self.call.parent_session_id,
             attempt_index=None if self.attempts == 0 else self.attempts - 1,
             sent=sent,
             phase=None if failure is None else failure.phase,

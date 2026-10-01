@@ -16,7 +16,7 @@ from contextlib import (
     contextmanager,
     suppress,
 )
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import partial
 from time import monotonic, time
 from typing import TYPE_CHECKING, ClassVar, Final, Generic, Literal, TypeVar
@@ -51,6 +51,7 @@ from .errors import (
     LimiterExecutionError,
     PhaseTimeoutError,
     ProtocolError,
+    ProtocolSizeError,
     RedirectPolicyError,
     RequestEncodingError,
     ResponseTooLargeError,
@@ -133,9 +134,12 @@ if TYPE_CHECKING:
         Iterator,
         Sequence,
     )
+    from typing import Protocol
 
     from ..model_codecs.parameters import ParameterFragment
     from ..model_codecs.wire import WireValue
+    from ..protocols.options import ProtocolClientOptions, ProtocolDefaults
+    from ..protocols.references import OperationRef
     from .auth import (
         AsyncCloseableCredentialProvider,
         AuthConfig,
@@ -156,6 +160,7 @@ if TYPE_CHECKING:
     from .body_sources import AsyncBodyBindings, AsyncBodySource, BodyBindings, BodySource
     from .errors import RetryStopReason
     from .hooks import AsyncLimiter, AsyncPermit, Limiter, Permit
+    from .logical import OperationSession
     from .multipart import AsyncBodyInput, BodyInput
     from .operations import OperationPlan, ServerPlan
     from .options import RequestValidation, ResolvedTransportOptions
@@ -165,8 +170,25 @@ if TYPE_CHECKING:
     from .urls import Origin
 
 T = TypeVar("T")
+R = TypeVar("R")
 AdapterT = TypeVar("AdapterT")
 HandleT = TypeVar("HandleT")
+
+if TYPE_CHECKING:
+
+    class _PagePlan(Protocol):
+        """The identity of a protocol helper and of the operation its pages call."""
+
+        @property
+        def helper_id(self) -> str:
+            """Return the helper's dotted name."""
+            raise NotImplementedError
+
+        @property
+        def operation(self) -> OperationRef:
+            """Return the reference of the operation the helper calls."""
+            raise NotImplementedError
+
 
 MAX_RESPONSE_BYTES: Final = 16 * 1024 * 1024
 MAX_ERROR_BODY_BYTES: Final = 64 * 1024
@@ -185,11 +207,12 @@ _EMPTY_VISITED: Final[frozenset[tuple[str, str]]] = frozenset()
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ClientDefaults:
-    """The generated defaults of one client package, and the validation modes it allows."""
+    """The generated defaults of one client package, the validation modes it allows, and its helpers' kinds by name."""
 
     user_agent: str | None = None
     validation: ValidationModes = DEFAULT_VALIDATION
     security_schemes: tuple[SecuritySchemeEntry, ...] = ()
+    helpers: tuple[tuple[str, str], ...] = ()
 
 
 _DEFAULT_SERVER: Final = ServerSelection()
@@ -267,6 +290,17 @@ def _timeouts(current: ResolvedTimeoutOptions, layer: TimeoutOptions | Unset | N
         write=current.write if isinstance(layer.write, Unset) else layer.write,
         pool=current.pool if isinstance(layer.pool, Unset) else layer.pool,
     )
+
+
+def _protocol_options(options: ClientOptions | None, defaults: ClientDefaults) -> ProtocolClientOptions | None:
+    """Return the client's protocol settings, refusing defaults for a helper the package lacks or of another kind."""
+    if options is None or (protocols := options.protocols) is None or isinstance(protocols, Unset):
+        return None
+    if not isinstance(helpers := protocols.defaults, Unset) and helpers:
+        from ..protocols.options import checked_defaults  # noqa: PLC0415 - Only helper defaults load the helper settings.
+
+        checked_defaults(helpers, defaults.helpers)
+    return protocols
 
 
 def _client_settings(options: object, defaults: ClientDefaults) -> Settings:
@@ -608,6 +642,42 @@ def _completed(
         error.call_id = error.call_id or info.call_id
         raise
     return Response(data=data, info=info)
+
+
+def _page(  # noqa: PLR0913
+    decoder: ResponseDecoder[T, object],
+    info: ResponseInfo,
+    body: _Body,
+    call: _Call,
+    plan: _PagePlan,
+    *,
+    page_limited: bool,
+) -> tuple[T, WireValue]:
+    """Return a page's value and wire value, or raise the error of a page or response over its size limit."""
+    settings = call.settings
+    if body.overflow:
+        limit = settings.max_response_bytes
+        assert limit is not None
+        if page_limited:
+            raise ProtocolSizeError(
+                kind="page",
+                limit=limit,
+                observed=body.size,
+                unit="bytes",
+                helper_id=plan.helper_id,
+                operation=plan.operation,
+                info=info,
+            )
+        raise ResponseTooLargeError(info=info, representation="decoded", limit=limit, observed_bytes=body.size)
+    if (problem := body.problem) is not None and body.success:
+        raise problem
+    return decoder.decode_page(
+        info,
+        body.content,
+        truncated=body.truncated or problem is not None,
+        problem=problem,
+        native=settings.validation.response == "native",
+    )
 
 
 RAW_DECODER: Final[ResponseDecoder[object, object]] = ResponseDecoder((), (), HTTPStatusError)
@@ -1102,8 +1172,53 @@ class _Call(LogicalCallContext):
         )
 
 
+class _SessionCall(_Call):
+    """A child call of a protocol helper session, which also bounds the call's deadline and send admissions."""
+
+    __slots__ = ("parent", "session")
+
+    def __init__(
+        self,
+        settings: Settings,
+        scope: Scope[HandleT],
+        operation: OperationPlan[object, object],
+        session: OperationSession,
+    ) -> None:
+        """Bind the call to its session, ending it no later than the session does."""
+        super().__init__(settings, scope, operation)
+        self.session = self.parent = session
+        deadline = self.deadline
+        if (limit := session.deadline) is not None and (deadline is None or limit.at < deadline.at):
+            self.deadline = limit
+
+    def retry(
+        self,
+        info: ResponseInfo | None,
+        error: TransportError | None,
+        *,
+        replayable: bool,
+        retry_owner: Literal["sdk", "transport"],
+    ) -> RetryDelay | None:
+        """Plan a retry as an ordinary call does, refusing it when the session cannot pay for its sends.
+
+        A recovery that needs a new token acquisition needs a slot for the token request too.
+        """
+        planned = super().retry(info, error, replayable=replayable, retry_owner=retry_owner)
+        if planned is None:
+            return None
+        auth = self.auth
+        exchange = planned.reason == "auth_invalid_token" and auth is not None and auth.exchange_needed()
+        if not self.parent.room(exchange=exchange):
+            self.stop_reason = "parent_budget_exhausted"
+            return None
+        return planned
+
+
 class _Shared(Generic[AdapterT]):
-    """What a client shares with its views: the transport, the fixed headers, and whether the transport was closed."""
+    """What a client shares with its views: the transport, the fixed headers, and whether the transport was closed.
+
+    It also keeps the client's protocol helper settings.
+    """
 
     __slots__ = (
         "adapter",
@@ -1112,6 +1227,7 @@ class _Shared(Generic[AdapterT]):
         "fixed",
         "loop",
         "modes",
+        "protocols",
         "providers",
         "security_schemes",
         "transport",
@@ -1132,6 +1248,7 @@ class _Shared(Generic[AdapterT]):
         self.adapter_closed = False
         self.closing_tasks: dict[Scope[AsyncRawResponse], asyncio.Task[list[Exception]]] | None = None
         self.loop: asyncio.AbstractEventLoop | None = None
+        self.protocols: ProtocolClientOptions | None = None
 
 
 class _Core(Generic[AdapterT, HandleT]):
@@ -1144,6 +1261,16 @@ class _Core(Generic[AdapterT, HandleT]):
         self._scope = scope
         self._owned = owned
         self._urls: dict[int, tuple[tuple[ServerPlan, ...], str]] = {}
+
+    def fixes_key(self, options: RequestOptions | None) -> bool:
+        """Return whether a call's effective options, its own, a view's, or the client's, fix an idempotency key."""
+        return isinstance(self._call_settings(options, None).idempotency_key, IdempotencyKey)
+
+    def protocol_defaults(self, name: str) -> ProtocolDefaults | None:
+        """Return the defaults the client's protocol settings give one helper, or None."""
+        if (protocols := self._shared.protocols) is None or isinstance(defaults := protocols.defaults, Unset):
+            return None
+        return defaults.get(name)
 
     def view(self, options: object) -> Self:
         """Return a view with the options layered on these, sharing the transport and counting its calls here too."""
@@ -1680,7 +1807,7 @@ def _limiter_context(call: LogicalCallContext, url: str) -> LimiterContext:
         operation_id=call.operation_id,
         origin=f"{parts.scheme}://{parts.netloc}",
         call_id=call.call_id,
-        parent_session_id=None,
+        parent_session_id=call.parent_session_id,
         remaining_timeout=call.remaining(),
         cancel_token=call.settings.cancel_token,
     )
@@ -1904,14 +2031,12 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             from .auth_policy import validate_auth_mode  # noqa: PLC0415
 
             validate_auth_mode(settings.auth, asynchronous=False)
+        protocols = _protocol_options(options, defaults)
         transport = _transport(options, http_client, transport_adapter)
         adapter, owned = _adapter(http_client, http_client_ownership, transport_adapter, transport)
-        result = cls(
-            _Shared(defaults, adapter, transport, trusted=isinstance(adapter, Httpx2Transport)),
-            settings,
-            Scope(),
-            owned=owned,
-        )
+        shared = _Shared(defaults, adapter, transport, trusted=isinstance(adapter, Httpx2Transport))
+        shared.protocols = protocols
+        result = cls(shared, settings, Scope(), owned=owned)
         if settings.auth is not None:
             result._adopt_auth(settings.auth)
         return result
@@ -1961,6 +2086,67 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             call.check("decode")
             if events is not None:
                 events.finish(result)
+            call.check("decode")
+        except BaseException as error:  # noqa: BLE001
+            failure = call.stopped(error)
+            if events is not None:
+                events.ended(failure)
+            raise failure from None
+        else:
+            return result
+        finally:
+            self._scope.release()
+            call.finish()
+
+    def execute_page(  # noqa: PLR0913
+        self,
+        plan: _PagePlan,
+        operation: OperationPlan[T, object],
+        arguments: Callable[[], tuple[object, ...]],
+        build: Callable[[T, WireValue, ResponseInfo], R],
+        *,
+        body: object,
+        media_type: str | MediaSelector | None,
+        options: RequestOptions | None,
+        session: OperationSession,
+        max_page_bytes: int,
+    ) -> R:
+        """Execute one page of a helper session as a child logical call, building what the page's response gives.
+
+        The page reads at most `max_page_bytes` of its body, and its arguments are taken when the call prepares.
+        """
+        settings = self._call_settings(options, operation.operation_id)
+        if page_limited := (limit := settings.max_response_bytes) is None or max_page_bytes <= limit:
+            settings = replace(settings, max_response_bytes=max_page_bytes)
+        call = _SessionCall(settings, self._scope, operation, session)
+        events = call.events = self._started(call, operation.path, options)
+        decoder = call.decoder = operation.responses
+
+        def prepare() -> tuple[PreparedRequest[EncodedAttempt], object]:
+            return self._prepare(
+                operation,
+                arguments(),
+                call.settings,
+                body=body,
+                media_type=media_type,
+                options=options,
+                accept=decoder.accept,
+                narrowed=False,
+            )
+
+        def receive(response: TransportResponse, info: ResponseInfo) -> tuple[Response[T], R]:
+            received = self._read(response, info, decoder, call)
+            call.check("decode")
+            data, wire = _page(decoder, info, received, call, plan, page_limited=page_limited)
+            result = build(data, wire, info)
+            call.check("decode")
+            return Response(data=data, info=info), result
+
+        try:
+            completed, result = self._run(call, body, prepare, receive, options)
+            call.check("decode")
+            if events is not None:
+                events.finish(completed)
             call.check("decode")
         except BaseException as error:  # noqa: BLE001
             failure = call.stopped(error)
@@ -2668,9 +2854,11 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             from .auth_policy import validate_auth_mode  # noqa: PLC0415
 
             validate_auth_mode(settings.auth, asynchronous=True)
+        protocols = _protocol_options(options, defaults)
         transport = _transport(options, http_client, transport_adapter)
         adapter, owned = _async_adapter(http_client, http_client_ownership, transport_adapter, transport)
         shared = _Shared(defaults, adapter, transport, trusted=isinstance(adapter, AsyncHttpx2Transport))
+        shared.protocols = protocols
         with suppress(RuntimeError):
             shared.loop = asyncio.get_running_loop()
         result = cls(shared, settings, Scope(), owned=owned)
@@ -2736,6 +2924,68 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             call.check("decode")
             if events is not None:
                 await events.afinish(result)
+            call.check("decode")
+        except BaseException as error:  # noqa: BLE001
+            failure = call.stopped(error)
+            if events is not None:
+                await events.aended(failure)
+            raise failure from None
+        else:
+            return result
+        finally:
+            self._scope.release()
+            call.finish()
+
+    async def execute_page(  # noqa: PLR0913
+        self,
+        plan: _PagePlan,
+        operation: OperationPlan[T, object],
+        arguments: Callable[[], tuple[object, ...]],
+        build: Callable[[T, WireValue, ResponseInfo], R],
+        *,
+        body: object,
+        media_type: str | MediaSelector | None,
+        options: RequestOptions | None,
+        session: OperationSession,
+        max_page_bytes: int,
+    ) -> R:
+        """Execute one page of a helper session as a child logical call, building what the page's response gives.
+
+        The page reads at most `max_page_bytes` of its body, and its arguments are taken when the call prepares.
+        """
+        settings = self._call_settings(options, operation.operation_id)
+        if page_limited := (limit := settings.max_response_bytes) is None or max_page_bytes <= limit:
+            settings = replace(settings, max_response_bytes=max_page_bytes)
+        call = _SessionCall(settings, self._scope, operation, session)
+        self._running(call.operation_id, call.call_id)
+        events = call.events = await self._started(call, operation.path, options)
+        decoder = call.decoder = operation.responses
+
+        def prepare() -> tuple[PreparedRequest[EncodedAttempt], object]:
+            return self._prepare(
+                operation,
+                arguments(),
+                call.settings,
+                body=body,
+                media_type=media_type,
+                options=options,
+                accept=decoder.accept,
+                narrowed=False,
+            )
+
+        async def receive(response: AsyncTransportResponse, info: ResponseInfo) -> tuple[Response[T], R]:
+            received = await self._read(response, info, decoder, call)
+            call.check("decode")
+            data, wire = _page(decoder, info, received, call, plan, page_limited=page_limited)
+            result = build(data, wire, info)
+            call.check("decode")
+            return Response(data=data, info=info), result
+
+        try:
+            completed, result = await call.bounded(lambda: self._run(call, body, prepare, receive, options))
+            call.check("decode")
+            if events is not None:
+                await events.afinish(completed)
             call.check("decode")
         except BaseException as error:  # noqa: BLE001
             failure = call.stopped(error)

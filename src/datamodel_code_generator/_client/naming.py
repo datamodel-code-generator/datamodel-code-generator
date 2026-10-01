@@ -5,7 +5,10 @@ from __future__ import annotations
 import keyword
 import re
 import unicodedata
-from typing import Final
+from typing import TYPE_CHECKING, Final
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 _ACRONYM: Final = re.compile(r"([A-Z]+)([A-Z][a-z])")
 _CAMEL: Final = re.compile(r"([a-z0-9])([A-Z])")
@@ -110,3 +113,14 @@ def helper_name_problem(value: str) -> str | None:
         if unicodedata.normalize("NFKC", part) != part or part.startswith("_") or part.casefold() in WINDOWS_DEVICES:
             return f"The helper name {value!r} cannot use the part {part!r}"
     return None
+
+
+def helper_classes(name: str, kind: str) -> Iterator[tuple[tuple[str, ...], str]]:
+    """Yield the class of each namespace a helper's dotted name opens, then the helper's own class, with their parts.
+
+    A namespace class ends in `Protocols` and a helper class in its kind, both after the PascalCase parts.
+    """
+    parts = tuple(name.split("."))
+    for end in range(1, len(parts)):
+        yield parts[:end], f"{''.join(map(pascal, parts[:end]))}Protocols"
+    yield parts, f"{''.join(map(pascal, parts))}{pascal(kind)}"

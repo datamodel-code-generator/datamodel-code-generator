@@ -1923,5 +1923,82 @@
     "config": {
       "protocols": "protocols/querystring.yaml"
     }
+  },
+  "pagination": {
+    "input": "pagination.yaml",
+    "references": [
+      "protocols/pagination.yaml"
+    ],
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "config": {
+      "protocols": "protocols/pagination.yaml",
+      "validation": {
+        "response_overrides": [
+          "schema"
+        ]
+      }
+    }
+  },
+  "protocols-pagination-checks": {
+    "input": "pagination-checks.yaml",
+    "references": [
+      "protocols/pagination-checks.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-checks.yaml"
+    },
+    "modules": false
+  },
+  "pagination-plans": {
+    "input": "pagination.yaml",
+    "references": [
+      "protocols/pagination.yaml"
+    ],
+    "backends": [
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "config": {
+      "protocols": "protocols/pagination.yaml",
+      "validation": {
+        "response_overrides": [
+          "schema"
+        ]
+      }
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
+  "pagination-documents": {
+    "input": "pagination.yaml",
+    "references": [
+      "protocols/pagination-documents.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-documents.yaml"
+    }
+  },
+  "pagination-limits": {
+    "input": "pagination-limits.yaml",
+    "references": [
+      "protocols/pagination-limits.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-limits.yaml",
+      "validation": {
+        "request_overrides": [
+          "schema"
+        ]
+      }
+    }
   }
 }

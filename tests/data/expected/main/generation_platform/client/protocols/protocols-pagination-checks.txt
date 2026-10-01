@@ -1,0 +1,24 @@
+# protocols-pagination-checks
+render pydantic_v2.BaseModel
+  APIGenerationError
+  E_NAME_COLLISION target protocols.helpers['users_all.items'] /paths/~1users/get: The helper name 'users_all.items' gives the class name 'UsersAllItemsPagination', which 'users.all_items' already gives
+  E_CLIENT_UNSUPPORTED target protocols.helpers['bindings.given'].bindings[0] /paths/~1users/get: The pagination helper 'bindings.given' with a binding to a header target is not supported yet
+  E_CLIENT_UNSUPPORTED target protocols.helpers['write.header'].continuation.write /paths/~1users/get: The pagination helper 'write.header' writing its cursor to a header target is not supported yet
+  E_CLIENT_UNSUPPORTED target protocols.helpers['body.form'] /paths/~1forms/post: The pagination helper 'body.form' sends a request body other than JSON, which is not supported yet
+  E_CONFIG_VALUE config protocols.helpers['responses.twice'].operation /paths/~1twice/get: GET /twice must declare exactly one JSON success response for the pagination helper 'responses.twice'
+  E_CLIENT_UNSUPPORTED target protocols.helpers['responses.hidden'] /paths/~1hidden/get: The pagination helper 'responses.hidden' reads an envelope-projected response, which is not supported yet
+  E_CLIENT_UNSUPPORTED target protocols.helpers['items.union'].items /paths/~1users/get: The items pointer '/either/data' of 'items.union' reads through a union or map, which is not supported yet
+  E_CLIENT_UNSUPPORTED target protocols.helpers['items.map'].items /paths/~1users/get: The items pointer '/grouped/admins' of 'items.map' reads through a union or map, which is not supported yet
+  E_CONFIG_VALUE config protocols.helpers['items.absent'].items /paths/~1users/get: The items pointer '/data/id' of 'items.absent' names no property of the GET /users response
+  E_CONFIG_VALUE config protocols.helpers['items.scalar'].items /paths/~1users/get: The items pointer '/count' of 'items.scalar' selects no JSON array of the GET /users response
+  E_CONFIG_VALUE config protocols.helpers['items.unknown_schema'].item_schema /paths/~1users/get: The item_schema '/components/schemas/Nobody' of 'items.unknown_schema' does not exist in its document
+  E_CONFIG_VALUE config protocols.helpers['items.other_schema'].item_schema /paths/~1users/get: The item_schema '/components/schemas/Label' of 'items.other_schema' is not the item schema of the array its items pointer selects
+  E_CONFIG_VALUE config protocols.helpers['cursor.absent'].continuation.read /paths/~1users/get: The cursor pointer '/nothing' of 'cursor.absent' names no property of the GET /users response
+  E_CONFIG_VALUE config protocols.helpers['cursor.header'].continuation.read /paths/~1users/get: The cursor of 'cursor.header' reads the header 'X-Missing', which GET /users does not declare
+  E_CONFIG_VALUE config protocols.helpers['cursor.types'].continuation.write /paths/~1users/get: The cursor of 'cursor.types' reads array, boolean, integer, number, or object values, which the query parameter 'cursor' of GET /users does not accept
+  E_CONFIG_VALUE config protocols.helpers['cursor.null'].continuation.end /paths/~1users/get: The cursor of 'cursor.null' can read null, which no end condition covers
+  E_CONFIG_VALUE config protocols.helpers['cursor.null'].continuation.end[1].value /paths/~1users/get: The end value 5 of 'cursor.null' is integer, which its cursor never reads
+  E_CONFIG_VALUE config protocols.helpers['cursor.number'].continuation.end[1].value /paths/~1users/get: The end value 2.0 of 'cursor.number' is number, which its cursor never reads
+  E_CONFIG_VALUE config protocols.helpers['cursor.union'].continuation.write /paths/~1users/get: The cursor of 'cursor.union' reads integer values, which the query parameter 'cursor' of GET /users does not accept
+  E_CONFIG_VALUE config protocols.helpers['cursor.union'].continuation.end /paths/~1users/get: The cursor of 'cursor.union' can read null, which no end condition covers
+  E_CLIENT_UNSUPPORTED target protocols.helpers['cursor.map'].continuation.read /paths/~1users/get: The cursor pointer '/grouped/admins' of 'cursor.map' reads through a union or map, which is not supported yet

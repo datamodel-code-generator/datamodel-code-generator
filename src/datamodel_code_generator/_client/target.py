@@ -13,6 +13,7 @@ from datamodel_code_generator._api_manifest import canonical_bytes, sha256
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
 from datamodel_code_generator._client.config import ClientGenerationConfig
 from datamodel_code_generator._client.fields import plan_fields
+from datamodel_code_generator._client.pagination import plan_pagination
 from datamodel_code_generator._client.plan import (
     PlanError,
     Planner,
@@ -23,6 +24,7 @@ from datamodel_code_generator._client.plan import (
     style_uses,
 )
 from datamodel_code_generator._client.protocol_plan import (
+    helper_metadata,
     helper_problems,
     plan_protocols,
     protocol_helpers,
@@ -45,6 +47,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_manifest import JSONObject
     from datamodel_code_generator._api_types import TargetKind
+    from datamodel_code_generator._client.pagination import PaginationSpec
     from datamodel_code_generator._client.plan import ClientPlan, MediaSpec, OperationSpec, PartSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._generation_contract import GeneratedTypeContractBatch, TypeUseBinding
@@ -77,7 +80,7 @@ class ClientTarget:
     backends: frozenset[DataModelType] = frozenset(_BACKENDS)
     unsupported_backend: str = "E_CONFIG_VALUE"
 
-    def render(self, request: TargetRequest) -> TargetRender:  # noqa: PLR6301
+    def render(self, request: TargetRequest) -> TargetRender:  # noqa: PLR6301, PLR0914
         """Plan the selected operations, bind their codecs, and render the package."""
         config = request.config
         assert isinstance(config, ClientGenerationConfig)
@@ -112,10 +115,11 @@ class ClientTarget:
         if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
             raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
         plan, named = plan_fields(plan, codecs, batch, wire)
+        helpers, checked = plan_pagination(protocols, plan, codecs, wire, request)
         if refused := (
             *named,
             *admission_problems(config.validation, codecs, argument_uses(plan)),
-            *helper_problems(protocols, plan),
+            *helper_problems(protocols, plan, checked),
         ):
             raise APIGenerationError(
                 tuple(
@@ -123,13 +127,23 @@ class ClientTarget:
                     for item in refused
                 )
             )
+        data = _TargetData(plan, config, request, codecs, wire)
+        metadata = helper_metadata(protocols, request)
+        fingerprints = {spec.helper.name: data.fingerprint(spec, metadata[spec.helper.name]) for spec in helpers}
         renderer = ClientRenderer(
-            config=config, package=request.layout.package, plan=plan, batch=batch, wire=wire, codecs=codecs
+            config=config,
+            package=request.layout.package,
+            plan=plan,
+            batch=batch,
+            wire=wire,
+            codecs=codecs,
+            helpers=helpers,
+            fingerprints=fingerprints,
         )
         validation = config.validation
         return TargetRender(
             files=renderer.files(),
-            target_data=_TargetData(plan, config, request, codecs, wire).data(protocols),
+            target_data=data.data(protocols, fingerprints),
             dependencies=(
                 *DEPENDENCIES,
                 *(VALIDATION if codecs.bindings else ()),
@@ -145,7 +159,7 @@ class ClientTarget:
                 *model_dependencies(request.models),
             ),
             bindings=_bindings(codecs, backend),
-            protocol_metadata=protocol_metadata(protocols, request),
+            protocol_metadata=protocol_metadata(metadata, protocols),
         )
 
 
@@ -222,18 +236,44 @@ class _TargetData:
         self.selected = {operation.id: index for index, operation in enumerate(request.operations)}
         self.spelling = TypeSource(Namespace(()), dict(codecs.imports), lambda module, name: f"{module}.{name}")
 
-    def data(self, protocols: Protocols | None) -> JSONObject:
+    def data(self, protocols: Protocols | None, fingerprints: Mapping[str, str]) -> JSONObject:
         """Return the client manifest data with the target's helpers."""
         extensions = int(self.config.formatter_settings is not None) + len(self.config.custom_formatters)
         return {
             "namespace": self.config.package,
             "public_api": [self.operation(spec) for spec in self.plan.operations],
-            "protocol_helpers": protocol_helpers(protocols),
+            "protocol_helpers": protocol_helpers(protocols, fingerprints),
             "runtime_defaults_ref": "/inputs/target_config/runtime_defaults",
             "selection_ref": "/selection",
             "binding_refs": [f"/bindings/{index}" for index in range(len(self.codecs.bindings))],
             "extension_refs": [f"/extensions/formatters/{index}" for index in range(extensions)],
         }
+
+    def fingerprint(self, spec: PaginationSpec, settings: JSONValue) -> str:
+        """Return the digest of a helper's contract closure: its signature and settings, operation, schema, and page.
+
+        The settings are the helper's normalized metadata, so equivalent spellings of its references digest alike.
+        """
+        operation, helper = spec.operation, spec.helper
+        body = operation.body
+        signature = {
+            "name": helper.name,
+            "parameters": [(item.python_name, item.required, self.type(item.use)) for item in operation.parameters],
+            "body": None
+            if body is None
+            else (body.required, [(media.media_type, self.type(media.use)) for media in body.media]),
+            "item": self.spelling.static(spec.item),
+            "page": self.type(spec.page),
+            "settings": settings,
+        }
+        return _digest({
+            "kind": helper.kind,
+            "signatures": [signature],
+            "operations": [self.request.documents.operation(operation.contract.id)],
+            "schemas": [spec.item_schema],
+            "type_uses": [self.contract(spec.page)],
+            "adapters": [],
+        })
 
     def operation(self, spec: OperationSpec) -> JSONValue:
         """Return the manifest record of one public operation."""

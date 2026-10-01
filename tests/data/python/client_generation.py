@@ -156,6 +156,13 @@ def _public_api(content: bytes) -> list[str]:
     return lines
 
 
+def copy_references(case: dict[str, Any], root: Path) -> None:
+    """Copy the documents a case references beside its input, keeping their relative paths."""
+    for reference in case.get("references", ()):
+        (root / reference).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(SOURCE / reference, root / reference)
+
+
 def _render(
     case: dict[str, Any], backend: str, root: Path, modules: Modules, *, documents: dict[str, str] | None = None
 ) -> list[str]:
@@ -171,9 +178,7 @@ def _render(
     }
     root.mkdir(parents=True, exist_ok=True)
     source = shutil.copy2(SOURCE / case["input"], root / case["input"])
-    for reference in case.get("references", ()):
-        (root / reference).parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(SOURCE / reference, root / reference)
+    copy_references(case, root)
     try:
         with _working_directory(case, root):
             if (toml := case.get("toml")) is not None:
@@ -208,9 +213,10 @@ def _render(
     return lines
 
 
-def _digests(case: dict[str, Any], root: Path) -> tuple[dict[str, dict[str, str]], bytes]:
-    """Return the contract digests of each operation in the manifest of a rendered case, and its models."""
+def _manifest(case: dict[str, Any], root: Path) -> tuple[dict[str, Any], bytes]:
+    """Return the client data in the manifest of a rendered case, and its models."""
     root.mkdir(parents=True)
+    copy_references(case, root)
     config = client_config(case.get("config", {}), root)
     model = {
         "output": root / "models.py",
@@ -230,10 +236,13 @@ def _digests(case: dict[str, Any], root: Path) -> tuple[dict[str, dict[str, str]
     )
     manifest = next(item for item in project.artifacts if item.path.name == MANIFEST)
     models = next(item for item in project.artifacts if item.path == root / "models.py")
-    operations = json.loads(manifest.content or b"")["target_data"]["client"]["public_api"]
-    return {
-        f"{item['resource']}.{item['method']}": item["contract_digests"] for item in operations
-    }, models.content or b""
+    return json.loads(manifest.content or b"")["target_data"]["client"], models.content or b""
+
+
+def _digests(case: dict[str, Any], root: Path) -> tuple[dict[str, dict[str, str]], bytes]:
+    """Return the contract digests of each operation in the manifest of a rendered case, and its models."""
+    data, models = _manifest(case, root)
+    return {f"{item['resource']}.{item['method']}": item["contract_digests"] for item in data["public_api"]}, models
 
 
 def client_digest_report(first: str, second: str, root: Path) -> str:
@@ -247,6 +256,18 @@ def client_digest_report(first: str, second: str, root: Path) -> str:
     return "\n".join(lines) + "\n"
 
 
+def client_helper_digest_report(first: str, second: str, root: Path) -> str:
+    """Render two cases and report, for each helper both declare, whether its contract digest is the same."""
+    cases = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))
+    left, right = (
+        {item["name"]: item["contract_sha256"] for item in _manifest(cases[name], root / name)[0]["protocol_helpers"]}
+        for name in (first, second)
+    )
+    return "".join(
+        [f"# {first} and {second}\n", *(f"  {name} same {left[name] == digest}\n" for name, digest in right.items())]
+    )
+
+
 def client_render(case_name: str, root: Path) -> tuple[str, dict[str, Modules]]:
     """Render one fixture for each of its backends, returning a report and every backend's Python modules."""
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
@@ -255,8 +276,8 @@ def client_render(case_name: str, root: Path) -> tuple[str, dict[str, Modules]]:
     for backend in case.get("backends", ["pydantic_v2.BaseModel"]):
         lines.append(f"render {backend}")
         lines.extend(_render(case, backend, root / (name := backend.replace(".", "_")), modules := {}))
-        if modules and case.get("modules", True):
-            rendered[name] = modules
+        if modules and (kept := case.get("modules", True)):
+            rendered[name] = modules if kept is True else {parts: modules[parts] for parts in map(tuple, kept)}
     return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n", rendered
 
 

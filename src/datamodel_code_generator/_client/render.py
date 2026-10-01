@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import cached_property, partial
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
@@ -12,7 +12,7 @@ from datamodel_code_generator._api_generation import RenderedFile
 from datamodel_code_generator._client._compiled_templates import client as client_template
 from datamodel_code_generator._client._compiled_templates import resource as resource_template
 from datamodel_code_generator._client._compiled_templates import types as types_template
-from datamodel_code_generator._client.naming import pascal
+from datamodel_code_generator._client.naming import helper_classes, pascal
 from datamodel_code_generator._client.plan import media_range, member_parts, reachable, success_media
 from datamodel_code_generator._client.validation import allowed
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
@@ -27,6 +27,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping, Sequence
 
     from datamodel_code_generator._client.config import ClientGenerationConfig, ClientValidationConfig
+    from datamodel_code_generator._client.pagination import PaginationSpec
     from datamodel_code_generator._client.plan import (
         ClientPlan,
         FieldBranch,
@@ -378,10 +379,12 @@ from .._runtime.protocols.webhooks import (
 )
 
 if TYPE_CHECKING:
+    from .._runtime.protocols.pagination import AsyncPager, Page, Pager
     from .._runtime.protocols.replay import AsyncMemoryReplayStore, MemoryReplayStore
 
 __all__ = [
     "AsyncMemoryReplayStore",
+    "AsyncPager",
     "AsyncReplayStore",
     "BodySelector",
     "BodyTarget",
@@ -391,6 +394,8 @@ __all__ = [
     "MemoryReplayStore",
     "OperationRef",
     "Origin",
+    "Page",
+    "Pager",
     "PaginationOptions",
     "ParameterTarget",
     "PollOptions",
@@ -416,7 +421,11 @@ __all__ = [
 
 
 def __getattr__(name: str) -> object:
-    """Load a memory-store implementation only when its public class is requested."""
+    """Load a memory store or a pagination type only when its public class is requested."""
+    if name in {"AsyncPager", "Page", "Pager"}:
+        from .._runtime.protocols import pagination
+
+        return getattr(pagination, name)
     if name == "MemoryReplayStore":
         from .._runtime.protocols.replay import MemoryReplayStore
 
@@ -629,6 +638,10 @@ def _call(head: str, entries: Iterable[tuple[str, Doc]]) -> Group:
 
 def _mode(*, asynchronous: bool) -> str:
     return "async" if asynchronous else "sync"
+
+
+def _helpers_module(*, asynchronous: bool) -> str:
+    return "_async_helpers" if asynchronous else "_helpers"
 
 
 def _summary(spec: OperationSpec) -> str:
@@ -944,12 +957,14 @@ class _Resources(_Typing):
         validation: ClientValidationConfig,
         *,
         unpacked: bool = False,
+        helpers: tuple[PaginationSpec, ...] = (),
     ) -> None:
-        """Keep the typing context, the generated User-Agent and validation, and the TypedDicts of unpacked methods."""
+        """Keep the typing context, User-Agent, validation, unpacked methods' TypedDicts, and protocol helpers."""
         super().__init__(plan, codecs, accessors)
         self.user_agent = user_agent
         self.validation = validation
         self.records = _Records(self) if unpacked else None
+        self.helpers = helpers
 
     def defaults(self, module: Module) -> str:
         """Return the generated defaults of the clients, naming the validation modes that differ from the runtime's."""
@@ -960,12 +975,19 @@ class _Resources(_Typing):
             ("arguments", allowed(validation.arguments, validation.argument_overrides), ("none",)),
         )
         arguments = ", ".join(f"{axis}={selected!r}" for axis, selected, runtime in modes if selected != runtime)
-        defaults = f"{module.local('_runtime.client.client', 'ClientDefaults')}(user_agent={self.user_agent!r}"
+        entries: list[tuple[str, Doc]] = [("user_agent=", repr(self.user_agent))]
         if self.plan.security_schemes:
-            defaults += f", security_schemes={module.local('_generated', 'security')}.ROOT_SCHEMES"
+            entries.append(("security_schemes=", f"{module.local('_generated', 'security')}.ROOT_SCHEMES"))
         if arguments:
-            defaults += f", validation={module.local('_runtime.client.options', 'ValidationModes')}({arguments})"
-        return f"{defaults})"
+            entries.append((
+                "validation=",
+                f"{module.local('_runtime.client.options', 'ValidationModes')}({arguments})",
+            ))
+        name = module.local("_runtime.client.client", "ClientDefaults")
+        if not (helpers := self.helpers):
+            return f"{name}({', '.join(f'{prefix}{value}' for prefix, value in entries)})"
+        entries.append(("helpers=", _tuple(repr((spec.helper.name, spec.helper.kind)) for spec in helpers)))
+        return layout(_call(name, entries), 0, len("_DEFAULTS = "), WIDTH)
 
     def client(self, *, asynchronous: bool) -> str:
         """Return a root client module: its constructor, lazy resource attributes, and close methods."""
@@ -975,8 +997,13 @@ class _Resources(_Typing):
             (resource, f"{prefix}{resource.pascal}Resource", f".resources.{resource.namespace}._{mode}")
             for resource in self.plan.roots
         ]
-        names = {f"{prefix}Client", f"{prefix}ClientWithStreamingResponse", "_DEFAULTS"}
+        names = {f"{prefix}Client", f"{prefix}ClientWithStreamingResponse", f"{prefix}ProtocolHelpers", "_DEFAULTS"}
         module = Module({*names, *(name for _, name, _ in roots)}, self.symbols, level=1)
+        lazy = [(name, path) for _, name, path in roots]
+        protocols = f"{prefix}ProtocolHelpers" if self.helpers else None
+        helpers_module = f".protocols.{_helpers_module(asynchronous=asynchronous)}"
+        if protocols is not None:
+            lazy.append((protocols, helpers_module))
         values = {
             "defaults": self.defaults(module),
             "options": module.local("options", "ClientOptions"),
@@ -999,10 +1026,10 @@ class _Resources(_Typing):
             ),
         }
         imports = module.imports()
-        if roots:
+        if lazy:
             checking = module.name("typing", "TYPE_CHECKING")
-            lazy = "\n".join(f"    from {path} import {name}" for _, name, path in roots)
-            imports = f"{module.imports()}\n\nif {checking}:\n{lazy}"
+            listed = "\n".join(f"    from {path} import {name}" for name, path in lazy)
+            imports = f"{module.imports()}\n\nif {checking}:\n{listed}"
         return client_template.render(
             docstring=f"The {'asyncio' if asynchronous else 'synchronous'} client of this package.",
             imports=imports,
@@ -1012,6 +1039,8 @@ class _Resources(_Typing):
                 {"name": resource.parts[0], "namespace": resource.namespace, "class_name": name, "module": path}
                 for resource, name, path in roots
             ],
+            protocols=protocols,
+            protocols_module=helpers_module,
             **values,
         )
 
@@ -2133,6 +2162,263 @@ class _Registry(_Typing):
         )
 
 
+_HELPER_OPTIONS: Final = (
+    ("pagination_options", ".", "PaginationOptions"),
+    ("options", "..options", "RequestOptions"),
+    ("session_options", "..options", "SessionOptions"),
+)
+_HELPER_CALLS: Final[dict[bool, tuple[str, str, str]]] = {
+    False: ("first_page", "iterate_pages", "following_page"),
+    True: ("afirst_page", "aiterate_pages", "afollowing_page"),
+}
+
+
+class _Helpers:
+    """Render the protocol helpers of a client package: their plans and their sync and asyncio namespaces."""
+
+    def __init__(self, resources: _Resources, fingerprints: Mapping[str, str]) -> None:
+        """Keep the resources' typing context, its helpers, and each helper's contract fingerprint."""
+        self.resources = resources
+        self.helpers = resources.helpers
+        self.fingerprints = fingerprints
+
+    @staticmethod
+    def page(module: Module, spec: PaginationSpec) -> str:
+        """Return the type of a helper's page response: its operation's response alias."""
+        operation = spec.operation
+        return module.local(f"types.{operation.resource}", f"{operation.pascal}Response")
+
+    def plans(self) -> str:
+        """Return the module of every helper's items accessor and plan."""
+        module = Module(
+            {name for index in range(len(self.helpers)) for name in (f"PLAN_{index}", f"_items_{index}")},
+            self.resources.symbols,
+            level=2,
+        )
+        sections: list[str] = []
+        for index, spec in enumerate(self.helpers):
+            sections.extend((self.accessor(module, index, spec), self.plan(module, index, spec)))
+        return types_template.render(
+            docstring="The plans of this package's pagination helpers; regenerate them instead of editing.",
+            imports=module.imports(),
+            sections=sections,
+        )
+
+    def accessor(self, module: Module, index: int, spec: PaginationSpec) -> str:
+        """Return a helper's typed items accessor, returning None where an optional step is None."""
+        sequence = module.name("collections.abc", "Sequence")
+        returns = f"{sequence}[{module.types.static(spec.item)}] | None"
+        lines = [
+            _function(f"def _items_{index}(", (f"data: {self.page(module, spec)}",), returns, stub=False),
+            f'    """Return the items of one page of {spec.helper.name}."""',
+        ]
+        expression, last = "data", len(spec.steps) - 1
+        for position, step in enumerate(spec.steps):
+            match step.kind:
+                case "key":
+                    expression = f"{expression}[{step.name!r}]"
+                case "get":
+                    expression = f"{expression}.get({step.name!r})"
+                case _:
+                    expression = f"{expression}.{step.name}"
+            if (step.none and position < last) or step.unset:
+                value = f"value_{position}"
+                if step.unset:
+                    unset = f"isinstance({value}, {module.name('msgspec', 'UnsetType')})"
+                    tested = f"isinstance({value} := {expression}, {module.name('msgspec', 'UnsetType')})"
+                    condition = f"({value} := {expression}) is None or {unset}" if step.none else tested
+                else:
+                    condition = f"({value} := {expression}) is None"
+                lines.extend((f"    if {condition}:", "        return None"))
+                expression = value
+        lines.append(f"    return {expression}")
+        return "\n".join(lines)
+
+    def plan(self, module: Module, index: int, spec: PaginationSpec) -> str:
+        """Return a helper's plan: its identity, operation, items, cursor continuation, and fingerprint."""
+        records = "_runtime.protocols.records"
+        runtime = "_runtime.protocols.pagination"
+        helper, continuation = spec.helper, spec.continuation
+        read = continuation["read"]
+        selector = f"{module.local(records, 'StatusSelector')}()"
+        match read["from"]:
+            case "body":
+                selector = f"{module.local(records, 'BodySelector')}(pointer={read['pointer']!r})"
+            case "header":
+                selector = f"{module.local(records, 'HeaderSelector')}(name={read['name']!r})"
+        write = continuation["write"]
+        ends = [end["kind"] for end in continuation["end"]]
+        values = [repr(end["value"]) for end in continuation["end"] if end["kind"] == "value"]
+        entries: list[tuple[str, Doc]] = [
+            ("read=", selector),
+            (
+                "write=",
+                f"{module.local(records, 'ParameterTarget')}(location={write['in']!r}, name={write['name']!r})",
+            ),
+            *((("end_missing=", "True"),) if "missing" in ends else ()),
+            *((("end_null=", "True"),) if "null" in ends else ()),
+            *((("end_values=", _tuple(values)),) if values else ()),
+            *((("empty_string_ends=", "True"),) if continuation["empty_string"] == "end" else ()),
+        ]
+        plan = module.local(runtime, "PaginationPlan")
+        value = _call(
+            plan,
+            (
+                ("helper_id=", repr(helper.name)),
+                (
+                    "operation=",
+                    (
+                        f"{module.local('_runtime.protocols.references', 'OperationRef')}"
+                        f"(pointer={spec.operation.contract.id.use_site.pointer!r})"
+                    ),
+                ),
+                ("call=", f"{module.root('_operations')}.OPERATION_{spec.operation.index}"),
+                ("items=", f"_items_{index}"),
+                (
+                    "items_selector=",
+                    f"{module.local(records, 'BodySelector')}(pointer={helper.tree['items']['pointer']!r})",
+                ),
+                ("continuation=", _call(module.local(runtime, "CursorPlan"), entries)),
+                ("fingerprint=", repr(self.fingerprints[helper.name])),
+            ),
+        )
+        head = (
+            f"PLAN_{index}: {module.name('typing', 'Final')}"
+            f"[{plan}[{module.types.static(spec.item)}, {self.page(module, spec)}]] = "
+        )
+        return head + layout(value, 0, len(head), WIDTH)
+
+    def module(self, *, asynchronous: bool) -> str:
+        """Return the sync or asyncio module of the helper namespaces and the helpers."""
+        prefix = "Async" if asynchronous else ""
+        root = f"{prefix}ProtocolHelpers"
+        nodes: dict[tuple[str, ...], dict[str, tuple[str, str]]] = {(): {}}
+        leaves: dict[str, PaginationSpec] = {}
+        for spec in self.helpers:
+            helper = spec.helper
+            for parts, class_name in helper_classes(helper.name, helper.kind):
+                nodes.setdefault(parts[:-1], {})[parts[-1]] = (f"{prefix}{class_name}", ".".join(parts))
+                if parts == tuple(helper.name.split(".")):
+                    leaves[f"{prefix}{class_name}"] = spec
+                else:
+                    nodes.setdefault(parts, {})
+        names = {root, *(name for children in nodes.values() for name, _ in children.values())}
+        module = Module(names, self.resources.symbols, level=2)
+        core = module.local("_runtime.client.client", f"{prefix}ClientCore")
+        cached = module.name("functools", "cached_property")
+        sections: list[str] = []
+        for parts, children in nodes.items():
+            name = f"{prefix}{''.join(map(pascal, parts))}Protocols" if parts else root
+            members = [
+                f"    @{cached}\n    def {attribute}(self) -> {child}:\n"
+                f'        """The {dotted} {"pagination helper" if child in leaves else "protocol helpers"}."""\n'
+                f"        return {child}(self._core)"
+                for attribute, (child, dotted) in children.items()
+            ]
+            what = f"the {'.'.join(parts)} protocol helpers" if parts else "the protocol helpers of this API"
+            sections.append(self.node(name, what, core, members))
+        sections.extend(
+            self.node(
+                name,
+                f"the {spec.helper.name} pagination helper of {spec.operation.contract.method.upper()} "
+                f"{spec.operation.contract.path}",
+                core,
+                self.methods(module, index, spec, asynchronous=asynchronous),
+                leaf=True,
+            )
+            for index, (name, spec) in enumerate(leaves.items())
+        )
+        kind = "asyncio" if asynchronous else "synchronous"
+        return types_template.render(
+            docstring=f"The {kind} protocol helpers of this package, by their dotted names.",
+            imports=module.imports(),
+            sections=sections,
+        )
+
+    @staticmethod
+    def node(name: str, what: str, core: str, members: list[str], *, leaf: bool = False) -> str:
+        """Return a namespace or helper class holding the client core its members send through."""
+        head = (
+            f'class {name}:\n    """{what[0].upper()}{what[1:]}."""\n\n'
+            f"    def __init__(self, core: {core}) -> None:\n"
+            f'        """Keep the client core {"the helper sends" if leaf else "its helpers send"} through."""\n'
+            "        self._core = core"
+        )
+        return "\n\n".join((head, *members))
+
+    def methods(self, module: Module, index: int, spec: PaginationSpec, *, asynchronous: bool) -> list[str]:  # noqa: PLR0914
+        """Return a pagination helper's page, iterate, and next_page methods."""
+        operation = replace(spec.operation, fields=())
+        resources = self.resources
+        runtime = "_runtime.protocols.pagination"
+        arguments = [resources.parameter(module, parameter) for parameter in operation.parameters]
+        body = resources.requests(module, operation, asynchronous=asynchronous)[1]
+        options = [
+            _Argument(name, f"{module.namespace.name(source, kind)} | None", "none")
+            for name, source, kind in _HELPER_OPTIONS
+        ]
+        item, page = module.types.static(spec.item), self.page(module, spec)
+        page_type = f"{module.local(runtime, 'Page')}[{item}, {page}]"
+        pager = f"{module.local(runtime, 'AsyncPager' if asynchronous else 'Pager')}[{item}, {page}]"
+        plan = f"{module.namespace.name('.', '_plans')}.PLAN_{index}"
+        passed = [
+            ("", "self._core"),
+            ("", plan),
+            ("", _tuple(parameter.python_name for parameter in operation.parameters)),
+            *((f"{argument.name}=", argument.name) for argument in body),
+            *((f"{name}=", name) for name, _, _ in _HELPER_OPTIONS),
+        ]
+        first, iterate, following = (module.local(runtime, name) for name in _HELPER_CALLS[asynchronous])
+        route = f"{operation.contract.method.upper()} {operation.contract.path}"
+        signature = tuple(argument.parameter(module) for argument in (*arguments, *body, *options))
+        wait = "await " if asynchronous else ""
+        return [
+            "\n".join((
+                _signature("page", signature, page_type, asynchronous=asynchronous, stub=False),
+                f'        """Fetch the first page of {route}."""',
+                f"        return {wait}{layout(_call(first, passed), 8, 7 + len(wait), WIDTH)}",
+            )),
+            "\n".join((
+                _signature("iterate", signature, pager, asynchronous=False, stub=False),
+                f'        """Return a pager over the items of {route}; it sends nothing until it is iterated."""',
+                f"        return {layout(_call(iterate, passed), 8, 7, WIDTH)}",
+            )),
+            "\n".join((
+                layout(
+                    Group(
+                        f"    {'async ' if asynchronous else ''}def next_page(",
+                        items((
+                            "self",
+                            f"page: {page_type}",
+                            "*",
+                            *(argument.parameter(module) for argument in options),
+                        )),
+                        f") -> {page_type} | None:",
+                    ),
+                    4,
+                    0,
+                    WIDTH,
+                ),
+                '        """Fetch the page after a page of this helper, or return None after the last page."""',
+                f"        return {wait}"
+                + layout(
+                    _call(
+                        following,
+                        (
+                            ("", "self._core"),
+                            ("", plan),
+                            ("", "page"),
+                            *((f"{name}=", name) for name, _, _ in _HELPER_OPTIONS),
+                        ),
+                    ),
+                    8,
+                    7 + len(wait),
+                    WIDTH,
+                ),
+            )),
+        ]
+
+
 class ClientRenderer:
     """Render every module of one client package from its plan, codec plan, and wire plan."""
 
@@ -2145,14 +2431,18 @@ class ClientRenderer:
         batch: GeneratedTypeContractBatch,
         wire: WirePlan,
         codecs: CodecPlan,
+        helpers: tuple[PaginationSpec, ...] = (),
+        fingerprints: Mapping[str, str] | None = None,
     ) -> None:
-        """Keep the plans; the model bindings module and its accessors are rendered when first used."""
+        """Keep the plans and helpers; the model bindings module and its accessors are rendered when first used."""
         self.config = config
         self.package = package
         self.plan = plan
         self.batch = batch
         self.wire = wire
         self.codecs = codecs
+        self.helpers = helpers
+        self.fingerprints = fingerprints or {}
 
     @cached_property
     def bindings(self) -> RenderedBindings:
@@ -2232,6 +2522,33 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
 
 ```json
 {json.dumps(metadata, indent=2, ensure_ascii=True)}
+```
+{self.helper_readme()}"""
+
+    def helper_readme(self) -> str:
+        """Describe the package's protocol helpers, or nothing when it has none."""
+        if not self.helpers:
+            return ""
+        helpers = [
+            {
+                "helper": spec.helper.name,
+                "kind": spec.helper.kind,
+                "operation": f"{spec.operation.resource}.{spec.operation.name}",
+                "method": spec.operation.contract.method.upper(),
+                "path": spec.operation.contract.path,
+            }
+            for spec in self.helpers
+        ]
+        return f"""
+## Protocol helpers
+
+`client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.
+A pagination helper's `page` fetches the first page and `next_page` the page after one it returned, each in a
+session of its own; `iterate` returns a pager, which sends nothing until it is iterated and fetches each page only
+once the previous one is consumed. See the runtime reference for their limits.
+
+```json
+{json.dumps(helpers, indent=2, ensure_ascii=True)}
 ```
 """
 
@@ -2409,7 +2726,49 @@ A limiter permit is acquired before opening a body and released when its respons
 bounded wait, retains unfinished owned work, and preserves the primary error, attaching secondary failures where
 possible. Client/view closure refuses new work and interrupts active calls at observation points. Retrying close can
 wait for retained cleanup; it does not authorize another send or restore an expired logical deadline.
-"""  # noqa: S608
+{self.helper_runtime()}"""  # noqa: S608
+
+    def helper_runtime(self) -> str:
+        """Describe pagination sessions and their limits, or nothing for a package without helpers."""
+        if not self.helpers:
+            return ""
+        return f"""
+## Pagination sessions
+
+A pager, and each `page` or `next_page` call, is one session. Every page is its own logical call with its own retries,
+total timeout, and idempotency key; the session bounds all of them. Each limit comes from the call's options, then
+`ProtocolClientOptions.defaults` for the helper, then the default below. Defaults naming a helper the package lacks, or
+another kind's options, fail construction. The session types are imported from:
+
+- `{self.config.package}.protocols`: `PaginationOptions`, `Page`, `Pager`, and `AsyncPager`
+- `{self.config.package}.options`: `SessionOptions`
+
+| Limit | Effective default |
+|---|---|
+| pages per session | 1000; None removes it |
+| items per session | 100000; None removes it, and 0 ends a pager at once |
+| decoded body per page | 8 MiB |
+| cursor size | 64 KiB |
+| session total timeout | 300 seconds; None removes it |
+| network sends per session | 3000; None removes it |
+
+A page's items must be a JSON array; an empty array does not end the traversal. A server's cursor is sent as it came,
+without its parameter's schema checks. The cursor ends the traversal only through the declared end conditions, and a
+missing or null cursor that no condition covers raises `ProtocolDataError`. A continuation seen earlier in the session
+ends it with `PaginationCycleError` after the repeating page. A limit reached while pages remain raises
+`SessionLimitError` with the progress so far; a pager then refuses further steps.
+"""
+
+    def helper_files(self, resources: _Resources) -> tuple[RenderedFile, ...]:
+        """Return the modules of the package's protocol helpers, none without helpers."""
+        if not self.helpers:
+            return ()
+        helpers = _Helpers(resources, self.fingerprints)
+        return (
+            self.file(PurePosixPath("protocols", "_plans.py"), "protocols", helpers.plans()),
+            self.file(PurePosixPath("protocols", "_helpers.py"), "protocols", helpers.module(asynchronous=False)),
+            self.file(PurePosixPath("protocols", "_async_helpers.py"), "protocols", helpers.module(asynchronous=True)),
+        )
 
     def files(self) -> tuple[RenderedFile, ...]:
         """Return every rendered client file in the fixed artifact order."""
@@ -2424,6 +2783,7 @@ wait for retained cleanup; it does not authorize another send or restore an expi
             user_agent,
             config.validation,
             unpacked=config.signature_style == "unpack",
+            helpers=self.helpers,
         )
         types = _Types(self.plan, self.codecs, self.accessors)
         registry = _Registry(self.plan, self.codecs, self.accessors)
@@ -2474,12 +2834,14 @@ wait for retained cleanup; it does not authorize another send or restore an expi
                 self.file(PurePosixPath("_generated", "security.py"), "security", _Security(self.plan).source())
             )
         files.append(self.file(PurePosixPath("_operations.py"), "operations", registry.module()))
-        runtime = runtime_sources(file.text for file in files)
+        helpers = self.helper_files(resources)
+        runtime = runtime_sources(file.text for file in (*files, *helpers))
         documentation = PurePosixPath() if config.package_mode == "standalone" else PurePosixPath("_generated_docs")
         reference = documentation / ("docs/runtime.md" if config.package_mode == "standalone" else "runtime.md")
         return (
             *files,
             *(self.file(path, "runtime", text, verbatim=True) for path, text in runtime),
+            *helpers,
             RenderedFile(path=documentation / "README.md", kind="readme", text=self.readme()),
             RenderedFile(path=reference, kind="documentation", text=self.runtime_documentation()),
         )
