@@ -29,7 +29,7 @@ from datamodel_code_generator.fastapi import (
 )
 from datamodel_code_generator.format import Formatter
 from tests.data.python import fastapi_hooks
-from tests.data.python.model_codec_adapters import declaration
+from tests.data.python.codec_declarations import declaration
 
 SOURCE = Path(__file__).parents[1] / "generation_platform" / "fastapi"
 PACKAGE = "server"

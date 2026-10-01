@@ -1,4 +1,4 @@
-"""Run the Pydantic v2 BaseModel and dataclass model codecs over really generated models."""
+"""Run the Pydantic v2 BaseModel and dataclass model codecs of generated client packages."""
 
 from __future__ import annotations
 
@@ -33,7 +33,6 @@ EXPECTED = DATA / "expected/main/generation_platform/codecs/pydantic"
         ("pets", "pets-forbid"),
         ("pets", "pets-allow"),
         ("pets", "pets-custom"),
-        ("pets", "pets-mismatch"),
         ("pets", "pets-variants"),
         ("pets", "pets-schemas-scope"),
         ("pets", "pets-paths-scope"),
@@ -47,22 +46,24 @@ EXPECTED = DATA / "expected/main/generation_platform/codecs/pydantic"
         ("extras", "extras-basemodel"),
         ("extras", "extras-dataclass"),
         ("zoo", "zoo-collapsed"),
+        ("choice", "choice"),
         ("ids", "ids"),
         ("containers", "containers-noalias"),
     ],
 )
-def test_pydantic_codecs(source: str, cases: str, tmp_path: PathType, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Decode, project, snapshot, and encode real generated models with presence and direction rules."""
+def test_pydantic_codecs(source: str, cases: str, tmp_path: PathType) -> None:
+    """Decode, project, snapshot, and encode through generated codecs with presence and direction rules."""
     assert_output(
-        builtin_codec_report(CODECS / f"{source}.yaml", CODECS / f"{cases}.json", tmp_path, monkeypatch),
+        builtin_codec_report(CODECS / f"{source}.yaml", CODECS / f"{cases}.json", tmp_path),
         EXPECTED / f"{cases}.txt",
     )
 
 
+@pytest.mark.abnormal_path("generated models or bindings edited out of sync after generation")
 @pytest.mark.parametrize("cases", ["pets-startup", "pets-startup-dataclass", "pets-startup-noalias"])
-def test_pydantic_codec_startup(cases: str, tmp_path: PathType, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Refuse bindings, bundles, and native types that disagree before any value is processed."""
+def test_pydantic_codec_startup(cases: str, tmp_path: PathType) -> None:
+    """Refuse edited bindings, bundles, and native types that disagree before any value is processed."""
     assert_output(
-        builtin_codec_startup_report(CODECS / "pets.yaml", CODECS / f"{cases}.json", tmp_path, monkeypatch),
+        builtin_codec_startup_report(CODECS / "pets.yaml", CODECS / f"{cases}.json", tmp_path),
         EXPECTED / f"{cases}.txt",
     )
