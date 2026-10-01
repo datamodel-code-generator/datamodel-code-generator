@@ -71,7 +71,7 @@ from .resume import (
     state_count,
     state_fields,
 )
-from .values import MISSING, Missing, RepeatedValueError, resolve, selected, written
+from .values import MISSING, Missing, Patch, RepeatedValueError, resolve, selected, written
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterator
@@ -81,7 +81,7 @@ if TYPE_CHECKING:
     from ..client.client import AsyncClientCore, ClientCore
     from ..client.codecs import NativeValue
     from ..client.logical import LogicalCallContext, OperationSession
-    from ..client.operations import OperationPlan
+    from ..client.operations import OperationPlan, RequestBody
     from ..client.raw import AsyncRawResponse, RawResponse
     from ..client.responses import ResponseInfo
     from ..client.timing import Deadline
@@ -804,14 +804,72 @@ def _reopen_request(resume: StreamResumePlan, position: _Position) -> _Given:
         arguments, body, media_type = given
     else:
         arguments, body, media_type = (UNSET,) * len(resume.call.parameters), UNSET, None
-    writes, bound, cursor = resume.writes, position.bound, position.cursor
-    if cursor is None:
-        cleared = cast("int", writes[-1][0])
-        arguments = (*arguments[:cleared], UNSET, *arguments[cleared + 1 :])
-        arguments, body = written(writes[:-1], arguments, body, bound)
-    else:
-        arguments, body = written(writes, arguments, body, (*bound, cursor))
-    return arguments, body, media_type
+    return (*_written(resume, arguments, body, position.bound, position.cursor), media_type)
+
+
+def _written(
+    resume: StreamResumePlan,
+    arguments: tuple[object, ...],
+    body: object,
+    bound: tuple[WireValue, ...],
+    cursor: WireValue,
+) -> tuple[tuple[object, ...], object]:
+    """Return a request's arguments and body with each binding's value and then the cursor written.
+
+    A cleared cursor's parameter is omitted.
+    """
+    writes = resume.writes
+    if cursor is not None:
+        return written(writes, arguments, body, (*bound, cursor))
+    cleared = cast("int", writes[-1][0])
+    return written(writes[:-1], (*arguments[:cleared], UNSET, *arguments[cleared + 1 :]), body, bound)
+
+
+def _wire(value: object) -> WireValue:
+    """Return a value written by wire value with its writes applied, or the value itself."""
+    return value.applied(_same) if isinstance(value, Patch) else cast("WireValue", value)
+
+
+def _same(value: object) -> WireValue:
+    return cast("WireValue", value)
+
+
+def _fitting(
+    core: ClientCore | AsyncClientCore,
+    resume: StreamResumePlan,
+    fields: Mapping[str, WireValue],
+    bound: tuple[WireValue, ...],
+    cursor: WireValue,
+) -> None:
+    """Refuse a saved cursor or binding value that does not fit where the reopen writes it.
+
+    The values are written into the saved request's wire values as a reopen writes them, and the request is built again
+    from them as a saved request is, its body validated whole; a value that does not fit raises RequestEncodingError.
+    """
+    call = resume.call
+    arguments: tuple[object, ...] = (UNSET,) * len(call.parameters)
+    body: object = UNSET
+    declared: str | None = None
+    concrete: str | None = None
+    if resume.own:
+        arguments = tuple(
+            item[0] if (item := state_array(saved)) else UNSET for saved in state_array(fields["arguments"])
+        )
+        if sent := state_array(fields["body"]):
+            body, declared, concrete = sent[0], cast("str", sent[1]), cast("str | None", sent[2])
+    patched, written_body = _written(resume, arguments, body, bound, cursor)
+    wire = cast("tuple[WireValue | Unset, ...]", tuple(map(_wire, patched)))
+    core.restored_request(
+        call,
+        wire,
+        None
+        if isinstance(written_body, Unset)
+        else (
+            _wire(written_body),
+            declared or cast("RequestBody", call.body).select(call.operation_id, None).media_type,
+            concrete,
+        ),
+    )
 
 
 def _security(
@@ -1753,6 +1811,10 @@ def _restore(  # noqa: PLR0913, PLR0917
         given = request.arguments, request.body, request.media_type
     else:
         require_state(fields["arguments"] == () and fields["body"] == ())
+    try:
+        _fitting(core, resume, fields, bound, cursor)
+    except RequestEncodingError:
+        raise MalformedStateError from None
     if (selector := _dotted(resume, bound, given)) is not None:
         raise ProtocolDataError(
             condition="value", location=selector, helper_id=plan.helper_id, operation=resume.operation

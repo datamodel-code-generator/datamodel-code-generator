@@ -1458,7 +1458,9 @@ returns once its response is a declared success, as `open` does; sequences and r
 checkpoint, the session's deadline and sends start afresh, and the reopen counts as no reconnection. Before sending it
 refuses a value that is not a `ResumeState` with `ProtocolConfigurationError`, and with `ResumeStateError` another
 helper's state, one made under other security, an expired one, and one that does not fit the helper or whose request
-does not encode; a saved dot segment for a path parameter raises `ProtocolDataError` as a server's would.
+does not encode. The saved cursor and bindings' values are written into the saved request and validated with it as a
+saved request is, its body whole, so a value that does not fit its target is refused too; a saved dot segment for a
+path parameter raises `ProtocolDataError` as a server's would.
 
 With `StreamOptions(reconnect=True)`, a stream that has delivered a cursor reopens itself within the same step after a
 read-phase transport failure the shared retry classification retries, or a read timeout the call's own

@@ -373,6 +373,7 @@ refusals
   > POST https://api.example.com/feed last-event-id=None body=b'{"topic":"t"}'
   < closed
   ticks cleared cursor ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  ticks cursor replaced by an object ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   resume without send slots ! SessionLimitError: SessionLimitError(kind='network_sends', limit=0) [kind='network_sends', limit=0] session_limit_error
   > GET https://api.example.com/events?topic=news last-event-id='1'
   < closed

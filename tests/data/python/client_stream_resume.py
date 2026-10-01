@@ -579,6 +579,11 @@ def _refusals(resumes: _Resumes, api: Any) -> None:
         "ticks cleared cursor",
         lambda: api.protocols.feed.ticks.resume(_crafted(harness, tick, _replaced(tick, cursor=None))),
     )
+    record(
+        lines,
+        "ticks cursor replaced by an object",
+        lambda: api.protocols.feed.ticks.resume(_crafted(harness, tick, _replaced(tick, cursor={"$gt": 0}))),
+    )
     nothing = options.SessionOptions(max_network_sends=0)
     record(lines, "resume without send slots", lambda: helper.resume(state, session_options=nothing))
     one = options.SessionOptions(max_network_sends=1)
