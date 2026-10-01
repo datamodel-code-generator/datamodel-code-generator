@@ -473,7 +473,6 @@ async def _nested_waits(
             await hook.entered.wait()
             closer: asyncio.Task[None] | None = None
             if reason == "token":
-                await asyncio.sleep(0.075)
                 token.cancel()
             elif reason == "closing":
                 closer = asyncio.create_task(api.aclose())
