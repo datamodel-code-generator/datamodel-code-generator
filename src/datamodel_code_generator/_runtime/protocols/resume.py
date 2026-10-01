@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping
 from datetime import datetime, timezone
-from typing import Final, Literal, TypeAlias, final, get_args
+from typing import Final, Literal, TypeAlias, cast, final, get_args
 
 from ..client.errors import ProtocolConfigurationError, ProtocolError, error_choice, error_count
 from ..client.responses import ResponseInfo  # noqa: TC001 - Public annotations support get_type_hints().
@@ -16,12 +16,17 @@ from .records import Sealed, canonical_json, record_instance, wire_string
 from .references import OperationRef  # noqa: TC001 - Public annotations support get_type_hints().
 
 __all__ = (
+    "MalformedStateError",
     "ResumeState",
     "ResumeStateError",
     "ResumeStateTooLargeError",
     "helper_state",
     "import_state",
+    "require_state",
+    "state_array",
+    "state_count",
     "state_fields",
+    "state_text",
 )
 
 _ResumeCondition: TypeAlias = Literal["version", "fingerprint", "security", "expired", "malformed", "checksum", "size"]
@@ -242,10 +247,16 @@ def _assign(  # noqa: PLR0913
         object.__setattr__(state, name, value)  # noqa: PLC2801 - Initialize the opaque immutable value.
 
 
-def helper_state(
-    *, helper_fingerprint: str, security_fingerprint: str, state: WireValue, payload: bytes, exportable: bool
+def helper_state(  # noqa: PLR0913
+    *,
+    helper_fingerprint: str,
+    security_fingerprint: str,
+    state: WireValue,
+    payload: bytes,
+    exportable: bool,
+    expires_at: datetime | None = None,
 ) -> ResumeState:
-    """Return the state a helper saved, which exports only when `exportable`."""
+    """Return the state a helper saved, which exports only when `exportable` and expires at a server's expiry."""
     saved = object.__new__(ResumeState)
     _assign(
         saved,
@@ -253,7 +264,7 @@ def helper_state(
         security_fingerprint=security_fingerprint,
         state_json=canonical_json(state),
         payload=payload,
-        expires_at=None,
+        expires_at=expires_at,
         exportable=exportable,
     )
     return saved
@@ -268,6 +279,36 @@ def state_fields(state: ResumeState) -> tuple[str, str, bytes, bytes, datetime |
         state._payload,  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
         state._expires_at,  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     )
+
+
+class MalformedStateError(Exception):
+    """A checkpoint whose state or saved bodies do not fit the helper resuming it; the helper raises it as malformed."""
+
+
+def require_state(condition: bool) -> None:  # noqa: FBT001
+    """Refuse a checkpoint's state that breaks a condition of its helper."""
+    if not condition:
+        raise MalformedStateError
+
+
+def state_array(value: WireValue) -> tuple[WireValue, ...]:
+    """Return a saved array, refusing any other value."""
+    require_state(isinstance(value, tuple))
+    return cast("tuple[WireValue, ...]", value)
+
+
+def state_count(value: WireValue, limit: int | None = None) -> int:
+    """Return a saved nonnegative integer no larger than any limit, refusing any other value."""
+    require_state(
+        isinstance(value, int) and not isinstance(value, bool) and value >= 0 and (limit is None or value <= limit)
+    )
+    return cast("int", value)
+
+
+def state_text(value: WireValue) -> str | None:
+    """Return a saved string or null, refusing any other value."""
+    require_state(value is None or isinstance(value, str))
+    return cast("str | None", value)
 
 
 def _members(

@@ -71,9 +71,10 @@ from ._runtime.client.errors import (
 
 if TYPE_CHECKING:
     from ._runtime.protocols.errors import (
-        ConcurrentReceiveError,
-        DeliveryUnknownError,
-        HandshakeResponse,
+        CacheInvalidationError,
+        CacheProtocolError,
+        CacheStoreError,
+        CacheValidatorConflictError,
         IncompleteFrameError,
         OperationCancelledError,
         OperationFailedError,
@@ -89,9 +90,6 @@ if TYPE_CHECKING:
         StreamInterruptedError,
         StreamRemoteError,
         StreamResumeExhaustedError,
-        WebSocketClosedError,
-        WebSocketHandshakeError,
-        WebSocketProxyError,
     )
 
 __all__ = [
@@ -115,17 +113,18 @@ __all__ = [
     'BodyNotReplayableError',
     'BodyProtocolError',
     'BudgetExceededError',
+    'CacheInvalidationError',
+    'CacheProtocolError',
+    'CacheStoreError',
+    'CacheValidatorConflictError',
     'CleanupError',
     'ClientClosedError',
-    'ConcurrentReceiveError',
     'ConfigurationError',
     'DeadlineExceededError',
     'DecodeError',
     'DecompressionLimitError',
     'DeliveryState',
-    'DeliveryUnknownError',
     'HTTPStatusError',
-    'HandshakeResponse',
     'HookExecutionError',
     'IOPhase',
     'IncompleteFrameError',
@@ -171,17 +170,15 @@ __all__ = [
     'UnexpectedStatusError',
     'UnsupportedAsyncBackendError',
     'UnsupportedContentCodingError',
-    'WebSocketClosedError',
-    'WebSocketHandshakeError',
-    'WebSocketProxyError',
     'WebhookReplayError',
     'WebhookStoreError',
     'WebhookVerificationError',
 ]
 _PROTOCOL_ERRORS = frozenset({
-    'ConcurrentReceiveError',
-    'DeliveryUnknownError',
-    'HandshakeResponse',
+    'CacheInvalidationError',
+    'CacheProtocolError',
+    'CacheStoreError',
+    'CacheValidatorConflictError',
     'IncompleteFrameError',
     'OperationCancelledError',
     'OperationFailedError',
@@ -197,9 +194,6 @@ _PROTOCOL_ERRORS = frozenset({
     'StreamInterruptedError',
     'StreamRemoteError',
     'StreamResumeExhaustedError',
-    'WebSocketClosedError',
-    'WebSocketHandshakeError',
-    'WebSocketProxyError',
 })
 
 

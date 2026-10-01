@@ -255,7 +255,7 @@ def _limits(
     defaults = core.protocol_defaults(plan.helper_id)
     kinds = (ws_options, UNSET if defaults is None else defaults.options)
     sessions = (session_options, UNSET if defaults is None else defaults.session)
-    socket = _socket(kinds, core.call_settings(request, plan.call.operation_id).stream_idle_timeout)
+    socket = _socket(kinds, core.call_settings(request, plan.call).stream_idle_timeout)
     if socket.reconnect:
         raise _invalid(plan, ("ws_options", "reconnect"), "missing_metadata")
     if socket.compression is not None and not plan.compression:

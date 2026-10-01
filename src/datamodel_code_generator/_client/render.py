@@ -12,6 +12,7 @@ from datamodel_code_generator._api_generation import RenderedFile
 from datamodel_code_generator._client._compiled_templates import client as client_template
 from datamodel_code_generator._client._compiled_templates import resource as resource_template
 from datamodel_code_generator._client._compiled_templates import types as types_template
+from datamodel_code_generator._client.caching import CacheSpec
 from datamodel_code_generator._client.naming import helper_classes, pascal
 from datamodel_code_generator._client.plan import media_range, member_parts, reachable, success_media
 from datamodel_code_generator._client.polling import STATES, PollingSpec
@@ -115,6 +116,7 @@ from typing import TYPE_CHECKING
 from ._runtime.client.options import (
     CancelToken,
     ClientOptions,
+    Clock,
     Deadline,
     HeaderPatch,
     IdempotencyKey,
@@ -137,6 +139,7 @@ __all__ = [
     "UNSET",
     "CancelToken",
     "ClientOptions",
+    "Clock",
     "Deadline",
     "HeaderPatch",
     "IdempotencyKey",
@@ -292,6 +295,10 @@ _ERROR_NAMES: Final = (
     "WebhookVerificationError",
 )
 _PROTOCOL_ERROR_NAMES: Final = (
+    "CacheInvalidationError",
+    "CacheProtocolError",
+    "CacheStoreError",
+    "CacheValidatorConflictError",
     "ConcurrentReceiveError",
     "DeliveryUnknownError",
     "HandshakeResponse",
@@ -352,7 +359,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from .._runtime.protocols.caches import AsyncCacheStore, CacheEntry, CacheResult, CacheStore
 from .._runtime.protocols.options import (
+    CacheOptions,
     Origin,
     PaginationOptions,
     PollOptions,
@@ -365,6 +374,7 @@ from .._runtime.protocols.options import (
 from .._runtime.protocols.records import (
     BodySelector,
     BodyTarget,
+    CancelReceipt,
     Continuation,
     HeaderSelector,
     ParameterTarget,
@@ -402,6 +412,7 @@ from .._runtime.protocols.websocket_types import (
 )
 
 if TYPE_CHECKING:
+    from .._runtime.protocols.cache_stores import AsyncMemoryCacheStore, MemoryCacheStore
     from .._runtime.protocols.pagination import AsyncPager, Page, Pager
     from .._runtime.protocols.polling import AsyncLroHandle, LroHandle
     from .._runtime.protocols.replay import AsyncMemoryReplayStore, MemoryReplayStore
@@ -409,8 +420,10 @@ if TYPE_CHECKING:
     from .._runtime.protocols.websocket import AsyncWebSocketSession, WebSocketSession
 
 __all__ = [
+    "AsyncCacheStore",
     "AsyncEventStream",
     "AsyncLroHandle",
+    "AsyncMemoryCacheStore",
     "AsyncMemoryReplayStore",
     "AsyncPager",
     "AsyncReplayStore",
@@ -419,11 +432,17 @@ __all__ = [
     "AsyncWebSocketSession",
     "BodySelector",
     "BodyTarget",
+    "CacheEntry",
+    "CacheOptions",
+    "CacheResult",
+    "CacheStore",
+    "CancelReceipt",
     "Continuation",
     "EventStream",
     "HeaderSelector",
     "KeySet",
     "LroHandle",
+    "MemoryCacheStore",
     "MemoryReplayStore",
     "Message",
     "OperationRef",
@@ -476,6 +495,10 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import polling
 
         return getattr(polling, name)
+    if name in {"AsyncMemoryCacheStore", "MemoryCacheStore"}:
+        from .._runtime.protocols import cache_stores
+
+        return getattr(cache_stores, name)
     if name in {"AsyncEventStream", "EventStream", "StreamEvent", "UnknownEvent"}:
         from .._runtime.protocols import streams
 
@@ -707,6 +730,40 @@ def _mode(*, asynchronous: bool) -> str:
 
 def _helpers_module(*, asynchronous: bool) -> str:
     return "_async_helpers" if asynchronous else "_helpers"
+
+
+def _resume_method(
+    module: Module,
+    plan: str,
+    returns: str,
+    options: tuple[list[_Argument], list[tuple[str, Doc]]],
+    *,
+    asynchronous: bool,
+) -> str:
+    """Return a polling helper's resume method, which is never awaited and returns the handle start returns."""
+    keywords, forwarded = options
+    resume = module.local(_POLLING, "aresume_operation" if asynchronous else "resume_operation")
+    state = f"state: {module.local('_runtime.protocols.resume', 'ResumeState')}"
+    return "\n".join((
+        layout(
+            Group(
+                "    def resume(",
+                items(("self", state, "*", *(argument.parameter(module) for argument in keywords))),
+                f") -> {returns}:",
+            ),
+            4,
+            0,
+            WIDTH,
+        ),
+        '        """Return a handle continuing a checkpoint of this helper; it sends nothing until it polls."""',
+        "        return "
+        + layout(_call(resume, (("", "self._core"), ("", plan), ("", "state"), *forwarded)), 8, 7, WIDTH),
+    ))
+
+
+def _handle(spec: PollingSpec, prefix: str) -> str:
+    """Return the name of a polling helper's own handle class, after its dotted name's PascalCase parts."""
+    return f"{prefix}{''.join(map(pascal, spec.helper.name.split('.')))}Handle"
 
 
 def _summary(spec: OperationSpec) -> str:
@@ -1022,7 +1079,7 @@ class _Resources(_Typing):
         validation: ClientValidationConfig,
         *,
         unpacked: bool = False,
-        helpers: tuple[PaginationSpec | PollingSpec, ...] = (),
+        helpers: tuple[PaginationSpec | PollingSpec | CacheSpec, ...] = (),
         streams: tuple[StreamSpec, ...] = (),
         sockets: tuple[SocketSpec, ...] = (),
     ) -> None:
@@ -2274,6 +2331,7 @@ _HELPER_KINDS: Final = {
     "sse": "SSE helper",
     "ndjson": "NDJSON helper",
     "websocket": "WebSocket helper",
+    "cache": "cache helper",
 }
 _STREAM_KINDS: Final = {"sse": "event stream", "ndjson": "NDJSON stream"}
 _STREAM_LABELS: Final = {"sse": "SSE", "ndjson": "NDJSON"}
@@ -2283,6 +2341,9 @@ _HELPER_CALLS: Final[dict[bool, tuple[str, str, str, str]]] = {
 }
 _POLL_OPTIONS: Final = (("poll_options", ".", "PollOptions"), *_HELPER_OPTIONS[1:])
 _POLLING: Final = "_runtime.protocols.polling"
+_CACHE: Final = "_runtime.protocols.cache"
+_CACHE_OPTIONS: Final = (("cache_options", ".", "CacheOptions"), _HELPER_OPTIONS[1])
+_DEFAULT_STATUSES: Final = [200]
 
 
 class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
@@ -2315,11 +2376,17 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
 
     def plans(self) -> str:
         """Return the module of every helper's accessors and plan, then each stream and WebSocket helper's plan."""
-        names = ("PLAN_{}", "_items_{}", "_result_{}", "_immediate_{}")
+        names = ("PLAN_{}", "CANCEL_{}", "_items_{}", "_result_{}", "_immediate_{}")
         streams, sockets = self.streams, self.sockets
         module = Module(
             {
                 *(name.format(index) for index in range(len(self.helpers)) for name in names),
+                *(
+                    f"MUTATION_{index}_{position}"
+                    for index, spec in enumerate(self.helpers)
+                    if isinstance(spec, CacheSpec)
+                    for position in range(len(spec.mutations))
+                ),
                 *(f"STREAM_{index}" for index in range(len(streams))),
                 *(f"SOCKET_{index}" for index in range(len(sockets))),
             },
@@ -2330,6 +2397,8 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         for index, spec in enumerate(self.helpers):
             if isinstance(spec, PollingSpec):
                 sections.extend(self.polling(module, index, spec))
+            elif isinstance(spec, CacheSpec):
+                sections.extend(self.cache(module, index, spec))
             else:
                 sections.extend((self.items(module, index, spec), self.plan(module, index, spec)))
         sections.extend(self.stream_plan(module, index, spec) for index, spec in enumerate(streams))
@@ -2347,6 +2416,45 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             imports=module.imports(),
             sections=sections,
         )
+
+    def cache(self, module: Module, index: int, spec: CacheSpec) -> list[str]:
+        """Return a cache helper's plan and the plans of its mutations, each naming only settings it declares."""
+        helper, operations = spec.helper, module.root("_operations")
+        tree = helper.tree
+        plan = module.local(_CACHE, "CachePlan")
+        entries: list[tuple[str, Doc]] = [
+            ("helper_id=", repr(helper.name)),
+            ("operation=", self.reference(module, spec.operation)),
+            ("call=", f"{operations}.OPERATION_{spec.operation.index}"),
+            ("validator=", repr(tree["validator"])),
+            ("authenticated=", repr(tree["authenticated"])),
+            ("fingerprint=", repr(self.fingerprints[helper.name])),
+        ]
+        if (statuses := list(tree["statuses"])) != _DEFAULT_STATUSES:
+            entries.append(("statuses=", _call("frozenset", (("", _tuple(map(repr, statuses))),))))
+        if names := sorted({name.lower() for name in tree["vary_allowlist"]}):
+            entries.append(("vary_allowlist=", _call("frozenset", (("", _tuple(map(repr, names))),))))
+        if spec.tags:
+            entries.append(("tags=", _tuple(map(repr, spec.tags))))
+        head = f"PLAN_{index}: {module.name('typing', 'Final')}[{plan}[{self.response(module, spec.operation)}]] = "
+        sections = [head + layout(_call(plan, entries), 0, len(head), WIDTH)]
+        mutation = module.local(_CACHE, "CacheMutationPlan")
+        for position, item in enumerate(spec.mutations):
+            head = (
+                f"MUTATION_{index}_{position}: {module.name('typing', 'Final')}"
+                f"[{mutation}[{self.response(module, item.operation)}]] = "
+            )
+            value = _call(
+                mutation,
+                (
+                    ("helper_id=", repr(helper.name)),
+                    ("operation=", self.reference(module, item.operation)),
+                    ("call=", f"{operations}.OPERATION_{item.operation.index}"),
+                    ("tags=", _tuple(map(repr, item.tags))),
+                ),
+            )
+            sections.append(head + layout(value, 0, len(head), WIDTH))
+        return sections
 
     def items(self, module: Module, index: int, spec: PaginationSpec) -> str:
         """Return a pagination helper's typed items accessor."""
@@ -2560,10 +2668,28 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         entries.append(("interval=", repr(float(interval["seconds"]))))
         if (header := interval["retry_after_header"]) is not None:
             entries.append(("retry_after_header=", repr(header)))
+        if (cancel := spec.cancel) is not None:
+            sections.append(self.cancel(module, index, spec, cancel))
+            entries.append(("cancel=", f"CANCEL_{index}"))
+        if (expires_at := tree.get("expires_at")) is not None:
+            entries.append(("expires_at=", self.selector(module, expires_at)))
         plan = module.local(_POLLING, "PollingPlan")
         head = f"PLAN_{index}: {module.name('typing', 'Final')}[{plan}[{result}, {poll}, {create}]] = "
         sections.append(head + layout(_call(plan, entries), 0, len(head), WIDTH))
         return sections
+
+    def cancel(self, module: Module, index: int, spec: PollingSpec, cancel: OperationSpec) -> str:
+        """Return the plan of a polling helper's remote cancellation, typed by its operation's response."""
+        bindings = spec.helper.tree["remote_cancel"]["bindings"]
+        entries: list[tuple[str, Doc]] = [
+            ("operation=", self.reference(module, cancel)),
+            ("call=", f"{module.root('_operations')}.OPERATION_{cancel.index}"),
+        ]
+        if bindings:
+            entries.append(("bindings=", _tuple([self.binding(module, item) for item in bindings])))
+        plan = module.local(_POLLING, "CancelPlan")
+        head = f"CANCEL_{index}: {module.name('typing', 'Final')}[{plan}[{self.response(module, cancel)}]] = "
+        return head + layout(_call(plan, entries), 0, len(head), WIDTH)
 
     def module(self, *, asynchronous: bool) -> str:  # noqa: PLR0914
         """Return the sync or asyncio module of the helper namespaces and the helpers."""
@@ -2584,7 +2710,17 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         leaves = {named[spec.helper.name]: spec for spec in self.helpers}
         streams = {named[spec.helper.name]: spec for spec in self.streams}
         sockets = {named[spec.helper.name]: spec for spec in self.sockets}
-        names = {root, *(name for children in nodes.values() for name, _ in children.values())}
+        handles = {
+            name: _handle(spec, prefix)
+            for name, spec in leaves.items()
+            if isinstance(spec, PollingSpec) and spec.cancel is not None
+        }
+        names = {
+            root,
+            *(name for children in nodes.values() for name, _ in children.values()),
+            *handles.values(),
+            *(f"{name}Mutations" for name, spec in leaves.items() if isinstance(spec, CacheSpec) and spec.mutations),
+        }
         module = Module(names, self.resources.symbols, level=2)
         core = module.local("_runtime.client.client", f"{prefix}ClientCore")
         cached = module.name("functools", "cached_property")
@@ -2599,19 +2735,10 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             ]
             what = f"the {'.'.join(parts)} protocol helpers" if parts else "the protocol helpers of this API"
             sections.append(self.node(name, what, core, members))
-        sections.extend(
-            self.node(
-                name,
-                f"the {spec.helper.name} {_HELPER_KINDS[spec.helper.kind]} of {spec.operation.contract.method.upper()} "
-                f"{spec.operation.contract.path}",
-                core,
-                self.start(module, index, spec, asynchronous=asynchronous)
-                if isinstance(spec, PollingSpec)
-                else self.methods(module, index, spec, asynchronous=asynchronous),
-                leaf=True,
+        for index, (name, spec) in enumerate(leaves.items()):
+            sections.extend(
+                self.leaf(module, index, name, spec, core, handle=handles.get(name), asynchronous=asynchronous)
             )
-            for index, (name, spec) in enumerate(leaves.items())
-        )
         sections.extend(
             self.node(
                 name,
@@ -2640,6 +2767,55 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             imports=module.imports(),
             sections=sections,
         )
+
+    def leaf(  # noqa: PLR0913
+        self,
+        module: Module,
+        index: int,
+        name: str,
+        spec: PaginationSpec | PollingSpec | CacheSpec,
+        core: str,
+        *,
+        handle: str | None,
+        asynchronous: bool,
+    ) -> list[str]:
+        """Return a helper's class, then a polling helper's own handle class or a cache helper's mutations class.
+
+        A polling helper has its own handle class when it cancels remotely, and a cache helper a mutations class when
+        it declares mutations.
+        """
+        route = f"{spec.operation.contract.method.upper()} {spec.operation.contract.path}"
+        what = f"the {spec.helper.name} {_HELPER_KINDS[spec.helper.kind]} of {route}"
+        if isinstance(spec, PollingSpec):
+            node = self.node(
+                name, what, core, self.start(module, index, spec, handle, asynchronous=asynchronous), leaf=True
+            )
+            if handle is None:
+                return [node]
+            return [node, self.handle(module, index, spec, handle, asynchronous=asynchronous)]
+        if not isinstance(spec, CacheSpec):
+            return [
+                self.node(name, what, core, self.methods(module, index, spec, asynchronous=asynchronous), leaf=True)
+            ]
+        members = self.fetch(module, index, spec, asynchronous=asynchronous)
+        if not spec.mutations:
+            return [self.node(name, what, core, members, leaf=True)]
+        mutations = f"{name}Mutations"
+        members.append(
+            f"    @{module.name('functools', 'cached_property')}\n    def mutations(self) -> {mutations}:\n"
+            f'        """The mutations that invalidate entries of this helper."""\n'
+            f"        return {mutations}(self._core)"
+        )
+        return [
+            self.node(name, what, core, members, leaf=True),
+            self.node(
+                mutations,
+                f"the mutations of the {spec.helper.name} cache helper",
+                core,
+                self.mutations(module, index, spec, asynchronous=asynchronous),
+                leaf=True,
+            ),
+        ]
 
     @staticmethod
     def node(name: str, what: str, core: str, members: list[str], *, leaf: bool = False) -> str:
@@ -2733,8 +2909,10 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             )),
         ]
 
-    def start(self, module: Module, index: int, spec: PollingSpec, *, asynchronous: bool) -> list[str]:
-        """Return a polling helper's start method, which creates the operation and returns its handle."""
+    def start(
+        self, module: Module, index: int, spec: PollingSpec, handle: str | None, *, asynchronous: bool
+    ) -> list[str]:
+        """Return a polling helper's start and resume methods, which return its handle, or its own handle class."""
         operation = replace(spec.operation, fields=())
         resources = self.resources
         arguments = [resources.parameter(module, parameter) for parameter in operation.parameters]
@@ -2743,14 +2921,19 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             _Argument(name, f"{module.namespace.name(source, kind)} | None", "none")
             for name, source, kind in _POLL_OPTIONS
         ]
-        handle = module.local(_POLLING, "AsyncLroHandle" if asynchronous else "LroHandle")
-        returns = f"{handle}[{self.result(module, spec)}, {self.response(module, spec.poll)}]"
+        base = module.local(_POLLING, "AsyncLroHandle" if asynchronous else "LroHandle")
+        returns = handle or f"{base}[{self.result(module, spec)}, {self.response(module, spec.poll)}]"
+        plan = f"{module.namespace.name('.', '_plans')}.PLAN_{index}"
+        forwarded = [
+            *((("handle=", handle),) if handle is not None else ()),
+            *((f"{name}=", name) for name, _, _ in _POLL_OPTIONS),
+        ]
         passed = [
             ("", "self._core"),
-            ("", f"{module.namespace.name('.', '_plans')}.PLAN_{index}"),
+            ("", plan),
             ("", _tuple(parameter.python_name for parameter in operation.parameters)),
             *((f"{argument.name}=", argument.name) for argument in body),
-            *((f"{name}=", name) for name, _, _ in _POLL_OPTIONS),
+            *forwarded,
         ]
         start = module.local(_POLLING, "astart_operation" if asynchronous else "start_operation")
         route = f"{operation.contract.method.upper()} {operation.contract.path}"
@@ -2761,8 +2944,95 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                 _signature("start", signature, returns, asynchronous=asynchronous, stub=False),
                 f'        """Create the operation of {route} and return the handle that polls it."""',
                 f"        return {wait}{layout(_call(start, passed), 8, 7 + len(wait), WIDTH)}",
-            ))
+            )),
+            _resume_method(module, plan, returns, (options, forwarded), asynchronous=asynchronous),
         ]
+
+    def fetch(self, module: Module, index: int, spec: CacheSpec, *, asynchronous: bool) -> list[str]:
+        """Return a cache helper's fetch and invalidate methods."""
+        operation = spec.operation
+        arguments = [self.resources.parameter(module, parameter) for parameter in operation.parameters]
+        options = [
+            _Argument(name, f"{module.namespace.name(source, kind)} | None", "none")
+            for name, source, kind in _CACHE_OPTIONS
+        ]
+        plan = f"{module.namespace.name('.', '_plans')}.PLAN_{index}"
+        passed = [
+            ("", "self._core"),
+            ("", plan),
+            ("", _tuple(parameter.python_name for parameter in operation.parameters)),
+            *((f"{name}=", name) for name, _, _ in _CACHE_OPTIONS),
+        ]
+        result = f"{module.local('_runtime.protocols.caches', 'CacheResult')}[{self.response(module, operation)}]"
+        fetch, invalidate = (
+            module.local(_CACHE, name)
+            for name in (("afetch", "ainvalidate") if asynchronous else ("fetch", "invalidate"))
+        )
+        route = f"{operation.contract.method.upper()} {operation.contract.path}"
+        signature = tuple(argument.parameter(module) for argument in (*arguments, *options))
+        wait, coroutine = ("await ", "async ") if asynchronous else ("", "")
+        return [
+            "\n".join((
+                _signature("fetch", signature, result, asynchronous=asynchronous, stub=False),
+                f'        """Fetch {route} through the helper\'s cache, revalidating a stale entry."""',
+                f"        return {wait}{layout(_call(fetch, passed), 8, 7 + len(wait), WIDTH)}",
+            )),
+            "\n".join((
+                f"    {coroutine}def invalidate(self, tags: tuple[str, ...]) -> int:",
+                '        """Remove the stored entries that carry any of the tags, returning how many."""',
+                f"        return {wait}{invalidate}(self._core, {plan}, tags)",
+            )),
+        ]
+
+    def mutations(self, module: Module, index: int, spec: CacheSpec, *, asynchronous: bool) -> list[str]:
+        """Return a method per mutation of a cache helper, taking its operation's parameters, body, and options."""
+        resources = self.resources
+        methods: list[str] = []
+        call = module.local(_CACHE, "amutate" if asynchronous else "mutate")
+        wait = "await " if asynchronous else ""
+        for position, item in enumerate(spec.mutations):
+            operation = replace(item.operation, fields=())
+            arguments = [resources.parameter(module, parameter) for parameter in operation.parameters]
+            body = resources.requests(module, operation, asynchronous=asynchronous)[1]
+            options = _Argument("options", f"{module.namespace.name('..options', 'RequestOptions')} | None", "none")
+            passed = [
+                ("", "self._core"),
+                ("", f"{module.namespace.name('.', '_plans')}.MUTATION_{index}_{position}"),
+                ("", _tuple(parameter.python_name for parameter in operation.parameters)),
+                *((f"{argument.name}=", argument.name) for argument in body),
+                ("options=", "options"),
+            ]
+            route = f"{operation.contract.method.upper()} {operation.contract.path}"
+            signature = tuple(argument.parameter(module) for argument in (*arguments, *body, options))
+            methods.append(
+                "\n".join((
+                    _signature(
+                        item.name, signature, self.response(module, operation), asynchronous=asynchronous, stub=False
+                    ),
+                    f'        """Call {route}, then remove the cached entries its tags name once it succeeds."""',
+                    f"        return {wait}{layout(_call(call, passed), 8, 7 + len(wait), WIDTH)}",
+                ))
+            )
+        return methods
+
+    def handle(self, module: Module, index: int, spec: PollingSpec, name: str, *, asynchronous: bool) -> str:
+        """Return a polling helper's own handle class, which also cancels its operation remotely."""
+        cancel = spec.cancel
+        assert cancel is not None
+        base = module.local(_POLLING, "AsyncLroHandle" if asynchronous else "LroHandle")
+        receipt = f"{module.local('_runtime.protocols.records', 'CancelReceipt')}[{self.response(module, cancel)}]"
+        route = f"{cancel.contract.method.upper()} {cancel.contract.path}"
+        prefix, wait = ("async ", "await ") if asynchronous else ("", "")
+        return (
+            f"class {name}({base}[{self.result(module, spec)}, {self.response(module, spec.poll)}]):\n"
+            f'    """A handle of the {spec.helper.name} polling helper, which also cancels the operation with '
+            f'{route}."""'
+            "\n\n    __slots__ = ()\n\n"
+            f"    {prefix}def cancel_remote(self) -> {receipt}:\n"
+            '        """Ask the server to cancel the operation; the handle keeps its last poll until it polls again."""'
+            "\n"
+            f"        return {wait}self._cancel_remote({module.namespace.name('.', '_plans')}.CANCEL_{index})"
+        )
 
     @staticmethod
     def event_type(module: Module, spec: StreamSpec) -> str:
@@ -2957,7 +3227,7 @@ class ClientRenderer:
         batch: GeneratedTypeContractBatch,
         wire: WirePlan,
         codecs: CodecPlan,
-        helpers: tuple[PaginationSpec | PollingSpec, ...] = (),
+        helpers: tuple[PaginationSpec | PollingSpec | CacheSpec, ...] = (),
         streams: tuple[StreamSpec, ...] = (),
         sockets: tuple[SocketSpec, ...] = (),
         fingerprints: Mapping[str, str] | None = None,
@@ -3103,8 +3373,18 @@ reference for their limits and checkpoints."""
             """
 A polling helper's `start` creates the operation and returns a handle: `status` polls it once and `wait` polls until
 it settles and returns its result, each poll after the wait the last response requires; `close()` or `aclose()`
-stops only local polling. See the runtime reference for their limits."""
+stops only local polling. `resume` returns a handle continuing a handle's `checkpoint()` without creating the
+operation again, and a helper that declares a remote cancellation returns a handle whose `cancel_remote` sends it. See
+the runtime reference for their limits and checkpoints."""
             if "polling" in kinds
+            else ""
+        )
+        caching = (
+            """
+A cache helper's `fetch` answers from a fresh entry of the store `ProtocolClientOptions.cache_stores` lends it, or
+sends the request, revalidating a stale entry; `invalidate` and its `mutations` remove tagged entries. See the runtime
+reference for their limits."""
+            if "cache" in kinds
             else ""
         )
         closing = "" if kinds else "\nSee the runtime reference for their limits."
@@ -3113,7 +3393,7 @@ stops only local polling. See the runtime reference for their limits."""
 
 `client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.{
             streams
-        }{sockets}{pagination}{polling}{closing}
+        }{sockets}{pagination}{polling}{caching}{closing}
 
 ```json
 {json.dumps(helpers, indent=2, ensure_ascii=True)}
@@ -3154,6 +3434,9 @@ refunded. `Deadline.after(seconds)` shares an absolute monotonic expiry across c
 the relative total timeout wins. `CancelToken` is thread-safe and remains cancelled once signalled. Sync callbacks,
 DNS, I/O, and cleanup are cooperative and may return after a deadline. Async SDK waits enforce their budgets.
 Native cancellation remains the original exception. No work starts after an observed cancellation or expiry.
+`ClientOptions(clock=Clock(monotonic=..., time=..., random=...))` replaces the time and jitter sources of every call;
+`OAuthProviderOptions(clock=...)` does so for a provider, and `Deadline.after(seconds, clock=...)` creates a deadline
+on that clock. Waits still pass in real time, so a test clock skips one by advancing itself.
 
 ## Retry decisions and delays
 
@@ -3297,8 +3580,8 @@ wait for retained cleanup; it does not authorize another send or restore an expi
 {self.helper_runtime()}{self.stream_runtime()}{self.socket_runtime()}"""  # noqa: S608
 
     def helper_runtime(self) -> str:
-        """Describe the sessions of the package's pagination and polling helpers, or nothing without helpers."""
-        return self.pagination_runtime() + self.polling_runtime()
+        """Describe the package's pagination and polling sessions and cache helpers, or nothing without helpers."""
+        return self.pagination_runtime() + self.polling_runtime() + self.cache_runtime()
 
     def polling_runtime(self) -> str:
         """Describe polling sessions and their limits, or nothing for a package without polling helpers."""
@@ -3307,12 +3590,13 @@ wait for retained cleanup; it does not authorize another send or restore an expi
         return f"""
 ## Polling sessions
 
-A polling helper's `start` and the handle it returns are one session. The create call, every poll, and the result
-fetch are logical calls of their own, with their own retries, total timeout, and idempotency key; the session bounds
-all of them. Each limit comes from the call's options, then `ProtocolClientOptions.defaults` for the helper, then the
-default below. The session types are imported from:
+A polling helper's `start` and the handle it returns are one session. The create call, every poll, the result fetch,
+and a remote cancel are logical calls of their own, with their own retries, total timeout, and idempotency key; the
+session bounds all of them. Each limit comes from the call's options, then `ProtocolClientOptions.defaults` for the
+helper, then the default below. The session types are imported from:
 
-- `{self.config.package}.protocols`: `PollOptions`, `PollSnapshot`, `LroHandle`, and `AsyncLroHandle`
+- `{self.config.package}.protocols`: `PollOptions`, `PollSnapshot`, `CancelReceipt`, `LroHandle`, `AsyncLroHandle`,
+  and `ResumeState`
 - `{self.config.package}.options`: `SessionOptions`
 
 | Limit | Effective default |
@@ -3339,6 +3623,24 @@ the handle as it was: pending, so a later `status` or `wait` polls again without
 succeeded with its result fetch still due, which a later `wait` retries alone. `status` and `wait` at once raise
 `ProtocolStateError`, and so does every step after `close()` or `aclose()`, which stops only local polling. A call's
 options must not fix an idempotency key or patch a header or query parameter the helper writes.
+
+`checkpoint()` returns a `ResumeState` without sending, also after closing and while another thread or task polls:
+the phase, the polls so far, the wait left before the next poll or result fetch, the values the next requests write,
+and a settled operation's final poll and result bodies, never model objects, the session, or the call's options. The
+helper's `resume` is never awaited and returns a handle in a session of its own that sends nothing until `status` or
+`wait`; polls count on, while the session's timeout, deadline, and sends start afresh. Before returning, it refuses
+another helper's state, one made under other security, an expired one, and one that does not fit the helper with
+`ResumeStateError`, a saved dot segment for a path parameter with `ProtocolDataError`, and a saved body over the call's
+response size limit with `ProtocolSizeError`; a saved value the result fetch writes into its querystring or body is
+checked when the fetch request is built. `PollWaitLimitError` and a `SessionLimitError` of a created operation keep a
+checkpoint as `resume_state`. A helper that declares `expires_at` reads the server's expiry, an RFC 3339 date-time with
+an offset or an HTTP date, from the accepted create response, and its checkpoints expire then; a create response
+without a valid one fails `start` with `ProtocolDataError`, though the remote operation was created.
+
+A helper that declares `remote_cancel` returns a handle of its own class whose `cancel_remote()` sends the cancel
+request once, while the operation is pending, and returns a `CancelReceipt` of its response; it also runs while
+another thread or task waits in `status` or `wait`. It does not change the handle, which keeps its last poll until it
+polls again; closing sends nothing.
 """
 
     def pagination_runtime(self) -> str:
@@ -3348,7 +3650,7 @@ options must not fix an idempotency key or patch a header or query parameter the
         page-number helper, and followed URLs only for one with a next-URL or Link helper; the cursor size limit
         applies to cursors and followed URLs.
         """
-        if not (pages := [spec for spec in self.helpers if not isinstance(spec, PollingSpec)]):
+        if not (pages := [spec for spec in self.helpers if not isinstance(spec, PollingSpec | CacheSpec)]):
             return ""
         kinds = {spec.continuation["kind"] for spec in pages}
         cursors = "cursor" in kinds
@@ -3391,6 +3693,41 @@ another kind's options, fail construction. The session types are imported from:
 
 {rules}
 {self.count_runtime(kinds)}{self.follow_runtime(kinds)}{_RESUME_RUNTIME}"""
+
+    def cache_runtime(self) -> str:
+        """Describe cache helpers' stores, keys, freshness, revalidation, and invalidation, or nothing without them."""
+        if not any(isinstance(spec, CacheSpec) for spec in self.helpers):
+            return ""
+        return f"""
+## Cache helpers
+
+A cache helper keeps entries only in the store `ProtocolClientOptions.cache_stores` lends it under its name, a
+`MemoryCacheStore` or `AsyncMemoryCacheStore` or another implementation of `CacheStore` or `AsyncCacheStore` of the
+client's mode; a client without one refuses `fetch`, `invalidate`, and the mutations with
+`ProtocolConfigurationError` before sending. The client never creates or closes a store. The types are imported from
+`{self.config.package}.protocols`: `CacheOptions`, `CacheResult`, `CacheEntry`, the store protocols, and the memory
+stores.
+
+| Limit | Effective default |
+|---|---|
+| stored body per entry | 2 MiB |
+| freshness of any entry | 300 seconds |
+
+`fetch` returns a `CacheResult` whose `source` is `fresh_cache` for a fresh entry, answered without sending or call
+events, `revalidated` for a stale entry a 304 confirmed, and `network` otherwise; a stored body is decoded again every
+time. An entry is keyed by the method, the URL, the Accept header, the credential partition, and the credentials the
+auth binds, and selected by the request headers its `Vary` names and those a header patch or a declared parameter fills.
+A request carrying credentials needs `ProtocolSecurityContext.credential_partition`, a helper declared authenticated,
+and the client's own auth, not a view's or a call's; anything else raises `ProtocolConfigurationError`. A response whose
+`Vary` names a header the auth manages is never stored, and one partition is one permission set: credentials the client
+cannot see, such as a client certificate, need a partition of their own. Freshness comes from `max-age` or `Expires`
+only, capped by `max_ttl`; a stale entry is revalidated with its validator, and a 304 without a usable entry raises
+`CacheProtocolError`. A response is stored only when its status is cacheable, it came without a redirect, Set-Cookie,
+`no-store`, or an unsupported Cache-Control directive, and its `Vary` names only allowlisted headers; otherwise it
+removes the entry it supersedes. Store failures raise `CacheStoreError` and never resend a request. A mutation removes
+the entries its tags name only after it succeeds; a store failure then raises `CacheInvalidationError`, whose
+`require_result()` returns the mutation's result.
+"""
 
     @staticmethod
     def follow_runtime(kinds: set[str]) -> str:
