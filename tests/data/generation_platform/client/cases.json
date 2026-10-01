@@ -2563,5 +2563,132 @@
       "protocols": "protocols/pagination-link-checks.yaml"
     },
     "modules": false
+  },
+  "streams": {
+    "input": "streams.yaml",
+    "references": [
+      "protocols/streams.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/streams.yaml",
+      "validation": {
+        "response_overrides": [
+          "schema"
+        ]
+      }
+    },
+    "modules": [
+      [
+        "client",
+        "_client.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ]
+    ]
+  },
+  "protocols-stream-checks": {
+    "input": "streams.yaml",
+    "references": [
+      "protocols/stream-checks.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/stream-checks.yaml"
+    },
+    "modules": false
+  },
+  "protocols-stream-scope": {
+    "input": "streams.yaml",
+    "references": [
+      "protocols/stream-scope.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/stream-scope.yaml"
+    },
+    "modules": false,
+    "model": {
+      "openapi_scopes": [
+        "schemas"
+      ]
+    }
+  },
+  "streams-mixed": {
+    "input": "streams-mixed.yaml",
+    "references": [
+      "protocols/streams-mixed.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/streams-mixed.yaml"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ]
+    ]
+  },
+  "ndjson": {
+    "input": "ndjson.yaml",
+    "references": [
+      "protocols/ndjson.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/ndjson.yaml",
+      "validation": {
+        "response_overrides": [
+          "schema"
+        ]
+      }
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ]
+    ]
+  },
+  "protocols-ndjson-checks": {
+    "input": "ndjson.yaml",
+    "references": [
+      "protocols/ndjson-checks.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/ndjson-checks.yaml"
+    },
+    "modules": false
   }
 }

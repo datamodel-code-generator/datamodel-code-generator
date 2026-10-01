@@ -1,0 +1,183 @@
+# streams
+render pydantic_v2.BaseModel
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/events/__init__.py
+  write client/resources/events/_sync.py
+  write client/resources/events/_async.py
+  write client/resources/feed/__init__.py
+  write client/resources/feed/_sync.py
+  write client/resources/feed/_async.py
+  write client/resources/status/__init__.py
+  write client/resources/status/_sync.py
+  write client/resources/status/_async.py
+  write client/types/__init__.py
+  write client/types/events/__init__.py
+  write client/types/events/_operations.py
+  write client/types/feed/__init__.py
+  write client/types/feed/_operations.py
+  write client/types/status/__init__.py
+  write client/types/status/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/protocols/_plans.py
+  write client/protocols/_helpers.py
+  write client/protocols/_async_helpers.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['events.messages', 'events.typed', 'events.tagged', 'feed.all'] bindings 13
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper events.messages sse enabled True /inputs/target_config/protocol_metadata/helpers/events.messages 47deb62e9b7f5c9aca31b278bef559cf79bf8ebfb407d55aa696a19b7c29efab
+  helper events.typed sse enabled True /inputs/target_config/protocol_metadata/helpers/events.typed 047624039d1515adc69e1e230e74d8dd69aaf6b29e945ee089eda87db70cc580
+  helper events.tagged sse enabled True /inputs/target_config/protocol_metadata/helpers/events.tagged 30242dd9c3bbafd4d580c05e69ae1f3239c9b39fd434847ffb202cf0286fa4e6
+  helper feed.all sse enabled True /inputs/target_config/protocol_metadata/helpers/feed.all cbd2a9efc2b2e8cace2e77be641622bce70d90e03fb73d0b57bc730a8d182152
+  {
+    "helpers": {
+      "events.messages": {
+        "completion": {
+          "kind": "eof"
+        },
+        "enabled": true,
+        "error_events": {},
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Message"
+        },
+        "kind": "sse",
+        "media": "text/event-stream",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1events/get"
+        },
+        "resume": {
+          "enabled": false
+        },
+        "unknown": "error"
+      },
+      "events.tagged": {
+        "completion": {
+          "kind": "sentinel",
+          "value": "[DONE]"
+        },
+        "enabled": true,
+        "error_events": {
+          "failed": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Failure"
+          }
+        },
+        "event_schema": {
+          "discriminator": {
+            "from": "body",
+            "pointer": "/type"
+          },
+          "mapping": {
+            "created": {
+              "document": "/inputs/root",
+              "pointer": "/components/schemas/Created"
+            },
+            "deleted": {
+              "document": "/inputs/root",
+              "pointer": "/components/schemas/Deleted"
+            }
+          }
+        },
+        "kind": "sse",
+        "media": "text/event-stream",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1events/get"
+        },
+        "resume": {
+          "enabled": false
+        },
+        "unknown": "error"
+      },
+      "events.typed": {
+        "completion": {
+          "kind": "event_type",
+          "value": "done"
+        },
+        "enabled": true,
+        "error_events": {
+          "error": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/StreamError"
+          }
+        },
+        "event_schema": {
+          "discriminator": {
+            "from": "event_type"
+          },
+          "mapping": {
+            "created": {
+              "document": "/inputs/root",
+              "pointer": "/components/schemas/Created"
+            },
+            "deleted": {
+              "document": "/inputs/root",
+              "pointer": "/components/schemas/Deleted"
+            }
+          }
+        },
+        "kind": "sse",
+        "media": "text/event-stream",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1events/get"
+        },
+        "resume": {
+          "enabled": false
+        },
+        "unknown": "raw"
+      },
+      "feed.all": {
+        "completion": {
+          "kind": "sentinel",
+          "value": "[DONE]"
+        },
+        "enabled": true,
+        "error_events": {},
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Message"
+        },
+        "kind": "sse",
+        "media": "text/event-stream",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1feed/post"
+        },
+        "resume": {
+          "enabled": false
+        },
+        "unknown": "error"
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 events.stream_events(query:topic=topic, header:Last-Event-ID=last_event_id)
+    exports client.types.events.StreamEventsResponse client.types.events.StreamEventsErrorData client.types.events.StreamEventsHTTPError
+    exports client.types.events.StreamEventsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 feed.stream_feed()
+    exports client.types.feed.StreamFeedResponse client.types.feed.StreamFeedErrorData client.types.feed.StreamFeedHTTPError
+    exports client.types.feed.StreamFeedRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/2 status.get_status()
+    exports client.types.status.GetStatusResponse client.types.status.GetStatusErrorData client.types.status.GetStatusHTTPError
+    exports client.types.status.GetStatusRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

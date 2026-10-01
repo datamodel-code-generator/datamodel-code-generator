@@ -1,0 +1,12 @@
+# protocols-stream-checks
+render pydantic_v2.BaseModel
+  APIGenerationError
+  E_CONFIG_VALUE config protocols.helpers['checks.media'].media /paths/~1events/get: The media type 'text/plain' of 'checks.media' is not text/event-stream
+  E_CONFIG_VALUE config protocols.helpers['checks.response'].operation /paths/~1status/get: GET /status declares no text/event-stream success response for the SSE helper 'checks.response'
+  E_CLIENT_UNSUPPORTED target protocols.helpers['checks.resume'].resume /paths/~1events/get: The SSE helper 'checks.resume' resumes its stream, which is not supported yet
+  E_CONFIG_VALUE config protocols.helpers['checks.schema'].event_schema /paths/~1events/get: The schema '/components/schemas/Nobody' of 'checks.schema' does not exist in its document
+  E_CONFIG_CONFLICT config protocols.helpers['checks.terminal_event'].completion.value /paths/~1events/get: The completion event type 'done' of 'checks.terminal_event' is also a key of its event_schema.mapping
+  E_CONFIG_CONFLICT config protocols.helpers['checks.terminal_error'].completion.value /paths/~1events/get: The completion event type 'stop' of 'checks.terminal_error' is also a key of its error_events
+  E_CLIENT_UNSUPPORTED target protocols.helpers['checks.envelope'].event_schema /paths/~1events/get: The SSE helper 'checks.envelope' decodes an envelope-projected event, which is not supported yet
+  E_CONFIG_VALUE config protocols.helpers['checks.discriminator_absent'].event_schema.discriminator.pointer /paths/~1events/get: The discriminator pointer '/kind' of 'checks.discriminator_absent' names no property of '/components/schemas/Created'
+  E_CONFIG_VALUE config protocols.helpers['checks.discriminator_type'].event_schema.discriminator.pointer /paths/~1events/get: The discriminator of 'checks.discriminator_type' reads integer values from '/components/schemas/Counted', where only string values fit
