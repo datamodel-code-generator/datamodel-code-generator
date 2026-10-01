@@ -7,14 +7,17 @@ from functools import cached_property
 from typing import Literal
 
 from models import Created as _dcg_type_4
-from models import FeedQuery as _dcg_type_7
+from models import FeedQuery as _dcg_type_10
 from models import FieldEventsGetCookieSessionParameter as _dcg_type_2
 from models import FieldEventsGetHeaderLastEventIDParameter as _dcg_type_1
 from models import FieldEventsGetQueryTopicParameter as _dcg_type_0
-from models import FieldRecordsGetQueryAfterParameter as _dcg_type_5
+from models import FieldRecordsGetQueryAfterParameter as _dcg_type_8
+from models import FieldRoomsRoomShardGetHeaderLastEventIDParameter as _dcg_type_7
+from models import FieldRoomsRoomShardGetPathRoomParameter as _dcg_type_5
+from models import FieldRoomsRoomShardGetPathShardParameter as _dcg_type_6
 from models import Message as _dcg_type_3
-from models import Record as _dcg_type_6
-from models import Tick as _dcg_type_8
+from models import Record as _dcg_type_9
+from models import Tick as _dcg_type_11
 
 from .._runtime.client.client import ClientCore
 from .._runtime.protocols.resume import ResumeState
@@ -40,6 +43,11 @@ class ProtocolHelpers:
     def events(self) -> EventsProtocols:
         """The events protocol helpers."""
         return EventsProtocols(self._core)
+
+    @cached_property
+    def rooms(self) -> RoomsProtocols:
+        """The rooms protocol helpers."""
+        return RoomsProtocols(self._core)
 
     @cached_property
     def records(self) -> RecordsProtocols:
@@ -73,6 +81,19 @@ class EventsProtocols:
     def tracked(self) -> EventsTrackedSse:
         """The events.tracked SSE helper."""
         return EventsTrackedSse(self._core)
+
+
+class RoomsProtocols:
+    """The rooms protocol helpers."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core its helpers send through."""
+        self._core = core
+
+    @cached_property
+    def live(self) -> RoomsLiveSse:
+        """The rooms.live SSE helper."""
+        return RoomsLiveSse(self._core)
 
 
 class RecordsProtocols:
@@ -221,6 +242,52 @@ class EventsTrackedSse:
         )
 
 
+class RoomsLiveSse:
+    """The rooms.live SSE helper of GET /rooms/{room}{shard}."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+    def open(
+        self,
+        *,
+        room: _dcg_type_5 | ModelValue[_dcg_type_5],
+        shard: _dcg_type_6 | ModelValue[_dcg_type_6],
+        last_event_id: _dcg_type_7 | ModelValue[_dcg_type_7] | Unset = UNSET,
+        stream_options: StreamOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> EventStream[_dcg_type_3]:
+        """Open the event stream of GET /rooms/{room}{shard}, returning once its response is a declared success."""
+        return open_events(
+            self._core,
+            _plans.STREAM_3,
+            (room, shard, last_event_id),
+            stream_options=stream_options,
+            options=options,
+            session_options=session_options,
+        )
+
+    def resume(
+        self,
+        state: ResumeState,
+        *,
+        stream_options: StreamOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> EventStream[_dcg_type_3]:
+        """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
+        return resume_events(
+            self._core,
+            _plans.STREAM_3,
+            state,
+            stream_options=stream_options,
+            options=options,
+            session_options=session_options,
+        )
+
+
 class RecordsAllNdjson:
     """The records.all NDJSON helper of GET /records."""
 
@@ -231,15 +298,15 @@ class RecordsAllNdjson:
     def open(
         self,
         *,
-        after: _dcg_type_5 | ModelValue[_dcg_type_5] | Unset = UNSET,
+        after: _dcg_type_8 | ModelValue[_dcg_type_8] | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> EventStream[_dcg_type_6]:
+    ) -> EventStream[_dcg_type_9]:
         """Open the NDJSON stream of GET /records, returning once its response is a declared success."""
         return open_events(
             self._core,
-            _plans.STREAM_3,
+            _plans.STREAM_4,
             (after,),
             stream_options=stream_options,
             options=options,
@@ -253,11 +320,11 @@ class RecordsAllNdjson:
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> EventStream[_dcg_type_6]:
+    ) -> EventStream[_dcg_type_9]:
         """Reopen the NDJSON stream after a checkpoint's cursor, returning once its response is a declared success."""
         return resume_events(
             self._core,
-            _plans.STREAM_3,
+            _plans.STREAM_4,
             state,
             stream_options=stream_options,
             options=options,
@@ -275,16 +342,16 @@ class FeedTicksSse:
     def open(
         self,
         *,
-        body: _dcg_type_7 | ModelValue[_dcg_type_7],
-        media_type: Literal['application/json'] | RequestMedia[_dcg_type_7 | ModelValue[_dcg_type_7], _dcg_type_7 | ModelValue[_dcg_type_7]] | None = None,
+        body: _dcg_type_10 | ModelValue[_dcg_type_10],
+        media_type: Literal['application/json'] | RequestMedia[_dcg_type_10 | ModelValue[_dcg_type_10], _dcg_type_10 | ModelValue[_dcg_type_10]] | None = None,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> EventStream[_dcg_type_8 | UnknownEvent]:
+    ) -> EventStream[_dcg_type_11 | UnknownEvent]:
         """Open the event stream of POST /feed, returning once its response is a declared success."""
         return open_events(
             self._core,
-            _plans.STREAM_4,
+            _plans.STREAM_5,
             (),
             body=body,
             media_type=media_type,
@@ -300,11 +367,11 @@ class FeedTicksSse:
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> EventStream[_dcg_type_8 | UnknownEvent]:
+    ) -> EventStream[_dcg_type_11 | UnknownEvent]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return resume_events(
             self._core,
-            _plans.STREAM_4,
+            _plans.STREAM_5,
             state,
             stream_options=stream_options,
             options=options,

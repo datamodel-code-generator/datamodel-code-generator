@@ -66,6 +66,31 @@ paths:
               schema: {type: string}
         '404':
           description: The stream expired.
+  /rooms/{room}{shard}:
+    get:
+      operationId: streamRoom
+      tags: [rooms]
+      parameters:
+        - name: room
+          in: path
+          required: true
+          schema: {type: string}
+        - name: shard
+          in: path
+          required: true
+          schema: {type: string}
+        - name: Last-Event-ID
+          in: header
+          schema: {type: string}
+      responses:
+        '200':
+          description: The events of a room's shard.
+          headers:
+            X-Shard:
+              schema: {type: string}
+          content:
+            text/event-stream:
+              schema: {type: string}
   /replay:
     get:
       operationId: replayEvents

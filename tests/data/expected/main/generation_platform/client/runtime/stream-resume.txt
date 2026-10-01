@@ -224,6 +224,19 @@ another reopen operation
   < closed
     hook stream_end outcome=error
     ! ProtocolDataError: ProtocolDataError(condition='missing') [condition='missing', location=HeaderSelector(name='X-Resume-Token', occurrence='single')] protocol_data_error resume_state=NoneType
+bound path values
+  > GET https://api.example.com/rooms/r0 last-event-id=None
+  reopened with the shard
+    1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+  > GET https://api.example.com/rooms/r1 last-event-id='1'
+    2 message id='2' retry=None data=Message{'text': 'b'} raw='{"text": "b"}'
+  < closed
+    end
+  shard saved {"arguments": [["r"], ["0"], []], "body": [], "bound": ["2"], "cursor": "2", "reconnects": 1, "retry_ms": null, "sequence": 2} expires_at=None
+  > GET https://api.example.com/rooms/.x last-event-id=None
+  < closed
+  open with a shard making a dot segment ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='X-Shard', occurrence='single')] protocol_data_error
 NDJSON body cursors
   > GET https://api.example.com/records last-event-id=None
   1  id=None retry=None data=Record{'id': 'r1', 'text': 'a'} raw='{"id": "r1", "text": "a"}'

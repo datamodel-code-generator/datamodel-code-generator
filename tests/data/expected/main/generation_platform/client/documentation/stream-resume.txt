@@ -18,6 +18,9 @@
   write client/resources/streams/__init__.py
   write client/resources/streams/_sync.py
   write client/resources/streams/_async.py
+  write client/resources/rooms/__init__.py
+  write client/resources/rooms/_sync.py
+  write client/resources/rooms/_async.py
   write client/resources/replay/__init__.py
   write client/resources/replay/_sync.py
   write client/resources/replay/_async.py
@@ -35,6 +38,8 @@
   write client/types/events/_operations.py
   write client/types/streams/__init__.py
   write client/types/streams/_operations.py
+  write client/types/rooms/__init__.py
+  write client/types/rooms/_operations.py
   write client/types/replay/__init__.py
   write client/types/replay/_operations.py
   write client/types/records/__init__.py
@@ -53,11 +58,12 @@
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['events.live', 'events.plain', 'events.tracked', 'records.all', 'feed.ticks'] bindings 25
+  namespace client helpers ['events.live', 'events.plain', 'events.tracked', 'rooms.live', 'records.all', 'feed.ticks'] bindings 31
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   helper events.live sse enabled True /inputs/target_config/protocol_metadata/helpers/events.live fe9d46bf6146c8ad370b9e120eebaa7a97ce69791b82e42dc42fb36df7d8d89b
   helper events.plain sse enabled True /inputs/target_config/protocol_metadata/helpers/events.plain bb4bb5c8c5cbe3809e0cde61598b05446f9667463353a95c362eae717c7baaf9
   helper events.tracked sse enabled True /inputs/target_config/protocol_metadata/helpers/events.tracked 232c5953c24399dd4c254772dababfe778d0e461afbd363f2ad354cafe88ccaf
+  helper rooms.live sse enabled True /inputs/target_config/protocol_metadata/helpers/rooms.live 43fcb00a6c594945f0cff5207c7f6b56715c2e167232866a8b2c3ecdb8fce84a
   helper records.all ndjson enabled True /inputs/target_config/protocol_metadata/helpers/records.all 0be49633d4172954b6470e209d25f77bde0e1e664b68c1bc0afbc93ec6002286
   helper feed.ticks sse enabled True /inputs/target_config/protocol_metadata/helpers/feed.ticks 25b1534b79b168ed861fcb9eb40248e67166dec73ec511b1d877f9dab321d951
   {
@@ -298,6 +304,56 @@
           }
         },
         "unknown": "error"
+      },
+      "rooms.live": {
+        "completion": {
+          "kind": "eof"
+        },
+        "enabled": true,
+        "error_events": {},
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Message"
+        },
+        "kind": "sse",
+        "media": "text/event-stream",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1rooms~1{room}{shard}/get"
+        },
+        "resume": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "shard"
+              },
+              "value": {
+                "selector": {
+                  "from": "header",
+                  "name": "X-Shard",
+                  "occurrence": "single"
+                },
+                "source": "previous"
+              }
+            }
+          ],
+          "cursor": "event_id",
+          "delivery": "at_least_once",
+          "enabled": true,
+          "reconnect_on": [
+            "transport_interruption"
+          ],
+          "reopen_operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1rooms~1{room}{shard}/get"
+          },
+          "write": {
+            "in": "header",
+            "name": "Last-Event-ID"
+          }
+        },
+        "unknown": "error"
       }
     },
     "schema_version": 1
@@ -308,16 +364,19 @@
   /selection/selected_operations/1 streams.reopen_stream(path:streamId=stream_id, header:Last-Event-ID=last_event_id, query:token=token, query:mode=mode)
     exports client.types.streams.ReopenStreamResponse client.types.streams.ReopenStreamErrorData client.types.streams.ReopenStreamHTTPError
     exports client.types.streams.ReopenStreamRequestCodecs client.types.streams.decode_reopen_stream_header digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/2 replay.replay_events(query:from=from_)
+  /selection/selected_operations/2 rooms.stream_room(path:room=room, path:shard=shard, header:Last-Event-ID=last_event_id)
+    exports client.types.rooms.StreamRoomResponse client.types.rooms.StreamRoomErrorData client.types.rooms.StreamRoomHTTPError
+    exports client.types.rooms.StreamRoomRequestCodecs client.types.rooms.decode_stream_room_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/3 replay.replay_events(query:from=from_)
     exports client.types.replay.ReplayEventsResponse client.types.replay.ReplayEventsErrorData client.types.replay.ReplayEventsHTTPError
     exports client.types.replay.ReplayEventsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/3 records.stream_records(query:after=after)
+  /selection/selected_operations/4 records.stream_records(query:after=after)
     exports client.types.records.StreamRecordsResponse client.types.records.StreamRecordsErrorData client.types.records.StreamRecordsHTTPError
     exports client.types.records.StreamRecordsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/4 feed.stream_feed()
+  /selection/selected_operations/5 feed.stream_feed()
     exports client.types.feed.StreamFeedResponse client.types.feed.StreamFeedErrorData client.types.feed.StreamFeedHTTPError
     exports client.types.feed.StreamFeedRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/5 status.get_status()
+  /selection/selected_operations/6 status.get_status()
     exports client.types.status.GetStatusResponse client.types.status.GetStatusErrorData client.types.status.GetStatusHTTPError
     exports client.types.status.GetStatusRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
@@ -372,6 +431,17 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
     "operation": "streams.reopen_stream",
     "method": "GET",
     "path": "/streams/{streamId}",
+    "retry_safety": "method_default",
+    "idempotency": null,
+    "retry_after_ms_header": null,
+    "should_retry_header": null,
+    "security": null,
+    "auth_challenge_less_401": false
+  },
+  {
+    "operation": "rooms.stream_room",
+    "method": "GET",
+    "path": "/rooms/{room}{shard}",
     "retry_safety": "method_default",
     "idempotency": null,
     "retry_after_ms_header": null,
@@ -457,6 +527,13 @@ See the runtime reference for their limits.
     "operation": "events.stream_events",
     "method": "GET",
     "path": "/events"
+  },
+  {
+    "helper": "rooms.live",
+    "kind": "sse",
+    "operation": "rooms.stream_room",
+    "method": "GET",
+    "path": "/rooms/{room}{shard}"
   },
   {
     "helper": "records.all",

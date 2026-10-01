@@ -6,6 +6,7 @@ import base64
 import importlib
 import json
 from datetime import datetime, timezone
+from functools import partial
 from typing import TYPE_CHECKING, Any, Final
 
 from tests.data.python.client_runtime import arecord, describe, record, run
@@ -135,10 +136,11 @@ class _Resumes:
         options = self.harness.options
         return options.RequestOptions(redirects=options.RedirectOptions(enabled=True))
 
-    def argument(self, location: str, name: str, wire: str) -> object:
-        """Return an argument of the events operation for a wire value."""
-        types = importlib.import_module(f"{self.harness.package.__name__}.types.events")
-        return types.StreamEventsRequestCodecs.parameter(location=location, name=name).from_wire(wire)
+    def argument(self, location: str, name: str, wire: str, operation: str = "events.StreamEvents") -> object:
+        """Return an argument of an operation, the events one unless told otherwise, for a wire value."""
+        resource, codecs = operation.split(".")
+        types = importlib.import_module(f"{self.harness.package.__name__}.types.{resource}")
+        return getattr(types, f"{codecs}RequestCodecs").parameter(location=location, name=name).from_wire(wire)
 
     def client_options(self) -> Any:
         """Return client options whose reconnection backoff waits for nothing."""
@@ -158,6 +160,7 @@ def stream_resume(package: ModuleType, lines: list[str]) -> None:
         _budgets(resumes, api)
         _waits(resumes, api)
         _tracked(resumes, api)
+        _rooms(resumes, api)
         _records(resumes, api)
         _ticks(resumes, api)
         _refusals(resumes, api)
@@ -377,6 +380,20 @@ def _tracked(resumes: _Resumes, api: Any) -> None:
     resumes.reply(b'event: created\nid: 1\ndata: {"id": "1"}\n\n', harness.interrupted(), headers=_TRACKED)
     resumes.reply(b"event: done\ndata: {}\n\n")
     _drained(lines, "reopen without the token", hooked.open(stream_options=resumes.reconnect))
+
+
+def _rooms(resumes: _Resumes, api: Any) -> None:
+    """Reopen the caller's own path with the shard the last response gave, refusing one that makes a dot segment."""
+    lines, harness, helper = resumes.lines, resumes.harness, api.protocols.rooms.live
+    lines.append("bound path values")
+    resumes.reply(b'id: 1\ndata: {"text": "a"}\n\n', harness.interrupted(), headers=(("X-Shard", "1"),))
+    resumes.reply(b'id: 2\ndata: {"text": "b"}\n\n', headers=(("X-Shard", "2"),))
+    room, shard = (partial(resumes.argument, "path", name, operation="rooms.StreamRoom") for name in ("room", "shard"))
+    stream = helper.open(room=room("r"), shard=shard("0"), stream_options=resumes.reconnect)
+    _drained(lines, "reopened with the shard", stream)
+    _saved(lines, "shard", stream.checkpoint())
+    resumes.reply(b'id: 1\ndata: {"text": "a"}\n\n', headers=(("X-Shard", "."),))
+    record(lines, "open with a shard making a dot segment", lambda: helper.open(room=room("."), shard=shard("x")))
 
 
 def state_expiry(state: Any) -> datetime:
