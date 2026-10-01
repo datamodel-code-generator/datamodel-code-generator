@@ -2282,18 +2282,22 @@ A helper that declares `resume` tracks the cursor of the last event it delivered
 cursor pointer reads from an event's data, which an empty event ID or a null value clears. Once a cursor was delivered,
 a stream's `checkpoint()` returns a `ResumeState` without sending: the cursor, the event and reconnection counts, the
 last `retry` time, the bindings' values, and the caller's first request when the reopen repeats it, never events,
-responses, the session, the call's options, or a cookie or credential argument. The helper's `resume` sends the reopen
-in a session of its own, writing the cursor, and omitting a cleared one, and returns once its response is a declared
-success; it refuses another helper's state, one made under other security, an expired one, and one that does not fit
-with `ResumeStateError` before sending. `StreamInterruptedError` keeps a checkpoint as `resume_state`, and call options
-must not patch a header or query parameter a reopen writes or fix an idempotency key.
+responses, the session, or the call's options. A call given a cookie or credential argument cannot be checkpointed:
+`checkpoint()` raises `ProtocolConfigurationError` with the condition `wrong_capability`, and `ProtocolDataError` for a
+cursor the reopen request cannot encode, as a reconnection does. The helper's `resume` sends the reopen in a session of
+its own, writing the cursor, and omitting a cleared one, and returns once its response is a declared success; it
+refuses another helper's state, one made under other security, an expired one, and one that does not fit with
+`ResumeStateError` before sending. `StreamInterruptedError` keeps a checkpoint as `resume_state`, and no options, the
+client's, a view's, or the call's, may patch a header or query parameter a reopen writes or fix an idempotency key.
 
 With `StreamOptions(reconnect=True)` such a stream reopens itself as one more child call of its session after a
-transport interruption, or after an incomplete end when the helper declares `incomplete_eof`, once a cursor was
+transport interruption, a read-phase failure classified as retryable or a read timeout the call's own
+`TimeoutOptions(read=...)` set, or after an incomplete end when the helper declares `incomplete_eof`, once a cursor was
 delivered and after the retry backoff and at least the last `retry` time. Running out of reconnections or of the
-session's sends raises `StreamResumeExhaustedError` with a checkpoint; a wait longer than allowed or than the session
-has left raises the interruption instead. Decode, size, remote, and idle failures, the declared end, and closing never
-reconnect, and events the server sends again after a reopen are delivered again.
+session's sends raises `StreamResumeExhaustedError` with a checkpoint; a wait whose backoff cap or `retry` time is
+longer than allowed, or a wait longer than the session has left, raises the interruption instead. Decode, size, remote,
+idle, and deadline failures, the declared end, and closing never reconnect, and events the server sends again after a
+reopen are delivered again.
 """
 
 

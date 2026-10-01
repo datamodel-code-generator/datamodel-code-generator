@@ -1436,6 +1436,25 @@ class _Core(Generic[AdapterT, HandleT]):
         """Return whether a call's effective options, its own, a view's, or the client's, fix an idempotency key."""
         return isinstance(self._call_settings(options, None).idempotency_key, IdempotencyKey)
 
+    def patches(self, options: RequestOptions | None) -> tuple[tuple[HeaderPatch, ...], tuple[QueryPatch, ...]]:
+        """Return the header and query patches of a call's effective options: the client's, a view's, and its own."""
+        settings = self._call_settings(options, None)
+        return settings.headers, settings.query
+
+    def reconnects_after(self, error: TransportError, options: RequestOptions | None, operation_id: str | None) -> bool:
+        """Return whether a transport failure reading a stream's body is one an automatic reconnection may follow.
+
+        It is a read-phase failure the shared retry classification retries. A read timeout qualifies only when the
+        call's own read timeout set its cap, not the stream's idle limit, which wins a tie.
+        """
+        if error.phase != "read" or transport_retry_reason(error, AttemptTrace()) is None:
+            return False
+        if not isinstance(error, PhaseTimeoutError):
+            return True
+        settings = self._call_settings(options, operation_id)
+        read, idle = settings.stream_read_timeout, settings.stream_idle_timeout
+        return read is not None and (idle is None or read < idle)
+
     def waiting(
         self, options: RequestOptions | None, session: OperationSession, operation_id: str | None
     ) -> LogicalCallContext:

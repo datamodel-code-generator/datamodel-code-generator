@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 from functools import partial
 from typing import TYPE_CHECKING, Any, Final
 
+import httpx2
+
 from tests.data.python.client_runtime import arecord, describe, record, run
 from tests.data.python.client_streams import _AsyncEnds, _Ends, _event, _Harness, _Probed
 from tests.data.python.client_transports import Adapter, AsyncAdapter, AsyncResponse, Response, Stop
@@ -163,6 +165,7 @@ def stream_resume(package: ModuleType, lines: list[str]) -> None:
         _rooms(resumes, api)
         _records(resumes, api)
         _ticks(resumes, api)
+        _unencodable(resumes, api)
         _refusals(resumes, api)
     run(lambda: _async_resume(package, lines))
 
@@ -230,6 +233,11 @@ def _checkpoints(resumes: _Resumes, api: Any) -> None:
     record(lines, "open patching the cursor header", lambda: helper.open(options=headers))
     query = harness.options.RequestOptions(query=(("after", "7"),))
     record(lines, "open patching the cursor query", lambda: api.protocols.records.all.open(options=query))
+    record(
+        lines, "open through a view patching the cursor header", api.with_options(headers).protocols.events.live.open
+    )
+    with resumes_client(resumes, harness.options.ClientOptions(headers=(("Last-Event-ID", "7"),))) as patched:
+        record(lines, "open on a client patching the cursor header", patched.protocols.events.live.open)
     fixed = harness.options.RequestOptions(idempotency_key=harness.options.IdempotencyKey.new())
     record(lines, "open fixing an idempotency key", lambda: helper.open(options=fixed))
     ok = harness.options.RequestOptions(headers=(("x-trace", "1"),), query=(("trace", "1"),))
@@ -262,6 +270,11 @@ def _reconnects(resumes: _Resumes, api: Any) -> None:
     resumes.reply(b'retry: 1\nid: 1\ndata: {"text": "a"}\n\n', cut)
     resumes.reply(*_events('id: 2\ndata: {"text": "b"}\n\n'))
     _drained(lines, "reopened after the reconnection time", helper.open(stream_options=resumes.reconnect))
+    read = harness.options.RequestOptions(timeout=harness.options.TimeoutOptions(read=5.0))
+    resumes.reply(b'id: 1\ndata: {"text": "a"}\n\n', harness.idle())
+    resumes.reply(*_events('id: 2\ndata: {"text": "b"}\n\n'))
+    stream = helper.open(options=read, stream_options=resumes.reconnect)
+    _drained(lines, "reopened after the call's own read timeout", stream)
 
 
 def _ineligible(resumes: _Resumes, api: Any) -> None:
@@ -276,6 +289,19 @@ def _ineligible(resumes: _Resumes, api: Any) -> None:
     _drained(lines, "line over its limit", helper.open(stream_options=small))
     resumes.reply(first, harness.idle())
     _drained(lines, "idle read", helper.open(stream_options=resumes.reconnect))
+    level = harness.options.RequestOptions(timeout=harness.options.TimeoutOptions(read=60.0))
+    resumes.reply(first, harness.idle())
+    _drained(
+        lines, "read timeout tied with the idle limit", helper.open(options=level, stream_options=resumes.reconnect)
+    )
+    errors = harness.errors
+    undecodable = errors.TransportError(
+        delivery_state=errors.DeliveryState.RESPONSE_STARTED, phase="read", cause=httpx2.DecodingError("bad coding")
+    )
+    resumes.reply(first, undecodable)
+    _drained(lines, "read failure classified as not retryable", helper.open(stream_options=resumes.reconnect))
+    resumes.reply(first, errors.TransportError(delivery_state=errors.DeliveryState.RESPONSE_STARTED, phase="write"))
+    _drained(lines, "failure outside the read phase", helper.open(stream_options=resumes.reconnect))
     resumes.reply(first, Stop())
     stream = helper.open(stream_options=resumes.reconnect)
     next(stream)
@@ -333,6 +359,11 @@ def _budgets(resumes: _Resumes, api: Any) -> None:
     resumes.redirect()
     stream = helper.open(stream_options=resumes.reconnect, options=resumes.redirects(), session_options=two_sends)
     _drained(lines, "reopen redirected past the sends", stream)
+    resumes.reply(b'event: created\nid: 1\ndata: {"id": "1"}\n\n', cut, headers=_TRACKED)
+    resumes.redirect()
+    tracked = api.protocols.events.tracked
+    stream = tracked.open(stream_options=resumes.reconnect, options=resumes.redirects(), session_options=two_sends)
+    _refused(lines, "another reopen operation redirected past the sends", stream)
 
 
 def _waits(resumes: _Resumes, api: Any) -> None:
@@ -346,6 +377,11 @@ def _waits(resumes: _Resumes, api: Any) -> None:
     short = harness.options.SessionOptions(total_timeout=30.0)
     resumes.reply(b'retry: 70000\nid: 1\ndata: {"text": "a"}\n\n', cut)
     _drained(lines, "reconnection time past the deadline", helper.open(stream_options=patient, session_options=short))
+    options = harness.options
+    slow = options.RequestOptions(retry=options.RetryOptions(initial_delay=10.0, max_delay=10.0))
+    hasty = harness.protocols.StreamOptions(reconnect=True, max_reconnect_wait=5.0)
+    resumes.reply(b'id: 1\ndata: {"text": "a"}\n\n', cut)
+    _drained(lines, "backoff cap over the allowed wait", helper.open(options=slow, stream_options=hasty))
 
 
 def _tracked(resumes: _Resumes, api: Any) -> None:
@@ -450,6 +486,37 @@ def _ticks(resumes: _Resumes, api: Any) -> None:
         _drained(lines, label, helper.open(body=query))
 
 
+def _unencodable(resumes: _Resumes, api: Any) -> None:
+    """Refuse a reconnection after, and a checkpoint of, a cursor the reopen request cannot encode, keeping no state."""
+    lines, harness = resumes.lines, resumes.harness
+    lines.append("cursors a reopen cannot encode")
+    resumes.reply(b'id: 5 \ndata: {"text": "a"}\n\n', harness.interrupted())
+    stream = api.protocols.events.live.open(stream_options=resumes.reconnect)
+    _refused(lines, "event ID ending in a space", stream)
+    record(lines, "checkpoint", stream.checkpoint)
+    resumes.reply(b'event: other\ndata: {"id": {"a": 1}}\n\n', harness.interrupted())
+    stream = api.protocols.topics.marks.open(stream_options=resumes.reconnect)
+    _refused(lines, "object body cursor written to a query parameter", stream)
+    record(lines, "checkpoint", stream.checkpoint)
+
+
+def _refused(lines: list[str], label: str, stream: Iterable[Any]) -> None:
+    """Drain a stream whose reconnection is refused, reporting the refusal's operation, cause, and context."""
+    lines.append(f"  {label}")
+    try:
+        for event in stream:
+            lines.append(f"    {_event(event)}")
+    except Exception as error:  # noqa: BLE001
+        _origins(lines, error)
+
+
+def _origins(lines: list[str], error: BaseException) -> None:
+    """Report a failure, its operation, its cause, and its context."""
+    _kept(lines, error)
+    cause, context = type(getattr(error, "cause", None)).__name__, type(error.__context__).__name__
+    lines.append(f"    operation {getattr(error, 'operation', None)!r} cause {cause} context {context}")
+
+
 def _refusals(resumes: _Resumes, api: Any) -> None:
     """Refuse a state that is not one, another helper's, made under other security, or that does not fit."""
     lines, harness, helper = resumes.lines, resumes.harness, api.protocols.events.live
@@ -479,6 +546,7 @@ def _refusals(resumes: _Resumes, api: Any) -> None:
         ("bound values of another count", _replaced(state, bound=["x"])),
         ("a saved cookie", _replaced(state, arguments=[[], [], ["c"]])),
         ("negative sequence", _replaced(state, sequence=-1)),
+        ("retry time over its limit", _replaced(state, retry_ms=10**18)),
     ):
         record(lines, f"resume {label}", lambda saved=saved: helper.resume(_crafted(harness, state, saved)))
     record(lines, "resume a payload", lambda: helper.resume(_crafted(harness, state, payload=b"x")))
@@ -561,6 +629,13 @@ async def _async_resume(package: ModuleType, lines: list[str]) -> None:
         redirects = resumes.redirects()
         stream = await helper.open(stream_options=resumes.reconnect, options=redirects, session_options=two_sends)
         await _adrained(lines, "async reopen redirected past the sends", stream)
+        resumes.reply(b'id: 5 \ndata: {"text": "a"}\n\n', cut)
+        stream = await helper.open(stream_options=resumes.reconnect)
+        try:
+            await anext(stream)
+            await anext(stream)
+        except Exception as error:  # noqa: BLE001
+            _origins(lines, error)
         resumes.reply(b'id: 1\ndata: {"text": "a"}\n\n', Stop())
         stream = await helper.open(stream_options=resumes.reconnect)
         await anext(stream)

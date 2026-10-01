@@ -164,3 +164,24 @@ STREAM_5: Final[EventPlan[_dcg_type_3 | UnknownEvent]] = EventPlan(
         reconnect_on=('incomplete_eof',),
     ),
 )
+
+
+STREAM_6: Final[EventPlan[_dcg_type_1 | UnknownEvent]] = EventPlan(
+    helper_id='topics.marks',
+    operation=OperationRef(pointer='/paths/~1events/get'),
+    call=_operations.OPERATION_0,
+    media='text/event-stream',
+    fingerprint='229677d4f9f10623e0aa9378cbf121c4f7520d62042812013b68f342dbdd3e35',
+    routes=(
+        ('created', native_value(model_bindings.codec_26, model_bindings.CONTEXT_26)),
+    ),
+    unknown=unknown_event,
+    resume=StreamResumePlan(
+        operation=OperationRef(pointer='/paths/~1events/get'),
+        call=_operations.OPERATION_0,
+        media='text/event-stream',
+        write=ParameterTarget(location='query', name='topic'),
+        own=True,
+        cursor=BodySelector(pointer='/id'),
+    ),
+)

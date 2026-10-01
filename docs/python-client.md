@@ -1442,9 +1442,14 @@ that, and while another step runs, it raises `ProtocolStateError`, and on a stre
 `ProtocolConfigurationError` with the condition `missing_metadata`. It saves the cursor, the number of events dispatched
 and of reconnections, the last valid `retry` time, the bindings' values, and, when the reopen operation is the helper's
 own, the wire values of the caller's first request, never events, responses, the session, the call's options, or what
-its auth adds. A call that gives a cookie, a credential header, or a security scheme's query parameter cannot be
-checkpointed and raises `ProtocolConfigurationError` with the condition `wrong_capability`. The state is bound to the
-helper's fingerprint and to the security of the reopen operation, and exports as pagination and polling checkpoints do.
+its auth adds; the caller's value of an optional parameter the reopen writes, such as its own `Last-Event-ID`, is left
+out. A call that gives a cookie, a credential header, or a security scheme's query parameter cannot be checkpointed and
+raises `ProtocolConfigurationError` with the condition `wrong_capability`. A cursor the reopen request cannot encode,
+such as an event ID ending in a space or an object written to a query parameter, raises `ProtocolDataError` with the
+condition `value` and the cursor's selector, or for an event ID the target it is written to, as `location`, from
+`checkpoint()` and from a reconnection, which keeps no `resume_state` and has the interruption as its context. The state
+is bound to the helper's fingerprint and to the security of the reopen operation, and exports as pagination and polling
+checkpoints do.
 
 `resume` creates a session of its own and sends the reopen at once: the helper's own operation repeats the caller's
 first request, another one sends only what is written, each binding's value first and then the cursor, whose
@@ -1456,19 +1461,22 @@ helper's state, one made under other security, an expired one, and one that does
 does not encode; a saved dot segment for a path parameter raises `ProtocolDataError` as a server's would.
 
 With `StreamOptions(reconnect=True)`, a stream that has delivered a cursor reopens itself within the same step after a
-transport failure reading the body, and after a cut frame or an end before the declared completion only when
-`reconnect_on` lists `incomplete_eof`. Each reopen is one more child call of the stream's session: its own retries,
-Retry-After included, follow the call's retry options, and its sends count toward the session's. Before a reopen the
-stream waits the retry backoff, and at least the last `retry` time the server sent, in the session's deadline; a wait
-longer than `max_reconnect_wait`, or not shorter than the session's remaining time, is not begun and raises the
-interruption with its `resume_state`. Running out of reconnections raises `StreamResumeExhaustedError` with the kind
-`reconnects`, and out of the session's sends with the kind `network_sends`, each with a checkpoint as `resume_state`
-and never as a normal end. A decode, size, remote, idle, or deadline failure, the declared end, a reopen answered with
-an error, and closing never reconnect. Events the server sends again after a reopen are delivered again, numbered on:
-nothing removes duplicates. Every open and reopen reports its own hook events, so an interrupted response reports
-`stream_end` with the outcome `error` before its reopen starts. A `StreamInterruptedError` that does not reconnect
-keeps a checkpoint as `resume_state`, or None before any cursor, and call options of a resuming helper must not patch a
-header or query parameter its reopen writes or fix an idempotency key.
+read-phase transport failure the shared retry classification retries, or a read timeout the call's own
+`TimeoutOptions(read=...)` set rather than the stream's idle limit, which wins a tie; after a cut frame or an end before
+the declared completion it does so only when `reconnect_on` lists `incomplete_eof`. Each reopen is one more child call
+of the stream's session: its own retries, Retry-After included, follow the call's retry options, and its sends count
+toward the session's. Before a reopen the stream waits the retry backoff, and at least the last `retry` time the server
+sent, in the session's deadline. When the backoff's cap or that `retry` time is longer than `max_reconnect_wait`,
+whatever the jitter draws below the cap, or the wait is not shorter than the session's remaining time, the wait is not
+begun and the interruption is raised with its `resume_state`. Running out of reconnections raises
+`StreamResumeExhaustedError` with the kind `reconnects`, and out of the session's sends with the kind `network_sends`,
+each with a checkpoint as `resume_state` and never as a normal end. A decode, size, remote, idle, or deadline failure,
+the declared end, a reopen answered with an error, and closing never reconnect. Events the server sends again after a
+reopen are delivered again, numbered on: nothing removes duplicates. Every open and reopen reports its own hook events,
+so an interrupted response reports `stream_end` with the outcome `error` before its reopen starts. A
+`StreamInterruptedError` that does not reconnect keeps a checkpoint as `resume_state`, or None before any cursor. No
+options of a resuming helper, the client's, a view's, or the call's, may patch a header or query parameter its reopen
+writes or fix an idempotency key.
 
 ### Stream generation checks
 

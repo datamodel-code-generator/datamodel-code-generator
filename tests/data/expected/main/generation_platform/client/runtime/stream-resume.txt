@@ -3,14 +3,14 @@ event ID cursors
   > GET https://api.example.com/events?topic=news last-event-id='0'
   checkpoint before any event ! ProtocolStateError: ProtocolStateError(state='uncursored', action='checkpoint') [] protocol_state_error
   1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
-  after one event saved {"arguments": [["news"], ["0"], []], "body": [], "bound": [], "cursor": "1", "reconnects": 0, "retry_ms": null, "sequence": 1} expires_at=None
+  after one event saved {"arguments": [["news"], [], []], "body": [], "bound": [], "cursor": "1", "reconnects": 0, "retry_ms": null, "sequence": 1} expires_at=None
   2 message id='1' retry=None data=Message{'text': 'b'} raw='{"text": "b"}'
-  after an event without an ID saved {"arguments": [["news"], ["0"], []], "body": [], "bound": [], "cursor": "1", "reconnects": 0, "retry_ms": null, "sequence": 2} expires_at=None
+  after an event without an ID saved {"arguments": [["news"], [], []], "body": [], "bound": [], "cursor": "1", "reconnects": 0, "retry_ms": null, "sequence": 2} expires_at=None
   rest
     3 message id='2' retry=2500 data=Message{'text': 'c'} raw='{"text": "c"}'
   < closed
     end
-  after the end saved {"arguments": [["news"], ["0"], []], "body": [], "bound": [], "cursor": "2", "reconnects": 0, "retry_ms": 2500, "sequence": 3} expires_at=None
+  after the end saved {"arguments": [["news"], [], []], "body": [], "bound": [], "cursor": "2", "reconnects": 0, "retry_ms": 2500, "sequence": 3} expires_at=None
   state repr ResumeState(version=1)
   > GET https://api.example.com/events?topic=news last-event-id='2'
   resumed response 200 progress {'reconnects': 0, 'network_send_count': 1, 'network_send_budget_used': 1}
@@ -19,7 +19,7 @@ event ID cursors
     5 message id=None retry=2500 data=Message{'text': 'cleared'} raw='{"text": "cleared"}'
   < closed
     end
-  cleared saved {"arguments": [["news"], ["0"], []], "body": [], "bound": [], "cursor": null, "reconnects": 0, "retry_ms": 2500, "sequence": 5} expires_at=None
+  cleared saved {"arguments": [["news"], [], []], "body": [], "bound": [], "cursor": null, "reconnects": 0, "retry_ms": 2500, "sequence": 5} expires_at=None
   > GET https://api.example.com/events?topic=news last-event-id=None
   resumed without a cursor
     6 message id='9' retry=2500 data=Message{'text': 'fresh'} raw='{"text": "fresh"}'
@@ -51,6 +51,8 @@ checkpoints
   < closed
   open patching the cursor header ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'headers', 'last-event-id'), condition='invalid_value'] protocol_configuration_error
   open patching the cursor query ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'query', 'after'), condition='invalid_value'] protocol_configuration_error
+  open through a view patching the cursor header ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'headers', 'last-event-id'), condition='invalid_value'] protocol_configuration_error
+  open on a client patching the cursor header ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'headers', 'Last-Event-ID'), condition='invalid_value'] protocol_configuration_error
   open fixing an idempotency key ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'idempotency_key'), condition='invalid_value'] protocol_configuration_error
   > GET https://api.example.com/events?trace=1 last-event-id=None
   open patching other parameters
@@ -99,6 +101,14 @@ reconnections
     2 message id='2' retry=1 data=Message{'text': 'b'} raw='{"text": "b"}'
   < closed
     end
+  > GET https://api.example.com/events last-event-id=None
+  reopened after the call's own read timeout
+    1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+  > GET https://api.example.com/events last-event-id='1'
+    2 message id='2' retry=None data=Message{'text': 'b'} raw='{"text": "b"}'
+  < closed
+    end
 failures that never reconnect
   > GET https://api.example.com/events last-event-id=None
   undecodable event
@@ -115,6 +125,21 @@ failures that never reconnect
     1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
     ! PhaseTimeoutError: PhaseTimeoutError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=1.0) [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout_error resume_state=NoneType
+  > GET https://api.example.com/events last-event-id=None
+  read timeout tied with the idle limit
+    1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    ! PhaseTimeoutError: PhaseTimeoutError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=1.0) [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout_error resume_state=NoneType
+  > GET https://api.example.com/events last-event-id=None
+  read failure classified as not retryable
+    1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamEvents', call_id='<call>', condition='transport', sequence=1) [operation_id='streamEvents', condition='transport', cause=TransportError()] stream_interrupted_error resume_state=ResumeState
+  > GET https://api.example.com/events last-event-id=None
+  failure outside the read phase
+    1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamEvents', call_id='<call>', condition='transport', sequence=1) [operation_id='streamEvents', condition='transport', cause=TransportError()] stream_interrupted_error resume_state=ResumeState
   > GET https://api.example.com/events last-event-id=None
   < closed
   stopped ! Stop then ProtocolStateError: ProtocolStateError(state='failed', action='next') [] protocol_state_error
@@ -161,6 +186,14 @@ budgets
   > GET https://api.example.com/events last-event-id='1'
   < closed
     ! StreamResumeExhaustedError: StreamResumeExhaustedError(operation_id='streamEvents', call_id='<call>', kind='network_sends', limit=2) [operation_id='streamEvents', kind='network_sends', limit=2, cause=BudgetExceededError()] stream_resume_exhausted_error resume_state=ResumeState
+  > GET https://api.example.com/events last-event-id=None
+  another reopen operation redirected past the sends
+    1 created id='1' retry=None data=Created{'id': '1'} raw='{"id": "1"}'
+  < closed
+  > GET https://api.example.com/streams/s1?token=t1&mode=resume last-event-id='1'
+  < closed
+    ! StreamResumeExhaustedError: StreamResumeExhaustedError(operation_id='reopenStream', call_id='<call>', kind='network_sends', limit=2) [operation_id='reopenStream', kind='network_sends', limit=2, cause=BudgetExceededError()] stream_resume_exhausted_error resume_state=ResumeState
+    operation OperationRef(pointer='/paths/~1streams~1{streamId}/get', document=None) cause BudgetExceededError context BudgetExceededError
 waits
   > GET https://api.example.com/events last-event-id=None
   reconnection time over the allowed wait
@@ -170,6 +203,11 @@ waits
   > GET https://api.example.com/events last-event-id=None
   reconnection time past the deadline
     1 message id='1' retry=70000 data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamEvents', call_id='<call>', condition='transport', sequence=1) [operation_id='streamEvents', condition='transport', cause=TransportError()] stream_interrupted_error resume_state=ResumeState
+  > GET https://api.example.com/events last-event-id=None
+  backoff cap over the allowed wait
+    1 message id='1' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
     ! StreamInterruptedError: StreamInterruptedError(operation_id='streamEvents', call_id='<call>', condition='transport', sequence=1) [operation_id='streamEvents', condition='transport', cause=TransportError()] stream_interrupted_error resume_state=ResumeState
 another reopen operation
@@ -296,6 +334,21 @@ SSE body cursors
   unknown event that is not JSON
   < closed
     ! StreamDecodeError: StreamDecodeError(operation_id='streamFeed', call_id='<call>', condition='missing', sequence=1, truncated=False) [operation_id='streamFeed', condition='missing', location=BodySelector(pointer='/seq'), truncated=False] stream_decode_error resume_state=NoneType
+cursors a reopen cannot encode
+  > GET https://api.example.com/events last-event-id=None
+  event ID ending in a space
+    1 message id='5 ' retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    ! ProtocolDataError: ProtocolDataError(operation_id='streamEvents', condition='value') [operation_id='streamEvents', condition='value', location=ParameterTarget(location='header', name='Last-Event-ID'), cause=RequestEncodingError()] protocol_data_error resume_state=NoneType
+    operation OperationRef(pointer='/paths/~1events/get', document=None) cause RequestEncodingError context StreamInterruptedError
+  checkpoint ! ProtocolDataError: ProtocolDataError(operation_id='streamEvents', condition='value') [operation_id='streamEvents', condition='value', location=ParameterTarget(location='header', name='Last-Event-ID'), cause=RequestEncodingError()] protocol_data_error
+  > GET https://api.example.com/events last-event-id=None
+  object body cursor written to a query parameter
+    1 other id=None retry=None data=UnknownEvent{'discriminator': 'other', 'raw_data': '{"id": {"a": 1}}'} raw='{"id": {"a": 1}}'
+  < closed
+    ! ProtocolDataError: ProtocolDataError(operation_id='streamEvents', condition='value') [operation_id='streamEvents', condition='value', location=BodySelector(pointer='/id'), cause=RequestEncodingError()] protocol_data_error resume_state=NoneType
+    operation OperationRef(pointer='/paths/~1events/get', document=None) cause RequestEncodingError context StreamInterruptedError
+  checkpoint ! ProtocolDataError: ProtocolDataError(operation_id='streamEvents', condition='value') [operation_id='streamEvents', condition='value', location=BodySelector(pointer='/id'), cause=RequestEncodingError()] protocol_data_error
 refusals
   > GET https://api.example.com/events?topic=news last-event-id=None
   < closed
@@ -310,6 +363,7 @@ refusals
   resume bound values of another count ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   resume a saved cookie ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   resume negative sequence ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  resume retry time over its limit ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   resume a payload ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   retry of NDJSON ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   object cursor ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
@@ -362,6 +416,10 @@ asyncio
   > GET https://api.example.com/events last-event-id='1'
   < closed
     ! StreamResumeExhaustedError: StreamResumeExhaustedError(operation_id='streamEvents', call_id='<call>', kind='network_sends', limit=2) [operation_id='streamEvents', kind='network_sends', limit=2, cause=BudgetExceededError()] stream_resume_exhausted_error resume_state=ResumeState
+  > GET https://api.example.com/events last-event-id=None
+  < closed
+    ! ProtocolDataError: ProtocolDataError(operation_id='streamEvents', condition='value') [operation_id='streamEvents', condition='value', location=ParameterTarget(location='header', name='Last-Event-ID'), cause=RequestEncodingError()] protocol_data_error resume_state=NoneType
+    operation OperationRef(pointer='/paths/~1events/get', document=None) cause RequestEncodingError context StreamInterruptedError
   > GET https://api.example.com/events last-event-id=None
   < closed
   async stopped ! Stop

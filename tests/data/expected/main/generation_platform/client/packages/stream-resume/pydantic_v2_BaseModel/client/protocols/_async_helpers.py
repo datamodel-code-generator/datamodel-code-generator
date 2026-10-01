@@ -59,6 +59,11 @@ class AsyncProtocolHelpers:
         """The feed protocol helpers."""
         return AsyncFeedProtocols(self._core)
 
+    @cached_property
+    def topics(self) -> AsyncTopicsProtocols:
+        """The topics protocol helpers."""
+        return AsyncTopicsProtocols(self._core)
+
 
 class AsyncEventsProtocols:
     """The events protocol helpers."""
@@ -120,6 +125,19 @@ class AsyncFeedProtocols:
     def ticks(self) -> AsyncFeedTicksSse:
         """The feed.ticks SSE helper."""
         return AsyncFeedTicksSse(self._core)
+
+
+class AsyncTopicsProtocols:
+    """The topics protocol helpers."""
+
+    def __init__(self, core: AsyncClientCore) -> None:
+        """Keep the client core its helpers send through."""
+        self._core = core
+
+    @cached_property
+    def marks(self) -> AsyncTopicsMarksSse:
+        """The topics.marks SSE helper."""
+        return AsyncTopicsMarksSse(self._core)
 
 
 class AsyncEventsLiveSse:
@@ -372,6 +390,52 @@ class AsyncFeedTicksSse:
         return await aresume_events(
             self._core,
             _plans.STREAM_5,
+            state,
+            stream_options=stream_options,
+            options=options,
+            session_options=session_options,
+        )
+
+
+class AsyncTopicsMarksSse:
+    """The topics.marks SSE helper of GET /events."""
+
+    def __init__(self, core: AsyncClientCore) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+    async def open(
+        self,
+        *,
+        topic: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        last_event_id: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        session: _dcg_type_2 | ModelValue[_dcg_type_2] | Unset = UNSET,
+        stream_options: StreamOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> AsyncEventStream[_dcg_type_4 | UnknownEvent]:
+        """Open the event stream of GET /events, returning once its response is a declared success."""
+        return await aopen_events(
+            self._core,
+            _plans.STREAM_6,
+            (topic, last_event_id, session),
+            stream_options=stream_options,
+            options=options,
+            session_options=session_options,
+        )
+
+    async def resume(
+        self,
+        state: ResumeState,
+        *,
+        stream_options: StreamOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> AsyncEventStream[_dcg_type_4 | UnknownEvent]:
+        """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
+        return await aresume_events(
+            self._core,
+            _plans.STREAM_6,
             state,
             stream_options=stream_options,
             options=options,

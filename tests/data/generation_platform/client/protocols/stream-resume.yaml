@@ -90,3 +90,21 @@ helpers:
       reopen_operation: /paths/~1feed/post
       delivery: at_least_once
       reconnect_on: [incomplete_eof]
+  topics.marks:
+    kind: sse
+    operation: /paths/~1events/get
+    media: text/event-stream
+    event_schema:
+      discriminator: {from: event_type}
+      mapping:
+        created: {pointer: /components/schemas/Created}
+    unknown: raw
+    completion: {kind: eof}
+    resume:
+      enabled: true
+      cursor: {from: body, pointer: /id}
+      missing: inherit
+      'null': clear
+      write: {in: query, name: topic}
+      reopen_operation: /paths/~1events/get
+      delivery: at_least_once
