@@ -61,7 +61,7 @@ model_codecs/wire.py: .errors, __future__, collections.abc, dataclasses, decimal
 protocols/__init__.py: -
 protocols/adapters.py: ..client.errors, .webhook_events, .webhooks, __future__, collections.abc, dataclasses, datetime, types, typing, typing_extensions
 protocols/cache.py: ..client.bodies, ..client.client, ..client.errors, ..client.media, ..client.operations, ..client.options, ..client.responses, ..client.retry, ..client.transports, ..model_codecs.selectors, ..model_codecs.unset, ..model_codecs.wire, .caches, .errors, .options, .records, .references, __future__, collections.abc, dataclasses, datetime, hashlib, re, time, typing, typing_extensions, uuid
-protocols/cache_stores.py: ..client.errors, ..client.responses, .caches, .options, __future__, collections, datetime, hashlib, hmac, secrets, threading, typing
+protocols/cache_stores.py: ..client.errors, ..client.responses, .caches, .options, __future__, collections, hashlib, heapq, hmac, math, secrets, threading, time, typing
 protocols/caches.py: ..client.responses, __future__, dataclasses, datetime, math, typing, typing_extensions
 protocols/errors.py: ..client.errors, ..client.responses, ..model_codecs.unset, .caches, .records, .references, .resume, __future__, collections.abc, types, typing, typing_extensions
 protocols/links.py: __future__, collections.abc, re, string, typing
