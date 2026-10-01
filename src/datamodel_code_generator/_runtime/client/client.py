@@ -761,7 +761,6 @@ def _draw() -> float:
 
 
 _EMPTY_ORIGINS: Final[frozenset[Origin]] = frozenset()
-_EMPTY_NAMES: Final[frozenset[str]] = frozenset()
 
 
 def _uncredentialed(
@@ -1288,9 +1287,16 @@ class _SessionCall(_Call):
         self.url = request.url
         return request
 
-    def managed_query(self) -> frozenset[str]:
-        """Return the query fields the call's auth places itself, none without auth."""
-        return _EMPTY_NAMES if (auth := self.auth) is None else auth.bound.managed_query
+    def followed_query(self, schemes: tuple[SecuritySchemeEntry, ...]) -> frozenset[str]:
+        """Return the query fields a followed URL is sent and saved without, whatever its origin.
+
+        They are the positions of the package's declared security schemes and the fields the call's auth places, which
+        the auth adds again itself.
+        """
+        from .security import secret_names  # noqa: PLC0415 - Only a followed URL needs the schemes.
+
+        query = secret_names(schemes)[1]
+        return query if (auth := self.auth) is None else query | auth.bound.managed_query
 
     def restart(self, original: PreparedRequest[EncodedAttempt]) -> frozenset[tuple[str, str]]:
         """Begin the next resource candidate at the original URL."""
@@ -1884,8 +1890,9 @@ class _Core(Generic[AdapterT, HandleT]):
     ) -> tuple[PreparedRequest[EncodedAttempt], object]:
         """Return a page's request, sent to the URL a server gave when the walk follows one.
 
-        A followed URL is sent without the auth's own query fields it repeats, and to another origin than the server's
-        without the credential and cookie headers, which only a provider authorized for that origin adds again.
+        A followed URL is sent without the query fields of the package's security schemes and the auth's own, which
+        the auth adds again, and to another origin than the server's without the credential and cookie headers, which
+        only a provider authorized for that origin adds again.
         """
         operation = call.operation
         assert operation is not None
@@ -1904,10 +1911,7 @@ class _Core(Generic[AdapterT, HandleT]):
         if url is None:
             return prepared, deferred
         server = call.server_origin = request_origin(self._base(operation, call.settings))
-        if (auth := call.auth) is not None:
-            from .auth_policy import strip_managed_query  # noqa: PLC0415
-
-            url = strip_managed_query(url, auth.bound)
+        url = strip_query(url, call.followed_query(self._shared.security_schemes))
         headers = prepared.headers
         if request_origin(url) != server:
             items, url = _uncredentialed(headers.items(), url, self._shared.security_schemes)
@@ -2455,7 +2459,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
 
         The page reads at most `max_page_bytes` of its body, and its arguments, body, and any URL a server gave are
         taken when the call prepares; `body` is the caller's. What the page gives is built from its decoded body
-        and its bytes, with the URL of the hop that returned it and the query fields the call's auth manages.
+        and its bytes, with the URL of the hop that returned it and the query fields a followed URL is without.
         """
         settings = self._call_settings(options, operation.operation_id)
         if page_limited := (limit := settings.max_response_bytes) is None or max_page_bytes <= limit:
@@ -2469,7 +2473,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             received = self._read(response, info, decoder, call)
             call.check("decode")
             data, wire, content = _page(decoder, info, received, call, plan, page_limited=page_limited)
-            result = build(data, wire, content, info, call.url, call.managed_query())
+            result = build(data, wire, content, info, call.url, call.followed_query(self._shared.security_schemes))
             call.check("decode")
             return Response(data=data, info=info), result
 
@@ -3293,7 +3297,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
 
         The page reads at most `max_page_bytes` of its body, and its arguments, body, and any URL a server gave are
         taken when the call prepares; `body` is the caller's. What the page gives is built from its decoded body
-        and its bytes, with the URL of the hop that returned it and the query fields the call's auth manages.
+        and its bytes, with the URL of the hop that returned it and the query fields a followed URL is without.
         """
         settings = self._call_settings(options, operation.operation_id)
         if page_limited := (limit := settings.max_response_bytes) is None or max_page_bytes <= limit:
@@ -3308,7 +3312,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             received = await self._read(response, info, decoder, call)
             call.check("decode")
             data, wire, content = _page(decoder, info, received, call, plan, page_limited=page_limited)
-            result = build(data, wire, content, info, call.url, call.managed_query())
+            result = build(data, wire, content, info, call.url, call.followed_query(self._shared.security_schemes))
             call.check("decode")
             return Response(data=data, info=info), result
 

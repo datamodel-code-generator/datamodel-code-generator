@@ -628,14 +628,14 @@ def _followed(  # noqa: PLR0913, PLR0917
     info: ResponseInfo | None,
     limit: int,
     origins: frozenset[Origin],
-    managed: frozenset[str],
+    stripped: frozenset[str],
 ) -> str:
     """Return the absolute URL of a server's next-page reference, resolved against the URL that returned the page.
 
     The reference must be an RFC 3986 URI reference without a fragment, whose brackets enclose only an IP literal
     host, and give an HTTP or HTTPS URL without user information at one of the origins. The URL is returned without
-    the query fields the auth manages, which it places itself, and must stay within 8 KiB of UTF-8, or the cursor size
-    limit when that is smaller.
+    the stripped query fields, those of the package's security schemes and its auth, and must stay within 8 KiB of
+    UTF-8, or the cursor size limit when that is smaller.
     """
     from ..client.urls import URLValidationError, redirect_target, strip_query  # noqa: PLC0415 - Parse only here.
 
@@ -649,7 +649,7 @@ def _followed(  # noqa: PLR0913, PLR0917
         raise _data_error(plan, info, "value", read) from None
     if target.origin not in origins:
         raise _data_error(plan, info, "value", read)
-    followed = strip_query(target.url, managed)
+    followed = strip_query(target.url, stripped)
     if (size := len(followed.encode())) > (limit := min(limit, _MAX_URL_BYTES)):
         raise _size_error(plan, info, "cursor", limit, size)
     return followed
@@ -959,7 +959,7 @@ class _Walk(Generic[T, P]):
         return tuple(values)
 
     def follow(
-        self, rule: NextUrlPlan | LinkPlan, wire: WireValue, info: ResponseInfo, url: str, managed: frozenset[str]
+        self, rule: NextUrlPlan | LinkPlan, wire: WireValue, info: ResponseInfo, url: str, stripped: frozenset[str]
     ) -> str | Missing:
         """Return the absolute URL of the page after a page, or MISSING when the page is the last.
 
@@ -970,23 +970,23 @@ class _Walk(Generic[T, P]):
         if self.link is None:
             from ..client.urls import absolute_target, strip_query  # noqa: PLC0415 - Only a followed URL is parsed.
 
-            first = strip_query(absolute_target(url).url, managed)
+            first = strip_query(absolute_target(url).url, stripped)
             self.seed = sha256(continuation_json(Continuation(kind=rule.kind, value=first))).digest()
         reference = _linked(plan, rule, info, limit) if isinstance(rule, LinkPlan) else _ended(plan, rule, wire, info)
         if isinstance(reference, Missing):
             return reference
         if not isinstance(reference, str):
             raise _data_error(plan, info, "type", rule.read)
-        return _followed(plan, rule.read, reference, url, info, limit, self.origins, managed)
+        return _followed(plan, rule.read, reference, url, info, limit, self.origins, stripped)
 
     def build(  # noqa: PLR0913, PLR0917
-        self, data: P, wire: WireValue, content: bytes, info: ResponseInfo, url: str, managed: frozenset[str]
+        self, data: P, wire: WireValue, content: bytes, info: ResponseInfo, url: str, stripped: frozenset[str]
     ) -> tuple[Page[T, P], WireValue | Missing, tuple[WireValue, ...], bytes]:
         """Return a decoded page, what the next request writes, its bindings' values, and the page's body.
 
         The items are checked in the wire value before the page's accessor reads them from the decoded one; a value of
         another type fails its response's validation first, in every mode. What the next request writes is the cursor
-        or position, or the URL it follows without the query fields the auth manages, MISSING after the last page.
+        or position, or the URL it follows without the stripped query fields, MISSING after the last page.
         The bindings are read only when a page follows, and a dot segment read for a path parameter is refused.
         """
         plan = self.plan
@@ -1004,7 +1004,7 @@ class _Walk(Generic[T, P]):
         elif isinstance(rule, CountPlan):
             cursor = self.advance(rule, len(items), wire, info)
         else:
-            cursor = self.follow(rule, wire, info, url, managed)
+            cursor = self.follow(rule, wire, info, url, stripped)
         if isinstance(cursor, Missing):
             return Page(items=items, data=data, response=info), cursor, (), content
         bound = self.bound(wire, info)

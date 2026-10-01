@@ -273,6 +273,7 @@ def _continuations(harness: Harness, api: Any, exchange: Exchange, lines: list[s
     state = linked.checkpoint()
     _saved(lines, "linked", state)
     drained(lines, "resumed linked", users.linked.resume(state))
+    _echoed(harness, users, exchange, lines)
     searches = api.protocols.searches.all
     body = _body(harness, "searches", "Search", {"query": "a"})
     exchange.respond(user_page("1", next_cursor="c1"), user_page("2", next_cursor="c2"), user_page("3"))
@@ -286,6 +287,27 @@ def _continuations(harness: Harness, api: Any, exchange: Exchange, lines: list[s
     path = archive.iterate(cursor=harness.argument("archive", "ListArchive", "path", "cursor", "start"))
     _taken(lines, "archive first", path, 1)
     drained(lines, "resumed archive", archive.resume(path.checkpoint()))
+
+
+def _echoed(harness: Harness, users: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Save and send a same-origin URL without a declared security scheme's query field it echoes.
+
+    A crafted state whose URL carries the field resumes without it too.
+    """
+    exchange.respond(user_page("1", next=f"{_SERVER}/users?api_key=leak&cursor=2"), user_page("2"))
+    follow = users.follow.iterate()
+    _taken(lines, "echoed key followed first", follow, 1)
+    state = follow.checkpoint()
+    _saved(lines, "followed without the echoed key", state)
+    drained(lines, "resumed without the echoed key", users.follow.resume(state))
+    exchange.respond(headed_page("1", headers=(("Link", "<?api_key=leak&page=2>; rel=next"),)), user_page("2"))
+    linked = users.linked.iterate()
+    _taken(lines, "echoed key linked first", linked, 1)
+    _saved(lines, "linked without the echoed key", linked.checkpoint())
+    drained(lines, "resumed link without the echoed key", users.linked.resume(linked.checkpoint()))
+    keyed = _replaced(state, ("page", 2, 0), f"{_SERVER}/users?cursor=2&api_key=leak")
+    exchange.respond(user_page("2"))
+    drained(lines, "crafted URL with a key", users.follow.resume(_crafted(harness, state, keyed)))
 
 
 def _starts(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -622,6 +644,13 @@ async def _async_resume(harness: Harness, lines: list[str], static: Any) -> None
         await anext(aiter(pages.iter_pages()))
         await adrained(lines, "async resumed pages", helper.resume(pages.checkpoint()).iter_pages())
         record(lines, "async another helper's state", lambda: api.protocols.users.snapshot.resume(state))
+        follow = api.protocols.users.follow
+        exchange.respond(user_page("1", next="?api_key=leak&cursor=2"), user_page("2"))
+        followed = follow.iterate()
+        await anext(aiter(followed))
+        state = followed.checkpoint()
+        _saved(lines, "async followed without the echoed key", state)
+        await adrained(lines, "async resumed without the echoed key", follow.resume(state))
     auth = importlib.import_module(f"{harness.package.__name__}.auth")
     secret = auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("secret"))
     grant = auth.AsyncClientCredentialsProvider(

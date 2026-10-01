@@ -212,7 +212,7 @@ def _guarded(harness: Harness, *, asynchronous: bool) -> tuple[tuple[str, Any, t
     """Return rows of client options, responders, and the start of a traversal or an ordinary call, for either mode.
 
     They follow URLs to allowed origins and back, without the server's credentials, cookies, or the positions of the
-    package's security schemes, authenticate only where the auth allows, and redirect.
+    package's security schemes at any origin, authenticate only where the auth allows, and redirect.
     """
     options, auth = harness.options, importlib.import_module(f"{harness.package.__name__}.auth")
     other = harness.protocols.Origin(scheme="https", host="other.example.com", port=443)
@@ -270,6 +270,18 @@ def _guarded(harness: Harness, *, asynchronous: bool) -> tuple[tuple[str, Any, t
             ),
             (_links(secure), user_page("2")),
             lambda api: api.protocols.secure.users.iterate(),
+        ),
+        (
+            "other scheme's query key at the same origin",
+            _secured(harness, other, auth=auth.AuthConfig({"bearer": token})),
+            (_links("<?api_key=leak&page=2>; rel=next"), user_page("2")),
+            lambda api: api.protocols.secure.users.iterate(),
+        ),
+        (
+            "scheme query key without auth at the same origin",
+            options.ClientOptions(),
+            (user_page("1", next="/v1/users?cursor=2&api_key=leak"), user_page("2")),
+            lambda api: api.protocols.users.follow.iterate(),
         ),
         (
             "query key repeated by the URL",

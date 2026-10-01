@@ -119,6 +119,23 @@
   > GET https://api.example.com/v1/users?page=2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   resumed linked ['2']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  echoed key followed first = ['1']
+  followed without the echoed key saved {"arguments": [[], [], [], [], [], []], "body": [], "page": [0, 1, ["https://api.example.com/v1/users?cursor=2"], [], null, [["0c3a930eb80fe3523dd90bc7d80292e67ba11e9ff420dc7191943386103b5a47", 0], ["4a8fa21a8b9d61d2b8fb1b17bde2cdfaf9e2ebfdb23862f89c0b7e1e1d9d9851", 0]], null]} payload=b''
+  > GET https://api.example.com/v1/users?cursor=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  resumed without the echoed key ['2']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  echoed key linked first = ['1']
+  linked without the echoed key saved {"arguments": [[], [], [], [], [], []], "body": [], "page": [0, 1, ["https://api.example.com/v1/users?page=2"], [], null, [["4a8fa21a8b9d61d2b8fb1b17bde2cdfaf9e2ebfdb23862f89c0b7e1e1d9d9851", 0], ["d5592343d3ebf893f9c26e6d71da16e8ba832f709b7898987c871e9922a9a1d8", 0]], null]} payload=b''
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  resumed link without the echoed key ['2']
+  > GET https://api.example.com/v1/users?cursor=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  crafted URL with a key ['2']
   > POST https://api.example.com/v1/searches
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 13] b'{"query":"a"}'
   search first = ['1']
@@ -294,5 +311,11 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async resumed pages ['[2]']
   async another helper's state ! ResumeStateError: ResumeStateError(condition='fingerprint') [condition='fingerprint'] resume_state_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async followed without the echoed key saved {"arguments": [[], [], [], [], [], []], "body": [], "page": [0, 1, ["https://api.example.com/v1/users?cursor=2"], [], null, [["0c3a930eb80fe3523dd90bc7d80292e67ba11e9ff420dc7191943386103b5a47", 0], ["4a8fa21a8b9d61d2b8fb1b17bde2cdfaf9e2ebfdb23862f89c0b7e1e1d9d9851", 0]], null]} payload=b''
+  > GET https://api.example.com/v1/users?cursor=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async resumed without the echoed key ['2']
   async granted checkpoint resumes = mappingproxy({'pages': 0, 'items': 0, 'network_send_count': 0, 'network_send_budget_used': 0})
   async static token resumes a synchronous one = mappingproxy({'pages': 0, 'items': 0, 'network_send_count': 0, 'network_send_budget_used': 0})
