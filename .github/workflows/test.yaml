@@ -361,25 +361,19 @@ jobs:
             os: windows-latest
             coverage: false
             shard: 1
-            shard_total: 4
+            shard_total: 3
           - tox_env: client-httpx2-max-nocov-e2e
             name: Client HTTPX2 latest HTTP/1.1 and HTTP/2
             os: windows-latest
             coverage: false
             shard: 2
-            shard_total: 4
+            shard_total: 3
           - tox_env: client-httpx2-max-nocov-e2e
             name: Client HTTPX2 latest HTTP/1.1 and HTTP/2
             os: windows-latest
             coverage: false
             shard: 3
-            shard_total: 4
-          - tox_env: client-httpx2-max-nocov-e2e
-            name: Client HTTPX2 latest HTTP/1.1 and HTTP/2
-            os: windows-latest
-            coverage: false
-            shard: 4
-            shard_total: 4
+            shard_total: 3
           - tox_env: fastapi-install-nocov-e2e
             name: FastAPI server installation e2e
             os: ubuntu-24.04

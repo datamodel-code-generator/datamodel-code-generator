@@ -16,10 +16,9 @@
     "client-e2e:ubuntu-24.04:1/3:",
     "client-e2e:ubuntu-24.04:2/3:",
     "client-e2e:ubuntu-24.04:3/3:",
-    "client-httpx2-max-nocov-e2e:windows-latest:1/4:",
-    "client-httpx2-max-nocov-e2e:windows-latest:2/4:",
-    "client-httpx2-max-nocov-e2e:windows-latest:3/4:",
-    "client-httpx2-max-nocov-e2e:windows-latest:4/4:",
+    "client-httpx2-max-nocov-e2e:windows-latest:1/3:",
+    "client-httpx2-max-nocov-e2e:windows-latest:2/3:",
+    "client-httpx2-max-nocov-e2e:windows-latest:3/3:",
     "client-httpx2-min-nocov-e2e:macos-latest:/:",
     "client-py311-e2e:ubuntu-24.04:/:",
     "client-py312-nocov-e2e:ubuntu-24.04:/:",
@@ -119,7 +118,7 @@
   ],
   "gate_always": "always()",
   "gate_needs_all_jobs": true,
-  "job_count": 90,
+  "job_count": 89,
   "permissions": {
     "contents": "read"
   },

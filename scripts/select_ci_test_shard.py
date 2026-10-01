@@ -18,7 +18,7 @@ SPLIT_NODE_FILES = frozenset({PAYLOAD_VALIDATION_FILE})
 RECIPE_VERSION = 1
 WEIGHTS_VERSION = 3
 SLOW_TEST_MS = 1000
-PROFILES = ("3.10", "3.11", "3.12", "3.13", "3.14", "windows", "macos")
+PROFILES = ("3.10", "3.11", "3.12", "3.13", "3.14", "windows", "macos", "e2e")
 TESTS_ROOT = Path("tests")
 WEIGHTS_PATH = Path(__file__).with_name("ci_shard_weights.json")
 
@@ -173,7 +173,7 @@ def _milliseconds(totals: dict[str, float]) -> Weights:
 
 
 def _junit_weights(paths: Iterable[Path], files: Iterable[str]) -> tuple[Weights, Weights, Weights]:
-    """Sum JUnit durations per sharded module, per split-file test function, and per slow test."""
+    """Sum JUnit durations per sharded module and per split-file test function, and keep each slow test's longest."""
     from xml.etree.ElementTree import iterparse  # noqa: PLC0415
 
     modules = {file[:-3].replace("/", "."): file for file in files}
@@ -192,7 +192,8 @@ def _junit_weights(paths: Iterable[Path], files: Iterable[str]) -> tuple[Weights
                 continue
             file, classes = located
             if seconds * 1000 >= SLOW_TEST_MS:
-                slow_tests["::".join(part for part in (file, classes, name) if part)] = seconds
+                test = "::".join(part for part in (file, classes, name) if part)
+                slow_tests[test] = max(seconds, slow_tests.get(test, 0.0))
             if file not in SPLIT_NODE_FILES:
                 file_totals[file] = file_totals.get(file, 0.0) + seconds
                 continue
