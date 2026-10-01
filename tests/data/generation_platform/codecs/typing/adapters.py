@@ -28,7 +28,7 @@ from adapted.model_codecs import (
     presence_of,
     thaw_wire,
 )
-from adapted.models import Keeper, Pet
+from adapted_models import Keeper, Pet
 
 
 class PetAdapter:

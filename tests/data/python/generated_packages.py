@@ -11,6 +11,7 @@ import importlib
 import importlib.util
 import pkgutil
 import sys
+from contextlib import contextmanager
 from pathlib import Path
 from types import ModuleType
 from typing import TYPE_CHECKING
@@ -74,3 +75,15 @@ def forget_generated(package: str) -> None:
         name for name in sys.modules if name.startswith((f"{package}.", f"{package}_models")) or name == package
     ]:
         del sys.modules[name]
+
+
+@contextmanager
+def generated_root(root: Path, *packages: str) -> Iterator[None]:
+    """Put a generation root on the import path, then remove it and forget the packages imported from it."""
+    sys.path.insert(0, str(root))
+    try:
+        yield
+    finally:
+        sys.path.remove(str(root))
+        for package in packages:
+            forget_generated(package)
