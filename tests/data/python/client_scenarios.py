@@ -80,6 +80,8 @@ from tests.data.python.client_runtime import (
 )
 from tests.data.python.client_selectors import selectors
 from tests.data.python.client_signatures import keywords, signatures
+from tests.data.python.client_socket_connectors import socket_connectors
+from tests.data.python.client_sockets import sockets
 from tests.data.python.client_stream_lifetimes import stream_lifetimes
 from tests.data.python.client_streams import ndjson, ndjson_backends, stream_backends, streams
 from tests.data.python.client_streams import stream_lifetimes as event_stream_lifetimes
@@ -802,6 +804,8 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "stream-backends": ("streams", BACKENDS, stream_backends),
     "ndjson": ("ndjson", ("pydantic_v2.BaseModel",), ndjson),
     "ndjson-backends": ("ndjson", BACKENDS, ndjson_backends),
+    "sockets": ("sockets", ("pydantic_v2.BaseModel",), sockets),
+    "socket-connectors": ("sockets", ("pydantic_v2.BaseModel",), socket_connectors),
     "protocol-errors": ("pets", ("pydantic_v2.BaseModel",), protocol_errors),
     "evolution": ("evolution", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"), evolution),
     "evolution-schema": (

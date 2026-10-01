@@ -138,6 +138,7 @@ black24 = [ "black==24.1" ]
 blacklatest = [ "black" ]
 client = [
   "httpx2[http2]>=2.13,<3",
+  "websockets>=17.1; python_version>='3.11'",
 ]
 coverage = [
   "covdefaults>=2.3",

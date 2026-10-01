@@ -2520,5 +2520,36 @@
       "protocols": "protocols/ndjson-checks.yaml"
     },
     "modules": false
+  },
+  "sockets": {
+    "input": "sockets.yaml",
+    "references": [
+      "protocols/sockets.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/sockets.yaml",
+      "validation": {
+        "response_overrides": [
+          "schema"
+        ]
+      }
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ]
+    ]
   }
 }

@@ -33,6 +33,8 @@ from datamodel_code_generator._client.protocol_plan import (
 )
 from datamodel_code_generator._client.render import ClientRenderer
 from datamodel_code_generator._client.security import security_contract
+from datamodel_code_generator._client.sockets import DEPENDENCY as WEBSOCKETS
+from datamodel_code_generator._client.sockets import plan_sockets, socket_uses
 from datamodel_code_generator._client.streams import plan_streams, stream_uses
 from datamodel_code_generator._client.validation import admission_problems, allowed, argument_uses
 from datamodel_code_generator._client.webhooks import plan_webhooks, webhook_files, webhook_uses
@@ -53,6 +55,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.pagination import PaginationSpec
     from datamodel_code_generator._client.plan import ClientPlan, MediaSpec, OperationSpec, PartSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
+    from datamodel_code_generator._client.sockets import SocketSpec
     from datamodel_code_generator._client.streams import StreamSpec
     from datamodel_code_generator._client.webhooks import WebhookSpec
     from datamodel_code_generator._generation_contract import GeneratedTypeContractBatch, TypeUseBinding, TypeUseId
@@ -101,9 +104,10 @@ class ClientTarget:
         events, hooked = webhook_uses(protocols, request)
         received = frozenset(event.use.id for event in events)
         streamed, stream_events, stream_problems = stream_uses(protocols, plan, request, wire)
-        uses = frozenset(plan_uses(plan)) | received | frozenset(use.id for use in stream_events)
+        opened, messages, socket_problems = socket_uses(protocols, plan, request, wire)
+        uses = frozenset(plan_uses(plan)) | received | frozenset(use.id for use in (*stream_events, *messages))
         batch = request.batch
-        if parts := (*part_uses(plan), *stream_events):
+        if parts := (*part_uses(plan), *stream_events, *messages):
             batch = replace(batch, type_uses=(*batch.type_uses, *parts))
         if parts or events:
             wire = _wire(request, batch, parts, received)
@@ -126,12 +130,13 @@ class ClientTarget:
         plan, named = plan_fields(plan, codecs, batch, wire)
         helpers, checked = plan_pagination(protocols, plan, codecs, wire, request)
         streams = plan_streams(streamed, protocols, codecs, wire, request, stream_problems)
+        sockets = plan_sockets(opened, codecs, socket_problems)
         webhooks = plan_webhooks(events, codecs, config, hooked)
         ordinary = replace(codecs, bindings=tuple(item for item in codecs.bindings if item[0] not in received))
         if refused := (
             *named,
             *admission_problems(config.validation, ordinary, argument_uses(plan)),
-            *helper_problems(protocols, plan, {**checked, **hooked, **stream_problems}),
+            *helper_problems(protocols, plan, {**checked, **hooked, **stream_problems, **socket_problems}),
         ):
             raise APIGenerationError(
                 tuple(
@@ -144,6 +149,7 @@ class ClientTarget:
         fingerprints = {spec.helper.name: data.fingerprint(spec, metadata[spec.helper.name]) for spec in helpers}
         fingerprints.update((spec.helper.name, data.webhook(spec, metadata[spec.helper.name])) for spec in webhooks)
         fingerprints.update((spec.helper.name, data.stream(spec, metadata[spec.helper.name])) for spec in streams)
+        fingerprints.update((spec.helper.name, data.socket(spec, metadata[spec.helper.name])) for spec in sockets)
         renderer = ClientRenderer(
             config=config,
             package=request.layout.package,
@@ -153,6 +159,7 @@ class ClientTarget:
             codecs=codecs,
             helpers=helpers,
             streams=streams,
+            sockets=sockets,
             fingerprints=fingerprints,
             webhooks=partial(webhook_files, webhooks, dict(codecs.imports), fingerprints),
         )
@@ -162,6 +169,7 @@ class ClientTarget:
             target_data=data.data(protocols, fingerprints),
             dependencies=(
                 *DEPENDENCIES,
+                *((WEBSOCKETS,) if sockets else ()),
                 *(VALIDATION if codecs.bindings else ()),
                 *dict.fromkeys((
                     *BACKEND_DEPENDENCIES.get(backend, ()),
@@ -331,6 +339,28 @@ class _TargetData:
             else (body.required, [(media.media_type, self.type(media.use)) for media in body.media]),
             "events": [(key, self.type(use)) for key, use in spec.events],
             "errors": [(key, self.type(use)) for key, use in spec.errors],
+            "settings": settings,
+        }
+        return _digest({
+            "kind": helper.kind,
+            "signatures": [signature],
+            "operations": [self.request.documents.operation(operation.contract.id)],
+            "schemas": list(spec.schemas),
+            "type_uses": [self.contract(use) for use in spec.uses],
+            "adapters": [],
+        })
+
+    def socket(self, spec: SocketSpec, settings: JSONValue) -> str:
+        """Return the digest of a WebSocket helper's contract closure: its signature, settings, operation, and schemas.
+
+        Each message use contributes its type and contract, so a changed schema changes the digest.
+        """
+        operation, helper = spec.operation, spec.helper
+        signature = {
+            "name": helper.name,
+            "parameters": [(item.python_name, item.required, self.type(item.use)) for item in operation.parameters],
+            "send": None if spec.send is None else self.type(spec.send),
+            "receive": None if spec.receive is None else self.type(spec.receive),
             "settings": settings,
         }
         return _digest({

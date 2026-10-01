@@ -64,7 +64,7 @@ from .errors import (
 from .events import CallEvents, aauth_ended, auth_ended, call_events
 from .hooks import LimiterContext
 from .lifecycle import AsyncOwnedProviders, OwnedProviders, Scope, cleanup_secondary
-from .logical import LogicalCallContext
+from .logical import LogicalCallContext, joined_cap
 from .media import normalized
 from .multipart import MultipartSource, is_multipart, new_boundary, quiet_aclose, quiet_close
 from .native import (
@@ -97,7 +97,7 @@ from .options import (
     resolve_transport_options,
 )
 from .paths import PLACEHOLDER, dot_segment, dotted_route, path_segments
-from .raw import AsyncRawResponse, RawResponse
+from .raw import AsyncRawResponse, RawResponse, arefused, refused
 from .redirects import RedirectState, redirect_target
 from .responses import HeadersView, Response, ResponseInfo
 from .retry import (
@@ -203,6 +203,7 @@ _BINARY: Final = "A body must be bytes or a file, stream, factory, or multipart 
 _MIN_STATUS: Final = 200
 _MAX_STATUS: Final = 599
 _ERROR_STATUS: Final = 400
+_SWITCHING: Final = 101
 _UNAUTHORIZED: Final = 401
 _EMPTY_VISITED: Final[frozenset[tuple[str, str]]] = frozenset()
 
@@ -294,14 +295,23 @@ def _timeouts(current: ResolvedTimeoutOptions, layer: TimeoutOptions | Unset | N
     )
 
 
-def _protocol_options(options: ClientOptions | None, defaults: ClientDefaults) -> ProtocolClientOptions | None:
-    """Return the client's protocol settings, refusing defaults for a helper the package lacks or of another kind."""
+def _protocol_options(
+    options: ClientOptions | None, defaults: ClientDefaults, *, asynchronous: bool
+) -> ProtocolClientOptions | None:
+    """Return the client's protocol settings, refusing defaults for a helper the package lacks or of another kind.
+
+    A WebSocket connector of the other execution mode is refused too.
+    """
     if options is None or (protocols := options.protocols) is None or isinstance(protocols, Unset):
         return None
     if not isinstance(helpers := protocols.defaults, Unset) and helpers:
         from ..protocols.options import checked_defaults  # noqa: PLC0415 - Only helper defaults load the helper settings.
 
         checked_defaults(helpers, defaults.helpers)
+    if protocols.websocket_connector is not None and not isinstance(protocols.websocket_connector, Unset):
+        from ..protocols.options import checked_connector  # noqa: PLC0415 - Only a connector loads the helper settings.
+
+        checked_connector(protocols, asynchronous=asynchronous)
     return protocols
 
 
@@ -1301,6 +1311,39 @@ class _SessionCall(_Call):
         return planned
 
 
+class _SocketCall(_SessionCall):
+    """The handshake of a WebSocket helper: a session child call whose open has one cap for all of its phases.
+
+    The cap is the least of the open timeout and the connect, read, and write timeouts, bounded by the deadline, so a
+    cap the deadline binds ends the call with DeadlineExceededError. WebSockets have no pool.
+    """
+
+    __slots__ = ("open_timeout",)
+
+    def __init__(
+        self,
+        settings: Settings,
+        scope: Scope[HandleT],
+        operation: OperationPlan[object, object],
+        session: OperationSession,
+        open_timeout: float | None,
+    ) -> None:
+        """Bind the call to its session and keep the open timeout."""
+        super().__init__(settings, scope, operation, session)
+        self.open_timeout = open_timeout
+
+    def timeout(self) -> ResolvedTimeoutOptions:
+        """Resolve the open's one cap for the connect, read, and write phases; a handed-over socket keeps the rest."""
+        if self.streaming:
+            return super().timeout()
+        configured = self.settings.timeout
+        cap = joined_cap(
+            (self.open_timeout, configured.connect, configured.read, configured.write), self.remaining(), self.deadline
+        )
+        self.phase_caps = (cap, cap, cap, cap)
+        return ResolvedTimeoutOptions(connect=cap.effective, read=cap.effective, write=cap.effective, pool=None)
+
+
 class _Shared(Generic[AdapterT]):
     """What a client shares with its views: the transport, the fixed headers, and whether the transport was closed.
 
@@ -1317,6 +1360,7 @@ class _Shared(Generic[AdapterT]):
         "protocols",
         "providers",
         "security_schemes",
+        "socket_connector",
         "transport",
         "trusted",
     )
@@ -1336,6 +1380,7 @@ class _Shared(Generic[AdapterT]):
         self.closing_tasks: dict[Scope[AsyncRawResponse], asyncio.Task[list[Exception]]] | None = None
         self.loop: asyncio.AbstractEventLoop | None = None
         self.protocols: ProtocolClientOptions | None = None
+        self.socket_connector: object = None
 
 
 class _Core(Generic[AdapterT, HandleT]):
@@ -1362,6 +1407,20 @@ class _Core(Generic[AdapterT, HandleT]):
     def native_responses(self, options: RequestOptions | None, operation_id: str | None) -> bool:
         """Return whether a call with these options reads response values through their converters alone."""
         return self._call_settings(options, operation_id).validation.response == "native"
+
+    def call_settings(self, options: RequestOptions | None, operation_id: str | None) -> Settings:
+        """Return the effective settings of a call with these options."""
+        return self._call_settings(options, operation_id)
+
+    def protocol_options(self) -> ProtocolClientOptions | None:
+        """Return the client's protocol settings, or None."""
+        return self._shared.protocols
+
+    def owned_connector(self, native: Callable[[], object]) -> object:
+        """Return the WebSocket connector the client owns, created on first use and shared with its views."""
+        if (connector := self._shared.socket_connector) is None:
+            connector = self._shared.socket_connector = native()
+        return connector
 
     def _raw_call(
         self, operation: OperationPlan[object, object], options: RequestOptions | None, session: OperationSession | None
@@ -1435,18 +1494,23 @@ class _Core(Generic[AdapterT, HandleT]):
             return selected
         return call.snapshot_error(AdapterExecutionError(delivery_state=delivery, cause=selected))
 
+    @staticmethod
     def _response_info(
-        self,
         response: TransportResponse | AsyncTransportResponse,
         trace: AttemptTrace,
         request_id_header: str | None,
         call: LogicalCallContext,
+        *,
+        trusted: bool,
     ) -> ResponseInfo:
-        """Return received metadata only after checking the response and the call's termination signals."""
+        """Return received metadata only after checking the response and the call's termination signals.
+
+        A trusted adapter's response is used as it is; another one's status must be final and its trace intact.
+        """
         call.delivery_state = DeliveryState.RESPONSE_STARTED
         status, headers = (
             (response.status_code, response.headers)
-            if self._shared.trusted
+            if trusted
             else _head(response.status_code, response.headers, trace)
         )
         info = _info(status, headers, request_id_header, call)
@@ -2193,7 +2257,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             from .auth_policy import validate_auth_mode  # noqa: PLC0415
 
             validate_auth_mode(settings.auth, asynchronous=False)
-        protocols = _protocol_options(options, defaults)
+        protocols = _protocol_options(options, defaults, asynchronous=False)
         transport = _transport(options, http_client, transport_adapter)
         adapter, owned = _adapter(http_client, http_client_ownership, transport_adapter, transport)
         shared = _Shared(defaults, adapter, transport, trusted=isinstance(adapter, Httpx2Transport))
@@ -2476,17 +2540,89 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         """Return a block that sends a raw request on entry and yields its streaming response until exit."""
         return _streamed(lambda: self.request_raw(method, url, body=body, options=options, stream=True))
 
-    def _run(
+    def open_socket(  # noqa: PLR0913
+        self,
+        operation: OperationPlan[object, object],
+        arguments: tuple[object, ...],
+        adapter: TransportAdapter,
+        *,
+        options: RequestOptions | None,
+        session: OperationSession,
+        open_timeout: float | None,
+        check: Callable[[HeadersView], None],
+    ) -> tuple[RawResponse, LogicalCallContext]:
+        """Open a WebSocket helper's handshake through its adapter, as one child call of the helper's session.
+
+        The headers prepared pass the check before anything is sent. The 101 is handed over as a streaming handle,
+        whose close closes the connection, with the call whose deadline bounds it; any other response raises the call's
+        typed failure.
+        """
+        settings = self._call_settings(options, operation.operation_id)
+        call = _SocketCall(settings, self._scope, operation, session, open_timeout)
+        events = call.events = self._started(call, operation.path, options)
+        call.decoder = operation.responses
+        result: RawResponse | None = None
+        handed = False
+
+        def prepare() -> tuple[PreparedRequest[EncodedAttempt], object]:
+            request, deferred = self._prepare(
+                operation,
+                arguments,
+                call.settings,
+                body=UNSET,
+                media_type=None,
+                options=options,
+                accept=None,
+                narrowed=False,
+            )
+            check(request.headers)
+            return request, deferred
+
+        def receive(response: TransportResponse, info: ResponseInfo) -> RawResponse:
+            return self._raw_response(response, info, call, stream=True)
+
+        try:
+            result = self._run(call, UNSET, prepare, receive, options, adapter)
+            call.check("send")
+            if result.info.status_code != _SWITCHING:
+                refused(result)
+            self._scope.handoff(result)
+            handed = True
+            if events is not None:
+                events.finish(UNSET, handed_off=True)
+            call.check("send")
+            call.handoff()
+        except BaseException as error:  # noqa: BLE001
+            failure = call.stopped(error)
+            if result is not None:
+                result.discard(failure)
+            if events is not None:
+                events.ended(failure)
+            raise failure from None
+        else:
+            return result, call
+        finally:
+            if not handed:
+                self._scope.release()
+            if not call.streaming:
+                call.finish()
+
+    def _run(  # noqa: PLR0913, PLR0917
         self,
         call: _Call,
         body: object,
         prepare: Callable[[], tuple[PreparedRequest[EncodedAttempt], object]],
         receive: Callable[[TransportResponse, ResponseInfo], T],
         options: RequestOptions | None,
+        adapter: TransportAdapter | None = None,
     ) -> T:
-        """Own entry capture, the single encode, every hop, and final source release."""
+        """Own entry capture, the single encode, every hop, and final source release.
+
+        A WebSocket handshake sends through its own adapter instead of the client's.
+        """
         entry: BodyBindings | None = None
         source: BodySource | None = None
+        adapter = self._shared.adapter if adapter is None else adapter
         try:
             entry = (
                 capture_body(body)
@@ -2494,7 +2630,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                 else None
             )
             call.check("encode")
-            call.bind(self._shared.adapter.capabilities, options)
+            call.bind(adapter.capabilities, options)
             if call.settings.auth is not None or (call.operation is not None and call.operation.security is not None):
                 self._bind_auth(call)
             if (events := call.events) is not None:
@@ -2512,7 +2648,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                 abandoned, entry = entry, None
                 _released(abandoned.close, call.operation_id, call.call_id)
             call.check("encode")
-            result = self._exchange(request, source, call, receive)
+            result = self._exchange(request, source, call, receive, adapter)
         except BaseException as error:  # noqa: BLE001
             failure = call.failure(error)
             if source is not None:
@@ -2529,16 +2665,18 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                 raise
         return result
 
-    def _exchange(
+    def _exchange(  # noqa: PLR0915
         self,
         original: PreparedRequest[EncodedAttempt],
         source: BodySource | None,
         call: _Call,
         receive: Callable[[TransportResponse, ResponseInfo], T],
+        adapter: TransportAdapter,
     ) -> T:
         """Run resource candidates and their redirect hops without exposing intermediate payloads."""
         request = original
         events = call.events
+        trusted = adapter is not self._shared.adapter or self._shared.trusted
         visited: frozenset[tuple[str, str]] = (
             frozenset({(request.method, request.url)}) if call.settings.redirects.enabled else _EMPTY_VISITED
         )
@@ -2550,8 +2688,8 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             sends_before = call.network_send_count
             call.response_transferred = False
             try:
-                response = self._send(request, source, call)
-                info = self._response_info(response, call.trace, call.request_id_header, call)
+                response = self._send(request, source, call, adapter)
+                info = self._response_info(response, call.trace, call.request_id_header, call, trusted=trusted)
                 call.received(info)
                 if events is not None:
                     events.emit(events.responding(info))
@@ -2816,6 +2954,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         request: PreparedRequest[BodyAttempt],
         source: BodySource | None,
         call: _Call,
+        adapter: TransportAdapter,
     ) -> TransportResponse:
         """Open one body after its permit and transfer resource ownership only after cleanup."""
         attempt = request.body
@@ -2856,7 +2995,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             if events is not None:
                 events.sending()
             try:
-                response = self._shared.adapter.send(request, io)
+                response = adapter.send(request, io)
             finally:
                 call.observe_send(trace)
         except BaseException as error:  # noqa: BLE001
@@ -3024,7 +3163,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             from .auth_policy import validate_auth_mode  # noqa: PLC0415
 
             validate_auth_mode(settings.auth, asynchronous=True)
-        protocols = _protocol_options(options, defaults)
+        protocols = _protocol_options(options, defaults, asynchronous=True)
         transport = _transport(options, http_client, transport_adapter)
         adapter, owned = _async_adapter(http_client, http_client_ownership, transport_adapter, transport)
         shared = _Shared(defaults, adapter, transport, trusted=isinstance(adapter, AsyncHttpx2Transport))
@@ -3329,17 +3468,87 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         """Return a block that sends a raw request on entry and yields its streaming response until exit."""
         return _astreamed(lambda: self.request_raw(method, url, body=body, options=options, stream=True))
 
-    async def _run(
+    async def open_socket(  # noqa: PLR0913
+        self,
+        operation: OperationPlan[object, object],
+        arguments: tuple[object, ...],
+        adapter: AsyncTransportAdapter,
+        *,
+        options: RequestOptions | None,
+        session: OperationSession,
+        open_timeout: float | None,
+        check: Callable[[HeadersView], None],
+    ) -> tuple[AsyncRawResponse, LogicalCallContext]:
+        """Open a WebSocket helper's handshake with asyncio, as the synchronous core does."""
+        settings = self._call_settings(options, operation.operation_id)
+        call = _SocketCall(settings, self._scope, operation, session, open_timeout)
+        self._running(call.operation_id, call.call_id)
+        events = call.events = await self._started(call, operation.path, options)
+        call.decoder = operation.responses
+        result: AsyncRawResponse | None = None
+        handed = False
+
+        def prepare() -> tuple[PreparedRequest[EncodedAttempt], object]:
+            request, deferred = self._prepare(
+                operation,
+                arguments,
+                call.settings,
+                body=UNSET,
+                media_type=None,
+                options=options,
+                accept=None,
+                narrowed=False,
+            )
+            check(request.headers)
+            return request, deferred
+
+        async def receive(response: AsyncTransportResponse, info: ResponseInfo) -> AsyncRawResponse:
+            return await self._raw_response(response, info, call, stream=True)
+
+        try:
+            result = await call.bounded(
+                lambda: self._run(call, UNSET, prepare, receive, options, adapter), cleanup=AsyncRawResponse.aclose
+            )
+            call.check("send")
+            if result.info.status_code != _SWITCHING:
+                await arefused(result)
+            self._scope.handoff(result)
+            handed = True
+            if events is not None:
+                await events.afinish(UNSET, handed_off=True)
+            call.check("send")
+            call.handoff()
+        except BaseException as error:  # noqa: BLE001
+            failure = call.stopped(error)
+            if result is not None:
+                await result.discard(failure)
+            if events is not None:
+                await events.aended(failure)
+            raise failure from None
+        else:
+            return result, call
+        finally:
+            if not handed:
+                self._scope.release()
+            if not call.streaming:
+                call.finish()
+
+    async def _run(  # noqa: PLR0913, PLR0917
         self,
         call: _Call,
         body: object,
         prepare: Callable[[], tuple[PreparedRequest[EncodedAttempt], object]],
         receive: Callable[[AsyncTransportResponse, ResponseInfo], Awaitable[T]],
         options: RequestOptions | None,
+        adapter: AsyncTransportAdapter | None = None,
     ) -> T:
-        """Own entry capture, the single encode, every hop, and final source release."""
+        """Own entry capture, the single encode, every hop, and final source release.
+
+        A WebSocket handshake sends through its own adapter instead of the client's.
+        """
         entry: AsyncBodyBindings | None = None
         source: AsyncBodySource | None = None
+        adapter = self._shared.adapter if adapter is None else adapter
         try:
             entry = (
                 await capture_async_body(body, cleanup=call.cleanup)
@@ -3347,7 +3556,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 else None
             )
             call.check("encode")
-            call.bind(self._shared.adapter.capabilities, options)
+            call.bind(adapter.capabilities, options)
             if call.settings.auth is not None or (call.operation is not None and call.operation.security is not None):
                 self._bind_auth(call)
             if (events := call.events) is not None:
@@ -3365,7 +3574,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 abandoned, entry = entry, None
                 await call.cleanup(abandoned.aclose)
             call.check("encode")
-            result = await self._exchange(request, source, call, receive)
+            result = await self._exchange(request, source, call, receive, adapter)
         except BaseException as error:  # noqa: BLE001
             failure = call.failure(error)
             if source is not None:
@@ -3382,16 +3591,18 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 raise
         return result
 
-    async def _exchange(
+    async def _exchange(  # noqa: PLR0915
         self,
         original: PreparedRequest[EncodedAttempt],
         source: AsyncBodySource | None,
         call: _Call,
         receive: Callable[[AsyncTransportResponse, ResponseInfo], Awaitable[T]],
+        adapter: AsyncTransportAdapter,
     ) -> T:
         """Run resource candidates and their redirect hops without exposing intermediate payloads."""
         request = original
         events = call.events
+        trusted = adapter is not self._shared.adapter or self._shared.trusted
         visited: frozenset[tuple[str, str]] = (
             frozenset({(request.method, request.url)}) if call.settings.redirects.enabled else _EMPTY_VISITED
         )
@@ -3403,8 +3614,8 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             sends_before = call.network_send_count
             call.response_transferred = False
             try:
-                response = await self._send(request, source, call)
-                info = self._response_info(response, call.trace, call.request_id_header, call)
+                response = await self._send(request, source, call, adapter)
+                info = self._response_info(response, call.trace, call.request_id_header, call, trusted=trusted)
                 call.received(info)
                 if events is not None:
                     await events.aemit(events.responding(info))
@@ -3672,6 +3883,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         request: PreparedRequest[AsyncBodyAttempt],
         source: AsyncBodySource | None,
         call: _Call,
+        adapter: AsyncTransportAdapter,
     ) -> AsyncTransportResponse:
         """Open one body after its permit and transfer resource ownership only after cleanup."""
         attempt = request.body
@@ -3712,7 +3924,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             if events is not None:
                 events.sending()
             try:
-                response = await self._shared.adapter.send(request, io)
+                response = await adapter.send(request, io)
             finally:
                 call.observe_send(trace)
         except BaseException as error:  # noqa: BLE001

@@ -444,6 +444,18 @@ def aheld(response: AsyncRawResponse) -> AsyncGenerator[bytes, None]:
     return response._stream(decoded=True, held=True)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
 
 
+def refused(response: RawResponse) -> None:
+    """Close an open response its caller cannot use, whatever its status, raising its typed failure from its prefix."""
+    response._check()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    response._refuse(response._state)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+
+
+async def arefused(response: AsyncRawResponse) -> None:
+    """Close an open asyncio response its caller cannot use, as `refused` does."""
+    response._check()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    await response._refuse(response._state)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+
+
 def finished(response: RawResponse, error: BaseException | None = None) -> None:
     """End a held stream as read, or as failed with the reader's error, releasing it and reporting its end once."""
     response._end("consumed" if error is None else "failed", error)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
@@ -547,6 +559,9 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
             self._check()
         if self._decoder.success(self._info.status_code):
             return
+        self._refuse(state)
+
+    def _refuse(self, state: State) -> None:
         match state:
             case "buffered":
                 raise self._saved_failure()
@@ -879,6 +894,9 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             self._check()
         if self._decoder.success(self._info.status_code):
             return
+        await self._refuse(state)
+
+    async def _refuse(self, state: State) -> None:
         match state:
             case "buffered":
                 raise self._saved_failure()
