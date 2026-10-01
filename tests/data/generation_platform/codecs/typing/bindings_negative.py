@@ -2,7 +2,7 @@
 
 from adapted._generated import model_bindings as bindings
 from adapted.model_codecs import ModelCodec, ModelValue, NativeOutboundCodec, WireValue
-from adapted.models import Keeper, Pet, Secretive
+from adapted_models import Keeper, Pet, Secretive
 
 
 def exercise(wire: WireValue, keeper: Keeper) -> None:

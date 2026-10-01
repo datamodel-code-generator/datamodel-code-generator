@@ -304,8 +304,10 @@ explicitly before using it as a model.
 Pagination, polling, and SSE or NDJSON stream helpers of an API are declared in a helper configuration, which the client
 target reads through its `protocols` setting. The helpers are still being implemented: generation validates every
 helper, resolves its references against the selected API, and records it in the target manifest. An enabled pagination
-helper generates the [pagination helper](#pagination-helpers) below, and an enabled HMAC webhook helper the [webhook
-verification helper](#webhook-verification-helpers); any other enabled helper fails with `E_CLIENT_UNSUPPORTED`. A
+helper generates the [pagination helper](#pagination-helpers) below, an enabled SSE helper the
+[SSE stream helper](#sse-stream-helpers), an enabled NDJSON helper the [NDJSON stream helper](#ndjson-stream-helpers),
+and an enabled HMAC webhook helper the [webhook verification helper](#webhook-verification-helpers); any other enabled
+helper fails with `E_CLIENT_UNSUPPORTED`. A
 disabled helper generates nothing, so the package is the same as without it. The `websocket`, `cache`,
 `resumable_upload`, `batch`, and `queue` kinds fail with `E_CLIENT_UNSUPPORTED` whether they are enabled or not, and
 their settings are not read yet.
@@ -593,10 +595,13 @@ header, or cookie parameter, a property of the querystring, or a member of the J
 returned is sent as it came, without its target's schema checks even under `request="schema"` validation, while a
 start cursor the caller passes is checked like any other argument. The traversal ends at a page whose cursor is missing
 or null where the helper declares that end, is one of its end values, or is empty with `empty_string: end`. A missing
-or null cursor that no end covers, missing or null items, a header repeated for a single cursor, and a dot segment
-(`.` or `..`) read for a path parameter raise `ProtocolDataError`, and a cursor over its size limit raises
-`ProtocolSizeError`, each as a failure of the page's call. A continuation returned by an earlier page of the same
-pager, or an earlier page `next_page` continued from, ends it with `PaginationCycleError` after the repeating page.
+or null cursor that no end covers, missing or null items, a header repeated for a single cursor, and a value read for
+a path parameter that makes its segment, encoded in the parameters' styles with the caller's own path arguments and
+the helper's literals beside it, a dot segment (`.` or `..`, `%2E` in either case counting as `.`) raise
+`ProtocolDataError`, and a cursor over its size limit raises `ProtocolSizeError`, each as a failure of the page's call.
+The error names the first such read value whose encoded text is non-empty, or else the first one. A continuation
+returned by an earlier page of the same pager, or an earlier page `next_page` continued from, ends it with
+`PaginationCycleError` after the repeating page.
 
 ### Offsets and page numbers
 
@@ -748,8 +753,10 @@ must read a declared property or header, and a querystring or body target's poin
 declares, through `allOf` members and nullable `anyOf` or `oneOf` ones. The JSON types a cursor reads, other than null,
 and those a binding reads or its literal has, null included, must be ones the target accepts, and a binding that can
 give null must write a JSON body or a querystring of JSON content; a cursor that can be null needs a `null` end, and
-each end value must be of a type the cursor reads. A literal `.` or `..` is no path parameter value, and a body target
-needs a required body or one media type a call without `media_type` sends. A binding that writes the continuation's
+each end value must be of a type the cursor reads. Literals that make a path segment whose every parameter they fill a
+dot segment once encoded in their parameters' styles, such as `..` in the simple style, or the empty string in the
+label style, are no path parameter values, reported at the segment's first literal binding, and a body target needs a
+required body or one media type a call without `media_type` sends. A binding that writes the continuation's
 target or another binding's, or a body or querystring member inside or around one, fails with `E_CONFIG_CONFLICT`. An
 offset's or page number's target must accept integers, a page number advances by a literal step, `has_more` must read
 booleans, and `total` must read integers from the body or a header, never the status. A next URL must read strings, or
@@ -779,7 +786,12 @@ E_CONFIG_CONFLICT config protocols.helpers['bindings.conflicts'].bindings[0].tar
 E_CONFIG_CONFLICT config protocols.helpers['bindings.conflicts'].bindings[2].target /paths/~1users/get: The binding 2 of 'bindings.conflicts' writes the same target as its binding 1
 E_CONFIG_CONFLICT config protocols.helpers['bindings.overlaps'].bindings[0].target /paths/~1bodies/post: The binding 0 of 'bindings.overlaps' writes a target overlapping that of its cursor
 E_CONFIG_CONFLICT config protocols.helpers['bindings.overlaps'].bindings[2].target /paths/~1bodies/post: The binding 2 of 'bindings.overlaps' writes a target overlapping that of its cursor
-E_CONFIG_VALUE config protocols.helpers['bindings.dots'].bindings[0].value.literal /paths/~1folders~1{folder}/get: The binding 0 of 'bindings.dots' gives the dot segment '..', which cannot be written to the path parameter 'folder' of GET /folders/{folder}
+E_CONFIG_VALUE config protocols.helpers['bindings.dots'].bindings[0].value.literal /paths/~1folders~1{folder}/get: The binding 0 of 'bindings.dots' gives '..', which makes the segment of the path parameter 'folder' of GET /folders/{folder} a dot segment
+E_CONFIG_VALUE config protocols.helpers['bindings.label_empty'].bindings[0].value.literal /paths/~1styled~1{label}~1{reserved}~1{file}.json/get: The binding 0 of 'bindings.label_empty' gives '', which makes the segment of the path parameter 'label' of GET /styled/{label}/{reserved}/{file}.json a dot segment
+E_CONFIG_VALUE config protocols.helpers['bindings.label_dot'].bindings[0].value.literal /paths/~1styled~1{label}~1{reserved}~1{file}.json/get: The binding 0 of 'bindings.label_dot' gives '.', which makes the segment of the path parameter 'label' of GET /styled/{label}/{reserved}/{file}.json a dot segment
+E_CONFIG_VALUE config protocols.helpers['bindings.reserved_dot'].bindings[0].value.literal /paths/~1styled~1{label}~1{reserved}~1{file}.json/get: The binding 0 of 'bindings.reserved_dot' gives '%2e', which makes the segment of the path parameter 'reserved' of GET /styled/{label}/{reserved}/{file}.json a dot segment
+E_CONFIG_VALUE config protocols.helpers['bindings.path_null'].bindings[0].target /paths/~1styled~1{label}~1{reserved}~1{file}.json/get: The binding 0 of 'bindings.path_null' can give null, which cannot be written to the path parameter 'reserved' of GET /styled/{label}/{reserved}/{file}.json
+E_CONFIG_VALUE config protocols.helpers['bindings.joined_dots'].bindings[0].value.literal /paths/~1joined~1{first}{second}/get: The binding 0 of 'bindings.joined_dots' gives '.', which makes the segment of the path parameter 'first' of GET /joined/{first}{second} a dot segment
 E_CONFIG_VALUE config protocols.helpers['write.optional_body'].continuation.write /paths/~1multi/post: The cursor of 'write.optional_body' writes the request body of POST /multi, which is optional and has no media type a call without one sends
 E_CONFIG_VALUE config protocols.helpers['write.body_type'].continuation.write /paths/~1bodies/post: The cursor of 'write.body_type' reads string values, which the property '/count' of the request body of POST /bodies does not accept
 E_CLIENT_UNSUPPORTED target protocols.helpers['body.form'] /paths/~1forms/post: The pagination helper 'body.form' sends a request body other than JSON, which is not supported yet
@@ -804,6 +816,229 @@ E_CLIENT_UNSUPPORTED target protocols.helpers['cursor.map'].continuation.read /p
 
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.pagination.diagnostics -->
+
+## SSE stream helpers
+
+An enabled `sse` helper is generated at `client.protocols.<name>` on `Client` and `AsyncClient` alike, with one method,
+`open`. It takes the operation's parameters and its body as keywords, never field arguments, then `stream_options`,
+`options`, and `session_options`, sends the operation in a session of its own, and returns an `EventStream[T]`, or with
+one `await` an `AsyncEventStream[T]`, once the response is a declared success of the helper's media type:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.streams.helper -->
+<!-- fmt: off -->
+
+```python
+    def open(
+        self,
+        *,
+        topic: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        last_event_id: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        stream_options: StreamOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> EventStream[_dcg_type_2]:
+        """Open the event stream of GET /events, returning once its response is a declared success."""
+        return open_events(
+            self._core,
+            _plans.STREAM_0,
+            (topic, last_event_id),
+            stream_options=stream_options,
+            options=options,
+            session_options=session_options,
+        )
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.streams.helper -->
+
+```python
+with Client() as client, client.protocols.events.typed.open() as stream:
+    for event in stream:
+        print(event.sequence, event.event_type, event.data)
+```
+
+`T` is the type of the helper's event schema, or the union of its mapped schemas' types, with `UnknownEvent` when
+`unknown: raw` keeps unmapped events. Iterating a stream yields `StreamEvent[T]` records: `data`, the event's SSE
+`event_type` (`message` when the event names none), `event_id`, the last ID the stream set or None when it set none or
+an empty one, `retry_ms`, the last valid `retry` in milliseconds, `sequence`, numbering the dispatched events from 1,
+and `raw_data`, the event's data text. `data()` iterates over the data of the same events and advances the same stream;
+the asyncio `data()` is not awaited. Representations name no data, event ID, or raw data. `StreamEvent`,
+`UnknownEvent`, `EventStream`, and `AsyncEventStream` are imported from `pkg.protocols`, in every package.
+
+The response's status and `Content-Type` are checked before `open` returns: an error status raises the operation's
+typed HTTP error, an undeclared status `UnexpectedStatusError`, and a body of another media type, or none,
+`UnexpectedMediaTypeError`. Its acquisition retries like any call. A stream then reads only the bytes its next event
+needs and owns the response until it ends, fails, or closes: close it with `with`, `async with`, `close()`, or
+`aclose()`, since leaving a loop early releases nothing. One consumer reads a stream at a time: a step, or a close,
+while another step runs raises `ProtocolStateError`, and so does every step after a failure or `close()`; after its end
+every step stops. Closing the client waits up to its `cleanup_timeout` for open streams, then closes them and raises
+`CleanupError` naming them as pending leases; their next step raises `ClientClosedError`.
+
+### Framing and events
+
+The body is read as the WHATWG event-stream interpretation reads it: a leading byte order mark is skipped, CR, LF, and
+CRLF end lines, including a CRLF split between reads, lines starting with `:` are comments, `data` lines join with LF,
+`event` names the type, an `id` containing NUL is ignored, `retry` of ASCII digits sets the reconnection time (more than
+18 digits are ignored), and a blank line dispatches an event that has data. Invalid UTF-8 decodes to replacement
+characters. Each event's data is JSON decoded by its schema, through its converter alone or by the schema as the call's
+response validation selects; data that is not JSON, or that the schema or type refuses, raises `StreamDecodeError`
+with at most the event limit or 64 KiB of the data as `raw_prefix`.
+
+An event schema mapping is chosen by the event's SSE type with `discriminator: {from: event_type}`, or by the string a
+body pointer reads from the JSON data with `{from: body, pointer}`; a missing, null, or non-string body discriminator,
+and an unmapped one without `unknown: raw`, raise `StreamDecodeError`. An `error_events` key raises
+`StreamRemoteError` with the error schema's decoded `data` instead of yielding the event.
+
+The stream ends as its `completion` declares: at the end of the body for `eof`, or at the event whose raw data equals a
+`sentinel` value or whose SSE type is the `event_type` value; neither terminal event is decoded or yielded, and the
+response is released. A body that ends before a sentinel or terminal type raises `StreamInterruptedError` with the
+condition `eof`, and one that cuts a line or an event, under any completion, raises `IncompleteFrameError` with the
+bytes of the cut frame. A connection that breaks while the body is read raises `StreamInterruptedError` with the
+condition `transport` and the transport failure as its `cause`. `sequence` is the last event delivered.
+
+### Stream limits and sessions
+
+`open` is one session holding one logical call. The call's total timeout bounds only acquiring the response; the
+stream then ends no later than the earlier of the call's `stream_total_timeout` from the handoff and the session's
+deadline, raising `DeadlineExceededError` with the phase `stream` at the next step, even for an event whose bytes it
+already read, and releasing the response. Its idle timeout counts only while a step waits for bytes, comments
+included, so a pause between steps never counts, and raises `PhaseTimeoutError`. Each limit comes from the call's
+options, then the helper's `ProtocolDefaults` in `ProtocolClientOptions.defaults`, then the default below:
+
+| Limit | Default | None |
+|---|---|---|
+| `StreamOptions.idle_timeout` | The call's merged `stream_idle_timeout`, 60 seconds by default | No idle limit |
+| `StreamOptions.max_line_bytes` | 256 KiB per line | Not allowed |
+| `StreamOptions.max_event_bytes` | 1 MiB of data per event | Not allowed |
+| `SessionOptions.total_timeout` | None | No session deadline |
+| `SessionOptions.deadline` | None | No deadline |
+| `SessionOptions.max_network_sends` | 16 sends | Removes the limit |
+
+A line or event over its limit raises `ProtocolSizeError` with the kind `line` or `event` before it is kept, and a
+session without a send slot raises `SessionLimitError` without sending. Streams never reconnect yet, so
+`StreamOptions(reconnect=True)` raises `ProtocolConfigurationError` with the condition `missing_metadata`, and
+`max_reconnects` and `max_reconnect_wait` have no effect. Options of another type raise `ProtocolConfigurationError`.
+
+### Stream generation checks
+
+The helper's `media` must be `text/event-stream`, compared without case and with any parameters allowed, and a success
+response of its operation must declare an event stream media type, which the helper then requests as declared. Each
+event and error schema must exist and decode natively, without an envelope; a schema outside the selected model scopes
+fails with `BND_MODEL_SCOPE_REQUIRED`. A body discriminator must name a declared property of each mapped and error schema
+whose values can be strings, and an `event_type` completion cannot be a key of the event type mapping or the error
+events. Resuming a stream is not supported yet:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.streams.diagnostics -->
+<!-- fmt: off -->
+
+```text
+E_CONFIG_VALUE config protocols.helpers['checks.media'].media /paths/~1events/get: The media type 'text/plain' of 'checks.media' is not text/event-stream
+E_CONFIG_VALUE config protocols.helpers['checks.response'].operation /paths/~1status/get: GET /status declares no text/event-stream success response for the SSE helper 'checks.response'
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.resume'].resume /paths/~1events/get: The SSE helper 'checks.resume' resumes its stream, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['checks.schema'].event_schema /paths/~1events/get: The schema '/components/schemas/Nobody' of 'checks.schema' does not exist in its document
+E_CONFIG_CONFLICT config protocols.helpers['checks.terminal_event'].completion.value /paths/~1events/get: The completion event type 'done' of 'checks.terminal_event' is also a key of its event_schema.mapping
+E_CONFIG_CONFLICT config protocols.helpers['checks.terminal_error'].completion.value /paths/~1events/get: The completion event type 'stop' of 'checks.terminal_error' is also a key of its error_events
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.envelope'].event_schema /paths/~1events/get: The SSE helper 'checks.envelope' decodes an envelope-projected event, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['checks.discriminator_absent'].event_schema.discriminator.pointer /paths/~1events/get: The discriminator pointer '/kind' of 'checks.discriminator_absent' names no property of '/components/schemas/Created'
+E_CONFIG_VALUE config protocols.helpers['checks.discriminator_type'].event_schema.discriminator.pointer /paths/~1events/get: The discriminator of 'checks.discriminator_type' reads integer values from '/components/schemas/Counted', where only string values fit
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.streams.diagnostics -->
+
+## NDJSON stream helpers
+
+An enabled `ndjson` helper reads a body of newline-delimited JSON records, one JSON value a line, as the
+[SSE stream helper](#sse-stream-helpers) reads events: it is generated at `client.protocols.<name>` with the same `open`
+method and returns the same `EventStream[T]`, or `AsyncEventStream[T]`, so everything above about opening, iterating,
+`data()`, closing, error events, limits, and sessions applies to it too, except what concerns SSE framing:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.ndjson.helper -->
+<!-- fmt: off -->
+
+```python
+    def open(
+        self,
+        *,
+        topic: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        stream_options: StreamOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> EventStream[_dcg_type_1]:
+        """Open the NDJSON stream of GET /records, returning once its response is a declared success."""
+        return open_events(
+            self._core,
+            _plans.STREAM_0,
+            (topic,),
+            stream_options=stream_options,
+            options=options,
+            session_options=session_options,
+        )
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.ndjson.helper -->
+
+```python
+with Client() as client, client.protocols.records.all.open() as stream:
+    for record in stream.data():
+        print(record.text)
+```
+
+```yaml
+helpers:
+  records.all:
+    kind: ndjson
+    operation: /paths/~1records/get
+    media: application/x-ndjson
+    event_schema: {pointer: /components/schemas/Record}
+    completion: {kind: eof}
+    final_line: require_newline
+```
+
+### Records
+
+LF ends a line, and so does CRLF, whose CR is not part of the record; a CR alone does not end one. Each line is one
+record, strict UTF-8 JSON decoded by the helper's schema, or by the schema a `{from: body, pointer}` discriminator maps
+it to, the only discriminator NDJSON has. Every line is a record, so a blank or whitespace-only line, one that is not
+UTF-8, a leading byte order mark, and anything else that is not JSON raise `StreamDecodeError` with the condition
+`malformed`; none is skipped. The error keeps at most the event limit or 64 KiB of the line as `raw_prefix`, which no
+message shows, and a line that is not UTF-8 has no `cause`.
+
+A record yields a `StreamEvent` whose `event_type` is the empty string and whose `event_id` and `retry_ms` are None; an
+`error_events` record raises `StreamRemoteError` with the `event_type` None. A `sentinel` completion ends at the line
+equal to its value, which is compared before JSON decoding and never yielded, so the value need not be JSON; a value
+containing LF could never match, so it fails generation with `E_CONFIG_VALUE`.
+
+`final_line` says how the body may end. With `require_newline`, every record ends with a line end, and bytes after the
+last one raise `IncompleteFrameError` with their count as `buffered_bytes`. With `allow_eof`, those bytes are decoded as
+the last record, a sentinel included; a body that ends with a line end ends the same way under both.
+
+A record counts toward both `StreamOptions.max_line_bytes` and `max_event_bytes`, without its LF or the CR of a CRLF;
+one over the smaller limit raises `ProtocolSizeError` with that limit's kind, `line` or `event`, before it is kept.
+Bytes are searched for a line end at most twice, so a line split over many reads costs time linear in its length.
+
+### NDJSON generation checks
+
+The helper's `media` must be `application/x-ndjson`, `application/ndjson`, `application/jsonl`, `application/x-jsonl`,
+`application/jsonlines`, or `application/x-jsonlines`, compared without case and with any parameters allowed, and a
+success response of its operation must declare that media type, which the helper then requests as declared. The schema
+checks are those of SSE helpers, and resuming a stream is not supported yet:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.ndjson.diagnostics -->
+<!-- fmt: off -->
+
+```text
+E_CONFIG_VALUE config protocols.helpers['checks.media'].media /paths/~1records/get: The media type 'application/json' of 'checks.media' is not one of application/jsonl, application/jsonlines, application/ndjson, application/x-jsonl, application/x-jsonlines, or application/x-ndjson
+E_CONFIG_VALUE config protocols.helpers['checks.response'].operation /paths/~1status/get: GET /status declares no application/x-ndjson success response for the NDJSON helper 'checks.response'
+E_CONFIG_VALUE config protocols.helpers['checks.other_media'].operation /paths/~1search/post: POST /search declares no application/x-ndjson success response for the NDJSON helper 'checks.other_media'
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.resume'].resume /paths/~1records/get: The NDJSON helper 'checks.resume' resumes its stream, which is not supported yet
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.envelope'].event_schema /paths/~1records/get: The NDJSON helper 'checks.envelope' decodes an envelope-projected event, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['checks.discriminator_absent'].event_schema.discriminator.pointer /paths/~1records/get: The discriminator pointer '/kind' of 'checks.discriminator_absent' names no property of '/components/schemas/Created'
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.ndjson.diagnostics -->
 
 ## Signature style
 
@@ -1236,6 +1471,12 @@ What every mode still does:
   A form-data member that its direction excludes takes no part in either.
 - **Native behavior.** `none` does not undo validation a model's constructor already did, and it cannot send what the
   serializer cannot represent.
+- **Path segments.** Path arguments that make their segment `.` or `..` once encoded in their parameters' styles and
+  put into the path template, `%2E` in either case counting as `.`, such as `..` in the simple style, the empty string
+  in the label style, or `%2e` with `allowReserved`, fail with `RequestEncodingError` at the segment's first parameter
+  whose encoded text is non-empty, with a `ParameterEncodingError` cause, before anything is sent: URL normalization in
+  clients, proxies, and servers would remove the segment and send the call to another resource, and encoding the dots
+  does not prevent it. `...` and `.a` are sent as they are, and a dot segment the path template spells is not refused.
 - **Strict records.** A `ModelValue` or `ModelInput` passed as an argument, the `RequestCodecs` factories, the header
   decoders, and a response the package returns as `DecodedValue` keep their strict schema validation in every mode.
   Read a body without any model with `with_raw_response` or `with_streaming_response` instead.

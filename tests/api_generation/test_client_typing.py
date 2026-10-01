@@ -101,7 +101,7 @@ def test_client_typing_pagination(backend: DataModelType, tmp_path: Path) -> Non
 
 
 @pytest.mark.parametrize(
-    "case", ["pagination-targets", "pagination-querystring", "pagination-counts", "pagination-links"]
+    "case", ["pagination-targets", "pagination-querystring", "pagination-counts", "pagination-links", "streams-mixed"]
 )
 def test_client_typing_package(case: str, tmp_path: Path) -> None:
     """Check packages whose helpers write each kind of request target, bindings, positions, and followed URLs."""
@@ -130,6 +130,46 @@ def test_client_typing_webhooks(backend: DataModelType, tmp_path: Path) -> None:
     assert_output(
         client_typing_report(tmp_path, backend, "webhooks-typing", ("webhook_helpers",)),
         EXPECTED / f"{backend.value.replace('.', '-')}-webhooks.txt",
+    )
+
+
+@pytest.mark.parametrize(
+    "backend",
+    [
+        DataModelType.PydanticV2BaseModel,
+        DataModelType.PydanticV2Dataclass,
+        DataModelType.DataclassesDataclass,
+        DataModelType.TypingTypedDict,
+        DataModelType.MsgspecStruct,
+    ],
+)
+def test_client_typing_streams(backend: DataModelType, tmp_path: Path) -> None:
+    """Check SSE helpers: typed events and data, unknown events, sync and asyncio streams, and misuses of each."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(
+        client_typing_report(tmp_path, backend, "streams", ("streams",)),
+        EXPECTED / f"{backend.value.replace('.', '-')}-streams.txt",
+    )
+
+
+@pytest.mark.parametrize(
+    "backend",
+    [
+        DataModelType.PydanticV2BaseModel,
+        DataModelType.PydanticV2Dataclass,
+        DataModelType.DataclassesDataclass,
+        DataModelType.TypingTypedDict,
+        DataModelType.MsgspecStruct,
+    ],
+)
+def test_client_typing_ndjson(backend: DataModelType, tmp_path: Path) -> None:
+    """Check NDJSON helpers: typed records and data, unknown records, sync and asyncio streams, and misuses of each."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(
+        client_typing_report(tmp_path, backend, "ndjson", ("ndjson",)),
+        EXPECTED / f"{backend.value.replace('.', '-')}-ndjson.txt",
     )
 
 

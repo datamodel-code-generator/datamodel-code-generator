@@ -17,6 +17,7 @@ render pydantic_v2.BaseModel
   E_CONFIG_VALUE config protocols.helpers['schema.type'].event_schema: protocols.helpers['schema.type'].event_schema must be a schema reference
   E_CONFIG_VALUE config protocols.helpers['completion.sentinel'].completion.value: protocols.helpers['completion.sentinel'].completion.value must be a nonempty UTF-8 string
   E_CONFIG_VALUE config protocols.helpers['completion.ndjson'].completion.kind: protocols.helpers['completion.ndjson'].completion.kind must be 'eof' or 'sentinel'
+  E_CONFIG_VALUE config protocols.helpers['completion.line'].completion.value: protocols.helpers['completion.line'].completion.value must not contain a line feed
   E_CONFIG_UNKNOWN config protocols.helpers['final.sse'].final_line: protocols.helpers['final.sse'] has no key 'final_line'
   E_CONFIG_VALUE config protocols.helpers['final.missing'].final_line: protocols.helpers['final.missing'] needs 'final_line'
   E_CONFIG_VALUE config protocols.helpers['final.choice'].final_line: protocols.helpers['final.choice'].final_line must be 'require_newline' or 'allow_eof'

@@ -20,8 +20,11 @@ from typing_extensions import Self, TypeVar
 
 from ..client.errors import BudgetExceededError, ProtocolConfigurationError, ProtocolSizeError
 from ..client.options import RequestOptions
+from ..client.paths import dot_segment, path_segments
 from ..client.responses import ResponseInfo
 from ..client.timing import SessionOptions
+from ..model_codecs.errors import ParameterEncodingError
+from ..model_codecs.parameters import path_text
 from ..model_codecs.unset import UNSET, Unset
 from .errors import PaginationCycleError, ProtocolDataError, ProtocolStateError, SessionLimitError
 from .options import PaginationOptions
@@ -44,8 +47,9 @@ from .records import (
 from .values import MISSING, Missing, Patch, resolve
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Awaitable, Callable, Generator, Iterator, Sequence
+    from collections.abc import AsyncIterator, Awaitable, Callable, Generator, Iterator, Mapping, Sequence
     from types import TracebackType
+    from typing import TypeAlias
 
     from ..client.client import AsyncClientCore, ClientCore
     from ..client.logical import OperationSession
@@ -56,6 +60,8 @@ if TYPE_CHECKING:
     from ..model_codecs.selectors import MediaSelector
     from ..model_codecs.wire import WireValue
     from .references import OperationRef
+
+    _PathPart: TypeAlias = tuple[str, int | None, Selector | None, int]
 
 __all__ = (
     "AsyncPager",
@@ -82,7 +88,6 @@ V = TypeVar("V")
 T_co = TypeVar("T_co", covariant=True, default=object)
 P_co = TypeVar("P_co", covariant=True, default=object)
 
-_DOT_SEGMENTS: Final = (".", "..")
 _BOOLEANS: Final = MappingProxyType({"true": True, "false": False})
 _MAX_URL_BYTES: Final = 8192
 _REFERENCE: Final = re.compile(
@@ -219,8 +224,9 @@ class PaginationPlan(Generic[T, P]):
     is written into the caller's encoded value. They skip the schema and argument checks, since the server chose them.
     A helper that `follows` a server's URLs writes no cursor and sends each later page to the URL with GET and no body,
     unless it repeats the request body with the operation's method. `headers` and `queries` name the header, cookie,
-    and query parameters it writes, which a call's options must not patch, and `dotted` the writes of read values into
-    path parameters, which must not be dot segments.
+    and query parameters it writes, which a call's options must not patch, and `dotted` the path segments a read value
+    is written to, by each parameter's name, write, selector, and position, a caller's argument without a write;
+    such a segment must not encode to a dot segment.
     """
 
     helper_id: str
@@ -235,7 +241,7 @@ class PaginationPlan(Generic[T, P]):
     writes: tuple[tuple[int | None, str | None], ...] = field(init=False)
     headers: frozenset[str] = field(init=False)
     queries: frozenset[str] = field(init=False)
-    dotted: tuple[tuple[int, Selector], ...] = field(init=False)
+    dotted: tuple[tuple[str, tuple[_PathPart, ...]], ...] = field(init=False)
     continued: OperationPlan[P, object] = field(init=False)
 
     def __post_init__(self) -> None:
@@ -293,15 +299,7 @@ class PaginationPlan(Generic[T, P]):
         object.__setattr__(self, "writes", tuple(writes))
         object.__setattr__(self, "headers", frozenset(headers))
         object.__setattr__(self, "queries", frozenset(queries))
-        object.__setattr__(
-            self,
-            "dotted",
-            tuple(
-                (index, selector)
-                for index, (target, selector) in enumerate(sources)
-                if isinstance(target, ParameterTarget) and target.location == "path" and selector is not None
-            ),
-        )
+        object.__setattr__(self, "dotted", _read_paths(call, sources))
         continued = replace(call, parameters=tuple(parameters), body=body, checks=())
         if follows and not (isinstance(rule, NextUrlPlan) and rule.repeat_request_body):
             continued = replace(continued, method="GET", body=None, retry_safety="method_default", idempotency=None)
@@ -527,6 +525,53 @@ def _selected(plan: PaginationPlan[T, P], read: Selector, wire: WireValue, info:
     return info.status_code
 
 
+def _read_paths(
+    call: OperationPlan[P, object], sources: Sequence[tuple[RequestTarget, Selector | None]]
+) -> tuple[tuple[str, tuple[_PathPart, ...]], ...]:
+    """Return the path segments read values are written to, each parameter by name, write, selector, and position.
+
+    A parameter the caller's argument fills has no write.
+    """
+    paths: dict[str, tuple[int | None, Selector | None]] = {
+        target.name: (index, selector)
+        for index, (target, selector) in enumerate(sources)
+        if isinstance(target, ParameterTarget) and target.location == "path"
+    }
+    reads = {name for name, (_, selector) in paths.items() if selector is not None}
+    return tuple(
+        (segment, tuple((name, *paths.get(name, (None, None)), _position(call, "path", name)) for name in names))
+        for segment, names in (path_segments(call.path) if reads else ())
+        if not reads.isdisjoint(names)
+    )
+
+
+def _dotted(
+    plan: PaginationPlan[T, P],
+    segment: str,
+    parts: tuple[_PathPart, ...],
+    written: tuple[WireValue, ...],
+    callers: Callable[[], Mapping[str, str]],
+) -> Selector | None:
+    """Return the selector of a read value written to a path segment that encodes to a dot segment, or None.
+
+    The caller's own path arguments in the segment keep the texts the first page sent. The first read value whose
+    encoded text is non-empty is blamed, or else the first read value. A value its parameter cannot encode is left to
+    the request, which refuses it.
+    """
+    parameters = plan.call.parameters
+    try:
+        texts = {
+            name: callers()[name] if index is None else path_text(parameters[position].plan, written[index])
+            for name, index, _, position in parts
+        }
+    except ParameterEncodingError:
+        return None
+    if not dot_segment(segment, texts):
+        return None
+    reads = [(name, read) for name, _, read, _ in parts if read is not None]
+    return next((read for name, read in reads if texts[name]), reads[0][1])
+
+
 def _size_error(
     plan: PaginationPlan[T, P], info: ResponseInfo, kind: Literal["cursor", "headers"], limit: int, size: int
 ) -> ProtocolSizeError:
@@ -676,7 +721,7 @@ class _Walk(Generic[T, P]):
     keeps the origins it may follow them to once its first fetch resolves them.
     """
 
-    __slots__ = ("delivered", "limits", "link", "origins", "plan", "request", "seed", "session", "start")
+    __slots__ = ("delivered", "limits", "link", "origins", "paths", "plan", "request", "seed", "session", "start")
 
     def __init__(
         self, plan: PaginationPlan[T, P], request: _Request, limits: _Limits, link: _Link | None = None
@@ -691,6 +736,7 @@ class _Walk(Generic[T, P]):
         self.start: int | None = None
         self.origins: frozenset[Origin] = frozenset()
         self.seed: bytes | None = None
+        self.paths: dict[str, str] | None = None
 
     def progress(self) -> ProtocolProgress:
         """Return the pages fetched, the items delivered, and the session's sends so far."""
@@ -701,6 +747,22 @@ class _Walk(Generic[T, P]):
             "network_send_count": 0 if session is None else session.network_send_count,
             "network_send_budget_used": 0 if session is None else session.network_send_budget_used,
         })
+
+    def callers(self) -> dict[str, str]:
+        """Return the texts of the caller's path arguments that share a segment with a read value, once a walk.
+
+        Each argument the first page sent is encoded again by its parameter's codec, without validation.
+        """
+        if (texts := self.paths) is None:
+            plan, arguments = self.plan, self.request.arguments
+            parameters = plan.call.parameters
+            texts = self.paths = {
+                name: path_text(parameters[position].plan, parameters[position].encode(arguments[position], "none"))
+                for _, parts in plan.dotted
+                for name, index, _, position in parts
+                if index is None
+            }
+        return texts
 
     def session_id(self) -> str | None:
         """Return the identifier of the walk's session once it started."""
@@ -978,7 +1040,8 @@ class _Walk(Generic[T, P]):
         The items are checked in the wire value before the page's accessor reads them from the decoded one; a value of
         another type fails its response's validation first, in every mode. What the next request writes is the cursor
         or position, or the URL it follows without the query fields the auth manages, MISSING after the last page.
-        The bindings are read only when a page follows, and a dot segment read for a path parameter is refused.
+        The bindings are read only when a page follows, and a read value that makes a path segment a dot segment once
+        encoded is refused.
         """
         plan = self.plan
         selector = plan.items_selector
@@ -1000,8 +1063,8 @@ class _Walk(Generic[T, P]):
             return Page(items=items, data=data, response=info), cursor, ()
         bound = self.bound(wire, info)
         written = bound if plan.follows else (*bound, cursor)
-        for index, read in plan.dotted:
-            if written[index] in _DOT_SEGMENTS:
+        for segment, parts in plan.dotted:
+            if (read := _dotted(plan, segment, parts, written, self.callers)) is not None:
                 raise _data_error(plan, info, "value", read)
         continuation = Continuation(kind=rule.kind, value=cursor)
         page = Page(items=items, data=data, response=info, continuation=continuation)

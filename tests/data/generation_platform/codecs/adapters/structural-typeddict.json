@@ -5,6 +5,6 @@
   "cases": [
     {"name": "cat-outbound", "use": "/paths/~1cats/post request_body", "op": "outbound", "value": {"kind": "cat"}},
     {"name": "cat-snapshot", "use": "/paths/~1cats/post request_body", "op": "snapshot", "value": {"model": "Cat", "args": {"kind": "cat"}}},
-    {"name": "pair-encode", "use": "/paths/~1cats/post parameter query pair", "op": "encode", "value": ["a", "b"]}
+    {"name": "pair-encode", "use": "/paths/~1pairs/post request_body", "op": "encode", "value": ["a", "b"]}
   ]
 }
