@@ -21,7 +21,8 @@ if TYPE_CHECKING:
 
 RUNTIME: Final = Path(__file__).parent / "_runtime"
 _RUNTIME_IMPORT: Final = re.compile(r"^[ \t]*from \.+_runtime\.(\w+)\.(\w+) import", re.MULTILINE)
-_RELATIVE_IMPORT: Final = re.compile(r"^\s*from (\.+)(\w+(?:\.\w+)*) import", re.MULTILINE)
+_RELATIVE_IMPORT: Final = re.compile(r"^\s*from (\.+)((?:\w+(?:\.\w+)*)?) import[ \t]*(\([^)]*\)|[^\n]*)", re.MULTILINE)
+_IMPORTED_NAME: Final = re.compile(r"(\w+)(?:\s+as\s+\w+)?\s*(?:,|$)", re.MULTILINE)
 PATTERNS: Final = "google-re2>=1.1.20251105"
 MODEL_DEPENDENCIES: Final = (
     ("pydantic.EmailStr", "email-validator>=2.3"),
@@ -54,12 +55,16 @@ def items(values: Iterable[Doc]) -> tuple[tuple[str, Doc], ...]:
 
 @cache
 def _relative_imports(module: str) -> tuple[str, ...]:
-    """Return the runtime modules that one runtime module imports relatively."""
+    """Return the runtime modules that one runtime module imports relatively, including submodules of a package."""
     parents = PurePosixPath(module).parents
-    return tuple(
-        f"{parents[len(dots) - 1].joinpath(*target.split('.')).as_posix()}.py"
-        for dots, target in _RELATIVE_IMPORT.findall((RUNTIME / module).read_text(encoding="utf-8"))
-    )
+    paths = []
+    source = _COMMENT.sub("", (RUNTIME / module).read_text(encoding="utf-8"))
+    for dots, target, names in _RELATIVE_IMPORT.findall(source):
+        path = parents[len(dots) - 1].joinpath(*target.split(".")) if target else parents[len(dots) - 1]
+        submodules = [path / f"{name}.py" for name in _IMPORTED_NAME.findall(names.strip("()"))]
+        found = [submodule.as_posix() for submodule in submodules if (RUNTIME / submodule).is_file()]
+        paths.extend((found or [f"{path.as_posix()}.py"]) if target else found)
+    return tuple(paths)
 
 
 def runtime_sources(texts: Iterable[str]) -> Iterator[tuple[PurePosixPath, str]]:

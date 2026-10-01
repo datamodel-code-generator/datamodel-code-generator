@@ -268,14 +268,14 @@ def set_error_counters(  # noqa: PLR0913
 ) -> None:
     """Finalize an error's readonly counter snapshot before publishing it."""
     counters = (
-        _error_count(resource_attempt_count, "resource_attempt_count"),
-        _error_count(redirect_count, "redirect_count"),
-        _error_count(auth_exchange_count, "auth_exchange_count"),
-        _error_count(network_send_count, "network_send_count"),
-        _error_count(network_send_budget_used, "network_send_budget_used"),
-        _error_count(auth_exchange_budget_used, "auth_exchange_budget_used"),
+        error_count(resource_attempt_count, "resource_attempt_count"),
+        error_count(redirect_count, "redirect_count"),
+        error_count(auth_exchange_count, "auth_exchange_count"),
+        error_count(network_send_count, "network_send_count"),
+        error_count(network_send_budget_used, "network_send_budget_used"),
+        error_count(auth_exchange_budget_used, "auth_exchange_budget_used"),
         _error_ids(auth_refresh_ids),
-        _error_count(auth_refresh_pending, "auth_refresh_pending"),
+        error_count(auth_refresh_pending, "auth_refresh_pending"),
         _error_optional_count(wire_send_count, "wire_send_count"),
     )
     object.__setattr__(error, "_counters", counters)  # noqa: PLC2801 - Finalize the readonly snapshot.
@@ -288,13 +288,15 @@ def _condition(value: object) -> str:
     return value
 
 
-def _error_choice(value: object, choices: tuple[str, ...], field: str) -> None:
+def error_choice(value: object, choices: tuple[str, ...], field: str) -> None:
+    """Refuse an error field value outside its declared choices."""
     if not isinstance(value, str) or value not in choices:
         msg = f"{field} must be one of its declared values"
         raise ValueError(msg)
 
 
-def _error_time(value: object, field: str, *, nonnegative: bool = True) -> float:
+def error_time(value: object, field: str, *, nonnegative: bool = True) -> float:
+    """Return an error field duration as a finite float, refusing booleans and values outside its range."""
     match value:
         case bool():
             pass
@@ -319,7 +321,8 @@ def _error_status(value: object) -> int:
     return value
 
 
-def _error_count(value: object, field: str) -> int:
+def error_count(value: object, field: str) -> int:
+    """Return an error field count, refusing booleans and negative or non-integer values."""
     if type(value) is not int or value < 0:
         msg = f"{field} must be a nonnegative integer"
         raise ValueError(msg)
@@ -327,7 +330,7 @@ def _error_count(value: object, field: str) -> int:
 
 
 def _error_optional_count(value: object, field: str) -> int | None:
-    return None if value is None else _error_count(value, field)
+    return None if value is None else error_count(value, field)
 
 
 def _error_delivery(value: object) -> DeliveryState:
@@ -337,14 +340,13 @@ def _error_delivery(value: object) -> DeliveryState:
     return value
 
 
-def _is_error_ids(value: object) -> TypeIs[tuple[object, ...] | list[object]]:
+def is_sequence(value: object) -> TypeIs[tuple[object, ...] | list[object]]:
+    """Return whether a value is a tuple or a list."""
     return isinstance(value, (tuple, list))
 
 
 def _error_ids(value: object) -> tuple[str, ...]:
-    if _is_error_ids(value) and len(identifiers := tuple(item for item in value if isinstance(item, str))) == len(
-        value
-    ):
+    if is_sequence(value) and len(identifiers := tuple(item for item in value if isinstance(item, str))) == len(value):
         return identifiers
     msg = "auth_refresh_ids must contain only strings"
     raise ValueError(msg)
@@ -364,7 +366,8 @@ def _error_expiry(value: object) -> datetime | None:
     raise ValueError(msg)
 
 
-def _string(value: object, field: str, *, optional: bool = False) -> None:
+def error_string(value: object, field: str, *, optional: bool = False) -> None:
+    """Refuse an error field value that is not a string, or None where optional."""
     if isinstance(value, str) or (optional and value is None):
         return
     msg = f"{field} must be a string{' or None' if optional else ''}"
@@ -372,7 +375,7 @@ def _string(value: object, field: str, *, optional: bool = False) -> None:
 
 
 def _protocol_context(helper_id: object, operation: object) -> None:
-    _string(helper_id, "helper_id", optional=True)
+    error_string(helper_id, "helper_id", optional=True)
     if operation is not None and not isinstance(operation, OperationRef):
         msg = "operation must be an OperationRef or None"
         raise ValueError(msg)
@@ -466,7 +469,7 @@ class ProtocolConfigurationError(ConfigurationError):
         secondary_errors: tuple[BaseException, ...] = (),
     ) -> None:
         """Keep the configuration location, safe rejection category, and helper context."""
-        _error_choice(
+        error_choice(
             condition,
             (
                 "unknown_field",
@@ -797,8 +800,8 @@ class AuthRefreshError(SDKError):
         wire_send_count: int | None = None,
     ) -> None:
         """Keep provider identifiers, the SDK state, and the phase without exposing credential material."""
-        _error_choice(state, self._states, "state")
-        _error_choice(
+        error_choice(state, self._states, "state")
+        error_choice(
             phase,
             get_args(AuthPhase),
             "phase",
@@ -893,7 +896,7 @@ class AuthProviderExecutionError(AuthRefreshError):
         wire_send_count: int | None = None,
     ) -> None:
         """Identify the failed callback while preserving its exact exception as the cause."""
-        _error_choice(callback, ("get", "invalidate", "refresh"), "callback")
+        error_choice(callback, ("get", "invalidate", "refresh"), "callback")
         super().__init__(
             provider_id=provider_id,
             refresh_id=refresh_id,
@@ -1031,7 +1034,7 @@ class TokenExpiredError(AuthRefreshError):
         wire_send_count: int | None = None,
     ) -> None:
         """Keep the expiry category and an actual datetime, never an invalid raw expiry value."""
-        _error_choice(condition, ("expired", "nonpositive_expiry", "invalid_expiry"), "condition")
+        error_choice(condition, ("expired", "nonpositive_expiry", "invalid_expiry"), "condition")
         super().__init__(
             provider_id=provider_id,
             refresh_id=refresh_id,
@@ -1108,7 +1111,7 @@ class OAuthExchangeError(AuthRefreshError):
         if status_code is not None:
             _error_status(status_code)
         if oauth_error is not None:
-            _error_choice(oauth_error, OAUTH_ERROR_CODES, "oauth_error")
+            error_choice(oauth_error, OAUTH_ERROR_CODES, "oauth_error")
         super().__init__(
             provider_id=provider_id,
             refresh_id=refresh_id,
@@ -1182,8 +1185,8 @@ class AuthTimeoutError(AuthRefreshError):
         wire_send_count: int | None = None,
     ) -> None:
         """Keep the timeout that fired and whether it bounded one phase or the whole provider session."""
-        seconds = _error_time(effective_timeout, "effective_timeout")
-        _error_choice(timeout_kind, get_args(AuthTimeoutKind), "timeout_kind")
+        seconds = error_time(effective_timeout, "effective_timeout")
+        error_choice(timeout_kind, get_args(AuthTimeoutKind), "timeout_kind")
         super().__init__(
             provider_id=provider_id,
             refresh_id=refresh_id,
@@ -1255,7 +1258,7 @@ class AuthStateUncertainError(AuthRefreshError):
         wire_send_count: int | None = None,
     ) -> None:
         """Keep the category that left the exchange's outcome unknown and any status obtained, never the body."""
-        _error_choice(
+        error_choice(
             failure_kind,
             get_args(AuthFailureKind),
             "failure_kind",
@@ -1334,7 +1337,7 @@ class AuthReauthorizationRequiredError(AuthRefreshError):
         wire_send_count: int | None = None,
     ) -> None:
         """Keep why a new authorization is required."""
-        _error_choice(condition, get_args(ReauthorizationCondition), "condition")
+        error_choice(condition, get_args(ReauthorizationCondition), "condition")
         super().__init__(
             provider_id=provider_id,
             refresh_id=refresh_id,
@@ -1399,7 +1402,7 @@ class AuthStateConflictError(AuthRefreshError):
         wire_send_count: int | None = None,
     ) -> None:
         """Keep the refused operation; the state names where the provider or flow stood."""
-        _error_choice(action, get_args(AuthAction), "action")
+        error_choice(action, get_args(AuthAction), "action")
         super().__init__(
             provider_id=provider_id,
             refresh_id=refresh_id,
@@ -1466,7 +1469,7 @@ class AuthTokenLoadError(AuthRefreshError):
         wire_send_count: int | None = None,
     ) -> None:
         """Keep why the provider loaded the token set; the loaded value itself is never kept."""
-        _error_choice(purpose, get_args(TokenLoadPurpose), "purpose")
+        error_choice(purpose, get_args(TokenLoadPurpose), "purpose")
         super().__init__(
             provider_id=provider_id,
             refresh_id=refresh_id,
@@ -1533,7 +1536,7 @@ class AuthTokenStoreError(AuthRefreshError):
         wire_send_count: int | None = None,
     ) -> None:
         """Keep the persistence action and the revisions it compared and tried to store."""
-        _error_choice(action, get_args(TokenStoreAction), "action")
+        error_choice(action, get_args(TokenStoreAction), "action")
         expected = _error_optional_count(expected_revision, "expected_revision")
         pending = _error_optional_count(pending_revision, "pending_revision")
         super().__init__(
@@ -1689,7 +1692,7 @@ class AuthConcurrencyLimitError(AuthRefreshError):
         wire_send_count: int | None = None,
     ) -> None:
         """Keep which limit refused the caller and its configured value."""
-        _error_choice(limit_kind, get_args(AuthLimitKind), "limit_kind")
+        error_choice(limit_kind, get_args(AuthLimitKind), "limit_kind")
         super().__init__(
             provider_id=provider_id,
             refresh_id=refresh_id,
@@ -1713,7 +1716,7 @@ class AuthConcurrencyLimitError(AuthRefreshError):
             wire_send_count=wire_send_count,
         )
         self._limit_kind: AuthLimitKind = limit_kind
-        self._limit = _error_count(limit, "limit")
+        self._limit = error_count(limit, "limit")
 
     @property
     def limit_kind(self) -> AuthLimitKind:
@@ -1762,7 +1765,7 @@ class AuthBudgetExceededError(AuthRefreshError):
         wire_send_count: int | None = None,
     ) -> None:
         """Keep the exhausted budget and how many slots were already consumed."""
-        _error_choice(budget_kind, get_args(AuthBudgetKind), "budget_kind")
+        error_choice(budget_kind, get_args(AuthBudgetKind), "budget_kind")
         super().__init__(
             provider_id=provider_id,
             refresh_id=refresh_id,
@@ -1786,8 +1789,8 @@ class AuthBudgetExceededError(AuthRefreshError):
             wire_send_count=wire_send_count,
         )
         self._budget_kind: AuthBudgetKind = budget_kind
-        self._limit = _error_count(limit, "limit")
-        self._used = _error_count(used, "used")
+        self._limit = error_count(limit, "limit")
+        self._used = error_count(used, "used")
 
     @property
     def budget_kind(self) -> AuthBudgetKind:
@@ -1944,7 +1947,7 @@ class PhaseTimeoutError(TransportError):
         wire_send_count: int | None = None,
     ) -> None:
         """Keep the expired phase cap, delivery evidence, and native timeout cause."""
-        _error_choice(phase, ("connect", "read", "write", "pool"), "phase")
+        error_choice(phase, ("connect", "read", "write", "pool"), "phase")
         super().__init__(
             delivery_state=_error_delivery(delivery_state),
             phase=phase,
@@ -1965,7 +1968,7 @@ class PhaseTimeoutError(TransportError):
             auth_refresh_pending=auth_refresh_pending,
             wire_send_count=wire_send_count,
         )
-        self._effective_timeout = _error_time(effective_timeout, "effective_timeout")
+        self._effective_timeout = error_time(effective_timeout, "effective_timeout")
 
     @property
     def effective_timeout(self) -> float:
@@ -2005,7 +2008,7 @@ class DeadlineExceededError(SDKError):
         wire_send_count: int | None = None,
     ) -> None:
         """Keep the absolute expiry, elapsed time, interrupted activity, and delivery evidence."""
-        _error_choice(
+        error_choice(
             phase, ("encode", "auth", "limiter", "sleep", "send", "decode", "stream", "cleanup", "unknown"), "phase"
         )
         super().__init__(
@@ -2025,8 +2028,8 @@ class DeadlineExceededError(SDKError):
             auth_refresh_pending=auth_refresh_pending,
             wire_send_count=wire_send_count,
         )
-        self._deadline_at = _error_time(deadline_at, "deadline_at", nonnegative=False)
-        self._elapsed = _error_time(elapsed, "elapsed")
+        self._deadline_at = error_time(deadline_at, "deadline_at", nonnegative=False)
+        self._elapsed = error_time(elapsed, "elapsed")
         self._delivery_state = _error_delivery(delivery_state)
         self._phase: DeadlinePhase = phase
 
@@ -2085,7 +2088,7 @@ class RequestCancelledError(SDKError):
         wire_send_count: int | None = None,
     ) -> None:
         """Keep the observed token source and request delivery evidence."""
-        _error_choice(source, ("cancel_token", "parent_cancel_token"), "source")
+        error_choice(source, ("cancel_token", "parent_cancel_token"), "source")
         super().__init__(
             operation_id=operation_id,
             call_id=call_id,
@@ -2148,7 +2151,7 @@ class BudgetExceededError(SDKError):
         wire_send_count: int | None = None,
     ) -> None:
         """Keep the exhausted budget and how many slots were already consumed."""
-        _error_choice(budget_kind, ("network", "parent_network"), "budget_kind")
+        error_choice(budget_kind, ("network", "parent_network"), "budget_kind")
         super().__init__(
             operation_id=operation_id,
             call_id=call_id,
@@ -2167,8 +2170,8 @@ class BudgetExceededError(SDKError):
             wire_send_count=wire_send_count,
         )
         self._budget_kind: Literal["network", "parent_network"] = budget_kind
-        self._limit = _error_count(limit, "limit")
-        self._used = _error_count(used, "used")
+        self._limit = error_count(limit, "limit")
+        self._used = error_count(used, "used")
 
     @property
     def budget_kind(self) -> Literal["network", "parent_network"]:
@@ -2215,7 +2218,7 @@ class LimiterExecutionError(SDKError):
         wire_send_count: int | None = None,
     ) -> None:
         """Keep the failing callback category without exposing the callback's values."""
-        _error_choice(action, ("acquire", "release"), "action")
+        error_choice(action, ("acquire", "release"), "action")
         super().__init__(
             operation_id=operation_id,
             call_id=call_id,
@@ -2682,57 +2685,6 @@ class ProtocolError(SDKError):
         self.operation = operation
 
 
-class ProtocolDataError(ProtocolError):
-    """Received data that is missing, null, of another type or value, malformed, or inconsistent."""
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        condition: Literal["missing", "null", "type", "value", "malformed", "inconsistent"] = "value",
-        helper_id: str | None = None,
-        operation: OperationRef | None = None,
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Keep which rule the received data broke."""
-        super().__init__(
-            helper_id=helper_id,
-            operation=operation,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self.condition = condition
-
-    def _details(self) -> tuple[tuple[str, object], ...]:
-        return (*super()._details(), ("condition", self.condition))
-
-
 class ProtocolSizeError(ProtocolError):
     """A received record over the limit of its buffer; the oversized value never reaches the caller."""
 
@@ -2824,7 +2776,7 @@ class WebhookVerificationError(ProtocolError):
         secondary_errors: tuple[BaseException, ...] = (),
     ) -> None:
         """Keep only the safe rejection category and shared context, never signature or key material."""
-        _error_choice(
+        error_choice(
             condition,
             ("malformed_signature", "invalid_signature", "missing_key", "timestamp_window", "missing_delivery_id"),
             "condition",
@@ -2864,7 +2816,7 @@ class WebhookReplayError(ProtocolError):
     ) -> None:
         """Keep the delivery and namespace for explicit inspection, excluding both from its message."""
         for field, value in (("delivery_id", delivery_id), ("namespace", namespace)):
-            _string(value, field)
+            error_string(value, field)
         super().__init__(
             helper_id=helper_id,
             operation=operation,
@@ -2897,7 +2849,7 @@ class ProtocolStoreError(ProtocolError):
         secondary_errors: tuple[BaseException, ...] = (),
     ) -> None:
         """Keep the store action and private entry identity alongside the helper context."""
-        _error_choice(
+        error_choice(
             action,
             (
                 "lookup",
@@ -2919,7 +2871,7 @@ class ProtocolStoreError(ProtocolError):
             ),
             "action",
         )
-        _string(entry_id, "entry_id", optional=True)
+        error_string(entry_id, "entry_id", optional=True)
         super().__init__(
             helper_id=helper_id,
             operation=operation,

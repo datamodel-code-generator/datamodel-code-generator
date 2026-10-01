@@ -10,7 +10,7 @@
     hints=True/True/True retained=True
     str=ProtocolConfigurationError(operation_id='webhook', call_id='call-1', condition='binding_mismatch') repr=ProtocolConfigurationError() secret=False
   ProtocolDataError: base=ProtocolError sdk=True reason=protocol_data_error
-    fields=call_id,cause,condition,helper_id,info,operation,operation_id,parent_session_id,secondary_errors
+    fields=call_id,cause,condition,helper_id,info,location,operation,operation_id,parent_session_id,secondary_errors
     context=True/True/True/True/True call=webhook/call-1/session-1
     hints=True/True/True retained=True
     str=ProtocolDataError(operation_id='webhook', call_id='call-1', condition='malformed') repr=ProtocolDataError() secret=False

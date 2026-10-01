@@ -41,6 +41,8 @@ from tests.data.python.client_oauth_device import oauth_device
 from tests.data.python.client_oauth_refresh import oauth_refresh, oauth_refresh_load
 from tests.data.python.client_oauth_shared import oauth_shared
 from tests.data.python.client_oauth_store import oauth_refresh_store
+from tests.data.python.client_protocol_contracts import protocol_contracts
+from tests.data.python.client_protocol_errors import protocol_errors
 from tests.data.python.client_query import query
 from tests.data.python.client_raw import raw
 from tests.data.python.client_redirects import head_redirects, redirects
@@ -706,6 +708,8 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "limiter-faults": ("pets", ("pydantic_v2.BaseModel",), limiter_faults),
     "webhook-contracts": ("pets", BACKENDS, webhook_contracts),
     "webhook-errors": ("pets", ("pydantic_v2.BaseModel",), webhook_errors),
+    "protocol-contracts": ("pets", BACKENDS, protocol_contracts),
+    "protocol-errors": ("pets", ("pydantic_v2.BaseModel",), protocol_errors),
     "evolution": ("evolution", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"), evolution),
     "evolution-schema": (
         "evolution-schema",

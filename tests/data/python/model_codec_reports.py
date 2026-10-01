@@ -42,6 +42,7 @@ from datamodel_code_generator._runtime.model_codecs.unset import UNSET, Unset
 from datamodel_code_generator._runtime.model_codecs.wire import freeze_wire, presence_of, thaw_wire
 
 if TYPE_CHECKING:
+    import ast
     from collections.abc import Callable
     from pathlib import Path
 
@@ -479,6 +480,15 @@ def alias_hint_report() -> str:
     return "\n".join(lines) + "\n"
 
 
+def _imported_name(path: Path, node: ast.ImportFrom, name: str) -> str:
+    """Name a relative import by the submodule it imports from a package, or else by the module it imports from."""
+    module = f"{'.' * node.level}{node.module or ''}"
+    package = path.parents[node.level - 1].joinpath(*(node.module or "").split(".")) if node.level else None
+    if package is not None and (package / f"{name}.py").is_file():
+        return f"{module}.{name}" if node.module else f"{module}{name}"
+    return module
+
+
 def runtime_import_report(root: Path) -> str:
     """List every import of the embeddable runtime, which must never reach the generator package."""
     import ast
@@ -486,7 +496,7 @@ def runtime_import_report(root: Path) -> str:
     lines = []
     for path in sorted(root.rglob("*.py")):
         imports = sorted({
-            f"{'.' * node.level}{node.module or ''}" if isinstance(node, ast.ImportFrom) else alias.name
+            _imported_name(path, node, alias.name) if isinstance(node, ast.ImportFrom) else alias.name
             for node in ast.walk(ast.parse(path.read_text(encoding="utf-8")))
             if isinstance(node, (ast.Import, ast.ImportFrom))
             for alias in node.names

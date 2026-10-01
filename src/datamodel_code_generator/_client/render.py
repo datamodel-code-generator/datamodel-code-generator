@@ -104,6 +104,10 @@ __all__ = [
 '''
 _OPTIONS: Final = '''"""Settings of the clients and of each call: UNSET inherits, and each field defines its None."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from ._runtime.client.options import (
     CancelToken,
     ClientOptions,
@@ -122,6 +126,9 @@ from ._runtime.client.options import (
 )
 from ._runtime.model_codecs.unset import UNSET, Unset
 
+if TYPE_CHECKING:
+    from ._runtime.protocols.options import ProtocolClientOptions
+
 __all__ = [
     "UNSET",
     "CancelToken",
@@ -129,6 +136,7 @@ __all__ = [
     "Deadline",
     "HeaderPatch",
     "IdempotencyKey",
+    "ProtocolClientOptions",
     "QueryPatch",
     "RedirectOptions",
     "RequestOptions",
@@ -140,6 +148,22 @@ __all__ = [
     "Unset",
     "ValidationOptions",
 ]
+
+
+def __getattr__(name: str) -> object:
+    """Load the protocol helper settings only when their class is requested."""
+    if name == "ProtocolClientOptions":
+        from ._runtime.protocols.options import ProtocolClientOptions
+
+        globals()[name] = ProtocolClientOptions
+        return ProtocolClientOptions
+    msg = f"module {__name__!r} has no attribute {name!r}"
+    raise AttributeError(msg)
+
+
+def __dir__() -> list[str]:
+    """List the module's names, including those loaded on first use."""
+    return sorted({*globals(), *__all__})
 '''
 _AUTH_NAMES: Final = (
     "AccessToken",
@@ -236,7 +260,6 @@ _ERROR_NAMES: Final = (
     "OAuthExchangeError",
     "PhaseTimeoutError",
     "ProtocolConfigurationError",
-    "ProtocolDataError",
     "ProtocolError",
     "ProtocolSizeError",
     "ProtocolStoreError",
@@ -264,13 +287,47 @@ _ERROR_NAMES: Final = (
     "WebhookStoreError",
     "WebhookVerificationError",
 )
+_PROTOCOL_ERROR_NAMES: Final = (
+    "IncompleteFrameError",
+    "OperationCancelledError",
+    "OperationFailedError",
+    "PaginationCycleError",
+    "PollWaitLimitError",
+    "PollingStateError",
+    "ProtocolDataError",
+    "ProtocolStateError",
+    "ResumeStateError",
+    "ResumeStateTooLargeError",
+    "SessionLimitError",
+    "StreamDecodeError",
+    "StreamInterruptedError",
+    "StreamRemoteError",
+    "StreamResumeExhaustedError",
+)
 _ERRORS: Final = (
     '"""Exceptions of this package\'s clients: every class derives from SDKError."""\n\n'
+    "from __future__ import annotations\n\n"
+    "from typing import TYPE_CHECKING\n\n"
     "from ._runtime.client.errors import (\n"
     + "".join(f"    {name},\n" for name in _ERROR_NAMES)
-    + ")\n\n__all__ = [\n"
-    + "".join(f"    {name!r},\n" for name in _ERROR_NAMES)
-    + "]\n"
+    + ")\n\nif TYPE_CHECKING:\n    from ._runtime.protocols.errors import (\n"
+    + "".join(f"        {name},\n" for name in _PROTOCOL_ERROR_NAMES)
+    + "    )\n\n__all__ = [\n"
+    + "".join(f"    {name!r},\n" for name in sorted((*_ERROR_NAMES, *_PROTOCOL_ERROR_NAMES)))
+    + "]\n_PROTOCOL_ERRORS = frozenset({\n"
+    + "".join(f"    {name!r},\n" for name in _PROTOCOL_ERROR_NAMES)
+    + "})\n\n\n"
+    "def __getattr__(name: str) -> object:\n"
+    '    """Load the protocol helper exceptions only when one of their classes is requested."""\n'
+    "    if name in _PROTOCOL_ERRORS:\n"
+    "        from ._runtime.protocols import errors\n\n"
+    "        value = globals()[name] = getattr(errors, name)\n"
+    "        return value\n"
+    '    msg = f"module {__name__!r} has no attribute {name!r}"\n'
+    "    raise AttributeError(msg)\n\n\n"
+    "def __dir__() -> list[str]:\n"
+    '    """List the module\'s names, including the protocol helper exceptions loaded on first use."""\n'
+    "    return sorted({*globals(), *__all__})\n"
 )
 _RESPONSES: Final = '''"""Typed results of this package's calls, the metadata of their responses, and raw responses."""
 
@@ -279,13 +336,36 @@ from ._runtime.client.responses import HeadersView, Response, ResponseInfo
 
 __all__ = ["AsyncRawResponse", "HeadersView", "RawResponse", "Response", "ResponseInfo"]
 '''
-_PROTOCOLS: Final = '''"""Public contracts for standalone webhook verification and atomic replay stores."""
+_PROTOCOLS: Final = '''"""Public protocol contracts: selectors, helper options, records, resume state, and webhooks."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from .._runtime.protocols.options import (
+    Origin,
+    PaginationOptions,
+    PollOptions,
+    ProtocolDefaults,
+    ProtocolSecurityContext,
+    StreamOptions,
+)
+from .._runtime.protocols.records import (
+    BodySelector,
+    BodyTarget,
+    Continuation,
+    HeaderSelector,
+    ParameterTarget,
+    PollSnapshot,
+    ProgressKey,
+    ProtocolProgress,
+    QuerystringTarget,
+    RequestTarget,
+    Selector,
+    StatusSelector,
+)
 from .._runtime.protocols.references import OperationRef
+from .._runtime.protocols.resume import ResumeState, import_state
 from .._runtime.protocols.webhooks import (
     AsyncReplayStore,
     KeySet,
@@ -303,15 +383,35 @@ if TYPE_CHECKING:
 __all__ = [
     "AsyncMemoryReplayStore",
     "AsyncReplayStore",
+    "BodySelector",
+    "BodyTarget",
+    "Continuation",
+    "HeaderSelector",
     "KeySet",
     "MemoryReplayStore",
     "OperationRef",
+    "Origin",
+    "PaginationOptions",
+    "ParameterTarget",
+    "PollOptions",
+    "PollSnapshot",
+    "ProgressKey",
+    "ProtocolDefaults",
+    "ProtocolProgress",
+    "ProtocolSecurityContext",
+    "QuerystringTarget",
     "ReplayStore",
+    "RequestTarget",
     "ResolvedWebhookOptions",
+    "ResumeState",
+    "Selector",
+    "StatusSelector",
+    "StreamOptions",
     "VerifiedSignature",
     "VerifiedWebhook",
     "Verifier",
     "WebhookOptions",
+    "import_state",
 ]
 
 

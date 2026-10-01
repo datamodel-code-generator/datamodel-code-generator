@@ -109,6 +109,196 @@ All fields without a displayed default are required. They also accept the shared
 SDK error fields. `reason_code` is the concrete class name in snake case. Error strings and representations exclude
 delivery IDs, namespaces, operation references, entry IDs, and causes; callers may read those attributes explicitly.
 
+## Protocol contracts
+
+Generated packages also expose the shared contracts of pagination, polling, and stream helpers. Records, options,
+and resume state come from `pkg.protocols`; `ProtocolClientOptions` comes from `pkg.options`; exceptions come from
+`pkg.errors`. These imports need no HTTP library and start no threads. A client that uses no protocol settings loads
+none of these definitions: `pkg.options` and `pkg.errors` load them the first time one of their names is used. The
+helpers that use these contracts are still being implemented; constructing a record or option sends nothing.
+
+### Selectors, targets, and origins
+
+All records below are immutable and keyword-only. A field of the wrong type raises `TypeError`, including a
+non-string where a string or one of several strings is expected; an invalid value raises `ValueError`. Values are
+kept as given: a record never rewrites a name, pointer, or host into another spelling.
+
+| Type | Fields and accepted values |
+|---|---|
+| `BodySelector` | `pointer: str`, an RFC 6901 pointer over wire names: `""` or a value starting with `/` in which `~` is followed only by `0` or `1` |
+| `HeaderSelector` | `name: str`, an HTTP token; `occurrence: Literal['single', 'all'] = 'single'` |
+| `StatusSelector` | No fields; selects the final status code |
+| `ParameterTarget` | `location: Literal['path', 'query', 'header', 'cookie']`; `name: str`, nonempty, and an HTTP token for headers and cookies |
+| `QuerystringTarget` | `name: str`, the nonempty declaration identity that is never sent; `pointer: str`, an RFC 6901 pointer where `""` is the whole value |
+| `BodyTarget` | `pointer: str`, an RFC 6901 pointer where `""` is the whole body |
+| `Origin` | `scheme: str`, `host: str`, and `port: int`, exactly as the client's URL rule gives them back for an absolute `http` or `https` URL |
+
+`Selector` is `BodySelector | HeaderSelector | StatusSelector`, and `RequestTarget` is
+`ParameterTarget | QuerystringTarget | BodyTarget`.
+
+An `Origin` accepts exactly the triples that the client's own URL rule gives back unchanged: the rule spells the
+origin as an absolute URL, interprets that URL, and the resulting scheme, host, and effective port must equal the
+given ones. Anything the rule would rewrite or refuse raises `ValueError`, such as `Origin(scheme="https",
+host="API.example.com", port=443)`, whose host the rule lowercases, or a scheme other than `http` or `https`. The
+host is in the rule's own form; for example, an IPv6 address has no brackets, as in
+`Origin(scheme="https", host="::1", port=443)`. A field of the wrong type, including a boolean port, raises
+`TypeError`. Constructing an `Origin` loads the client's HTTP library to apply the rule.
+
+### Continuations, poll snapshots, and progress
+
+`Continuation(*, kind, value)` records the position of a helper session. `kind` is one of `cursor`, `offset`, `page`,
+`next_url`, and `link`; `value` is a JSON value. The continuation keeps only the value's canonical JSON, described
+below, and exposes only `kind`. Its representation is `Continuation(kind='cursor')`. Each continuation equals only
+itself, and it cannot be modified.
+
+`PollSnapshot[P]` is an immutable poll result with `state: WireValue`, `terminal: bool`, `data: P`, and
+`response: ResponseInfo`. The state is frozen, and the state and data are excluded from the representation. `P` is
+covariant, so a `PollSnapshot[Pet]` is also a `PollSnapshot[object]`.
+
+`ProgressKey` is `Literal['pages', 'items', 'polls', 'reconnects', 'parts', 'confirmed_bytes', 'network_send_count',
+'network_send_budget_used', 'messages_sent', 'messages_received']`, and `ProtocolProgress` is
+`Mapping[ProgressKey, int]`.
+
+Continuations and resume state encode their values as the same canonical JSON: UTF-8 without whitespace, object
+members sorted by the code points of their names, and strings escaped as Python's `json.dumps` escapes them with
+`ensure_ascii=False`, so only `"`, `\`, and U+0000–U+001F are escaped. An integer is written in plain decimal.
+A float is first converted to the decimal of its shortest round-trip representation, so `1e16` becomes `1E+16`. A
+decimal is written as its scientific string: no exponent when the exponent is at most 0 and the adjusted exponent is at
+least -6, and otherwise one digit before the point and an `E` exponent with a sign. For example, `1.50`, `-0.0`,
+`1E+2`, and `1E-7` keep those spellings. A decimal whose string has neither a point nor an exponent is written as an
+integer, so `Decimal("-0")` becomes `0`. Decoding the result and encoding it again gives the same bytes. A value
+nested beyond the interpreter recursion limit, and an integer beyond the interpreter's decimal conversion limit,
+raise `ValueError`.
+
+### Resume state
+
+`ResumeState(*, helper_fingerprint: str, security_fingerprint: str, state: WireValue, payload: bytes = b'',
+expires_at: datetime | None = None)` is opaque. The fingerprints must be strings without lone surrogates, and
+`expires_at` must be timezone-aware. The representation is `ResumeState(version=1)`, each instance equals only
+itself, and nothing is written to disk automatically. `copy.copy` and `copy.deepcopy` return the same instance,
+which cannot change, and `pickle.dumps` raises `TypeError`. The same applies to `Continuation`.
+
+`state.export()` returns canonical JSON with the members `expires_at`, `helper_fingerprint`, `payload`,
+`security_fingerprint`, `sha256`, `state`, and `version`. `expires_at` is `null` or the expiry's
+`datetime.isoformat()`, `payload` is standard base64 with padding, and `version` is `1`. `sha256` is the lowercase
+hexadecimal SHA-256 of the canonical JSON of the other six members. It detects corruption only; it is not a
+signature. An envelope larger than 16 MiB raises `ResumeStateTooLargeError` from `export()`, because
+`import_state` would refuse it.
+
+`import_state(data)` validates the bytes and rejects them in this order:
+
+| Rejected input | Exception |
+|---|---|
+| More than 16 MiB | `ResumeStateTooLargeError(limit=16777216, observed_bytes=...)` |
+| Not bytes, or not a JSON object | `ResumeStateError(condition='malformed')` |
+| An integer version other than 1, whatever the other members | `ResumeStateError(condition='version')` |
+| Unknown, missing, or mistyped members, an expiry or payload that `export()` would spell differently, or a state nested too deeply | `ResumeStateError(condition='malformed')` |
+| A checksum that does not match | `ResumeStateError(condition='checksum')` |
+| An expiry that has passed | `ResumeStateError(condition='expired')` |
+
+```python
+from pkg.protocols import ResumeState, import_state
+
+state = ResumeState(helper_fingerprint="helper", security_fingerprint="tenant", state={"cursor": "c2"})
+restored = import_state(state.export())
+```
+
+Errors never include fingerprints, state, or payload bytes. `import_state` does not compare fingerprints; the
+helper that resumes the state compares them with its own before sending anything.
+
+### Helper options
+
+Every option field defaults to `UNSET`, imported from `pkg.options`. The effective defaults below apply after
+merging. `None` removes a limit only where the table allows it. Counts and byte limits are integers, excluding
+booleans. Durations are finite numbers of seconds, excluding booleans; integers are accepted. Invalid values raise
+`ProtocolConfigurationError` with `condition='invalid_value'` and the field name as `field_path`.
+
+| Type | Field | Effective default | Valid values |
+|---|---|---|---|
+| `PaginationOptions` | `max_pages` | `1000` | Positive integer or `None` |
+| | `max_items` | `100000` | Nonnegative integer or `None`; `0` ends without sending |
+| | `max_page_bytes` | `8388608` | Positive integer |
+| | `max_cursor_bytes` | `65536` | Positive integer |
+| `PollOptions` | `max_polls` | `1000` | Positive integer or `None` |
+| | `interval` | The declared interval, `1` second by default | Positive duration |
+| | `max_wait` | `60` seconds | Positive duration or `None` |
+| `StreamOptions` | `idle_timeout` | The merged `stream_idle_timeout` | Positive duration or `None` |
+| | `max_line_bytes` | `262144` | Positive integer |
+| | `max_event_bytes` | `1048576` | Positive integer |
+| | `reconnect` | `False` | `bool` |
+| | `max_reconnects` | `5` | Nonnegative integer or `None` |
+| | `max_reconnect_wait` | `60` seconds | Positive duration or `None` |
+
+`ProtocolSecurityContext(*, credential_partition: str, allowed_origins: tuple[Origin, ...] = ())` names the
+nonsecret credential partition of helper state and the origins permitted in addition to the same origin. The
+partition must be nonempty and free of control characters, and it is excluded from the representation. A list of
+origins is copied into a tuple; an origin listed twice raises `ProtocolConfigurationError`.
+
+### Client protocol settings
+
+Protocol settings belong to the client only; `RequestOptions` has no `protocols` field. `ProtocolDefaults` comes from
+`pkg.protocols`.
+
+```python
+from pkg import Client
+from pkg.options import ClientOptions, ProtocolClientOptions, SessionOptions
+from pkg.protocols import PaginationOptions, ProtocolDefaults, ProtocolSecurityContext
+
+options = ClientOptions(
+    protocols=ProtocolClientOptions(
+        security=ProtocolSecurityContext(credential_partition="tenant-a"),
+        defaults={
+            "users.all": ProtocolDefaults(
+                session=SessionOptions(max_network_sends=100),
+                options=PaginationOptions(max_pages=10),
+            ),
+        },
+    ),
+)
+client = Client(options=options)
+```
+
+| Setting | Type | Meaning |
+|---|---|---|
+| `ClientOptions.protocols` | `ProtocolClientOptions \| None`, default `UNSET` | `None` or `UNSET` uses every protocol default. Another type raises `ConfigurationError(condition='invalid_type')` |
+| `ProtocolClientOptions.security` | `ProtocolSecurityContext \| None`, default `UNSET` | `None` means anonymous use |
+| `ProtocolClientOptions.defaults` | `Mapping[str, ProtocolDefaults]`, default `UNSET` | Keys are helper names: Python identifiers separated by dots, without keywords or empty parts. The mapping is copied into a read-only mapping, and its values keep their identity |
+| `ProtocolDefaults.session` | `SessionOptions`, default `UNSET` | Session limits of that helper |
+| `ProtocolDefaults.options` | `PaginationOptions \| PollOptions \| StreamOptions`, default `UNSET` | Kind-specific options of that helper |
+
+Invalid values inside `ProtocolClientOptions` and `ProtocolDefaults` raise `ProtocolConfigurationError`. Explicit
+call options take precedence over these defaults, which take precedence over the effective defaults above.
+
+### Protocol exceptions
+
+Every constructor is keyword-only. Besides the fields below, each accepts `helper_id`, `operation`,
+`operation_id`, `call_id`, `parent_session_id`, `info`, `cause`, `secondary_errors`, and the shared SDK counters.
+Invalid field values raise `ValueError`.
+
+| Exception | Direct base | Fields |
+|---|---|---|
+| `ProtocolDataError` | `ProtocolError` | `condition: Literal['missing', 'null', 'type', 'value', 'malformed', 'inconsistent'] = 'value'`, `location: Selector \| RequestTarget \| None = None` |
+| `ProtocolStateError` | `ProtocolError` | `state: str`, `action: str` |
+| `SessionLimitError` | `ProtocolError` | `kind: Literal['network_sends', 'pages', 'items', 'polls', 'reconnects', 'parts']`, `limit: int`, `progress: ProtocolProgress`, `resume_state: ResumeState \| None = None` |
+| `StreamResumeExhaustedError` | `SessionLimitError` | The same fields; `kind` is `reconnects` or `network_sends` |
+| `ResumeStateError` | `ProtocolError` | `condition: Literal['version', 'fingerprint', 'security', 'expired', 'malformed', 'checksum', 'size']` |
+| `ResumeStateTooLargeError` | `ResumeStateError` | `limit: int`, `observed_bytes: int`; `condition` is always `size` |
+| `PaginationCycleError` | `ProtocolDataError` | `page_index: int`, `first_seen_page_index: int`, `resume_state: ResumeState \| None = None`; `condition` is always `inconsistent` |
+| `PollingStateError` | `ProtocolDataError` | `condition: Literal['type', 'value'] = 'value'` |
+| `PollWaitLimitError` | `ProtocolError` | `kind: Literal['wait', 'deadline']`, `required_wait: float`, `limit: float`, `resume_state: ResumeState \| None = None` |
+| `OperationFailedError[P]` | `ProtocolError` | `snapshot: PollSnapshot[P]`, a read-only property |
+| `OperationCancelledError[P]` | `ProtocolError` | `snapshot: PollSnapshot[P]`, a read-only property |
+| `StreamDecodeError` | `ProtocolDataError` | `sequence: int`, `raw_prefix: bytes` of at most 65536 bytes, `truncated: bool`; `condition` defaults to `malformed` |
+| `StreamInterruptedError` | `ProtocolError` | `condition: Literal['eof', 'transport']`, `sequence: int`, `resume_state: ResumeState \| None = None` |
+| `IncompleteFrameError` | `StreamInterruptedError` | `buffered_bytes: int`; `condition` is always `eof` |
+| `StreamRemoteError[E]` | `ProtocolError` | `event_type: str \| None`, `data: E`, a read-only property, `sequence: int` |
+
+A field whose value is fixed is not a constructor argument, so passing it raises `TypeError`. `progress` is
+copied into a read-only mapping. Messages and representations exclude locations, progress, resume state, snapshots,
+raw bytes, event types, and event data; read those attributes explicitly. The payload type parameters are covariant
+and default to `object`, so an unparameterized `OperationFailedError` has `object` snapshot data. Narrow the payload
+explicitly before using it as a model.
+
 ## Signature style
 
 `signature_style` chooses how every operation method of the generated package declares its keyword arguments.

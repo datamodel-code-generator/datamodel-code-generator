@@ -5,11 +5,12 @@ from __future__ import annotations
 import zlib
 from typing import TYPE_CHECKING, Final
 
-from .errors import DecompressionLimitError, ProtocolDataError, ProtocolSizeError, UnsupportedContentCodingError
+from .errors import DecompressionLimitError, ProtocolSizeError, UnsupportedContentCodingError
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Iterator
 
+    from ..protocols.errors import ProtocolDataError
     from .responses import ResponseInfo
 
 CHUNK: Final = 64 * 1024
@@ -84,6 +85,8 @@ class _Layer:
             raise self._malformed(None)
 
     def _malformed(self, cause: BaseException | None) -> ProtocolDataError:
+        from ..protocols.errors import ProtocolDataError  # noqa: PLC0415 - Load protocol errors only on this failure.
+
         return ProtocolDataError(
             condition="malformed",
             operation_id=self._operation_id,

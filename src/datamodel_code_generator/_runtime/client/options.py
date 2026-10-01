@@ -21,10 +21,20 @@ from typing_extensions import TypeIs
 from ..model_codecs.media import encode_json
 from ..model_codecs.unset import UNSET, Unset
 from ..model_codecs.wire import JSONScalar  # noqa: TC001 - Public annotations support get_type_hints().
+from ..protocols import names as protocol_names
 from .auth import AuthConfig, checked_type
-from .errors import AuthConfigurationError, ConfigurationError
+from .errors import AuthConfigurationError, ConfigurationError, is_sequence
 from .hooks import AsyncHook, AsyncLimiter, Hook, Limiter  # noqa: TC001 - Public annotations support get_type_hints().
-from .timing import CancelToken, Deadline, ResolvedTimeoutOptions, finite_number, seconds
+from .timing import (
+    CancelToken,
+    Deadline,
+    ResolvedTimeoutOptions,
+    SessionOptions,
+    checked_count,
+    checked_instance,
+    finite_number,
+    seconds,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -79,11 +89,6 @@ _RETRY_STATUS_EXCLUDED: Final = frozenset({401, 403, 407})
 _OptionT = TypeVar("_OptionT")
 
 
-def _count(value: object, path: tuple[str, ...], *, minimum: int = 0, maximum: int | None = None) -> None:
-    if type(value) is not int or value < minimum or (maximum is not None and value > maximum):
-        raise ConfigurationError(field_path=path, condition="out_of_range")
-
-
 def _positive_seconds(value: object, path: tuple[str, ...]) -> None:
     match value:
         case bool():
@@ -122,17 +127,13 @@ def _query_patch(value: object) -> QueryPatch:
 
 
 def _patch(value: object, field: str) -> tuple[tuple[str, str | None], ...]:
-    if not _is_sequence(value):
+    if not is_sequence(value):
         raise ConfigurationError(field_path=(field,), condition="invalid_type")
     return tuple(_pair(item, field) for item in value)
 
 
-def _is_sequence(value: object) -> TypeIs[tuple[object, ...] | list[object]]:
-    return isinstance(value, (tuple, list))
-
-
 def _pair(item: object, field: str) -> tuple[str, str | None]:
-    if _is_sequence(item) and len(item) == _PAIR:
+    if is_sequence(item) and len(item) == _PAIR:
         match item[0], item[1]:
             case str() as name, (str() | None) as text:
                 return name, text
@@ -143,7 +144,7 @@ def _pair(item: object, field: str) -> tuple[str, str | None]:
 
 def _hooks(value: object) -> tuple[Hook | AsyncHook, ...]:
     """Return a copy of a tuple of hooks, refusing anything that has no on_event method."""
-    if not _is_sequence(value) or len(hooks := tuple(hook for hook in value if _is_hook(hook))) != len(value):
+    if not is_sequence(value) or len(hooks := tuple(hook for hook in value if _is_hook(hook))) != len(value):
         raise ConfigurationError(field_path=("hooks",), condition="invalid_type")
     return hooks
 
@@ -210,12 +211,6 @@ def _accepted(value: str) -> bool:
     return True
 
 
-def _typed(value: object, kinds: tuple[type, ...], path: tuple[str, ...]) -> None:
-    """Refuse an option value of another type."""
-    if not isinstance(value, kinds):
-        raise ConfigurationError(field_path=path, condition="invalid_type")
-
-
 def _auth_type(value: object) -> None:
     if not isinstance(value, (AuthConfig, Unset, type(None))):
         raise AuthConfigurationError(field_path=("auth",), condition="invalid_type")
@@ -251,7 +246,7 @@ class ServerSelection:
 
     def __post_init__(self) -> None:
         """Freeze the variables and reject a negative position or non-string values."""
-        _count(self.index, ("server", "index"))
+        checked_count(self.index, ("server", "index"))
         variables = dict(self.variables)
         if not all(type(name) is str and type(value) is str for name, value in variables.items()):
             raise ConfigurationError(field_path=("server", "variables"), condition="invalid_value")
@@ -334,26 +329,6 @@ class TimeoutOptions:
                 object.__setattr__(self, name, seconds(value, ("timeout", name)))
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
-class SessionOptions:
-    """Limits of a session spanning several requests: UNSET keeps the session's default and None removes that limit.
-
-    The session ends at the earlier of its total timeout, counted from its start, and its absolute deadline.
-    """
-
-    total_timeout: float | Unset | None = UNSET
-    deadline: Deadline | Unset | None = UNSET
-    max_network_sends: int | Unset | None = UNSET
-
-    def __post_init__(self) -> None:
-        """Refuse booleans, negative or nonfinite durations, negative counts, and deadlines of other types."""
-        if (timeout := self.total_timeout) is not None and not isinstance(timeout, Unset):
-            object.__setattr__(self, "total_timeout", seconds(timeout, ("session_options", "total_timeout")))
-        _typed(self.deadline, (Deadline, Unset, type(None)), ("session_options", "deadline"))
-        if (sends := self.max_network_sends) is not None and not isinstance(sends, Unset):
-            _count(sends, ("session_options", "max_network_sends"))
-
-
 def _choice(value: object, choices: frozenset[str], path: tuple[str, ...]) -> None:
     if type(value) is not str or value not in choices:
         raise ConfigurationError(field_path=path, condition="invalid_value")
@@ -409,7 +384,7 @@ class RetryOptions:
     def __post_init__(self) -> None:
         """Validate explicit overrides without resolving values inherited from another layer."""
         if not isinstance(self.max_retries, Unset):
-            _count(self.max_retries, ("retry", "max_retries"))
+            checked_count(self.max_retries, ("retry", "max_retries"))
         for name, value in (("initial_delay", self.initial_delay), ("max_delay", self.max_delay)):
             if not isinstance(value, Unset):
                 object.__setattr__(self, name, seconds(value, ("retry", name)))
@@ -428,7 +403,7 @@ class RetryOptions:
             ("retry_on_pool_timeout", self.retry_on_pool_timeout),
         ):
             if not isinstance(value, Unset):
-                _typed(value, (bool,), ("retry", name))
+                checked_instance(value, (bool,), ("retry", name))
         _retry_header(self.retry_after_ms_header, "retry_after_ms_header")
         _retry_header(self.should_retry_header, "should_retry_header")
 
@@ -443,7 +418,7 @@ def _origin(value: object) -> str:
 
 
 def _origins(value: object) -> tuple[str, ...]:
-    if not _is_sequence(value):
+    if not is_sequence(value):
         raise ConfigurationError(field_path=("redirects", "allowed_origins"), condition="invalid_type")
     return tuple(_origin(item) for item in value)
 
@@ -466,9 +441,9 @@ class RedirectOptions:
             ("allow_https_downgrade", self.allow_https_downgrade),
         ):
             if not isinstance(value, Unset):
-                _typed(value, (bool,), ("redirects", name))
+                checked_instance(value, (bool,), ("redirects", name))
         if not isinstance(self.max_redirects, Unset):
-            _count(self.max_redirects, ("redirects", "max_redirects"))
+            checked_count(self.max_redirects, ("redirects", "max_redirects"))
         if not isinstance(self.allowed_origins, Unset):
             object.__setattr__(self, "allowed_origins", _origins(self.allowed_origins))
 
@@ -536,18 +511,18 @@ class TransportOptions:
     def __post_init__(self) -> None:
         """Validate construction fields and reject any explicit verify alongside an SSLContext."""
         if not isinstance(self.verify, Unset):
-            _typed(self.verify, (bool,), ("transport", "verify"))
-        _typed(self.ssl_context, (SSLContext, type(None)), ("transport", "ssl_context"))
+            checked_instance(self.verify, (bool,), ("transport", "verify"))
+        checked_instance(self.ssl_context, (SSLContext, type(None)), ("transport", "ssl_context"))
         if self.ssl_context is not None and not isinstance(self.verify, Unset):
             raise ConfigurationError(field_path=("transport", "verify"), condition="conflicts_with_ssl_context")
-        _typed(self.proxy, (str, type(None)), ("transport", "proxy"))
+        checked_instance(self.proxy, (str, type(None)), ("transport", "proxy"))
         for name, enabled in (("trust_env", self.trust_env), ("http2", self.http2)):
-            _typed(enabled, (bool,), ("transport", name))
+            checked_instance(enabled, (bool,), ("transport", name))
         for name, count in (
             ("max_connections", self.max_connections),
             ("max_keepalive_connections", self.max_keepalive_connections),
         ):
-            _count(count, ("transport", name))
+            checked_count(count, ("transport", name))
         object.__setattr__(self, "keepalive_expiry", seconds(self.keepalive_expiry, ("transport", "keepalive_expiry")))
         _choice(self.retry_owner, _RETRY_OWNERS, ("transport", "retry_owner"))
 
@@ -687,24 +662,24 @@ class _Options:
     auth: AuthConfig | Unset | None = field(default=UNSET, repr=False)
 
     def _check_timing(self) -> None:
-        _typed(self.timeout, (TimeoutOptions, Unset, type(None)), ("timeout",))
-        _typed(self.deadline, (Deadline, Unset, type(None)), ("deadline",))
-        _typed(self.cancel_token, (CancelToken, Unset, type(None)), ("cancel_token",))
+        checked_instance(self.timeout, (TimeoutOptions, Unset, type(None)), ("timeout",))
+        checked_instance(self.deadline, (Deadline, Unset, type(None)), ("deadline",))
+        checked_instance(self.cancel_token, (CancelToken, Unset, type(None)), ("cancel_token",))
         if self.limiter is not None and not isinstance(self.limiter, Unset) and not _is_limiter(self.limiter):
             raise ConfigurationError(field_path=("limiter",), condition="invalid_type")
         for name in ("total_timeout", "stream_idle_timeout", "stream_total_timeout"):
             if (value := getattr(self, name)) is not None and not isinstance(value, Unset):
                 object.__setattr__(self, name, seconds(value, (name,)))  # noqa: PLC2801 - Normalize frozen options.
         if self.max_network_sends is not None and not isinstance(self.max_network_sends, Unset):
-            _count(self.max_network_sends, ("max_network_sends",))
+            checked_count(self.max_network_sends, ("max_network_sends",))
 
     def __post_init__(self) -> None:
         self._check_timing()
         _auth_type(self.auth)
-        _typed(self.validation, (ValidationOptions, Unset), ("validation",))
-        _typed(self.retry, (RetryOptions, Unset), ("retry",))
-        _typed(self.redirects, (RedirectOptions, Unset), ("redirects",))
-        _typed(self.idempotency_key, (IdempotencyKey, Unset, type(None)), ("idempotency_key",))
+        checked_instance(self.validation, (ValidationOptions, Unset), ("validation",))
+        checked_instance(self.retry, (RetryOptions, Unset), ("retry",))
+        checked_instance(self.redirects, (RedirectOptions, Unset), ("redirects",))
+        checked_instance(self.idempotency_key, (IdempotencyKey, Unset, type(None)), ("idempotency_key",))
         if not isinstance(self.hooks, Unset):
             object.__setattr__(self, "hooks", _hooks(self.hooks))
         if not isinstance(self.context, Unset):
@@ -715,19 +690,19 @@ class _Options:
             object.__setattr__(self, "query", _query_patch(self.query))
         if not isinstance(self.server, Unset) and not isinstance(self.base_url, Unset):
             raise ConfigurationError(field_path=("base_url",), condition="conflicts_with_server")
-        _typed(self.server, (ServerSelection, Unset), ("server",))
+        checked_instance(self.server, (ServerSelection, Unset), ("server",))
         if not isinstance(self.base_url, Unset):
             if type(self.base_url) is not str:
                 raise ConfigurationError(field_path=("base_url",), condition="invalid_type")
             checked_base_url(self.base_url, ("base_url",))
         if self.max_response_bytes is not None and not isinstance(self.max_response_bytes, Unset):
-            _count(self.max_response_bytes, ("max_response_bytes",))
+            checked_count(self.max_response_bytes, ("max_response_bytes",))
         if not isinstance(self.max_error_body_bytes, Unset):
-            _count(self.max_error_body_bytes, ("max_error_body_bytes",), minimum=1, maximum=MAX_ERROR_BODY_LIMIT)
+            checked_count(self.max_error_body_bytes, ("max_error_body_bytes",), minimum=1, maximum=MAX_ERROR_BODY_LIMIT)
         if not isinstance(self.cleanup_timeout, Unset):
             _positive_seconds(self.cleanup_timeout, ("cleanup_timeout",))
         if self.max_stream_bytes is not None and not isinstance(self.max_stream_bytes, Unset):
-            _count(self.max_stream_bytes, ("max_stream_bytes",))
+            checked_count(self.max_stream_bytes, ("max_stream_bytes",))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -740,11 +715,14 @@ class ClientOptions(_Options):
     """
 
     transport: TransportOptions | Unset = UNSET
+    protocols: protocol_names.ProtocolClientOptions | Unset | None = UNSET
 
     def __post_init__(self) -> None:
-        """Validate ordinary options and the client-only construction settings."""
+        """Validate ordinary options and the client-only construction settings, loading protocol types only if set."""
         _Options.__post_init__(self)
-        _typed(self.transport, (TransportOptions, Unset), ("transport",))
+        checked_instance(self.transport, (TransportOptions, Unset), ("transport",))
+        if self.protocols is not None and not isinstance(self.protocols, Unset):
+            checked_instance(self.protocols, (protocol_names.ProtocolClientOptions,), ("protocols",))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
