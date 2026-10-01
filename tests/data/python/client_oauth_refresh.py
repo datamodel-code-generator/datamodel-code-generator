@@ -408,8 +408,8 @@ def _faults(  # noqa: PLR0913, PLR0915
         ("adapter failure", _Sent(transports, RuntimeError("adapter"), rotated), {}),
         (
             "body slower than the session",
-            _Sent(transports, Response(responses, 200, json.dumps(_ROTATED).encode(), pause=0.3), rotated),
-            {"total": 0.1},
+            _Sent(transports, Response(responses, 200, json.dumps(_ROTATED).encode(), pause=1.0), rotated),
+            {"total": 0.5},
         ),
         ("interrupted send", _Sent(transports, KeyboardInterrupt(), rotated), {}),
         (
@@ -429,7 +429,7 @@ def _faults(  # noqa: PLR0913, PLR0915
             lines.append(f"    refresh tokens sent = {adapter.refresh_tokens}")
     unstuck = threading.Event()
     adapter = _Sent(transports, rotated, gate=unstuck)
-    with provider(adapter, total=0.1) as family:
+    with provider(adapter, total=0.5) as family:
         lines.append(f"  answer after the session and its grace = {_outcome(lambda: family.get(_context(auth)))}")
         unstuck.set()
         lines.append(f"    later get = {_outcome(lambda: family.get(_context(auth)))} sent={adapter.refresh_tokens}")
@@ -546,13 +546,13 @@ async def _async(auth: ModuleType, transports: ModuleType, responses: ModuleType
         client_id="c",
         token_set=_tokens(auth, minutes=-1),
         client_auth_method="none",
-        options=auth.OAuthProviderOptions(refresh_timeout=0.05),
+        options=auth.OAuthProviderOptions(refresh_timeout=0.5),
         token_transport=blocked,
     )
     async with family:
         first = asyncio.create_task(_aoutcome(lambda: family.get(_context(auth))))
         await asyncio.sleep(0)
-        time.sleep(1.2)
+        time.sleep(1.6)
         lines.append(f"  async refresh starting once its session ended = {await _aoutcome(lambda: family.get(_context(auth)))}")
         lines.append(f"    first caller = {await first} sends={blocked.sends}")
 

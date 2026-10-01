@@ -146,11 +146,11 @@ def deadline_streams(package: ModuleType, lines: list[str]) -> None:
     options = importlib.import_module(f"{package.__name__}.options")
     exchange = Exchange(lines)
     with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
-        exchange.respond(_delayed(0.8))
+        exchange.respond(_delayed(1.5))
         with api.with_streaming_response.request_raw(
             "GET",
             "https://example.com/handoff",
-            options=options.RequestOptions(total_timeout=0.2, stream_idle_timeout=3),
+            options=options.RequestOptions(total_timeout=1, stream_idle_timeout=3),
         ) as response:
             record(lines, "stream acquisition released", response.read)
         for label, idle in (("default", options.UNSET), ("disabled", None)):
@@ -175,12 +175,13 @@ def deadline_streams(package: ModuleType, lines: list[str]) -> None:
                 lines.append(f"  stream {label} {outcome(response.read).partition(' secondary ')[0]}")
         for status in (200, 503):
             exchange.respond(_delayed(2, status))
-            result = outcome(
+            record(
+                lines,
+                f"buffered acquisition {status}",
                 lambda: api.request_raw(
-                    "GET", "https://example.com/buffered", options=options.RequestOptions(total_timeout=0.2, retry=options.RetryOptions(max_retries=0))
-                )
+                    "GET", "https://example.com/buffered", options=options.RequestOptions(total_timeout=1, retry=options.RetryOptions(max_retries=0))
+                ),
             )
-            lines.append(f"  buffered acquisition {status} {result.partition(' secondary ')[0]}")
         token = options.CancelToken()
         exchange.respond(raw_response(200, b'{"ready":true}', "application/json"))
         saved = api.request_raw("GET", "https://example.com/saved", options=options.RequestOptions(cancel_token=token))
@@ -249,11 +250,11 @@ def _http2(package: ModuleType, lines: list[str]) -> None:
         with package.Client(http_client=http, http_client_ownership="owned") as api:
             warmed = api.request_raw("GET", server.url, options=options.RequestOptions(total_timeout=10))
             lines.append(f"  HTTP2 sync warm connection {warmed.read()!r}")
-            server.delay = 1.0
+            server.delay = 1.5
             with api.with_streaming_response.request_raw(
                 "GET",
                 server.url,
-                options=options.RequestOptions(total_timeout=0.5, stream_idle_timeout=3),
+                options=options.RequestOptions(total_timeout=1, stream_idle_timeout=3),
             ) as response:
                 record(lines, "HTTP2 stream acquisition released", response.read)
         lines.append(f"  HTTP2 sync protocols {server.protocols!r} requests {server.requests}")
@@ -265,11 +266,11 @@ async def _async_streams(package: ModuleType, lines: list[str]) -> None:
     options = importlib.import_module(f"{package.__name__}.options")
     exchange = Exchange(lines)
     async with package.AsyncClient(http_client=exchange.async_client(), http_client_ownership="owned") as api:
-        exchange.respond(_delayed(0.8))
+        exchange.respond(_delayed(1.5))
         async with api.with_streaming_response.request_raw(
             "GET",
             "https://example.com/handoff",
-            options=options.RequestOptions(total_timeout=0.2, stream_idle_timeout=3),
+            options=options.RequestOptions(total_timeout=1, stream_idle_timeout=3),
         ) as response:
             await arecord(lines, "async stream acquisition released", response.read)
         for label, idle in (("default", options.UNSET), ("disabled", None)):
@@ -293,12 +294,13 @@ async def _async_streams(package: ModuleType, lines: list[str]) -> None:
             ) as response:
                 lines.append(f"  async stream {label} {(await aoutcome(response.read)).partition(' secondary ')[0]}")
         exchange.respond(_delayed(2))
-        result = await aoutcome(
+        await arecord(
+            lines,
+            "async buffered acquisition",
             lambda: api.request_raw(
-                "GET", "https://example.com/buffered", options=options.RequestOptions(total_timeout=0.2, retry=options.RetryOptions(max_retries=0))
+                "GET", "https://example.com/buffered", options=options.RequestOptions(total_timeout=1, retry=options.RetryOptions(max_retries=0))
             ),
         )
-        lines.append(f"  async buffered acquisition {result.partition(' secondary ')[0]}")
         token = options.CancelToken()
         exchange.respond(_delayed(2))
         async with api.with_streaming_response.request_raw(
@@ -410,11 +412,11 @@ async def _async_http2(package: ModuleType, lines: list[str]) -> None:
         async with package.AsyncClient(http_client=http, http_client_ownership="owned") as api:
             warmed = await api.request_raw("GET", server.url, options=options.RequestOptions(total_timeout=10))
             lines.append(f"  HTTP2 async warm connection {await warmed.read()!r}")
-            server.delay = 1.0
+            server.delay = 1.5
             async with api.with_streaming_response.request_raw(
                 "GET",
                 server.url,
-                options=options.RequestOptions(total_timeout=0.5, stream_idle_timeout=3),
+                options=options.RequestOptions(total_timeout=1, stream_idle_timeout=3),
             ) as response:
                 await arecord(lines, "HTTP2 async stream acquisition released", response.read)
         lines.append(f"  HTTP2 async protocols {server.protocols!r} requests {server.requests}")
