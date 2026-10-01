@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import contextlib
 import errno
 import gzip
 import importlib
@@ -12,6 +11,7 @@ import os
 import tempfile
 import threading
 from collections import defaultdict
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, BinaryIO, Final
 
@@ -80,6 +80,19 @@ class _FullDisk(io.FileIO):
         self.room -= 1
         self.written.wait(5)
         return super().write(data)
+
+
+class _Written(io.FileIO):
+    """A download file that tells the scenario once a write of the body reached it."""
+
+    def __init__(self, handle: int, mode: str, *, written: Callable[[], object]) -> None:
+        super().__init__(handle, mode)
+        self.written = written
+
+    def write(self, data: Any) -> int:
+        size = super().write(data)
+        self.written()
+        return size
 
 
 def _free() -> threading.Event:
@@ -450,7 +463,7 @@ async def _downloads(package: ModuleType, lines: list[str], directory: Path) -> 
         exchange.respond(_stalled(gate))
         async with streaming.request_raw("GET", _URL) as response:
             task = asyncio.create_task(response.stream_to(held))
-            await _mid_body(directory, task)
+            await _mid_body(task)
             writing = [thread.name for thread in _workers()]
             gate.set()
             await task
@@ -578,18 +591,14 @@ async def _disk_failures(api: Any, exchange: Exchange, lines: list[str], directo
         lines.append(f"  async file object broken read {await aoutcome(lambda: response.stream_to(io.BytesIO()))}")
 
 
-def _size(path: Path) -> int:
-    with contextlib.suppress(FileNotFoundError):
-        return path.stat().st_size
-    return 0
-
-
-async def _mid_body(directory: Path, task: asyncio.Task[None]) -> None:
-    """Wait until the download's temporary file holds the first chunk, past the file's write buffer, or it ends."""
-    for _ in range(500):
-        if task.done() or any(_size(path) for path in directory.glob("*.part")):
-            return
-        await asyncio.sleep(0.01)
+async def _mid_body(task: asyncio.Task[None]) -> None:
+    """Wait until the download wrote the body's first chunk to its temporary file, or until it ended."""
+    loop, written = asyncio.get_running_loop(), asyncio.Event()
+    with pytest.MonkeyPatch.context() as disk:
+        disk.setattr(os, "fdopen", partial(_Written, written=partial(loop.call_soon_threadsafe, written.set)))
+        waiting = asyncio.create_task(written.wait())
+        await asyncio.wait((waiting, task), return_when=asyncio.FIRST_COMPLETED)
+        waiting.cancel()
 
 
 async def _stopped_downloads(package: ModuleType, lines: list[str], directory: Path) -> None:
@@ -611,7 +620,7 @@ async def _stopped_downloads(package: ModuleType, lines: list[str], directory: P
         api = package.AsyncClient(http_client=http)
         async with api.with_streaming_response.request_raw("GET", _URL, options=settings) as response:
             task = asyncio.create_task(response.stream_to(target, overwrite=True))
-            await _mid_body(directory, task)
+            await _mid_body(task)
             closed = ""
             match label:
                 case "cancelled":

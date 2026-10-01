@@ -418,13 +418,13 @@ def _faults(
         ("phase timeout after sending", provider(read)),
         ("connect failure proven unsent", provider(unsent, evidence=True)),
         ("adapter failure", provider(RuntimeError("adapter"))),
-        ("body slower than the session", provider(Response(responses, 200, json.dumps(_ISSUED).encode(), pause=0.3), total=0.1)),
+        ("body slower than the session", provider(Response(responses, 200, json.dumps(_ISSUED).encode(), pause=1.0), total=0.5)),
         ("interrupted send", provider(KeyboardInterrupt())),
         ("secret failure", provider(client_secret=_Once(auth.ApiKeyCredential("s"), failure=RuntimeError("secret")))),
         ("secret auth failure naming its own refresh", provider(client_secret=_Once(auth.ApiKeyCredential("s"), failure=errors.AuthTimeoutError(
             effective_timeout=1.0, timeout_kind="provider", state="UNCERTAIN", refresh_id="vault-refresh")))),
         ("secret failure of a foreign error class", provider(client_secret=_Once(auth.ApiKeyCredential("s"), failure=_foreign(errors)))),
-        ("secret slower than the session", provider(client_secret=_Once(auth.ApiKeyCredential("s"), delay=0.3), total=0.1)),
+        ("secret slower than the session", provider(client_secret=_Once(auth.ApiKeyCredential("s"), delay=1.0), total=0.5)),
         ("secret material type", provider(client_secret=Secret(auth.BasicCredential("u", "p")))),
     ):
         with shared:
@@ -565,11 +565,11 @@ async def _async_faults(auth: ModuleType, transports: ModuleType, responses: Mod
         _TOKEN,
         client_id="c",
         client_secret=stubborn,
-        options=auth.OAuthProviderOptions(refresh_timeout=0.1),
+        options=auth.OAuthProviderOptions(refresh_timeout=0.5),
         token_transport=AsyncAdapter(transports, granted),
     ) as shared:
-        asyncio.get_running_loop().call_later(0.3, stubborn.release.set)
         lines.append(f"  async secret ignoring its cancellation = {await _aoutcome(lambda: shared.get(_context(auth)))}")
+        stubborn.release.set()
         lines.append(f"    later get = {await _aoutcome(lambda: shared.get(_context(auth)))}")
 
 

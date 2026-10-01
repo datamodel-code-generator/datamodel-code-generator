@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Final, Literal
 
 from .errors import DeliveryState, RedirectPolicyError
-from .retry import replay_safe
+from .retry import body_replay_safe
 from .urls import URLValidationError
 from .urls import redirect_target as resolve_target
 
@@ -58,7 +58,7 @@ def _method(status: int, state: RedirectState, redirects: ResolvedRedirectOption
         if status in {301, 302}:
             if state.method in _READ_METHODS:
                 return state.method
-        elif replay_safe(state.method, state.retry_safety, state.idempotency, state.key_expires_at, now=now):
+        elif body_replay_safe(state.method, state.retry_safety, state.idempotency, state.key_expires_at, now=now):
             return state.method
     raise RedirectPolicyError(delivery_state=DeliveryState.RESPONSE_STARTED)
 

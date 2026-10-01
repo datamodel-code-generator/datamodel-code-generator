@@ -147,6 +147,21 @@ def replay_safe(
     )
 
 
+def body_replay_safe(
+    method: str,
+    retry_safety: Literal["method_default", "idempotent", "never"],
+    idempotency: IdempotencyPlan | None,
+    key_expires_at: float | None,
+    *,
+    now: float,
+) -> bool:
+    """Return whether a request may send its body again with its method, as a 307 or 308 redirect does.
+
+    An operation that never retries never sends its body again; otherwise the payload-independent safety decides.
+    """
+    return retry_safety != "never" and replay_safe(method, retry_safety, idempotency, key_expires_at, now=now)
+
+
 _NOT_RETRYABLE: Final[dict[str, RetryStopReason]] = {
     "auth": "auth_unrefreshable",
     "status": "status_not_retryable",
