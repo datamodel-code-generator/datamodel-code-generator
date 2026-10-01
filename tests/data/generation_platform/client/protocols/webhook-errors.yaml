@@ -7,8 +7,7 @@ helpers:
     event_schema: {discriminator: {from: event_type}, mapping: {a: {pointer: /components/schemas/Message}}}
     signature: hmac
   shape.kind: {kind: webhook, event_schema: {pointer: /components/schemas/Message}, signature: {kind: hmac-md5}}
-  later.ed25519: {kind: webhook, event_schema: {pointer: /components/schemas/Message}, signature: {kind: ed25519}}
-  later.rsa: {kind: webhook, event_schema: {pointer: /components/schemas/Message}, signature: {kind: rsa-pss-sha256}}
+  shape.ed25519: {kind: webhook, event_schema: {pointer: /components/schemas/Message}, signature: {kind: ed25519}}
   later.adapter: {kind: webhook, event_schema: {pointer: /components/schemas/Message}, signature: {kind: adapter}}
   later.none: {kind: webhook, event_schema: {pointer: /components/schemas/Message}, signature: {kind: none}}
   shape.settings:

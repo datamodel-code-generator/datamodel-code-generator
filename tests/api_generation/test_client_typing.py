@@ -133,6 +133,18 @@ def test_client_typing_webhooks(backend: DataModelType, tmp_path: Path) -> None:
     )
 
 
+def test_client_typing_public_keys(tmp_path: Path) -> None:
+    """Check Ed25519 and RSA-PSS helpers next to an HMAC one: key wrappers, events, and misuses of each key type."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(
+        client_typing_report(
+            tmp_path, DataModelType.PydanticV2BaseModel, "webhooks-public-keys", ("public_key_helpers",)
+        ),
+        EXPECTED / "pydantic_v2-BaseModel-public-keys.txt",
+    )
+
+
 @pytest.mark.parametrize(
     "backend",
     [

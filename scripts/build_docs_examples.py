@@ -464,6 +464,21 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
+            example_id="python-client.webhooks.public-keys",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "python", blocks(CLIENT_DATA / "typing" / "public_key_helpers.py", "def keys(", separator="\n\n\n")
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.webhooks.public-keys-yaml",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "yaml",
+                yaml_helpers(CLIENT_DATA / "protocols" / "webhook-public-keys.yaml", "standard.ed25519", "keyed.rsa"),
+            ),
+        ),
+        DocsExample(
             example_id="python-client.webhooks.diagnostics",
             path=DOCS / "python-client.md",
             render=lambda: fenced(

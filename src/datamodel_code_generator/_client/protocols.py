@@ -59,6 +59,7 @@ __all__ = (
     "PollInterval",
     "PollingHelper",
     "ProtocolConfiguration",
+    "PublicKeySignature",
     "RemoteCancel",
     "SignedLiteral",
     "Source",
@@ -97,7 +98,10 @@ KINDS: Final = (
     "queue",
 )
 _LATER: Final = frozenset({"websocket", "cache", "resumable_upload", "batch", "queue"})
-_LATER_SIGNATURES: Final = ("ed25519", "rsa-pss-sha256", "adapter", "none")
+_HMAC_SIGNATURES: Final = ("hmac-sha256", "hmac-sha512")
+_PUBLIC_KEY_SIGNATURES: Final = ("ed25519", "rsa-pss-sha256")
+_SIGNATURES: Final = (*_HMAC_SIGNATURES, *_PUBLIC_KEY_SIGNATURES)
+_LATER_SIGNATURES: Final = ("adapter", "none")
 _ENCODINGS: Final = {
     "hex": frozenset("0123456789ABCDEFabcdef"),
     "base64": frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="),
@@ -400,14 +404,14 @@ class AsciiBytes:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class HmacSignature:
-    """How an HMAC webhook signature is carried and which bytes it signs, in order.
+class _Signature:
+    """How a builtin webhook signature is carried and which bytes it signs, in order.
 
     `none` declares that a webhook has no key id, timestamp, or delivery id header, and a separator of `none` keeps
     each signature header value whole.
     """
 
-    kind: Literal["hmac-sha256", "hmac-sha512"]
+    kind: str
     header: str
     encoding: Literal["hex", "base64", "base64url"]
     prefix: str
@@ -424,13 +428,27 @@ class HmacSignature:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class HmacSignature(_Signature):
+    """How an HMAC webhook signature is carried and which bytes it signs, in order."""
+
+    kind: Literal["hmac-sha256", "hmac-sha512"]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class PublicKeySignature(_Signature):
+    """How an Ed25519 or RSA-PSS webhook signature is carried and which bytes it signs, in order."""
+
+    kind: Literal["ed25519", "rsa-pss-sha256"]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class WebhookHelper:
     """Verify a signed webhook delivery and decode its event."""
 
     kind: ClassVar[Literal["webhook"]] = "webhook"
 
     event_schema: SchemaRef | EventMapping
-    signature: HmacSignature
+    signature: HmacSignature | PublicKeySignature
     duplicates: Literal["report", "reject"] = "report"
     enabled: bool = True
 
@@ -476,6 +494,7 @@ _RECORDS: Final = frozenset({
     FixedBytes,
     AsciiBytes,
     HmacSignature,
+    PublicKeySignature,
     WebhookHelper,
     ProtocolConfiguration,
 })
@@ -489,6 +508,7 @@ _ROLES: Final[Mapping[tuple[type, str], str]] = {
     (EventMapping, "mapping"): "mapping",
     (StreamHelper, "error_events"): "mapping",
     (HmacSignature, "field_constraints"): "mapping",
+    (PublicKeySignature, "field_constraints"): "mapping",
     (ProtocolConfiguration, "helpers"): "mapping",
 }
 
@@ -595,11 +615,18 @@ def project(configuration: ProtocolConfiguration) -> object:
     def reference(value: Any) -> object:
         return {"pointer": value.pointer, **({} if value.document is None else {"document": value.document})}
 
+    def signature(value: HmacSignature | PublicKeySignature) -> object:
+        """Project a signature record whose class allows its kind, and refuse any other as validation refuses."""
+        kinds = _HMAC_SIGNATURES if isinstance(value, HmacSignature) else _PUBLIC_KEY_SIGNATURES
+        return members(value) if value.kind in kinds else FOREIGN
+
     def step(value: object) -> object:
         return {"page_items_count": True} if value == "page_items_count" else {"literal": convert(value)}
 
     shapes: dict[type, Callable[[Any], object]] = {
         **dict.fromkeys(_RECORDS, members),
+        HmacSignature: signature,
+        PublicKeySignature: signature,
         CountContinuation: lambda value: {**members(value), "step": step(value.step)},
         StreamResume: lambda value: {"enabled": True, **members(value)},
         BodySelector: lambda value: {"from": "body", "pointer": value.pointer},
@@ -1322,9 +1349,7 @@ class _Validator:  # noqa: PLR0904
             "signed_parts": (self.signed_parts, REQUIRED),
             "field_constraints": (self.constraints, {}),
         }
-        signature = self.tagged(
-            value, at, "kind", dict.fromkeys(("hmac-sha256", "hmac-sha512"), settings), "a signature"
-        )
+        signature = self.tagged(value, at, "kind", dict.fromkeys(_SIGNATURES, settings), "a signature")
         if signature is not INVALID and (conflict := _ambiguity(signature, at)) is not None:
             self.conflict(*conflict)
             return INVALID

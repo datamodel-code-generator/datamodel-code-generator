@@ -6,9 +6,15 @@ render pydantic_v2.BaseModel
   E_CONFIG_VALUE config protocols.helpers['shape.values'].event_schema.discriminator.from: protocols.helpers['shape.values'].event_schema.discriminator.from must be 'body'
   E_CONFIG_VALUE config protocols.helpers['shape.values'].duplicates: protocols.helpers['shape.values'].duplicates must be 'report' or 'reject'
   E_CONFIG_VALUE config protocols.helpers['shape.values'].signature: protocols.helpers['shape.values'].signature must be a signature
-  E_CONFIG_VALUE config protocols.helpers['shape.kind'].signature.kind: protocols.helpers['shape.kind'].signature.kind must be 'hmac-sha256' or 'hmac-sha512'
-  E_CLIENT_UNSUPPORTED target protocols.helpers['later.ed25519'].signature.kind: The ed25519 signature is not supported yet
-  E_CLIENT_UNSUPPORTED target protocols.helpers['later.rsa'].signature.kind: The rsa-pss-sha256 signature is not supported yet
+  E_CONFIG_VALUE config protocols.helpers['shape.kind'].signature.kind: protocols.helpers['shape.kind'].signature.kind must be 'hmac-sha256', 'hmac-sha512', 'ed25519' or 'rsa-pss-sha256'
+  E_CONFIG_VALUE config protocols.helpers['shape.ed25519'].signature.header: protocols.helpers['shape.ed25519'].signature needs 'header'
+  E_CONFIG_VALUE config protocols.helpers['shape.ed25519'].signature.encoding: protocols.helpers['shape.ed25519'].signature needs 'encoding'
+  E_CONFIG_VALUE config protocols.helpers['shape.ed25519'].signature.prefix: protocols.helpers['shape.ed25519'].signature needs 'prefix'
+  E_CONFIG_VALUE config protocols.helpers['shape.ed25519'].signature.separator: protocols.helpers['shape.ed25519'].signature needs 'separator'
+  E_CONFIG_VALUE config protocols.helpers['shape.ed25519'].signature.key_id: protocols.helpers['shape.ed25519'].signature needs 'key_id'
+  E_CONFIG_VALUE config protocols.helpers['shape.ed25519'].signature.timestamp: protocols.helpers['shape.ed25519'].signature needs 'timestamp'
+  E_CONFIG_VALUE config protocols.helpers['shape.ed25519'].signature.delivery_id: protocols.helpers['shape.ed25519'].signature needs 'delivery_id'
+  E_CONFIG_VALUE config protocols.helpers['shape.ed25519'].signature.signed_parts: protocols.helpers['shape.ed25519'].signature needs 'signed_parts'
   E_CLIENT_UNSUPPORTED target protocols.helpers['later.adapter'].signature.kind: The adapter signature is not supported yet
   E_CLIENT_UNSUPPORTED target protocols.helpers['later.none'].signature.kind: The none signature is not supported yet
   E_CONFIG_UNKNOWN config protocols.helpers['shape.settings'].signature.extra: protocols.helpers['shape.settings'].signature has no key 'extra'

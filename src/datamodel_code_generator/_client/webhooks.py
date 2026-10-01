@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from pathlib import PurePosixPath
 from textwrap import fill
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any, Final, NamedTuple
 
 from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._client._compiled_templates import types as types_template
@@ -34,19 +34,52 @@ if TYPE_CHECKING:
     from datamodel_code_generator._openapi_codec_plan import CodecPlan
     from datamodel_code_generator._openapi_codec_render import UseAccessors
 
-__all__ = ("WebhookSpec", "plan_webhooks", "webhook_files", "webhook_uses")
+__all__ = (
+    "WebhookSpec",
+    "key_class",
+    "plan_webhooks",
+    "webhook_dependencies",
+    "webhook_files",
+    "webhook_uses",
+)
 
 _SENDERS: Final = frozenset({"webhook", "callback"})
 _PARTS: Final = {"raw-body": "RAW_BODY", "timestamp": "TIMESTAMP", "delivery-id": "DELIVERY_ID"}
-_ALGORITHMS: Final = {"hmac-sha256": ("HMAC_SHA256", "HMAC-SHA256"), "hmac-sha512": ("HMAC_SHA512", "HMAC-SHA512")}
+_CRYPTOGRAPHY: Final = "cryptography>=50.0.0"
+
+
+class _Algorithm(NamedTuple):
+    """A signature kind's runtime algorithm, by its module and name, its display name, and its key class."""
+
+    module: str
+    name: str
+    display: str
+    key_module: str
+    key: str
+
+
+_HMAC: Final = "_runtime.protocols.signatures"
+_PUBLIC_KEYS: Final = "_runtime.protocols.public_keys"
+_RSA_PSS: Final = "RSA-PSS with SHA-256, MGF1 with SHA-256, and a 32-byte salt"
+_ALGORITHMS: Final = {
+    "hmac-sha256": _Algorithm(_HMAC, "HMAC_SHA256", "HMAC-SHA256", "_runtime.protocols.webhook_keys", "HmacKey"),
+    "hmac-sha512": _Algorithm(_HMAC, "HMAC_SHA512", "HMAC-SHA512", "_runtime.protocols.webhook_keys", "HmacKey"),
+    "ed25519": _Algorithm(_PUBLIC_KEYS, "ED25519", "Ed25519", _PUBLIC_KEYS, "Ed25519Key"),
+    "rsa-pss-sha256": _Algorithm(_PUBLIC_KEYS, "RSA_PSS_SHA256", _RSA_PSS, _PUBLIC_KEYS, "RSAPSSKey"),
+}
 _CHUNK: Final = 48
 _PACKAGE: Final = '"""Webhook verification helpers of this package, by their dotted names."""\n'
-_KEYS: Final = '''"""The key types of this package's webhook signature profiles."""
 
-from .._runtime.protocols.webhook_keys import HmacKey
 
-__all__ = ["HmacKey"]
-'''
+def key_class(kind: str) -> str:
+    """Return the name of the key class of a signature kind."""
+    return _ALGORITHMS[kind].key
+
+
+def webhook_dependencies(specs: tuple[WebhookSpec, ...]) -> tuple[str, ...]:
+    """Return cryptography when a helper verifies a public-key signature, and nothing otherwise."""
+    kinds = {spec.helper.tree["signature"]["kind"] for spec in specs}
+    return (_CRYPTOGRAPHY,) if any(_ALGORITHMS[kind].module == _PUBLIC_KEYS for kind in kinds) else ()
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -226,7 +259,7 @@ class _Webhooks:
         }
         return (
             (PurePosixPath("webhooks", "__init__.py"), _PACKAGE),
-            (PurePosixPath("webhooks", "keys.py"), _KEYS),
+            (PurePosixPath("webhooks", "keys.py"), self.keys()),
             *(
                 (package / "__init__.py", f'"""The {".".join(package.parts[1:])} webhook verification helpers."""\n')
                 for package in sorted(packages)
@@ -237,10 +270,22 @@ class _Webhooks:
             ),
         )
 
+    def keys(self) -> str:
+        """Return the keys module, which imports the key class of each selected signature kind only."""
+        modules: dict[str, set[str]] = {}
+        for spec in self.specs:
+            algorithm = _ALGORITHMS[spec.helper.tree["signature"]["kind"]]
+            modules.setdefault(algorithm.key_module, set()).add(algorithm.key)
+        imports = "".join(
+            f"from ..{module} import {', '.join(sorted(names))}\n" for module, names in sorted(modules.items())
+        )
+        names = ", ".join(f'"{name}"' for name in sorted(set().union(*modules.values())))
+        return f'"""The key types of this package\'s webhook signature profiles."""\n\n{imports}\n__all__ = [{names}]\n'
+
     @staticmethod
     def profile(module: Module, signature: Mapping[str, Any]) -> Group:
         """Return the runtime signature profile of a helper's normalized signature settings."""
-        signatures = "_runtime.protocols.signatures"
+        signatures, algorithm = "_runtime.protocols.signatures", _ALGORITHMS[signature["kind"]]
         constraints = signature["field_constraints"]
         separator, key_id = signature["separator"], signature["key_id"]
         timestamp, delivery = signature["timestamp"], signature["delivery_id"]
@@ -249,7 +294,7 @@ class _Webhooks:
             for part in signature["signed_parts"]
         ]
         entries: list[tuple[str, Any]] = [
-            ("algorithm=", module.local(signatures, _ALGORITHMS[signature["kind"]][0])),
+            ("algorithm=", module.local(algorithm.module, algorithm.name)),
             ("header=", repr(signature["header"].lower())),
             ("encoding=", repr(signature["encoding"])),
             ("prefix=", repr(signature["prefix"])),
@@ -273,7 +318,8 @@ class _Webhooks:
         verification = "_runtime.protocols.verification"
         assert use.type is not None
         event = module.types.static(use.type)
-        key = module.local("_runtime.protocols.webhook_keys", "HmacKey")
+        algorithm = _ALGORITHMS[helper.tree["signature"]["kind"]]
+        key = module.local(algorithm.key_module, algorithm.key)
         accessor = self.accessors[use.id]
         bindings = module.local("_generated", "model_bindings")
         decoder = _call(
@@ -304,7 +350,7 @@ class _Webhooks:
         signature = helper.tree["signature"]
         module = Module({"_PLAN", "verify", "verify_async"}, self.symbols, level=helper.name.count(".") + 2)
         event, key, plan = self.plan(module, spec)
-        algorithm = _ALGORITHMS[signature["kind"]][1]
+        algorithm = _ALGORITHMS[signature["kind"]].display
         window = (
             "Deliveries outside the timestamp window are rejected. The window closes at the timestamp plus "
             "past_tolerance, while a replay store keeps a claim until the timestamp plus past_tolerance and "

@@ -13,10 +13,10 @@ same OpenAPI document and model settings produce the same model files whichever 
 
 ## Webhook contracts and replay stores
 
-Generated packages expose webhook contracts from `pkg.protocols` and their exceptions from `pkg.errors`, where
-`pkg` is the generated package name. These imports need no HTTP or cryptography library. The
-[webhook verification helpers](#webhook-verification-helpers) verify HMAC signatures and decode events; constructing
-a signature or event record yourself does not verify received data.
+Generated packages expose webhook contracts from `pkg.protocols` and their exceptions from `pkg.errors`, where `pkg` is
+the generated package name. These imports need no HTTP or cryptography library. The
+[webhook verification helpers](#webhook-verification-helpers) verify HMAC, Ed25519, and RSA-PSS signatures and decode
+events; constructing a signature or event record yourself does not verify received data.
 
 All records below are immutable and keyword-only. `KeySet` retains the original tuple and key objects without
 inspecting or copying the keys. Its representation excludes key material. `VerifiedWebhook` excludes event data
@@ -306,9 +306,9 @@ target reads through its `protocols` setting. The helpers are still being implem
 helper, resolves its references against the selected API, and records it in the target manifest. An enabled pagination
 helper generates the [pagination helper](#pagination-helpers) below, an enabled SSE helper the
 [SSE stream helper](#sse-stream-helpers), an enabled NDJSON helper the [NDJSON stream helper](#ndjson-stream-helpers),
-and an enabled HMAC webhook helper the [webhook verification helper](#webhook-verification-helpers); any other enabled
-helper fails with `E_CLIENT_UNSUPPORTED`. A
-disabled helper generates nothing, so the package is the same as without it. The `websocket`, `cache`,
+and an enabled webhook helper with an HMAC, Ed25519, or RSA-PSS signature the
+[webhook verification helper](#webhook-verification-helpers); any other enabled helper fails with `E_CLIENT_UNSUPPORTED`.
+A disabled helper generates nothing, so the package is the same as without it. The `websocket`, `cache`,
 `resumable_upload`, `batch`, and `queue` kinds fail with `E_CLIENT_UNSUPPORTED` whether they are enabled or not, and
 their settings are not read yet.
 
@@ -501,13 +501,13 @@ E_SELECTOR_DEPENDENCY selection protocols.helpers['audit.all'].operation /paths/
 
 ### Python records and the manifest
 
-`ProtocolConfiguration(schema_version=1, helpers={...})` takes `PaginationHelper`, `PollingHelper`, `StreamHelper`,
-and `WebhookHelper` records, which mirror the file: their fields have the file's names, with `from_` for `from`, and
-they take the client's `Selector` and `RequestTarget` records, `OperationRef` or a pointer string, and `SchemaRef`. A
-webhook's `HmacSignature` takes `HeaderName`, `TimestampHeader`, `SignedLiteral`, `FixedBytes`, and `AsciiBytes`
-records, or `"none"`, and `signed_parts` entries `"raw-body"`, `"timestamp"`, and `"delivery-id"`. They are validated
-as the file is, with the same diagnostics, when the client configuration is constructed. The later kinds have no
-records yet.
+`ProtocolConfiguration(schema_version=1, helpers={...})` takes `PaginationHelper`, `PollingHelper`, `StreamHelper`, and
+`WebhookHelper` records, which mirror the file: their fields have the file's names, with `from_` for `from`, and they
+take the client's `Selector` and `RequestTarget` records, `OperationRef` or a pointer string, and `SchemaRef`. A
+webhook's `HmacSignature` (`hmac-sha256` or `hmac-sha512`) or `PublicKeySignature` (`ed25519` or `rsa-pss-sha256`) has
+the same fields and takes `HeaderName`, `TimestampHeader`, `SignedLiteral`, `FixedBytes`, and `AsciiBytes` records, or
+`"none"`, and `signed_parts` entries `"raw-body"`, `"timestamp"`, and `"delivery-id"`. They are validated as the file
+is, with the same diagnostics, when the client configuration is constructed. The later kinds have no records yet.
 
 ```python
 ClientGenerationConfig(
@@ -2662,11 +2662,11 @@ applications construct providers explicitly.
 
 ## Webhook verification helpers
 
-An enabled `webhook` helper with an `hmac-sha256` or `hmac-sha512` signature generates the module
-`pkg.webhooks.<name>`, where each dotted part of the helper's name is a package or the module. It verifies one received
-delivery and decodes its JSON event; it creates no client, server, or route. The key type is in `pkg.webhooks.keys`,
-whose name a helper cannot take, and a package exists only when at least one webhook helper is enabled. With the
-package `pets` and the `standard.message` helper below:
+An enabled `webhook` helper with an `hmac-sha256`, `hmac-sha512`, `ed25519`, or `rsa-pss-sha256` signature generates the
+module `pkg.webhooks.<name>`, where each dotted part of the helper's name is a package or the module. It verifies one
+received delivery and decodes its JSON event; it creates no client, server, or route. The key type is in
+`pkg.webhooks.keys`, whose name a helper cannot take, and a package exists only when at least one webhook helper is
+enabled. With the package `pets` and the `standard.message` helper below:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.usage -->
 <!-- fmt: off -->
@@ -2728,6 +2728,84 @@ the same facts. `raw_body` is the exact received `bytes`, `headers` a list or tu
 received order, and `now` an aware datetime. `HmacKey(*, id: str, secret: bytes)` passes the secret to HMAC unchanged;
 the id is a nonempty string without NUL, CR, or LF, the secret must be `bytes`, and its representation names the id
 only. Keys cannot be changed, copied into new objects, or pickled.
+
+### Public-key signatures
+
+An `ed25519` helper takes `KeySet[Ed25519Key]` and an `rsa-pss-sha256` helper `KeySet[RSAPSSKey]`, where
+`Ed25519Key(*, id: str, public_key: Ed25519PublicKey)` and `RSAPSSKey(*, id: str, public_key: RSAPublicKey)` wrap the
+public key classes of [cryptography](https://cryptography.io/). `pkg.webhooks.keys` exports only the key types of the
+selected signature kinds, and only these key types and their helpers import cryptography, so `pkg`, `pkg.protocols`,
+and HMAC helpers import without it. A package with such a helper lists `cryptography>=50.0.0` among its dependencies,
+and generation prints it in the `uv add` hint. Load the key with cryptography yourself, for example:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.public-keys -->
+<!-- fmt: off -->
+
+```python
+def keys(raw_key: bytes, modulus: int) -> tuple[KeySet[Ed25519Key], KeySet[RSAPSSKey]]:
+    """Wrap an Ed25519 public key from its raw bytes and an RSA public key from its numbers."""
+    ed25519_key = Ed25519Key(id="active", public_key=Ed25519PublicKey.from_public_bytes(raw_key))
+    rsa_key = RSAPSSKey(id="rsa-2048", public_key=RSAPublicNumbers(65537, modulus).public_key())
+    return KeySet(keys=(ed25519_key,)), KeySet(keys=(rsa_key,))
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.public-keys -->
+
+A key keeps the public key object it was given and uses it only to verify: it is never copied, serialized, compared, or
+shown, and a private key, `bytes`, PEM or DER text, or a key of the other kind raises `TypeError` naming only the
+expected class. The key's own class must derive from the cryptography class, so an object that only claims that class is
+refused, while a class registered with it is accepted: the application supplies its keys. The SDK never derives a public
+key from a private one. An Ed25519 signature is the raw 64-byte signature, and a decoded signature of another length is
+`malformed_signature`. RSA-PSS uses SHA-256, MGF1 with SHA-256, and a 32-byte salt; each key decides its signature size,
+so keys of different sizes can share a key set during rotation, and a signature of the wrong size for a key is
+`invalid_signature` for that key. Only cryptography's `InvalidSignature` moves on to the next signature or key;
+`UnsupportedAlgorithm` raises `ProtocolConfigurationError` with `condition="wrong_capability"` and the key's
+`("keys", "<index>")`, and any other error, including cancellation, propagates unchanged. The signature settings are the
+same as for HMAC:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.public-keys-yaml -->
+<!-- fmt: off -->
+
+```yaml
+schema_version: 1
+helpers:
+  standard.ed25519:
+    kind: webhook
+    event_schema: {pointer: /components/schemas/Message}
+    signature:
+      kind: ed25519
+      header: webhook-signature
+      encoding: base64
+      prefix: "v1a,"
+      separator: " "
+      key_id: none
+      timestamp: {header: webhook-timestamp, unit: seconds}
+      delivery_id: {header: webhook-id}
+      signed_parts: [delivery-id, {literal: "."}, timestamp, {literal: "."}, raw-body]
+      field_constraints:
+        delivery-id: {ascii_bytes: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"}
+        timestamp: {ascii_bytes: "0123456789"}
+  keyed.rsa:
+    kind: webhook
+    event_schema: {pointer: /components/schemas/Message}
+    signature:
+      kind: rsa-pss-sha256
+      header: X-Signature
+      encoding: base64url
+      prefix: "v1="
+      separator: ","
+      key_id: {header: X-Key-Id}
+      timestamp: {header: X-Timestamp, unit: milliseconds}
+      delivery_id: {header: X-Delivery}
+      signed_parts: [timestamp, {literal: "."}, delivery-id, {literal: "."}, raw-body]
+      field_constraints:
+        timestamp: {ascii_bytes: "0123456789"}
+        delivery-id: {ascii_bytes: "abcdefghijklmnopqrstuvwxyz0123456789-"}
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.public-keys-yaml -->
 
 ### Signature settings
 
@@ -2801,8 +2879,8 @@ E_CONFIG_CONFLICT config protocols.helpers['conflict.facts_adjacent'].signature.
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.diagnostics -->
 
-Other signature kinds (`ed25519`, `rsa-pss-sha256`, `adapter`, `none`) fail with `E_CLIENT_UNSUPPORTED` even when the
-helper is disabled, and their settings are not read yet. Event mappings, and an event whose model needs an envelope,
+Other signature kinds (`adapter`, `none`) fail with `E_CLIENT_UNSUPPORTED` even when the helper is disabled, and their
+settings are not read yet. Event mappings, and an event whose model needs an envelope,
 fail with `E_CLIENT_UNSUPPORTED` when the helper is enabled. A header value is read as ASCII; a format that keeps its
 timestamp and signatures in one header, such as `t=...,v1=...`, needs an adapter, which is not supported yet.
 
@@ -2830,7 +2908,7 @@ header value, or body.
   compared in exact microseconds.
 - `missing_key`: no key is eligible, such as an empty key set or a key id no key has.
 - `invalid_signature`: keys are tried in key-set order and signatures in header order, and none verifies; HMAC digests
-  are compared in constant time. The first key that verifies gives `matched_key_id`.
+  are compared in constant time, and public keys verify with cryptography. The first key that verifies gives `matched_key_id`.
 - `missing_delivery_id`: a replay store was given to a helper without a delivery id.
 
 ### Replay detection

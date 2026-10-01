@@ -71,6 +71,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
         "pagination-targets",
         "webhooks",
         "webhooks-schema",
+        "webhooks-public-keys",
         "streams",
         "streams-mixed",
         "ndjson",
@@ -141,7 +142,11 @@ def test_client_protocols(case: str, tmp_path: Path) -> None:
 
 @pytest.mark.parametrize(
     ("first", "second", "expected"),
-    [("pagination", "pagination-documents", "helper-documents"), ("webhooks", "webhooks-python", "webhook-records")],
+    [
+        ("pagination", "pagination-documents", "helper-documents"),
+        ("webhooks", "webhooks-python", "webhook-records"),
+        ("webhooks-public-keys", "webhooks-public-keys-python", "webhook-public-key-records"),
+    ],
 )
 def test_client_helper_digests(first: str, second: str, expected: str, tmp_path: Path) -> None:
     """Digest a helper's normalized settings, so equivalent spellings and equal Python records digest alike."""
