@@ -1153,7 +1153,7 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
         cap = self._deadline(self._socket.send_timeout)
         lane = self._call.lane(cap)
         try:
-            await lane.bounded(self._queue.acquire, phase="stream", idle=False)
+            await lane.bounded(self._queue.acquire, phase="stream", idle=False, cleanup=self._release_turn)
         except BaseException as error:  # noqa: BLE001
             raise (self._unsent() if self._capped(error, cap) else self._own(error)) from None
         try:
@@ -1175,6 +1175,11 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
         finally:
             self._queue.release()
         self._sent += 1
+
+    async def _release_turn(self, acquired: object) -> None:
+        """Give back the send turn a send got just as the call stopped it, so later sends can take it."""
+        del acquired
+        self._queue.release()
 
     async def receive(self) -> Message[RecvT]:
         """Return the next message, waiting at most the idle timeout for it."""

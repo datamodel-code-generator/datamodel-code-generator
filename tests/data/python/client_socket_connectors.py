@@ -80,7 +80,7 @@ class _AsyncConnection(_Connection):
         self.lines.append(f"    connection send text={text} {data!r} deadline={deadline is not None}")
         if self.blocked is not None:
             self.blocked.set()
-            await asyncio.sleep(10)
+            await asyncio.to_thread(self.released.wait, 10)
         self._fail("send")
 
     async def receive(self, *, deadline: object) -> Any:  # ty: ignore[invalid-method-override]
@@ -212,6 +212,7 @@ def socket_connectors(package: ModuleType, lines: list[str]) -> None:
     _default_transport(harness, connector)
     lines.append("  borrowed connector left open")
     run(lambda: _async_connectors(harness))
+    run(lambda: _stopped_turn(harness))
 
 
 def _construction(harness: _Harness) -> None:
@@ -478,6 +479,31 @@ def _cancelled(harness: _Harness, connector: _Connector) -> None:
         session = api.protocols.feed.text.connect()
         record(lines, "receive cancelled at the token interval", session.receive)
         session.close()
+
+
+async def _stopped_turn(harness: _Harness) -> None:
+    """Give back the send turn a waiting send got just as its cap passed on the client's clock."""
+    lines, options = harness.lines, harness.options
+    now = [0.0]
+    connector = _AsyncConnector(harness)
+    clock = options.Clock(monotonic=lambda: now[0])
+    async with harness.package.AsyncClient(options=harness.client(connector, clock=clock)) as api:
+        connection = _AsyncConnection(harness)
+        connection.blocked = threading.Event()
+        connector.queue.append(connection)
+        session = await api.protocols.feed.text.connect(
+            options=options.RequestOptions(total_timeout=None), ws_options=harness.protocols.WSOptions(send_timeout=10)
+        )
+        first = asyncio.create_task(session.send("first"))
+        await asyncio.to_thread(connection.blocked.wait, 5)
+        connection.blocked = None
+        second = asyncio.create_task(session.send("second"))
+        await asyncio.sleep(0)
+        now[0] = 20.0
+        connection.released.set()
+        await arecord(lines, "async send holding the turn past its cap", lambda: first)
+        await arecord(lines, "async send given the turn past its cap", lambda: second)
+        await arecord(lines, "async send after the stopped turn", lambda: session.send("third"))
 
 
 async def _async_connectors(harness: _Harness) -> None:
