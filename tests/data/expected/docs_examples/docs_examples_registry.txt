@@ -17,6 +17,9 @@ python-client.pagination.helper: python-client.md
 python-client.pagination.diagnostics: python-client.md
 python-client.polling.helper: python-client.md
 python-client.polling.diagnostics: python-client.md
+python-client.batches.helper: python-client.md
+python-client.batches.records: python-client.md
+python-client.batches.diagnostics: python-client.md
 python-client.streams.helper: python-client.md
 python-client.streams.diagnostics: python-client.md
 python-client.ndjson.helper: python-client.md

@@ -1,0 +1,34 @@
+mypy pets and batches.py: clean
+pyright pets and batches.py: clean
+ty pets and batches.py: clean
+batches_negative.py 9 marked lines
+mypy batches_negative.py: 9/9 marked lines with one error, 0 elsewhere, 0 in other files
+  14 arg-type
+  15 arg-type
+  16 call-arg
+  17 assignment
+  18 misc
+  21 assignment
+  23 assignment
+  24 misc
+  25 call-arg
+pyright batches_negative.py: 9/9 marked lines with one error, 0 elsewhere, 0 in other files
+  14 reportArgumentType
+  15 reportArgumentType
+  16 reportCallIssue
+  17 reportAssignmentType
+  18 reportGeneralTypeIssues
+  21 reportAssignmentType
+  23 reportAssignmentType
+  24 reportAttributeAccessIssue
+  25 reportCallIssue
+ty batches_negative.py: 9/9 marked lines with one error, 0 elsewhere, 0 in other files
+  14 invalid-argument-type
+  15 invalid-argument-type
+  16 unknown-argument
+  17 invalid-assignment
+  18 invalid-await
+  21 invalid-assignment
+  23 invalid-assignment
+  24 invalid-assignment
+  25 unknown-argument

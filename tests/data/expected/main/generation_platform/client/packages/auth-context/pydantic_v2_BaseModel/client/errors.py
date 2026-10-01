@@ -71,6 +71,10 @@ from ._runtime.client.errors import (
 
 if TYPE_CHECKING:
     from ._runtime.protocols.errors import (
+        BatchDeliveryUnknownError,
+        BatchItemTooLargeError,
+        BatchProtocolError,
+        DeliveryUnknownError,
         IncompleteFrameError,
         OperationCancelledError,
         OperationFailedError,
@@ -104,6 +108,9 @@ __all__ = [
     'AuthTokenLoadError',
     'AuthTokenStoreConflictError',
     'AuthTokenStoreError',
+    'BatchDeliveryUnknownError',
+    'BatchItemTooLargeError',
+    'BatchProtocolError',
     'BodyChangedError',
     'BodyFactoryError',
     'BodyNotReplayableError',
@@ -116,6 +123,7 @@ __all__ = [
     'DecodeError',
     'DecompressionLimitError',
     'DeliveryState',
+    'DeliveryUnknownError',
     'HTTPStatusError',
     'HookExecutionError',
     'IOPhase',
@@ -167,6 +175,10 @@ __all__ = [
     'WebhookVerificationError',
 ]
 _PROTOCOL_ERRORS = frozenset({
+    'BatchDeliveryUnknownError',
+    'BatchItemTooLargeError',
+    'BatchProtocolError',
+    'DeliveryUnknownError',
     'IncompleteFrameError',
     'OperationCancelledError',
     'OperationFailedError',

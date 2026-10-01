@@ -1855,6 +1855,23 @@
     },
     "modules": false
   },
+  "protocols-batch-errors": {
+    "input": "helpers.yaml",
+    "references": [
+      "helpers-external.yaml",
+      "protocols/batch-errors.yaml"
+    ],
+    "config": {
+      "selection": {
+        "exclude_tags": [
+          "admin"
+        ],
+        "reason": "Administration stays internal"
+      },
+      "protocols": "protocols/batch-errors.yaml"
+    },
+    "modules": false
+  },
   "protocols-stream-errors": {
     "input": "helpers.yaml",
     "references": [
@@ -2685,6 +2702,77 @@
     ],
     "config": {
       "protocols": "protocols/polling-checks.yaml"
+    },
+    "modules": false
+  },
+  "batches": {
+    "input": "batches.yaml",
+    "references": [
+      "protocols/batches.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/batches.yaml"
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "batches.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ]
+    ]
+  },
+  "batches-plans": {
+    "input": "batches.yaml",
+    "references": [
+      "protocols/batches.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/batches.yaml"
+    },
+    "backends": [
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "batches.py"
+      ]
+    ]
+  },
+  "protocols-batch-checks": {
+    "input": "batch-checks.yaml",
+    "references": [
+      "protocols/batch-checks.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/batch-checks.yaml"
     },
     "modules": false
   },

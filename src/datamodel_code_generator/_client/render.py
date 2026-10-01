@@ -12,6 +12,7 @@ from datamodel_code_generator._api_generation import RenderedFile
 from datamodel_code_generator._client._compiled_templates import client as client_template
 from datamodel_code_generator._client._compiled_templates import resource as resource_template
 from datamodel_code_generator._client._compiled_templates import types as types_template
+from datamodel_code_generator._client.batches import BatchSpec
 from datamodel_code_generator._client.naming import helper_classes, pascal
 from datamodel_code_generator._client.plan import media_range, member_parts, reachable, success_media
 from datamodel_code_generator._client.polling import STATES, PollingSpec
@@ -291,6 +292,10 @@ _ERROR_NAMES: Final = (
     "WebhookVerificationError",
 )
 _PROTOCOL_ERROR_NAMES: Final = (
+    "BatchDeliveryUnknownError",
+    "BatchItemTooLargeError",
+    "BatchProtocolError",
+    "DeliveryUnknownError",
     "IncompleteFrameError",
     "OperationCancelledError",
     "OperationFailedError",
@@ -346,6 +351,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .._runtime.protocols.options import (
+    BatchOptions,
     Origin,
     PaginationOptions,
     PollOptions,
@@ -381,17 +387,21 @@ from .._runtime.protocols.webhooks import (
 )
 
 if TYPE_CHECKING:
+    from .._runtime.protocols.batches import AsyncBatchIterator, BatchIterator
     from .._runtime.protocols.pagination import AsyncPager, Page, Pager
     from .._runtime.protocols.polling import AsyncLroHandle, LroHandle
     from .._runtime.protocols.replay import AsyncMemoryReplayStore, MemoryReplayStore
     from .._runtime.protocols.streams import AsyncEventStream, EventStream, StreamEvent, UnknownEvent
 
 __all__ = [
+    "AsyncBatchIterator",
     "AsyncEventStream",
     "AsyncLroHandle",
     "AsyncMemoryReplayStore",
     "AsyncPager",
     "AsyncReplayStore",
+    "BatchIterator",
+    "BatchOptions",
     "BodySelector",
     "BodyTarget",
     "Continuation",
@@ -431,7 +441,7 @@ __all__ = [
 
 
 def __getattr__(name: str) -> object:
-    """Load a memory store or a pagination, polling, or stream type only when its public class is requested."""
+    """Load a memory store or a pagination, polling, stream, or batch type only when it is requested."""
     if name in {"AsyncPager", "Page", "Pager"}:
         from .._runtime.protocols import pagination
 
@@ -444,6 +454,10 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import streams
 
         return getattr(streams, name)
+    if name in {"AsyncBatchIterator", "BatchIterator"}:
+        from .._runtime.protocols import batches
+
+        return getattr(batches, name)
     if name == "MemoryReplayStore":
         from .._runtime.protocols.replay import MemoryReplayStore
 
@@ -982,7 +996,7 @@ class _Resources(_Typing):
         validation: ClientValidationConfig,
         *,
         unpacked: bool = False,
-        helpers: tuple[PaginationSpec | PollingSpec, ...] = (),
+        helpers: tuple[PaginationSpec | PollingSpec | BatchSpec, ...] = (),
         streams: tuple[StreamSpec, ...] = (),
     ) -> None:
         """Keep the typing context, User-Agent, validation, unpacked methods' TypedDicts, and protocol helpers."""
@@ -2224,6 +2238,7 @@ _STREAM_OPTIONS: Final = (
 _HELPER_KINDS: Final = {
     "pagination": "pagination helper",
     "polling": "polling helper",
+    "batch": "batch helper",
     "sse": "SSE helper",
     "ndjson": "NDJSON helper",
 }
@@ -2235,6 +2250,18 @@ _HELPER_CALLS: Final[dict[bool, tuple[str, str, str, str]]] = {
 }
 _POLL_OPTIONS: Final = (("poll_options", ".", "PollOptions"), *_HELPER_OPTIONS[1:])
 _POLLING: Final = "_runtime.protocols.polling"
+_BATCHES: Final = "_runtime.protocols.batches"
+_BATCH_OPTIONS: Final = (("batch_options", ".", "BatchOptions"), *_HELPER_OPTIONS[1:])
+_RECORDS: Final = (
+    ("Success", "value", "success", "the server applied, with its success value"),
+    ("Error", "error", "error", "the server refused, with its error"),
+)
+_SUFFIXES: Final = ("Success", "Error", "DeliveryUnknown", "Result")
+
+
+def _prefix(spec: BatchSpec) -> str:
+    """Return the prefix of a batch helper's record names: its dotted name's parts in PascalCase."""
+    return "".join(map(pascal, spec.helper.name.split(".")))
 
 
 class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
@@ -2248,7 +2275,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         self.fingerprints = fingerprints
 
     @staticmethod
-    def page(module: Module, spec: PaginationSpec | PollingSpec) -> str:
+    def page(module: Module, spec: PaginationSpec | PollingSpec | BatchSpec) -> str:
         """Return the type of a helper's page or create response: its operation's response alias."""
         return _Helpers.response(module, spec.operation)
 
@@ -2266,7 +2293,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
 
     def plans(self) -> str:
         """Return the module of every helper's accessors and plan, then each stream helper's plan."""
-        names = ("PLAN_{}", "_items_{}", "_result_{}", "_immediate_{}")
+        names = ("PLAN_{}", "_items_{}", "_result_{}", "_immediate_{}", "_results_{}", "_success_{}", "_error_{}")
         streams = self.streams
         module = Module(
             {
@@ -2280,6 +2307,8 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         for index, spec in enumerate(self.helpers):
             if isinstance(spec, PollingSpec):
                 sections.extend(self.polling(module, index, spec))
+            elif isinstance(spec, BatchSpec):
+                sections.extend(self.batch(module, index, spec))
             else:
                 sections.extend((self.items(module, index, spec), self.plan(module, index, spec)))
         sections.extend(self.stream_plan(module, index, spec) for index, spec in enumerate(streams))
@@ -2549,9 +2578,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                 f"the {spec.helper.name} {_HELPER_KINDS[spec.helper.kind]} of {spec.operation.contract.method.upper()} "
                 f"{spec.operation.contract.path}",
                 core,
-                self.start(module, index, spec, asynchronous=asynchronous)
-                if isinstance(spec, PollingSpec)
-                else self.methods(module, index, spec, asynchronous=asynchronous),
+                self.leaf(module, index, spec, asynchronous=asynchronous),
                 leaf=True,
             )
             for index, (name, spec) in enumerate(leaves.items())
@@ -2573,6 +2600,16 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             imports=module.imports(),
             sections=sections,
         )
+
+    def leaf(
+        self, module: Module, index: int, spec: PaginationSpec | PollingSpec | BatchSpec, *, asynchronous: bool
+    ) -> list[str]:
+        """Return the methods of one helper by its kind."""
+        if isinstance(spec, PollingSpec):
+            return self.start(module, index, spec, asynchronous=asynchronous)
+        if isinstance(spec, BatchSpec):
+            return [self.iterate(module, index, spec, asynchronous=asynchronous)]
+        return self.methods(module, index, spec, asynchronous=asynchronous)
 
     @staticmethod
     def node(name: str, what: str, core: str, members: list[str], *, leaf: bool = False) -> str:
@@ -2698,6 +2735,147 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         ]
 
     @staticmethod
+    def records(module: Module, spec: BatchSpec, suffixes: tuple[str, ...] = _SUFFIXES) -> list[str]:
+        """Return the record classes and result alias of a batch helper with the suffixes given."""
+        prefix = _prefix(spec)
+        return [module.local("protocols.batches", f"{prefix}{suffix}") for suffix in suffixes]
+
+    def batch(self, module: Module, index: int, spec: BatchSpec) -> list[str]:
+        """Return a batch helper's result accessors and its plan: its operation, result members, and limits."""
+        helper = spec.helper
+        tree, name = helper.tree, helper.name
+        result = module.types.static(spec.result)
+        sequence = module.name("collections.abc", "Sequence")
+        sections = [
+            self.accessor(
+                module,
+                f"_results_{index}",
+                self.page(module, spec),
+                f"{sequence}[{result}] | None",
+                f"the results of one request of {name}",
+                spec.results,
+            ),
+            *(
+                self.accessor(
+                    module,
+                    f"_{key}_{index}",
+                    result,
+                    f"{module.types.static(member.value)} | None",
+                    f"the {key} member of one result of {name}",
+                    member.steps,
+                )
+                for key, member in (("success", spec.success), ("error", spec.error))
+            ),
+        ]
+        succeeded, failed, unknown, alias = self.records(module, spec)
+        records = "_runtime.protocols.records"
+        entries: list[tuple[str, Doc]] = [
+            ("helper_id=", repr(name)),
+            ("operation=", self.reference(module, spec.operation)),
+            ("call=", f"{module.root('_operations')}.OPERATION_{spec.operation.index}"),
+            ("results=", f"_results_{index}"),
+            ("results_selector=", f"{module.local(records, 'BodySelector')}(pointer={tree['results']['pointer']!r})"),
+            ("success=", f"_success_{index}"),
+            ("success_pointer=", repr(tree["success"]["pointer"])),
+            ("error=", f"_error_{index}"),
+            ("error_pointer=", repr(tree["error"]["pointer"])),
+            ("succeeded=", succeeded),
+            ("failed=", failed),
+            ("unknown=", unknown),
+            ("max_items=", repr(tree["max_items"])),
+            ("max_request_bytes=", repr(tree["max_request_bytes"])),
+            ("fingerprint=", repr(self.fingerprints[name])),
+        ]
+        if spec.items_member is not None:
+            entries.append(("items_member=", repr(spec.items_member)))
+        if spec.items_root is not None:
+            entries.append(("items_root=", module.types.static(spec.items_root)))
+        if (correlation := tree["correlation"])["kind"] == "id":
+            entries.extend((("input_id=", repr(correlation["input"])), ("result_id=", repr(correlation["result"]))))
+        plan = module.local(_BATCHES, "BatchPlan")
+        head = f"PLAN_{index}: {module.name('typing', 'Final')}[{plan}[{module.types.static(spec.item)}, {alias}]] = "
+        sections.append(head + layout(_call(plan, entries), 0, len(head), WIDTH))
+        return sections
+
+    def iterate(self, module: Module, index: int, spec: BatchSpec, *, asynchronous: bool) -> str:
+        """Return a batch helper's iterate method, which takes the items and its operation's parameters."""
+        operation = spec.operation
+        resources = self.resources
+        arguments = [resources.parameter(module, parameter) for parameter in operation.parameters]
+        options = [
+            _Argument(name, f"{module.namespace.name(source, kind)} | None", "none")
+            for name, source, kind in _BATCH_OPTIONS
+        ]
+        item = module.types.static(spec.item)
+        iterable = f"{module.name('collections.abc', 'Iterable')}[{item}]"
+        if asynchronous:
+            iterable = f"{iterable} | {module.name('collections.abc', 'AsyncIterable')}[{item}]"
+        alias = self.records(module, spec, ("Result",))[0]
+        iterator = f"{module.local(_BATCHES, 'AsyncBatchIterator' if asynchronous else 'BatchIterator')}[{alias}]"
+        passed = [
+            ("", "self._core"),
+            ("", f"{module.namespace.name('.', '_plans')}.PLAN_{index}"),
+            ("", _tuple(parameter.python_name for parameter in operation.parameters)),
+            ("", "items"),
+            *((f"{name}=", name) for name, _, _ in _BATCH_OPTIONS),
+        ]
+        factory = module.local(_BATCHES, "aiterate_batches" if asynchronous else "iterate_batches")
+        route = f"{operation.contract.method.upper()} {operation.contract.path}"
+        signature = (f"items: {iterable}", "*", *(argument.parameter(module) for argument in (*arguments, *options)))
+        return "\n".join((
+            layout(Group("    def iterate(", items(("self", *signature)), f") -> {iterator}:"), 4, 0, WIDTH),
+            f'        """Return the results of {route} for the items in order; nothing is sent until iterated."""',
+            f"        return {layout(_call(factory, passed), 8, 7, WIDTH)}",
+        ))
+
+    def results_module(self) -> str:
+        """Return the module of every batch helper's result records and result alias.
+
+        Each record is frozen and keyword-only, and its outcome is a literal that narrows the result alias; a record's
+        value, error, and retry token stay out of its repr.
+        """
+        batches = [(spec, _prefix(spec)) for spec in self.helpers if isinstance(spec, BatchSpec)]
+        names = sorted(f"{prefix}{suffix}" for _, prefix in batches for suffix in _SUFFIXES)
+        module = Module(names, self.resources.symbols, level=2)
+        field = module.name("dataclasses", "field")
+        literal = module.name("typing", "Literal")
+        decorators = (
+            f"@{module.name('typing', 'final')}\n@{module.name('dataclasses', 'dataclass')}"
+            "(frozen=True, slots=True, kw_only=True)\n"
+        )
+        response = f"{module.local('responses', 'ResponseInfo')} | None"
+        token = f"    retry_token: bytes | None = {field}(default=None, repr=False)\n"
+        sections = ["__all__ = [\n" + "".join(f"    {name!r},\n" for name in names) + "]"]
+        for spec, prefix in batches:
+            shared = f"    index: int\n    item_id: {spec.item_id or 'None'}\n    response: {response}\n"
+            for suffix, member, outcome, what in _RECORDS:
+                value = (spec.success if outcome == "success" else spec.error).value
+                sections.append(
+                    f"{decorators}class {prefix}{suffix}:\n"
+                    f'    """One item of {spec.helper.name} {what}."""\n\n{shared}'
+                    f"    {member}: {module.types.static(value)} = {field}(repr=False)\n{token}"
+                    f"    outcome: {literal}[{outcome!r}] = {field}(default={outcome!r}, init=False)"
+                )
+            sections.extend((
+                (
+                    f"{decorators}class {prefix}DeliveryUnknown:\n"
+                    f'    """One item of {spec.helper.name} whose request may have reached the server unanswered."""'
+                    "\n\n"
+                    f"{shared}{token}"
+                    f"    outcome: {literal}['delivery_unknown'] = {field}(default='delivery_unknown', init=False)"
+                ),
+                (
+                    f"{prefix}Result: {module.name('typing', 'TypeAlias')} = "
+                    f"{prefix}Success | {prefix}Error | {prefix}DeliveryUnknown"
+                ),
+            ))
+        return types_template.render(
+            docstring="The result records of this package's batch helpers; regenerate them instead of editing.",
+            imports=module.imports(),
+            sections=sections,
+        )
+
+    @staticmethod
     def event_type(module: Module, spec: StreamSpec) -> str:
         """Return the type of a stream's event data: its event types, with UnknownEvent when it keeps unknown events."""
         types = [use.type for _, use in spec.events if use.type is not None]
@@ -2809,7 +2987,7 @@ class ClientRenderer:
         batch: GeneratedTypeContractBatch,
         wire: WirePlan,
         codecs: CodecPlan,
-        helpers: tuple[PaginationSpec | PollingSpec, ...] = (),
+        helpers: tuple[PaginationSpec | PollingSpec | BatchSpec, ...] = (),
         streams: tuple[StreamSpec, ...] = (),
         fingerprints: Mapping[str, str] | None = None,
         webhooks: Callable[[Mapping[TypeUseId, UseAccessors]], tuple[tuple[PurePosixPath, str], ...]],
@@ -2950,13 +3128,21 @@ stops only local polling. See the runtime reference for their limits."""
             if "polling" in kinds
             else ""
         )
+        batch = (
+            """
+A batch helper's `iterate` returns an iterator that sends nothing until it is consumed, then sends the items in
+requests within the server's and the caller's limits, a few at once, and returns one record per item in input order:
+its success value, its error, or an unknown delivery. See the runtime reference for its limits."""
+            if "batch" in kinds
+            else ""
+        )
         closing = "" if kinds else "\nSee the runtime reference for their limits."
         return f"""
 ## Protocol helpers
 
 `client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.{
             streams
-        }{pagination}{polling}{closing}
+        }{pagination}{polling}{batch}{closing}
 
 ```json
 {json.dumps(helpers, indent=2, ensure_ascii=True)}
@@ -3140,8 +3326,46 @@ wait for retained cleanup; it does not authorize another send or restore an expi
 {self.helper_runtime()}{self.stream_runtime()}"""  # noqa: S608
 
     def helper_runtime(self) -> str:
-        """Describe the sessions of the package's pagination and polling helpers, or nothing without helpers."""
-        return self.pagination_runtime() + self.polling_runtime()
+        """Describe the sessions of the package's pagination, polling, and batch helpers, or nothing without them."""
+        return self.pagination_runtime() + self.polling_runtime() + self.batch_runtime()
+
+    def batch_runtime(self) -> str:
+        """Describe batch sessions and their limits, or nothing for a package without batch helpers."""
+        if not any(isinstance(spec, BatchSpec) for spec in self.helpers):
+            return ""
+        return f"""
+## Batch sessions
+
+A batch helper's `iterate` returns an iterator that is one session; it reads, encodes, and sends nothing until it is
+consumed. Every request is a logical call of its own, with its own retries, total timeout, and idempotency key; the
+session bounds all of them. Each limit comes from the call's options, then `ProtocolClientOptions.defaults` for the
+helper, then the default below. The session types are imported from:
+
+- `{self.config.package}.protocols`: `BatchOptions`, `BatchIterator`, and `AsyncBatchIterator`
+- `{self.config.package}.protocols.batches`: each helper's records and result alias
+- `{self.config.package}.options`: `SessionOptions`
+
+| Limit | Effective default |
+|---|---|
+| items per request | 100, fewer when the server allows fewer |
+| requests in flight | 4 |
+| items per session | 100000; None removes it |
+| encoded bytes per item | 8 MiB, less when one request carries less |
+| prepared request bytes | 32 MiB, also the most one request carries |
+| session total timeout | 600 seconds; None removes it |
+| network sends per session | 10000; None removes it |
+
+Items are grouped in input order into requests within the count and byte limits, and an item whose declared ID is
+already in a request starts the next one. Results come back in input order, whatever order requests complete in. A
+result item must carry exactly one of its success and error members, and results that do not match the request's
+items by position or declared ID raise `BatchProtocolError`. An item too large for any request raises
+`BatchItemTooLargeError` before it is sent. Item errors are records, never retried; a request is resent only as the
+shared retry policy allows its operation. A request that may have reached the server without a response gives one
+unknown delivery record per item, never resent, or raises `BatchDeliveryUnknownError` with
+`BatchOptions(raise_on_error=True)`. Any other failure, and a failure of the caller's items, is raised after the
+results before it, and the iterator then stops sending. `close()` or `aclose()` stops sending and drops the results
+not yet returned; it never closes the client. A call's options must not fix an idempotency key.
+"""
 
     def polling_runtime(self) -> str:
         """Describe polling sessions and their limits, or nothing for a package without polling helpers."""
@@ -3191,7 +3415,7 @@ options must not fix an idempotency key or patch a header or query parameter the
         page-number helper, and followed URLs only for one with a next-URL or Link helper; the cursor size limit
         applies to cursors and followed URLs.
         """
-        if not (pages := [spec for spec in self.helpers if not isinstance(spec, PollingSpec)]):
+        if not (pages := [spec for spec in self.helpers if not isinstance(spec, (PollingSpec, BatchSpec))]):
             return ""
         kinds = {spec.continuation["kind"] for spec in pages}
         cursors = "cursor" in kinds
@@ -3327,8 +3551,14 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
         if not (self.helpers or self.streams):
             return ()
         helpers = _Helpers(resources, self.fingerprints)
+        batches = (
+            (self.file(PurePosixPath("protocols", "batches.py"), "protocols", helpers.results_module()),)
+            if any(isinstance(spec, BatchSpec) for spec in self.helpers)
+            else ()
+        )
         return (
             self.file(PurePosixPath("protocols", "_plans.py"), "protocols", helpers.plans()),
+            *batches,
             self.file(PurePosixPath("protocols", "_helpers.py"), "protocols", helpers.module(asynchronous=False)),
             self.file(PurePosixPath("protocols", "_async_helpers.py"), "protocols", helpers.module(asynchronous=True)),
         )

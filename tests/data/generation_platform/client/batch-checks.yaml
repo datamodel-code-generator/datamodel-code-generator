@@ -1,0 +1,205 @@
+openapi: 3.2.0
+info:
+  title: Batch checks
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /checks/plain:
+    post:
+      operationId: plainBatch
+      tags: [checks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CheckRequest'}
+      responses:
+        '200':
+          description: Results.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CheckResponse'}
+  /checks/media:
+    post:
+      operationId: mediaBatch
+      tags: [checks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CheckRequest'}
+          text/plain:
+            schema: {type: string}
+      responses:
+        '200':
+          description: Results.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CheckResponse'}
+  /checks/envelope:
+    post:
+      operationId: envelopeBatch
+      tags: [checks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/EnvelopeRequest'}
+      responses:
+        '200':
+          description: Results.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CheckResponse'}
+  /checks/union:
+    post:
+      operationId: unionBatch
+      tags: [checks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - {$ref: '#/components/schemas/CheckRequest'}
+                - {$ref: '#/components/schemas/OtherRequest'}
+      responses:
+        '200':
+          description: Results.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CheckResponse'}
+  /checks/required:
+    post:
+      operationId: requiredBatch
+      tags: [checks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ModeRequest'}
+      responses:
+        '200':
+          description: Results.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CheckResponse'}
+  /checks/empty:
+    post:
+      operationId: emptyBatch
+      tags: [checks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CheckRequest'}
+      responses:
+        '204':
+          description: Nothing.
+  /checks/strings:
+    post:
+      operationId: stringsBatch
+      tags: [checks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CheckRequest'}
+      responses:
+        '200':
+          description: Strings.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/StringsResponse'}
+components:
+  schemas:
+    Item:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string}
+        count: {type: integer}
+        flag: {type: boolean}
+    Other:
+      type: object
+      properties:
+        id: {type: string}
+    ItemList:
+      type: array
+      items: {$ref: '#/components/schemas/Item'}
+    CheckRequest:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/Item'}
+        others:
+          type: array
+          items: {$ref: '#/components/schemas/Other'}
+        listed: {$ref: '#/components/schemas/ItemList'}
+        label: {type: string}
+        nested:
+          type: object
+          properties:
+            items:
+              type: array
+              items: {$ref: '#/components/schemas/Item'}
+    OtherRequest:
+      type: object
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/Other'}
+    EnvelopeRequest:
+      type: object
+      required: [items, created]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/Item'}
+        created: {type: string, readOnly: true}
+    ModeRequest:
+      type: object
+      required: [items, mode]
+      properties:
+        items:
+          type: array
+          items: {$ref: '#/components/schemas/Item'}
+        mode: {type: string}
+    Err:
+      type: object
+      properties:
+        code: {type: string}
+    Result:
+      type: object
+      properties:
+        id: {type: string}
+        count: {type: integer}
+        ok: {$ref: '#/components/schemas/Item'}
+        error: {$ref: '#/components/schemas/Err'}
+        meta:
+          type: object
+          additionalProperties: {type: string}
+    CheckResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items: {$ref: '#/components/schemas/Result'}
+        names:
+          type: array
+          items: {type: string}
+        data:
+          type: object
+          additionalProperties:
+            type: array
+            items: {$ref: '#/components/schemas/Result'}
+        total: {type: integer}
+    StringsResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items: {type: string}

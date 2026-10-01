@@ -230,6 +230,12 @@ booleans. Durations are finite numbers of seconds, excluding booleans; integers 
 | | `reconnect` | `False` | `bool` |
 | | `max_reconnects` | `5` | Nonnegative integer or `None` |
 | | `max_reconnect_wait` | `60` seconds | Positive duration or `None` |
+| `BatchOptions` | `batch_size` | `100`, fewer when the server allows fewer | Positive integer |
+| | `parallelism` | `4` | Positive integer |
+| | `max_items` | `100000` | Nonnegative integer or `None` |
+| | `max_item_bytes` | `8388608` | Positive integer |
+| | `max_buffer_bytes` | `33554432` | Positive integer |
+| | `raise_on_error` | `False` | `bool` |
 
 `ProtocolSecurityContext(*, credential_partition: str, allowed_origins: tuple[Origin, ...] = ())` names the
 nonsecret credential partition of helper state and the origins permitted in addition to the same origin. The
@@ -266,7 +272,7 @@ client = Client(options=options)
 | `ProtocolClientOptions.security` | `ProtocolSecurityContext \| None`, default `UNSET` | `None` means anonymous use. Its `allowed_origins` are the origins beyond the server's that a next-URL or Link pagination helper may follow a URL to |
 | `ProtocolClientOptions.defaults` | `Mapping[str, ProtocolDefaults]`, default `UNSET` | Keys are helper names: Python identifiers separated by dots, without keywords or empty parts. The mapping is copied into a read-only mapping, and its values keep their identity |
 | `ProtocolDefaults.session` | `SessionOptions`, default `UNSET` | Session limits of that helper |
-| `ProtocolDefaults.options` | `PaginationOptions \| PollOptions \| StreamOptions`, default `UNSET` | Kind-specific options of that helper |
+| `ProtocolDefaults.options` | `PaginationOptions \| PollOptions \| StreamOptions \| BatchOptions`, default `UNSET` | Kind-specific options of that helper |
 
 Invalid values inside `ProtocolClientOptions` and `ProtocolDefaults` raise `ProtocolConfigurationError`. Explicit
 call options take precedence over these defaults, which take precedence over the effective defaults above.
@@ -294,6 +300,10 @@ Invalid field values raise `ValueError`.
 | `StreamInterruptedError` | `ProtocolError` | `condition: Literal['eof', 'transport']`, `sequence: int`, `resume_state: ResumeState \| None = None` |
 | `IncompleteFrameError` | `StreamInterruptedError` | `buffered_bytes: int`; `condition` is always `eof` |
 | `StreamRemoteError[E]` | `ProtocolError` | `event_type: str \| None`, `data: E`, a read-only property, `sequence: int` |
+| `DeliveryUnknownError` | `ProtocolError` | `delivery_state: DeliveryState`, `MAYBE_SENT` or `RESPONSE_STARTED`, `resume_state: ResumeState \| None = None`, `message_id: str \| None = None` |
+| `BatchProtocolError` | `ProtocolDataError` | `indices: tuple[int, ...]`; `condition` is always `inconsistent` |
+| `BatchItemTooLargeError` | `ProtocolSizeError` | `index: int`, `limit: int`, `observed: int`; `kind` is always `body` and `unit` `bytes` |
+| `BatchDeliveryUnknownError[R]` | `DeliveryUnknownError` | `partial_results: tuple[R, ...]`, a read-only property, `batch_indices: tuple[int, ...]`; `message_id` is None |
 
 A field whose value is fixed is not a constructor argument, so passing it raises `TypeError`. `progress` is
 copied into a read-only mapping. Messages and representations exclude locations, progress, resume state, snapshots,
@@ -459,6 +469,7 @@ querystring, or its request body. An operation that owns a querystring takes no 
 | `polling` | `create`, `accepted_statuses`, `poll`, `bindings` (create to poll), `state`, `pending`, `succeeded`, `result` | `failed` and `cancelled` (`[]`), `interval` (`{seconds: 1, retry_after_header: null}`), `remote_cancel` (`{operation, bindings?}`), `immediate_result` (`{statuses, selector, schema}`), `expires_at` |
 | `sse`, `ndjson` | `operation`, `media`, `event_schema`, `completion`, and for `ndjson` `final_line` (`require_newline` or `allow_eof`) | `unknown` (`error`, the default, or `raw`), `error_events` (`{}`), `resume` (`{enabled: false}`) |
 | `webhook` | `event_schema`, `signature` (see [webhook verification helpers](#webhook-verification-helpers)) | `duplicates` (`report`, the default, or `reject`, which needs a signature) |
+| `batch` | `operation`, `request_items` (a body target), `item_schema`, `max_items`, `max_request_bytes` (positive integers), `results` (a body selector), `success` and `error` (`{pointer, schema}`), `correlation` (`{kind: position}` or `{kind: id, input, result}`) | `retry_failed_subset` (`false`; see [batch helpers](#batch-helpers)) |
 
 A pagination `continuation` is one of these:
 
@@ -1081,6 +1092,212 @@ E_CONFIG_VALUE config protocols.helpers['checks.media'].result.bindings /paths/~
 
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.polling.diagnostics -->
+
+## Batch helpers
+
+A batch helper sends a list of items through one API operation that takes many items in its request body and answers
+with one result per item. Declare it with `kind: batch`:
+
+```yaml
+schema_version: 1
+helpers:
+  users.create:
+    kind: batch
+    operation: /paths/~1users~1batch/post
+    request_items: {in: body, pointer: /users}
+    item_schema: {pointer: /components/schemas/NewUser}
+    max_items: 37
+    max_request_bytes: 4096
+    results: {from: body, pointer: /results}
+    success: {pointer: /user, schema: {pointer: /components/schemas/User}}
+    error: {pointer: /error, schema: {pointer: /components/schemas/ItemError}}
+    correlation: {kind: id, input: /id, result: /id}
+```
+
+`request_items` is the JSON request body itself (`pointer: ''`) or one of its top-level properties, an array of
+`item_schema`; the helper builds the body from the items alone, so the body's other properties must be optional and
+are never sent. `max_items` and `max_request_bytes` are the server's limits per request. `results` selects the array
+of result items in the success response, and `success` and `error` name the member of a result item that carries its
+success value or its error, with the schema each member has. `correlation` matches results with items:
+`{kind: position}` declares that the API answers every item in order, and `{kind: id, input, result}` names the ID
+property of an input item and of a result item, both strings or both integers. `retry_failed_subset` defaults to
+`false`; `true` is not supported yet.
+
+An enabled batch helper is generated at `client.protocols.<name>` on `Client` and `AsyncClient` alike. Its `iterate`
+takes the items, positionally, then the operation's parameters as keywords, never a body or field arguments, then
+`batch_options`, `options`, and `session_options`:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.batches.helper -->
+<!-- fmt: off -->
+
+```python
+    def iterate(
+        self,
+        items: Iterable[_dcg_type_1],
+        *,
+        dry_run: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        batch_options: BatchOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> BatchIterator[UsersCreateResult]:
+        """Return the results of POST /users/batch for the items in order; nothing is sent until iterated."""
+        return iterate_batches(
+            self._core,
+            _plans.PLAN_0,
+            (dry_run,),
+            items,
+            batch_options=batch_options,
+            options=options,
+            session_options=session_options,
+        )
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.batches.helper -->
+
+```python
+with Client() as client:
+    for result in client.protocols.users.create.iterate(new_users):
+        if result.outcome == "success":
+            created = result.value
+        elif result.outcome == "error":
+            refused = result.error
+```
+
+`iterate` is an ordinary method on both clients and sends nothing: the returned `BatchIterator[R]`, or
+`AsyncBatchIterator[R]` with `async for`, reads, encodes, and sends items only as it is consumed. The asyncio `iterate`
+also takes an `AsyncIterable`. Each result is one of the helper's records from `pkg.protocols.batches`, frozen and
+keyword-only, whose `outcome` literal narrows the `<Helper>Result` alias:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.batches.records -->
+<!-- fmt: off -->
+
+```python
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
+class UsersCreateSuccess:
+    """One item of users.create the server applied, with its success value."""
+
+    index: int
+    item_id: str
+    response: ResponseInfo | None
+    value: _dcg_type_0 = field(repr=False)
+    retry_token: bytes | None = field(default=None, repr=False)
+    outcome: Literal['success'] = field(default='success', init=False)
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.batches.records -->
+
+`<Helper>Error` carries `error`, typed as the declared error schema, and `<Helper>DeliveryUnknown` carries no payload.
+Every record has the item's input `index`, its `item_id` (the input item's ID as sent, or None for positions), and the
+`response` metadata of its request, None for an unknown delivery. `retry_token` is always None until retries of failed
+items are supported. Values, errors, and tokens stay out of a record's representation.
+
+### Requests and order
+
+Each item is encoded once, as the request body's codec encodes it under the call's request validation mode, and its
+compact JSON bytes are measured. Items are grouped in input order into requests of at most
+`min(BatchOptions.batch_size, max_items)` items whose bodies stay within `min(max_request_bytes, 32 MiB,
+BatchOptions.max_buffer_bytes)` bytes; an item whose ID is already in a request starts the next one. An item larger
+than one request can carry, or than `BatchOptions.max_item_bytes`, is never sent: once every earlier item's result has
+been returned, the iterator raises `BatchItemTooLargeError` with its `index`.
+
+At most `BatchOptions.parallelism` requests are in flight, on a private thread pool for `Client` and as tasks for
+`AsyncClient`. Results always come back in input order: a request's slot is held until every one of its results has
+been returned, and items are read only into a free slot and while the bytes prepared for requests in flight stay within
+`max_buffer_bytes`, so at most `parallelism × batch_size` items and one more are read ahead of the results. With `id`
+correlation, results may come in any order; with `position`, they must come in item order.
+
+### Results and failures
+
+A result item must carry exactly one of the success and error members, neither missing nor null. A response whose
+results cannot be matched with the request's items, by count for `position`, or by a missing, unknown, or repeated
+result ID or an item without a result for `id`, raises `BatchProtocolError` with the input `indices` of the items
+concerned; so do a result with both members or neither, and an input item without its declared ID. A missing result
+array raises `ProtocolDataError`. Item errors are results, never retried.
+
+Each request is a child call with the shared retry policy, so a whole request is resent only when the operation's
+retry safety allows it: a `PUT` is retried after a `503` by default, while a `POST` needs an idempotent declaration or
+a key contract, and each request has its own idempotency key. A request whose transport failed after it may have been
+sent becomes one `<Helper>DeliveryUnknown` record per item, never resent; with `BatchOptions(raise_on_error=True)` the
+iterator raises `BatchDeliveryUnknownError` instead, whose `partial_results` are that request's records and
+`batch_indices` its items' indices. Any other failure of a request, such as an HTTP error, a decoding error, or a
+mismatch, is raised once the results before it have been returned; the iterator then stops sending, waits for or
+cancels the requests in flight, and ends.
+
+A failure of the caller's items, such as an exception from its iterator or an item its codec refuses, stops reading:
+the items read before it are still sent and their results returned, then the original exception, or the
+`RequestEncodingError` with the location `("items", index)`, is raised.
+
+`close()` or `aclose()`, or leaving a `with` or `async with` block, stops sending: requests not started are cancelled,
+`close` waits for the requests in flight and `aclose` cancels them, and their results are dropped; later steps end the
+iteration. Neither closes the client. Calling a step while another one runs raises `ProtocolStateError` with
+`state='iterating'`.
+
+### Limits and sessions
+
+An iterator is one session. Every request is a call of its own, with its own retries, total timeout, and idempotency
+key, and the session bounds all of them. Each limit comes from the call's options, then the helper's
+`ProtocolDefaults` in `ProtocolClientOptions.defaults`, then the default below:
+
+| Limit | Default | None |
+|---|---|---|
+| `BatchOptions.batch_size` | 100 items, fewer when `max_items` is smaller | Not allowed |
+| `BatchOptions.parallelism` | 4 requests | Not allowed |
+| `BatchOptions.max_items` | 100000 items read | Removes the limit |
+| `BatchOptions.max_item_bytes` | 8 MiB | Not allowed |
+| `BatchOptions.max_buffer_bytes` | 32 MiB | Not allowed |
+| `BatchOptions.raise_on_error` | `False` | Not allowed |
+| `SessionOptions.total_timeout` | 600 seconds from `iterate` | Removes the limit |
+| `SessionOptions.deadline` | None | No deadline |
+| `SessionOptions.max_network_sends` | 10000 sends | Removes the limit |
+
+An item past `max_items` raises `SessionLimitError` with the kind `items`, and a request the session has no send slot
+for raises it with the kind `network_sends`, each after the results before it. The options of `iterate` apply to
+every request; they must not fix an idempotency key, and options of another type raise `ProtocolConfigurationError`
+before anything is read. Checkpoints, resumable item sources, and retries of failed items are not supported yet.
+
+### Generation checks
+
+The operation must take one JSON request media type, sent by default, whose model is read natively, and declare
+exactly one success response with one JSON media type, read natively. The items pointer must name an array of
+`item_schema` in the body, or be the body; a nested member, a union, a map, and a root model property are not
+supported yet. The results pointer must name an array of objects, and the success and error pointers properties of a
+result item whose schemas are the declared ones. Declared IDs must be string or integer properties of the item schema
+and of a result item of the same type:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.batches.diagnostics -->
+<!-- fmt: off -->
+
+```text
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.retried'].retry_failed_subset /paths/~1checks~1plain/post: The batch helper 'checks.retried' retries failed subsets, which is not supported yet
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.media'].request_items /paths/~1checks~1media/post: The batch helper 'checks.media' needs one JSON request media of POST /checks/media, which is not supported yet
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.envelope'].request_items /paths/~1checks~1envelope/post: The batch helper 'checks.envelope' sends an envelope-projected request body, which is not supported yet
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.nested'].request_items /paths/~1checks~1plain/post: The items pointer '/nested/items' of 'checks.nested' names a nested member, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['checks.absent'].request_items /paths/~1checks~1plain/post: The items pointer '/missing' of 'checks.absent' names no property of the POST /checks/plain request body
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.union'].request_items /paths/~1checks~1union/post: The items pointer '/items' of 'checks.union' reads through a union, a map, or a root model property, which is not supported yet
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.listed'].request_items /paths/~1checks~1plain/post: The items pointer '/listed' of 'checks.listed' reads through a union, a map, or a root model property, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['checks.scalar'].request_items /paths/~1checks~1plain/post: The items pointer '/label' of 'checks.scalar' selects no JSON array of the POST /checks/plain request body
+E_CONFIG_VALUE config protocols.helpers['checks.unknown_schema'].item_schema /paths/~1checks~1plain/post: The item_schema '/components/schemas/Missing' of 'checks.unknown_schema' does not exist in its document
+E_CONFIG_VALUE config protocols.helpers['checks.other_schema'].item_schema /paths/~1checks~1plain/post: The item_schema '/components/schemas/Item' of 'checks.other_schema' is not the item schema of the array its items pointer selects
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.required'].request_items /paths/~1checks~1required/post: The batch helper 'checks.required' sends only the items of the POST /checks/required request body, which also requires 'mode'
+E_CONFIG_VALUE config protocols.helpers['checks.empty'].operation /paths/~1checks~1empty/post: POST /checks/empty must declare exactly one JSON success response for the batch helper 'checks.empty'
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.mapped_results'].results /paths/~1checks~1plain/post: The results pointer '/data/first' of 'checks.mapped_results' reads through a union or map, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['checks.absent_results'].results /paths/~1checks~1plain/post: The results pointer '/outcomes' of 'checks.absent_results' names no property of the POST /checks/plain response
+E_CONFIG_VALUE config protocols.helpers['checks.string_results'].results /paths/~1checks~1strings/post: The results pointer '/results' of 'checks.string_results' selects no JSON array of objects of POST /checks/strings
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.mapped_member'].success.pointer /paths/~1checks~1plain/post: The success pointer '/meta/x' of 'checks.mapped_member' reads through a union or map, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['checks.mapped_member'].error.pointer /paths/~1checks~1plain/post: The error pointer '/missing' of 'checks.mapped_member' names no property of a result item
+E_CONFIG_VALUE config protocols.helpers['checks.member_schemas'].success.schema /paths/~1checks~1plain/post: The success schema '/components/schemas/Missing' of 'checks.member_schemas' does not exist in its document
+E_CONFIG_VALUE config protocols.helpers['checks.member_schemas'].error.schema /paths/~1checks~1plain/post: The error schema '/components/schemas/Item' of 'checks.member_schemas' is not the schema its pointer reads
+E_CONFIG_VALUE config protocols.helpers['checks.input_id'].correlation.input /paths/~1checks~1plain/post: The input ID pointer '/flag' of 'checks.input_id' names no string or integer property of the item schema
+E_CONFIG_VALUE config protocols.helpers['checks.result_id'].correlation.result /paths/~1checks~1plain/post: The result ID pointer '/id' of 'checks.result_id' names no property of a result item of the input ID's type, integer
+E_CONFIG_VALUE config protocols.helpers['checks.absent_ids'].correlation.input /paths/~1checks~1plain/post: The input ID pointer '/missing' of 'checks.absent_ids' names no string or integer property of the item schema
+E_CONFIG_VALUE config protocols.helpers['checks.integer_ids'].correlation.result /paths/~1checks~1plain/post: The result ID pointer '/missing' of 'checks.integer_ids' names no property of a result item of the input ID's type, integer
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.batches.diagnostics -->
 
 ## SSE stream helpers
 

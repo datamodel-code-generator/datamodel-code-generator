@@ -407,6 +407,43 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
+            example_id="python-client.batches.helper",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "python",
+                blocks(
+                    CLIENT_PACKAGES / "batches" / "pydantic_v2_BaseModel" / "client" / "protocols" / "_helpers.py",
+                    "    def iterate(",
+                    limit=1,
+                ),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.batches.records",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "python",
+                blocks(
+                    CLIENT_PACKAGES / "batches" / "pydantic_v2_BaseModel" / "client" / "protocols" / "batches.py",
+                    "class UsersCreateSuccess:",
+                    limit=1,
+                    separator="\n\n\n",
+                ),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.batches.diagnostics",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "text",
+                "\n".join(
+                    line.strip()
+                    for line in read_text(EXPECTED_CLIENT / "protocols" / "protocols-batch-checks.txt").splitlines()
+                    if line.lstrip().startswith("E_")
+                ),
+            ),
+        ),
+        DocsExample(
             example_id="python-client.streams.helper",
             path=DOCS / "python-client.md",
             render=lambda: fenced(

@@ -12,6 +12,7 @@ from typing_extensions import TypeIs
 from datamodel_code_generator._api_generation import TargetBinding, TargetRender
 from datamodel_code_generator._api_manifest import canonical_bytes, sha256
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
+from datamodel_code_generator._client.batches import plan_batches
 from datamodel_code_generator._client.config import ClientGenerationConfig
 from datamodel_code_generator._client.fields import plan_fields
 from datamodel_code_generator._client.pagination import plan_pagination
@@ -58,6 +59,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_manifest import JSONObject
     from datamodel_code_generator._api_types import TargetKind
+    from datamodel_code_generator._client.batches import BatchSpec
     from datamodel_code_generator._client.pagination import PaginationSpec
     from datamodel_code_generator._client.plan import ClientPlan, MediaSpec, OperationSpec, ParameterSpec, PartSpec
     from datamodel_code_generator._client.polling import PollingSpec
@@ -140,15 +142,16 @@ class ClientTarget:
         plan, named = plan_fields(plan, codecs, batch, wire)
         pages, checked = plan_pagination(protocols, plan, codecs, wire, request)
         polls, polled = plan_polling(protocols, plan, codecs, wire, request)
+        batches, batched = plan_batches(protocols, plan, codecs, wire, request)
         order = {} if protocols is None else {helper.name: index for index, helper in enumerate(protocols.helpers)}
-        helpers = tuple(sorted((*pages, *polls), key=lambda spec: order[spec.helper.name]))
+        helpers = tuple(sorted((*pages, *polls, *batches), key=lambda spec: order[spec.helper.name]))
         streams = plan_streams(streamed, protocols, plan, codecs, wire, request, stream_problems)
         webhooks = plan_webhooks(events, codecs, config, hooked)
         ordinary = replace(codecs, bindings=tuple(item for item in codecs.bindings if item[0] not in received))
         if refused := (
             *named,
             *admission_problems(config.validation, ordinary, argument_uses(plan)),
-            *helper_problems(protocols, plan, {**checked, **polled, **hooked, **stream_problems}),
+            *helper_problems(protocols, plan, {**checked, **polled, **batched, **hooked, **stream_problems}),
         ):
             raise APIGenerationError(
                 tuple(
@@ -160,6 +163,7 @@ class ClientTarget:
         metadata = helper_metadata(protocols, request)
         fingerprints = {spec.helper.name: data.fingerprint(spec, metadata[spec.helper.name]) for spec in pages}
         fingerprints.update((spec.helper.name, data.polling(spec, metadata[spec.helper.name])) for spec in polls)
+        fingerprints.update((spec.helper.name, data.batch(spec, metadata[spec.helper.name])) for spec in batches)
         fingerprints.update((spec.helper.name, data.webhook(spec, metadata[spec.helper.name])) for spec in webhooks)
         fingerprints.update((spec.helper.name, data.stream(spec, metadata[spec.helper.name])) for spec in streams)
         renderer = ClientRenderer(
@@ -354,6 +358,37 @@ class _TargetData:
                 documents.operation(item.contract.id)
                 for item in (operation, spec.poll, *(() if fetch is None else (fetch,)))
             ],
+            "schemas": list(spec.schemas),
+            "type_uses": [self.contract(use) for use in uses],
+            "adapters": [],
+        })
+
+    def batch(self, spec: BatchSpec, settings: JSONValue) -> str:
+        """Return the digest of a batch helper's contract closure: its signature and settings, operation, and uses.
+
+        The signature spells the shared arguments, the item, result, success, error, and ID types, and the uses are
+        the request body's and the response's.
+        """
+        operation, helper = spec.operation, spec.helper
+        body = operation.body
+        assert body is not None
+        uses = (*(media.use for media in body.media if media.use is not None), spec.page)
+        static = self.spelling.static
+        signature = {
+            "name": helper.name,
+            "parameters": [(item.python_name, item.required, self.type(item.use)) for item in operation.parameters],
+            "item": static(spec.item),
+            "result": static(spec.result),
+            "success": static(spec.success.value),
+            "error": static(spec.error.value),
+            "item_id": spec.item_id,
+            "uses": [self.type(use) for use in uses],
+            "settings": settings,
+        }
+        return _digest({
+            "kind": helper.kind,
+            "signatures": [signature],
+            "operations": [self.request.documents.operation(operation.contract.id)],
             "schemas": list(spec.schemas),
             "type_uses": [self.contract(use) for use in uses],
             "adapters": [],

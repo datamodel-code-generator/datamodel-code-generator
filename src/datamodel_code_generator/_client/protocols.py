@@ -34,6 +34,8 @@ if TYPE_CHECKING:
 __all__ = (
     "AdapterSignature",
     "AsciiBytes",
+    "BatchHelper",
+    "BatchMember",
     "Binding",
     "Continuation",
     "Converter",
@@ -48,6 +50,7 @@ __all__ = (
     "HelperDefinition",
     "HelperKind",
     "HmacSignature",
+    "IdCorrelation",
     "ImmediateResult",
     "InlineResult",
     "Link",
@@ -60,6 +63,7 @@ __all__ = (
     "PaginationHelper",
     "PollInterval",
     "PollingHelper",
+    "PositionCorrelation",
     "ProtocolConfiguration",
     "PublicKeySignature",
     "RemoteCancel",
@@ -99,7 +103,7 @@ KINDS: Final = (
     "batch",
     "queue",
 )
-_LATER: Final = frozenset({"websocket", "cache", "resumable_upload", "batch", "queue"})
+_LATER: Final = frozenset({"websocket", "cache", "resumable_upload", "queue"})
 _HMAC_SIGNATURES: Final = ("hmac-sha256", "hmac-sha512")
 _PUBLIC_KEY_SIGNATURES: Final = ("ed25519", "rsa-pss-sha256")
 _SIGNATURES: Final = (*_HMAC_SIGNATURES, *_PUBLIC_KEY_SIGNATURES)
@@ -472,7 +476,51 @@ class WebhookHelper:
     enabled: bool = True
 
 
-HelperDefinition: TypeAlias = PaginationHelper | PollingHelper | StreamHelper | WebhookHelper
+@dataclass(frozen=True, slots=True, kw_only=True)
+class BatchMember:
+    """The member of each batch result item that carries its success or error value, and that value's schema."""
+
+    pointer: str
+    schema: SchemaRef
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class PositionCorrelation:
+    """Results answer the items of a request in order, one result per item, by the API's contract."""
+
+    kind: ClassVar[Literal["position"]] = "position"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class IdCorrelation:
+    """Results answer the items of a request by an ID each input item and each result item declare."""
+
+    kind: ClassVar[Literal["id"]] = "id"
+
+    input: str
+    result: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class BatchHelper:
+    """Send a list of items through one batch operation in bounded requests, returning one result per item."""
+
+    kind: ClassVar[Literal["batch"]] = "batch"
+
+    operation: OperationSelector
+    request_items: RequestTarget
+    item_schema: SchemaRef
+    max_items: int
+    max_request_bytes: int
+    results: Selector
+    success: BatchMember
+    error: BatchMember
+    correlation: PositionCorrelation | IdCorrelation
+    retry_failed_subset: bool = False
+    enabled: bool = True
+
+
+HelperDefinition: TypeAlias = PaginationHelper | PollingHelper | StreamHelper | WebhookHelper | BatchHelper
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -517,6 +565,10 @@ _RECORDS: Final = frozenset({
     AdapterSignature,
     NoSignature,
     WebhookHelper,
+    BatchMember,
+    PositionCorrelation,
+    IdCorrelation,
+    BatchHelper,
     ProtocolConfiguration,
 })
 _ROLES: Final[Mapping[tuple[type, str], str]] = {
@@ -1094,6 +1146,8 @@ class _Validator:  # noqa: PLR0904
                 tree = self.polling(value, at)
             case "webhook":
                 tree = self.webhook(value, at)
+            case "batch":
+                tree = self.batch(value, at)
             case _:
                 tree = self.stream(value, at, sse=kind == "sse")
         if tree is INVALID:
@@ -1340,6 +1394,49 @@ class _Validator:  # noqa: PLR0904
         reasons = self.items(value, at, self.choice("transport_interruption", "incomplete_eof"), nonempty=True)
         return self.distinct(at, reasons, "a reconnect reason")
 
+    def batch(self, value: object, at: str) -> Tree | _Invalid:
+        """Convert a batch helper, refusing one member read as both outcomes."""
+        batch = self.record(
+            value,
+            at,
+            {
+                "kind": (_keep, REQUIRED),
+                "enabled": (self.boolean, True),
+                "operation": (self.operation, REQUIRED),
+                "request_items": (self.body_target, REQUIRED),
+                "item_schema": (self.schema, REQUIRED),
+                "max_items": (self.positive, REQUIRED),
+                "max_request_bytes": (self.positive, REQUIRED),
+                "results": (partial(self.selector, body=True), REQUIRED),
+                "success": (self.member, REQUIRED),
+                "error": (self.member, REQUIRED),
+                "correlation": (self.correlation, REQUIRED),
+                "retry_failed_subset": (self.boolean, False),
+            },
+            "a helper definition",
+        )
+        if batch is not INVALID and batch["success"]["pointer"] == batch["error"]["pointer"]:
+            self.conflict(f"{at}.error.pointer", f"{at}.error.pointer names the member {at}.success.pointer names")
+            return INVALID
+        return batch
+
+    def body_target(self, value: object, at: str) -> object:
+        """Convert a request target that must write the request body."""
+        if isinstance(target := self.target(value, at), Mapping) and target["in"] != "body":
+            return self.value(f"{at}.in", f"{at}.in must be 'body'")
+        return target
+
+    def member(self, value: object, at: str) -> object:
+        spec: Spec = {"pointer": (self.pointer, REQUIRED), "schema": (self.schema, REQUIRED)}
+        return self.record(value, at, spec, "a result member")
+
+    def correlation(self, value: object, at: str) -> object:
+        variants: dict[str, Spec] = {
+            "position": {},
+            "id": {"input": (self.pointer, REQUIRED), "result": (self.pointer, REQUIRED)},
+        }
+        return self.tagged(value, at, "kind", variants, "a correlation")
+
     def webhook(self, value: object, at: str) -> Tree | _Invalid:
         """Convert a webhook helper, refusing to reject duplicates of deliveries that are unsigned."""
         webhook = self.record(
@@ -1512,6 +1609,12 @@ def _links(kind: str, tree: Tree, at: str) -> Iterator[Link]:
             )
         case "webhook":
             return
+        case "batch":
+            yield Link(
+                at=f"{at}.operation",
+                ref=tree["operation"],
+                targets=((f"{at}.request_items", tree["request_items"]),),
+            )
         case "polling":
             yield Link(at=f"{at}.create", ref=tree["create"])
             yield Link(at=f"{at}.poll", ref=tree["poll"], targets=_targets(tree["bindings"], f"{at}.bindings"))

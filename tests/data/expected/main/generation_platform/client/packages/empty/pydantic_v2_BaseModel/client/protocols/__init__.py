@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .._runtime.protocols.options import (
+    BatchOptions,
     Origin,
     PaginationOptions,
     PollOptions,
@@ -41,6 +42,7 @@ from .._runtime.protocols.webhooks import (
 )
 
 if TYPE_CHECKING:
+    from .._runtime.protocols.batches import AsyncBatchIterator, BatchIterator
     from .._runtime.protocols.pagination import AsyncPager, Page, Pager
     from .._runtime.protocols.polling import AsyncLroHandle, LroHandle
     from .._runtime.protocols.replay import AsyncMemoryReplayStore, MemoryReplayStore
@@ -52,11 +54,14 @@ if TYPE_CHECKING:
     )
 
 __all__ = [
+    "AsyncBatchIterator",
     "AsyncEventStream",
     "AsyncLroHandle",
     "AsyncMemoryReplayStore",
     "AsyncPager",
     "AsyncReplayStore",
+    "BatchIterator",
+    "BatchOptions",
     "BodySelector",
     "BodyTarget",
     "Continuation",
@@ -96,7 +101,7 @@ __all__ = [
 
 
 def __getattr__(name: str) -> object:
-    """Load a memory store or a pagination, polling, or stream type only when its public class is requested."""
+    """Load a memory store or a pagination, polling, stream, or batch type only when it is requested."""
     if name in {"AsyncPager", "Page", "Pager"}:
         from .._runtime.protocols import pagination
 
@@ -109,6 +114,10 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import streams
 
         return getattr(streams, name)
+    if name in {"AsyncBatchIterator", "BatchIterator"}:
+        from .._runtime.protocols import batches
+
+        return getattr(batches, name)
     if name == "MemoryReplayStore":
         from .._runtime.protocols.replay import MemoryReplayStore
 

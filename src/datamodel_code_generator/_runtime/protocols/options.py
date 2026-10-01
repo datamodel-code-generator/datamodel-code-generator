@@ -38,6 +38,13 @@ _STREAM: Final = (
     ("max_reconnects", False, True, True),
     ("max_reconnect_wait", True, True, False),
 )
+_BATCH: Final = (
+    ("batch_size", False, False, False),
+    ("parallelism", False, False, False),
+    ("max_items", False, True, True),
+    ("max_item_bytes", False, False, False),
+    ("max_buffer_bytes", False, False, False),
+)
 WEBHOOK_LIMITS: Final = (
     ("max_body_bytes", False, False, False),
     ("max_header_bytes", False, False, False),
@@ -187,6 +194,27 @@ class StreamOptions:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class BatchOptions:
+    """Batch limits; only max_items takes None or 0, and raise_on_error raises an unknown delivery instead.
+
+    A request carries at most batch_size items, fewer when the server allows fewer, and parallelism requests are in
+    flight at once; max_item_bytes bounds one encoded item and max_buffer_bytes the input prepared ahead of sending.
+    """
+
+    batch_size: int | Unset = UNSET
+    parallelism: int | Unset = UNSET
+    max_items: int | Unset | None = UNSET
+    max_item_bytes: int | Unset = UNSET
+    max_buffer_bytes: int | Unset = UNSET
+    raise_on_error: bool | Unset = UNSET
+
+    def __post_init__(self) -> None:
+        """Reject booleans as limits, a nonboolean raise_on_error, and every forbidden None or zero."""
+        check_limits(self, _BATCH)
+        _instance(self.raise_on_error, (bool, Unset), "raise_on_error")
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class ProtocolSecurityContext:
     """The nonsecret credential partition of helper state and the origins permitted beyond the same origin."""
 
@@ -217,12 +245,12 @@ class ProtocolDefaults:
     """Defaults of one helper, below its call arguments and above the kind's effective defaults."""
 
     session: SessionOptions | Unset = UNSET
-    options: PaginationOptions | PollOptions | StreamOptions | Unset = UNSET
+    options: PaginationOptions | PollOptions | StreamOptions | BatchOptions | Unset = UNSET
 
     def __post_init__(self) -> None:
         """Refuse values other than session options and one kind's options."""
         _instance(self.session, (SessionOptions, Unset), "session")
-        _instance(self.options, (PaginationOptions, PollOptions, StreamOptions, Unset), "options")
+        _instance(self.options, (PaginationOptions, PollOptions, StreamOptions, BatchOptions, Unset), "options")
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -248,6 +276,7 @@ _KIND_OPTIONS: Final[Mapping[str, type]] = MappingProxyType({
     "polling": PollOptions,
     "sse": StreamOptions,
     "ndjson": StreamOptions,
+    "batch": BatchOptions,
 })
 
 

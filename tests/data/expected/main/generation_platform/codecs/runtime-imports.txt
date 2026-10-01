@@ -60,6 +60,7 @@ model_codecs/views.py: .bindings, .capabilities, .context, .parameters, .wire, _
 model_codecs/wire.py: .errors, __future__, collections.abc, dataclasses, decimal, math, re, types, typing, typing_extensions
 protocols/__init__.py: -
 protocols/adapters.py: ..client.errors, .webhook_events, .webhooks, __future__, collections.abc, dataclasses, datetime, types, typing, typing_extensions
+protocols/batches.py: ..client.client, ..client.errors, ..client.logical, ..client.operations, ..client.options, ..client.responses, ..client.timing, ..model_codecs.media, ..model_codecs.unset, ..model_codecs.wire, .errors, .options, .records, .references, .values, .writes, __future__, asyncio, collections, collections.abc, concurrent.futures, contextlib, dataclasses, functools, threading, types, typing, typing_extensions
 protocols/errors.py: ..client.errors, ..client.responses, .records, .references, .resume, __future__, collections.abc, types, typing, typing_extensions
 protocols/links.py: __future__, collections.abc, re, string, typing
 protocols/names.py: .options, __future__, typing

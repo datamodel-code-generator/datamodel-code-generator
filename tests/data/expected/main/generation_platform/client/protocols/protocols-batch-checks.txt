@@ -1,0 +1,26 @@
+# protocols-batch-checks
+render pydantic_v2.BaseModel
+  APIGenerationError
+  E_CLIENT_UNSUPPORTED target protocols.helpers['checks.retried'].retry_failed_subset /paths/~1checks~1plain/post: The batch helper 'checks.retried' retries failed subsets, which is not supported yet
+  E_CLIENT_UNSUPPORTED target protocols.helpers['checks.media'].request_items /paths/~1checks~1media/post: The batch helper 'checks.media' needs one JSON request media of POST /checks/media, which is not supported yet
+  E_CLIENT_UNSUPPORTED target protocols.helpers['checks.envelope'].request_items /paths/~1checks~1envelope/post: The batch helper 'checks.envelope' sends an envelope-projected request body, which is not supported yet
+  E_CLIENT_UNSUPPORTED target protocols.helpers['checks.nested'].request_items /paths/~1checks~1plain/post: The items pointer '/nested/items' of 'checks.nested' names a nested member, which is not supported yet
+  E_CONFIG_VALUE config protocols.helpers['checks.absent'].request_items /paths/~1checks~1plain/post: The items pointer '/missing' of 'checks.absent' names no property of the POST /checks/plain request body
+  E_CLIENT_UNSUPPORTED target protocols.helpers['checks.union'].request_items /paths/~1checks~1union/post: The items pointer '/items' of 'checks.union' reads through a union, a map, or a root model property, which is not supported yet
+  E_CLIENT_UNSUPPORTED target protocols.helpers['checks.listed'].request_items /paths/~1checks~1plain/post: The items pointer '/listed' of 'checks.listed' reads through a union, a map, or a root model property, which is not supported yet
+  E_CONFIG_VALUE config protocols.helpers['checks.scalar'].request_items /paths/~1checks~1plain/post: The items pointer '/label' of 'checks.scalar' selects no JSON array of the POST /checks/plain request body
+  E_CONFIG_VALUE config protocols.helpers['checks.unknown_schema'].item_schema /paths/~1checks~1plain/post: The item_schema '/components/schemas/Missing' of 'checks.unknown_schema' does not exist in its document
+  E_CONFIG_VALUE config protocols.helpers['checks.other_schema'].item_schema /paths/~1checks~1plain/post: The item_schema '/components/schemas/Item' of 'checks.other_schema' is not the item schema of the array its items pointer selects
+  E_CLIENT_UNSUPPORTED target protocols.helpers['checks.required'].request_items /paths/~1checks~1required/post: The batch helper 'checks.required' sends only the items of the POST /checks/required request body, which also requires 'mode'
+  E_CONFIG_VALUE config protocols.helpers['checks.empty'].operation /paths/~1checks~1empty/post: POST /checks/empty must declare exactly one JSON success response for the batch helper 'checks.empty'
+  E_CLIENT_UNSUPPORTED target protocols.helpers['checks.mapped_results'].results /paths/~1checks~1plain/post: The results pointer '/data/first' of 'checks.mapped_results' reads through a union or map, which is not supported yet
+  E_CONFIG_VALUE config protocols.helpers['checks.absent_results'].results /paths/~1checks~1plain/post: The results pointer '/outcomes' of 'checks.absent_results' names no property of the POST /checks/plain response
+  E_CONFIG_VALUE config protocols.helpers['checks.string_results'].results /paths/~1checks~1strings/post: The results pointer '/results' of 'checks.string_results' selects no JSON array of objects of POST /checks/strings
+  E_CLIENT_UNSUPPORTED target protocols.helpers['checks.mapped_member'].success.pointer /paths/~1checks~1plain/post: The success pointer '/meta/x' of 'checks.mapped_member' reads through a union or map, which is not supported yet
+  E_CONFIG_VALUE config protocols.helpers['checks.mapped_member'].error.pointer /paths/~1checks~1plain/post: The error pointer '/missing' of 'checks.mapped_member' names no property of a result item
+  E_CONFIG_VALUE config protocols.helpers['checks.member_schemas'].success.schema /paths/~1checks~1plain/post: The success schema '/components/schemas/Missing' of 'checks.member_schemas' does not exist in its document
+  E_CONFIG_VALUE config protocols.helpers['checks.member_schemas'].error.schema /paths/~1checks~1plain/post: The error schema '/components/schemas/Item' of 'checks.member_schemas' is not the schema its pointer reads
+  E_CONFIG_VALUE config protocols.helpers['checks.input_id'].correlation.input /paths/~1checks~1plain/post: The input ID pointer '/flag' of 'checks.input_id' names no string or integer property of the item schema
+  E_CONFIG_VALUE config protocols.helpers['checks.result_id'].correlation.result /paths/~1checks~1plain/post: The result ID pointer '/id' of 'checks.result_id' names no property of a result item of the input ID's type, integer
+  E_CONFIG_VALUE config protocols.helpers['checks.absent_ids'].correlation.input /paths/~1checks~1plain/post: The input ID pointer '/missing' of 'checks.absent_ids' names no string or integer property of the item schema
+  E_CONFIG_VALUE config protocols.helpers['checks.integer_ids'].correlation.result /paths/~1checks~1plain/post: The result ID pointer '/missing' of 'checks.integer_ids' names no property of a result item of the input ID's type, integer

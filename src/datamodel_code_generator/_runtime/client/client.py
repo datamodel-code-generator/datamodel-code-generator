@@ -1449,6 +1449,10 @@ class _Core(Generic[AdapterT, HandleT]):
         """Return whether a call with these options reads response values through their converters alone."""
         return self._call_settings(options, operation_id).validation.response == "native"
 
+    def request_validation(self, options: RequestOptions | None, operation_id: str | None) -> RequestValidation:
+        """Return how a call with these options validates the values it sends."""
+        return self._call_settings(options, operation_id).validation.request
+
     def _raw_call(
         self, operation: OperationPlan[object, object], options: RequestOptions | None, session: OperationSession | None
     ) -> _Call:

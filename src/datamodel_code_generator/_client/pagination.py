@@ -237,15 +237,17 @@ class _Pages:
         self.roots = {member.consumer: member for member in members if member.member_kind == "root_value"}
         self.documents = {pointer: document for document, pointer in request.documents.pointers.items()}
 
-    def walk(self, binding: UseBinding, pointer: str) -> _Reached | Literal["absent", "unsupported"]:
-        """Follow a pointer through the fields of a page's models, or say why it names no field.
+    def walk(
+        self, binding: UseBinding, pointer: str, start: TypeNode | None = None
+    ) -> _Reached | Literal["absent", "unsupported"]:
+        """Follow a pointer through the fields of a page's models, from its root or a node of it, or say why it fails.
 
         A root model and a nullable single model are stepped through; a union of several members or a map is not.
         """
         models = {model.symbol: model for model in binding.models}
         steps: list[ItemStep] = []
         member: FieldUseBinding | None = None
-        node = binding.type
+        node = binding.type if start is None else start
         for token in _tokens(pointer):
             node = _unwrapped(node, models, steps)
             if isinstance(node, (UnionNode, MapNode)):
