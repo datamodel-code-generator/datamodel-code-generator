@@ -9,8 +9,6 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from fastapi.testclient import TestClient
-
 from datamodel_code_generator import DataModelType, GenerateConfig, OpenAPIScope
 from datamodel_code_generator.fastapi import generate_fastapi
 from datamodel_code_generator.format import Formatter
@@ -135,6 +133,8 @@ def _client(package: Any, case: str, spec: dict[str, Any], lines: list[str]) -> 
 
 
 def _server(package: Any, case: str, spec: dict[str, Any], lines: list[str]) -> None:
+    from fastapi.testclient import TestClient
+
     class Service:
         def shape(self, *, body: object) -> object:
             lines.append(f"shape received {type(body).__name__}: {_plain(body)}")
