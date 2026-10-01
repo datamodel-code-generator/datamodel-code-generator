@@ -1,0 +1,47 @@
+openapi: 3.1.0
+info:
+  title: Split form-data parts
+  version: "1"
+servers:
+  - url: https://api.example.com
+paths:
+  /uploads:
+    post:
+      operationId: sendUpload
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [photo]
+              properties:
+                photo: {type: string, format: binary}
+                note: {$ref: "#/components/schemas/Note"}
+              additionalProperties: {$ref: "#/components/schemas/Note"}
+      responses:
+        "204":
+          description: Stored.
+    get:
+      operationId: readUpload
+      responses:
+        "200":
+          description: The stored upload, its note split into request and response models.
+          content:
+            multipart/form-data:
+              schema:
+                type: object
+                required: [photo, note]
+                properties:
+                  photo: {type: string, format: binary}
+                  note: {$ref: "#/components/schemas/Note"}
+                additionalProperties: {$ref: "#/components/schemas/Note"}
+components:
+  schemas:
+    Note:
+      type: object
+      required: [text]
+      properties:
+        text: {type: string}
+        id: {type: integer, readOnly: true}
+        secret: {type: string, writeOnly: true}

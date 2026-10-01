@@ -31,7 +31,7 @@ from tests.data.python.client_headers import headers
 from tests.data.python.client_hooks import hooks
 from tests.data.python.client_limiter_faults import limiter_faults
 from tests.data.python.client_limiters import limiters
-from tests.data.python.client_multipart import multipart
+from tests.data.python.client_multipart import multipart, split_parts
 from tests.data.python.client_native import native_faults, native_wire
 from tests.data.python.client_native_signing import native_signing
 from tests.data.python.client_oauth_accounting import oauth_accounting
@@ -84,10 +84,10 @@ from tests.data.python.client_runtime import (
 from tests.data.python.client_selectors import selectors
 from tests.data.python.client_signatures import keywords, signatures
 from tests.data.python.client_stream_lifetimes import stream_lifetimes
-from tests.data.python.client_streams import ndjson, ndjson_backends, stream_backends, streams
+from tests.data.python.client_streams import ndjson, ndjson_backends, ndjson_split, stream_backends, streams
 from tests.data.python.client_streams import stream_lifetimes as event_stream_lifetimes
 from tests.data.python.client_transports import lifecycle, transports
-from tests.data.python.client_unions import schema_unions, unions
+from tests.data.python.client_unions import schema_unions, split_unions, unions
 from tests.data.python.client_validation import arguments, validation
 from tests.data.python.client_webhook_adapters import (
     webhook_adapter_imports,
@@ -735,6 +735,7 @@ BACKENDS: Final = (
     "msgspec.Struct",
 )
 ALL_BUT_MSGSPEC: Final = BACKENDS[:-1]
+STRUCTURAL: Final = BACKENDS[2:]
 SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, list[str]], None]]]] = {
     "pets": ("pets", ("pydantic_v2.BaseModel", "typing.TypedDict"), pets),
     "auth-errors": ("pets", ("pydantic_v2.BaseModel",), auth_errors),
@@ -783,6 +784,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "stream-lifetimes": ("pets", ("pydantic_v2.BaseModel",), stream_lifetimes),
     "bodies": ("pets", ("pydantic_v2.BaseModel",), bodies),
     "multipart": ("media", ("pydantic_v2.BaseModel", "typing.TypedDict"), multipart),
+    "multipart-split": ("multipart-split", STRUCTURAL, split_parts),
     "selectors": ("media", ("pydantic_v2.BaseModel", "typing.TypedDict"), selectors),
     "headers": ("pets", ("pydantic_v2.BaseModel",), headers),
     "query": ("pets", ("pydantic_v2.BaseModel",), query),
@@ -815,6 +817,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "stream-backends": ("streams", BACKENDS, stream_backends),
     "ndjson": ("ndjson", ("pydantic_v2.BaseModel",), ndjson),
     "ndjson-backends": ("ndjson", BACKENDS, ndjson_backends),
+    "ndjson-split": ("ndjson-split", STRUCTURAL, ndjson_split),
     "protocol-errors": ("pets", ("pydantic_v2.BaseModel",), protocol_errors),
     "evolution": ("evolution", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"), evolution),
     "evolution-schema": (
@@ -850,6 +853,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "unions-schema": ("unions-schema", BACKENDS, schema_unions),
     "unions-legacy": ("unions-legacy", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), unions),
     "unions-legacy-schema": ("unions-legacy-schema", BACKENDS, schema_unions),
+    "unions-split": ("unions-split", BACKENDS, split_unions),
 }
 
 

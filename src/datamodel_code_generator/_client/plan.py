@@ -37,7 +37,7 @@ from datamodel_code_generator._runtime.client.multipart import PartPlan
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalize_media_type
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterable, Iterator
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._client.config import (
@@ -48,6 +48,7 @@ if TYPE_CHECKING:
         IdempotencyMetadata,
     )
     from datamodel_code_generator._generation_contract import (
+        Direction,
         FinalPythonType,
         FrozenLiteral,
         ModelFieldFacts,
@@ -365,13 +366,9 @@ class Planner:
         self.raise_problems()
 
     @cached_property
-    def _schemas(self) -> dict[tuple[SourceDocumentId, str], TypeUseBinding]:
-        """Return the value use of each schema occurrence by its location, which a part of a body is bound as."""
-        return {
-            (use.id.use_site.document, use.id.use_site.pointer): use
-            for use in self.request.batch.type_uses
-            if use.id.role == "schema" and use.id.projection == "value"
-        }
+    def _schemas(self) -> dict[tuple[SourceDocumentId, str, Direction], TypeUseBinding]:
+        """Return the value use of each schema occurrence by location and direction, which a body's part is bound as."""
+        return schema_uses(self.request.batch.type_uses)
 
     def raise_problems(self) -> None:
         """Stop the phase when it reported any failure."""
@@ -939,13 +936,41 @@ def _members(use: TypeUseBinding) -> list[tuple[str, SourceLocation, ModelFieldF
     ]
 
 
+def schema_uses(uses: Iterable[TypeUseBinding]) -> dict[tuple[SourceDocumentId, str, Direction], TypeUseBinding]:
+    """Index the value use of each schema occurrence by its location and the direction whose model it projects."""
+    return {
+        (use.id.use_site.document, use.id.use_site.pointer, use.id.direction): use
+        for use in uses
+        if use.id.role == "schema" and use.id.projection == "value"
+    }
+
+
+def schema_use(
+    schemas: Mapping[tuple[SourceDocumentId, str, Direction], TypeUseBinding],
+    location: SourceLocation,
+    direction: Direction,
+    referenced: SourceLocation | None = None,
+) -> TypeUseBinding | None:
+    """Return the use a schema is read or sent by in a body's direction.
+
+    The direction's own use comes first, at the schema or else at the `referenced` schema it resolves to, since a split
+    model's request and response variants are recorded where it is declared; the schema's neutral use comes last.
+    """
+    key = (location.document, location.pointer)
+    return (
+        schemas.get((*key, direction))
+        or (None if referenced is None else schemas.get((referenced.document, referenced.pointer, direction)))
+        or schemas.get((*key, "neutral"))
+    )
+
+
 def _extra(location: SourceLocation) -> SourceLocation:
     return SourceLocation(location.document, f"{location.pointer}/additionalProperties", "schema")
 
 
 def _sent(  # noqa: PLR0913
     wire: WirePlan,
-    schemas: Mapping[tuple[SourceDocumentId, str], TypeUseBinding],
+    schemas: Mapping[tuple[SourceDocumentId, str, Direction], TypeUseBinding],
     use: TypeUseBinding,
     site: SourceLocation,
     *,
@@ -966,7 +991,9 @@ def _sent(  # noqa: PLR0913
             additional = None
         case Mapping() as declared if declared and _file(wire, extra):
             additional = PartSpec(plan=PartPlan("", repeated=_array(wire, extra), file=True))
-        case Mapping() as declared if declared and (typed := schemas.get((extra.document, extra.pointer))):
+        case Mapping() as declared if declared and (
+            typed := schema_use(schemas, extra, use.id.direction, wire.schema(extra)[0])
+        ):
             additional = PartSpec(
                 plan=PartPlan("", repeated=_array(wire, extra)),
                 use=_part_use(use, extra, None, typed),
@@ -998,7 +1025,7 @@ def _sent(  # noqa: PLR0913
 
 def _received(
     wire: WirePlan,
-    schemas: Mapping[tuple[SourceDocumentId, str], TypeUseBinding],
+    schemas: Mapping[tuple[SourceDocumentId, str, Direction], TypeUseBinding],
     use: TypeUseBinding,
     site: SourceLocation,
 ) -> tuple[tuple[PartSpec, ...] | None, PartSpec | None]:
@@ -1040,7 +1067,7 @@ def _received(
 
 def _read(  # noqa: PLR0913
     wire: WirePlan,
-    schemas: Mapping[tuple[SourceDocumentId, str], TypeUseBinding],
+    schemas: Mapping[tuple[SourceDocumentId, str, Direction], TypeUseBinding],
     body: TypeUseBinding,
     name: str,
     location: SourceLocation,
@@ -1058,7 +1085,9 @@ def _read(  # noqa: PLR0913
     if plan.repeated:
         resolved, _ = wire.schema(location)
         location = SourceLocation(resolved.document, f"{resolved.pointer}/items", "schema")
-    bound = schemas.get((location.document, location.pointer)) or TypeUseBinding(body.id, "not_generated", None, None)
+    bound = schema_use(schemas, location, body.id.direction, wire.schema(location)[0]) or TypeUseBinding(
+        body.id, "not_generated", None, None
+    )
     return PartSpec(plan=plan, use=_part_use(body, location, name or None, bound))
 
 

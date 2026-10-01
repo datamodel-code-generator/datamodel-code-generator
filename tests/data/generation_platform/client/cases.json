@@ -113,6 +113,18 @@
       }
     }
   },
+  "multipart-split": {
+    "input": "multipart-split.yaml",
+    "model": {
+      "read_only_write_only_model_type": "request-response"
+    },
+    "config": {
+      "validation": {
+        "request": "schema",
+        "response": "schema"
+      }
+    }
+  },
   "servers": {
     "input": "servers.yaml",
     "config": {
@@ -2499,6 +2511,18 @@
       }
     }
   },
+  "unions-split": {
+    "input": "unions-split.yaml",
+    "model": {
+      "read_only_write_only_model_type": "request-response"
+    },
+    "config": {
+      "validation": {
+        "request": "schema",
+        "response": "schema"
+      }
+    }
+  },
   "pagination-counts": {
     "input": "pagination-counts.yaml",
     "references": [
@@ -2780,6 +2804,22 @@
         "_async_helpers.py"
       ]
     ]
+  },
+  "ndjson-split": {
+    "input": "ndjson-split.yaml",
+    "references": [
+      "protocols/ndjson-split.yaml"
+    ],
+    "model": {
+      "read_only_write_only_model_type": "request-response"
+    },
+    "config": {
+      "protocols": "protocols/ndjson-split.yaml",
+      "validation": {
+        "request": "schema",
+        "response": "schema"
+      }
+    }
   },
   "protocols-ndjson-checks": {
     "input": "ndjson.yaml",

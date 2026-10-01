@@ -536,3 +536,34 @@ async def _async_multipart(package: ModuleType, lines: list[str]) -> None:
         exchange.respond(raw_response(200, _form((_NAMED % b"x", b"1")), "multipart/mixed; boundary=b1"))
         lines.append(f"  async parts read {_parts_of(await api.forms.read_parts())}")
     await http.aclose()
+
+
+_SPLIT_PARTS: Final = (
+    (_NAMED % b"photo" + b'; filename="a.png"\r\nContent-Type: image/png', b"\x89PNG"),
+    (_NAMED % b"note" + _JSON, b'{"text":"t","id":1}'),
+    (_NAMED % b"spare" + _JSON, b'{"text":"s","id":2}'),
+)
+
+
+def split_parts(package: ModuleType, lines: list[str]) -> None:
+    """Send and read form-data parts whose schema splits into request and response models.
+
+    A member or extra part sent goes through the request model, and one read through the response model.
+    """
+    bodies = importlib.import_module(f"{package.__name__}.bodies")
+    codecs = importlib.import_module(f"{package.__name__}.types.default").SendUploadRequestCodecs
+    exchange = Exchange(lines)
+    with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
+        parts = [bodies.FilePart("photo", b"\x89PNG")]
+        for name in ("note", "spare"):
+            value = record(
+                lines,
+                f"split {name} part",
+                lambda name=name: codecs.part(name=name).from_wire({"text": name[0], "secret": "s"}).value,
+            )
+            parts.append(bodies.FieldPart(name, value))
+        exchange.respond(raw_response(204))
+        record(lines, "split parts sent", lambda: api.default.send_upload(body=bodies.MultipartBody(tuple(parts))))
+        exchange.respond(raw_response(200, _form(*_SPLIT_PARTS), "multipart/form-data; boundary=b1"))
+        record(lines, "split parts read", lambda: [(part.name, part.value) for part in api.default.read_upload().parts])
+    lines[:] = [_BOUNDARY.sub("<boundary>", line) for line in lines]
