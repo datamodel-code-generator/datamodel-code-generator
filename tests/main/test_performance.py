@@ -24,7 +24,16 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from datamodel_code_generator import DataModelType, Formatter, InputFileType, ModuleSplitMode, YamlValue, generate
+from datamodel_code_generator import (
+    DataModelType,
+    Formatter,
+    GenerateConfig,
+    InputFileType,
+    ModuleSplitMode,
+    YamlValue,
+    generate,
+    load_pyproject_config,
+)
 from datamodel_code_generator.model.msgspec import DataModelField as MsgspecDataModelField
 from datamodel_code_generator.model.msgspec import DataTypeManager as MsgspecDataTypeManager
 from datamodel_code_generator.model.msgspec import Struct as MsgspecStruct
@@ -49,6 +58,32 @@ EXPECTED_STARTUP_MEASUREMENT_CASES = {
     "cli-schema-generation",
     "cli-schema-structured-output",
 }
+
+
+@pytest.fixture(scope="module")
+def pyproject_config_directory(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """Prepare project settings outside the configuration-loading benchmark."""
+    project = tmp_path_factory.mktemp("pyproject-config-benchmark")
+    source = PERFORMANCE_DATA_PATH.parent / "pyproject_config" / "profiles.toml"
+    shutil.copyfile(source, project / "pyproject.toml")
+    return project
+
+
+@pytest.fixture(scope="module", params=["mapping", "config"])
+def pyproject_config_overrides(request: pytest.FixtureRequest) -> Any:
+    """Prepare both accepted override representations outside measured calls."""
+    overrides = {"output": None, "class_name": "Benchmark"}
+    return GenerateConfig(**overrides) if request.param == "config" else overrides
+
+
+@pytest.mark.perf
+@pytest.mark.benchmark
+@pytest.mark.parametrize("profile", [None, "multiple"])
+def test_perf_load_pyproject_config(
+    pyproject_config_directory: Path, pyproject_config_overrides: Any, profile: str | None
+) -> None:
+    """Measure shared project discovery, profile resolution, and override validation."""
+    load_pyproject_config(pyproject_config_directory, profile, overrides=pyproject_config_overrides)
 
 
 @pytest.fixture(scope="module")

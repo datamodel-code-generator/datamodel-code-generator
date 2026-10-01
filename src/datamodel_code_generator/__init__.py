@@ -117,6 +117,7 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator._generation_contract import GenerationCaptureSession, OpenAPIParserFactory
     from datamodel_code_generator._parser_context import ParserSourceContext
+    from datamodel_code_generator._project_config import load_pyproject_config
     from datamodel_code_generator._publication import PublicationAnchor
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._types import (
@@ -2800,6 +2801,7 @@ def detect_xmlschema_version(source: Any) -> XMLSchemaVersion:
 
 
 _LAZY_IMPORTS = {
+    "load_pyproject_config": "datamodel_code_generator._project_config",
     "clear_dynamic_models_cache": "datamodel_code_generator.dynamic",
     "detect_jsonschema_version": "datamodel_code_generator.parser.schema_version",
     "detect_openapi_version": "datamodel_code_generator.parser.schema_version",
@@ -2885,3 +2887,4 @@ __all__ = [
 ]
 
 __all__ += ["GenerateConfig"]
+__all__ += ["load_pyproject_config"]

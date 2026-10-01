@@ -1,0 +1,12 @@
+[tool.datamodel-codegen]
+input = "ignored.json"
+check = true
+target-python-version = "3.11"
+formatters = ["builtin"]
+disable-timestamp = true
+class-name = "Configured"
+use-default = true
+output = "generated.py"
+aliases = "aliases.json"
+[tool.black]
+line-length = 100
