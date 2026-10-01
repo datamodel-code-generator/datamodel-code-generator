@@ -11,10 +11,12 @@ from models import FeedQuery as _dcg_type_10
 from models import FieldEventsGetCookieSessionParameter as _dcg_type_2
 from models import FieldEventsGetHeaderLastEventIDParameter as _dcg_type_1
 from models import FieldEventsGetQueryTopicParameter as _dcg_type_0
+from models import FieldMarksGetQueryScopeParameter as _dcg_type_12
 from models import FieldRecordsGetQueryAfterParameter as _dcg_type_8
 from models import FieldRoomsRoomShardGetHeaderLastEventIDParameter as _dcg_type_7
 from models import FieldRoomsRoomShardGetPathRoomParameter as _dcg_type_5
 from models import FieldRoomsRoomShardGetPathShardParameter as _dcg_type_6
+from models import Mark as _dcg_type_13
 from models import Message as _dcg_type_3
 from models import Record as _dcg_type_9
 from models import Tick as _dcg_type_11
@@ -63,6 +65,11 @@ class AsyncProtocolHelpers:
     def topics(self) -> AsyncTopicsProtocols:
         """The topics protocol helpers."""
         return AsyncTopicsProtocols(self._core)
+
+    @cached_property
+    def marks(self) -> AsyncMarksProtocols:
+        """The marks protocol helpers."""
+        return AsyncMarksProtocols(self._core)
 
 
 class AsyncEventsProtocols:
@@ -138,6 +145,19 @@ class AsyncTopicsProtocols:
     def marks(self) -> AsyncTopicsMarksSse:
         """The topics.marks SSE helper."""
         return AsyncTopicsMarksSse(self._core)
+
+
+class AsyncMarksProtocols:
+    """The marks protocol helpers."""
+
+    def __init__(self, core: AsyncClientCore) -> None:
+        """Keep the client core its helpers send through."""
+        self._core = core
+
+    @cached_property
+    def scoped(self) -> AsyncMarksScopedSse:
+        """The marks.scoped SSE helper."""
+        return AsyncMarksScopedSse(self._core)
 
 
 class AsyncEventsLiveSse:
@@ -436,6 +456,50 @@ class AsyncTopicsMarksSse:
         return await aresume_events(
             self._core,
             _plans.STREAM_6,
+            state,
+            stream_options=stream_options,
+            options=options,
+            session_options=session_options,
+        )
+
+
+class AsyncMarksScopedSse:
+    """The marks.scoped SSE helper of GET /marks."""
+
+    def __init__(self, core: AsyncClientCore) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+    async def open(
+        self,
+        *,
+        scope: _dcg_type_12 | ModelValue[_dcg_type_12] | Unset = UNSET,
+        stream_options: StreamOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> AsyncEventStream[_dcg_type_13]:
+        """Open the event stream of GET /marks, returning once its response is a declared success."""
+        return await aopen_events(
+            self._core,
+            _plans.STREAM_7,
+            (scope,),
+            stream_options=stream_options,
+            options=options,
+            session_options=session_options,
+        )
+
+    async def resume(
+        self,
+        state: ResumeState,
+        *,
+        stream_options: StreamOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> AsyncEventStream[_dcg_type_13]:
+        """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
+        return await aresume_events(
+            self._core,
+            _plans.STREAM_7,
             state,
             stream_options=stream_options,
             options=options,

@@ -352,7 +352,7 @@ def _cursor(helper: Helper, spec: StreamSpec, reopen: OperationSpec, pages: _Pag
     resume, name, label = helper.tree["resume"], helper.name, _label(reopen)
     at, write, cursor = f"{helper.at}.resume", helper.tree["resume"]["write"], helper.tree["resume"]["cursor"]
     where, place = f"{at}.write", f"the {write['in']} parameter {write.get('name')!r} of {label}"
-    if (secret := credential_place(write, pages.secret_headers, pages.secret_queries)) is not None:
+    if (secret := credential_place(write, pages.secret_headers, pages.secret_queries, reopen)) is not None:
         message = f"The cursor of {name!r} writes {secret}, which carries credentials no helper writes"
         yield _problem("E_CONFIG_VALUE", "config", where, message, reopen)
         return

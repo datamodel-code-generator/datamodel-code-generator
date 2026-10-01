@@ -1444,12 +1444,13 @@ and of reconnections, the last valid `retry` time, the bindings' values, and, wh
 own, the wire values of the caller's first request, never events, responses, the session, the call's options, or what
 its auth adds; the caller's value of an optional parameter the reopen writes, such as its own `Last-Event-ID`, is left
 out. A call that gives a cookie, a credential header, or a security scheme's query parameter cannot be checkpointed and
-raises `ProtocolConfigurationError` with the condition `wrong_capability`. A cursor the reopen request cannot encode,
-such as an event ID ending in a space or an object written to a query parameter, raises `ProtocolDataError` with the
-condition `value` and the cursor's selector, or for an event ID the target it is written to, as `location`, from
-`checkpoint()` and from a reconnection, which keeps no `resume_state` and has the interruption as its context. The state
-is bound to the helper's fingerprint and to the security of the reopen operation, and exports as pagination and polling
-checkpoints do.
+raises `ProtocolConfigurationError` with the condition `wrong_capability`, and so does a stream whose cursor or binding
+value the reopen sends as such a query field, a property of an exploded form object query parameter included. A cursor
+the reopen request cannot encode, such as an event ID ending in a space or an object written to a query parameter,
+raises `ProtocolDataError` with the condition `value` and the cursor's selector, or for an event ID the target it is
+written to, as `location`, from `checkpoint()` and from a reconnection, which keeps no `resume_state` and has the
+interruption as its context. The state is bound to the helper's fingerprint and to the security of the reopen operation,
+and exports as pagination and polling checkpoints do.
 
 `resume` creates a session of its own and sends the reopen at once: the helper's own operation repeats the caller's
 first request, another one sends only what is written, each binding's value first and then the cursor, whose
@@ -1506,12 +1507,13 @@ E_CONFIG_VALUE config protocols.helpers['checks.discriminator_type'].event_schem
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.streams.diagnostics -->
 
-A resumption is checked against its reopen operation, which must declare a success response of the helper's media
-type. A cursor is never written to a cookie, a credential header, a security scheme's position, or a path parameter,
-and one that can be cleared, an event ID or a body cursor with `null: clear`, only to an optional header or query
-parameter; a body cursor must read a declared property of an event schema, of every one under `missing: error`, whose
-types fit its target. Bindings are checked as polling bindings are, reading only the headers and status of the stream
-responses, and a reopen with another operation must write each of its required parameters and its body:
+A resumption is checked against its reopen operation, which must declare a success response of the helper's media type.
+A cursor is never written to a cookie, a credential header, a security scheme's position, an exploded form object query
+parameter declaring a property at such a position, or a path parameter, and one that can be cleared, an event ID or a
+body cursor with `null: clear`, only to an optional header or query parameter; a body cursor must read a declared
+property of an event schema, of every one under `missing: error`, whose types fit its target. Bindings are checked as
+polling bindings are, reading only the headers and status of the stream responses, and a reopen with another operation
+must write each of its required parameters and its body:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.streams.resume-diagnostics -->
 <!-- fmt: off -->
@@ -1532,6 +1534,7 @@ E_CONFIG_CONFLICT config protocols.helpers['checks.bindings'].resume.bindings[2]
 E_CONFIG_VALUE config protocols.helpers['checks.bindings'].resume.bindings[3].value.selector /paths/~1streams~1{streamId}/get: The binding 3 of 'checks.bindings' reads the header 'X-Stream-Id', which GET /streams/{streamId} does not declare
 E_CONFIG_VALUE config protocols.helpers['checks.bindings'].resume.expires_at /paths/~1events/get: The expiry of 'checks.bindings' reads a body, where only a header of a stream gives one
 E_CONFIG_VALUE config protocols.helpers['checks.expiry'].resume.expires_at /paths/~1events/get: The expiry of 'checks.expiry' reads the header 'Expires', which GET /events does not declare
+E_CONFIG_VALUE config protocols.helpers['checks.cursor_exploded'].resume.write /paths/~1keyed-marks/get: The cursor of 'checks.cursor_exploded' writes the query field 'api_key', which carries credentials no helper writes
 ```
 
 <!-- fmt: on -->

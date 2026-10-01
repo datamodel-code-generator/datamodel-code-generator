@@ -108,3 +108,17 @@ helpers:
       write: {in: query, name: topic}
       reopen_operation: /paths/~1events/get
       delivery: at_least_once
+  marks.scoped:
+    kind: sse
+    operation: /paths/~1marks/get
+    media: text/event-stream
+    event_schema: {pointer: /components/schemas/Mark}
+    completion: {kind: eof}
+    resume:
+      enabled: true
+      cursor: {from: body, pointer: /scope}
+      missing: inherit
+      'null': clear
+      write: {in: query, name: scope}
+      reopen_operation: /paths/~1marks/get
+      delivery: at_least_once

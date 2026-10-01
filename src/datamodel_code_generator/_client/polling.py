@@ -299,7 +299,7 @@ class _Polls:
         for index, item in enumerate(bindings):
             where, owner, value, target = f"{at}[{index}]", f"{what} {index}", item["value"], item["target"]
             pages = self.pages
-            if (place := credential_place(target, pages.secret_headers, pages.secret_queries)) is not None:
+            if (place := credential_place(target, pages.secret_headers, pages.secret_queries, spec)) is not None:
                 message = f"The {owner} of {name!r} writes {place}, which carries credentials no helper writes"
                 yield _problem("E_CONFIG_VALUE", "config", f"{where}.target", message, spec)
                 continue

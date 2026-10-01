@@ -135,10 +135,51 @@ paths:
           content:
             text/event-stream:
               schema: {type: string}
+  /marks:
+    get:
+      operationId: streamMarks
+      tags: [marks]
+      parameters:
+        - name: scope
+          in: query
+          style: form
+          explode: true
+          schema:
+            type: object
+            properties:
+              after: {type: string}
+            additionalProperties: {type: string}
+      responses:
+        '200':
+          description: The marks of a scope.
+          content:
+            text/event-stream:
+              schema: {type: string}
+  /keyed-marks:
+    get:
+      operationId: streamKeyedMarks
+      tags: [marks]
+      parameters:
+        - name: keyed
+          in: query
+          style: form
+          explode: true
+          schema:
+            type: object
+            properties:
+              api_key: {type: string}
+      responses:
+        '200':
+          description: The marks of a key.
+          content:
+            text/event-stream:
+              schema: {type: string}
   /status:
     get:
       operationId: getStatus
       tags: [status]
+      security:
+        - query_key: []
       responses:
         '200':
           description: The service's status.
@@ -146,7 +187,18 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/Message'}
 components:
+  securitySchemes:
+    query_key:
+      type: apiKey
+      in: query
+      name: api_key
   schemas:
+    Mark:
+      type: object
+      properties:
+        scope:
+          type: [object, 'null']
+          additionalProperties: {type: string}
     Message:
       type: object
       required: [text]

@@ -349,6 +349,19 @@ cursors a reopen cannot encode
     ! ProtocolDataError: ProtocolDataError(operation_id='streamEvents', condition='value') [operation_id='streamEvents', condition='value', location=BodySelector(pointer='/id'), cause=RequestEncodingError()] protocol_data_error resume_state=NoneType
     operation OperationRef(pointer='/paths/~1events/get', document=None) cause RequestEncodingError context StreamInterruptedError
   checkpoint ! ProtocolDataError: ProtocolDataError(operation_id='streamEvents', condition='value') [operation_id='streamEvents', condition='value', location=BodySelector(pointer='/id'), cause=RequestEncodingError()] protocol_data_error
+cursors written as exploded query fields
+  > GET https://api.example.com/marks last-event-id=None
+  1 message id=None retry=None data=Mark{'scope': {'after': '5'}} raw='{"scope": {"after": "5"}}'
+  scope saved {"arguments": [[]], "body": [], "bound": [], "cursor": {"after": "5"}, "reconnects": 0, "retry_ms": null, "sequence": 1} expires_at=None
+  2 message id=None retry=None data=Mark{'scope': {'api_key': 'k'}} raw='{"scope": {"api_key": "k"}}'
+  checkpoint of a credential field ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('arguments', 'query', 'scope'), condition='wrong_capability'] protocol_configuration_error
+  < closed
+  resume a credential field ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  > GET https://api.example.com/marks?after=5 last-event-id=None
+  resumed after the scope
+    2 message id=None retry=None data=Mark{'scope': {'after': '6'}} raw='{"scope": {"after": "6"}}'
+  < closed
+    end
 refusals
   > GET https://api.example.com/events?topic=news last-event-id=None
   < closed

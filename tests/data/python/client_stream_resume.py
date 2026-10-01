@@ -166,6 +166,7 @@ def stream_resume(package: ModuleType, lines: list[str]) -> None:
         _records(resumes, api)
         _ticks(resumes, api)
         _unencodable(resumes, api)
+        _exploded(resumes, api)
         _refusals(resumes, api)
     run(lambda: _async_resume(package, lines))
 
@@ -498,6 +499,24 @@ def _unencodable(resumes: _Resumes, api: Any) -> None:
     stream = api.protocols.topics.marks.open(stream_options=resumes.reconnect)
     _refused(lines, "object body cursor written to a query parameter", stream)
     record(lines, "checkpoint", stream.checkpoint)
+
+
+def _exploded(resumes: _Resumes, api: Any) -> None:
+    """Never checkpoint a cursor written to an exploded object query parameter whose property is a scheme's query field."""
+    lines, harness, helper = resumes.lines, resumes.harness, api.protocols.marks.scoped
+    lines.append("cursors written as exploded query fields")
+    resumes.reply(*_events('data: {"scope": {"after": "5"}}\n\n', 'data: {"scope": {"api_key": "k"}}\n\n'))
+    stream = helper.open()
+    lines.append(f"  {_event(next(stream))}")
+    state = stream.checkpoint()
+    _saved(lines, "scope", state)
+    lines.append(f"  {_event(next(stream))}")
+    record(lines, "checkpoint of a credential field", stream.checkpoint)
+    stream.close()
+    crafted = _crafted(harness, state, _replaced(state, cursor={"api_key": "k"}))
+    record(lines, "resume a credential field", lambda: helper.resume(crafted))
+    resumes.reply(*_events('data: {"scope": {"after": "6"}}\n\n'))
+    _drained(lines, "resumed after the scope", helper.resume(state))
 
 
 def _refused(lines: list[str], label: str, stream: Iterable[Any]) -> None:

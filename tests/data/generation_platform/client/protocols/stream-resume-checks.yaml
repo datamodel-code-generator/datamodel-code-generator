@@ -96,3 +96,17 @@ helpers:
       bindings:
         - {target: {in: path, name: streamId}, value: {source: initial, selector: {from: header, name: X-Stream-Id}}}
       expires_at: {from: header, name: Expires}
+  checks.cursor_exploded:
+    kind: sse
+    operation: /paths/~1keyed-marks/get
+    media: text/event-stream
+    event_schema: {pointer: /components/schemas/Mark}
+    completion: {kind: eof}
+    resume:
+      enabled: true
+      cursor: {from: body, pointer: /scope}
+      missing: inherit
+      'null': clear
+      write: {in: query, name: keyed}
+      reopen_operation: /paths/~1keyed-marks/get
+      delivery: at_least_once

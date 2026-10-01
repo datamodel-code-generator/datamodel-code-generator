@@ -140,7 +140,7 @@ if TYPE_CHECKING:
     )
     from typing import Protocol
 
-    from ..model_codecs.parameters import ParameterFragment
+    from ..model_codecs.parameters import ParameterFragment, ParameterPlan
     from ..model_codecs.wire import WireValue
     from ..protocols.options import ProtocolClientOptions, ProtocolDefaults, ProtocolSecurityContext
     from ..protocols.references import OperationRef
@@ -478,21 +478,33 @@ def _auth_identity(auth: AuthConfig) -> WireValue:
 
 
 def _secret(spec: ParameterSpec, value: WireValue, headers: frozenset[str], queries: frozenset[str]) -> bool:
-    """Return whether an argument carries credentials: a cookie, a credential header, or a scheme's query field."""
-    name = spec.plan.name
+    """Return whether an argument carries credentials: a cookie, a credential header, or a scheme's query field.
+
+    An exploded form object query parameter sends each of its properties as a query field of its own, as a querystring
+    does, an additional property included.
+    """
+    plan = spec.plan
+    name = plan.name
     secret = False
-    match spec.plan.location:
+    match plan.location:
         case "cookie":
             secret = True
         case "header":
             secret = name.lower() in headers
         case "query":
-            secret = name in queries
+            secret = name in queries or (
+                _exploded(plan) and isinstance(value, Mapping) and not queries.isdisjoint(value)
+            )
         case "querystring":
             secret = isinstance(value, Mapping) and not queries.isdisjoint(value)
         case _:
             pass
     return secret
+
+
+def _exploded(plan: ParameterPlan) -> bool:
+    """Return whether a parameter sends each property of its object value as a field of its own."""
+    return plan.shape == "object" and plan.explode and plan.style in {"form", "cookie"}
 
 
 def _coded(operation: OperationPlan[object, object], spec: ParameterSpec, code: Callable[[], R]) -> R:
@@ -848,7 +860,7 @@ def _parameter_names(operation: OperationPlan[object, object], location: str) ->
     for parameter in operation.parameters:
         plan = parameter.plan
         if plan.location == location:
-            if plan.shape == "object" and plan.explode and plan.style in {"form", "cookie"}:
+            if _exploded(plan):
                 yield from (field.name for field in plan.fields)
             else:
                 yield plan.name

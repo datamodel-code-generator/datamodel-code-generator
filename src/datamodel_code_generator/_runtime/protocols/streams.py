@@ -830,6 +830,11 @@ def _wire(value: object) -> WireValue:
     return value.applied(_same) if isinstance(value, Patch) else cast("WireValue", value)
 
 
+def _wires(arguments: tuple[object, ...]) -> tuple[WireValue | Unset, ...]:
+    """Return arguments written by wire value with their writes applied."""
+    return cast("tuple[WireValue | Unset, ...]", tuple(map(_wire, arguments)))
+
+
 def _same(value: object) -> WireValue:
     return cast("WireValue", value)
 
@@ -841,7 +846,7 @@ def _fitting(
     bound: tuple[WireValue, ...],
     cursor: WireValue,
 ) -> None:
-    """Refuse a saved cursor or binding value that does not fit where the reopen writes it.
+    """Refuse a saved cursor or binding value that does not fit where the reopen writes it or that is never saved.
 
     The values are written into the saved request's wire values as a reopen writes them, and the request is built again
     from them as a saved request is, its body validated whole; a value that does not fit raises RequestEncodingError.
@@ -858,7 +863,8 @@ def _fitting(
         if sent := state_array(fields["body"]):
             body, declared, concrete = sent[0], cast("str", sent[1]), cast("str | None", sent[2])
     patched, written_body = _written(resume, arguments, body, bound, cursor)
-    wire = cast("tuple[WireValue | Unset, ...]", tuple(map(_wire, patched)))
+    wire = _wires(patched)
+    require_state(core.unsaved_argument(call, wire) is None)
     core.restored_request(
         call,
         wire,
@@ -995,7 +1001,8 @@ class _Events(Generic[T]):
     def _saved(self) -> ResumeState:
         """Return a checkpoint of the stream, bound to the helper and the security its reopen runs under.
 
-        A helper without resume metadata refuses, and so does a call giving an argument a checkpoint never saves. The
+        A helper without resume metadata refuses, and so does a call giving an argument a checkpoint never saves, or a
+        cursor or binding value the reopen writes as one, such as a security scheme's query field. The
         caller's arguments at the optional parameters a reopen writes are not saved, and a cursor the reopen request
         cannot encode raises ProtocolDataError rather than saving a state that `resume` refuses.
         """
@@ -1014,6 +1021,14 @@ class _Events(Generic[T]):
             )
         except _ENCODING_ERRORS as error:
             raise self._unencodable(error) from None
+        sent = _written(resume, (UNSET,) * len(resume.call.parameters), UNSET, self._bound, self._cursor)[0]
+        if (unsaved := client.unsaved_argument(resume.call, _wires(sent))) is not None:
+            raise ProtocolConfigurationError(
+                field_path=("arguments", *unsaved),
+                condition="wrong_capability",
+                helper_id=plan.helper_id,
+                operation=plan.operation,
+            )
         arguments: WireValue = ()
         body: WireValue = ()
         if given is not None:
