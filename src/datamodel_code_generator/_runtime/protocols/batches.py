@@ -356,7 +356,7 @@ class _Batches(Generic[R]):
     def _check(self, core: ClientCore | AsyncClientCore) -> None:
         """Check the shared arguments once, before anything is sent, as the operation's own calls are checked."""
         if not self._checked:
-            self._arguments = core.checked_arguments(self._plan.call, self._arguments, self._limits.options)
+            self._arguments = core.validated_arguments(self._plan.call, self._arguments, self._limits.options)
             self._checked = True
 
     def _item(self, value: object, index: int) -> _Item:

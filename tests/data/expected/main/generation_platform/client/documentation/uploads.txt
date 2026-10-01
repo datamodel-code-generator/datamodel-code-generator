@@ -1,0 +1,695 @@
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/files/__init__.py
+  write client/resources/files/_sync.py
+  write client/resources/files/_async.py
+  write client/types/__init__.py
+  write client/types/files/__init__.py
+  write client/types/files/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/protocols/_plans.py
+  write client/protocols/_helpers.py
+  write client/protocols/_async_helpers.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['files.upload', 'files.finish', 'files.put'] bindings 19
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper files.upload resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.upload b54828e09b09ced695bff454b906aa43d74a89622afd3b49f47aceb0026e39e2
+  helper files.finish resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.finish f4e80e660ad3f3695e4277b7fd960a499ed809b326e26be4f87fa47610b8c8a1
+  helper files.put resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.put 6c7344a5c9a3b46acc6e4f33414cdce38dca96ed39a71f05a94570ffbe1ec02c
+  {
+    "helpers": {
+      "files.finish": {
+        "append": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "Tus-Resumable"
+              },
+              "value": {
+                "literal": "1.0.0"
+              }
+            }
+          ],
+          "offset": {
+            "in": "header",
+            "name": "Upload-Offset"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/patch"
+          }
+        },
+        "completion": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "kind": "operation",
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1complete/post"
+          },
+          "result_schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Stored"
+          }
+        },
+        "create": {
+          "expires_at": {
+            "from": "body",
+            "pointer": "/expires"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files/post"
+          },
+          "size": {
+            "in": "header",
+            "name": "Upload-Length"
+          }
+        },
+        "enabled": true,
+        "kind": "resumable_upload",
+        "max_chunk_bytes": 8,
+        "partial_commit": "forbidden",
+        "probe": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1status/get"
+          },
+          "remote_offset": {
+            "from": "body",
+            "pointer": "/offset"
+          }
+        },
+        "profile": "offset"
+      },
+      "files.put": {
+        "append": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "offset": {
+            "in": "query",
+            "name": "offset"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/put"
+          }
+        },
+        "completion": {
+          "kind": "length"
+        },
+        "create": {
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files/post"
+          }
+        },
+        "enabled": true,
+        "kind": "resumable_upload",
+        "max_chunk_bytes": 4,
+        "partial_commit": "forbidden",
+        "probe": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "Tus-Resumable"
+              },
+              "value": {
+                "literal": "1.0.0"
+              }
+            }
+          ],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/head"
+          },
+          "remote_offset": {
+            "from": "header",
+            "name": "Upload-Offset",
+            "occurrence": "single"
+          }
+        },
+        "profile": "offset"
+      },
+      "files.upload": {
+        "append": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "Tus-Resumable"
+              },
+              "value": {
+                "literal": "1.0.0"
+              }
+            }
+          ],
+          "length": {
+            "in": "header",
+            "name": "X-Chunk-Length"
+          },
+          "offset": {
+            "in": "header",
+            "name": "Upload-Offset"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/patch"
+          }
+        },
+        "completion": {
+          "kind": "length"
+        },
+        "create": {
+          "expires_at": {
+            "from": "header",
+            "name": "Upload-Expires",
+            "occurrence": "single"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files/post"
+          },
+          "size": {
+            "in": "header",
+            "name": "Upload-Length"
+          }
+        },
+        "enabled": true,
+        "kind": "resumable_upload",
+        "max_chunk_bytes": 4,
+        "partial_commit": "allowed",
+        "probe": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "Tus-Resumable"
+              },
+              "value": {
+                "literal": "1.0.0"
+              }
+            }
+          ],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/head"
+          },
+          "remote_offset": {
+            "from": "header",
+            "name": "Upload-Offset",
+            "occurrence": "single"
+          }
+        },
+        "profile": "offset"
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 files.create_file(header:Upload-Length=upload_length, header:Tus-Resumable=tus_resumable, header:X-Name=x_name)
+    exports client.types.files.CreateFileResponse client.types.files.CreateFileErrorData client.types.files.CreateFileHTTPError
+    exports client.types.files.CreateFileRequestCodecs client.types.files.decode_create_file_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 files.probe_file(path:fileId=file_id, header:Tus-Resumable=tus_resumable)
+    exports client.types.files.ProbeFileResponse client.types.files.ProbeFileErrorData client.types.files.ProbeFileHTTPError
+    exports client.types.files.ProbeFileRequestCodecs client.types.files.decode_probe_file_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/2 files.append_file(path:fileId=file_id, header:Upload-Offset=upload_offset, header:Tus-Resumable=tus_resumable, header:X-Chunk-Length=x_chunk_length)
+    exports client.types.files.AppendFileResponse client.types.files.AppendFileErrorData client.types.files.AppendFileHTTPError
+    exports client.types.files.AppendFileRequestCodecs client.types.files.decode_append_file_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/3 files.put_file_chunk(path:fileId=file_id, query:offset=offset)
+    exports client.types.files.PutFileChunkResponse client.types.files.PutFileChunkErrorData client.types.files.PutFileChunkHTTPError
+    exports client.types.files.PutFileChunkRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/4 files.get_file_status(path:fileId=file_id)
+    exports client.types.files.GetFileStatusResponse client.types.files.GetFileStatusErrorData client.types.files.GetFileStatusHTTPError
+    exports client.types.files.GetFileStatusRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/5 files.complete_file(path:fileId=file_id)
+    exports client.types.files.CompleteFileResponse client.types.files.CompleteFileErrorData client.types.files.CompleteFileHTTPError
+    exports client.types.files.CompleteFileRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+
+# artifact client/_generated_docs/README.md
+# client
+
+This generated package exposes `Client` and `AsyncClient`. Import options, bodies, errors, and response types from
+its public modules. Operations are grouped into the resource attributes listed below; `request_raw` accepts an
+explicit URL. Close clients with `with` or `async with`, and retain streaming responses only inside their context.
+
+```python
+from client import Client
+from client.options import ClientOptions, RetryOptions
+
+with Client(options=ClientOptions(retry=RetryOptions(max_retries=0))) as client:
+    response = client.request_raw("GET", "https://api.example.com/health")
+    status = response.info.status_code
+```
+
+Replace the example URL with your service. The explicit `max_retries=0` disables resends for this example.
+The default is two retries, subject to operation safety, replayable input, delay, and the shared deadline/send budget.
+The default status set is 408, 429, 500, 502, 503, and 504. Server retry delays are respected by default.
+`RetryOptions(respect_retry_after=False)` is an explicit application override that ignores those server hints;
+set it deliberately in `ClientOptions` or `RequestOptions`. This package does not embed that override.
+
+See the [runtime reference](runtime.md) for defaults, ownership, cancellation, replay, redirects, and transport costs.
+
+## Selected operation contracts
+
+These declarations come from the finalized operation selection and generation configuration. A key contract does
+not guarantee exactly-once execution. A null idempotency declaration or a false replay guarantee cannot make an
+unsafe method replay-safe. No vendor retry-header name is inferred. Security requirements preserve ordered OR
+alternatives and their AND members; `[]` and `[{}]` remain distinct declared anonymous choices. Missing required
+credentials fail before sending. `auth_challenge_less_401` is the explicit generation declaration at
+`operations[].runtime.auth_challenge_less_401`; it is false by default and is not a client option.
+
+```json
+[
+  {
+    "operation": "files.create_file",
+    "method": "POST",
+    "path": "/files",
+    "retry_safety": "method_default",
+    "idempotency": null,
+    "retry_after_ms_header": null,
+    "should_retry_header": null,
+    "security": null,
+    "auth_challenge_less_401": false
+  },
+  {
+    "operation": "files.probe_file",
+    "method": "HEAD",
+    "path": "/files/{fileId}",
+    "retry_safety": "method_default",
+    "idempotency": null,
+    "retry_after_ms_header": null,
+    "should_retry_header": null,
+    "security": null,
+    "auth_challenge_less_401": false
+  },
+  {
+    "operation": "files.append_file",
+    "method": "PATCH",
+    "path": "/files/{fileId}",
+    "retry_safety": "method_default",
+    "idempotency": null,
+    "retry_after_ms_header": null,
+    "should_retry_header": null,
+    "security": null,
+    "auth_challenge_less_401": false
+  },
+  {
+    "operation": "files.put_file_chunk",
+    "method": "PUT",
+    "path": "/files/{fileId}",
+    "retry_safety": "method_default",
+    "idempotency": null,
+    "retry_after_ms_header": null,
+    "should_retry_header": null,
+    "security": null,
+    "auth_challenge_less_401": false
+  },
+  {
+    "operation": "files.get_file_status",
+    "method": "GET",
+    "path": "/files/{fileId}/status",
+    "retry_safety": "method_default",
+    "idempotency": null,
+    "retry_after_ms_header": null,
+    "should_retry_header": null,
+    "security": null,
+    "auth_challenge_less_401": false
+  },
+  {
+    "operation": "files.complete_file",
+    "method": "POST",
+    "path": "/files/{fileId}/complete",
+    "retry_safety": "method_default",
+    "idempotency": null,
+    "retry_after_ms_header": null,
+    "should_retry_header": null,
+    "security": null,
+    "auth_challenge_less_401": false
+  }
+]
+```
+
+## Protocol helpers
+
+`client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.
+An upload helper's `start` reads its source once and creates the upload; the handle's `advance` appends one chunk and
+`run` appends the rest and completes it, and `resume` continues a handle's `checkpoint()` from the offset the server
+holds. `close()` or `aclose()` stops only local uploading. See the runtime reference for their limits.
+
+```json
+[
+  {
+    "helper": "files.upload",
+    "kind": "resumable_upload",
+    "operation": "files.create_file",
+    "method": "POST",
+    "path": "/files"
+  },
+  {
+    "helper": "files.finish",
+    "kind": "resumable_upload",
+    "operation": "files.create_file",
+    "method": "POST",
+    "path": "/files"
+  },
+  {
+    "helper": "files.put",
+    "kind": "resumable_upload",
+    "operation": "files.create_file",
+    "method": "POST",
+    "path": "/files"
+  }
+]
+```
+
+
+# artifact client/_generated_docs/runtime.md
+# Runtime reference
+
+Import `Client` and `AsyncClient` from `client` and the records below from
+`client.options`. Async calls require asyncio.
+
+## Layered options and budgets
+
+`RequestOptions` overrides the nearest `with_options` view, then `ClientOptions`, then fixed defaults.
+`UNSET` inherits. `TimeoutOptions`, `RetryOptions`, and `RedirectOptions` merge their fields independently;
+sets and tuples replace the inherited collection. `retry=None` and `redirects=None` are invalid.
+`timeout=None` clears phase limits; `TimeoutOptions(read=None)` clears only read. `total_timeout=None`,
+`deadline=None`, and `max_network_sends=None` clear their own limits. `cleanup_timeout` remains positive and finite.
+
+| Setting | Effective default |
+|---|---|
+| connect / read / write / pool timeout | 5 / 30 / 30 / 5 seconds |
+| total timeout | 60 seconds from logical-call entry |
+| retries / initial delay / maximum delay / jitter | 2 / 0.5 seconds / 8 seconds / full |
+| retry statuses | 408, 429, 500, 502, 503, 504 |
+| maximum accepted Retry-After | 60 seconds; explicit None removes this cap |
+| respect Retry-After / retry pool timeout | True / False |
+| redirects / maximum redirects / 303 conversion | False / 5 / False |
+| allowed redirect origins / HTTPS downgrade | empty tuple (initial origin only) / False |
+| network send slots | 1 + max_retries + (max_redirects if redirects) + (max_token_exchanges if SDK OAuth) |
+| stream idle / stream total / cleanup | 60 seconds / None / 5 seconds |
+| maximum response / error body / stream bytes | 16 MiB / 64 KiB / None |
+
+Zero retries permits only the initial resource attempt. A zero send budget refuses all sends. Reservations are not
+refunded. `Deadline.after(seconds)` shares an absolute monotonic expiry across calls; the earlier of that expiry and
+the relative total timeout wins. `CancelToken` is thread-safe and remains cancelled once signalled. Sync callbacks,
+DNS, I/O, and cleanup are cooperative and may return after a deadline. Async SDK waits enforce their budgets.
+Native cancellation remains the original exception. No work starts after an observed cancellation or expiry.
+`ClientOptions(clock=Clock(monotonic=..., time=..., random=...))` replaces the time and jitter sources of every call;
+`OAuthProviderOptions(clock=...)` does so for a provider, and `Deadline.after(seconds, clock=...)` creates a deadline
+on that clock. Waits still pass in real time, so a test clock skips one by advancing itself.
+
+## Retry decisions and delays
+
+GET, HEAD, OPTIONS, PUT, and DELETE are eligible for retries by default; POST/PATCH require an explicit idempotent
+declaration or a valid key contract. Proven unsent failures from the SDK-owned native transport may permit an
+otherwise unsafe retry; `retry_safety="never"` forbids every resend. All candidates still need replayable input and
+available budgets.
+Pool timeouts need explicit `retry_on_pool_timeout=True`. TLS/configuration/permanent DNS errors, callback failures,
+decoding failures, cancellation, and logical deadlines are not retry candidates. Phase timeouts can be candidates.
+
+Full jitter samples from zero to the capped exponential delay; `jitter="none"` uses the cap directly. A server delay
+is a minimum and is never shortened to fit the retry-after cap or remaining deadline. `respect_retry_after=False`
+explicitly ignores server hints. Vendor millisecond/boolean controls require the names declared for the operation;
+an options value cannot invent that declaration, and explicit None disables an inherited vendor control.
+
+Typed errors retain the final available response. Buffered and streaming raw APIs return final HTTP statuses,
+including retry exhaustion, rather than converting statuses to typed HTTP errors. Transport, budget, cancellation,
+and redirect-policy failures still raise. Stream acquisition can retry; body reads never retry after handle handoff.
+After handoff, stream idle/total limits replace the completed acquisition deadline; an explicitly configured read
+phase cap still applies. Close an abandoned stream to release its response and limiter permit.
+
+## Idempotency and replayable input
+
+`IdempotencyKey(value, first_used_at=aware_datetime)` retains a caller's key and known first-use time.
+`IdempotencyKey.new()` creates a UUID4 value with a UTC timestamp. `idempotency_key=None` disables automatic creation;
+`UNSET` permits it for an operation with declared idempotency metadata, including `replay_safe_with_key=False`.
+A false replay-safety flag does not make an unsafe operation eligible for retries. The key is created once and never
+replaced to retry. Unknown prior-use time or expired retention does not establish retry safety. One logical call
+retains its key, origin, scope, encoded body, and multipart boundary across eligible attempts.
+
+Immutable bytes and JSON encoding results are retained once; JSON encoding memory scales with input size.
+`FileBody(file)` remembers the entry offset and seeks there for replay when possible. Borrowed files stay open and
+their final position is not restored. `FileBody.from_path(path)` and its async counterpart reopen per attempt and
+check initial device/inode/size/mtime; unchanged stat data is not proof of identical content. Reads use bounded chunks.
+One-shot `StreamBody`/`AsyncStreamBody` input is never buffered or spooled implicitly and cannot replay after use.
+
+`BodyFactory`/`AsyncBodyFactory` must return a fresh SDK-owned attempt with identical payload for every invocation.
+The SDK closes every returned attempt. Freshness is the factory's general obligation; detection uses a call-owned
+ledger and an immediate cross-call guard, not indefinite object history. Fingerprint/length/stat checks detect some
+changes without buffering the entire payload. Multipart can replay only when every part can replay. Borrowed
+resources remain caller-owned; close explicitly created async file adapters to release their worker.
+
+## Redirects and transport construction
+
+`RedirectOptions(enabled=True)` enables SDK-controlled hops. 301/302 permit only GET/HEAD. 303 changes to GET for
+GET/HEAD or explicit `allow_303_to_get=True`, dropping body and content/framing headers including Content-Encoding.
+307/308 preserve method/body and require safety and replayability. Every hop consumes a send slot and the logical
+deadline. The origin allowlist and HTTPS downgrade permission are separate; credentials and cookies from the
+original request are stripped on an origin change. Invalid/multiple Location, loops, limits, and rejected hops raise
+`RedirectPolicyError` with `body_available=False` and delivery/response metadata when available.
+
+`TransportOptions` belongs only to `ClientOptions`: verify=True, ssl_context=None, proxy=None, trust_env=False,
+http2=False, max_connections=100, max_keepalive_connections=20, keepalive_expiry=5, retry_owner="sdk".
+An SSLContext supplies TLS settings and conflicts with any explicit verify override. HTTP/2 is explicit and requires
+its dependency. Injected native clients retain their pool/proxy/TLS construction; incompatible construction settings
+are rejected. Borrowed clients/adapters are not closed; `OwnedTransportAdapter` transfers adapter ownership.
+`retry_owner="transport"` requires an explicitly injected adapter with the declared internal retry/deadline/body
+contract and disables SDK retries. The default SDK-owned native transport disables native internal retries.
+
+## Explicit authentication and signing
+
+Import `AuthConfig`, credential values, providers, and signers from `client.auth`.
+`auth=UNSET` inherits, an `AuthConfig` replaces the inherited configuration as a whole, and `auth=None` disables it.
+Required security cannot become anonymous. AND requires all schemes; OR picks the first fully available declared
+alternative unless `selection` chooses its index, which applies only to operations declaring several alternatives.
+That choice stays fixed through a call and its retries.
+
+```python
+from client.auth import AccessToken, AuthConfig, StaticTokenProvider
+from client.options import RequestOptions
+
+
+def bearer_options(token: str) -> RequestOptions:
+    return RequestOptions(auth=AuthConfig({"bearer": StaticTokenProvider(AccessToken(token, scopes=None))}))
+```
+
+Use the API's declared scheme name in place of `bearer`, and pass the options to an operation requiring it.
+Async clients use `AsyncStaticTokenProvider` or another async provider. API keys use `ApiKeyCredential`; Basic uses
+`BasicCredential` with UTF-8. OAuth2/OpenID Connect declarations accept preobtained bearer material without discovery
+or token HTTP. `EnvironmentCredentialProvider(variable_name, kind="api_key")` reads only when selected and called;
+its async counterpart has the same explicit selection. Imports and constructors do not discover environment secrets.
+
+Known scopes are canonical tuples: None means unknown and leaves authorization to the server; () is known empty.
+Insufficient known grants fail before sending with `InsufficientScopeError`; 403 never expands scope automatically.
+Provider contexts carry current origin/deadline/cancellation/requirements, and audience is currently None.
+Borrow providers by default; only `OwnedCredentialProvider` transfers a closeable provider to the root scope.
+Views share that ownership. Provider and signer callbacks consume the call deadline; synchronous callbacks are
+cooperative and cannot be forcibly terminated. Wrong callback modes fail before I/O, with no implicit offload.
+
+Anonymous operations and `request_raw` send no credentials by default. Opt in with `send_on_anonymous=True` and
+explicit `anonymous_schemes`; signer-only calls also need the opt-in. Raw destinations require explicit auth origins.
+Authentication, redirect, and signer origin permissions are independent. Every hop reconstructs credentials and
+signatures for its current origin. Generic patches cannot change managed credential/signature names.
+
+Static providers cannot refresh. Custom refresh providers explicitly implement get/invalidate/refresh (all async in
+the async Protocol). At most one eligible 401 recovery invalidates the exact used token version and refreshes; a
+Bearer invalid-token challenge or explicit `auth_challenge_less_401` declaration is required. Retry safety, replay,
+retry counts, send slots, and the original deadline still apply. Zero retries prevents recovery resends, while first
+acquisition remains allowed. These callbacks start no builtin token exchange.
+
+Signers declare readonly `SignerCapabilities` and return ordered `SignatureFields` only for declared names.
+They receive final per-hop method/URL/raw query/headers and optional SHA-256 digest after credential and body framing,
+before attempt hooks and sending. Overlapping owners fail early; signatures are rebuilt per attempt and hop.
+`SigningExecutionError` preserves callback failures without transport retry. No effective auth means no provider,
+signer, environment read, or body hashing. Optional hashing costs O(payload bytes), uses chunked reads, and restores
+seekable offsets. `BodyFactory(..., sha256=32_byte_digest)` and the async counterpart declare a whole payload digest
+without reading the factory for hashing. One-shot/digest-less input cannot satisfy digest-required signing and is
+never implicitly spooled. A part factory's digest cannot establish the whole multipart digest.
+
+Credential/signature values do not appear in repr or hook events. Query credentials and signatures are part of the
+request URL, which the `httpx2` logger records at INFO level. Causes are retained without automatically formatting
+their potentially sensitive messages.
+
+`AuthorizationCodeFlow` and `AsyncAuthorizationCodeFlow` create PKCE S256 authorization requests without I/O and
+exchange each request's code once, without redirects or retries, through a token transport of their own that must
+verify TLS. `DeviceAuthorizationFlow` and `AsyncDeviceAuthorizationFlow` run one device authorization per flow, polling
+at the server's interval within the response's lifetime and the `SessionOptions` limits. No flow opens a browser or a
+verification URI; the returned `TokenSet` omits its tokens from repr. `ClientCredentialsProvider` and
+`AsyncClientCredentialsProvider` acquire a client's own token when a call first needs it, share one acquisition among
+concurrent callers within `OAuthProviderOptions` limits, and renew the token before it expires. The call needing a
+new acquisition, or a queued one's oldest waiting call, pays one `AuthConfig.max_token_exchanges` exchange and one
+network send, and joiners report `auth_wait`. `RefreshTokenProvider` and `AsyncRefreshTokenProvider` keep one token
+family current from a `TokenSet`, following the rotation of its refresh token and never sending a spent one again; a
+refresh whose outcome is rejected or unknown stops the family until `replace_token_set`, or `reload_token_set` with
+a `load` callback supplying the persisted token set. A `store` callback stores each refreshed token set before it
+becomes current, and `retry_store` stores one whose store failed. Basic charset overrides, resource audience metadata,
+and generated OAuth factories are not available yet. Providers are explicit.
+
+## Counters and cleanup
+
+`ResponseInfo`, terminal events, and SDK errors expose logical resource attempts, redirect count, adapter invocations,
+and reserved send slots. `wire_send_count` on ResponseInfo/errors is known only when trusted adapter evidence proves
+wire sends; a borrowed transport can hide internal sends. Error counters exist even without a response.
+`PhaseTimeoutError` identifies the phase cap; `DeadlineExceededError` identifies the logical/stream budget.
+`BudgetExceededError` reports its kind, limit, and used slots. Safe error representations omit key/body/header values.
+
+A limiter permit is acquired before opening a body and released when its response is released. Cleanup has its own
+bounded wait, retains unfinished owned work, and preserves the primary error, attaching secondary failures where
+possible. Client/view closure refuses new work and interrupts active calls at observation points. Retrying close can
+wait for retained cleanup; it does not authorize another send or restore an expired logical deadline.
+
+## Upload sessions
+
+An upload helper's `start` and the handle it returns are one session, and so are `resume` and its handle. The create
+call, every probe, append, and the completion are logical calls of their own, with their own retries, total timeout,
+and idempotency key; the session bounds all of them. Each limit comes from the call's options, then
+`ProtocolClientOptions.defaults` for the helper, then the default below. The session types are imported from:
+
+- `client.protocols`: `UploadOptions`, `UploadSource`, `AsyncUploadSource`, `UploadIdentity`,
+  `UploadProgress`, `UploadHandle`, `AsyncUploadHandle`, and the builtin `BytesUploadSource`, `FileUploadSource`,
+  `AsyncBytesUploadSource`, and `AsyncFileUploadSource`
+- `client.options`: `SessionOptions`
+
+| Limit | Effective default |
+|---|---|
+| chunk size | 8 MiB, or the helper's smaller `max_chunk_bytes` |
+| chunks per upload | 10000; None removes it |
+| probes after an append of unknown outcome | 3; 0 probes none |
+| session total timeout | 600 seconds from `start` or `resume`, the reading of the source included; None removes it |
+| network sends per session | 10000; None removes it |
+
+A source has an immutable identity, its size and SHA-256 digest, and opens an independent reader for each range. Before
+anything is sent, `start` and `resume` read the whole source once and record each chunk's digest; each append reads
+its chunk again into one buffer and sends it only when it matches, so a source whose content changed raises
+`UploadSourceChangedError` and the handle sends nothing more. A one-shot stream or iterator is no source and raises
+`NonResumableSourceError`; send it as an ordinary upload. Sources a call is given are borrowed and never closed, and
+every reader the client opens is closed.
+
+`start` sends the create request once, resent only as shared retries allow. `advance` appends the chunk holding the
+confirmed offset, and `run` appends every remaining chunk and completes the upload: by length, returning None, or with
+the declared completion operation, sent once and returning its response. An append whose outcome is unknown is never
+resent blindly: the server's offset is probed instead, and an unchanged offset sends the range again, the chunk's end
+confirms it, and an offset inside it confirms its bytes only when partial commits are allowed. An offset that regresses,
+passes the content, or commits part of a chunk that may not be raises `UploadOffsetError`, and probes that never answer
+raise `UploadDeliveryUnknownError`; so does a completion whose outcome is unknown, which is never sent again.
+
+`checkpoint()` saves the confirmed offset, the chunk layout and digests, and the values later calls write, sending
+nothing. `resume` checks it, then the source, then probes the server's offset once; it never creates the upload again.
+A checkpoint past the server's declared expiry raises `UploadExpiredError`. `advance` and `run` at once raise
+`ProtocolStateError`, and so does every step after `close()` or `aclose()`, which stops only local uploading. A call's
+options must not fix an idempotency key or patch a header or query parameter the helper writes.

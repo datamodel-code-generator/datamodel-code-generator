@@ -4,11 +4,9 @@ from __future__ import annotations
 
 import importlib
 import math
-from contextlib import ExitStack
 from datetime import datetime, timedelta, timezone
 from functools import partial
 from typing import TYPE_CHECKING, NoReturn
-from unittest.mock import patch
 from uuid import UUID
 
 import httpx2
@@ -519,20 +517,15 @@ def _timing(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
             hook = _TimingHook(clock)
             exchange.responders.clear()
             exchange.respond(*(_response(status, fields) for status in statuses))
-            with ExitStack() as stack:
-                for name in ("client", "logical", "timing", "transports", "events"):
-                    module = importlib.import_module(f"{package.__name__}._runtime.client.{name}")
-                    stack.enter_context(patch.object(module, "monotonic", clock))
-                module = importlib.import_module(f"{package.__name__}._runtime.client.client")
-                stack.enter_context(patch.object(module, "_draw", draw))
-                api = stack.enter_context(
-                    package.Client(
-                        http_client=native,
-                        options=options.ClientOptions(
-                            retry=options.RetryOptions(**retry_fields), total_timeout=total, hooks=(hook,)
-                        ),
-                    )
-                )
+            with package.Client(
+                http_client=native,
+                options=options.ClientOptions(
+                    retry=options.RetryOptions(**retry_fields),
+                    total_timeout=total,
+                    hooks=(hook,),
+                    clock=options.Clock(monotonic=clock, random=draw),
+                ),
+            ) as api:
                 record(lines, label, lambda api=api: outcome(api.retry.with_response.get_vendor))
             lines.append(
                 f"    delays={tuple(hook.delays)!r} expected={expected!r} match={tuple(hook.delays) == expected} "
@@ -562,16 +555,12 @@ def _timing(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
             hook = _TimingHook(clock, headers_elapsed=elapsed, end_elapsed=end_elapsed)
             exchange.responders.clear()
             exchange.respond(_response(503, fields), _response(200))
-            with ExitStack() as stack:
-                for name in ("client", "logical", "timing", "transports", "events"):
-                    module = importlib.import_module(f"{package.__name__}._runtime.client.{name}")
-                    stack.enter_context(patch.object(module, "monotonic", clock))
-                api = stack.enter_context(
-                    package.Client(
-                        http_client=native,
-                        options=options.ClientOptions(retry=options.RetryOptions(**retry_fields), hooks=(hook,)),
-                    )
-                )
+            with package.Client(
+                http_client=native,
+                options=options.ClientOptions(
+                    retry=options.RetryOptions(**retry_fields), hooks=(hook,), clock=options.Clock(monotonic=clock)
+                ),
+            ) as api:
                 record(lines, label, lambda api=api: outcome(api.retry.with_response.get_vendor))
             lines.append(
                 f"    delays={tuple(hook.delays)!r} expected={expected!r} match={tuple(hook.delays) == expected}"
@@ -590,24 +579,36 @@ def _retention_boundaries(package: ModuleType, options: ModuleType, lines: list[
             )
             exchange.responders.clear()
             exchange.respond(_response(503), _response(200))
-            with ExitStack() as stack:
-                for name in ("client", "logical", "timing", "transports", "events"):
-                    module = importlib.import_module(f"{package.__name__}._runtime.client.{name}")
-                    stack.enter_context(patch.object(module, "monotonic", clock))
-                api = stack.enter_context(
-                    package.Client(
-                        http_client=native,
-                        options=options.ClientOptions(
-                            retry=options.RetryOptions(initial_delay=2, jitter="none"),
-                            hooks=(hook,),
-                            idempotency_key=key,
-                        ),
-                    )
-                )
+            with package.Client(
+                http_client=native,
+                options=options.ClientOptions(
+                    retry=options.RetryOptions(initial_delay=2, jitter="none"),
+                    hooks=(hook,),
+                    idempotency_key=key,
+                    clock=options.Clock(monotonic=clock),
+                ),
+            ) as api:
                 record(
                     lines, label, lambda api=api: outcome(lambda: api.retry.with_response.post_keyed(body=b"payload"))
                 )
             lines.append(f"    delays={tuple(hook.delays)!r} unused={len(exchange.responders)}")
+
+
+def _frozen(options: ModuleType) -> object:
+    """Return options whose clock never moves, so each retry waits as long in real time as its policy chose."""
+    return options.ClientOptions(
+        retry=options.RetryOptions(initial_delay=0.05, jitter="none"),
+        total_timeout=5,
+        clock=options.Clock(monotonic=lambda: 1000.0),
+    )
+
+
+def _frozen_retries(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    exchange = Exchange(lines)
+    with exchange.client() as native, package.Client(http_client=native, options=_frozen(options)) as api:
+        exchange.respond(_response(503), _response(503), _response(200))
+        response = record(lines, "retries on a frozen clock", api.retry.with_response.get_safe)
+        lines.append(f"    attempts={getattr(getattr(response, 'info', None), 'resource_attempt_count', None)}")
 
 
 async def _async(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
@@ -626,6 +627,10 @@ async def _async(package: ModuleType, options: ModuleType, lines: list[str]) -> 
         counts = tuple(getattr(info, name, None) for name in ("resource_attempt_count", "network_send_count"))
         lines.append(f"    counts={counts!r} events={events.values!r}")
         events.values.clear()
+        async with package.AsyncClient(http_client=native, options=_frozen(options)) as frozen:
+            exchange.respond(_response(503), _response(503), _response(200))
+            response = await arecord(lines, "async retries on a frozen clock", frozen.retry.with_response.get_safe)
+            lines.append(f"    attempts={getattr(getattr(response, 'info', None), 'resource_attempt_count', None)}")
         exchange.respond(
             lambda request: _response(503, (("X-Observed-Key", request.headers.get("Idempotency-Key", "")),))(request),
             _response(200),
@@ -654,4 +659,5 @@ def retry_policy(package: ModuleType, lines: list[str]) -> None:
     _bodies(package, options, lines)
     _timing(package, options, lines)
     _retention_boundaries(package, options, lines)
+    _frozen_retries(package, options, lines)
     run(lambda: _async(package, options, lines))

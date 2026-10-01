@@ -6,6 +6,8 @@ normalized metadata. Selectors and request targets are the runtime records gener
 
 from __future__ import annotations
 
+import keyword
+import re
 from collections import deque
 from collections.abc import Mapping
 from dataclasses import dataclass, field, fields
@@ -37,6 +39,8 @@ __all__ = (
     "BatchHelper",
     "BatchMember",
     "Binding",
+    "CacheHelper",
+    "CacheMutation",
     "Continuation",
     "Converter",
     "CountContinuation",
@@ -53,12 +57,14 @@ __all__ = (
     "IdCorrelation",
     "ImmediateResult",
     "InlineResult",
+    "LengthCompletion",
     "Link",
     "LinkContinuation",
     "LiteralValue",
     "NextUrlContinuation",
     "NoResult",
     "NoSignature",
+    "OperationCompletion",
     "OperationResult",
     "PaginationHelper",
     "PollInterval",
@@ -67,6 +73,7 @@ __all__ = (
     "ProtocolConfiguration",
     "PublicKeySignature",
     "RemoteCancel",
+    "ResumableUploadHelper",
     "SignedLiteral",
     "Source",
     "SourceValue",
@@ -76,6 +83,12 @@ __all__ = (
     "StreamResume",
     "TimestampHeader",
     "Tree",
+    "UploadAbort",
+    "UploadAppend",
+    "UploadCreate",
+    "UploadProbe",
+    "WebSocketHelper",
+    "WebSocketMessage",
     "WebhookHelper",
     "load_protocols",
     "project",
@@ -103,7 +116,7 @@ KINDS: Final = (
     "batch",
     "queue",
 )
-_LATER: Final = frozenset({"websocket", "cache", "resumable_upload", "queue"})
+_LATER: Final = frozenset({"queue"})
 _HMAC_SIGNATURES: Final = ("hmac-sha256", "hmac-sha512")
 _PUBLIC_KEY_SIGNATURES: Final = ("ed25519", "rsa-pss-sha256")
 _SIGNATURES: Final = (*_HMAC_SIGNATURES, *_PUBLIC_KEY_SIGNATURES)
@@ -115,13 +128,16 @@ _ENCODINGS: Final = {
 }
 _FACTS: Final = ("timestamp", "delivery-id")
 _SOURCES: Final = ("input", "initial", "previous")
-_BRACKETED: Final = frozenset({"helpers", "mapping", "error_events"})
+_BRACKETED: Final = frozenset({"helpers", "mapping", "error_events", "mutations"})
 _KEYS: Final = {"from_": "from"}
 _ROOT: Final = "protocols"
 _MERGE: Final = "tag:yaml.org,2002:merge"
 _EMPTY_STRING: Final = {"kind": "value", "value": ""}
 _STATE_SETS: Final = ("pending", "succeeded", "failed", "cancelled")
+_FRAMES: Final = {"json": None, "utf8": "text", "bytes": "binary"}
 _MAX_DEPTH: Final = 64
+_VALIDATOR_KINDS: Final = ("etag", "last_modified", "both")
+_TAG: Final = re.compile(r"(?:[^{}]|\{[^{}]+\})+")
 
 
 class _Mark(Enum):
@@ -477,6 +493,139 @@ class WebhookHelper:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class WebSocketMessage:
+    """How the messages of one direction are coded: JSON by a schema, UTF-8 text, or bytes, and in which frames.
+
+    The frame defaults to text for JSON and UTF-8 text, and to binary for bytes.
+    """
+
+    codec: Literal["json", "utf8", "bytes"]
+    schema: SchemaRef | None = None
+    frame: Literal["text", "binary"] | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class WebSocketHelper:
+    """Open a WebSocket through an operation's handshake, and send and receive typed messages on it.
+
+    The operation is a GET without a request body; the subprotocols are offered in order, one of which the server must
+    select when any is offered, and compression permits the caller's deflate.
+    """
+
+    kind: ClassVar[Literal["websocket"]] = "websocket"
+
+    operation: OperationSelector
+    send: WebSocketMessage
+    receive: WebSocketMessage
+    subprotocols: tuple[str, ...] = ()
+    compression: bool = False
+    enabled: bool = True
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CacheMutation:
+    """An operation whose explicit wrapper invalidates the cache entries its tags name after it succeeds."""
+
+    operation: OperationSelector
+    invalidate_tags: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CacheHelper:
+    """Fetch one operation's responses through a private cache that revalidates stale entries with their validator.
+
+    A tag is literal text whose braces each name a required path or query parameter of the operation it renders for.
+    """
+
+    kind: ClassVar[Literal["cache"]] = "cache"
+
+    operation: OperationSelector
+    validator: Literal["etag", "last_modified", "both"]
+    authenticated: bool
+    statuses: tuple[int, ...] = (200,)
+    vary_allowlist: tuple[str, ...] = ()
+    tags: tuple[str, ...] = ()
+    mutations: Mapping[str, CacheMutation] = field(default_factory=lambda: MappingProxyType({}))
+    enabled: bool = True
+
+    def __post_init__(self) -> None:
+        """Keep a read-only copy of the mutations."""
+        object.__setattr__(self, "mutations", _frozen(self.mutations))
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class UploadCreate:
+    """The operation that starts an upload, where it writes the content's size, and what its response gives."""
+
+    operation: OperationSelector
+    size: RequestTarget | None = None
+    session_url: Selector | None = None
+    expires_at: Selector | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class UploadProbe:
+    """The operation that reads the server's offset of an upload."""
+
+    operation: OperationSelector
+    remote_offset: Selector
+    bindings: tuple[Binding, ...] = ()
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class UploadAppend:
+    """The operation that appends one chunk, and where it writes the chunk's offset and length."""
+
+    operation: OperationSelector
+    offset: RequestTarget
+    length: RequestTarget | None = None
+    bindings: tuple[Binding, ...] = ()
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class LengthCompletion:
+    """Complete an upload once the server holds every byte."""
+
+    kind: ClassVar[Literal["length"]] = "length"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class OperationCompletion:
+    """Complete an upload with an operation, whose response is the upload's result."""
+
+    kind: ClassVar[Literal["operation"]] = "operation"
+
+    operation: OperationSelector
+    result_schema: SchemaRef
+    bindings: tuple[Binding, ...] = ()
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class UploadAbort:
+    """The operation that aborts an upload remotely."""
+
+    operation: OperationSelector
+    bindings: tuple[Binding, ...] = ()
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ResumableUploadHelper:
+    """Upload content in chunks the server confirms, resuming from its confirmed offset."""
+
+    kind: ClassVar[Literal["resumable_upload"]] = "resumable_upload"
+
+    profile: Literal["offset", "parts"]
+    create: UploadCreate
+    probe: UploadProbe
+    append: UploadAppend
+    max_chunk_bytes: int
+    partial_commit: Literal["allowed", "forbidden"]
+    completion: LengthCompletion | OperationCompletion
+    abort: UploadAbort | None = None
+    enabled: bool = True
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class BatchMember:
     """The member of each batch result item that carries its success or error value, and that value's schema."""
 
@@ -520,7 +669,16 @@ class BatchHelper:
     enabled: bool = True
 
 
-HelperDefinition: TypeAlias = PaginationHelper | PollingHelper | StreamHelper | WebhookHelper | BatchHelper
+HelperDefinition: TypeAlias = (
+    PaginationHelper
+    | PollingHelper
+    | StreamHelper
+    | WebhookHelper
+    | WebSocketHelper
+    | CacheHelper
+    | ResumableUploadHelper
+    | BatchHelper
+)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -565,6 +723,17 @@ _RECORDS: Final = frozenset({
     AdapterSignature,
     NoSignature,
     WebhookHelper,
+    WebSocketMessage,
+    WebSocketHelper,
+    CacheMutation,
+    CacheHelper,
+    UploadCreate,
+    UploadProbe,
+    UploadAppend,
+    LengthCompletion,
+    OperationCompletion,
+    UploadAbort,
+    ResumableUploadHelper,
     BatchMember,
     PositionCorrelation,
     IdCorrelation,
@@ -582,6 +751,7 @@ _ROLES: Final[Mapping[tuple[type, str], str]] = {
     (StreamHelper, "error_events"): "mapping",
     (HmacSignature, "field_constraints"): "mapping",
     (PublicKeySignature, "field_constraints"): "mapping",
+    (CacheHelper, "mutations"): "mapping",
     (ProtocolConfiguration, "helpers"): "mapping",
 }
 
@@ -1123,7 +1293,7 @@ class _Validator:  # noqa: PLR0904
                 helpers.append(helper)
         return tuple(helpers)
 
-    def helper(self, name: str, value: object, at: str) -> Helper | None:
+    def helper(self, name: str, value: object, at: str) -> Helper | None:  # noqa: PLR0912
         """Validate one helper; kinds of later stages are refused without reading their settings."""
         if not isinstance(value, Mapping):
             self.value(at, f"{at} must be a helper definition")
@@ -1146,6 +1316,12 @@ class _Validator:  # noqa: PLR0904
                 tree = self.polling(value, at)
             case "webhook":
                 tree = self.webhook(value, at)
+            case "websocket":
+                tree = self.websocket(value, at)
+            case "cache":
+                tree = self.cache(value, at)
+            case "resumable_upload":
+                tree = self.upload(value, at, name)
             case "batch":
                 tree = self.batch(value, at)
             case _:
@@ -1288,6 +1464,67 @@ class _Validator:  # noqa: PLR0904
         }
         return self.record(value, at, spec, "an immediate result")
 
+    def upload(self, value: Mapping[object, object], at: str, name: str) -> Tree | _Invalid:
+        """Convert a resumable upload helper of the offset profile; the parts profile is not supported yet."""
+        if value.get("profile") == "parts":
+            message = f"The parts profile of the resumable_upload helper {name!r} is not supported yet"
+            self.problems.append(_unsupported(f"{at}.profile", message))
+            return INVALID
+        return self.record(
+            value,
+            at,
+            {
+                "kind": (_keep, REQUIRED),
+                "enabled": (self.boolean, True),
+                "profile": (self.choice("offset"), REQUIRED),
+                "create": (self.upload_create, REQUIRED),
+                "probe": (self.upload_probe, REQUIRED),
+                "append": (self.upload_append, REQUIRED),
+                "max_chunk_bytes": (self.positive, REQUIRED),
+                "partial_commit": (self.choice("allowed", "forbidden"), REQUIRED),
+                "completion": (self.upload_completion, REQUIRED),
+                "abort": (self.remote_cancel, OMITTED),
+            },
+            "a helper definition",
+        )
+
+    def upload_create(self, value: object, at: str) -> object:
+        spec: Spec = {
+            "operation": (self.operation, REQUIRED),
+            "size": (self.target, OMITTED),
+            "session_url": (self.selector, OMITTED),
+            "expires_at": (self.selector, OMITTED),
+        }
+        return self.record(value, at, spec, "an upload create")
+
+    def upload_probe(self, value: object, at: str) -> object:
+        spec: Spec = {
+            "operation": (self.operation, REQUIRED),
+            "bindings": (self.bindings, ()),
+            "remote_offset": (self.selector, REQUIRED),
+        }
+        return self.record(value, at, spec, "an upload probe")
+
+    def upload_append(self, value: object, at: str) -> object:
+        spec: Spec = {
+            "operation": (self.operation, REQUIRED),
+            "bindings": (self.bindings, ()),
+            "offset": (self.target, REQUIRED),
+            "length": (self.target, OMITTED),
+        }
+        return self.record(value, at, spec, "an upload append")
+
+    def upload_completion(self, value: object, at: str) -> object:
+        variants: dict[str, Spec] = {
+            "length": {},
+            "operation": {
+                "operation": (self.operation, REQUIRED),
+                "bindings": (self.bindings, ()),
+                "result_schema": (self.schema, REQUIRED),
+            },
+        }
+        return self.tagged(value, at, "kind", variants, "a completion")
+
     def stream(self, value: object, at: str, *, sse: bool) -> Tree | _Invalid:
         """Convert an SSE or NDJSON helper, refusing raw and error events without a discriminator."""
         final: Spec = {} if sse else {"final_line": (self.choice("require_newline", "allow_eof"), REQUIRED)}
@@ -1393,6 +1630,104 @@ class _Validator:  # noqa: PLR0904
     def reasons(self, value: object, at: str) -> object:
         reasons = self.items(value, at, self.choice("transport_interruption", "incomplete_eof"), nonempty=True)
         return self.distinct(at, reasons, "a reconnect reason")
+
+    def websocket(self, value: object, at: str) -> Tree | _Invalid:
+        return self.record(
+            value,
+            at,
+            {
+                "kind": (_keep, REQUIRED),
+                "enabled": (self.boolean, True),
+                "operation": (self.operation, REQUIRED),
+                "subprotocols": (self.subprotocols, ()),
+                "compression": (self.boolean, False),
+                "send": (self.message, REQUIRED),
+                "receive": (self.message, REQUIRED),
+            },
+            "a helper definition",
+        )
+
+    def subprotocols(self, value: object, at: str) -> object:
+        def subprotocol(item: object, where: str) -> object:
+            return item if token(item) else self.value(where, f"{where} must be a subprotocol token")
+
+        return self.distinct(at, self.items(value, at, subprotocol), "a subprotocol")
+
+    def message(self, value: object, at: str) -> object:
+        """Convert a message definition, giving it the frame its codec defaults to and refusing a mismatched one."""
+        spec: Spec = {
+            "codec": (self.choice(*_FRAMES), REQUIRED),
+            "frame": (self.choice("text", "binary"), OMITTED),
+            "schema": (self.schema, OMITTED),
+        }
+        if (message := self.record(value, at, spec, "a message definition")) is INVALID:
+            return INVALID
+        codec, fixed = message["codec"], _FRAMES[message["codec"]]
+        if (codec == "json") != ("schema" in message):
+            where = f"{at}.schema"
+            if codec == "json":
+                return self.value(where, f"{at} needs 'schema' for JSON messages")
+            self.conflict(where, f"{where} applies only to JSON messages")
+            return INVALID
+        frame = message.setdefault("frame", fixed or "text")
+        if fixed is not None and frame != fixed:
+            self.conflict(f"{at}.frame", f"{at}.frame must be {fixed!r} for {codec} messages")
+            return INVALID
+        return message
+
+    def cache(self, value: object, at: str) -> Tree | _Invalid:
+        return self.record(
+            value,
+            at,
+            {
+                "kind": (_keep, REQUIRED),
+                "enabled": (self.boolean, True),
+                "operation": (self.operation, REQUIRED),
+                "validator": (self.choice(*_VALIDATOR_KINDS), REQUIRED),
+                "authenticated": (self.boolean, REQUIRED),
+                "statuses": (self.statuses, [200]),
+                "vary_allowlist": (self.vary_names, []),
+                "tags": (self.tags, []),
+                "mutations": (self.mutations, {}),
+            },
+            "a helper definition",
+        )
+
+    def vary_names(self, value: object, at: str) -> object:
+        """Convert Vary header names, refusing `*` and a name repeated in another case."""
+        names = self.items(value, at, self.vary_name)
+        seen: set[str] = set()
+        for index, name in enumerate(names if isinstance(names, list) else ()):
+            if (folded := name.lower()) in seen:
+                return self.value(f"{at}[{index}]", f"{at}[{index}] repeats a header name")
+            seen.add(folded)
+        return names
+
+    def vary_name(self, value: object, at: str) -> object:
+        return self.value(at, f"{at} must name a header, not '*'") if value == "*" else self.header(value, at)
+
+    def tags(self, value: object, at: str, *, nonempty: bool = False) -> object:
+        return self.distinct(at, self.items(value, at, self.tag, nonempty=nonempty), "a tag")
+
+    def tag(self, value: object, at: str) -> object:
+        valid = isinstance(value, str) and _encodable(value) and _TAG.fullmatch(value) is not None
+        return value if valid else self.value(at, f"{at} must be nonempty text whose braces each name a parameter")
+
+    def mutations(self, value: object, at: str) -> object:
+        """Convert the mutations by their method names: public Python identifiers that are not keywords."""
+        if not isinstance(value, Mapping):
+            return self.value(at, f"{at} must be a mapping")
+        spec: Spec = {
+            "operation": (self.operation, REQUIRED),
+            "invalidate_tags": (partial(self.tags, nonempty=True), REQUIRED),
+        }
+        mutations: dict[str, object] = {}
+        for name, item in value.items():
+            if isinstance(name, str) and name.isidentifier() and not keyword.iskeyword(name) and name[0] != "_":
+                mutations[name] = self.record(item, f"{at}[{name!r}]", spec, "a mutation")
+            else:
+                mutations[""] = self.value(at, f"{at} has the key {name!r}, which is not a public method name")
+        return INVALID if any(item is INVALID for item in mutations.values()) else mutations
 
     def batch(self, value: object, at: str) -> Tree | _Invalid:
         """Convert a batch helper, refusing one member read as both outcomes."""
@@ -1624,6 +1959,14 @@ def _links(kind: str, tree: Tree, at: str) -> Iterator[Link]:
                 ref=tree["operation"],
                 targets=((f"{at}.request_items", tree["request_items"]),),
             )
+        case "websocket":
+            yield Link(at=f"{at}.operation", ref=tree["operation"])
+        case "cache":
+            yield Link(at=f"{at}.operation", ref=tree["operation"])
+            for name, mutation in tree["mutations"].items():
+                yield Link(at=f"{at}.mutations[{name!r}].operation", ref=mutation["operation"])
+        case "resumable_upload":
+            yield from _upload_links(tree, at)
         case "polling":
             yield Link(at=f"{at}.create", ref=tree["create"])
             yield Link(at=f"{at}.poll", ref=tree["poll"], targets=_targets(tree["bindings"], f"{at}.bindings"))
@@ -1641,3 +1984,27 @@ def _links(kind: str, tree: Tree, at: str) -> Iterator[Link]:
                 where = f"{at}.resume"
                 targets = ((f"{where}.write", resume["write"]), *_targets(resume["bindings"], f"{where}.bindings"))
                 yield Link(at=f"{where}.reopen_operation", ref=resume["reopen_operation"], targets=targets)
+
+
+def _upload_links(tree: Tree, at: str) -> Iterator[Link]:
+    """Yield the operations an upload helper sends, its create operation first, with the targets each one takes."""
+    create = tree["create"]
+    sized = ((f"{at}.create.size", create["size"]),) if "size" in create else ()
+    yield Link(at=f"{at}.create.operation", ref=create["operation"], targets=sized)
+    probe = tree["probe"]
+    yield Link(
+        at=f"{at}.probe.operation", ref=probe["operation"], targets=_targets(probe["bindings"], f"{at}.probe.bindings")
+    )
+    append = tree["append"]
+    written = tuple((f"{at}.append.{name}", append[name]) for name in ("offset", "length") if name in append)
+    yield Link(
+        at=f"{at}.append.operation",
+        ref=append["operation"],
+        targets=(*written, *_targets(append["bindings"], f"{at}.append.bindings")),
+    )
+    for name in ("completion", "abort"):
+        if (part := tree.get(name)) is not None and "operation" in part:
+            where = f"{at}.{name}"
+            yield Link(
+                at=f"{where}.operation", ref=part["operation"], targets=_targets(part["bindings"], f"{where}.bindings")
+            )

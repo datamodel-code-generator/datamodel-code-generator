@@ -786,7 +786,7 @@ def plan_pagination(
 ) -> tuple[tuple[PaginationSpec, ...], dict[str, list[Diagnostic]]]:
     """Plan every enabled pagination helper, returning the planned ones and each checked helper's problems.
 
-    Helpers of other kinds are left to the caller, which refuses them.
+    Helpers of other kinds have planners of their own.
     """
     if protocols is None:
         return (), {}

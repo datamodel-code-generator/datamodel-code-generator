@@ -9,7 +9,7 @@ from models import Report as _dcg_type_0
 
 from .. import _operations
 from .._runtime.protocols.pagination import PageBinding
-from .._runtime.protocols.polling import PollingPlan
+from .._runtime.protocols.polling import CancelPlan, PollingPlan
 from .._runtime.protocols.records import (
     BodySelector,
     BodyTarget,
@@ -19,8 +19,17 @@ from .._runtime.protocols.records import (
     StatusSelector,
 )
 from .._runtime.protocols.references import OperationRef
-from ..types.exports import ExportStatusResponse, StartExportResponse
-from ..types.jobs import CreateJobResponse, GetJobResponse, GetReportResponse
+from ..types.exports import (
+    CancelExportsResponse,
+    ExportStatusResponse,
+    StartExportResponse,
+)
+from ..types.jobs import (
+    CancelJobResponse,
+    CreateJobResponse,
+    GetJobResponse,
+    GetReportResponse,
+)
 from ..types.reports import FindReportResponse, LatestReportResponse
 
 PLAN_0: Final[PollingPlan[GetReportResponse, GetJobResponse, CreateJobResponse]] = PollingPlan(
@@ -35,7 +44,7 @@ PLAN_0: Final[PollingPlan[GetReportResponse, GetJobResponse, CreateJobResponse]]
     succeeded=('done',),
     failed=('failed',),
     cancelled=('cancelled',),
-    fingerprint='a62326d9ef225ed1d1ddb212f47352625f415f7b3b228b412a1dd764cdb5ee62',
+    fingerprint='bb2aabfb97bda394960302b7bcf50e56f249be6f3cf8da4fedfcf12aeac35654',
     bindings=(
         PageBinding(
             target=ParameterTarget(location='path', name='jobId'),
@@ -49,7 +58,7 @@ PLAN_0: Final[PollingPlan[GetReportResponse, GetJobResponse, CreateJobResponse]]
         ),
     ),
     fetch_operation=OperationRef(pointer='/paths/~1jobs~1{jobId}~1report/get'),
-    fetch=_operations.OPERATION_2,
+    fetch=_operations.OPERATION_3,
     fetch_bindings=(
         PageBinding(
             target=ParameterTarget(location='path', name='jobId'),
@@ -82,7 +91,7 @@ PLAN_1: Final[PollingPlan[_dcg_type_0, GetJobResponse, CreateJobResponse]] = Pol
     state=HeaderSelector(name='X-State'),
     pending=('pending',),
     succeeded=('done',),
-    fingerprint='7ac87f1c03a196f14971de567207e37bc4f7895fc8dd48f99ff699a16490eded',
+    fingerprint='9bd57b6e06ad3ad2835714a582ee3d690824cc1af861bbb965c0822a1dc39581',
     bindings=(
         PageBinding(
             target=ParameterTarget(location='path', name='jobId'),
@@ -113,7 +122,7 @@ PLAN_2: Final[PollingPlan[FindReportResponse, GetJobResponse, CreateJobResponse]
     state=BodySelector(pointer='/status'),
     pending=('queued',),
     succeeded=('done',),
-    fingerprint='3427fd0978f3ad540c325e1bb992ba88647f036130eed77484ef0a91d7184304',
+    fingerprint='2111d549b92439d14e3774232a2de81bcac29e6399d7a6829bf3db6981879264',
     bindings=(
         PageBinding(
             target=ParameterTarget(location='path', name='jobId'),
@@ -127,7 +136,7 @@ PLAN_2: Final[PollingPlan[FindReportResponse, GetJobResponse, CreateJobResponse]
         ),
     ),
     fetch_operation=OperationRef(pointer='/paths/~1reports/post'),
-    fetch=_operations.OPERATION_3,
+    fetch=_operations.OPERATION_4,
     fetch_bindings=(
         PageBinding(
             target=BodyTarget(pointer='/job'),
@@ -139,18 +148,24 @@ PLAN_2: Final[PollingPlan[FindReportResponse, GetJobResponse, CreateJobResponse]
 )
 
 
+CANCEL_3: Final[CancelPlan[CancelExportsResponse]] = CancelPlan(
+    operation=OperationRef(pointer='/paths/~1exports/delete'),
+    call=_operations.OPERATION_7,
+)
+
+
 PLAN_3: Final[PollingPlan[None, ExportStatusResponse, StartExportResponse]] = PollingPlan(
     helper_id='exports.run',
     operation=OperationRef(pointer='/paths/~1exports/post'),
-    create=_operations.OPERATION_5,
+    create=_operations.OPERATION_6,
     accepted=(202,),
     poll_operation=OperationRef(pointer='/paths/~1exports~1status/get'),
-    poll=_operations.OPERATION_6,
+    poll=_operations.OPERATION_8,
     state=BodySelector(pointer='/state'),
     pending=(0,),
     succeeded=(1,),
     failed=(2,),
-    fingerprint='6c6d9cecf9ad8eaabdae0d3229bf826d067c74a6660349e79ef765695e67d6d6',
+    fingerprint='5543014b8af1fb331a0882734ea4df99f5a320c71e03002920c0a79831ef8ebe',
     bindings=(
         PageBinding(
             target=QuerystringTarget(name='criteria', pointer='/id'),
@@ -159,21 +174,72 @@ PLAN_3: Final[PollingPlan[None, ExportStatusResponse, StartExportResponse]] = Po
         ),
     ),
     interval=1.0,
+    cancel=CANCEL_3,
 )
 
 
 PLAN_4: Final[PollingPlan[LatestReportResponse, ExportStatusResponse, StartExportResponse]] = PollingPlan(
     helper_id='exports.latest',
     operation=OperationRef(pointer='/paths/~1exports/post'),
-    create=_operations.OPERATION_5,
+    create=_operations.OPERATION_6,
     accepted=(202,),
     poll_operation=OperationRef(pointer='/paths/~1exports~1status/get'),
-    poll=_operations.OPERATION_6,
+    poll=_operations.OPERATION_8,
     state=BodySelector(pointer='/state'),
     pending=(0,),
     succeeded=(1,),
     fingerprint='1fa514fef220c92b2b8ea0723a22f8d01a4d38a7676f7acf036550c0614b9141',
     fetch_operation=OperationRef(pointer='/paths/~1reports~1latest/get'),
-    fetch=_operations.OPERATION_4,
+    fetch=_operations.OPERATION_5,
     interval=1.0,
+)
+
+
+def _result_5(data: GetJobResponse) -> _dcg_type_0 | None:
+    """Return the result of jobs.tracked in its final poll."""
+    return data.get('result')
+
+
+CANCEL_5: Final[CancelPlan[CancelJobResponse]] = CancelPlan(
+    operation=OperationRef(pointer='/paths/~1jobs~1{jobId}/delete'),
+    call=_operations.OPERATION_2,
+    bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='jobId'),
+            source='previous',
+            selector=BodySelector(pointer='/id'),
+        ),
+        PageBinding(
+            target=ParameterTarget(location='header', name='X-Reason'),
+            literal='requested',
+        ),
+    ),
+)
+
+
+PLAN_5: Final[PollingPlan[_dcg_type_0, GetJobResponse, CreateJobResponse]] = PollingPlan(
+    helper_id='jobs.tracked',
+    operation=OperationRef(pointer='/paths/~1jobs/post'),
+    create=_operations.OPERATION_0,
+    accepted=(202,),
+    poll_operation=OperationRef(pointer='/paths/~1jobs~1{jobId}/get'),
+    poll=_operations.OPERATION_1,
+    state=BodySelector(pointer='/status'),
+    pending=('queued', 'running'),
+    succeeded=('done',),
+    failed=('failed',),
+    cancelled=('cancelled',),
+    fingerprint='f1bc9eaee96465f7763d99297a449dfc001f22c64d5d6405ec8273b0c0cb1b08',
+    bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='jobId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+    ),
+    inline=_result_5,
+    inline_selector=BodySelector(pointer='/result'),
+    interval=1.0,
+    cancel=CANCEL_5,
+    expires_at=BodySelector(pointer='/expires'),
 )
