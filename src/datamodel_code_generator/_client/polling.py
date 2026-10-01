@@ -17,6 +17,7 @@ from datamodel_code_generator._client.pagination import (
     _fits,
     _json_type,
     _label,
+    _listed,
     _overlaps,
     _page_use,
     _Pages,
@@ -53,6 +54,7 @@ class PollingSpec:
     `create_uses` are the uses of the create operation's success media. An inline result is read from the final poll
     by `steps` and has the type `value`; a fetched one is the response of `fetch`, whose use is `fetch_use`; a helper
     without a result gives None. `immediate` reads the result from a create response with an immediate status.
+    `cancel` is the operation of a declared remote cancellation, whose success media have the uses `cancel_uses`.
     """
 
     helper: Helper
@@ -66,6 +68,8 @@ class PollingSpec:
     fetch_use: TypeUseBinding | None = None
     immediate: tuple[ItemStep, ...] | None = None
     schemas: tuple[Mapping[str, str], ...] = ()
+    cancel: OperationSpec | None = None
+    cancel_uses: tuple[TypeUseBinding, ...] = ()
 
     @property
     def result(self) -> Literal["inline", "operation", "none"]:
@@ -137,8 +141,9 @@ class _Polls:
         tree = helper.tree
         at = helper.at
         create, poll = self.spec(tree["create"]), self.spec(tree["poll"])
-        problems = list(self.unsupported(helper, create))
+        problems: list[Diagnostic] = []
         created = self.created(helper, create, problems)
+        problems.extend(self.expiry(helper, created))
         successes = [response for response in poll.responses if response.success]
         page = _page_use(successes)
         if page is None or (binding := self.model(successes[0])) is None:
@@ -151,6 +156,7 @@ class _Polls:
         problems.extend(self.states(helper, polled))
         sources = {"initial": created, "previous": [*created, polled]}
         problems.extend(self.bindings(helper, poll, tree["bindings"], f"{at}.bindings", sources, "binding"))
+        cancel = self.cancel(helper, sources, problems)
         if (result := self.result(helper, polled, created, problems)) is None:
             return None, problems
         immediate = self.immediate(helper, create, result, problems)
@@ -175,16 +181,47 @@ class _Polls:
             fetch_use=result.fetch_use,
             immediate=None if immediate is None else immediate[0],
             schemas=schemas,
+            cancel=cancel,
+            cancel_uses=()
+            if cancel is None
+            else tuple(
+                use
+                for response in cancel.responses
+                if response.success
+                for media in response.media
+                if (use := media.use) is not None
+            ),
         ), problems
 
-    @staticmethod
-    def unsupported(helper: Helper, create: OperationSpec) -> Iterator[Diagnostic]:
-        """Refuse remote cancellation and server expiry, which later polling helpers add."""
-        tree = helper.tree
-        for key, what in (("remote_cancel", "remote cancellation"), ("expires_at", "a server expiry")):
-            if key in tree:
-                message = f"The polling helper {helper.name!r} declares {what}, which is not supported yet"
-                yield _problem("E_CLIENT_UNSUPPORTED", "target", f"{helper.at}.{key}", message, create)
+    def expiry(self, helper: Helper, created: list[_Source]) -> Iterator[Diagnostic]:
+        """Check that a declared server expiry reads strings from every accepted create response."""
+        if (read := helper.tree.get("expires_at")) is None or not created:
+            return
+        at = f"{helper.at}.expires_at"
+        if isinstance(types := self.read(helper, created, read, at, "expiry"), Diagnostic):
+            yield types
+        elif not _fits("string", types):
+            spec = created[0].spec
+            message = (
+                f"The expiry of {helper.name!r} reads {_listed(sorted(cast('frozenset[str]', types)))} values, where "
+                "only a string gives a date and time"
+            )
+            yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
+
+    def cancel(
+        self, helper: Helper, sources: Mapping[str, list[_Source]], problems: list[Diagnostic]
+    ) -> OperationSpec | None:
+        """Check a declared remote cancellation: a success response its receipt holds, and its bindings."""
+        if (declared := helper.tree.get("remote_cancel")) is None:
+            return None
+        at, spec = f"{helper.at}.remote_cancel", self.spec(declared["operation"])
+        if not any(response.success for response in spec.responses):
+            message = f"{_label(spec)} must declare a success response for the remote cancel of {helper.name!r}"
+            problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.operation", message, spec))
+            return None
+        found = list(self.bindings(helper, spec, declared["bindings"], f"{at}.bindings", sources, "cancel binding"))
+        problems.extend(found)
+        return None if found else spec
 
     def created(self, helper: Helper, create: OperationSpec, problems: list[Diagnostic]) -> list[_Source]:
         """Return the create responses the accepted statuses select, refusing a status no success response declares."""

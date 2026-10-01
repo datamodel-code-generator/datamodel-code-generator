@@ -1890,10 +1890,11 @@ class _Core(Generic[AdapterT, HandleT]):
         status_code: int,
         content_type: str | None,
         options: RequestOptions | None,
-    ) -> tuple[T, WireValue]:
-        """Decode a page a helper saved in a checkpoint as its response decoded it, without any other response metadata.
+    ) -> tuple[T, WireValue, ResponseInfo]:
+        """Decode a body a helper saved in a checkpoint as its response decoded it, without any other response metadata.
 
-        The page's response metadata is not saved, so it is decoded under its status and media type alone.
+        The response's metadata is not saved, so it is decoded under its status and media type alone, which the
+        returned metadata holds with an empty call identifier.
         """
         settings = self._call_settings(options, operation.operation_id)
         info = ResponseInfo(
@@ -1906,7 +1907,8 @@ class _Core(Generic[AdapterT, HandleT]):
             network_send_count=0,
             network_send_budget_used=0,
         )
-        return operation.responses.decode_page(info, content, native=settings.validation.response == "native")
+        data, wire = operation.responses.decode_page(info, content, native=settings.validation.response == "native")
+        return data, wire, info
 
     def _page_request(
         self,

@@ -39,13 +39,14 @@
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['jobs.run', 'jobs.inline', 'jobs.report', 'exports.run', 'exports.latest'] bindings 26
+  namespace client helpers ['jobs.run', 'jobs.inline', 'jobs.report', 'exports.run', 'exports.latest', 'jobs.tracked'] bindings 29
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper jobs.run polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.run a943ca67ec97491c696da165d6e802e0c78af8a3d2afaabb27e01fd9e9eeeff2
-  helper jobs.inline polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.inline dc705b7c1badda7115df7f7aa32701cab58513baf148d91bc1ebc372f47bc4d4
-  helper jobs.report polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.report 664bb20507a2441cf367665daf34032cf2623bb798ad6297de8f8b58964be6a2
-  helper exports.run polling enabled True /inputs/target_config/protocol_metadata/helpers/exports.run 09354f792932bcdff10da7b995e64203084b3fa468a9602a1f685c3a74a569d7
+  helper jobs.run polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.run 2e0cc6442a5beb0b2062cea227235fff449a35463c9d6ddf282636970913ae8d
+  helper jobs.inline polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.inline b9da289f57206d7679f31aae14d29c439fe9874402f9178ca2ddcf229d67fb3b
+  helper jobs.report polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.report 1d888fa473c3e1fdcaeb645decddf49308f3ae28e9041f9f270173d3f95d53c4
+  helper exports.run polling enabled True /inputs/target_config/protocol_metadata/helpers/exports.run 3cb0a7fde598de4f1e4268c4972482be05b9a30b615abb36efa57ce343d02332
   helper exports.latest polling enabled True /inputs/target_config/protocol_metadata/helpers/exports.latest 8af6aaa3a5a2b58764ef418ce70c6fa4743d1b83f27442492c695940d05bd661
+  helper jobs.tracked polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.tracked d89817adedd7347168c49a161435c16883d60f0a290dfeb988c89058bfa12232
   {
     "helpers": {
       "exports.latest": {
@@ -129,6 +130,13 @@
         "poll": {
           "document": "/inputs/root",
           "pointer": "/paths/~1exports~1status/get"
+        },
+        "remote_cancel": {
+          "bindings": [],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1exports/delete"
+          }
         },
         "result": {
           "kind": "none"
@@ -386,6 +394,102 @@
         "succeeded": [
           "done"
         ]
+      },
+      "jobs.tracked": {
+        "accepted_statuses": [
+          202
+        ],
+        "bindings": [
+          {
+            "target": {
+              "in": "path",
+              "name": "jobId"
+            },
+            "value": {
+              "selector": {
+                "from": "body",
+                "pointer": "/id"
+              },
+              "source": "initial"
+            }
+          }
+        ],
+        "cancelled": [
+          "cancelled"
+        ],
+        "create": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs/post"
+        },
+        "enabled": true,
+        "expires_at": {
+          "from": "body",
+          "pointer": "/expires"
+        },
+        "failed": [
+          "failed"
+        ],
+        "interval": {
+          "retry_after_header": null,
+          "seconds": 1.0
+        },
+        "kind": "polling",
+        "pending": [
+          "queued",
+          "running"
+        ],
+        "poll": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs~1{jobId}/get"
+        },
+        "remote_cancel": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "jobId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "previous"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "X-Reason"
+              },
+              "value": {
+                "literal": "requested"
+              }
+            }
+          ],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1jobs~1{jobId}/delete"
+          }
+        },
+        "result": {
+          "kind": "inline",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Report"
+          },
+          "selector": {
+            "from": "body",
+            "pointer": "/result"
+          }
+        },
+        "state": {
+          "from": "body",
+          "pointer": "/status"
+        },
+        "succeeded": [
+          "done"
+        ]
       }
     },
     "schema_version": 1
@@ -396,25 +500,31 @@
   /selection/selected_operations/1 jobs.get_job(path:jobId=job_id, header:X-Trace=x_trace, query:verbose=verbose, query:since=since, cookie:session=session, header:X-Api-Key=x_api_key, query:api_key=api_key)
     exports client.types.jobs.GetJobResponse client.types.jobs.GetJobErrorData client.types.jobs.GetJobHTTPError
     exports client.types.jobs.GetJobRequestCodecs client.types.jobs.decode_get_job_header digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/2 jobs.get_report(path:jobId=job_id)
+  /selection/selected_operations/2 jobs.cancel_job(path:jobId=job_id, header:X-Reason=x_reason)
+    exports client.types.jobs.CancelJobResponse client.types.jobs.CancelJobErrorData client.types.jobs.CancelJobHTTPError
+    exports client.types.jobs.CancelJobRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/3 jobs.get_report(path:jobId=job_id)
     exports client.types.jobs.GetReportResponse client.types.jobs.GetReportErrorData client.types.jobs.GetReportHTTPError
     exports client.types.jobs.GetReportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/3 reports.find_report()
+  /selection/selected_operations/4 reports.find_report()
     exports client.types.reports.FindReportResponse client.types.reports.FindReportErrorData client.types.reports.FindReportHTTPError
     exports client.types.reports.FindReportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/4 reports.latest_report()
+  /selection/selected_operations/5 reports.latest_report()
     exports client.types.reports.LatestReportResponse client.types.reports.LatestReportErrorData client.types.reports.LatestReportHTTPError
     exports client.types.reports.LatestReportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/5 exports.start_export()
+  /selection/selected_operations/6 exports.start_export()
     exports client.types.exports.StartExportResponse client.types.exports.StartExportErrorData client.types.exports.StartExportHTTPError
     exports client.types.exports.StartExportRequestCodecs client.types.exports.decode_start_export_header digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/6 exports.export_status(querystring:criteria=criteria)
+  /selection/selected_operations/7 exports.cancel_exports()
+    exports client.types.exports.CancelExportsResponse client.types.exports.CancelExportsErrorData client.types.exports.CancelExportsHTTPError
+    exports client.types.exports.CancelExportsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/8 exports.export_status(querystring:criteria=criteria)
     exports client.types.exports.ExportStatusResponse client.types.exports.ExportStatusErrorData client.types.exports.ExportStatusHTTPError
     exports client.types.exports.ExportStatusRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/7 exports.find_export(querystring:filter=filter)
+  /selection/selected_operations/9 exports.find_export(querystring:filter=filter)
     exports client.types.exports.FindExportResponse client.types.exports.FindExportErrorData client.types.exports.FindExportHTTPError
     exports client.types.exports.FindExportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/8 reports.add_note()
+  /selection/selected_operations/10 reports.add_note()
     exports client.types.reports.AddNoteResponse client.types.reports.AddNoteErrorData client.types.reports.AddNoteHTTPError
     exports client.types.reports.AddNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
@@ -478,6 +588,17 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
     "auth_challenge_less_401": false
   },
   {
+    "operation": "jobs.cancel_job",
+    "method": "DELETE",
+    "path": "/jobs/{jobId}",
+    "retry_safety": "method_default",
+    "idempotency": null,
+    "retry_after_ms_header": null,
+    "should_retry_header": null,
+    "security": null,
+    "auth_challenge_less_401": false
+  },
+  {
     "operation": "jobs.get_report",
     "method": "GET",
     "path": "/jobs/{jobId}/report",
@@ -513,6 +634,17 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
   {
     "operation": "exports.start_export",
     "method": "POST",
+    "path": "/exports",
+    "retry_safety": "method_default",
+    "idempotency": null,
+    "retry_after_ms_header": null,
+    "should_retry_header": null,
+    "security": null,
+    "auth_challenge_less_401": false
+  },
+  {
+    "operation": "exports.cancel_exports",
+    "method": "DELETE",
     "path": "/exports",
     "retry_safety": "method_default",
     "idempotency": null,
@@ -562,7 +694,9 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
 `client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.
 A polling helper's `start` creates the operation and returns a handle: `status` polls it once and `wait` polls until
 it settles and returns its result, each poll after the wait the last response requires; `close` stops only local
-polling. See the runtime reference for their limits.
+polling. `resume` returns a handle continuing a handle's `checkpoint()` without creating the operation again, and a
+helper that declares a remote cancellation returns a handle whose `cancel_remote` sends it. See the runtime reference
+for their limits and checkpoints.
 
 ```json
 [
@@ -600,6 +734,13 @@ polling. See the runtime reference for their limits.
     "operation": "exports.start_export",
     "method": "POST",
     "path": "/exports"
+  },
+  {
+    "helper": "jobs.tracked",
+    "kind": "polling",
+    "operation": "jobs.create_job",
+    "method": "POST",
+    "path": "/jobs"
   }
 ]
 ```
@@ -781,12 +922,13 @@ wait for retained cleanup; it does not authorize another send or restore an expi
 
 ## Polling sessions
 
-A polling helper's `start` and the handle it returns are one session. The create call, every poll, and the result
-fetch are logical calls of their own, with their own retries, total timeout, and idempotency key; the session bounds
-all of them. Each limit comes from the call's options, then `ProtocolClientOptions.defaults` for the helper, then the
-default below. The session types are imported from:
+A polling helper's `start` and the handle it returns are one session. The create call, every poll, the result fetch,
+and a remote cancel are logical calls of their own, with their own retries, total timeout, and idempotency key; the
+session bounds all of them. Each limit comes from the call's options, then `ProtocolClientOptions.defaults` for the
+helper, then the default below. The session types are imported from:
 
-- `client.protocols`: `PollOptions`, `PollSnapshot`, `LroHandle`, and `AsyncLroHandle`
+- `client.protocols`: `PollOptions`, `PollSnapshot`, `CancelReceipt`, `LroHandle`, `AsyncLroHandle`,
+  and `ResumeState`
 - `client.options`: `SessionOptions`
 
 | Limit | Effective default |
@@ -813,3 +955,17 @@ the handle as it was: pending, so a later `status` or `wait` polls again without
 succeeded with its result fetch still due, which a later `wait` retries alone. `status` and `wait` at once raise
 `ProtocolStateError`, and so does every step after `close`, which stops only local polling. A call's options must not
 fix an idempotency key or patch a header or query parameter the helper writes.
+
+`checkpoint()` returns a `ResumeState` without sending, also after `close`: the phase, the polls so far, the wait left
+before the next poll or result fetch, the values the next requests write, and a settled operation's final poll and
+result bodies, never model objects, the session, or the call's options. The helper's `resume` is never awaited and
+returns a handle in a session of its own that sends nothing until `status` or `wait`; polls count on, while the
+session's timeout, deadline, and sends start afresh. It refuses another helper's state, one made under other security,
+an expired one, and one that does not fit the helper with `ResumeStateError` before sending. `PollWaitLimitError` and a
+`SessionLimitError` of a created operation keep a checkpoint as `resume_state`. A helper that declares
+`expires_at` reads the server's expiry, an RFC 3339 date-time with an offset or an HTTP date, from the accepted create
+response, and its checkpoints expire then.
+
+A helper that declares `remote_cancel` returns a handle of its own class whose `cancel_remote()` sends the cancel
+request once, while the operation is pending, and returns a `CancelReceipt` of its response. It does not change the
+handle, which keeps its last poll until it polls again; `close` sends nothing.
