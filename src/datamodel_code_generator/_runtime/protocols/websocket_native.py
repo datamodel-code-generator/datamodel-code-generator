@@ -384,9 +384,12 @@ class _Overdue(Exception):  # noqa: N818 - An internal signal, never raised to c
 
 
 def _fragments(data: bytes, deadline: Deadline | None, sent: list[int]) -> Iterator[bytes]:
-    """Yield a message's fragments, refusing the next one once the deadline passed, counting those handed over."""
+    """Yield a message's fragments, refusing each after the first once the deadline passed, counting those handed over.
+
+    The first fragment goes regardless, since the send checked the deadline before it began.
+    """
     for start in range(0, len(data), _FRAGMENT):
-        if deadline is not None and deadline.remaining() <= 0:
+        if start and deadline is not None and deadline.remaining() <= 0:
             raise _Overdue
         yield data[start : start + _FRAGMENT]
         sent[0] += 1

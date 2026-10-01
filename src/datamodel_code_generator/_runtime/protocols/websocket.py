@@ -689,6 +689,9 @@ class _Sockets(Generic[SendT, RecvT]):
             return error
         return None
 
+    def _checked(self) -> None:
+        self._call.check("stream", DeliveryState.RESPONSE_STARTED)
+
     def _state_error(self, action: str) -> ProtocolStateError:
         return self._stamped(ProtocolStateError(state=self._state.value, action=action))
 
@@ -957,9 +960,6 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
         """Return the call's check when a cancel token needs polling while waiting, or None."""
         return None if self._call.settings.cancel_token is None else self._checked
 
-    def _checked(self) -> None:
-        self._call.check("stream", DeliveryState.RESPONSE_STARTED)
-
     def send(self, value: SendT) -> None:
         """Send one message after the earlier sends, within the send timeout; a message that may have gone is final."""
         data, text = self._payload(value)
@@ -1136,6 +1136,11 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
             raise (self._unsent() if self._capped(error, cap) else self._own(error)) from None
         try:
             self._usable("send")
+            self._checked()
+        except BaseException:
+            self._queue.release()
+            raise
+        try:
             await lane.bounded(
                 lambda: self._connection.send(data, text=text, deadline=cap),
                 phase="stream",

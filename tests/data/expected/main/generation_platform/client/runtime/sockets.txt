@@ -230,6 +230,9 @@
   async ping once the server closed unread ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', code=1000, clean=True) [operation_id='feedSocket'] web_socket_closed_error
   async cancelled receive ! RequestCancelledError: RequestCancelledError(operation_id='roomSocket', call_id='<call>', source='cancel_token', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | no close
+  async send after the cancellation ! RequestCancelledError: RequestCancelledError(operation_id='roomSocket', call_id='<call>', source='cancel_token', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
+    async session after the unsent send AsyncWebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2') sent 0
+    server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1000 ''
   async receive cancelled by its task CancelledError AsyncWebSocketSession(helper_id='feed.text', state='open', subprotocol=None)
   async receive past wait_for ! TimeoutError:  []
   async send after the cancelled receives = None
