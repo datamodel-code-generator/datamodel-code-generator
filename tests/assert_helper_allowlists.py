@@ -14,7 +14,6 @@ JUSTIFIED_VIOLATIONS: dict[str, tuple[str, ...]] = {
     "client-coordinator": (
         "private-import:tests/data/python/client_generation.py",
         "private-import:tests/data/python/client_protocol_records.py",
-        "private-import:tests/data/python/client_runtime.py",
         "private-import:tests/data/python/client_typing.py",
     ),
     "comparison-reports": (
