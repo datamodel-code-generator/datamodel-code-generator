@@ -1,0 +1,346 @@
+# queues pydantic_v2.BaseModel
+enqueue
+  create = receipt e1 pending ttl=1:00:00
+  refresh = receipt e2 pending ttl=1 day, 0:00:00
+  saved payload {"arguments":[["t1"],[]],"body":[{"item":"tea","quantity":2},"application/json",null],"version":1}
+  saved key True blob None owned False
+  saved policy ResolvedQueueOptions(max_entries=100, parallelism=1, max_entry_body_bytes=8388608, max_deliveries=5, entry_ttl=86400.0, retry_initial_delay=5.0, retry_max_delay=600.0, lease_min=90.0, lease_grace=30.0, max_delivery_timeout=300.0)
+  saved repr hides ['payload', 'idempotency_key', 'fingerprint', 'version', 'lease_id']
+  sends after enqueue 0
+  secret cookie ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('arguments', 'cookie', 'session'), condition='wrong_capability'] protocol_configuration_error
+  too large ! ProtocolSizeError: ProtocolSizeError(kind='body', limit=10, observed=94) [kind='body', unit='bytes', limit=10] protocol_size_error observed=94
+  drain field ! QueuePolicyConflictError: QueuePolicyConflictError(condition='invalid_value', fields=('max_entries', 'parallelism')) [field_path=('queue_options',), condition='invalid_value'] queue_policy_conflict_error fields=('max_entries', 'parallelism')
+  options type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('queue_options',), condition='invalid_value'] protocol_configuration_error
+  delays order ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('queue_options', 'retry_max_delay'), condition='invalid_value'] protocol_configuration_error
+  short ttl = receipt e3 pending ttl=0:01:00
+  account = receipt e4 pending ttl=1 day, 0:00:00
+  anonymous account ! ProtocolConfigurationError: ProtocolConfigurationError(condition='security_partition') [field_path=('protocols', 'security'), condition='security_partition'] protocol_configuration_error
+  entries 4
+deliveries
+  first = receipt e5 pending ttl=1:00:00
+  second = receipt e6 pending ttl=1 day, 0:00:00
+  drain = succeeded=['e5', 'e6']
+  server POST /orders key=k1 body={"item":"tea","quantity":2} duplicate=False
+  server GET /orders/o1
+  inspect = e5 create_order succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/201
+  drain again = empty
+  retried = receipt e7 pending ttl=1:00:00
+  drain with a retry = succeeded=['e7']
+  server POST /orders key=k2 -> 503
+  server POST /orders key=k2 body={"item":"tea","quantity":2} duplicate=False
+  inspect retried = e7 create_order succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/201
+  refused = receipt e8 pending ttl=1:00:00
+  drain refused = dead=['e8']
+  server POST /orders key=k3 -> 422
+  inspect refused = e8 create_order dead deliveries=1 intent=False cancel=False leased=False outcome=permanent/create_order_http_error/422
+  lost = receipt e9 pending ttl=1:00:00
+  drain lost = unknown=['e9']
+  server POST /orders key=k4 body={"item":"tea","quantity":2} duplicate=False
+  inspect lost = e9 create_order delivery_unknown deliveries=1 intent=False cancel=False leased=False outcome=unknown/transport_error/None
+  drain leaves unknown = empty
+  retry unknown = e9 create_order pending deliveries=1 intent=False cancel=False leased=False outcome=unknown/transport_error/None
+  drain retried unknown = succeeded=['e9']
+  server POST /orders key=k4 body={"item":"tea","quantity":2} duplicate=True
+  retry settled ! ProtocolStateError: ProtocolStateError(state='succeeded', action='retry_unknown') [] protocol_state_error action='retry_unknown'
+  retry missing = None
+  unsent = receipt e10 pending ttl=1:00:00
+  drain unsent = unknown=['e10']
+  inspect unsent = e10 create_order delivery_unknown deliveries=1 intent=False cancel=False leased=False outcome=unknown/phase_timeout_error/None
+  purge = [e5 create_order succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/201, e6 refresh succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/200, e7 create_order succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/201, e8 create_order dead deliveries=1 intent=False cancel=False leased=False outcome=permanent/create_order_http_error/422, e9 create_order succeeded deliveries=2 intent=False cancel=False leased=False outcome=success/None/201, e10 create_order delivery_unknown deliveries=1 intent=False cancel=False leased=False outcome=unknown/phase_timeout_error/None]
+  purge naive ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('before',), condition='invalid_value'] protocol_configuration_error
+  left []
+outcomes
+  garbled success = receipt e11 pending ttl=1:00:00
+  drain garbled = succeeded=['e11']
+  inspect garbled = e11 create_order succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/201
+  undeclared status = receipt e12 pending ttl=1:00:00
+  drain undeclared = dead=['e12']
+  inspect undeclared = e12 create_order dead deliveries=1 intent=False cancel=False leased=False outcome=permanent/unexpected_status_error/304
+  dot segment = receipt e13 pending ttl=1 day, 0:00:00
+  drain dot segment = dead=['e13']
+  managed key header = receipt e14 pending ttl=1:00:00
+  drain patching the key ! ConfigurationError: ConfigurationError(operation_id='createOrder', call_id='<call>', field_path='headers.Idempotency-Key', condition='managed') [operation_id='createOrder', field_path=('headers', 'Idempotency-Key'), condition='managed'] configuration_error
+  inspect managed = e14 create_order pending deliveries=0 intent=False cancel=False leased=False outcome=-
+  drain without a session deadline = succeeded=['e14']
+  cancelled after a send = receipt e15 pending ttl=1:00:00
+  drain cancelled after a send = dead=['e15']
+  inspect cancelled = e15 create_order dead deliveries=1 intent=False cancel=False leased=False outcome=permanent/request_cancelled_error/503
+  cancelled and taken = receipt e16 pending ttl=1:00:00
+  drain cancelled and taken ! RequestCancelledError
+  server POST /orders key=k5 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders key=k6 -> 503
+  server POST /orders key=k7 body={"item":"tea","quantity":2} duplicate=False
+  proven unsent = receipt e17 pending ttl=1 day, 0:00:00
+  drain unsent = rescheduled=['e17']
+  inspect unsent = e17 refresh pending deliveries=1 intent=False cancel=False leased=False outcome=retryable/transport_error/None
+holding
+  ready again = receipt e18 pending ttl=1:00:00
+  drain once = rescheduled=['e18']
+  inspect released = e18 create_order pending deliveries=1 intent=False cancel=False leased=False outcome=retryable/create_order_http_error/503
+  broken = receipt e19 pending ttl=1 day, 0:00:00
+  release fails ! QueueBindingError: QueueBindingError(condition='binding_mismatch') [field_path=('entry_id',), condition='binding_mismatch'] queue_binding_error entry_id='e19' secondary=['QueueStoreError']
+  server POST /orders key=k8 -> 503
+  server POST /orders key=k8 -> 503
+waits
+  waited = receipt e20 pending ttl=1:00:00
+  drain past the child cap = rescheduled=['e20']
+  server POST /orders key=k9 -> 503
+  waits True saved True retry_at True
+  not ready yet = empty
+  wait past the key = dead=['e20']
+  server POST /orders key=k9 -> 503
+  inspect = e20 create_order dead deliveries=2 intent=False cancel=False leased=False outcome=permanent/expired/503
+  twice = receipt e21 pending ttl=1:00:00
+  first delivery = rescheduled=['e21']
+  second delivery = dead=['e21']
+  server POST /orders key=k10 -> 503
+  server POST /orders key=k10 -> 503
+  inspect twice = e21 create_order dead deliveries=2 intent=False cancel=False leased=False outcome=permanent/max_deliveries/503
+  past the drain = receipt e22 pending ttl=1:00:00
+  next = receipt e23 pending ttl=1 day, 0:00:00
+  drain shorter than the wait = succeeded=['e23'] rescheduled=['e22']
+  server POST /orders key=k11 -> 503
+  server GET /orders/o2
+  waits True
+  expired = receipt e24 pending ttl=1 day, 0:00:00
+  drain expired = dead=['e22', 'e24']
+  inspect expired = e24 refresh dead deliveries=0 intent=False cancel=False leased=False outcome=permanent/expired/None
+  exhausted = receipt e25 pending ttl=1 day, 0:00:00
+  drain exhausted = dead=['e25']
+  inspect exhausted = e25 refresh dead deliveries=5 intent=False cancel=False leased=False outcome=permanent/max_deliveries/None
+recovery
+  crash after intent = receipt e26 pending ttl=1:00:00
+  crashed before sending
+  inspect = e26 create_order leased deliveries=1 intent=True cancel=False leased=True outcome=-
+  lease held = empty
+  after the lease = succeeded=['e26']
+  server POST /orders key=k12 body={"item":"tea","quantity":2} duplicate=False
+  inspect recovered = e26 create_order succeeded deliveries=2 intent=False cancel=False leased=False outcome=success/None/201
+  crash after response = receipt e27 pending ttl=1:00:00
+  crashed before saving the response
+  server POST /orders key=k13 body={"item":"tea","quantity":2} duplicate=False
+  redelivered = succeeded=['e27']
+  server POST /orders key=k13 body={"item":"tea","quantity":2} duplicate=True
+  inspect redelivered = e27 create_order succeeded deliveries=2 intent=False cancel=False leased=False outcome=success/None/201
+  held by another worker = receipt e28 pending ttl=1 day, 0:00:00
+  leased elsewhere = empty
+  after its lease = succeeded=['e28']
+  server GET /orders/o5
+  inspect other = e28 refresh succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/200
+cancelling
+  pending = receipt e29 pending ttl=1:00:00
+  cancel pending = e29 create_order cancelled deliveries=0 intent=False cancel=False leased=False outcome=cancelled/None/None
+  cancel again = e29 create_order cancelled deliveries=0 intent=False cancel=False leased=False outcome=cancelled/None/None
+  retry cancelled ! ProtocolStateError: ProtocolStateError(state='cancelled', action='retry_unknown') [] protocol_state_error action='retry_unknown'
+  cancel missing = None
+  maybe sent = receipt e30 pending ttl=1:00:00
+  cancel maybe sent = e30 create_order delivery_unknown deliveries=0 intent=False cancel=False leased=False outcome=cancelled/None/None
+  leased = receipt e31 pending ttl=1:00:00
+  cancel leased = e31 create_order leased deliveries=0 intent=False cancel=True leased=True outcome=-
+  cancel requested = e31 create_order leased deliveries=0 intent=False cancel=True leased=True outcome=-
+  drain cancelled = cancelled=['e31']
+  inspect = e31 create_order cancelled deliveries=0 intent=False cancel=True leased=False outcome=cancelled/None/None
+  done = receipt e32 pending ttl=1 day, 0:00:00
+  drain done = succeeded=['e32']
+  server GET /orders/o6
+  cancel done ! ProtocolStateError: ProtocolStateError(state='succeeded', action='cancel') [] protocol_state_error action='cancel'
+  during a send = receipt e33 pending ttl=1:00:00
+  drain while cancelled = succeeded=['e33']
+  server POST /orders key=k14 body={"item":"tea","quantity":2} duplicate=False
+  inspect sent = e33 create_order succeeded deliveries=1 intent=False cancel=True leased=False outcome=success/None/201
+  during a failure = receipt e34 pending ttl=1:00:00
+  drain refused while cancelled = unknown=['e34']
+  server POST /orders key=k15 -> 503
+  inspect refused = e34 create_order delivery_unknown deliveries=1 intent=False cancel=True leased=False outcome=cancelled/None/503
+  before the send = receipt e35 pending ttl=1:00:00
+  drain cancelled before the send = cancelled=['e35']
+  inspect before the send = e35 create_order cancelled deliveries=0 intent=False cancel=True leased=False outcome=cancelled/None/None
+  cancelled during the intent = receipt e36 pending ttl=1:00:00
+  drain cancelled during the intent = cancelled=['e36']
+  inspect during the intent = e36 create_order cancelled deliveries=0 intent=False cancel=True leased=False outcome=cancelled/None/None
+  token = receipt e37 pending ttl=1:00:00
+  drain cancelled token ! RequestCancelledError: RequestCancelledError(operation_id='createOrder', call_id='<call>', source='cancel_token', delivery_state='NOT_SENT') [operation_id='createOrder', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] request_cancelled_error
+  inspect token = e37 create_order pending deliveries=0 intent=False cancel=False leased=False outcome=-
+bindings
+  fetch = receipt e38 pending ttl=1 day, 0:00:00
+  rename = receipt e39 pending ttl=0:10:00
+  token saved False
+  receipt ttl 0:10:00
+  drain with a new token = succeeded=['e38', 'e39']
+  server GET /account auth=Bearer secret-two
+  server PATCH /account key=k16 auth=Bearer secret-two body={"name":"grace"}
+  retry = receipt e40 pending ttl=1 day, 0:00:00
+  provider not ready = deferred=['e40']
+  inspect deferred = e40 fetch pending deliveries=0 intent=False cancel=False leased=False outcome=-
+  provider ready = succeeded=['e40']
+  server GET /account auth=Bearer secret-two
+  partition = receipt e41 pending ttl=1 day, 0:00:00
+  drain in another partition ! QueueBindingError: QueueBindingError(condition='binding_mismatch') [field_path=('entry_id',), condition='binding_mismatch'] queue_binding_error entry_id='e41'
+  inspect = e41 fetch pending deliveries=0 intent=False cancel=False leased=False outcome=-
+  changed contract ! QueueBindingError: QueueBindingError(condition='binding_mismatch') [field_path=('entry_id',), condition='binding_mismatch'] queue_binding_error entry_id='e41'
+  unknown alias ! QueueBindingError: QueueBindingError(condition='binding_mismatch') [field_path=('entry_id',), condition='binding_mismatch'] queue_binding_error entry_id='e41'
+  restored = succeeded=['e41']
+  server GET /account auth=Bearer secret-two
+malformed
+  drain not json = dead=['e42']
+  drain version = dead=['e43']
+  drain arguments = dead=['e44']
+  drain media = dead=['e45']
+  drain value = dead=['e46']
+  drain secret = dead=['e47']
+  drain bad key = dead=['e48']
+  inspect bad key = e48 create_order dead deliveries=0 intent=False cancel=False leased=False outcome=permanent/malformed_entry/None
+store failures
+  put fails ! QueueStoreError: QueueStoreError(action='put') [cause=OSError('disk full')] queue_store_error action='put' entry_id='<call>'
+  put full ! QueueFullError: QueueFullError(action='put', kind='entries', limit=1, observed=2) [kind='entries', limit=1] queue_full_error action='put' observed=2
+  entry = receipt e49 pending ttl=1:00:00
+  get wrong ! QueueStoreError: QueueStoreError(action='get') [] queue_store_error action='get' entry_id='e49'
+  get fails ! QueueStoreError: QueueStoreError(action='get') [cause=OSError('read')] queue_store_error action='get' entry_id='e49'
+  claim wrong ! QueueStoreError: QueueStoreError(action='claim') [] queue_store_error action='claim'
+  claim fails ! QueueStoreError: QueueStoreError(action='claim') [cause=OSError('lock')] queue_store_error action='claim'
+  intent fails ! QueueStoreError: QueueStoreError(action='compare_exchange') [cause=OSError('write')] queue_store_error action='compare_exchange' entry_id='e49'
+  inspect = e49 create_order leased deliveries=0 intent=False cancel=False leased=True outcome=-
+  exchange wrong ! QueueStoreError: QueueStoreError(action='compare_exchange') [] queue_store_error action='compare_exchange' entry_id='e49'
+  purge wrong ! QueueStoreError: QueueStoreError(action='purge_terminal') [] queue_store_error action='purge_terminal'
+  ignored leases = receipt e50 pending ttl=1 day, 0:00:00
+  drain bounded = succeeded=['e50']
+  claims bounded 5
+  server GET /orders/s1
+conflicts
+  entry = receipt e51 pending ttl=1:00:00
+  one conflict = succeeded=['e51']
+  server POST /orders key=k17 body={"item":"tea","quantity":2} duplicate=False
+  stuck = receipt e52 pending ttl=1:00:00
+  endless conflicts ! QueueStoreError: QueueStoreError(action='compare_exchange') [] queue_store_error action='compare_exchange' entry_id='e52'
+  drain stuck = succeeded=['e52']
+  server POST /orders key=k18 body={"item":"tea","quantity":2} duplicate=False
+  settled = receipt e53 pending ttl=1:00:00
+  conflicts after the send ! QueueStoreError: QueueStoreError(action='compare_exchange') [] queue_store_error action='compare_exchange' entry_id='e53'
+  server POST /orders key=k19 body={"item":"tea","quantity":2} duplicate=False
+  inspect settled = e53 create_order leased deliveries=1 intent=True cancel=False leased=True outcome=-
+  pending = receipt e54 pending ttl=1:00:00
+  cancel conflicts ! QueueStoreError: QueueStoreError(action='compare_exchange') [] queue_store_error action='compare_exchange' entry_id='e54'
+  retry conflicts ! QueueStoreError: QueueStoreError(action='compare_exchange') [] queue_store_error action='compare_exchange' entry_id='e53'
+  retry expired = e53 create_order dead deliveries=1 intent=False cancel=False leased=False outcome=permanent/expired/None
+  exhausted = receipt e55 pending ttl=1:00:00
+  retry exhausted = e55 create_order dead deliveries=5 intent=False cancel=False leased=False outcome=permanent/max_deliveries/None
+  taken after the intent = receipt e56 pending ttl=1:00:00
+  drain taken after the intent = empty
+  stolen = receipt e57 pending ttl=1:00:00
+  lease taken before the send = empty
+  lease taken during the send = empty
+  server POST /orders key=k20 body={"item":"tea","quantity":2} duplicate=False
+  inspect stolen = e57 create_order leased deliveries=1 intent=True cancel=False leased=True outcome=-
+limits
+  one entry = succeeded=['e58', 'e59']
+  one send = succeeded=['e60']
+  no time = empty
+  policy field ! QueuePolicyConflictError: QueuePolicyConflictError(condition='invalid_value', fields=('max_deliveries',)) [field_path=('queue_options',), condition='invalid_value'] queue_policy_conflict_error fields=('max_deliveries',)
+  fixed key ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'idempotency_key'), condition='invalid_value'] protocol_configuration_error
+  options type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
+  session type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('session_options',), condition='invalid_value'] protocol_configuration_error
+  entry type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('entry_id',), condition='invalid_value'] protocol_configuration_error
+  rest = empty
+  server GET /orders/l0
+  server GET /orders/l1
+  server GET /orders/l2
+parallel
+  waves = succeeded=['e61', 'e62', 'e63']
+  server GET /orders/p0
+  server GET /orders/p1
+  server GET /orders/p2
+  broken wave ! QueueStoreError: QueueStoreError(action='compare_exchange') [cause=OSError('release')] queue_store_error action='compare_exchange' entry_id='<call>' secondary=['QueueBindingError']
+configuration
+  unknown helper ! ProtocolConfigurationError: ProtocolConfigurationError(condition='unknown_field') [field_path=('protocols', 'queue_stores', 'orders.unknown'), condition='unknown_field'] protocol_configuration_error
+  not a mapping ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('queue_stores',), condition='invalid_value'] protocol_configuration_error
+  bad name ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('queue_stores',), condition='invalid_value'] protocol_configuration_error
+  missing methods ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('protocols', 'queue_stores', 'orders.outbox'), condition='wrong_capability'] protocol_configuration_error
+  async store ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('protocols', 'queue_stores', 'orders.outbox'), condition='wrong_capability'] protocol_configuration_error
+  kind defaults ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('protocols', 'defaults', 'orders.outbox', 'options'), condition='invalid_value'] protocol_configuration_error
+  no store ! ProtocolConfigurationError: ProtocolConfigurationError(condition='missing_adapter') [field_path=('protocols', 'queue_stores', 'orders.outbox'), condition='missing_adapter'] protocol_configuration_error
+  zero entries ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
+  boolean deliveries ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_deliveries',), condition='invalid_value'] protocol_configuration_error
+  long delivery ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_delivery_timeout',), condition='invalid_value'] protocol_configuration_error
+  infinite ttl ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('entry_ttl',), condition='invalid_value'] protocol_configuration_error
+  no fields ! ValueError: fields must be a nonempty tuple of field names []
+  resolved zero ! ValueError: max_entries must be at least 1 []
+  resolved long ! ValueError: max_delivery_timeout must be at most 300 seconds []
+  resolved order ! ValueError: retry_max_delay must not be less than retry_initial_delay []
+memory stores
+  put b = None
+  put a = None
+  put full ! QueueFullError: QueueFullError(action='put', kind='entries', limit=2, observed=3) [kind='entries', limit=2] queue_full_error action='put' observed=3
+  put again ! QueueStoreError: QueueStoreError(action='put') [] queue_store_error action='put' entry_id='a'
+  put other ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('entry',), condition='invalid_value'] protocol_configuration_error
+  claimed ['a', 'b'] lease hidden True
+  claim none = []
+  claim zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('limit',), condition='invalid_value'] protocol_configuration_error
+  recovered ['a']
+  exchange stale = False
+  exchange other lease = False
+  exchange mismatch ! QueueStoreError: QueueStoreError(action='compare_exchange') [] queue_store_error action='compare_exchange' entry_id='b'
+  exchange missing = False
+  exchange done = True
+  purge = ['a']
+  get missing = None
+  bytes full ! QueueFullError: QueueFullError(action='put', kind='bytes', limit=4, observed=5) [kind='bytes', limit=4] queue_full_error action='put' observed=5
+  bad limits ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
+  naive instant ! ValueError: created_at must be timezone-aware []
+  lease pair ! ValueError: lease_id and lease_until must be given together []
+  state ! ValueError: state must be one of pending, leased, succeeded, dead, delivery_unknown, cancelled []
+  payload ! TypeError: payload must be bytes []
+  wait ! ValueError: saved_wait_seconds must be a finite nonnegative number of seconds []
+  wait type ! TypeError: saved_wait_seconds must be a number of seconds []
+  count ! TypeError: delivery_count must be an integer []
+  outcome ! ValueError: category must be one of success, retryable, permanent, unknown, cancelled []
+  outcome response ! TypeError: response must be a ResponseInfo []
+  outcome instant ! TypeError: retry_at must be a datetime []
+  blob ! ValueError: sha256 must be 32 bytes []
+  blob key ! ValueError: key must not be empty []
+  blob digest ! TypeError: sha256 must be bytes []
+  with blob = e64 refresh pending deliveries=0 intent=False cancel=False leased=False outcome=-
+  wrong blob ! TypeError: blob must be a BlobRef []
+  wrong policy ! TypeError: policy must be a ResolvedQueueOptions []
+  wrong result ! TypeError: result must be a QueueOutcome []
+  lease of pending ! ValueError: entry must be leased under lease_id []
+  report ! TypeError: succeeded must be a tuple []
+  receipt ! TypeError: expires_at must be a datetime []
+  report counts {'succeeded': 1, 'rescheduled': 0, 'dead': 2, 'unknown': 0, 'deferred': 0, 'cancelled': 0}
+asyncio
+  enqueue = receipt e65 pending ttl=1:00:00
+  drain = succeeded=['e65', 'e66', 'e67']
+  server GET /orders/a0
+  server GET /orders/a1
+  server POST /orders key=k21 body={"item":"tea","quantity":2} duplicate=False
+  inspect = e65 create_order succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/201
+  purge = [e65 create_order succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/201, e66 refresh succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/200, e67 refresh succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/200]
+  lost = receipt e68 pending ttl=1:00:00
+  drain lost = unknown=['e68']
+  server POST /orders key=k22 body={"item":"tea","quantity":2} duplicate=False
+  retry unknown = e68 create_order pending deliveries=1 intent=False cancel=False leased=False outcome=unknown/transport_error/None
+  cancel = e68 create_order cancelled deliveries=1 intent=False cancel=False leased=False outcome=cancelled/None/None
+  broken wave ! QueueBindingError: QueueBindingError(condition='binding_mismatch') [field_path=('entry_id',), condition='binding_mismatch'] queue_binding_error entry_id='<call>' secondary=['QueueBindingError']
+  put fails ! QueueStoreError: QueueStoreError(action='put') [cause=OSError('disk full')] queue_store_error action='put' entry_id='<call>'
+  held = receipt e69 pending ttl=1:00:00
+  drain cancelled while sending
+  inspect held = e69 create_order leased deliveries=1 intent=True cancel=False leased=True outcome=-
+  redelivered = succeeded=['e69']
+  server POST /orders key=k23 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders key=k23 body={"item":"tea","quantity":2} duplicate=True
+  intent entry = receipt e70 pending ttl=1:00:00
+  intent fails ! QueueStoreError: QueueStoreError(action='compare_exchange') [cause=OSError('write')] queue_store_error action='compare_exchange' entry_id='e70'
+  entry type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('entry_id',), condition='invalid_value'] protocol_configuration_error
+  put full ! QueueFullError: QueueFullError(action='put', kind='bytes', limit=1, observed=2) [kind='bytes', limit=1] queue_full_error action='put' observed=2
+  claim wrong ! QueueStoreError: QueueStoreError(action='claim') [] queue_store_error action='claim'
+  ready again = receipt e71 pending ttl=1:00:00
+  broken = receipt e72 pending ttl=1 day, 0:00:00
+  release fails ! QueueBindingError: QueueBindingError(condition='binding_mismatch') [field_path=('entry_id',), condition='binding_mismatch'] queue_binding_error entry_id='e72' secondary=['QueueStoreError']
+  server POST /orders key=k24 -> 503
+  ignored leases = receipt e73 pending ttl=1 day, 0:00:00
+  drain bounded = succeeded=['e73']
+  server GET /orders/s2
+  memory enqueue = receipt e74 pending ttl=1 day, 0:00:00
+  memory drain = succeeded=['e74']
+  server GET /orders/m1
+  memory inspect = e74 refresh succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/200
+  memory purge = [e74 refresh succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/200]

@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from inspect import iscoroutinefunction
 from keyword import iskeyword
 from sys import float_info
 from types import MappingProxyType
@@ -15,6 +16,7 @@ from typing_extensions import TypeIs, TypeVar
 from ..client.errors import ProtocolConfigurationError, is_sequence
 from ..client.timing import SessionOptions
 from ..model_codecs.unset import UNSET, Unset
+from .queues import AsyncQueueStore, QueueStore, ResolvedQueueOptions
 from .records import record_string
 
 V = TypeVar("V")
@@ -38,6 +40,32 @@ _STREAM: Final = (
     ("max_reconnects", False, True, True),
     ("max_reconnect_wait", True, True, False),
 )
+QUEUE_FIELDS: Final = (
+    ("max_entries", False, False, False),
+    ("parallelism", False, False, False),
+    ("max_entry_body_bytes", False, False, False),
+    ("max_deliveries", False, False, False),
+    ("entry_ttl", True, False, False),
+    ("retry_initial_delay", True, False, False),
+    ("retry_max_delay", True, False, False),
+    ("lease_min", True, False, False),
+    ("lease_grace", True, False, False),
+    ("max_delivery_timeout", True, False, False),
+)
+QUEUE_DEFAULTS: Final = ResolvedQueueOptions(
+    max_entries=100,
+    parallelism=1,
+    max_entry_body_bytes=8388608,
+    max_deliveries=5,
+    entry_ttl=86400.0,
+    retry_initial_delay=5.0,
+    retry_max_delay=600.0,
+    lease_min=90.0,
+    lease_grace=30.0,
+    max_delivery_timeout=300.0,
+)
+_QUEUE_METHODS: Final = ("put", "get", "claim", "compare_exchange", "purge_terminal")
+_MAX_DELIVERY_TIMEOUT: Final = 300.0
 WEBHOOK_LIMITS: Final = (
     ("max_body_bytes", False, False, False),
     ("max_header_bytes", False, False, False),
@@ -187,6 +215,31 @@ class StreamOptions:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class QueueOptions:
+    """Queue settings: `max_entries` and `parallelism` bound one drain, every other field an entry's fixed policy.
+
+    Durations are finite positive seconds and counts positive integers; `max_delivery_timeout` is at most 300.
+    """
+
+    max_entries: int | Unset = UNSET
+    parallelism: int | Unset = UNSET
+    max_entry_body_bytes: int | Unset = UNSET
+    max_deliveries: int | Unset = UNSET
+    entry_ttl: float | Unset = UNSET
+    retry_initial_delay: float | Unset = UNSET
+    retry_max_delay: float | Unset = UNSET
+    lease_min: float | Unset = UNSET
+    lease_grace: float | Unset = UNSET
+    max_delivery_timeout: float | Unset = UNSET
+
+    def __post_init__(self) -> None:
+        """Reject booleans, other types, zero, nonfinite durations, and a delivery timeout over 300 seconds."""
+        check_limits(self, QUEUE_FIELDS)
+        if not isinstance(timeout := self.max_delivery_timeout, Unset) and timeout > _MAX_DELIVERY_TIMEOUT:
+            raise ProtocolConfigurationError(field_path=("max_delivery_timeout",), condition="invalid_value")
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class ProtocolSecurityContext:
     """The nonsecret credential partition of helper state and the origins permitted beyond the same origin."""
 
@@ -212,35 +265,49 @@ def _helper_defaults(value: object) -> Mapping[str, ProtocolDefaults]:
     return MappingProxyType(defaults)
 
 
+def _queue_stores(value: object) -> Mapping[str, object]:
+    if not _is_mapping(value):
+        raise ProtocolConfigurationError(field_path=("queue_stores",), condition="invalid_value")
+    stores: dict[str, object] = {}
+    for name, store in value.items():
+        if not _is_helper_name(name):
+            raise ProtocolConfigurationError(field_path=("queue_stores",), condition="invalid_value")
+        stores[name] = store
+    return MappingProxyType(stores)
+
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ProtocolDefaults:
     """Defaults of one helper, below its call arguments and above the kind's effective defaults."""
 
     session: SessionOptions | Unset = UNSET
-    options: PaginationOptions | PollOptions | StreamOptions | Unset = UNSET
+    options: PaginationOptions | PollOptions | StreamOptions | QueueOptions | Unset = UNSET
 
     def __post_init__(self) -> None:
         """Refuse values other than session options and one kind's options."""
         _instance(self.session, (SessionOptions, Unset), "session")
-        _instance(self.options, (PaginationOptions, PollOptions, StreamOptions, Unset), "options")
+        _instance(self.options, (PaginationOptions, PollOptions, StreamOptions, QueueOptions, Unset), "options")
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ProtocolClientOptions:
-    """Protocol helper settings of one client: its security context and each helper's defaults.
+    """Protocol helper settings of one client: its security context, each helper's defaults, and its queue stores.
 
-    None as the security context means anonymous use. The defaults are keyed by dotted helper names; the mapping is
-    copied into a read-only one that keeps each value's identity.
+    None as the security context means anonymous use. The defaults and the borrowed queue stores are keyed by dotted
+    helper names; each mapping is copied into a read-only one that keeps each value's identity.
     """
 
     security: ProtocolSecurityContext | Unset | None = UNSET
     defaults: Mapping[str, ProtocolDefaults] | Unset = UNSET
+    queue_stores: Mapping[str, QueueStore | AsyncQueueStore] | Unset = UNSET
 
     def __post_init__(self) -> None:
-        """Refuse another security value, helper names that are not dotted identifiers, and other default values."""
+        """Refuse another security value, dotted names that are not helper names, and other default values."""
         _instance(self.security, (ProtocolSecurityContext, Unset, type(None)), "security")
         if not isinstance(self.defaults, Unset):
             object.__setattr__(self, "defaults", _helper_defaults(self.defaults))
+        if not isinstance(self.queue_stores, Unset):
+            object.__setattr__(self, "queue_stores", _queue_stores(self.queue_stores))
 
 
 _KIND_OPTIONS: Final[Mapping[str, type]] = MappingProxyType({
@@ -248,6 +315,7 @@ _KIND_OPTIONS: Final[Mapping[str, type]] = MappingProxyType({
     "polling": PollOptions,
     "sse": StreamOptions,
     "ndjson": StreamOptions,
+    "queue": QueueOptions,
 })
 
 
@@ -261,3 +329,33 @@ def checked_defaults(defaults: Mapping[str, ProtocolDefaults], helpers: tuple[tu
             raise ProtocolConfigurationError(
                 field_path=("protocols", "defaults", name, "options"), condition="invalid_value"
             )
+
+
+def checked_queue_stores(
+    stores: Mapping[str, object], helpers: tuple[tuple[str, str], ...], *, asynchronous: bool
+) -> None:
+    """Refuse a queue store under a name that is no queue helper of the package, or one the client cannot call.
+
+    A store must have every method of the queue store contract, coroutine functions for an asyncio client and plain
+    functions for a synchronous one.
+    """
+    kinds = dict(helpers)
+    for name, store in stores.items():
+        if kinds.get(name) != "queue":
+            raise ProtocolConfigurationError(field_path=("protocols", "queue_stores", name), condition="unknown_field")
+        methods = [getattr(store, method, None) for method in _QUEUE_METHODS]
+        if not all(callable(method) and iscoroutinefunction(method) == asynchronous for method in methods):
+            raise ProtocolConfigurationError(
+                field_path=("protocols", "queue_stores", name), condition="wrong_capability"
+            )
+
+
+def resolved_queue(layers: tuple[object, ...]) -> ResolvedQueueOptions:
+    """Return queue options with each field from the first layer that sets it, or the kind's default.
+
+    Retry delays out of order are refused as the maximum delay.
+    """
+    values = {name: layered(layers, name, getattr(QUEUE_DEFAULTS, name)) for name, *_ in QUEUE_FIELDS}
+    if values["retry_max_delay"] < values["retry_initial_delay"]:
+        raise ProtocolConfigurationError(field_path=("queue_options", "retry_max_delay"), condition="invalid_value")
+    return ResolvedQueueOptions(**values)

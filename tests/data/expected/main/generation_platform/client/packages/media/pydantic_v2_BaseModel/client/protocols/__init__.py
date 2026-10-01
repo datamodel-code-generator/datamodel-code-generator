@@ -11,7 +11,19 @@ from .._runtime.protocols.options import (
     PollOptions,
     ProtocolDefaults,
     ProtocolSecurityContext,
+    QueueOptions,
     StreamOptions,
+)
+from .._runtime.protocols.queues import (
+    AsyncQueueStore,
+    BlobRef,
+    DrainReport,
+    QueueEntry,
+    QueueLease,
+    QueueOutcome,
+    QueueReceipt,
+    QueueStore,
+    ResolvedQueueOptions,
 )
 from .._runtime.protocols.records import (
     BodySelector,
@@ -43,6 +55,7 @@ from .._runtime.protocols.webhooks import (
 if TYPE_CHECKING:
     from .._runtime.protocols.pagination import AsyncPager, Page, Pager
     from .._runtime.protocols.polling import AsyncLroHandle, LroHandle
+    from .._runtime.protocols.queue_stores import AsyncMemoryQueueStore, MemoryQueueStore
     from .._runtime.protocols.replay import AsyncMemoryReplayStore, MemoryReplayStore
     from .._runtime.protocols.streams import (
         AsyncEventStream,
@@ -54,16 +67,21 @@ if TYPE_CHECKING:
 __all__ = [
     "AsyncEventStream",
     "AsyncLroHandle",
+    "AsyncMemoryQueueStore",
     "AsyncMemoryReplayStore",
     "AsyncPager",
+    "AsyncQueueStore",
     "AsyncReplayStore",
+    "BlobRef",
     "BodySelector",
     "BodyTarget",
     "Continuation",
+    "DrainReport",
     "EventStream",
     "HeaderSelector",
     "KeySet",
     "LroHandle",
+    "MemoryQueueStore",
     "MemoryReplayStore",
     "OperationRef",
     "Origin",
@@ -78,8 +96,15 @@ __all__ = [
     "ProtocolProgress",
     "ProtocolSecurityContext",
     "QuerystringTarget",
+    "QueueEntry",
+    "QueueLease",
+    "QueueOptions",
+    "QueueOutcome",
+    "QueueReceipt",
+    "QueueStore",
     "ReplayStore",
     "RequestTarget",
+    "ResolvedQueueOptions",
     "ResolvedWebhookOptions",
     "ResumeState",
     "Selector",
@@ -109,6 +134,10 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import streams
 
         return getattr(streams, name)
+    if name in {"AsyncMemoryQueueStore", "MemoryQueueStore"}:
+        from .._runtime.protocols import queue_stores
+
+        return getattr(queue_stores, name)
     if name == "MemoryReplayStore":
         from .._runtime.protocols.replay import MemoryReplayStore
 
