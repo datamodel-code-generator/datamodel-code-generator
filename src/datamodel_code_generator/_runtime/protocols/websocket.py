@@ -678,11 +678,14 @@ class _Sockets(Generic[SendT, RecvT]):
             return self._stamped(AdapterExecutionError(delivery_state=DeliveryState.RESPONSE_STARTED, cause=error))
         return error
 
-    def _halted(self) -> BaseException | None:
-        """Return what stops the session's call now: cancellation, the client closing, or the deadline."""
+    def _halted(self) -> Exception | None:
+        """Return what stops the session's call now: cancellation, the client closing, or the deadline.
+
+        A native cancellation propagates as it is.
+        """
         try:
             self._call.check("stream", DeliveryState.RESPONSE_STARTED)
-        except BaseException as error:  # noqa: BLE001
+        except Exception as error:  # noqa: BLE001
             return error
         return None
 
