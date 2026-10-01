@@ -17,6 +17,7 @@ from tests.data.python.client_auth_flows import auth_flows
 from tests.data.python.client_auth_options import auth_options
 from tests.data.python.client_auth_values import auth_values
 from tests.data.python.client_bodies import bodies
+from tests.data.python.client_caching import cache_backends, cache_stores, caching
 from tests.data.python.client_body_digest import body_digest
 from tests.data.python.client_body_replay import body_replay, multipart_replay
 from tests.data.python.client_body_replay_faults import body_replay_faults
@@ -821,6 +822,9 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "ndjson-backends": ("ndjson", BACKENDS, ndjson_backends),
     "ndjson-split": ("ndjson-split", STRUCTURAL, ndjson_split),
     "protocol-errors": ("pets", ("pydantic_v2.BaseModel",), protocol_errors),
+    "cache": ("caching", ("pydantic_v2.BaseModel",), caching),
+    "cache-stores": ("caching", ("pydantic_v2.BaseModel",), cache_stores),
+    "cache-backends": ("caching-backends", BACKENDS, cache_backends),
     "evolution": ("evolution", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"), evolution),
     "evolution-schema": (
         "evolution-schema",

@@ -472,6 +472,43 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
+            example_id="python-client.cache.yaml",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced("yaml", yaml_helpers(CLIENT_DATA / "protocols" / "caching.yaml", "users.profile")),
+        ),
+        DocsExample(
+            example_id="python-client.cache.helper",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "python",
+                blocks(
+                    CLIENT_PACKAGES / "caching" / "pydantic_v2_BaseModel" / "client" / "protocols" / "_helpers.py",
+                    "    def fetch(",
+                    "    def invalidate(",
+                    limit=2,
+                ),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.cache.usage",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "python", blocks(CLIENT_DATA / "typing" / "cache_helpers.py", "def cached_client(", separator="\n\n\n")
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.cache.diagnostics",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "text",
+                "\n".join(
+                    line.strip()
+                    for line in read_text(EXPECTED_CLIENT / "protocols" / "protocols-cache-checks.txt").splitlines()
+                    if line.lstrip().startswith("E_")
+                ),
+            ),
+        ),
+        DocsExample(
             example_id="python-client.webhooks.usage",
             path=DOCS / "python-client.md",
             render=lambda: fenced(

@@ -80,6 +80,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
         "streams",
         "streams-mixed",
         "ndjson",
+        "caching",
         "compatibility",
     ],
 )
@@ -134,6 +135,8 @@ def test_client_render(case: str, tmp_path: Path) -> None:
         "protocols-stream-checks",
         "protocols-stream-scope",
         "protocols-ndjson-checks",
+        "protocols-cache-errors",
+        "protocols-cache-checks",
     ],
 )
 def test_client_protocols(case: str, tmp_path: Path) -> None:
@@ -154,6 +157,7 @@ def test_client_protocols(case: str, tmp_path: Path) -> None:
         ("webhooks", "webhooks-python", "webhook-records"),
         ("webhooks-public-keys", "webhooks-public-keys-python", "webhook-public-key-records"),
         ("webhooks-adapters", "webhooks-adapters-python", "webhook-adapter-records"),
+        ("caching", "caching-python", "cache-records"),
     ],
 )
 def test_client_helper_digests(first: str, second: str, expected: str, tmp_path: Path) -> None:
@@ -186,6 +190,7 @@ def test_client_retry_metadata_digests(tmp_path: Path) -> None:
         "polling",
         "streams",
         "ndjson",
+        "caching",
     ],
 )
 def test_client_documentation(case: str, tmp_path: Path) -> None:

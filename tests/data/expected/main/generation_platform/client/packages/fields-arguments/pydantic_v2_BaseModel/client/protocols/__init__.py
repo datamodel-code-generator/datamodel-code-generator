@@ -5,7 +5,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from .._runtime.protocols.caches import (
+    AsyncCacheStore,
+    CacheEntry,
+    CacheResult,
+    CacheStore,
+)
 from .._runtime.protocols.options import (
+    CacheOptions,
     Origin,
     PaginationOptions,
     PollOptions,
@@ -42,6 +49,7 @@ from .._runtime.protocols.webhooks import (
 )
 
 if TYPE_CHECKING:
+    from .._runtime.protocols.cache_stores import AsyncMemoryCacheStore, MemoryCacheStore
     from .._runtime.protocols.pagination import AsyncPager, Page, Pager
     from .._runtime.protocols.polling import AsyncLroHandle, LroHandle
     from .._runtime.protocols.replay import AsyncMemoryReplayStore, MemoryReplayStore
@@ -53,19 +61,26 @@ if TYPE_CHECKING:
     )
 
 __all__ = [
+    "AsyncCacheStore",
     "AsyncEventStream",
     "AsyncLroHandle",
+    "AsyncMemoryCacheStore",
     "AsyncMemoryReplayStore",
     "AsyncPager",
     "AsyncReplayStore",
     "BodySelector",
     "BodyTarget",
+    "CacheEntry",
+    "CacheOptions",
+    "CacheResult",
+    "CacheStore",
     "CancelReceipt",
     "Continuation",
     "EventStream",
     "HeaderSelector",
     "KeySet",
     "LroHandle",
+    "MemoryCacheStore",
     "MemoryReplayStore",
     "OperationRef",
     "Origin",
@@ -107,6 +122,10 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import polling
 
         return getattr(polling, name)
+    if name in {"AsyncMemoryCacheStore", "MemoryCacheStore"}:
+        from .._runtime.protocols import cache_stores
+
+        return getattr(cache_stores, name)
     if name in {"AsyncEventStream", "EventStream", "StreamEvent", "UnknownEvent"}:
         from .._runtime.protocols import streams
 
