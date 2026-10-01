@@ -594,6 +594,23 @@ def _retention_boundaries(package: ModuleType, options: ModuleType, lines: list[
             lines.append(f"    delays={tuple(hook.delays)!r} unused={len(exchange.responders)}")
 
 
+def _frozen(options: ModuleType) -> object:
+    """Return options whose clock never moves, so each retry waits as long in real time as its policy chose."""
+    return options.ClientOptions(
+        retry=options.RetryOptions(initial_delay=0.05, jitter="none"),
+        total_timeout=5,
+        clock=options.Clock(monotonic=lambda: 1000.0),
+    )
+
+
+def _frozen_retries(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    exchange = Exchange(lines)
+    with exchange.client() as native, package.Client(http_client=native, options=_frozen(options)) as api:
+        exchange.respond(_response(503), _response(503), _response(200))
+        response = record(lines, "retries on a frozen clock", api.retry.with_response.get_safe)
+        lines.append(f"    attempts={getattr(getattr(response, 'info', None), 'resource_attempt_count', None)}")
+
+
 async def _async(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     events = _Events()
@@ -610,6 +627,10 @@ async def _async(package: ModuleType, options: ModuleType, lines: list[str]) -> 
         counts = tuple(getattr(info, name, None) for name in ("resource_attempt_count", "network_send_count"))
         lines.append(f"    counts={counts!r} events={events.values!r}")
         events.values.clear()
+        async with package.AsyncClient(http_client=native, options=_frozen(options)) as frozen:
+            exchange.respond(_response(503), _response(503), _response(200))
+            response = await arecord(lines, "async retries on a frozen clock", frozen.retry.with_response.get_safe)
+            lines.append(f"    attempts={getattr(getattr(response, 'info', None), 'resource_attempt_count', None)}")
         exchange.respond(
             lambda request: _response(503, (("X-Observed-Key", request.headers.get("Idempotency-Key", "")),))(request),
             _response(200),
@@ -638,4 +659,5 @@ def retry_policy(package: ModuleType, lines: list[str]) -> None:
     _bodies(package, options, lines)
     _timing(package, options, lines)
     _retention_boundaries(package, options, lines)
+    _frozen_retries(package, options, lines)
     run(lambda: _async(package, options, lines))

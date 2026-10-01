@@ -44,7 +44,7 @@ from .errors import (
     TokenExpiredError,
 )
 from .options import OAuthProviderOptions, SessionOptions
-from .timing import TOKEN_INTERVAL, CancelToken, Clock, Deadline, absolute_deadline, on_clock
+from .timing import TOKEN_INTERVAL, CancelToken, Clock, Deadline, absolute_deadline, on_clock, real_end, wait_left
 
 if TYPE_CHECKING:
     from concurrent.futures import Future
@@ -441,7 +441,10 @@ class DeviceAuthorization:
 
 @dataclass(slots=True)
 class _Transaction:
-    """The one device transaction a flow owns: its progress, and what each poll repeats, waits for, and spends."""
+    """The one device transaction a flow owns: its progress, and what each poll repeats, waits for, and spends.
+
+    The next poll may be sent once the flow's clock reaches next_send or real time reaches ready_by.
+    """
 
     status: DeviceState = "UNINITIALIZED"
     started: float = 0.0
@@ -452,6 +455,7 @@ class _Transaction:
     deadline: Deadline | None = None
     interval: float = 0.0
     next_send: float = 0.0
+    ready_by: float = 0.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -475,7 +479,7 @@ def _session_limits(options: object, started: float, clock: Clock) -> tuple[Dead
         *((on_clock(options.deadline, clock).at,) if isinstance(options.deadline, Deadline) else ()),
     ]
     sends = _DEVICE_SENDS if isinstance(options.max_network_sends, Unset) else options.max_network_sends
-    return (absolute_deadline(min(limits), clock) if limits else None), sends
+    return (absolute_deadline(min(limits), clock=clock) if limits else None), sends
 
 
 def _cancel_token(value: object) -> CancelToken | None:
@@ -611,10 +615,13 @@ class _DeviceFlow(_Flow[EndpointT]):
         except ValueError as cause:
             raise self._rejected(transaction, exchanged, cause) from None
         expiry = exchanged.receipt + grant.expires_in
-        deadline = limit if limit is not None and limit.at < expiry else absolute_deadline(expiry, self._options.clock)
+        deadline = (
+            limit if limit is not None and limit.at < expiry else absolute_deadline(expiry, clock=self._options.clock)
+        )
         with self._lock:
             transaction.device_code, transaction.deadline = grant.device_code, deadline
             transaction.interval, transaction.next_send = grant.interval, exchanged.receipt + grant.interval
+            transaction.ready_by = real_end(transaction.next_send - self._options.clock.monotonic())
             transaction.status = "READY"
         return DeviceAuthorization(
             user_code=grant.user_code,
@@ -634,6 +641,7 @@ class _DeviceFlow(_Flow[EndpointT]):
             with self._lock:
                 transaction.interval += _SLOW_DOWN if exchanged.error == "slow_down" else 0.0
                 transaction.next_send = exchanged.receipt + transaction.interval
+                transaction.ready_by = real_end(transaction.next_send - self._options.clock.monotonic())
             return None
         if exchanged.outcome != "success":
             raise self._ended(transaction, exchanged, session)
@@ -680,7 +688,7 @@ class _DeviceFlow(_Flow[EndpointT]):
             )
         if (send_limit := transaction.send_limit) is not None and transaction.sends >= send_limit:
             raise BudgetExceededError(budget_kind="network", limit=send_limit, used=transaction.sends)
-        remaining = max(0.0, transaction.next_send - now)
+        remaining = max(0.0, wait_left(transaction.next_send - now, transaction.ready_by))
         return remaining if cancel_token is None or remaining == 0 else min(remaining, TOKEN_INTERVAL)
 
     @staticmethod

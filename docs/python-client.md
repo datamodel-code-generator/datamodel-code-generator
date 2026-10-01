@@ -1594,17 +1594,24 @@ cannot change it. Each of the three sources is a function that takes no argument
 
 A source that cannot be called raises `ConfigurationError` with the `field_path` `("clock", name)`. OAuth providers
 and flows keep their own time through `OAuthProviderOptions(clock=...)`, since one provider can serve several clients.
-A key from `IdempotencyKey.new()` takes its first use from the system clock; pass `first_used_at` yourself for a client
-with another clock.
+A client and the providers it uses must agree on wall time, because an access token's `expires_at` passes between them
+as a UTC datetime. A key from `IdempotencyKey.new()` takes its first use from the system clock; pass `first_used_at`
+yourself for a client with another clock.
 
 A deadline remembers its clock. `Deadline.after(seconds, clock=clock)` creates it on that clock, the system clock by
 default, and `remaining()` reads that clock, so an adapter, limiter, or provider that receives it measures it
-correctly. A call given a deadline from another clock moves it onto its own clock by the time remaining at call entry.
-A deadline from the client's own clock stays the same object, so `DeadlineExceededError.deadline_at` equals its `at`.
+correctly. A call given a deadline made on another `Clock` object moves it onto its own clock by the time remaining at
+call entry. A deadline made on the client's own `Clock` object stays the same object, so
+`DeadlineExceededError.deadline_at` equals its `at`.
 
-The client still waits in real time. A retry sleep or a deadline timer lasts as long as the client measured on its
-clock, and closing and cleanup limits always use the system clock. A test clock that should skip a wait advances
-itself, for example from a hook when a retry is scheduled:
+The client still waits in real time. A retry sleep, a device flow's poll interval, or a wait for a token refresh ends
+once its clock reaches the target or once as much real time has passed as the wait measured on its clock when it
+began, whichever comes first, so a frozen clock still waits as long as the policy chose. An I/O timeout or an asyncio
+deadline timer lasts the time left that was measured on the clock when it started. Closing a client and its cleanup
+limits use the system clock, and closing an OAuth provider waits for its running token requests until their sessions
+end on the provider's clock or in real time, whichever comes first.
+
+A test clock that should skip a wait advances itself, for example from a hook when a retry is scheduled:
 
 ```python
 from pets import Client

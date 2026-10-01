@@ -17,7 +17,6 @@ from .bodies import AsyncBodyAttempt, BodyAttempt  # noqa: TC001 - Public annota
 from .errors import MAX_STATUS, MIN_STATUS, IOPhase
 from .responses import HeadersView
 from .timing import (
-    SYSTEM_CLOCK,
     CancelToken,
     Deadline,
     ResolvedTimeoutOptions,
@@ -179,7 +178,7 @@ class AttemptTrace:
         "wire_sent",
     )
 
-    def __init__(self, clock: Clock = SYSTEM_CLOCK) -> None:
+    def __init__(self, *, clock: Clock) -> None:
         """Start before any I/O, reading header receipt times from the clock."""
         self.clock = clock
         self.phase: IOPhase = "unknown"

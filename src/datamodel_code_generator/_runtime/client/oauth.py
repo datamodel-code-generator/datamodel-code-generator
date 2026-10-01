@@ -41,7 +41,7 @@ from .errors import (
     UnsupportedAsyncBackendError,
 )
 from .scopes import scope_tuple
-from .timing import ResolvedTimeoutOptions, absolute_deadline, finite_number
+from .timing import ResolvedTimeoutOptions, absolute_deadline, finite_number, on_clock
 from .transports import (
     AsyncTransportAdapter,
     AttemptIOContext,
@@ -335,16 +335,17 @@ class Session:
     def start(
         cls, refresh_timeout: float, phase_timeout: TimeoutOptions, clock: Clock, limit: Deadline | None = None
     ) -> Session:
-        """Start the budget now on the provider's clock, ending by an explicit limit, compared on the limit's clock."""
+        """Start the budget now on the provider's clock, ending by an explicit limit moved onto that clock."""
         phases = (
             _phase(phase_timeout.connect),
             _phase(phase_timeout.read),
             _phase(phase_timeout.write),
             _phase(phase_timeout.pool),
         )
-        if limit is not None and limit.at < limit.clock.monotonic() + refresh_timeout:
+        now = clock.monotonic()
+        if limit is not None and (limit := on_clock(limit, clock)).at < now + refresh_timeout:
             return cls(limit, refresh_timeout, phases, clock, limited=True)
-        return cls(absolute_deadline(clock.monotonic() + refresh_timeout, clock), refresh_timeout, phases, clock)
+        return cls(absolute_deadline(now + refresh_timeout, clock=clock), refresh_timeout, phases, clock)
 
     def context(self, trace: AttemptTrace) -> tuple[AttemptIOContext, tuple[bool, ...]]:
         """Clamp each phase to the remaining session and record which caps the session selected."""
@@ -672,7 +673,7 @@ class TokenEndpoint:
             except Exception as error:  # noqa: BLE001 - Classified by the secret provider's failure contract.
                 raise _provider_failure(error, state) from None
         request = token_request(target.url, authentication.client_id, authentication.method, fields, secret)
-        trace = AttemptTrace(session.clock)
+        trace = AttemptTrace(clock=session.clock)
         context, caps = session.context(trace)
         with self._lock:
             self._open()
@@ -789,7 +790,7 @@ class AsyncTokenEndpoint:
             except Exception as error:  # noqa: BLE001 - Classified by the secret provider's failure contract.
                 raise _provider_failure(error, state) from None
         request = token_request(target.url, authentication.client_id, authentication.method, fields, secret)
-        trace = AttemptTrace(session.clock)
+        trace = AttemptTrace(clock=session.clock)
         context, caps = session.context(trace)
         self._open()
         if session.deadline.remaining() <= 0 or not progress.start():

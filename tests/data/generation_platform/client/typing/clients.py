@@ -13,6 +13,7 @@ from typing import BinaryIO, Literal
 from typing_extensions import assert_type
 
 from pets import AsyncClient, Client
+from pets.auth import OAuthProviderOptions
 from pets.bodies import (
     AsyncBinaryBody,
     AsyncBodyAttempt,
@@ -352,6 +353,7 @@ def timing_options(client: Client, context: AttemptIOContext) -> None:
     assert_type(deadline.clock, Clock)
     clock = Clock(monotonic=lambda: 0.0, random=lambda: 0.5)
     assert_type(Deadline.after(1, clock=clock), Deadline)
+    assert_type(OAuthProviderOptions(clock=clock).clock, Clock)
     assert_type(token.cancelled, bool)
     assert_type(context.deadline, Deadline | None)
     assert_type(context.cancel_token, CancelToken | None)

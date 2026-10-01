@@ -388,13 +388,15 @@ def _faults(  # noqa: PLR0913, PLR0915
     unsent = errors.TransportError(delivery_state=errors.DeliveryState.NOT_SENT, phase="connect")
     secret = auth.StaticCredentialProvider(auth.ApiKeyCredential("s"))
 
-    def provider(adapter: Adapter, *, client_secret: object = secret, total: float = 30.0, **arguments: Any) -> Any:
+    def provider(
+        adapter: Adapter, *, client_secret: object = secret, total: float = 30.0, clock: Any = None, **arguments: Any
+    ) -> Any:
         return auth.RefreshTokenProvider(
             _TOKEN,
             client_id="c",
             token_set=arguments.pop("token_set", _tokens(auth, minutes=-1)),
             client_secret=client_secret,
-            options=auth.OAuthProviderOptions(refresh_timeout=total),
+            options=auth.OAuthProviderOptions(refresh_timeout=total, **({} if clock is None else {"clock": clock})),
             token_transport=adapter,
             **arguments,
         )
@@ -425,12 +427,15 @@ def _faults(  # noqa: PLR0913, PLR0915
             lines.append(f"  {label} = {_outcome(lambda family=family: family.get(_context(auth)))}")
             lines.append(f"    later get = {_outcome(lambda family=family: family.get(_context(auth)))}")
             lines.append(f"    refresh tokens sent = {adapter.refresh_tokens}")
-    unstuck = threading.Event()
-    adapter = _Sent(transports, rotated, gate=unstuck)
-    with provider(adapter, total=0.5) as family:
-        lines.append(f"  answer after the session and its grace = {_outcome(lambda: family.get(_context(auth)))}")
-        unstuck.set()
-        lines.append(f"    later get = {_outcome(lambda: family.get(_context(auth)))} sent={adapter.refresh_tokens}")
+    for label, clock in (("", None), (" on a frozen clock", options.Clock(monotonic=lambda: 1000.0))):
+        unstuck = threading.Event()
+        adapter = _Sent(transports, rotated, gate=unstuck)
+        with provider(adapter, total=0.5, clock=clock) as family:
+            lines.append(
+                f"  answer after the session and its grace{label} = {_outcome(lambda: family.get(_context(auth)))}"
+            )
+            unstuck.set()
+            lines.append(f"    later get = {_outcome(lambda: family.get(_context(auth)))} sent={adapter.refresh_tokens}")
     oauth = importlib.import_module(f"{package.__name__}._runtime.client.oauth")
     held = _Held(oauth.token_request)
     adapter = _Sent(transports, rotated)

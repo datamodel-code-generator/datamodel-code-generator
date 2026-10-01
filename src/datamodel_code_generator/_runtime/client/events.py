@@ -335,15 +335,14 @@ class CallEvents:
         self.terminal = True
         events = self._attempt_ending(error)
         status = None if self.info is None else self.info.status_code
+        outcome: CallOutcome = "cancel"
         match error:
             case None:
-                outcome: CallOutcome = "handed_off" if handed_off else "success"
+                outcome = "handed_off" if handed_off else "success"
             case RequestCancelledError():
-                outcome = "cancel"
+                pass
             case Exception():
                 outcome = "error"
-            case _:
-                outcome = "cancel"
         events.append(
             self.event(
                 "call_end", sent=self.sent, status=status, duration=self.monotonic() - self.started, outcome=outcome
@@ -489,15 +488,14 @@ class CallEvents:
         if (handed := self.handed) is None:
             return None
         self.handed = None
+        outcome: CallOutcome = "cancel"
         match error:
             case None:
-                outcome: CallOutcome = "cancel" if early else "success"
+                outcome = "cancel" if early else "success"
             case RequestCancelledError():
-                outcome = "cancel"
+                pass
             case Exception():
                 outcome = "error"
-            case _:
-                outcome = "cancel"
         status = None if self.info is None else self.info.status_code
         return self.event("stream_end", sent=True, status=status, duration=self.monotonic() - handed, outcome=outcome)
 

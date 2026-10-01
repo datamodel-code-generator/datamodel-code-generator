@@ -34,7 +34,7 @@ from .errors import (
     TokenExpiredError,
 )
 from .oauth import Progress, Session, token_material
-from .timing import TOKEN_INTERVAL
+from .timing import TOKEN_INTERVAL, real_end, wait_left
 
 if TYPE_CHECKING:
     from asyncio import Future, Task, TimerHandle
@@ -147,6 +147,7 @@ class Job:
 
     __slots__ = (
         "charged",
+        "ends",
         "exchanges",
         "finished",
         "outcome",
@@ -166,6 +167,7 @@ class Job:
         self.refresh_id = str(uuid4())
         self.waiters: list[_Waiter] = []
         self.session: Session | None = None
+        self.ends = 0.0
         self.progress = Progress()
         self.outcome: Outcome | None = None
         self.finished = False
@@ -176,6 +178,13 @@ class Job:
     def until(self) -> float | None:
         """Return when waiters stop waiting for an admitted job that has not finished its work."""
         return None if self.session is None else self.session.deadline.at + GRACE
+
+    def left(self, now: float) -> float | None:
+        """Return how long an admitted job may still run: until its session and grace end, or as long in real time.
+
+        now is the provider's clock, and ends is the real time its session and grace measured when it was admitted.
+        """
+        return None if (until := self.until) is None else wait_left(until - now, self.ends)
 
 
 @dataclass(slots=True, eq=False)
@@ -401,7 +410,8 @@ class SharedRefresh:
     def admit(self, job: Job) -> None:
         """Start a job's provider-owned session, charged to the call of its oldest waiter; the caller holds the lock."""
         options = self.options
-        job.session = Session.start(options.refresh_timeout, options.phase_timeout, options.clock)
+        job.session = session = Session.start(options.refresh_timeout, options.phase_timeout, options.clock)
+        job.ends = real_end(session.deadline.at + GRACE - self.monotonic())
         job.progress.guard = partial(self._sending, job)
         self._running.add(job)
         if job.exchanges and (charged := job.waiters[0].admission) is not None:
@@ -459,7 +469,7 @@ class SharedRefresh:
 
     def expire(self, job: Job) -> None:
         """Fail an admitted job whose work outlived its session and grace period, without stopping that work."""
-        if (until := job.until) is not None and self.monotonic() >= until:
+        if (left := job.left(self.monotonic())) is not None and not left > 0:
             self.overdue(job)
 
     def overdue(self, job: Job) -> None:
@@ -565,13 +575,13 @@ class SharedRefresh:
         """Return whether an admitted job's work has not returned yet."""
         return bool(self._running)
 
-    def drained(self, now: float) -> float | None:
+    def drained(self) -> float | None:
         """Expire running jobs whose session ended, and return how long closing still waits for the others."""
         waits: list[float] = []
         for job in self._outstanding:
             self.expire(job)
-            if job.outcome is None and (until := job.until) is not None:
-                waits.append(until - now)
+            if job.outcome is None and (left := job.left(self.monotonic())) is not None:
+                waits.append(left)
         return min(waits) if waits else None
 
 
@@ -682,8 +692,7 @@ class SyncSharedRefresh:
                             if (deadline := context.deadline) is None
                             else min(TOKEN_INTERVAL, deadline.remaining())
                         )
-                    if (until := job.until) is not None:
-                        left = until - shared.monotonic()
+                    if (left := job.left(shared.monotonic())) is not None:
                         remaining = left if remaining is None else min(remaining, left)
                     shared.changed.wait(None if remaining is None else min(remaining, threading.TIMEOUT_MAX))
                     shared.expire(job)
@@ -699,9 +708,9 @@ class SyncSharedRefresh:
         with shared.lock:
             try:
                 while (outcome := waiter.outcome) is None:
-                    until = job.until
-                    assert until is not None
-                    shared.changed.wait(min(until - shared.monotonic(), threading.TIMEOUT_MAX))
+                    left = job.left(shared.monotonic())
+                    assert left is not None
+                    shared.changed.wait(min(left, threading.TIMEOUT_MAX))
                     shared.expire(job)
             finally:
                 shared.leave(waiter, job)
@@ -804,7 +813,7 @@ class SyncSharedRefresh:
         """Release once the running jobs return or their sessions end, unless another closer already released."""
         shared = self.shared
         with shared.lock:
-            while not released.done() and (left := shared.drained(shared.monotonic())) is not None:
+            while not released.done() and (left := shared.drained()) is not None:
                 shared.changed.wait(min(left, threading.TIMEOUT_MAX))
         self._release()
 
@@ -924,9 +933,9 @@ class AsyncSharedRefresh:
         from asyncio import get_running_loop  # noqa: PLC0415
 
         loop = get_running_loop()
-        until = job.until
-        assert until is not None
-        timer = loop.call_at(loop.time() + until - self.shared.monotonic(), self._overdue, job)
+        left = job.left(self.shared.monotonic())
+        assert left is not None
+        timer = loop.call_later(max(0.0, left), self._overdue, job)
         task = _detached(self._run(job, timer))
         self._tasks.add(task)
         task.add_done_callback(partial(self._done, job, timer))
@@ -985,7 +994,7 @@ class AsyncSharedRefresh:
 
     def _drained(self) -> float | None:
         with self.shared.lock:
-            return self.shared.drained(self.shared.monotonic())
+            return self.shared.drained()
 
 
 def _invalidate(shared: SharedRefresh, version: object) -> None:

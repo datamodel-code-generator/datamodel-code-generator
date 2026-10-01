@@ -926,7 +926,7 @@ class _Call(LogicalCallContext):
         self.hop_index = 0
         self.previous_cap: float | None = None
         self.stop_reason: RetryStopReason | None = None
-        self.trace = AttemptTrace(self.settings.clock)
+        self.trace = AttemptTrace(clock=self.settings.clock)
         self.method = ""
         self.received_at = self.started
         self.received_wall_time = 0.0
@@ -1138,7 +1138,7 @@ class _Call(LogicalCallContext):
         self.hop_index = 0
         self.body_enabled = True
         self.current_origin = self.initial_origin
-        self.trace = AttemptTrace(self.settings.clock)
+        self.trace = AttemptTrace(clock=self.settings.clock)
         self.phase_caps = ()
         self.stop_reason = None
         if self.events is not None:
@@ -2533,7 +2533,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                     request = redirected
                     visited |= {(request.method, request.url)}
                     call.hop_index += 1
-                    call.trace = AttemptTrace(call.settings.clock)
+                    call.trace = AttemptTrace(clock=call.settings.clock)
                     call.phase_caps = ()
                     continue
                 planned = self._status_plan(info, source, call)
@@ -3378,7 +3378,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                     request = redirected
                     visited |= {(request.method, request.url)}
                     call.hop_index += 1
-                    call.trace = AttemptTrace(call.settings.clock)
+                    call.trace = AttemptTrace(clock=call.settings.clock)
                     call.phase_caps = ()
                     continue
                 planned = await self._status_plan(info, source, call)

@@ -61,13 +61,13 @@ class Clock:
 
     monotonic returns seconds on one never-decreasing scale, which measures every elapsed time, expiry, and wait. time
     returns POSIX wall-clock seconds, read only to place a wall-clock instant on that scale. random returns a float in
-    [0, 1) for full-jitter backoff. The SDK still waits in real time for the durations it measures on this clock, so a
-    fake clock that should skip a wait advances itself.
+    [0, 1) for full-jitter backoff. A wait ends once this clock reaches its target or once the real time it measured
+    when it began has passed, so a fake clock that should skip a wait advances itself. Hashing ignores the sources.
     """
 
-    monotonic: Callable[[], float] = _time.monotonic
-    time: Callable[[], float] = _time.time
-    random: Callable[[], float] = _random
+    monotonic: Callable[[], float] = field(default=_time.monotonic, hash=False)
+    time: Callable[[], float] = field(default=_time.time, hash=False)
+    random: Callable[[], float] = field(default=_random, hash=False)
 
     def __post_init__(self) -> None:
         """Refuse a source that cannot be called."""
@@ -84,7 +84,7 @@ class Deadline:
     """An immutable absolute deadline on a clock's monotonic scale, created with Deadline.after(seconds)."""
 
     _at: float
-    _clock: Clock = field(repr=False)
+    _clock: Clock = field(repr=False, hash=False)
 
     def __init__(self) -> None:
         """Require the relative factory so a wall-clock timestamp cannot become a deadline."""
@@ -98,7 +98,7 @@ class Deadline:
             clock = SYSTEM_CLOCK
         else:
             checked_instance(clock, (Clock,), ("clock",))
-        return absolute_deadline(clock.monotonic() + _seconds(seconds, ("deadline",)), clock)
+        return absolute_deadline(clock.monotonic() + _seconds(seconds, ("deadline",)), clock=clock)
 
     @property
     def at(self) -> float:
@@ -115,8 +115,8 @@ class Deadline:
         return max(0.0, self._at - self._clock.monotonic())
 
 
-def absolute_deadline(at: float, clock: Clock = SYSTEM_CLOCK) -> Deadline:
-    """Build the private absolute deadline used when a call or stream resolves its budget."""
+def absolute_deadline(at: float, *, clock: Clock) -> Deadline:
+    """Build the private absolute deadline on a clock's scale used when a call or stream resolves its budget."""
     value = object.__new__(Deadline)
     object.__setattr__(value, "_at", at)  # noqa: PLC2801 - Initialize the frozen value without a public constructor.
     object.__setattr__(value, "_clock", clock)  # noqa: PLC2801
@@ -124,10 +124,23 @@ def absolute_deadline(at: float, clock: Clock = SYSTEM_CLOCK) -> Deadline:
 
 
 def on_clock(deadline: Deadline, clock: Clock) -> Deadline:
-    """Return the deadline on the clock's scale: itself, or one moved from another clock by its remaining time."""
-    if deadline.clock.monotonic == clock.monotonic:
+    """Return the deadline on the clock's scale: itself when made on that Clock, or moved by its remaining time."""
+    if deadline.clock is clock:
         return deadline
-    return absolute_deadline(clock.monotonic() + deadline.remaining(), clock)
+    return absolute_deadline(clock.monotonic() + deadline.remaining(), clock=clock)
+
+
+def real_end(seconds: float) -> float:
+    """Return the real monotonic time by which a wait of seconds, measured on a clock as it begins, ends."""
+    return _time.monotonic() + seconds
+
+
+def wait_left(left: float, end: float) -> float:
+    """Return how long a wait lasts: until its clock has no time left or real time reaches the wait's end.
+
+    A NaN read from the clock stays NaN, which every wait treats as no time left.
+    """
+    return min(left, end - _time.monotonic())
 
 
 class CancelToken:

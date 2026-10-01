@@ -241,6 +241,7 @@
   clock random type ! ConfigurationError: ConfigurationError(field_path='clock.random', condition='invalid_type') [field_path=('clock', 'random'), condition='invalid_type'] configuration_error
   deadline clock type ! ConfigurationError: ConfigurationError(field_path='clock', condition='invalid_type') [field_path=('clock',), condition='invalid_type'] configuration_error
   fake clock deadline at=105.0 remaining=5.0 clock=True system=True
+  hashing ignores sources clock=True request=True
   deadline on the same clock ! TransportError: TransportError(call_id='<call>', delivery_state='NOT_SENT', phase='connect') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect'] transport_error
   deadline on the system clock ! TransportError: TransportError(call_id='<call>', delivery_state='NOT_SENT', phase='connect') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect'] transport_error
   kept=True moved onto the call's clock=True by its remaining time=True

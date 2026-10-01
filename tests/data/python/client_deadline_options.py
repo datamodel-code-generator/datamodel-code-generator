@@ -328,6 +328,16 @@ def _clocks(
         f"  fake clock deadline at={deadline.at} remaining={deadline.remaining()} clock={deadline.clock is fake}"
         f" system={options.Deadline.after(1).clock == options.Clock()}"
     )
+
+    class Unhashable:
+        __hash__ = None
+
+        def __call__(self) -> float:
+            return 100.0
+
+    odd = options.Clock(monotonic=Unhashable())
+    held = options.RequestOptions(deadline=options.Deadline.after(5, clock=odd))
+    lines.append(f"  hashing ignores sources clock={hash(odd) == hash(fake)} request={hash(held) == hash(held)}")
     seen: list[object] = []
 
     class ContextAdapter:

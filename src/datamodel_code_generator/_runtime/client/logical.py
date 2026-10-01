@@ -24,7 +24,7 @@ from .errors import (
 from .lifecycle import cleanup_secondary
 from .options import network_send_limit
 from .tasks import LEFT_WORK, TaskInterruptionError, task_failure, task_result
-from .timing import SYSTEM_CLOCK, TOKEN_INTERVAL, absolute_deadline, on_clock
+from .timing import TOKEN_INTERVAL, absolute_deadline, on_clock, real_end, wait_left
 from .transports import AttemptIOContext, ResolvedTimeoutOptions, set_io_timing
 
 if TYPE_CHECKING:
@@ -202,14 +202,14 @@ class OperationSession:
         total_timeout: float | None,
         deadline: Deadline | None,
         max_network_sends: int | None,
-        clock: Clock = SYSTEM_CLOCK,
+        clock: Clock,
     ) -> None:
         """Start the session now on its client's clock, with its effective deadline and send limit."""
         self.started = clock.monotonic()
         self.session_id = str(uuid4())
         deadline = None if deadline is None else on_clock(deadline, clock)
         if total_timeout is not None and (deadline is None or self.started + total_timeout < deadline.at):
-            deadline = absolute_deadline(self.started + total_timeout, clock)
+            deadline = absolute_deadline(self.started + total_timeout, clock=clock)
         self.deadline = deadline
         self.send_limit = max_network_sends
         self.network_send_budget_used = 0
@@ -275,7 +275,7 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
         if settings.total_timeout is not None:
             total_at = self.started + settings.total_timeout
             if deadline is None or total_at < deadline.at:
-                deadline = absolute_deadline(total_at, clock)
+                deadline = absolute_deadline(total_at, clock=clock)
         self.deadline: Deadline | None = deadline
         self.resource_attempt_count = 0
         self.redirect_count = 0
@@ -481,11 +481,15 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
             self.wire_send_count += 1
 
     def sleep_until(self, not_before: float) -> None:
-        """Wait until a retry target, waking for client close and checking an explicit token when present."""
+        """Wait until a retry target, or as long in real time, waking for client close and checking a token if any.
+
+        The wait ends once the call's clock reaches the target or the real time it measured at entry has passed.
+        """
+        end = real_end(not_before - self.monotonic())
         while True:
             self.check("sleep")
-            remaining = not_before - self.monotonic()
-            if remaining <= 0:
+            remaining = wait_left(not_before - self.monotonic(), end)
+            if not remaining > 0:
                 return
             if (deadline := self.deadline) is not None:
                 remaining = min(remaining, deadline.remaining())
@@ -560,7 +564,9 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
         self.streaming = True
         self.delivery_state = DeliveryState.RESPONSE_STARTED
         total = self.settings.stream_total_timeout
-        self.deadline = None if total is None else absolute_deadline(self.monotonic() + total, self.settings.clock)
+        self.deadline = (
+            None if total is None else absolute_deadline(self.monotonic() + total, clock=self.settings.clock)
+        )
         timeout = self.timeout()
         set_io_timing(self._io_context, timeout, self.deadline)
 
