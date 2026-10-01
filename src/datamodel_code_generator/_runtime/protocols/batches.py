@@ -25,6 +25,9 @@ from ..client.errors import (
     DeliveryState,
     ProtocolConfigurationError,
     RequestEncodingError,
+    ResponseDecodeError,
+    ResponseTooLargeError,
+    SDKError,
     TransportError,
 )
 from ..client.operations import DATA_ERRORS
@@ -67,6 +70,8 @@ R = TypeVar("R")
 
 MAX_REQUEST_BYTES: Final = 32 * 1024 * 1024
 _UNKNOWN: Final = frozenset({DeliveryState.MAYBE_SENT, DeliveryState.RESPONSE_STARTED})
+_MIN_SUCCESS: Final = 200
+_MAX_SUCCESS: Final = 299
 
 
 def _escaped(name: str) -> str:
@@ -201,36 +206,81 @@ class _Item:
 
 @dataclass(slots=True)
 class _Batch(Generic[R]):
-    """The items of one request, the bytes its body takes, and the work sending it."""
+    """The items of one request, the bytes its body takes and its items hold in the buffer, and the work sending it."""
 
     items: tuple[_Item, ...]
     size: int
+    held: int
     work: Any = None
 
 
 @dataclass(frozen=True, slots=True)
+class _Raise:
+    """A failure to raise once the records queued before it have been returned."""
+
+    error: Exception
+
+
+@dataclass(frozen=True, slots=True)
 class _Done(Generic[R]):
-    """What one request gave: a record per item, and the transport error of a delivery left unknown."""
+    """What one request gave: a record per item, and the failure that left its delivery unknown, if any.
+
+    `state` is how far an unknown delivery got, and `terminal` says the failure also ends the iteration, such as a
+    deadline, a cancellation, or a closed client.
+    """
 
     records: list[R]
-    unknown: TransportError | None = None
+    unknown: BaseException | None = None
+    state: DeliveryState = DeliveryState.MAYBE_SENT
+    terminal: bool = False
+
+
+def _counters(error: BaseException) -> dict[str, Any]:
+    """Return the call identity and counters an SDK failure carries, or nothing for any other failure."""
+    if not isinstance(error, SDKError):
+        return {}
+    return {
+        "operation_id": error.operation_id,
+        "call_id": error.call_id,
+        "parent_session_id": error.parent_session_id,
+        "resource_attempt_count": error.resource_attempt_count,
+        "redirect_count": error.redirect_count,
+        "auth_exchange_count": error.auth_exchange_count,
+        "network_send_count": error.network_send_count,
+        "network_send_budget_used": error.network_send_budget_used,
+        "auth_exchange_budget_used": error.auth_exchange_budget_used,
+        "auth_refresh_ids": error.auth_refresh_ids,
+        "auth_refresh_pending": error.auth_refresh_pending,
+        "wire_send_count": error.wire_send_count,
+    }
+
+
+def _applied(error: Exception) -> bool:
+    """Return whether a failure arrived with a success response, which the server applied before its body failed."""
+    info = error.info if isinstance(error, (ResponseDecodeError, ResponseTooLargeError)) else None
+    return info is not None and _MIN_SUCCESS <= info.status_code <= _MAX_SUCCESS
 
 
 class _Batches(Generic[R]):
     """What the synchronous and asyncio iterators share: reading and grouping items, sending, and matching results.
 
-    Items are read only while a request slot is free and the prepared bytes fit the buffer; a request is held until
-    every one of its results was returned, so results come back in input order.
+    Items are read only while a request slot is free and the buffer has room, and a request cut short by a full buffer
+    waits for the oldest request; a request is held until every one of its results was returned, so results come back
+    in input order. A failed request is raised in its turn, after which no item is read or sent, and the requests
+    already in flight still return their records in order.
     """
 
     __slots__ = (
         "_arguments",
         "_buffered",
+        "_cancelled",
+        "_checked",
         "_count",
         "_done",
         "_encoder",
         "_exhausted",
         "_failure",
+        "_halted",
         "_item_bytes",
         "_limits",
         "_lock",
@@ -265,13 +315,16 @@ class _Batches(Generic[R]):
         self._request_bytes = min(plan.max_request_bytes, MAX_REQUEST_BYTES, limits.max_buffer_bytes)
         self._item_bytes = max(0, min(limits.max_item_bytes, self._request_bytes - plan.overhead))
         self._slots: deque[_Batch[R]] = deque()
-        self._ready: deque[R] = deque()
-        self._pending: _Item | None = None
+        self._ready: deque[R | _Raise] = deque()
+        self._pending: deque[_Item] = deque()
         self._failure: Exception | None = None
         self._buffered = 0
         self._read = 0
         self._returned = 0
         self._exhausted = False
+        self._halted = False
+        self._cancelled = False
+        self._checked = False
         self._done = False
 
     def __repr__(self) -> str:
@@ -299,6 +352,12 @@ class _Batches(Generic[R]):
                 operation=plan.operation,
                 parent_session_id=self._session.session_id,
             )
+
+    def _check(self, core: ClientCore | AsyncClientCore) -> None:
+        """Check the shared arguments once, before anything is sent, as the operation's own calls are checked."""
+        if not self._checked:
+            self._arguments = core.checked_arguments(self._plan.call, self._arguments, self._limits.options)
+            self._checked = True
 
     def _item(self, value: object, index: int) -> _Item:
         """Encode one item as the request body's codec encodes it, and measure and identify it.
@@ -371,37 +430,47 @@ class _Batches(Generic[R]):
         if error is not None:
             self._failure = error
 
-    def _grouped(self, item: _Item, items: list[_Item], size: int, keys: set[bytes]) -> int | None:
-        """Return a request's body bytes with one more item, or None when it belongs to the next request.
+    def _halt(self) -> None:
+        """Read and send nothing more; the requests in flight still return their records."""
+        self._halted = True
+        self._exhausted = True
+        self._pending.clear()
 
-        It does not fit the count, the request's bytes, or the buffer, or its ID is already in this request.
+    def _hold(self, item: _Item) -> None:
+        """Keep an item read for the next request, counting its bytes in the buffer."""
+        self._pending.append(item)
+        self._buffered += item.size
+
+    def _front(self) -> tuple[list[_Item], int, bool]:
+        """Return the held items the next request takes, its body bytes, and whether it is complete.
+
+        A request is complete at the item count, or when the next held item exceeds its bytes or repeats an ID in it.
         """
-        grown = size + item.size + (1 if items else 0)
-        if (
-            len(items) >= self._count
-            or grown > self._request_bytes
-            or self._buffered + grown > self._limits.max_buffer_bytes
-            or (item.key is not None and item.key in keys)
-        ):
-            return None
-        return grown
+        items: list[_Item] = []
+        keys: set[bytes] = set()
+        size = self._plan.overhead
+        for item in self._pending:
+            grown = size + item.size + (1 if items else 0)
+            if len(items) >= self._count or grown > self._request_bytes or (item.key is not None and item.key in keys):
+                return items, size, True
+            items.append(item)
+            size = grown
+            if item.key is not None:
+                keys.add(item.key)
+        return items, size, len(items) >= self._count
 
-    def _added(self, item: _Item, items: list[_Item], size: int, keys: set[bytes]) -> int | None:
-        """Add an item to the request being grouped and return its new bytes, or hold the item for the next one."""
-        if (grown := self._grouped(item, items, size, keys)) is None:
-            self._pending = item
-            return None
-        items.append(item)
-        if item.key is not None:
-            keys.add(item.key)
-        return grown
+    def _wants(self) -> bool:
+        """Return whether one more item is read: the next request is incomplete, and input and buffer remain."""
+        return not self._front()[2] and not self._exhausted and self._buffered < self._limits.max_buffer_bytes
 
-    def _batch(self, items: list[_Item], size: int) -> _Batch[R] | None:
-        """Return the grouped request, counting its bytes in the buffer, or None when it has no item."""
-        if not items:
+    def _cut(self) -> _Batch[R] | None:
+        """Return the next request, or None when no item is held or a request cut short by the buffer should wait."""
+        items, size, complete = self._front()
+        if not items or (not complete and not self._exhausted and self._slots):
             return None
-        self._buffered += size
-        return _Batch(tuple(items), size)
+        for _ in items:
+            self._pending.popleft()
+        return _Batch(tuple(items), size, sum(item.size for item in items))
 
     def _request(self, batch: _Batch[R]) -> Callable[[], tuple[tuple[object, ...], object, None]]:
         """Return how a request is built: the shared arguments and a body holding the items' wire values."""
@@ -435,15 +504,27 @@ class _Batches(Generic[R]):
         )
 
     def _failed(self, batch: _Batch[R], error: Exception) -> _Done[R]:
-        """Return the records of a request whose delivery stays unknown, or raise its failure as the session's."""
-        if isinstance(error, TransportError) and error.delivery_state in _UNKNOWN:
-            plan = self._plan
-            return _Done(
-                [plan.unknown(index=item.index, item_id=item.item_id, response=None) for item in batch.items], error
-            )
+        """Return the records of a request whose delivery stays unknown, or raise its failure.
+
+        A request may have reached the server when its failure says so, and its server applied it when a success
+        response's body failed; a failure other than a transport one, such as a deadline, a cancellation, or a closed
+        client, also ends the iteration after the records.
+        """
         if isinstance(error, BudgetExceededError) and error.budget_kind == "parent_network":
             raise self._refused(error) from None
+        if isinstance(error, SDKError) and (state := getattr(error, "delivery_state", None)) in _UNKNOWN:
+            return self._unknown_records(batch, error, state, terminal=not isinstance(error, TransportError))
+        if _applied(error):
+            return self._unknown_records(batch, error, DeliveryState.RESPONSE_STARTED, terminal=False)
         raise error
+
+    def _unknown_records(
+        self, batch: _Batch[R], error: BaseException, state: DeliveryState, *, terminal: bool
+    ) -> _Done[R]:
+        """Return an unknown delivery record per item of a request, with the failure that left it unknown."""
+        plan = self._plan
+        records = [plan.unknown(index=item.index, item_id=item.item_id, response=None) for item in batch.items]
+        return _Done(records, error, state, terminal)
 
     def _mismatch(self, indices: tuple[int, ...], info: ResponseInfo) -> BatchProtocolError:
         plan = self._plan
@@ -526,42 +607,56 @@ class _Batches(Generic[R]):
         return BatchDeliveryUnknownError(
             partial_results=tuple(done.records),
             batch_indices=tuple(item.index for item in batch.items),
-            delivery_state=error.delivery_state,
+            delivery_state=done.state,
             helper_id=plan.helper_id,
             operation=plan.operation,
-            operation_id=error.operation_id,
-            call_id=error.call_id,
-            parent_session_id=error.parent_session_id,
             cause=error,
-            resource_attempt_count=error.resource_attempt_count,
-            redirect_count=error.redirect_count,
-            auth_exchange_count=error.auth_exchange_count,
-            network_send_count=error.network_send_count,
-            network_send_budget_used=error.network_send_budget_used,
-            auth_exchange_budget_used=error.auth_exchange_budget_used,
-            auth_refresh_ids=error.auth_refresh_ids,
-            auth_refresh_pending=error.auth_refresh_pending,
-            wire_send_count=error.wire_send_count,
+            **_counters(error),
         )
 
     def _settled(self, batch: _Batch[R], done: _Done[R]) -> None:
-        """Release a returned request's buffer bytes and queue its records, or raise its unknown delivery."""
-        self._buffered -= batch.size
-        if done.unknown is not None and self._limits.raise_on_error:
+        """Release a returned request's buffer bytes and queue its records, or raise its unknown delivery.
+
+        An unknown delivery raised, or one whose failure ends the iteration, stops reading and sending; the failure
+        that ends it is raised after the request's records.
+        """
+        self._buffered -= batch.held
+        if (error := done.unknown) is None:
+            self._ready.extend(done.records)
+            return
+        if self._limits.raise_on_error:
+            self._halt()
             raise self._unknown(batch, done)
         self._ready.extend(done.records)
+        if done.terminal and isinstance(error, Exception):
+            self._halt()
+            self._ready.append(_Raise(error))
 
     def _next_ready(self) -> R | None:
-        """Return the next queued record, or None when none is queued."""
+        """Return the next queued record, raise a queued failure, or return None when nothing is queued."""
         if not self._ready:
             return None
+        if isinstance(item := self._ready.popleft(), _Raise):
+            raise item.error
         self._returned += 1
-        return self._ready.popleft()
+        return item
 
     def _ended(self) -> Exception | None:
-        """End iteration once no request is left, returning the reading failure to raise after every result."""
+        """End iteration once no request is left, returning the failure to raise after every result.
+
+        After a cancellation, items read and not sent are reported by a ProtocolStateError of state `cancelled`.
+        """
         self._done = True
         failure, self._failure = self._failure, None
+        if failure is None and self._cancelled:
+            plan = self._plan
+            failure = ProtocolStateError(
+                state="cancelled",
+                action="next",
+                helper_id=plan.helper_id,
+                operation=plan.operation,
+                parent_session_id=self._session.session_id,
+            )
         return failure
 
 
@@ -592,12 +687,7 @@ class BatchIterator(_Batches[R]):
         self._executor: ThreadPoolExecutor | None = None
 
     def _take(self) -> _Item | None:
-        """Return the held item or read the next one, or None once reading stopped."""
-        if (item := self._pending) is not None:
-            self._pending = None
-            return item
-        if self._exhausted:
-            return None
+        """Read the next item, or return None once reading stopped."""
         try:
             value = next(self._source)
         except StopIteration:
@@ -609,15 +699,11 @@ class BatchIterator(_Batches[R]):
         return self._accepted(value)
 
     def _group(self) -> _Batch[R] | None:
-        """Read items into the next request until it is full, or None when none is ready to send."""
-        items: list[_Item] = []
-        keys: set[bytes] = set()
-        size = self._plan.overhead
-        while (item := self._take()) is not None:
-            if (grown := self._added(item, items, size, keys)) is None:
-                break
-            size = grown
-        return self._batch(items, size)
+        """Read items until the next request is complete, input ends, or the buffer is full, and cut it."""
+        while self._wants():
+            if (item := self._take()) is not None:
+                self._hold(item)
+        return self._cut()
 
     def _send(self, batch: _Batch[R]) -> _Done[R]:
         """Send one request as a child call of the session and return its records."""
@@ -637,9 +723,9 @@ class BatchIterator(_Batches[R]):
         except Exception as error:  # noqa: BLE001 - An unknown delivery becomes records; anything else is raised.
             return self._failed(batch, error)
 
-    def _fill(self) -> None:
-        """Submit requests while a slot is free and items are ready."""
-        while len(self._slots) < self._limits.parallelism and (batch := self._group()) is not None:
+    def _head(self) -> _Batch[R] | None:
+        """Submit requests while a slot is free and items are ready, then return the oldest one once it completed."""
+        while not self._halted and len(self._slots) < self._limits.parallelism and (batch := self._group()) is not None:
             if (executor := self._executor) is None:
                 from concurrent.futures import ThreadPoolExecutor  # noqa: PLC0415 - Only a sent batch needs threads.
 
@@ -648,12 +734,16 @@ class BatchIterator(_Batches[R]):
                 )
             batch.work = executor.submit(self._send, batch)
             self._slots.append(batch)
+        if not self._slots:
+            return None
+        work: Future[_Done[R]] = self._slots[0].work
+        work.exception()
+        return self._slots.popleft()
 
     def _finish(self) -> None:
         """Stop sending: cancel requests not started, wait for those in flight, and drop their results."""
         self._done = True
-        self._exhausted = True
-        self._pending = None
+        self._halt()
         slots, self._slots = self._slots, deque()
         for batch in slots:
             batch.work.cancel()
@@ -662,22 +752,25 @@ class BatchIterator(_Batches[R]):
             executor.shutdown(wait=True, cancel_futures=True)
 
     def _step(self) -> R:
+        self._check(self._core)
         while (record := self._next_ready()) is None:
             if self._done:
                 raise StopIteration
-            self._fill()
-            if not self._slots:
+            try:
+                batch = self._head()
+            except BaseException:
+                self._finish()
+                raise
+            if batch is None:
                 self._finish()
                 if (failure := self._ended()) is not None:
                     raise failure
                 raise StopIteration
-            batch = self._slots.popleft()
             work: Future[_Done[R]] = batch.work
-            try:
-                self._settled(batch, work.result())
-            except BaseException:
-                self._finish()
-                raise
+            if (error := work.exception()) is not None:
+                self._halt()
+                raise error
+            self._settled(batch, work.result())
         return record
 
     def __iter__(self) -> Self:
@@ -716,8 +809,9 @@ class BatchIterator(_Batches[R]):
 class AsyncBatchIterator(_Batches[R]):
     """The results of an asyncio batch helper's items in input order, sent in bounded requests as tasks.
 
-    `aclose` stops new requests and cancels and awaits those in flight; it never closes the client. Iterating from
-    two tasks at once raises ProtocolStateError.
+    A cancelled step cancels the requests in flight, whose records become unknown deliveries, and nothing is read or
+    sent after it. `aclose` stops new requests and cancels and awaits those in flight; it never closes the client.
+    Iterating from two tasks at once raises ProtocolStateError.
     """
 
     __slots__ = ("_aiterator", "_core", "_iterator", "_source")
@@ -756,12 +850,7 @@ class AsyncBatchIterator(_Batches[R]):
         return await anext(self._aiterator)
 
     async def _take(self) -> _Item | None:
-        """Return the held item or read the next one, or None once reading stopped."""
-        if (item := self._pending) is not None:
-            self._pending = None
-            return item
-        if self._exhausted:
-            return None
+        """Read the next item, or return None once reading stopped."""
         try:
             value = await self._value()
         except StopAsyncIteration:
@@ -773,15 +862,11 @@ class AsyncBatchIterator(_Batches[R]):
         return self._accepted(value)
 
     async def _group(self) -> _Batch[R] | None:
-        """Read items into the next request until it is full, or None when none is ready to send."""
-        items: list[_Item] = []
-        keys: set[bytes] = set()
-        size = self._plan.overhead
-        while (item := await self._take()) is not None:
-            if (grown := self._added(item, items, size, keys)) is None:
-                break
-            size = grown
-        return self._batch(items, size)
+        """Read items until the next request is complete, input ends, or the buffer is full, and cut it."""
+        while self._wants():
+            if (item := await self._take()) is not None:
+                self._hold(item)
+        return self._cut()
 
     async def _send(self, batch: _Batch[R]) -> _Done[R]:
         """Send one request as a child call of the session and return its records."""
@@ -801,52 +886,65 @@ class AsyncBatchIterator(_Batches[R]):
         except Exception as error:  # noqa: BLE001 - An unknown delivery becomes records; anything else is raised.
             return self._failed(batch, error)
 
-    async def _fill(self) -> None:
-        """Start requests while a slot is free and items are ready."""
-        from asyncio import ensure_future  # noqa: PLC0415 - Only an asyncio iterator starts tasks.
+    async def _head(self) -> _Batch[R] | None:
+        """Start requests while a slot is free and items are ready, then return the oldest one once it completed."""
+        from asyncio import ensure_future, wait  # noqa: PLC0415 - Only an asyncio iterator starts tasks.
 
-        while len(self._slots) < self._limits.parallelism and (batch := await self._group()) is not None:
-            batch.work = ensure_future(self._send(batch))
-            self._slots.append(batch)
-
-    def _abort(self) -> list[Task[_Done[R]]]:
-        """Stop sending and cancel every request in flight, returning their tasks to await."""
-        self._done = True
-        self._exhausted = True
-        self._pending = None
-        slots, self._slots = self._slots, deque()
-        tasks = [batch.work for batch in slots]
-        for task in tasks:
-            task.cancel()
+        while not self._halted and len(self._slots) < self._limits.parallelism and (batch := await self._group()):
+            batch.work = task = ensure_future(self._send(batch))
             task.add_done_callback(_retrieved)
-        return tasks
+            self._slots.append(batch)
+        if not self._slots:
+            return None
+        await wait((self._slots[0].work,))
+        return self._slots.popleft()
+
+    def _abort(self) -> None:
+        """Stop reading and sending at a cancellation, cancelling every request in flight; their tasks stay to await."""
+        self._halt()
+        self._cancelled = True
+        for batch in self._slots:
+            batch.work.cancel()
 
     async def _finish(self) -> None:
         """Stop sending, then cancel and await the requests in flight, dropping their results."""
         from asyncio import gather  # noqa: PLC0415 - Only an asyncio iterator awaits tasks.
 
-        if tasks := self._abort():
-            await gather(*tasks, return_exceptions=True)
+        self._done = True
+        self._halt()
+        slots, self._slots = self._slots, deque()
+        for batch in slots:
+            batch.work.cancel()
+        await gather(*(batch.work for batch in slots), return_exceptions=True)
+
+    def _outcome(self, batch: _Batch[R]) -> _Done[R]:
+        """Return a completed request's records: unknown deliveries when it was cancelled, or raise its failure."""
+        from asyncio import CancelledError  # noqa: PLC0415 - Only an asyncio iterator cancels tasks.
+
+        task: Task[_Done[R]] = batch.work
+        if task.cancelled():
+            return self._unknown_records(batch, CancelledError(), DeliveryState.MAYBE_SENT, terminal=False)
+        if (error := task.exception()) is not None:
+            self._halt()
+            raise error
+        return task.result()
 
     async def _step(self) -> R:
+        self._check(self._core)
         while (record := self._next_ready()) is None:
             if self._done:
                 raise StopAsyncIteration
-            await self._fill()
-            if not self._slots:
+            try:
+                batch = await self._head()
+            except BaseException:
+                self._abort()
+                raise
+            if batch is None:
                 await self._finish()
                 if (failure := self._ended()) is not None:
                     raise failure
                 raise StopAsyncIteration
-            batch = self._slots.popleft()
-            try:
-                self._settled(batch, await batch.work)
-            except Exception:
-                await self._finish()
-                raise
-            except BaseException:
-                self._abort()
-                raise
+            self._settled(batch, self._outcome(batch))
         return record
 
     def __aiter__(self) -> Self:

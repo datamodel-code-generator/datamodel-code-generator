@@ -139,6 +139,36 @@ def _summarized(lines: list[str], label: str, records: list[Any], failure: BaseE
         lines.append(f"    ! {describe(failure)}")
 
 
+def continued(lines: list[str], label: str, iterator: Iterator[Any]) -> None:
+    """Consume a batch iterator through its failures, reporting each failure after the records before it."""
+    records: list[Any] = []
+    failures: list[str] = []
+    while True:
+        try:
+            records.append(next(iterator))
+        except StopIteration:
+            break
+        except Exception as error:  # noqa: BLE001
+            failures.append(f"after {len(records)}: {describe(error)}")
+    _summarized(lines, label, records, None)
+    lines.extend(f"    ! {item}" for item in failures)
+
+
+async def acontinued(lines: list[str], label: str, iterator: Any) -> None:
+    """Consume an asyncio batch iterator through its failures, reporting each one after the records before it."""
+    records: list[Any] = []
+    failures: list[str] = []
+    while True:
+        try:
+            records.append(await anext(iterator))
+        except StopAsyncIteration:
+            break
+        except Exception as error:  # noqa: BLE001
+            failures.append(f"after {len(records)}: {describe(error)}")
+    _summarized(lines, label, records, None)
+    lines.extend(f"    ! {item}" for item in failures)
+
+
 def drained(lines: list[str], label: str, iterator: Iterator[Any]) -> list[Any]:
     """Consume a batch iterator, reporting its records and the failure that ended it."""
     records: list[Any] = []
@@ -195,6 +225,7 @@ def batches(package: ModuleType, lines: list[str]) -> None:
         _failures(harness, api, server, lines)
         _inputs(harness, api, server, lines)
         _states(harness, api, server, lines)
+        _siblings(harness, api, server, lines)
         _records(harness, api, server, lines)
     run(lambda: _async_batches(harness, lines))
     _errors(harness, lines)
@@ -282,7 +313,10 @@ def _mismatches(harness: _Batches, api: Any, server: _Server, lines: list[str]) 
         ("missing result", [good, {"id": "u0002", "error": {"code": "x"}}]),
         ("unknown ID", [good, {"id": "u0009", "error": {"code": "x"}}, {"id": "u0000", "error": {"code": "x"}}]),
         ("result without ID", [good, {"error": {"code": "x"}}, {"id": "u0000", "error": {"code": "x"}}]),
-        ("both members", [good, {"id": "u0002", "user": good["user"], "error": {"code": "x"}}, {"id": "u0000"}]),
+        (
+            "both members",
+            [good, {"id": "u0002", "user": good["user"], "error": {"code": "x"}}, {"id": "u0000", "error": {"code": "x"}}],
+        ),
         ("neither member", [good, {"id": "u0002", "user": None}, {"id": "u0000", "error": {"code": "x"}}]),
     ):
         server.respond(json_response(200, {"results": results}))
@@ -319,6 +353,65 @@ def _failures(harness: _Batches, api: Any, server: _Server, lines: list[str]) ->
         users.iterate(harness.users(5), batch_options=harness.batch(batch_size=2, parallelism=1, raise_on_error=True)),
     )
     server.report("unknown delivery raised")
+
+
+def _head_fails(request: httpx2.Request) -> httpx2.Response:
+    """Refuse the request holding the first user with a 503, and answer any other from its body."""
+    if json.loads(request.content)["users"][0]["id"] == "u0000":
+        return json_response(503, {"message": "busy"})(request)
+    return answer(request)
+
+
+class _Interrupt(BaseException):
+    """An interruption a caller's source raises, as KeyboardInterrupt would."""
+
+
+def _interrupted(items: list[Any]) -> Iterator[Any]:
+    """Yield the items, then interrupt the iteration reading them."""
+    yield from items
+    raise _Interrupt
+
+
+def _siblings(harness: _Batches, api: Any, server: _Server, lines: list[str]) -> None:
+    """Return the records of requests in flight after a failure, and report deliveries a stop left unknown."""
+    users = api.protocols.users.create
+    lines.append("requests in flight after a failure")
+    server.respond(_head_fails, _head_fails)
+    pair = harness.batch(batch_size=2, parallelism=2)
+    continued(lines, "head refused", users.iterate(harness.users(4), batch_options=pair))
+    server.report("head refused")
+    token = harness.options.CancelToken()
+
+    def cancelling(request: httpx2.Request) -> httpx2.Response:
+        response = answer(request)
+        token.cancel()
+        return response
+
+    server.respond(answer, cancelling)
+    single = harness.batch(batch_size=2, parallelism=1)
+    options = harness.options.RequestOptions(cancel_token=token)
+    continued(lines, "cancelled while answered", users.iterate(harness.users(6), batch_options=single, options=options))
+    server.report("cancelled while answered")
+    received, release = threading.Event(), threading.Event()
+
+    def stalled(request: httpx2.Request) -> httpx2.Response:
+        received.set()
+        release.wait(30)
+        return answer(request)
+
+    server.respond(stalled)
+    session = harness.options.SessionOptions(total_timeout=3)
+    continued(lines, "deadline while answered", users.iterate(harness.users(2), session_options=session))
+    release.set()
+    lines.append(f"  request received {received.is_set()}")
+    server.report("deadline while answered")
+    iterator = users.iterate(_interrupted(harness.users(1)), batch_options=single)
+    try:
+        next(iterator)
+    except _Interrupt:
+        lines.append("  interrupted while reading")
+    record(lines, "after the interruption", lambda: _record(next(iterator)))
+    server.report("interrupted")
 
 
 def _failing_source(items: list[Any]) -> Iterator[Any]:
@@ -439,6 +532,9 @@ async def _async_batches(harness: _Batches, lines: list[str]) -> None:
             ),
         )
         await adrained(lines, "item limit", users.iterate(harness.users(3), batch_options=harness.batch(max_items=2)))
+        server.respond(_head_fails, _head_fails)
+        pair = harness.batch(batch_size=2, parallelism=2)
+        await acontinued(lines, "head refused", users.iterate(harness.users(4), batch_options=pair))
         server.report("failures")
         await _async_states(harness, api, server, lines)
 
@@ -472,6 +568,65 @@ async def _async_states(harness: _Batches, api: Any, server: _Server, lines: lis
         lines.append("  after block stops")
     server.report("states")
     await _cancelled(harness, lines)
+    await _cancelled_reading(harness, lines, raise_on_error=False)
+    await _cancelled_reading(harness, lines, raise_on_error=True)
+
+
+class _Gated:
+    """An asynchronous source that waits before one item until it is released."""
+
+    def __init__(self, items: list[Any], gate: int) -> None:
+        """Keep the items and the position of the gate."""
+        self.items = items
+        self.position = 0
+        self.gate = gate
+        self.waiting = asyncio.Event()
+        self.release = asyncio.Event()
+
+    def __aiter__(self) -> _Gated:
+        """Return this source."""
+        return self
+
+    async def __anext__(self) -> Any:
+        """Return the next item, waiting at the gate until released."""
+        if self.position >= len(self.items):
+            raise StopAsyncIteration
+        if self.position == self.gate:
+            self.waiting.set()
+            await self.release.wait()
+        self.position += 1
+        return self.items[self.position - 1]
+
+
+async def _cancelled_reading(harness: _Batches, lines: list[str], *, raise_on_error: bool) -> None:
+    """Cancel a step while it reads the source with a request in flight: nothing more is read or sent.
+
+    The request's records become unknown deliveries, or its unknown delivery is raised, and a ProtocolStateError of
+    state `cancelled` then ends the iteration, so the item read but not sent is never dropped silently.
+    """
+    received, release = threading.Event(), threading.Event()
+
+    def stalled(request: httpx2.Request) -> httpx2.Response:
+        received.set()
+        release.wait(30)
+        return answer(request)
+
+    server = _Server(lines)
+    server.respond(stalled)
+    async with server.async_client() as native, harness.package.AsyncClient(http_client=native) as api:
+        source = _Gated(harness.users(6), gate=3)
+        settings = harness.batch(batch_size=2, parallelism=2, raise_on_error=raise_on_error)
+        iterator = api.protocols.users.create.iterate(source, batch_options=settings)
+        step = asyncio.ensure_future(anext(iterator))
+        await source.waiting.wait()
+        await asyncio.to_thread(received.wait, 30)
+        step.cancel()
+        cancelled = await asyncio.gather(step, return_exceptions=True)
+        release.set()
+        source.release.set()
+        lines.append(f"  cancelled while reading {[type(item).__name__ for item in cancelled]}")
+        await acontinued(lines, f"after the cancellation, raising {raise_on_error}", iterator)
+        server.report("cancelled while reading")
 
 
 async def _cancelled(harness: _Batches, lines: list[str]) -> None:
@@ -560,3 +715,21 @@ def batch_backends(package: ModuleType, lines: list[str]) -> None:
         drained(lines, "tags", api.protocols.tags.put.iterate(harness.tags("red", None, "blue", "green")))
         server.report("requests")
 
+
+
+def batch_arguments(package: ModuleType, lines: list[str]) -> None:
+    """Check the shared arguments with Pydantic once, before any request, when the package validates arguments."""
+    harness = _Batches(package)
+    server = _Server(lines)
+    with server.client() as native, package.Client(http_client=native, options=harness.client_options()) as api:
+        users = api.protocols.users.create
+        iterator = users.iterate(harness.users(3), dry_run=[1])
+        for label in ("invalid shared argument", "again"):
+            try:
+                next(iterator)
+            except Exception as error:  # noqa: BLE001
+                cause = type(error.__cause__ or getattr(error, "cause", None)).__name__
+                lines.append(f"  {label} ! {type(error).__name__} location={error.location} cause={cause}")
+        dry_run = harness.argument("users", "CreateUsers", "query", "dryRun", True)
+        drained(lines, "valid shared argument", users.iterate(harness.users(3), dry_run=dry_run))
+        server.report("arguments")

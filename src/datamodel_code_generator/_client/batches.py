@@ -307,9 +307,7 @@ class _Batches:
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.input", message, spec))
             return None
         pointer = correlation["result"]
-        if owner := next(
-            (key for key in ("success", "error") if f"{pointer}/".startswith(f"{helper.tree[key]['pointer']}/")), None
-        ):
+        if owner := next((key for key in ("success", "error") if _inside(pointer, helper.tree[key]["pointer"])), None):
             message = (
                 f"The result ID pointer {pointer!r} of {name!r} reads the {owner} member, which a result of the other "
                 "outcome does not carry"
@@ -327,6 +325,11 @@ class _Batches:
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.result", message, spec))
             return None
         return kind
+
+
+def _inside(pointer: str, member: str) -> bool:
+    """Return whether a pointer names a member, or a member inside it."""
+    return f"{pointer}/".startswith(f"{member}/")
 
 
 def _model(node: TypeNode, models: Mapping[str, Any]) -> ModelNode:

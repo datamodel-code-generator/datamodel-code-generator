@@ -2766,6 +2766,19 @@
       ]
     ]
   },
+  "batches-arguments": {
+    "input": "batches.yaml",
+    "references": [
+      "protocols/batches.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/batches.yaml",
+      "validation": {
+        "arguments": "pydantic"
+      }
+    },
+    "modules": false
+  },
   "protocols-batch-checks": {
     "input": "batch-checks.yaml",
     "references": [

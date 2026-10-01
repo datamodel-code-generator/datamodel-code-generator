@@ -16,7 +16,7 @@ from tests.data.python.client_auth_errors import auth_errors
 from tests.data.python.client_auth_flows import auth_flows
 from tests.data.python.client_auth_options import auth_options
 from tests.data.python.client_auth_values import auth_values
-from tests.data.python.client_batches import batch_backends, batches
+from tests.data.python.client_batches import batch_arguments, batch_backends, batches
 from tests.data.python.client_bodies import bodies
 from tests.data.python.client_body_digest import body_digest
 from tests.data.python.client_body_replay import body_replay, multipart_replay
@@ -815,6 +815,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "polling": ("polling", ("pydantic_v2.BaseModel",), polling),
     "batches": ("batches", ("pydantic_v2.BaseModel",), batches),
     "batch-backends": ("batches", BACKENDS, batch_backends),
+    "batch-arguments": ("batches-arguments", ("pydantic_v2.BaseModel",), batch_arguments),
     "streams": ("streams", ("pydantic_v2.BaseModel",), streams),
     "stream-events": ("streams", ("pydantic_v2.BaseModel",), event_stream_lifetimes),
     "stream-backends": ("streams", BACKENDS, stream_backends),

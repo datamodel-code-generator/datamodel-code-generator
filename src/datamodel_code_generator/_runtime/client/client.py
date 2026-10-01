@@ -1453,6 +1453,14 @@ class _Core(Generic[AdapterT, HandleT]):
         """Return how a call with these options validates the values it sends."""
         return self._call_settings(options, operation_id).validation.request
 
+    def checked_arguments(
+        self, operation: OperationPlan[object, object], arguments: tuple[object, ...], options: RequestOptions | None
+    ) -> tuple[object, ...]:
+        """Return a call's parameter arguments as its Pydantic argument validation checks them, when it uses one."""
+        if self._call_settings(options, operation.operation_id).validation.arguments != "pydantic":
+            return arguments
+        return operation.checked(arguments, UNSET, None)[0]
+
     def _raw_call(
         self, operation: OperationPlan[object, object], options: RequestOptions | None, session: OperationSession | None
     ) -> _Call:
