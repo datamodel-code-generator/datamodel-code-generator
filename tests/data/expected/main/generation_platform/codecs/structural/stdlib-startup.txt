@@ -9,6 +9,7 @@ required-disagrees: CodecConfigurationError The native type of models:Ticket doe
 unbound-required: CodecConfigurationError The native type of models:Ticket does not match its binding
 unresolved-annotation: CodecConfigurationError The native type of models:Ticket does not match its binding
 leaf-disagrees: CodecConfigurationError The native type of models:Ticket.label does not match its binding
+bytes-leaf: CodecConfigurationError The native type of models:Ticket.label does not match its binding
 union-disagrees: CodecConfigurationError The native type of models:Ticket.label does not match its binding
 container-disagrees: CodecConfigurationError The native type of models:Record.items does not match its binding
 key-disagrees: CodecConfigurationError The native type of models:Keyed.by_color does not match its binding

@@ -6,6 +6,7 @@ import gzip
 import importlib
 import json
 import zlib
+from functools import partial
 from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
@@ -42,12 +43,18 @@ from tests.data.python.client_oauth_refresh import oauth_refresh, oauth_refresh_
 from tests.data.python.client_oauth_shared import oauth_shared
 from tests.data.python.client_oauth_store import oauth_refresh_store
 from tests.data.python.client_pagination import pagination, pagination_backends, pagination_limits
+from tests.data.python.client_pagination_count_values import pagination_count_defaults, pagination_count_values
 from tests.data.python.client_pagination_counts import pagination_counts
 from tests.data.python.client_pagination_links import pagination_links
 from tests.data.python.client_pagination_resume import pagination_resume
 from tests.data.python.client_pagination_sessions import pagination_auth, pagination_sessions
-from tests.data.python.client_pagination_targets import pagination_querystring, pagination_targets
-from tests.data.python.client_path_segments import path_segments
+from tests.data.python.client_pagination_targets import (
+    pagination_paths,
+    pagination_querystring,
+    pagination_targets,
+    path_arguments,
+)
+from tests.data.python.client_parameter_adapters import parameter_adapters
 from tests.data.python.client_polling import polling
 from tests.data.python.client_polling_resume import polling_resume
 from tests.data.python.client_protocol_contracts import protocol_contracts
@@ -78,11 +85,20 @@ from tests.data.python.client_runtime import (
 from tests.data.python.client_selectors import selectors
 from tests.data.python.client_signatures import keywords, signatures
 from tests.data.python.client_stream_lifetimes import stream_lifetimes
+from tests.data.python.client_streams import ndjson, ndjson_backends, stream_backends, streams
+from tests.data.python.client_streams import stream_lifetimes as event_stream_lifetimes
 from tests.data.python.client_transports import lifecycle, transports
 from tests.data.python.client_unions import schema_unions, unions
 from tests.data.python.client_validation import arguments, validation
+from tests.data.python.client_webhook_adapters import (
+    webhook_adapter_imports,
+    webhook_adapters,
+    webhook_mapped_backends,
+    webhook_unsigned,
+)
 from tests.data.python.client_webhook_contracts import webhook_contracts
 from tests.data.python.client_webhook_errors import webhook_errors
+from tests.data.python.client_webhook_public_keys import webhook_public_keys
 from tests.data.python.client_webhooks import webhook_backends, webhook_replay, webhook_verification
 
 if TYPE_CHECKING:
@@ -563,6 +579,59 @@ def default_server(package: ModuleType, lines: list[str]) -> None:
         record(lines, "status", lambda: api.default.get_status())
 
 
+_DOTS: Final = (".", "..", "...", ".a", "%2e", "")
+_PATHS: Final = (
+    *(("get_archive", {"name": value}) for value in (*_DOTS, "%2E%2E", "a.b", "a/b", "../a/b?c#d")),
+    *(("get_file", {"name": value}) for value in (".", "")),
+    *(
+        ("get_pair", {"first": first, "second": second})
+        for first, second in ((".", "."), ("", ".."), (".", "a"), ("", "."), ("..", "."))
+    ),
+    *(("get_reserved", {"name": value}) for value in (*_DOTS, "%2E.", "%2e%2f", "a/..")),
+    *(("get_list", {"names": value}) for value in (["."], [".."], [".", "."], ["..", ""])),
+    *(("get_label", {"name": value}) for value in _DOTS),
+    *(("get_label_list", {"names": value}) for value in (["", ""], ["a", ""], ["."], [""])),
+    *(("get_matrix", {"name": value}) for value in _DOTS),
+    *(("get_matrix_list", {"names": value}) for value in ([".", ".."], [""])),
+    *(("get_reserved_label", {"name": value}) for value in (*_DOTS, "%2E.")),
+    *(("get_reserved_label_list", {"names": value}) for value in (["%2e"], ["%2e", "a"], ["", "%2E"])),
+    *(
+        ("get_dotted", {"first": first, "second": second})
+        for first, second in (("", ""), ("a", ""), ("", "."), (".", ""), ("%2e", ""))
+    ),
+    *(("get_static", {"name": value}) for value in ("a", "..")),
+)
+
+
+def _arguments(package: ModuleType, method: str, values: dict[str, object]) -> dict[str, object]:
+    return path_arguments(package, "default", method.title().replace("_", ""), values)
+
+
+def paths(package: ModuleType, lines: list[str]) -> None:
+    """Keep each call on its operation: a path value making its segment `.` or `..` is refused before sending.
+
+    URL normalization would remove such a segment, and `%2E` is the `.` it is equivalent to, so no encoding of these
+    values reaches the operation; every other value, `...` and `.a` among them, is sent as data.
+    """
+    exchange = Exchange(lines)
+    with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
+        for method, values in _PATHS:
+            call = partial(getattr(api.default, method), **_arguments(package, method, values))
+            exchange.responders[:] = [raw_response(204)]
+            record(lines, f"{method} {values}", call)
+    run(lambda: _async_paths(package, lines))
+
+
+async def _async_paths(package: ModuleType, lines: list[str]) -> None:
+    exchange = Exchange(lines)
+    api: Any
+    async with package.AsyncClient(http_client=exchange.async_client(), http_client_ownership="owned") as api:
+        for method, values in _PATHS:
+            call = partial(getattr(api.default, method), **_arguments(package, method, values))
+            exchange.responders[:] = [raw_response(204)]
+            await arecord(lines, f"async {method} {values}", call)
+
+
 _PET: Final = json.dumps({"id": 3, "name": "fox"}).encode()
 _ERROR: Final = json.dumps({"code": 7, "message": "boom"}).encode()
 _BOMB: Final = gzip.compress(bytes(2 * 1024 * 1024), mtime=0)
@@ -623,7 +692,11 @@ def codings(package: ModuleType, lines: list[str]) -> None:
         record(lines, "coding pre-read", lambda: api.pets.get_pet(pet_id=pet))
         exchange.respond(
             chunked_response(
-                200, gzip.compress(pets, mtime=0), 100, "application/json", **{"content-encoding": "gzip", "X-Rate": "1"}
+                200,
+                gzip.compress(pets, mtime=0),
+                100,
+                "application/json",
+                **{"content-encoding": "gzip", "X-Rate": "1"},
             )
         )
         record(lines, "coding chunked", lambda: len(api.pets.list_pets(x_trace=trace).root))
@@ -636,7 +709,9 @@ def codings(package: ModuleType, lines: list[str]) -> None:
         record(lines, "coding error", lambda: api.pets.list_pets(x_trace=trace))
         record(lines, "coding error truncated", lambda: api.pets.list_pets(x_trace=trace))
         record(lines, "coding redirect", lambda: api.pets.list_pets(x_trace=trace))
-        record(lines, "coding bodyless", lambda: api.pets.delete_pets_by_pet_id(pet_id=_pet(package, "DeletePetsByPetId")))
+        record(
+            lines, "coding bodyless", lambda: api.pets.delete_pets_by_pet_id(pet_id=_pet(package, "DeletePetsByPetId"))
+        )
     run(lambda: _async_codings(package, exchange, lines))
 
 
@@ -662,7 +737,6 @@ BACKENDS: Final = (
 )
 ALL_BUT_MSGSPEC: Final = BACKENDS[:-1]
 SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, list[str]], None]]]] = {
-    "path-segments": ("pagination-targets", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"), path_segments),
     "pets": ("pets", ("pydantic_v2.BaseModel", "typing.TypedDict"), pets),
     "auth-errors": ("pets", ("pydantic_v2.BaseModel",), auth_errors),
     "auth-values": ("auth", BACKENDS, auth_values),
@@ -702,6 +776,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "querystring": ("querystring", ("pydantic_v2.BaseModel",), querystring),
     "servers": ("servers", ("pydantic_v2.BaseModel",), servers),
     "default-server": ("default-server", ("pydantic_v2.BaseModel",), default_server),
+    "paths": ("paths", ("pydantic_v2.BaseModel",), paths),
     "codings": ("pets", ("pydantic_v2.BaseModel",), codings),
     "transports": ("pets", ("pydantic_v2.BaseModel",), transports),
     "lifecycle": ("pets", ("pydantic_v2.BaseModel",), lifecycle),
@@ -712,6 +787,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "selectors": ("media", ("pydantic_v2.BaseModel", "typing.TypedDict"), selectors),
     "headers": ("pets", ("pydantic_v2.BaseModel",), headers),
     "query": ("pets", ("pydantic_v2.BaseModel",), query),
+    "parameter-adapters": ("parameter-adapters", ("pydantic_v2.BaseModel",), parameter_adapters),
     "signatures": ("pets", BACKENDS, signatures),
     "signatures-unpack": ("pets-unpack", BACKENDS, signatures),
     "keywords": ("keywords", ("pydantic_v2.BaseModel",), keywords),
@@ -727,12 +803,20 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "pagination-auth": ("pagination", ("pydantic_v2.BaseModel",), pagination_auth),
     "pagination-limits": ("pagination-limits", ("pydantic_v2.BaseModel",), pagination_limits),
     "pagination-targets": ("pagination-targets", ("pydantic_v2.BaseModel",), pagination_targets),
+    "pagination-paths": ("pagination-paths", ("pydantic_v2.BaseModel",), pagination_paths),
     "pagination-querystring": ("pagination-querystring", ("pydantic_v2.BaseModel",), pagination_querystring),
+    "pagination-count-values": ("pagination-counts", ALL_BUT_MSGSPEC, pagination_count_values),
+    "pagination-count-defaults": ("pagination-counts", BACKENDS, pagination_count_defaults),
     "pagination-counts": ("pagination-counts", ("pydantic_v2.BaseModel",), pagination_counts),
     "pagination-links": ("pagination-links", ("pydantic_v2.BaseModel",), pagination_links),
     "pagination-resume": ("pagination-resume", ("pydantic_v2.BaseModel",), pagination_resume),
     "polling": ("polling", ("pydantic_v2.BaseModel",), polling),
     "polling-resume": ("polling", ("pydantic_v2.BaseModel",), polling_resume),
+    "streams": ("streams", ("pydantic_v2.BaseModel",), streams),
+    "stream-events": ("streams", ("pydantic_v2.BaseModel",), event_stream_lifetimes),
+    "stream-backends": ("streams", BACKENDS, stream_backends),
+    "ndjson": ("ndjson", ("pydantic_v2.BaseModel",), ndjson),
+    "ndjson-backends": ("ndjson", BACKENDS, ndjson_backends),
     "protocol-errors": ("pets", ("pydantic_v2.BaseModel",), protocol_errors),
     "evolution": ("evolution", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"), evolution),
     "evolution-schema": (
@@ -758,6 +842,11 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "webhook-verification": ("webhooks", ("pydantic_v2.BaseModel",), webhook_verification),
     "webhook-backends": ("webhooks", BACKENDS, webhook_backends),
     "webhook-replay": ("webhooks", ("pydantic_v2.BaseModel",), webhook_replay),
+    "webhook-public-keys": ("webhooks-public-keys", ("pydantic_v2.BaseModel",), webhook_public_keys),
+    "webhook-adapters": ("webhooks-adapters", ("pydantic_v2.BaseModel",), webhook_adapters),
+    "webhook-unsigned": ("webhooks-adapters", ("pydantic_v2.BaseModel",), webhook_unsigned),
+    "webhook-mapped-backends": ("webhooks-adapters", BACKENDS, webhook_mapped_backends),
+    "webhook-adapter-imports": ("webhooks-unsigned", ("pydantic_v2.BaseModel",), webhook_adapter_imports),
     "unions": ("unions", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), unions),
     "unions-tagged": ("unions-tagged", ("msgspec.Struct",), unions),
     "unions-schema": ("unions-schema", BACKENDS, schema_unions),

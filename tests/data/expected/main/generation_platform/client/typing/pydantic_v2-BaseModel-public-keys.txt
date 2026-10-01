@@ -1,0 +1,44 @@
+mypy pets and public_key_helpers.py: clean
+pyright pets and public_key_helpers.py: clean
+ty pets and public_key_helpers.py: clean
+public_key_helpers_negative.py 12 marked lines
+mypy public_key_helpers_negative.py: 12/12 marked lines with one error, 0 elsewhere, 0 in other files
+  32 arg-type
+  33 arg-type
+  34 arg-type
+  35 arg-type
+  36 arg-type
+  37 arg-type
+  38 arg-type
+  39 arg-type
+  40 arg-type
+  41 arg-type
+  42 call-arg
+  43 arg-type
+pyright public_key_helpers_negative.py: 12/12 marked lines with one error, 0 elsewhere, 0 in other files
+  32 reportArgumentType
+  33 reportArgumentType
+  34 reportArgumentType
+  35 reportArgumentType
+  36 reportArgumentType
+  37 reportArgumentType
+  38 reportArgumentType
+  39 reportArgumentType
+  40 reportArgumentType
+  41 reportArgumentType
+  42 reportCallIssue
+  43 reportArgumentType
+ty public_key_helpers_negative.py: 11/12 marked lines with one error, 0 elsewhere, 0 in other files
+  32 invalid-argument-type
+  33 invalid-argument-type
+  34 invalid-argument-type
+  35 invalid-argument-type
+  36 invalid-argument-type
+  37 invalid-argument-type
+  38 invalid-argument-type
+  39 invalid-argument-type
+  40 invalid-argument-type
+  41 invalid-argument-type
+  42 missing-argument
+  42 too-many-positional-arguments
+  43 invalid-argument-type

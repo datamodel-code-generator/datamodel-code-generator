@@ -5,24 +5,28 @@ info:
 paths:
   /cats:
     post:
-      parameters:
-        - name: pair
-          in: query
-          explode: false
-          schema:
-            type: array
-            prefixItems:
-              - type: string
-              - type: string
-            items: false
-            minItems: 2
-            maxItems: 2
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/Cat"
+      responses:
+        "204":
+          description: No content.
+  /pairs:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              prefixItems:
+                - type: string
+                - type: string
+              items: false
+              minItems: 2
+              maxItems: 2
       responses:
         "204":
           description: No content.

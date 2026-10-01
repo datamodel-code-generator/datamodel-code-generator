@@ -32,7 +32,7 @@ paths:
         - name: echo
           in: cookie
           style: form
-          explode: false
+          explode: true
           schema:
             $ref: "#/components/schemas/Echo"
       responses:

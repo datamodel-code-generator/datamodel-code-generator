@@ -53,11 +53,6 @@ paths:
               - $ref: "#/components/schemas/Dog"
             discriminator:
               propertyName: kind
-        - name: X-Ordered
-          in: header
-          schema:
-            type: object
-            x-python-type: "collections.OrderedDict[str, str]"
       requestBody:
         required: true
         content:
@@ -71,6 +66,17 @@ paths:
             application/json:
               schema:
                 type: [string, "null"]
+  /ordered:
+    get:
+      parameters:
+        - name: X-Ordered
+          in: header
+          schema:
+            type: object
+            x-python-type: "collections.OrderedDict[str, str]"
+      responses:
+        "204":
+          description: No content.
 components:
   schemas:
     Cat:

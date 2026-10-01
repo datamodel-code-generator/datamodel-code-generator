@@ -183,6 +183,17 @@ module = "project.hooks"
 callable = "rename"
 ```
 
+## Codec adapters
+
+`FastAPIConfig.codec_adapters`, set through the Python API, registers `CodecAdapterRegistration` records. A
+parameter adapter decodes the parameters it selects from their raw path, query, header, and cookie bytes instead of
+the builtin OpenAPI styles, so it also carries declarations no builtin style can, such as a `form` cookie array
+with `explode: false`. The server validates the value the adapter returns against the parameter's schema, answering
+a violation with 422, and answers a `ParameterEncodingError` the adapter raises for malformed input with
+`400 Invalid request`. An adapter that fails, or returns a value its capabilities exclude, such as an empty array or
+object without `supports_empty_containers`, raises `CodecAdapterError`, which FastAPI answers with
+`500 Internal Server Error`; refuse input the adapter cannot represent with `ParameterEncodingError` instead.
+
 ## The generated package
 
 | Path | Owner | Contents |

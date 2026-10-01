@@ -59,64 +59,14 @@ components:
           readOnly: true
     Item:
       type: object
-      required: [id, name, token, mode, both]
+      required: [mode, both]
       properties:
-        id:
-          type: integer
-          readOnly: true
-        name:
-          type: string
-        token:
-          type: string
-          writeOnly: true
         mode:
           $ref: "#/components/schemas/Mode"
         both:
           type: string
           readOnly: true
           writeOnly: true
-        tags:
-          type: array
-          items:
-            type: object
-            required: [label, secret]
-            properties:
-              label:
-                type: string
-              secret:
-                type: string
-                writeOnly: true
-        pair:
-          type: array
-          prefixItems:
-            - type: object
-              required: [key]
-              properties:
-                key:
-                  type: string
-                  readOnly: true
-          items: false
-      patternProperties:
-        "^x-":
-          type: object
-          required: [hidden]
-          properties:
-            hidden:
-              type: string
-              writeOnly: true
-      dependentRequired:
-        name: [id, token]
-      dependentSchemas:
-        token:
-          required: [id]
-      if:
-        required: [name]
-      then:
-        required: [id]
-      else:
-        required: [token]
-      not:
-        required: [missing]
     Shared:
       required: [key]
     ContextA:

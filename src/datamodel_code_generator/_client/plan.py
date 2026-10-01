@@ -31,7 +31,7 @@ from datamodel_code_generator._generation_contract import (
     SourceLocation,
     TypeUseBinding,
 )
-from datamodel_code_generator._openapi_wire_plan import property_members
+from datamodel_code_generator._openapi_wire_plan import parameter_plans, property_members
 from datamodel_code_generator._runtime.client.media import most_specific
 from datamodel_code_generator._runtime.client.multipart import PartPlan
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalize_media_type
@@ -342,15 +342,18 @@ def _tags(operation: OperationContract) -> tuple[str, ...]:
 class Planner:
     """Plan every selected operation of one client target from the accepted batch and its wire plan."""
 
-    def __init__(self, request: TargetRequest, config: ClientGenerationConfig, wire: WirePlan) -> None:
-        """Index the batch and the wire plan, and resolve the per-operation settings to operation keys."""
+    def __init__(
+        self, request: TargetRequest, config: ClientGenerationConfig, wire: WirePlan, adapted: frozenset[TypeUseId]
+    ) -> None:
+        """Index the batch and the wire plan, and resolve the per-operation settings to operation keys.
+
+        The parameters whose uses `adapted` holds go through their registered parameter adapters.
+        """
         self.request = request
         self.config = config
         self.wire = wire
         self.uses = {use.id: use for use in request.batch.type_uses}
-        self.parameter_plans = {
-            operation: {(plan.location, plan.name): plan for plan in plans} for operation, plans in wire.parameters
-        }
+        self.parameter_plans = parameter_plans(wire, request.operations, adapted)
         self.header_plans = dict(wire.headers)
         self.forms = {use: (fields, additional, encoded) for use, fields, additional, encoded in wire.forms}
         self.styles = {use: {plan.name: plan for plan in plans} for use, plans in wire.styles}

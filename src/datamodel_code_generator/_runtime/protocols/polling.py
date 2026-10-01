@@ -50,7 +50,6 @@ from .options import PollOptions, layered
 from .records import (
     BodySelector,
     CancelReceipt,
-    ParameterTarget,
     PollSnapshot,
     StatusSelector,
     canonical_json,
@@ -65,10 +64,10 @@ from .resume import (
     state_fields,
     state_text,
 )
-from .values import DOT_SEGMENTS, MISSING, Missing, Patch, RepeatedValueError, resolve, selected
+from .values import MISSING, Missing, Patch, RepeatedValueError, resolve, selected
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator, Iterable
+    from collections.abc import Callable, Generator
     from types import TracebackType
 
     from ..client.client import AsyncClientCore, ClientCore
@@ -79,8 +78,9 @@ if TYPE_CHECKING:
     from ..model_codecs.wire import WireValue
     from .errors import _DataCondition  # pyright: ignore[reportPrivateUsage]
     from .pagination import PageBinding
-    from .records import ProtocolProgress, RequestTarget, Selector
+    from .records import ProtocolProgress, Selector
     from .references import OperationRef
+    from .writes import ReadPaths
 
 __all__ = (
     "AsyncLroHandle",
@@ -115,6 +115,7 @@ class _Phase(Enum):
 _PHASES: Final[Mapping[str, _Phase]] = MappingProxyType({phase.value: phase for phase in _Phase})
 _STATE: Final = frozenset({"phase", "polls", "wait_ms", "bound", "seed", "cancel", "poll", "result"})
 _POLL_FIELDS: Final = 4
+_UNREAD: Final = "unread"
 _RESULT_FIELDS: Final = 3
 _MOST_WAIT_MS: Final = 2**53 - 1
 _RFC3339: Final = re.compile(
@@ -158,13 +159,15 @@ class _Targeted(Generic[T]):
 
     A write is a parameter's argument position without a pointer, a querystring's position with a pointer into its
     value, or no position with a pointer into the JSON body. `headers` and `queries` name the header and query
-    parameters it writes, which a call's options must not patch.
+    parameters it writes, which a call's options must not patch, and `dotted` the path segments a read value is
+    written to, which must not encode to a dot segment.
     """
 
     call: OperationPlan[T, object]
     writes: tuple[tuple[int | None, str | None], ...]
     headers: frozenset[str]
     queries: frozenset[str]
+    dotted: ReadPaths
 
     def request(self, values: tuple[WireValue, ...]) -> tuple[tuple[object, ...], object]:
         """Return the arguments and body of a request writing each value in order, every other argument omitted.
@@ -188,11 +191,12 @@ class _Targeted(Generic[T]):
         return tuple(arguments), body
 
 
-def _targeted(call: OperationPlan[T, object], targets: Iterable[RequestTarget]) -> _Targeted[T]:
-    """Return an operation that takes the values written to the targets, in order, as wire values."""
-    from .writes import targeted  # noqa: PLC0415 - Only a plan loads the operation runtime.
+def _targeted(call: OperationPlan[T, object], bindings: tuple[PageBinding, ...]) -> _Targeted[T]:
+    """Return an operation that takes the values the bindings write to their targets, in order, as wire values."""
+    from .writes import read_paths, targeted  # noqa: PLC0415 - Only a plan loads the operation runtime.
 
-    return _Targeted(*targeted(call, targets))
+    sources = tuple((binding.target, binding.selector) for binding in bindings)
+    return _Targeted(*targeted(call, (target for target, _ in sources)), read_paths(call, sources))
 
 
 @final
@@ -211,7 +215,7 @@ class CancelPlan(Generic[K]):
 
     def __post_init__(self) -> None:
         """Derive the cancel operation writing the bindings' values."""
-        object.__setattr__(self, "targeted", _targeted(self.call, (binding.target for binding in self.bindings)))
+        object.__setattr__(self, "targeted", _targeted(self.call, self.bindings))
 
 
 @final
@@ -273,8 +277,8 @@ class PollingPlan(Generic[T, P, C]):
             )
             for value in values
         }
-        polled = _targeted(self.poll, (binding.target for binding in self.bindings))
-        fetched = None if self.fetch is None else _targeted(self.fetch, (item.target for item in self.fetch_bindings))
+        polled = _targeted(self.poll, self.bindings)
+        fetched = None if self.fetch is None else _targeted(self.fetch, self.fetch_bindings)
         others = (*(() if fetched is None else (fetched,)), *(() if self.cancel is None else (self.cancel.targeted,)))
         object.__setattr__(self, "phases", MappingProxyType(phases))
         object.__setattr__(
@@ -703,8 +707,19 @@ class _Operation(Generic[T, P]):
         except RepeatedValueError:
             raise self._error(info, "malformed", read, operation) from None
 
-    def _values(
+    def _value(
+        self, binding: PageBinding, wire: WireValue, info: ResponseInfo, operation: OperationRef | None
+    ) -> WireValue:
+        """Return what a binding writes: its literal or what the response gives, refusing a missing value."""
+        if (selector := binding.selector) is None:
+            return binding.literal
+        if (value := self._selected(selector, wire, info, operation)) is MISSING:
+            raise self._error(info, "missing", selector, operation)
+        return value
+
+    def _values(  # noqa: PLR0913, PLR0917
         self,
+        targeted: _Targeted[Any],
         bindings: tuple[PageBinding, ...],
         wire: WireValue,
         info: ResponseInfo,
@@ -713,25 +728,17 @@ class _Operation(Generic[T, P]):
     ) -> tuple[WireValue, ...]:
         """Return the values bindings write: their literals, kept `initial` values, and what the response gives.
 
-        A missing value and a dot segment read for a path parameter are refused.
+        A missing value is refused, and so are read values that make a path segment a dot segment once encoded.
         """
-        written: list[WireValue] = []
-        for index, binding in enumerate(bindings):
-            if (selector := binding.selector) is None:
-                written.append(binding.literal)
-            elif kept and binding.source == "initial":
-                written.append(kept[index])
-            elif (value := self._selected(selector, wire, info, operation)) is MISSING:
-                raise self._error(info, "missing", selector, operation)
-            elif (
-                isinstance(target := binding.target, ParameterTarget)
-                and target.location == "path"
-                and (value in DOT_SEGMENTS)
-            ):
-                raise self._error(info, "value", selector, operation)
-            else:
-                written.append(value)
-        return tuple(written)
+        written = tuple(
+            kept[index]
+            if kept and binding.selector is not None and binding.source == "initial"
+            else self._value(binding, wire, info, operation)
+            for index, binding in enumerate(bindings)
+        )
+        if (read := _dotted(targeted, written)) is not None:
+            raise self._error(info, "value", read, operation)
+        return written
 
     def _expiry(self, wire: WireValue, info: ResponseInfo) -> datetime:
         """Return the server's expiry an accepted create response gives at the helper's declared selector.
@@ -792,11 +799,15 @@ class _Operation(Generic[T, P]):
         status, not_before, operation = info.status_code, self._after(info), plan.operation
         if status in plan.accepted:
             seed = tuple(
-                self._values((binding,), wire, info, operation)[0] if binding.source == "initial" else None
+                self._value(binding, wire, info, operation) if binding.source == "initial" else None
                 for binding in plan.fetch_bindings
             )
-            bound = self._values(plan.bindings, wire, info, operation)
-            cancel = () if (cancels := plan.cancel) is None else self._values(cancels.bindings, wire, info, operation)
+            bound = self._values(plan.polled, plan.bindings, wire, info, operation)
+            cancel = (
+                ()
+                if (cancels := plan.cancel) is None
+                else self._values(cancels.targeted, cancels.bindings, wire, info, operation)
+            )
             expires_at = None if plan.expires_at is None else self._expiry(wire, info)
             return _Step(_Phase.PENDING, not_before, bound=bound, seed=seed, cancel=cancel, expires_at=expires_at)
         if status in plan.immediate_statuses:
@@ -828,10 +839,10 @@ class _Operation(Generic[T, P]):
             )
         snapshot = PollSnapshot(state=value, terminal=phase is not _Phase.PENDING, data=data, response=info)
         if phase is _Phase.PENDING:
-            polled = self._values(plan.bindings, wire, info, operation, self._bound)
+            polled = self._values(plan.polled, plan.bindings, wire, info, operation, self._bound)
             if (cancel := plan.cancel) is None:
                 return _Step(phase, self._after(info), snapshot, polled)
-            cancels = self._values(cancel.bindings, wire, info, operation, self._cancel)
+            cancels = self._values(cancel.targeted, cancel.bindings, wire, info, operation, self._cancel)
             return _Step(phase, self._after(info), snapshot, polled, cancel=cancels)
         bound: tuple[WireValue, ...] = ()
         result: T | Missing = MISSING
@@ -845,8 +856,8 @@ class _Operation(Generic[T, P]):
         operation = plan.poll_operation
         if (inline := plan.inline) is not None:
             return (), self._result_of(inline, plan.inline_selector, data, wire, info, operation)
-        if plan.fetched is not None:
-            return self._values(plan.fetch_bindings, wire, info, operation, self._seed), MISSING
+        if (fetched := plan.fetched) is not None:
+            return self._values(fetched, plan.fetch_bindings, wire, info, operation, self._seed), MISSING
         return (), cast("T", None)
 
     def _counted(self, admitted: int) -> None:
@@ -950,26 +961,35 @@ class _Operation(Generic[T, P]):
         """Refuse a saved value a result fetch's `initial` binding writes to a parameter that cannot send it.
 
         Each is encoded as the fetch encodes its parameter, before the final poll gives the fetch's other values; a
-        value written into the fetch's querystring or body is checked when the fetch request is built.
+        value written into the fetch's querystring or body is checked when the fetch request is built. Saved values
+        that alone make a path segment a dot segment are refused as a server's; a segment that also takes a value the
+        final poll gives is checked when the fetch is built.
         """
         plan = self._plan
         if (fetched := plan.fetched) is None:
             return
+        bindings = plan.fetch_bindings
         given = {
             cast("int", position): value
-            for binding, (position, pointer), value in zip(plan.fetch_bindings, fetched.writes, self._seed, strict=True)
+            for binding, (position, pointer), value in zip(bindings, fetched.writes, self._seed, strict=True)
             if binding.source == "initial" and pointer is None
         }
         try:
             self._client.checked_arguments(fetched.call, given, self._limits.options)
         except RequestEncodingError:
             raise MalformedStateError from None
+        self._dots(
+            fetched,
+            tuple(
+                value if binding.source == "initial" else binding.literal if binding.selector is None else _UNREAD
+                for binding, value in zip(bindings, self._seed, strict=True)
+            ),
+        )
 
-    def _dots(self, bindings: tuple[PageBinding, ...], values: tuple[WireValue, ...]) -> None:
-        """Refuse a saved dot segment a binding writes to a path parameter, as if a server had just given it."""
-        for binding, value in zip(bindings, values, strict=True):
-            if binding.selector is not None and _dotted(binding, value):
-                raise self._error(None, "value", binding.selector, self._plan.operation)
+    def _dots(self, targeted: _Targeted[Any], written: tuple[WireValue, ...]) -> None:
+        """Refuse saved values making a path segment a dot segment once encoded, as if a server had just given them."""
+        if (read := _dotted(targeted, written)) is not None:
+            raise self._error(None, "value", read, self._plan.operation)
 
     def _restore(self, state: WireValue, payload: bytes, expires_at: datetime | None) -> None:  # noqa: PLR0914
         """Restore the handle from a checkpoint's decoded state and payload, refusing what does not fit the helper.
@@ -1011,12 +1031,11 @@ class _Operation(Generic[T, P]):
                     value if binding.source == "initial" else None
                     for binding, value in zip(plan.fetch_bindings, seed, strict=True)
                 )
-                self._dots(plan.bindings, self._bound)
-                self._dots(cancels, self._cancel)
-                self._dots(plan.fetch_bindings, self._seed)
+                self._dots(plan.polled, self._bound)
                 self._checked(plan.polled.call, self._poll_request)
                 self._seeded()
                 if (remote := plan.cancel) is not None:
+                    self._dots(remote.targeted, self._cancel)
                     self._checked(remote.targeted.call, _sent(remote.targeted, self._cancel))
             case _Phase.SUCCEEDED:
                 require_state(not seed and not cancel)
@@ -1054,7 +1073,7 @@ class _Operation(Generic[T, P]):
         if (fetched := plan.fetched) is not None:
             require_state(len(bound) == len(plan.fetch_bindings))
             self._bound = _literals(plan.fetch_bindings, bound)
-            self._dots(plan.fetch_bindings, self._bound)
+            self._dots(fetched, self._bound)
             self._checked(fetched.call, self._fetch_request)
             return MISSING
         require_state(not bound)
@@ -1080,10 +1099,19 @@ def _saved_body(saved: WireValue, payload: bytes, offset: int, fields: int) -> t
     return (content, status, content_type), entry[:-3]
 
 
-def _dotted(binding: PageBinding, value: WireValue) -> bool:
-    """Return whether a binding writes a dot segment to a path parameter."""
-    target = binding.target
-    return isinstance(target, ParameterTarget) and target.location == "path" and value in DOT_SEGMENTS
+def _dotted(targeted: _Targeted[Any], written: tuple[WireValue, ...]) -> Selector | None:
+    """Return the selector of a read value that makes a path segment a dot segment once encoded, or None."""
+    from .writes import dotted_read  # noqa: PLC0415 - A plan loaded the operation runtime.
+
+    parameters = targeted.call.parameters
+    return next(
+        (
+            read
+            for segment, parts in targeted.dotted
+            if (read := dotted_read(parameters, segment, parts, written, dict)) is not None
+        ),
+        None,
+    )
 
 
 def _receipt(

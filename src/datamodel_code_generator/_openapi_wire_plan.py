@@ -30,6 +30,7 @@ from datamodel_code_generator._runtime.model_codecs.media import (
     normalize_media_type,
 )
 from datamodel_code_generator._runtime.model_codecs.parameters import (
+    AdaptedParameterPlan,
     ParameterLocation,
     ParameterPlan,
     ValueShape,
@@ -218,14 +219,8 @@ def _supported_dialect(dialect: str) -> bool:
 
 
 def _logical(
-    batch: GeneratedTypeContractBatch, pointers: Mapping[SourceDocumentId, str] | None
+    batch: GeneratedTypeContractBatch, pointers: Mapping[SourceDocumentId, str]
 ) -> dict[SourceDocumentId, str]:
-    root, *others = batch.documents
-    if pointers is None:
-        return {root.id: f"{LOGICAL_ROOT}root"} | {
-            document.id: f"{LOGICAL_ROOT}documents/{index}"
-            for index, document in enumerate(sorted(others, key=lambda document: document.uri))
-        }
     logical: dict[SourceDocumentId, str] = {}
     seen: dict[str, int] = {}
     for document in batch.documents:
@@ -240,7 +235,7 @@ class _WirePlanner:
         self,
         batch: GeneratedTypeContractBatch,
         lease: SourceLease,
-        pointers: Mapping[SourceDocumentId, str] | None = None,
+        pointers: Mapping[SourceDocumentId, str],
     ) -> None:
         self.batch = batch
         self.lease = lease
@@ -693,14 +688,14 @@ def plan_wire(  # noqa: PLR0913
     uses: Sequence[TypeUseId] | None = None,
     *,
     operations: Collection[OperationId] | None = None,
-    documents: Mapping[SourceDocumentId, str] | None = None,
+    documents: Mapping[SourceDocumentId, str],
     forms: Mapping[TypeUseId, tuple[WireDeclaration, ...]] | None = None,
     styles: Mapping[TypeUseId, tuple[WireDeclaration, ...]] | None = None,
 ) -> WirePlan:
     """Build normalized offline schemas and parameter plans for the requested uses and operations.
 
-    Explicit document pointers, such as a target manifest's `/inputs/documents/<index>`, name the bundled
-    resources, so adapter source references match the manifest. The uses of URL-encoded bodies named in `forms`
+    The document pointers of the target manifest, such as `/inputs/documents/<index>`, name the bundled resources,
+    so adapter source references match the manifest. The uses of URL-encoded bodies named in `forms`
     get their member plans, and each member their encoding names the plan of a query parameter; the form-data uses
     named in `styles` get the query parameter plan of each member their encodings give a style.
     """
@@ -877,27 +872,74 @@ class ParameterViewPlan:
 
 
 def parameter_view(
-    batch: GeneratedTypeContractBatch, version: str, operation: OperationContract, declaration: WireDeclaration
+    version: str,
+    operation: OperationContract,
+    declaration: WireDeclaration,
+    plans: Iterable[ParameterPlan],
+    auth: Iterable[tuple[object, str]],
 ) -> ParameterViewPlan:
-    """Return one declaration's effective style, explode, and content facts and the names others own."""
-    location = _LOCATIONS[_fact(declaration, "in")]
-    name = declaration.name or ""
-    content = normalize_media_type(declaration.children[0].name or "") if declaration.children else None
-    style = None if content is not None else str(_fact(declaration, "style") or _DEFAULT_STYLES.get(location, "form"))
-    explode = _fact(declaration, "explode")
-    names = [*((_fact(item, "in"), item.name or "") for item in operation.parameters), *_auth_names(batch, operation)]
+    """Return one declaration's effective style, explode, and content facts and the names others own.
+
+    The names others own are the operation's other declared names, its apiKey names, and the members the effective
+    `plans` of its other parameters expand to, so an adapted neighbor reserves its own name only.
+    """
+    plan = _declared(declaration)
+    location, name = plan.location, plan.name
+    names = [
+        *((_fact(item, "in"), item.name or "") for item in operation.parameters),
+        *auth,
+        *((other.location, field.name) for other in plans if _spread(other) for field in other.fields),
+    ]
     return ParameterViewPlan(
         location=location,
         name=name,
         oas_version=version,
-        style=style,
-        explode=None if style is None else explode if isinstance(explode, bool) else style in {"form", "cookie"},
-        required=_fact(declaration, "required") is True,
-        allow_reserved=_fact(declaration, "allowReserved") is True,
+        style=plan.style,
+        explode=None if plan.style is None else plan.explode,
+        required=plan.required,
+        allow_reserved=plan.allow_reserved,
         allow_empty_value=_fact(declaration, "allowEmptyValue") is True,
-        content_media_type=content,
+        content_media_type=plan.content_media_type,
         reserved_names=tuple(sorted({other for kind, other in names if kind == location and other != name})),
     )
+
+
+def _declared(declaration: WireDeclaration) -> AdaptedParameterPlan:
+    """Return a parameter's plan as declared: its style or content media, explode, requiredness, and allowReserved."""
+    location = _LOCATIONS[_fact(declaration, "in")]
+    content = normalize_media_type(declaration.children[0].name or "") if declaration.children else None
+    style = None if content is not None else str(_fact(declaration, "style") or _DEFAULT_STYLES.get(location, "form"))
+    explode = _fact(declaration, "explode")
+    return AdaptedParameterPlan(
+        location=location,
+        name=declaration.name or "",
+        style=style,
+        explode=style is not None and (explode if isinstance(explode, bool) else style in {"form", "cookie"}),
+        required=_fact(declaration, "required") is True,
+        allow_reserved=_fact(declaration, "allowReserved") is True,
+        content_media_type=content,
+    )
+
+
+def parameter_plans(
+    wire: WirePlan, operations: Iterable[OperationContract], adapted: frozenset[TypeUseId]
+) -> dict[OperationId, dict[tuple[ParameterLocation, str], ParameterPlan]]:
+    """Index each operation's parameter plans by location and name.
+
+    A parameter whose use a registered parameter adapter selects gets its plan as declared instead, whether or not a
+    builtin form carries it, since its adapter encodes and decodes the value.
+    """
+    plans = {
+        operation: {(plan.location, plan.name): plan for plan in planned} for operation, planned in wire.parameters
+    }
+    if not adapted:
+        return plans
+    for operation in operations:
+        for declaration in operation.parameters:
+            if not adapted.isdisjoint(_uses(declaration)):
+                plan = _declared(declaration)
+                plans.setdefault(operation.id, {})[plan.location, plan.name] = plan
+    return plans
 
 
 def _planned(
@@ -957,7 +999,8 @@ def _requirement_names(value: FrozenLiteral | None) -> list[str]:
             return []
 
 
-def _auth_names(batch: GeneratedTypeContractBatch, operation: OperationContract) -> list[tuple[object, str]]:
+def auth_names(batch: GeneratedTypeContractBatch, operation: OperationContract) -> list[tuple[object, str]]:
+    """Return the locations and names of the apiKey credentials the operation's security requirements send."""
     document = (
         operation.declaration.location.document if operation.security_declared else operation.id.use_site.document
     )
@@ -976,7 +1019,7 @@ def _spread(plan: ParameterPlan) -> bool:
     return plan.shape == "object" and plan.explode and plan.style in {"form", "cookie"}
 
 
-def _claimed(plans: list[ParameterPlan], location: str) -> list[str]:
+def _claimed(plans: Sequence[ParameterPlan], location: str) -> list[str]:
     return [
         name.lower() if location == "header" else name
         for plan in plans
@@ -997,13 +1040,25 @@ def _reserving(plan: ParameterPlan, plans: list[ParameterPlan]) -> ParameterPlan
 
 def _parameters(planner: _WirePlanner, operation: OperationContract) -> tuple[ParameterPlan, ...]:
     declarations = operation.parameters
-    auth = _auth_names(planner.batch, operation)
+    auth = auth_names(planner.batch, operation)
     names = [*((_fact(item, "in"), item.name or "") for item in declarations), *auth]
     plans = [
         plan
         for declaration in declarations
         if (plan := _planned(planner, operation.id, declaration, names)) is not None
     ]
+    planner.diagnostics.extend(parameter_collisions(operation, plans, auth))
+    return tuple(_reserving(plan, plans) for plan in plans)
+
+
+def parameter_collisions(
+    operation: OperationContract, plans: Sequence[ParameterPlan], auth: Sequence[tuple[object, str]]
+) -> tuple[CodecDiagnostic, ...]:
+    """Report each location whose expanded parameter names or the `auth` apiKey names collide.
+
+    A parameter a registered adapter carries claims its own name only, however its declaration would expand.
+    """
+    found: list[CodecDiagnostic] = []
     for location in ("query", "header", "cookie"):
         claimed = [
             *_claimed(plans, location),
@@ -1017,13 +1072,13 @@ def _parameters(planner: _WirePlanner, operation: OperationContract) -> tuple[Pa
             or len(absorbing) > 1
             or (absorbing and any(plan.location == location and plan.style == "deepObject" for plan in plans))
         ):
-            source = next(item.use_site for item in declarations if _fact(item, "in") == location)
-            planner.diagnostics.append(
+            source = next(item.use_site for item in operation.parameters if _fact(item, "in") == location)
+            found.append(
                 CodecDiagnostic(
                     "MC_PARAMETER_ENCODING", source, f"Expanded {location} parameter names collide", operation.id
                 )
             )
-    return tuple(_reserving(plan, plans) for plan in plans)
+    return tuple(found)
 
 
 def _parameter(planner: _WirePlanner, declaration: WireDeclaration, names: list[tuple[object, str]]) -> ParameterPlan:
