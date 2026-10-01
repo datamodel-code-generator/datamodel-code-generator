@@ -259,11 +259,11 @@ def _static_text(node: ast.AST | None) -> tuple[str, bool] | None:
             text = node.value, True
         case ast.JoinedStr():
             prefix, complete = "", True
-            for value in node.values:
-                if not isinstance(value, ast.Constant):
+            for part in node.values:
+                if not isinstance(part, ast.Constant):
                     complete = False
                     break
-                prefix += str(value.value)
+                prefix += str(part.value)
             text = prefix, complete
         case ast.BinOp(op=ast.Add()) if (left := _static_text(node.left)) is not None:
             right = _static_text(node.right) if left[1] else None
@@ -710,12 +710,11 @@ class _ModuleAnalyzer(ast.NodeVisitor):
         """Whether a patch of sys.modules sets or removes a package or generated runtime module."""
         if not _is_sys_modules(target, self.aliases):
             return False
+        values = call.args[1] if len(call.args) > 1 else _keyword(call, "values")
         keys: list[ast.expr | None] = []
         if function[-1] in {"setitem", "delitem"}:
             keys = call.args[1:2]
-        elif function[-1] == "dict" and isinstance(
-            values := call.args[1] if len(call.args) > 1 else _keyword(call, "values"), ast.Dict
-        ):
+        elif function[-1] == "dict" and isinstance(values, ast.Dict):
             keys = values.keys
         return any((text := _complete_text(key)) is not None and self.reaches_text(text) for key in keys)
 
@@ -911,14 +910,11 @@ def _file_rules(relative_path: Path, exempt_files: frozenset[Path]) -> frozenset
     libraries such as conftest.py hold the shared assert helpers, so they and other fixture modules under tests/data
     follow only the private-import, mock, and marker rules.
     """
-    rules = SUPPORT_RULES
     if any(map(relative_path.is_relative_to, HELPER_ROOTS)):
-        rules = HELPER_RULES
-    elif relative_path.parts[:1] != ("data",) and _is_test_name(relative_path.name):
-        rules = SUPPORT_RULES if relative_path in exempt_files else TEST_RULES
-    else:
-        rules = SUPPORT_RULES
-    return rules
+        return HELPER_RULES
+    if relative_path.parts[:1] != ("data",) and _is_test_name(relative_path.name):
+        return SUPPORT_RULES if relative_path in exempt_files else TEST_RULES
+    return SUPPORT_RULES
 
 
 def _iter_python_files(tests_root: Path) -> list[Path]:
