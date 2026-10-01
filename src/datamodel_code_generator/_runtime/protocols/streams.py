@@ -81,7 +81,7 @@ if TYPE_CHECKING:
     from ..client.client import AsyncClientCore, ClientCore
     from ..client.codecs import NativeValue
     from ..client.logical import LogicalCallContext, OperationSession
-    from ..client.operations import OperationPlan, RequestBody
+    from ..client.operations import OperationPlan
     from ..client.raw import AsyncRawResponse, RawResponse
     from ..client.responses import ResponseInfo
     from ..client.timing import Deadline
@@ -804,7 +804,8 @@ def _reopen_request(resume: StreamResumePlan, position: _Position) -> _Given:
         arguments, body, media_type = given
     else:
         arguments, body, media_type = (UNSET,) * len(resume.call.parameters), UNSET, None
-    return (*_written(resume, arguments, body, position.bound, position.cursor), media_type)
+    arguments, body = _written(resume, arguments, body, position.bound, position.cursor)
+    return arguments, body, media_type
 
 
 def _written(
@@ -865,17 +866,10 @@ def _fitting(
     patched, written_body = _written(resume, arguments, body, bound, cursor)
     wire = _wires(patched)
     require_state(core.unsaved_argument(call, wire) is None)
-    core.restored_request(
-        call,
-        wire,
-        None
-        if isinstance(written_body, Unset)
-        else (
-            _wire(written_body),
-            declared or cast("RequestBody", call.body).select(call.operation_id, None).media_type,
-            concrete,
-        ),
-    )
+    saved: tuple[WireValue, str, str | None] | None = None
+    if not isinstance(written_body, Unset) and (request := call.body) is not None:
+        saved = _wire(written_body), declared or request.select(call.operation_id, None).media_type, concrete
+    core.restored_request(call, wire, saved)
 
 
 def _security(
