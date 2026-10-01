@@ -1,12 +1,21 @@
 use /paths/~1v2/post request_body: codec_0 None None pydantic_type_adapter native
+adapter version-two /paths/~1v2/post request_body: schema excluded=[]
 use /paths/~1capabilities/post request_body: codec_1 None None pydantic_type_adapter native
+adapter other-capabilities /paths/~1capabilities/post request_body: schema excluded=[]
 use /paths/~1capabilities-failure/post request_body: codec_2 None None pydantic_type_adapter native
+adapter failing-capabilities /paths/~1capabilities-failure/post request_body: schema excluded=[]
 use /paths/~1compile-failure/post request_body: codec_3 None None pydantic_type_adapter native
+adapter failing-compile /paths/~1compile-failure/post request_body: schema excluded=[]
 use /paths/~1compile-refusal/post request_body: codec_4 None None pydantic_type_adapter native
+adapter refusing-compile /paths/~1compile-refusal/post request_body: schema excluded=[]
 use /paths/~1scripted/post request_body: codec_5 None None pydantic_type_adapter native
+adapter scripted-lookaround /paths/~1scripted/post request_body: schema excluded=[]
 use /paths/~1limits/post request_body: codec_6 None None pydantic_type_adapter native
+adapter small-lookaround /paths/~1limits/post request_body: schema excluded=[]
 use /paths/~1boxes/post request_body: codec_7 None None pydantic_type_adapter native
+adapter box-lookaround /paths/~1boxes/post request_body: schema excluded=['id']
 use /paths/~1boxes/post response_body 200: codec_8 outbound_8 None pydantic_type_adapter native
+adapter box-lookaround /paths/~1boxes/post response_body 200: schema excluded=['secret']
 version-two: CodecAdapterError The version-two adapter does not implement codec adapter API version 1
 other-capabilities: CodecAdapterError The other-capabilities adapter reports capabilities that differ from its registration
 failing-capabilities: CodecAdapterError The failing-capabilities adapter failed to report its capabilities (from RuntimeError)

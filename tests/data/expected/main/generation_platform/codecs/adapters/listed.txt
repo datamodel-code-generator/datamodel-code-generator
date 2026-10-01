@@ -6,7 +6,8 @@ use /paths/~1scalars/post parameter query ratio: codec_2 outbound_2 None pydanti
 use /paths/~1scalars/post parameter query when: codec_3 outbound_3 None pydantic_type_adapter native
 use /paths/~1scalars/post parameter query mode: codec_4 outbound_4 None pydantic_type_adapter native
 use /paths/~1scalars/post parameter query price: codec_5 outbound_5 None pydantic_type_adapter native
-use /paths/~1scalars/post parameter query tags: codec_6 outbound_6 None registered_adapter adapter
+use /paths/~1scalars/post parameter query tags: codec_6 outbound_6 None registered_adapter native
+adapter names /paths/~1scalars/post parameter query tags: model
 use /paths/~1scalars/post parameter query pet: codec_7 outbound_7 None pydantic_type_adapter native
 use /paths/~1scalars/post request_body: codec_8 outbound_8 None pydantic_type_adapter native
 use /paths/~1scalars/post response_body 201: codec_9 None None pydantic_type_adapter native

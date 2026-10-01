@@ -1,11 +1,18 @@
 use /paths/~1tags/get parameter cookie tags: codec_0 None parameter_0 pydantic_type_adapter native
+adapter json-cookie /paths/~1tags/get parameter cookie tags: parameter
 use /paths/~1tags/get parameter cookie session: codec_1 None None pydantic_type_adapter native
 use /paths/~1codes/post request_body: codec_2 None None pydantic_type_adapter native
+adapter lookaround /paths/~1codes/post request_body: schema excluded=[]
 use /paths/~1codes/post response_body 200: codec_3 outbound_3 None pydantic_type_adapter native
-use /paths/~1pets/post request_body: codec_4 None None registered_adapter adapter
-use /paths/~1pets/post response_body 201: codec_5 outbound_5 None registered_adapter adapter
-use /paths/~1keepers/post request_body: codec_6 None None registered_adapter adapter
-use /paths/~1keepers/post response_body 201: codec_7 outbound_7 None registered_adapter adapter
+adapter lookaround /paths/~1codes/post response_body 200: schema excluded=[]
+use /paths/~1pets/post request_body: codec_4 None None registered_adapter envelope
+adapter pet-model /paths/~1pets/post request_body: model
+use /paths/~1pets/post response_body 201: codec_5 outbound_5 None registered_adapter native
+adapter pet-model /paths/~1pets/post response_body 201: model
+use /paths/~1keepers/post request_body: codec_6 None None registered_adapter native
+adapter keeper-model /paths/~1keepers/post request_body: model
+use /paths/~1keepers/post response_body 201: codec_7 outbound_7 None registered_adapter native
+adapter keeper-model /paths/~1keepers/post response_body 201: model
 use /paths/~1secrets/get response_body 200: codec_8 outbound_8 None pydantic_type_adapter envelope
 use /paths/~1zoo/put request_body: codec_9 None None pydantic_type_adapter envelope
 --- _generated/model_bindings.py

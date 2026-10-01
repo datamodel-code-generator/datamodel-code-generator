@@ -3,6 +3,68 @@
   "base_class": "app.bases.Base"
  },
  "bindings": true,
+ "refusal": {
+  "declarations": {
+   "exports": [
+    {
+     "schema": {
+      "pointer": "/components/schemas/Pet"
+     },
+     "module": "adapted.exports",
+     "symbol": "PetAlias",
+     "direction": "request"
+    },
+    {
+     "schema": {
+      "pointer": "/components/schemas/Pet"
+     },
+     "module": "elsewhere",
+     "symbol": "Pet",
+     "direction": "response"
+    },
+    {
+     "schema": {
+      "pointer": "/components/schemas/Missing"
+     },
+     "module": "adapted_models",
+     "symbol": "Missing"
+    },
+    {
+     "schema": {
+      "pointer": "/components/schemas/Tags"
+     },
+     "module": "adapted.dynamic",
+     "symbol": "Tags"
+    }
+   ],
+   "compatibility": [
+    {
+     "name": "other-document",
+     "backend": "pydantic_v2.BaseModel",
+     "schemas": [
+      {
+       "pointer": "/components/schemas/Pet",
+       "document": "other.yaml"
+      }
+     ]
+    }
+   ]
+  },
+  "config": {
+   "selection": {}
+  }
+ },
+ "config": {
+  "selection": {
+   "exclude_operations": [
+    "/paths/~1codes/post",
+    "/paths/~1pets/post",
+    "/paths/~1secrets/get",
+    "/paths/~1zoo/put"
+   ],
+   "reason": "These uses need a pattern adapter or a compatibility declaration"
+  }
+ },
  "declarations": {
   "compatibility": [
    {
@@ -17,16 +79,6 @@
    {
     "name": "dataclasses",
     "backend": "pydantic_v2.dataclass"
-   },
-   {
-    "name": "other-document",
-    "backend": "pydantic_v2.BaseModel",
-    "schemas": [
-     {
-      "pointer": "/components/schemas/Pet",
-      "document": "other.yaml"
-     }
-    ]
    }
   ],
   "exports": [
@@ -36,36 +88,6 @@
     },
     "module": "adapted_models",
     "symbol": "Keeper"
-   },
-   {
-    "schema": {
-     "pointer": "/components/schemas/Pet"
-    },
-    "module": "adapted.exports",
-    "symbol": "PetAlias",
-    "direction": "request"
-   },
-   {
-    "schema": {
-     "pointer": "/components/schemas/Pet"
-    },
-    "module": "elsewhere",
-    "symbol": "Pet",
-    "direction": "response"
-   },
-   {
-    "schema": {
-     "pointer": "/components/schemas/Missing"
-    },
-    "module": "adapted_models",
-    "symbol": "Missing"
-   },
-   {
-    "schema": {
-     "pointer": "/components/schemas/Tags"
-    },
-    "module": "adapted.dynamic",
-    "symbol": "Tags"
    }
   ]
  },

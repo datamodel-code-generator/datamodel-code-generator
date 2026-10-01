@@ -25,8 +25,9 @@ EXPECTED = DATA / "expected/main/generation_platform/codecs/adapters"
         ("rogue", "rogue"),
         ("scripted", "scripted"),
         ("types", "types"),
+        ("types", "types-server"),
         ("types", "listed"),
-        ("plans", "plans"),
+        ("plans-accepted", "plans"),
         ("adapters", "exports"),
         ("modular", "modular"),
         ("enums", "enums"),
@@ -38,11 +39,23 @@ EXPECTED = DATA / "expected/main/generation_platform/codecs/adapters"
         ("enums", "structural-typeddict"),
         ("enums", "isolated"),
         ("enums", "structural-msgspec"),
+        ("unplanned", "unplanned"),
+        ("unplanned", "unplanned-client"),
     ],
 )
-def test_codec_adapters(source: str, cases: str, tmp_path: PathType, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_codec_adapters(source: str, cases: str, tmp_path: PathType) -> None:
     """Select, render, and run registered adapters under the core's direction and boundary rules, or refuse them."""
     assert_output(
-        adapter_codec_report(ADAPTERS / f"{source}.yaml", ADAPTERS / f"{cases}.json", tmp_path, monkeypatch),
+        adapter_codec_report(ADAPTERS / f"{source}.yaml", ADAPTERS / f"{cases}.json", tmp_path),
         EXPECTED / f"{cases}.txt",
     )
+
+
+@pytest.mark.xfail(
+    reason="#4268: the FastAPI target asserts on a parameter adapter whose parameter has no builtin form",
+    raises=AssertionError,
+    strict=True,
+)
+def test_codec_adapters_unplanned_server_parameter(tmp_path: PathType) -> None:
+    """Generate a server whose cookie adapter takes over a parameter without a builtin form, which fails today."""
+    adapter_codec_report(ADAPTERS / "unplanned.yaml", ADAPTERS / "unplanned-server.json", tmp_path)

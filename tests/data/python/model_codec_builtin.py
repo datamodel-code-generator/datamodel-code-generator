@@ -7,7 +7,6 @@ import dataclasses
 import importlib
 import json
 import shutil
-import sys
 from collections import defaultdict
 from contextlib import contextmanager
 from datetime import datetime, time
@@ -19,7 +18,7 @@ from pydantic import BaseModel
 from datamodel_code_generator import SchemaParseError
 from datamodel_code_generator.api_types import APIGenerationError
 from tests.data.python.client_generation import generate_client
-from tests.data.python.generated_packages import forget_generated, import_generated
+from tests.data.python.generated_packages import generated_root, import_generated
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -108,12 +107,8 @@ class GeneratedCodecs:
 @contextmanager
 def imported(root: Path, name: str) -> Iterator[GeneratedCodecs]:
     """Import a package generated under a root, removing it and its models from the module cache afterwards."""
-    sys.path.insert(0, str(root))
-    try:
+    with generated_root(root, name):
         yield GeneratedCodecs(name, root)
-    finally:
-        sys.path.remove(str(root))
-        forget_generated(name)
 
 
 def _text(lines: list[str], package: str) -> str:
@@ -382,7 +377,10 @@ class _Source:
 
     def returned(self, name: str) -> ast.expr | None:
         """Return the expression the module-level function of a name returns."""
-        function = next(node for node in self.tree.body if isinstance(node, ast.FunctionDef) and node.name == name)
+        functions = (node for node in self.tree.body if isinstance(node, ast.FunctionDef) and node.name == name)
+        if (function := next(functions, None)) is None:
+            msg = f"{self.path.name} defines no module-level function {name}"
+            raise LookupError(msg)
         return function.body[-1].value if isinstance(function.body[-1], ast.Return) else None
 
     def call(self, name: str) -> ast.Call:
@@ -464,7 +462,7 @@ def _swap_models(path: Path, case: dict[str, Any]) -> None:
         elif symbol:
             lines.append(f"from {module} import {symbol} as {name}")
     if lines:
-        path.write_text(path.read_text(encoding="utf-8") + "".join(f"{line}\n" for line in lines), encoding="utf-8")
+        path.write_bytes(path.read_bytes() + "".join(f"{line}\n" for line in lines).encode())
 
 
 def _startup(generated: Path, root: Path, package: str, case: dict[str, Any], values: dict[str, Any]) -> str:

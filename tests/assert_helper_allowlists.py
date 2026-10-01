@@ -1190,7 +1190,6 @@ ALLOWLIST_GROUP_REASONS = {
         "Combinatorial wire-rule tables, the official JSON Schema suite, and the codec type-check probes exercise "
         "the runtime directly."
     ),
-    "model-codec-e2e": "Drive model codecs through FastAPI target e2e tests and import_generated.",
     "binding-e2e": (
         "Fold binding, session, and contract tests into target scenarios; first sweep each guard they inject faults "
         "into, deleting unreachable guards and keeping reachable ones as abnormal-path faults."

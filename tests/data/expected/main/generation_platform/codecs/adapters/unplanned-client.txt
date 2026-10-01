@@ -1,0 +1,3 @@
+APIGenerationError
+diagnostic MC_PARAMETER_ENCODING /paths/~1tags/get/parameters/0: cookie parameter style 'form' has no builtin form for array values
+diagnostic MC_PARAMETER_ENCODING /paths/~1pairs/get/parameters/0/schema/items: A parameter value needs one unambiguous scalar kind

@@ -4,22 +4,18 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from tests.data.python.model_codec_adapters import adapter_codec_report
 from tests.data.python.strict_typing import checked, marked_lines, negative
-
-if TYPE_CHECKING:
-    import pytest
 
 CODECS = Path(__file__).parents[1] / "generation_platform" / "codecs"
 SAMPLES = CODECS / "typing"
 ADAPTERS = CODECS / "adapters"
 
 
-def codec_typing_report(root: Path, monkeypatch: pytest.MonkeyPatch) -> str:
+def codec_typing_report(root: Path) -> str:
     """Check the positive samples clean, then each negative sample's marked lines, against the generated package."""
-    adapter_codec_report(ADAPTERS / "adapters.yaml", ADAPTERS / "adapters.json", root, monkeypatch)
+    adapter_codec_report(ADAPTERS / "adapters.yaml", ADAPTERS / "adapters.json", root)
     root /= "accepted"
     (package := root / "samples").mkdir()
     (package / "__init__.py").write_text("", encoding="utf-8")

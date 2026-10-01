@@ -1,18 +1,21 @@
 """Generate servers or clients with fixture codec declarations, import them, and run cases through their bindings.
 
 Server-surface fixtures generate a FastAPI server; client-surface ones generate a client. A fixture's `refusal` run
-first reports the diagnostics of a generation the target refuses, with extra declarations or other settings; the
-fixture's own declarations and `config` then generate the package that runs the cases.
+first reports the diagnostics of a generation the target refuses, with another input, extra declarations, or other
+settings; the fixture's own declarations and `config` then generate the package that runs the cases. The report names
+the adapter each generated accessor attaches, read from the generated bindings.
 """
 
 from __future__ import annotations
 
+import ast
 import importlib
 import json
+import re
 import shutil
 import subprocess
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 from typing import TYPE_CHECKING, Any
 
 from datamodel_code_generator import DataModelType, GenerateConfig
@@ -20,19 +23,19 @@ from datamodel_code_generator.api_types import APIGenerationError
 from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.fastapi import generate_fastapi
 from datamodel_code_generator.format import Formatter
-from tests.data.python.client_runtime import generate_client
+from tests.data.python.client_generation import generate_client
 from tests.data.python.codec_declarations import declaration
 from tests.data.python.fastapi_generation import fastapi_config
-from tests.data.python.generated_packages import forget_generated, import_generated
+from tests.data.python.generated_packages import generated_root, import_generated
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-    import pytest
-
 PACKAGE = "adapted"
 MODELS = f"{PACKAGE}_models"
 MANIFEST = ".dcg-target-manifest.json"
+ACCESSOR = re.compile(r"(codec|validator|parameter)_(\d+)")
+KINDS = {"codec": "model", "validator": "schema", "parameter": "parameter"}
 SETTINGS = {"codec_adapters": "adapters", "builtin_codec_compatibility": "compatibility", "export_bindings": "exports"}
 _ISOLATED = """
 import json
@@ -87,7 +90,8 @@ def _generate(source: Path, fixture: dict[str, Any], root: Path, run: dict[str, 
     config = {key: declarations[kind] for key, kind in SETTINGS.items() if kind in declarations}
     config.update(fixture.get("config", {}) | run.get("config", {}))
     root.mkdir(parents=True, exist_ok=True)
-    spec = shutil.copy2(source, root / source.name)
+    name = run.get("input", source.name)
+    spec = shutil.copy2(source.with_name(name), root / name)
     backend = fixture.get("backend", "pydantic_v2.BaseModel")
     model = {
         "openapi_scopes": [OpenAPIScope(scope) for scope in fixture.get("scopes", ["schemas", "api"])],
@@ -120,6 +124,36 @@ def _generate(source: Path, fixture: dict[str, Any], root: Path, run: dict[str, 
     return []
 
 
+def _called(call: ast.Call) -> str:
+    return call.func.attr if isinstance(call.func, ast.Attribute) else getattr(call.func, "id", "")
+
+
+def _attached(path: Path) -> tuple[dict[int, str], dict[int, list[tuple[str, str]]]]:
+    """Read each use's projection mode and the adapters its generated accessors attach from the bindings module."""
+    projections: dict[int, str] = {}
+    adapters: dict[int, list[tuple[str, str]]] = defaultdict(list)
+    for function in ast.parse(path.read_bytes()).body:
+        if not isinstance(function, ast.FunctionDef) or (found := ACCESSOR.fullmatch(function.name)) is None:
+            continue
+        kind, index = found[1], int(found[2])
+        names: list[str] = []
+        excluded: list[str] = []
+        for call in (node for node in ast.walk(function) if isinstance(node, ast.Call)):
+            keywords = {item.arg: item.value for item in call.keywords}
+            match _called(call):
+                case "AdapterManifest":
+                    names.append(ast.literal_eval(keywords["name"]))
+                case "SchemaAdapterValidator" if isinstance(value := keywords.get("excluded"), ast.Call):
+                    excluded = sorted(ast.literal_eval(value.args[0]))
+                case _:
+                    pass
+            if kind == "codec" and isinstance(mode := keywords.get("projection_mode"), ast.Constant):
+                projections.setdefault(index, mode.value)
+        shown = f" excluded={excluded}" if kind == "validator" else ""
+        adapters[index].extend((name, f"{KINDS[kind]}{shown}") for name in names)
+    return projections, adapters
+
+
 class _Package:
     """A generated package imported for its model bindings, with the report name of each bound use."""
 
@@ -131,6 +165,7 @@ class _Package:
         self.manifest = json.loads((root / PACKAGE / MANIFEST).read_text(encoding="utf-8"))["bindings"]
         self.keys, self.repeated = _use_keys([item["use_id"] for item in self.manifest])
         self.indexes = {key: index for index, key in enumerate(self.keys)}
+        self.projections, self.adapters = _attached(root / PACKAGE / "_generated" / "model_bindings.py")
 
     def accessor(self, kind: str, index: int) -> str | None:
         """Return the name of a use's accessor of one kind, if the bindings render it."""
@@ -145,11 +180,12 @@ class _Package:
         return self.media.encode_json(value).decode()
 
     def uses(self, *, bindings: bool) -> list[str]:
-        """List each bound use's accessors and strategies, and with `bindings` its built codec's binding."""
+        """List each bound use's accessors, strategy, projection, and adapters, and with `bindings` its binding."""
         lines = [f"duplicate report keys: {self.repeated}"] if self.repeated else []
         for index, (key, item) in enumerate(zip(self.keys, self.manifest, strict=True)):
             accessors = " ".join(str(self.accessor(kind, index)) for kind in ("codec", "outbound", "parameter"))
-            lines.append(f"use {key}: {accessors} {item['converter_strategy']} {item['strategy']}")
+            lines.append(f"use {key}: {accessors} {item['converter_strategy']} {self.projections[index]}")
+            lines.extend(f"adapter {name} {key}: {detail}" for name, detail in self.adapters[index])
             if bindings:
                 lines.append(f"binding {key}: {self.binding(index)}")
         return lines
@@ -157,7 +193,9 @@ class _Package:
     def binding(self, index: int) -> str:
         """Describe the binding of a use's built codec."""
         binding = getattr(self.bindings, f"codec_{index}")().binding
-        return f"{binding.native_export} {binding.native_kind} {binding.converter_strategy} {binding.projection_mode}"
+        export = binding.native_export
+        export = export if isinstance(export, str) else f"{export.module}:{export.symbol}"
+        return f"{export} {binding.native_kind} {binding.converter_strategy} {binding.projection_mode}"
 
 
 class _Runner:
@@ -252,6 +290,9 @@ class _Runner:
                 result = getattr(bindings, f"parameter_{index}")().encode(public.freeze_wire(value), context)
             case "parameter-decode":
                 result = getattr(bindings, f"parameter_{index}")().decode(self.raw(case), context)
+            case _:
+                msg = f"Unknown case operation: {operation}"
+                raise ValueError(msg)
         return result
 
     def run(self, case: dict[str, Any]) -> str:
@@ -277,7 +318,7 @@ def _isolated(root: Path, package: _Package, blocked: list[str], cases: list[dic
     return result.stdout.splitlines()
 
 
-def adapter_codec_report(source: Path, cases: Path, root: Path, monkeypatch: pytest.MonkeyPatch) -> str:
+def adapter_codec_report(source: Path, cases: Path, root: Path) -> str:
     """Generate a package with the fixture's declarations, import it, and run every case in order."""
     fixture = json.loads(cases.read_text(encoding="utf-8"))
     lines = [f"invalid {kind}: {_invalid(kind, data)}" for kind, data in fixture.get("invalid", ())]
@@ -289,8 +330,7 @@ def adapter_codec_report(source: Path, cases: Path, root: Path, monkeypatch: pyt
         return "\n".join([*lines, *refused]) + "\n"
     modules = source.parent / "modules"
     shutil.copytree(modules, accepted, ignore=shutil.ignore_patterns("__pycache__"), dirs_exist_ok=True)
-    monkeypatch.syspath_prepend(str(accepted))
-    try:
+    with generated_root(accepted, PACKAGE, *(path.name.removesuffix(".py") for path in modules.iterdir())):
         package = _Package(accepted)
         lines.extend(package.uses(bindings=bool(fixture.get("bindings"))))
         if fixture.get("source"):
@@ -304,8 +344,4 @@ def adapter_codec_report(source: Path, cases: Path, root: Path, monkeypatch: pyt
         else:
             runner = _Runner(package)
             lines.extend(f"{case['name']}: {runner.run(case)}" for case in package.load(cases).get("cases", ()))
-    finally:
-        forget_generated(PACKAGE)
-        for path in modules.iterdir():
-            forget_generated(path.name.removesuffix(".py"))
     return "\n".join(lines) + "\n"
