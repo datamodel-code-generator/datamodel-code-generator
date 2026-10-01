@@ -7,6 +7,7 @@ from functools import reduce
 from typing import TYPE_CHECKING
 
 from datamodel_code_generator._client.protocols import (
+    AdapterSignature,
     AsciiBytes,
     Binding,
     CountContinuation,
@@ -23,11 +24,13 @@ from datamodel_code_generator._client.protocols import (
     LiteralValue,
     NextUrlContinuation,
     NoResult,
+    NoSignature,
     OperationResult,
     PaginationHelper,
     PollingHelper,
     PollInterval,
     ProtocolConfiguration,
+    PublicKeySignature,
     RemoteCancel,
     SignedLiteral,
     SourceValue,
@@ -306,6 +309,34 @@ INVALID = ProtocolConfiguration(
             ),
         ),
         "jobs.run": object(),  # ty: ignore[invalid-argument-type]
+        "hooks.hmac": WebhookHelper(
+            event_schema=USER,
+            signature=HmacSignature(
+                kind="ed25519",  # ty: ignore[invalid-argument-type]
+                header="X-Signature",
+                encoding="hex",
+                prefix="",
+                separator="none",
+                key_id="none",
+                timestamp="none",
+                delivery_id="none",
+                signed_parts=("raw-body",),
+            ),
+        ),
+        "hooks.public": WebhookHelper(
+            event_schema=USER,
+            signature=PublicKeySignature(
+                kind="hmac-sha256",  # ty: ignore[invalid-argument-type]
+                header="X-Signature",
+                encoding="hex",
+                prefix="",
+                separator="none",
+                key_id="none",
+                timestamp="none",
+                delivery_id="none",
+                signed_parts=("raw-body",),
+            ),
+        ),
     },
 )
 
@@ -404,4 +435,106 @@ WEBHOOKS = ProtocolConfiguration(
     }
 )
 
-RECORDS = {"disabled": DISABLED, "invalid": INVALID, "shape": SHAPE, "webhooks": WEBHOOKS}
+ED25519_BODY = PublicKeySignature(
+    kind="ed25519",
+    header="X-Signature",
+    encoding="hex",
+    prefix="",
+    separator="none",
+    key_id="none",
+    timestamp="none",
+    delivery_id="none",
+    signed_parts=("raw-body",),
+)
+PUBLIC_KEYS = ProtocolConfiguration(
+    helpers={
+        "rfc8032.ed25519": WebhookHelper(event_schema=PUSH, signature=ED25519_BODY),
+        "wycheproof.rsa": WebhookHelper(
+            event_schema=SchemaRef(pointer="/components/schemas/Count"),
+            signature=replace(ED25519_BODY, kind="rsa-pss-sha256"),
+        ),
+        "standard.ed25519": WebhookHelper(
+            event_schema=MESSAGE,
+            signature=PublicKeySignature(
+                kind="ed25519",
+                header=STANDARD.header,
+                encoding=STANDARD.encoding,
+                prefix="v1a,",
+                separator=STANDARD.separator,
+                key_id=STANDARD.key_id,
+                timestamp=STANDARD.timestamp,
+                delivery_id=STANDARD.delivery_id,
+                signed_parts=STANDARD.signed_parts,
+                field_constraints=STANDARD.field_constraints,
+            ),
+        ),
+        "keyed.rsa": WebhookHelper(
+            event_schema=MESSAGE,
+            signature=PublicKeySignature(
+                kind="rsa-pss-sha256",
+                header="X-Signature",
+                encoding="base64url",
+                prefix="v1=",
+                separator=",",
+                key_id=HeaderName(header="X-Key-Id"),
+                timestamp=TimestampHeader(header="X-Timestamp", unit="milliseconds"),
+                delivery_id=HeaderName(header="X-Delivery"),
+                signed_parts=("timestamp", DOT, "delivery-id", DOT, "raw-body"),
+                field_constraints={
+                    "timestamp": DIGITS,
+                    "delivery-id": AsciiBytes(ascii_bytes="abcdefghijklmnopqrstuvwxyz0123456789-"),
+                },
+            ),
+        ),
+        "github.push": WEBHOOKS.helpers["github.push"],
+    }
+)
+
+INVOICE = SchemaRef(pointer="/components/schemas/Invoice")
+CUSTOMER = SchemaRef(pointer="/components/schemas/Customer")
+BY_TYPE = EventDiscriminator(from_="body", pointer="/type")
+ADAPTERS = ProtocolConfiguration(
+    helpers={
+        "stripe.event": WebhookHelper(
+            event_schema=EventMapping(
+                discriminator=BY_TYPE,
+                mapping={"invoice.paid": INVOICE, "invoice.updated": INVOICE, "customer.created": CUSTOMER},
+            ),
+            signature=AdapterSignature(timestamp="required", delivery_id="none"),
+        ),
+        "adapted.message": WebhookHelper(
+            event_schema=MESSAGE, signature=AdapterSignature(timestamp="required", delivery_id="required")
+        ),
+        "adapted.plain": WebhookHelper(
+            event_schema=MESSAGE,
+            duplicates="reject",
+            signature=AdapterSignature(timestamp="none", delivery_id="none"),
+        ),
+        "mapped.event": WebhookHelper(
+            event_schema=EventMapping(
+                discriminator=BY_TYPE, mapping={"invoice.paid": INVOICE, "customer.created": CUSTOMER}
+            ),
+            signature=BODY_ONLY,
+        ),
+        "unsigned.event": WebhookHelper(
+            event_schema=EventMapping(
+                discriminator=EventDiscriminator(from_="body", pointer="/meta/type"),
+                mapping={"invoice.paid": INVOICE, "customer.created": CUSTOMER},
+            ),
+            signature=NoSignature(),
+        ),
+        "unsigned.message": WebhookHelper(
+            event_schema=SchemaRef(pointer="/webhooks/message/post/requestBody/content/application~1json/schema"),
+            signature=NoSignature(),
+        ),
+    }
+)
+
+RECORDS = {
+    "disabled": DISABLED,
+    "invalid": INVALID,
+    "shape": SHAPE,
+    "webhooks": WEBHOOKS,
+    "public_keys": PUBLIC_KEYS,
+    "adapters": ADAPTERS,
+}

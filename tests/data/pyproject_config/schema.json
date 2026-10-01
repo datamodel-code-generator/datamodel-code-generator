@@ -1,0 +1,34 @@
+{
+  "title": "Sample",
+  "type": "object",
+  "properties": {
+    "userName": {
+      "type": "string",
+      "default": "guest"
+    },
+    "level": {
+      "type": "string",
+      "enum": [
+        "low",
+        "high"
+      ]
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 5
+    },
+    "note": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "userName",
+    "level",
+    "count"
+  ]
+}

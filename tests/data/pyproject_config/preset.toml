@@ -1,0 +1,4 @@
+[tool.datamodel-codegen]
+preset="standard-py311-20260909"
+formatters=["builtin"]
+disable-timestamp=true

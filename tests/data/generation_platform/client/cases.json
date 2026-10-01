@@ -2244,6 +2244,176 @@
       ]
     ]
   },
+  "webhooks-public-keys": {
+    "input": "webhooks.yaml",
+    "references": [
+      "protocols/webhook-public-keys.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/webhook-public-keys.yaml"
+    },
+    "modules": [
+      [
+        "client",
+        "webhooks",
+        "keys.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "rfc8032",
+        "ed25519.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "wycheproof",
+        "rsa.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "standard",
+        "ed25519.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "keyed",
+        "rsa.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "github",
+        "push.py"
+      ]
+    ]
+  },
+  "webhooks-public-keys-python": {
+    "input": "webhooks.yaml",
+    "config": {
+      "protocols": {
+        "python": "public_keys"
+      }
+    }
+  },
+  "webhooks-adapters": {
+    "input": "webhook-adapters.yaml",
+    "references": [
+      "protocols/webhook-adapters.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/webhook-adapters.yaml"
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "keys.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "stripe",
+        "event.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "adapted",
+        "message.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "adapted",
+        "plain.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "mapped",
+        "event.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "unsigned",
+        "event.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "unsigned",
+        "message.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "adapted",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "mapped",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "stripe",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "unsigned",
+        "__init__.py"
+      ]
+    ]
+  },
+  "webhooks-adapters-python": {
+    "input": "webhook-adapters.yaml",
+    "config": {
+      "protocols": {
+        "python": "adapters"
+      }
+    }
+  },
+  "webhooks-unsigned": {
+    "input": "webhook-adapters.yaml",
+    "references": [
+      "protocols/webhook-unsigned.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/webhook-unsigned.yaml"
+    },
+    "modules": [
+      [
+        "client",
+        "webhooks",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "unsigned",
+        "message.py"
+      ]
+    ]
+  },
   "unions": {
     "input": "unions.yaml",
     "config": {
@@ -2520,5 +2690,781 @@
       "protocols": "protocols/ndjson-checks.yaml"
     },
     "modules": false
+  },
+  "parameter-adapters": {
+    "input": "parameter-adapters.yaml",
+    "references": [
+      "protocols/parameter-adapters.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/parameter-adapters.yaml",
+      "validation": {
+        "request": "schema"
+      },
+      "codec_adapters": [
+        {
+          "kind": "parameter",
+          "name": "json-cookie",
+          "import_ref": "tests.data.python.parameter_adapters:json_cookie",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "cookie"
+            ],
+            "styles": [
+              "form"
+            ],
+            "explode_values": [
+              false
+            ],
+            "value_kinds": [
+              "array"
+            ],
+            "supports_empty_containers": true
+          },
+          "uses": [
+            {
+              "schema": {
+                "pointer": "/components/schemas/Tags"
+              },
+              "direction": "request"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "json-query",
+          "import_ref": "tests.data.python.parameter_adapters:json_query",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "query"
+            ],
+            "styles": [
+              "deepObject"
+            ],
+            "explode_values": [
+              true
+            ],
+            "value_kinds": [
+              "object"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1tags/get",
+              "role": "parameter",
+              "location": "query",
+              "name": "where"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "json-header",
+          "import_ref": "tests.data.python.parameter_adapters:json_header",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "header"
+            ],
+            "styles": [
+              "simple"
+            ],
+            "explode_values": [
+              false,
+              true
+            ],
+            "value_kinds": [
+              "array"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1tags/get",
+              "role": "parameter",
+              "location": "header",
+              "name": "X-Labels"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "json-path",
+          "import_ref": "tests.data.python.parameter_adapters:json_path",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "path"
+            ],
+            "styles": [
+              "simple"
+            ],
+            "explode_values": [
+              false
+            ],
+            "value_kinds": [
+              "object"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1items~1{key}/get",
+              "role": "parameter",
+              "location": "path",
+              "name": "key"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "raw-path",
+          "import_ref": "tests.data.python.parameter_adapters:raw_path",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "path"
+            ],
+            "styles": [
+              "simple"
+            ],
+            "explode_values": [
+              false
+            ],
+            "value_kinds": [
+              "string"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1segments~1{segment}/get",
+              "role": "parameter",
+              "location": "path",
+              "name": "segment"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "raw-header",
+          "import_ref": "tests.data.python.parameter_adapters:raw_header",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "header"
+            ],
+            "styles": [
+              "simple"
+            ],
+            "explode_values": [
+              false
+            ],
+            "value_kinds": [
+              "string"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1segments~1{segment}/get",
+              "role": "parameter",
+              "location": "header",
+              "name": "X-Raw"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "json-querystring",
+          "import_ref": "tests.data.python.parameter_adapters:json_querystring",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "querystring"
+            ],
+            "styles": [],
+            "explode_values": [],
+            "value_kinds": [
+              "object"
+            ],
+            "media_types": [
+              "application/json"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1finds/get",
+              "role": "parameter",
+              "location": "querystring",
+              "name": "criteria",
+              "media_type": "application/json"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "json-options",
+          "import_ref": "tests.data.python.parameter_adapters:json_options",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "query"
+            ],
+            "styles": [
+              "form"
+            ],
+            "explode_values": [
+              true
+            ],
+            "value_kinds": [
+              "object"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1search/get",
+              "role": "parameter",
+              "location": "query",
+              "name": "opts"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "members",
+          "import_ref": "tests.data.python.parameter_adapters:members",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "query"
+            ],
+            "styles": [
+              "form"
+            ],
+            "explode_values": [
+              true
+            ],
+            "value_kinds": [
+              "object"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1spread/get",
+              "role": "parameter",
+              "location": "query",
+              "name": "opts"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "brackets",
+          "import_ref": "tests.data.python.parameter_adapters:brackets",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "query"
+            ],
+            "styles": [
+              "deepObject"
+            ],
+            "explode_values": [
+              true
+            ],
+            "value_kinds": [
+              "object"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1search/get",
+              "role": "parameter",
+              "location": "query",
+              "name": "near"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "json-shelf",
+          "import_ref": "tests.data.python.parameter_adapters:json_path_text",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "path"
+            ],
+            "styles": [
+              "simple"
+            ],
+            "explode_values": [
+              false
+            ],
+            "value_kinds": [
+              "string"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get",
+              "role": "parameter",
+              "location": "path",
+              "name": "shelf"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "raw-rack",
+          "import_ref": "tests.data.python.parameter_adapters:raw_path",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "path"
+            ],
+            "styles": [
+              "simple"
+            ],
+            "explode_values": [
+              false
+            ],
+            "value_kinds": [
+              "string"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get",
+              "role": "parameter",
+              "location": "path",
+              "name": "rack"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "json-slot",
+          "import_ref": "tests.data.python.parameter_adapters:json_path_text",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "path"
+            ],
+            "styles": [
+              "simple"
+            ],
+            "explode_values": [
+              false
+            ],
+            "value_kinds": [
+              "string"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get",
+              "role": "parameter",
+              "location": "path",
+              "name": "slot"
+            }
+          ]
+        }
+      ]
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ],
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
+  "parameter-adapters-variant": {
+    "input": "parameter-adapters-variant.yaml",
+    "references": [
+      "protocols/parameter-adapters.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/parameter-adapters.yaml",
+      "validation": {
+        "request": "schema"
+      },
+      "codec_adapters": [
+        {
+          "kind": "parameter",
+          "name": "json-cookie",
+          "import_ref": "tests.data.python.parameter_adapters:json_cookie",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "cookie"
+            ],
+            "styles": [
+              "form"
+            ],
+            "explode_values": [
+              false
+            ],
+            "value_kinds": [
+              "array"
+            ],
+            "supports_empty_containers": true
+          },
+          "uses": [
+            {
+              "schema": {
+                "pointer": "/components/schemas/Tags"
+              },
+              "direction": "request"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "json-query",
+          "import_ref": "tests.data.python.parameter_adapters:json_query",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "query"
+            ],
+            "styles": [
+              "deepObject"
+            ],
+            "explode_values": [
+              true
+            ],
+            "value_kinds": [
+              "object"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1tags/get",
+              "role": "parameter",
+              "location": "query",
+              "name": "where"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "json-header",
+          "import_ref": "tests.data.python.parameter_adapters:json_header",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "header"
+            ],
+            "styles": [
+              "simple"
+            ],
+            "explode_values": [
+              false,
+              true
+            ],
+            "value_kinds": [
+              "array"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1tags/get",
+              "role": "parameter",
+              "location": "header",
+              "name": "X-Labels"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "json-path-v2",
+          "import_ref": "tests.data.python.parameter_adapters:json_path_v2",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "path"
+            ],
+            "styles": [
+              "simple"
+            ],
+            "explode_values": [
+              false
+            ],
+            "value_kinds": [
+              "object"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1items~1{key}/get",
+              "role": "parameter",
+              "location": "path",
+              "name": "key"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "raw-path",
+          "import_ref": "tests.data.python.parameter_adapters:raw_path",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "path"
+            ],
+            "styles": [
+              "simple"
+            ],
+            "explode_values": [
+              false
+            ],
+            "value_kinds": [
+              "string"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1segments~1{segment}/get",
+              "role": "parameter",
+              "location": "path",
+              "name": "segment"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "raw-header",
+          "import_ref": "tests.data.python.parameter_adapters:raw_header",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "header"
+            ],
+            "styles": [
+              "simple"
+            ],
+            "explode_values": [
+              false
+            ],
+            "value_kinds": [
+              "string"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1segments~1{segment}/get",
+              "role": "parameter",
+              "location": "header",
+              "name": "X-Raw"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "json-querystring",
+          "import_ref": "tests.data.python.parameter_adapters:json_querystring",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "querystring"
+            ],
+            "styles": [],
+            "explode_values": [],
+            "value_kinds": [
+              "object"
+            ],
+            "media_types": [
+              "application/json"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1finds/get",
+              "role": "parameter",
+              "location": "querystring",
+              "name": "criteria",
+              "media_type": "application/json"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "json-options",
+          "import_ref": "tests.data.python.parameter_adapters:json_options",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "query"
+            ],
+            "styles": [
+              "form"
+            ],
+            "explode_values": [
+              true
+            ],
+            "value_kinds": [
+              "object"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1search/get",
+              "role": "parameter",
+              "location": "query",
+              "name": "opts"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "members",
+          "import_ref": "tests.data.python.parameter_adapters:members",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "query"
+            ],
+            "styles": [
+              "form"
+            ],
+            "explode_values": [
+              true
+            ],
+            "value_kinds": [
+              "object"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1spread/get",
+              "role": "parameter",
+              "location": "query",
+              "name": "opts"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "brackets",
+          "import_ref": "tests.data.python.parameter_adapters:brackets",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "query"
+            ],
+            "styles": [
+              "deepObject"
+            ],
+            "explode_values": [
+              true
+            ],
+            "value_kinds": [
+              "object"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1search/get",
+              "role": "parameter",
+              "location": "query",
+              "name": "near"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "json-shelf",
+          "import_ref": "tests.data.python.parameter_adapters:json_path_text",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "path"
+            ],
+            "styles": [
+              "simple"
+            ],
+            "explode_values": [
+              false
+            ],
+            "value_kinds": [
+              "string"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get",
+              "role": "parameter",
+              "location": "path",
+              "name": "shelf"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "raw-rack",
+          "import_ref": "tests.data.python.parameter_adapters:raw_path",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "path"
+            ],
+            "styles": [
+              "simple"
+            ],
+            "explode_values": [
+              false
+            ],
+            "value_kinds": [
+              "string"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get",
+              "role": "parameter",
+              "location": "path",
+              "name": "rack"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "json-slot",
+          "import_ref": "tests.data.python.parameter_adapters:json_path_text",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "path"
+            ],
+            "styles": [
+              "simple"
+            ],
+            "explode_values": [
+              false
+            ],
+            "value_kinds": [
+              "string"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get",
+              "role": "parameter",
+              "location": "path",
+              "name": "slot"
+            }
+          ]
+        }
+      ]
+    }
   }
 }

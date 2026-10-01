@@ -1,0 +1,5 @@
+[tool.datamodel-codegen]
+output-model-type = "msgspec.Struct"
+target-python-version = "3.11"
+formatters = ["builtin"]
+disable-timestamp = true
