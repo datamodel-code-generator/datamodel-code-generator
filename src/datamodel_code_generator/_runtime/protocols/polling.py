@@ -299,7 +299,8 @@ class _Operation(Generic[T, P]):
     """What the synchronous and asyncio handles share: the plan, limits, session, phase, and the last poll.
 
     Only a settled child call changes the phase, so a failure that settles none, such as a transport error, a
-    deadline, a cancellation, or a limit, leaves the handle as it was, and a later step polls again.
+    deadline, a cancellation, or a limit, leaves the handle as it was, and a later step polls again unless a session
+    limit it hit stays spent.
     """
 
     __slots__ = (
