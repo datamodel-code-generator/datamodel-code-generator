@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from ..model_codecs.wire import WireValue
     from .records import Selector
 
-__all__ = ("MISSING", "Missing", "Patch", "RepeatedValueError", "resolve", "selected")
+__all__ = ("DOT_SEGMENTS", "MISSING", "Missing", "Patch", "RepeatedValueError", "resolve", "selected")
 
 
 class Missing(Enum):
@@ -32,6 +32,7 @@ class Missing(Enum):
 
 
 MISSING: Final = Missing.MISSING
+DOT_SEGMENTS: Final = (".", "..")
 
 
 def _tokens(pointer: str) -> list[str]:

@@ -73,7 +73,7 @@ protocols/values.py: ..client.responses, ..model_codecs.unset, ..model_codecs.wi
 protocols/verification.py: ..client.errors, ..client.operations, ..model_codecs.context, ..model_codecs.errors, ..model_codecs.media, ..model_codecs.unset, ..model_codecs.wire, .errors, .signatures, .webhooks, __future__, collections.abc, dataclasses, datetime, enum, inspect, re, typing, typing_extensions
 protocols/webhook_keys.py: ..client.errors, .records, __future__, re, typing
 protocols/webhooks.py: ..model_codecs.unset, .options, __future__, dataclasses, datetime, typing, typing_extensions
-protocols/writes.py: ..client.operations, ..client.options, ..model_codecs.wire, .values, __future__, collections.abc, dataclasses, typing
+protocols/writes.py: ..client.operations, ..client.options, ..model_codecs.wire, .records, .values, __future__, collections.abc, dataclasses, typing, typing_extensions
 server/__init__.py: -
 server/application.py: ..model_codecs.wire, .security, __future__, collections.abc, dataclasses, fastapi, fastapi.params, fastapi.routing, inspect, starlette.middleware, starlette.responses, starlette.routing, types, typing, typing_extensions
 server/codecs.py: ..model_codecs.errors, ..model_codecs.media, __future__, collections.abc, typing, typing_extensions

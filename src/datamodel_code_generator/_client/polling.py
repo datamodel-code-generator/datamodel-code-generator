@@ -50,15 +50,16 @@ _MAX_SUCCESS: Final = 299
 class PollingSpec:
     """A polling helper ready to render: its operations, poll and result types, and result accessors.
 
-    An inline result is read from the final poll by `steps` and has the type `value`; a fetched one is the response of
-    `fetch`, whose use is `fetch_use`; a helper without a result gives None. `immediate` reads the result from a create
-    response with an immediate status.
+    `create_uses` are the uses of the create operation's success media. An inline result is read from the final poll
+    by `steps` and has the type `value`; a fetched one is the response of `fetch`, whose use is `fetch_use`; a helper
+    without a result gives None. `immediate` reads the result from a create response with an immediate status.
     """
 
     helper: Helper
     operation: OperationSpec
     poll: OperationSpec
     poll_use: TypeUseBinding
+    create_uses: tuple[TypeUseBinding, ...] = ()
     value: FinalPythonType | None = None
     steps: tuple[ItemStep, ...] = ()
     fetch: OperationSpec | None = None
@@ -161,6 +162,13 @@ class _Polls:
             operation=create,
             poll=poll,
             poll_use=page,
+            create_uses=tuple(
+                use
+                for response in create.responses
+                if response.success
+                for media in response.media
+                if (use := media.use) is not None
+            ),
             value=result.value,
             steps=result.steps,
             fetch=result.fetch,

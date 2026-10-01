@@ -33,15 +33,13 @@ from ..model_codecs.errors import CodecError
 from ..model_codecs.media import decode_json
 from ..model_codecs.unset import UNSET, Unset
 from .errors import PaginationCycleError, ProtocolDataError, ProtocolStateError, ResumeStateError, SessionLimitError
-from .options import PaginationOptions
+from .options import PaginationOptions, layered
 from .records import (
     BodySelector,
-    BodyTarget,
     Continuation,
     HeaderSelector,
     ParameterTarget,
     ProtocolProgress,
-    QuerystringTarget,
     RequestTarget,
     Sealed,
     Selector,
@@ -51,7 +49,7 @@ from .records import (
     record_instance,
 )
 from .resume import ResumeState, helper_state, state_fields
-from .values import MISSING, Missing, Patch, RepeatedValueError, resolve, selected
+from .values import DOT_SEGMENTS, MISSING, Missing, Patch, RepeatedValueError, resolve, selected
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Generator, Iterator, Sequence
@@ -89,11 +87,9 @@ __all__ = (
 T = TypeVar("T")
 P = TypeVar("P")
 R = TypeVar("R")
-V = TypeVar("V")
 T_co = TypeVar("T_co", covariant=True, default=object)
 P_co = TypeVar("P_co", covariant=True, default=object)
 
-_DOT_SEGMENTS: Final = (".", "..")
 _BOOLEANS: Final = MappingProxyType({"true": True, "false": False})
 _MAX_URL_BYTES: Final = 8192
 _REFERENCE: Final = re.compile(
@@ -212,20 +208,6 @@ class PageBinding:
         object.__setattr__(self, "literal", frozen_wire(self.literal))
 
 
-def _position(call: OperationPlan[P, object], location: str, name: str) -> int:
-    """Return the argument position of a declared parameter, matching a header's name without regard to case."""
-
-    def key(value: str) -> str:
-        return value.lower() if location == "header" else value
-
-    wanted = key(name)
-    return next(
-        index
-        for index, spec in enumerate(call.parameters)
-        if spec.plan.location == location and key(spec.plan.name) == wanted
-    )
-
-
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class PaginationPlan(Generic[T, P]):
@@ -261,53 +243,18 @@ class PaginationPlan(Generic[T, P]):
         A write is a parameter's argument position with no pointer, a querystring's with a pointer into its value, or
         no position with a pointer into the JSON body. Every media of a body written to is JSON.
         """
-        from .writes import PatchedMedia, PatchedParameter  # noqa: PLC0415 - Only a plan loads the operation runtime.
+        from .writes import targeted  # noqa: PLC0415 - Only a plan loads the operation runtime.
 
-        call = self.call
-        parameters = list(call.parameters)
-        writes: list[tuple[int | None, str | None]] = []
-        headers: set[str] = set()
-        queries: set[str] = set()
-        patched = False
         rule = self.continuation
         follows = isinstance(rule, (NextUrlPlan, LinkPlan))
         sources = tuple((binding.target, binding.selector) for binding in self.bindings)
         if isinstance(rule, (CursorPlan, CountPlan)):
             sources = (*sources, (rule.write, rule.read if isinstance(rule, CursorPlan) else None))
-        for target, _ in sources:
-            if isinstance(target, BodyTarget):
-                writes.append((None, target.pointer))
-                patched = True
-                continue
-            if isinstance(target, QuerystringTarget):
-                position, pointer = _position(call, "querystring", target.name), target.pointer
-            else:
-                position, pointer = _position(call, target.location, target.name), None
-                if (location := target.location) == "header":
-                    headers.add(target.name.lower())
-                elif location == "query":
-                    queries.add(target.name)
-            spec = parameters[position]
-            parameters[position] = (
-                replace(spec, encoder=None)
-                if pointer is None
-                else PatchedParameter(plan=spec.plan, encoder=spec.encoder)
-            )
-            writes.append((position, pointer))
-        body = call.body
-        if patched:
-            assert body is not None
-            body = replace(
-                body,
-                media=tuple(
-                    PatchedMedia(media_type=media.media_type, kind=media.kind, encoder=media.encoder)
-                    for media in body.media
-                ),
-            )
+        continued, writes, headers, queries = targeted(self.call, (target for target, _ in sources))
         object.__setattr__(self, "follows", follows)
-        object.__setattr__(self, "writes", tuple(writes))
-        object.__setattr__(self, "headers", frozenset(headers))
-        object.__setattr__(self, "queries", frozenset(queries))
+        object.__setattr__(self, "writes", writes)
+        object.__setattr__(self, "headers", headers)
+        object.__setattr__(self, "queries", queries)
         object.__setattr__(
             self,
             "dotted",
@@ -317,7 +264,6 @@ class PaginationPlan(Generic[T, P]):
                 if isinstance(target, ParameterTarget) and target.location == "path" and selector is not None
             ),
         )
-        continued = replace(call, parameters=tuple(parameters), body=body, checks=())
         if follows and not (isinstance(rule, NextUrlPlan) and rule.repeat_request_body):
             continued = replace(continued, method="GET", body=None, retry_safety="method_default", idempotency=None)
         object.__setattr__(self, "continued", continued)
@@ -450,14 +396,6 @@ class _Limits:
 _DEFAULTS: Final = _Limits()
 
 
-def _first(layers: tuple[object, ...], name: str, default: V) -> V:
-    """Return a limit from the first options layer that sets it, or its default."""
-    for layer in layers:
-        if layer is not None and not isinstance(layer, Unset) and not isinstance(value := getattr(layer, name), Unset):
-            return cast("V", value)
-    return default
-
-
 def _invalid(plan: PaginationPlan[T, P], path: tuple[str, ...]) -> ProtocolConfigurationError:
     return ProtocolConfigurationError(
         field_path=path, condition="invalid_value", helper_id=plan.helper_id, operation=plan.operation
@@ -498,13 +436,13 @@ def _limits(
     kinds = (pagination_options, UNSET if defaults is None else defaults.options)
     sessions = (session_options, UNSET if defaults is None else defaults.session)
     return _Limits(
-        max_pages=_first(kinds, "max_pages", _DEFAULTS.max_pages),
-        max_items=_first(kinds, "max_items", _DEFAULTS.max_items),
-        max_page_bytes=_first(kinds, "max_page_bytes", _DEFAULTS.max_page_bytes),
-        max_cursor_bytes=_first(kinds, "max_cursor_bytes", _DEFAULTS.max_cursor_bytes),
-        total_timeout=_first(sessions, "total_timeout", _DEFAULTS.total_timeout),
-        deadline=_first(sessions, "deadline", _DEFAULTS.deadline),
-        max_network_sends=_first(sessions, "max_network_sends", _DEFAULTS.max_network_sends),
+        max_pages=layered(kinds, "max_pages", _DEFAULTS.max_pages),
+        max_items=layered(kinds, "max_items", _DEFAULTS.max_items),
+        max_page_bytes=layered(kinds, "max_page_bytes", _DEFAULTS.max_page_bytes),
+        max_cursor_bytes=layered(kinds, "max_cursor_bytes", _DEFAULTS.max_cursor_bytes),
+        total_timeout=layered(sessions, "total_timeout", _DEFAULTS.total_timeout),
+        deadline=layered(sessions, "deadline", _DEFAULTS.deadline),
+        max_network_sends=layered(sessions, "max_network_sends", _DEFAULTS.max_network_sends),
         options=request,
     )
 
@@ -592,7 +530,7 @@ def _sized(plan: PaginationPlan[T, P], value: WireValue, info: ResponseInfo | No
 def _dotted(plan: PaginationPlan[T, P], written: tuple[WireValue, ...], info: ResponseInfo | None) -> None:
     """Refuse a dot segment read for a path parameter among the values the next request writes."""
     for index, read in plan.dotted:
-        if written[index] in _DOT_SEGMENTS:
+        if written[index] in DOT_SEGMENTS:
             raise _data_error(plan, info, "value", read)
 
 
@@ -1198,7 +1136,7 @@ def _resent(
     _require(
         core.unsaved_argument(call, wire) is None
         and not any(
-            spec.plan.location == "path" and value in _DOT_SEGMENTS
+            spec.plan.location == "path" and value in DOT_SEGMENTS
             for spec, value in zip(call.parameters, wire, strict=True)
         )
     )

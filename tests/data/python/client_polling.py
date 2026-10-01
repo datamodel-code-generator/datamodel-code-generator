@@ -302,13 +302,27 @@ def _waits(harness: _Polling, api: Any, exchange: Exchange, lines: list[str]) ->
     step(lines, "undeclared delay header", api.protocols.jobs.inline.start(body=body).status)
     lines.append("intervals and deadlines")
     for label, polls in (
-        ("interval past the deadline", harness.polls(interval=30)),
-        ("interval past the deadline without a wait limit", harness.polls(interval=30, max_wait=None)),
+        ("interval past the session", harness.polls(interval=30)),
+        ("interval past the session without a wait limit", harness.polls(interval=30, max_wait=None)),
         ("interval past the wait limit", harness.polls(interval=30, max_wait=10)),
     ):
-        exchange.respond(_job("queued", 202))
-        handle = helper.start(body=body, poll_options=polls, session_options=harness.session(total_timeout=5))
-        step(lines, label, handle.status)
+        session = harness.session(total_timeout=5)
+        step(
+            lines,
+            label,
+            lambda polls=polls, session=session: helper.start(body=body, poll_options=polls, session_options=session),
+        )
+    deadline = harness.session(deadline=harness.options.Deadline.after(0.5))
+    step(
+        lines,
+        "interval past the session deadline",
+        lambda: helper.start(body=body, poll_options=harness.polls(interval=1), session_options=deadline),
+    )
+    exchange.respond(json_response(202, {"id": "j1", "status": "queued"}, **{"Retry-After": "120"}))
+    handle = helper.start(
+        body=body, poll_options=harness.polls(max_wait=None), session_options=harness.session(total_timeout=60)
+    )
+    step(lines, "server delay past the session", handle.status)
     exchange.respond(_job("queued", 202), _job("done"))
     handle = helper.start(
         body=body,
@@ -362,6 +376,19 @@ def _failures(harness: _Polling, api: Any, exchange: Exchange, lines: list[str])
     token.cancel()
     step(lines, "cancelled wait", handle.status)
     lines.append(f"  progress {dict(handle.progress)!r}")
+    token = harness.options.CancelToken()
+    exchange.respond(_job("queued", 202))
+    handle = helper.start(body=body, options=harness.request(cancel_token=token))
+    token.cancel()
+    step(lines, "poll refused before sending", handle.status)
+    lines.append(f"  progress {dict(handle.progress)!r}")
+    lines.append("server delay of a failed result fetch")
+    exchange.respond(
+        _job("queued", 202), _job("done"), json_response(503, {"message": "busy"}, **{"Retry-After": "30"})
+    )
+    handle = helper.start(body=body, options=once, poll_options=harness.polls(max_wait=10))
+    step(lines, "fetch answered with a server delay", handle.wait)
+    step(lines, "fetch before the delay", handle.wait)
     lines.append("server delay of a failed poll")
     exchange.respond(_job("queued", 202), json_response(503, {"message": "busy"}, **{"Retry-After": "30"}))
     handle = helper.start(body=body, options=once, poll_options=harness.polls(max_wait=10))
@@ -393,9 +420,10 @@ async def _async_polling(harness: _Polling, lines: list[str]) -> None:
         async with await api.protocols.jobs.inline.start(body=body) as immediate:
             await astep(lines, "immediate wait", immediate.wait)
         await astep(lines, "wait after the block", immediate.wait)
-        await arecord(lines, "start without a session send slot", lambda: helper.start(
-            body=body, session_options=harness.session(max_network_sends=0)
-        ))
+        unbudgeted = harness.session(max_network_sends=0)
+        await arecord(
+            lines, "start without a session send slot", lambda: helper.start(body=body, session_options=unbudgeted)
+        )
         lines.append("async concurrent steps")
         exchange.respond(_job("queued", 202))
         handle = await helper.start(body=body, poll_options=harness.polls(interval=30))
@@ -411,8 +439,33 @@ async def _async_polling(harness: _Polling, lines: list[str]) -> None:
         lines.append(f"  progress {dict(handle.progress)!r}")
         await astep(lines, "close", handle.aclose)
         await astep(lines, "status after close", handle.status)
-        lines.append("async server delay of a failed poll")
+        lines.append("async block error while another step runs")
+        exchange.respond(_job("queued", 202))
+        handle = await helper.start(body=body, poll_options=harness.polls(interval=30))
+        waiting = asyncio.create_task(handle.wait())
+        await asyncio.sleep(0)
+        try:
+            async with handle:
+                raise LookupError("block")
+        except LookupError as error:
+            lines.append(f"  block error kept: {error!r}")
+        waiting.cancel()
+        try:
+            await waiting
+        except asyncio.CancelledError:
+            lines.append("  wait cancelled")
+        lines.append(f"  progress {dict(handle.progress)!r}")
+        await astep(lines, "close the handle the block left open", handle.aclose)
+        await astep(lines, "status after its close", handle.status)
+        lines.append("async server delay of a failed result fetch")
         once = harness.request(retry=harness.options.RetryOptions(max_retries=0))
+        exchange.respond(
+            _job("queued", 202), _job("done"), json_response(503, {"message": "busy"}, **{"Retry-After": "30"})
+        )
+        handle = await helper.start(body=body, options=once, poll_options=harness.polls(max_wait=10))
+        await astep(lines, "fetch answered with a server delay", handle.wait)
+        await astep(lines, "fetch before the delay", handle.wait)
+        lines.append("async server delay of a failed poll")
         exchange.respond(_job("queued", 202), json_response(503, {"message": "busy"}, **{"Retry-After": "30"}))
         handle = await helper.start(body=body, options=once, poll_options=harness.polls(max_wait=10))
         await astep(lines, "poll answered with a server delay", handle.status)
@@ -433,3 +486,4 @@ async def _async_closing(harness: _Polling, lines: list[str]) -> None:
         await api.aclose()
         await astep(lines, "wait while the client closes", lambda: waiting)
         await astep(lines, "status after the client closed", handle.status)
+        lines.append(f"  progress {dict(handle.progress)!r}")

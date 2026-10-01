@@ -43,9 +43,9 @@ render pydantic_v2.BaseModel
   write client/.dcg-state/model-artifacts.json
   namespace client helpers ['jobs.run', 'jobs.inline', 'jobs.report', 'exports.run', 'exports.latest'] bindings 26
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper jobs.run polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.run f2bfa301a2208196c5ab22e84b7a8755eb0dfae26736f819beb3aa84d37a6a45
-  helper jobs.inline polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.inline 1fdb9d6433450d25e252c178ce9fb3cb1a407b431b97d3b34660146e334eadb8
-  helper jobs.report polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.report f150e681c83b09dd565e713b3900fcaf133da52e208fa475d85a6d97925312cf
+  helper jobs.run polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.run a943ca67ec97491c696da165d6e802e0c78af8a3d2afaabb27e01fd9e9eeeff2
+  helper jobs.inline polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.inline dc705b7c1badda7115df7f7aa32701cab58513baf148d91bc1ebc372f47bc4d4
+  helper jobs.report polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.report 664bb20507a2441cf367665daf34032cf2623bb798ad6297de8f8b58964be6a2
   helper exports.run polling enabled True /inputs/target_config/protocol_metadata/helpers/exports.run 09354f792932bcdff10da7b995e64203084b3fa468a9602a1f685c3a74a569d7
   helper exports.latest polling enabled True /inputs/target_config/protocol_metadata/helpers/exports.latest 8af6aaa3a5a2b58764ef418ce70c6fa4743d1b83f27442492c695940d05bd661
   {

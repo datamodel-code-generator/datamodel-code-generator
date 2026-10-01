@@ -3009,19 +3009,20 @@ default below. The session types are imported from:
 
 `start` sends the create request once, resent only as shared retries allow. An accepted status returns a pending
 handle, a declared immediate status a handle that already holds the result, and any other success status raises
-`ProtocolDataError`. Each poll waits until the interval after the last response, an error response included, has
-passed, or the longer delay the helper's declared delay header gives, and never polls early: a wait longer than the
-allowed wait, or not shorter than what remains of the session, raises `PollWaitLimitError` without sending. A poll's
-state must equal a declared state value, JSON type included; any other value raises `PollingStateError`, and success
-is never inferred.
+`ProtocolDataError`. An interval longer than the allowed wait, or not shorter than the session, raises
+`ProtocolConfigurationError` before the create request. Each poll waits until the interval after the last response, an
+error response included, has passed, or the longer delay the helper's declared delay header gives, and a result fetch
+after a failed one waits the same way; nothing is sent early: a server delay longer than the allowed wait, or not
+shorter than what remains of the session, raises `PollWaitLimitError` without sending. A poll's state must equal a
+declared state value, JSON type included; any other value raises `PollingStateError`, and success is never inferred.
 
 `wait` returns the result: read from the final poll, fetched once by the result operation, or None. A failed or
 cancelled operation raises `OperationFailedError` or `OperationCancelledError` with its last poll, on every later
 `wait` too. An error that settles nothing, such as a transport error, a deadline, a cancellation, or a limit, leaves
-the handle pending, so a later `status` or `wait` polls again without creating the operation again; a failed result
-fetch is retried alone. `status` and `wait` at once raise `ProtocolStateError`, and so does every step after `close`,
-which stops only local polling. A call's options must not fix an idempotency key or patch a header or query parameter
-the helper writes.
+the handle as it was: pending, so a later `status` or `wait` polls again without creating the operation again, or
+succeeded with its result fetch still due, which a later `wait` retries alone. `status` and `wait` at once raise
+`ProtocolStateError`, and so does every step after `close`, which stops only local polling. A call's options must not
+fix an idempotency key or patch a header or query parameter the helper writes.
 """
 
     def pagination_runtime(self) -> str:

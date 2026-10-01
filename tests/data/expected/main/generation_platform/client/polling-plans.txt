@@ -43,9 +43,9 @@ render pydantic_v2.dataclass
   write client/.dcg-state/model-artifacts.json
   namespace client helpers ['jobs.run', 'jobs.inline', 'jobs.report', 'exports.run', 'exports.latest'] bindings 26
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper jobs.run polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.run b56abda908e1206e221db8d81b3875a38609429b3e8b152b0b1b64fabb99bb8c
-  helper jobs.inline polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.inline e0e83c2521d730a7cbd1d57165213a2e7dc04890fd665abae0f238aa26256458
-  helper jobs.report polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.report 0090cdd4e3bfbd51771664db62e287797ec141bf4fb3f4a83b13bf25e36f3f32
+  helper jobs.run polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.run b937d502a888b3916047b2fe764d6d17a4a001f8b6d4610f84c695c431ee4baf
+  helper jobs.inline polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.inline e5ec80133fb6950fff5120c6ae5e37914d688745c36b1c075c15eba04dd0a41c
+  helper jobs.report polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.report c7c01bf2af3a8ae128b1c12424bbe2326433cfe822d79cadfdc080b2798e1929
   helper exports.run polling enabled True /inputs/target_config/protocol_metadata/helpers/exports.run b3a0bc2b7620c1a6583525555b6bd488be30d856d413948aeda93f0d3771d9aa
   helper exports.latest polling enabled True /inputs/target_config/protocol_metadata/helpers/exports.latest 9bf25a03f62542341578ea21c4fe0c8cb467de6b6bfe96b724f0f2273f44c154
   {
@@ -465,9 +465,9 @@ render dataclasses.dataclass
   write client/.dcg-state/model-artifacts.json
   namespace client helpers ['jobs.run', 'jobs.inline', 'jobs.report', 'exports.run', 'exports.latest'] bindings 26
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper jobs.run polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.run c0332c67c29282d8fdf1316cc6a49b4d06dfe483e7efe7d1e31dea6da582fd3a
-  helper jobs.inline polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.inline 6ee4ac439a0db1d5c0770f5a63956033cade560928cdda2f96559cc23738fba8
-  helper jobs.report polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.report 126ecb051f015bcbd9a3dd6c116fb3a7959df0087a6f89bc62cdd148da53bd1f
+  helper jobs.run polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.run 852510f5f03a6c40caca2832e81d837c1a421992e55e3d0d72bad0d02f0d2e1c
+  helper jobs.inline polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.inline f40a0ec21fb64a38eb021da0a25b2c972f9f028e64fd0b9690cc37e5d4feef7f
+  helper jobs.report polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.report 8d46d64986bea66bff71a29eaee35dd5f2f65c783e4ebe10932cca80aec70a97
   helper exports.run polling enabled True /inputs/target_config/protocol_metadata/helpers/exports.run 561625b9243640591f1fb3091dc04ed41a1020c13521fcf2a1ff631350e8722b
   helper exports.latest polling enabled True /inputs/target_config/protocol_metadata/helpers/exports.latest 33fd3a8143fa230110b585f90026e0f866360e41e39c90381e6f6dd232cf3b5b
   {
@@ -887,9 +887,9 @@ render typing.TypedDict
   write client/.dcg-state/model-artifacts.json
   namespace client helpers ['jobs.run', 'jobs.inline', 'jobs.report', 'exports.run', 'exports.latest'] bindings 26
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper jobs.run polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.run f5dece2c665fa9043ff620ad97b550ca6885a98d15b2d65498d342b34bc27517
-  helper jobs.inline polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.inline 50e2683a3bd31dccb5d7658fa126b62a3c4a0792597825a299e940650ab02b5d
-  helper jobs.report polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.report ef492707e599af05e6d7ebfcccf5a6bbc69b31bdbf75a8c160a71ad31c48851a
+  helper jobs.run polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.run a62326d9ef225ed1d1ddb212f47352625f415f7b3b228b412a1dd764cdb5ee62
+  helper jobs.inline polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.inline 7ac87f1c03a196f14971de567207e37bc4f7895fc8dd48f99ff699a16490eded
+  helper jobs.report polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.report 3427fd0978f3ad540c325e1bb992ba88647f036130eed77484ef0a91d7184304
   helper exports.run polling enabled True /inputs/target_config/protocol_metadata/helpers/exports.run 6c6d9cecf9ad8eaabdae0d3229bf826d067c74a6660349e79ef765695e67d6d6
   helper exports.latest polling enabled True /inputs/target_config/protocol_metadata/helpers/exports.latest 1fa514fef220c92b2b8ea0723a22f8d01a4d38a7676f7acf036550c0614b9141
   {
@@ -1309,9 +1309,9 @@ render msgspec.Struct
   write client/.dcg-state/model-artifacts.json
   namespace client helpers ['jobs.run', 'jobs.inline', 'jobs.report', 'exports.run', 'exports.latest'] bindings 26
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper jobs.run polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.run fad33bc290d8f79b5d038e97f3eb70078a609b42ad49d024dd9806c547c7e1a6
-  helper jobs.inline polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.inline 9fa8dcf2c544bf94db3fcc6e9c9757af9767417547ae6ac77574dca5107f0dda
-  helper jobs.report polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.report e0979f991c73c07cdf5c01e6cca7c1d3e071b807342e754c70028da41a682836
+  helper jobs.run polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.run d9459b274ca415c00f704091f2e12cdb33d84e69e5cd2723476ea0a82df1c83c
+  helper jobs.inline polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.inline 32e77e7c7e5aed7e3bc04e2529522f872e19bfbecb414848fb69fd8b3645864c
+  helper jobs.report polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.report 92419446fa0c563208976e81662b073e7c5f7fe3da2a5e1c71a3d93843f381bf
   helper exports.run polling enabled True /inputs/target_config/protocol_metadata/helpers/exports.run 58e8ab1568a94ff62336fd7bd2774b4148a073f8dda0ca4b47f41f85e61b8d23
   helper exports.latest polling enabled True /inputs/target_config/protocol_metadata/helpers/exports.latest a82f26fa670603c7c98c014de2c5609b980635a56aaf35661e9e57432f57781e
   {

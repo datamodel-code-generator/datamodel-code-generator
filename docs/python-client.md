@@ -925,7 +925,8 @@ of the `poll` operation, which writes each binding's value: what its selector re
 `source: initial`, kept for the whole operation, or from the latest response, the create response and then each poll,
 for `source: previous`, or a `literal`. A value is written as the server gave it, without its target's schema checks,
 and a missing value, a header repeated for a single value, and a dot segment (`.` or `..`) read for a path parameter
-raise `ProtocolDataError`. `progress` reports the polls sent and the session's sends.
+raise `ProtocolDataError`. `progress` reports the polls sent, counting none refused before sending, and the
+session's sends.
 
 ### States and results
 
@@ -942,30 +943,34 @@ is never inferred. A failed or cancelled operation makes `wait` raise `Operation
 `OperationCancelledError`, whose `snapshot` is the last poll, and every later `wait` raises it again without sending;
 `status` returns that poll. After a success, `wait` returns the result: the value an `inline` result's selector reads
 from the final poll, the response of the result `operation`, fetched once with its bindings, whose `previous` source is
-the final poll, or None for `kind: none`. A missing or null result raises `ProtocolDataError`. Later `status` and
-`wait` calls send nothing.
+the final poll, or None for `kind: none`. Later `status` and `wait` calls send nothing. A missing or null result in the
+final poll raises `ProtocolDataError` and leaves the handle pending, so a later `status` or `wait` polls again and
+raises the same error while the result stays missing; a missing or null immediate result fails `start`.
 
 An error that settles nothing, such as a transport error, an HTTP error, a deadline, a cancellation, a limit, or a
 `ProtocolDataError` of a poll, leaves the handle as it was, so a later `status` or `wait` polls again without creating
 the operation again, and a failed result fetch is retried alone. `close()`, or leaving a `with` block, stops only local
 polling; the remote operation goes on, and every later step raises `ProtocolStateError` with `state='closed'`. Calling
-`status`, `wait`, or `close` while another step runs raises `ProtocolStateError` with `state='polling'`.
+`status`, `wait`, or `close` while another step runs raises `ProtocolStateError` with `state='polling'`; a block that
+ends with an error while another step runs leaves the handle open and lets its own error propagate.
 
 ### Waits and server delays
 
 The first poll waits until `interval` seconds after the create response's receipt, and each later one until the
 interval after the last poll's; with `interval.retry_after_header`, a valid delay in that header, in seconds or as an
 HTTP date, makes the wait longer, never shorter. The delay counts from the final response of a call, after any retries
-inside it, so a retry's own delay is never added to the poll interval; a poll that fails with a response, such as a
-`503` after its retries, sets the next wait from that response the same way before its error is raised. `status`
-waits the same way. A wait longer than
-`PollOptions.max_wait`, or not shorter than what remains of the session's deadline or the options' deadline, raises
+inside it, so a retry's own delay is never added to the poll interval. A poll or a result fetch that fails with a
+response, such as a `503` after its retries, sets the next wait from that response the same way before its error is
+raised, and the next poll or fetch waits for it; the first result fetch is sent at once. `status` waits the same way.
+An interval longer than `PollOptions.max_wait`, or not shorter than the session's `total_timeout` or the time left
+before its `deadline`, could never be waited out, so `start` raises `ProtocolConfigurationError` with the
+`field_path` `("poll_options", "interval")` before sending the create request. A wait a server delay makes longer
+than `max_wait`, or not shorter than what remains of the session's deadline or the options' deadline, raises
 `PollWaitLimitError` with the kind `wait` or `deadline`, the `required_wait`, and the `limit` before anything is sent;
-the handle stays pending. A wait ends early for the options' `CancelToken` and the client's close, raising
+the handle stays as it was. A wait ends early for the options' `CancelToken` and the client's close, raising
 `RequestCancelledError` or `ClientClosedError` with the poll operation's `operation_id` and the session's
 `parent_session_id`. Once the client is closed, every later `status` or `wait` that needs a poll or a result fetch
-raises `ClientClosedError`. `resume_state` is None, since checkpoints of polling helpers are not
-supported yet.
+raises `ClientClosedError`. `resume_state` is None, since checkpoints of polling helpers are not supported yet.
 
 ### Limits and sessions
 
@@ -1001,11 +1006,11 @@ parameter value, and every required parameter and required body of the poll and 
 a binding. Two bindings writing the same target, or a body or querystring member inside or around another's, fail with
 `E_CONFIG_CONFLICT`. As for pagination, no binding of the poll or the result fetch writes a credential position: a
 cookie, the `Authorization`, `Proxy-Authorization`, `Cookie`, and `Cookie2` headers, or a header, query parameter, or
-querystring property a security scheme of the package names. An inline or immediate result reads a body pointer whose schema is
-the declared `schema`; an immediate result needs a result kind other than `none`, success responses of `create` that
-are all one JSON model, and the type of the result. Bindings that read the helper's input, request bodies other than
-JSON written by a binding, `remote_cancel`, `expires_at`, and pointers that read through a union or a map are not
-supported yet:
+querystring property a security scheme of the package names. An inline or immediate result reads a body pointer whose
+schema is the declared `schema`; an immediate result needs a result kind other than `none`, success responses of
+`create` that are all one JSON model, and the type of the result. Bindings that read the helper's input, request
+bodies other than JSON written by a binding, `remote_cancel`, `expires_at`, and pointers that read through a union or a
+map are not supported yet:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.polling.diagnostics -->
 <!-- fmt: off -->

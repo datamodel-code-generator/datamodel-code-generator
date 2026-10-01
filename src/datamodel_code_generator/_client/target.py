@@ -301,11 +301,12 @@ class _TargetData:
     def polling(self, spec: PollingSpec, settings: JSONValue) -> str:
         """Return the digest of a polling helper's contract closure: its signature and settings, operations, and uses.
 
-        The signature spells the create call's arguments and the result and poll types.
+        The signature spells the create call's arguments and the result type, and the uses are the create responses',
+        the poll's, and the result fetch's.
         """
         operation, helper, fetch = spec.operation, spec.helper, spec.fetch
         body = operation.body
-        uses = (spec.poll_use, *(() if spec.fetch_use is None else (spec.fetch_use,)))
+        uses = (*spec.create_uses, spec.poll_use, *(() if spec.fetch_use is None else (spec.fetch_use,)))
         signature = {
             "name": helper.name,
             "parameters": [(item.python_name, item.required, self.type(item.use)) for item in operation.parameters],
