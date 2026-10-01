@@ -1,0 +1,18 @@
+# parameter-adapters pydantic_v2.BaseModel
+  > GET https://api.example.com/tags?where=%7B%22range%22%3A%7B%22min%22%3A1%7D%2C%22name%22%3A%22x%20y%22%7D
+    [host: api.example.com, accept-encoding: gzip, deflate, x-labels: %5B%22l1%22%2C%22l2%22%5D, cookie: tags=%5B%22a%2Cb%22%2C%22c%22%5D; session=s] b''
+  adapted cookie, query, and header = None
+  > GET https://api.example.com/tags
+    [host: api.example.com, accept-encoding: gzip, deflate, cookie: tags=%5B%5D] b''
+  adapted empty cookie array = None
+  > GET https://api.example.com/items/%7B%22a%22%3A1%7D
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  adapted path = None
+  empty header array ! RequestEncodingError: RequestEncodingError(operation_id='listTags', call_id='<call>', location='header.X-Labels') [operation_id='listTags', location=('header', 'X-Labels'), cause=ParameterEncodingError('The X-Labels parameter adapter cannot encode an empty array or object')] request_encoding_error
+  > GET https://api.example.com/tags?where=%7B%22range%22%3A%7B%22min%22%3A1%7D%2C%22name%22%3A%22x%20y%22%7D
+    [host: api.example.com, accept-encoding: gzip, deflate, x-labels: %5B%22l1%22%2C%22l2%22%5D, cookie: tags=%5B%22a%2Cb%22%2C%22c%22%5D] b''
+  async adapted cookie, query, and header = None
+  > GET https://api.example.com/items/%7B%22a%22%3A1%7D
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  async adapted path = None
+  async empty header array ! RequestEncodingError: RequestEncodingError(operation_id='listTags', call_id='<call>', location='header.X-Labels') [operation_id='listTags', location=('header', 'X-Labels'), cause=ParameterEncodingError('The X-Labels parameter adapter cannot encode an empty array or object')] request_encoding_error

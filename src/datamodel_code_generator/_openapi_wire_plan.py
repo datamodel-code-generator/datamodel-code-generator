@@ -30,6 +30,7 @@ from datamodel_code_generator._runtime.model_codecs.media import (
     normalize_media_type,
 )
 from datamodel_code_generator._runtime.model_codecs.parameters import (
+    AdaptedParameterPlan,
     ParameterLocation,
     ParameterPlan,
     ValueShape,
@@ -898,6 +899,29 @@ def parameter_view(
         content_media_type=content,
         reserved_names=tuple(sorted({other for kind, other in names if kind == location and other != name})),
     )
+
+
+def parameter_plans(
+    wire: WirePlan, operations: Iterable[OperationContract], adapted: frozenset[TypeUseId]
+) -> dict[OperationId, dict[tuple[ParameterLocation, str], ParameterPlan]]:
+    """Index each operation's parameter plans by location and name.
+
+    A parameter whose use a registered parameter adapter selects gets an adapted plan of its location, name, and
+    requiredness instead, whether or not a builtin form carries it, since its adapter encodes and decodes the value.
+    """
+    plans = {
+        operation: {(plan.location, plan.name): plan for plan in planned} for operation, planned in wire.parameters
+    }
+    if not adapted:
+        return plans
+    for operation in operations:
+        for declaration in operation.parameters:
+            if not adapted.isdisjoint(_uses(declaration)):
+                location, name = _LOCATIONS[_fact(declaration, "in")], declaration.name or ""
+                plans.setdefault(operation.id, {})[location, name] = AdaptedParameterPlan(
+                    location=location, name=name, required=_fact(declaration, "required") is True
+                )
+    return plans
 
 
 def _planned(

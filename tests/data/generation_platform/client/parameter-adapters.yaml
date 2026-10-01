@@ -1,0 +1,72 @@
+openapi: 3.1.0
+info:
+  title: Parameter adapters
+  version: "1"
+servers:
+  - url: https://api.example.com
+paths:
+  /tags:
+    get:
+      operationId: listTags
+      parameters:
+        - name: tags
+          in: cookie
+          style: form
+          explode: false
+          schema:
+            $ref: "#/components/schemas/Tags"
+        - name: session
+          in: cookie
+          schema:
+            type: string
+        - name: where
+          in: query
+          style: deepObject
+          explode: true
+          schema:
+            $ref: "#/components/schemas/Filter"
+        - name: X-Labels
+          in: header
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        "204":
+          description: No content.
+  /items/{key}:
+    get:
+      operationId: getItem
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/Key"
+      responses:
+        "204":
+          description: No content.
+components:
+  schemas:
+    Tags:
+      type: array
+      items:
+        type: string
+    Filter:
+      type: object
+      properties:
+        range:
+          type: object
+          properties:
+            min:
+              type: integer
+            max:
+              type: integer
+        name:
+          type: string
+    Key:
+      type: object
+      required: [a]
+      properties:
+        a:
+          type: integer

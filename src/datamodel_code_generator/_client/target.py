@@ -37,6 +37,7 @@ from datamodel_code_generator._client.validation import admission_problems, allo
 from datamodel_code_generator._client.webhooks import plan_webhooks, webhook_files, webhook_uses
 from datamodel_code_generator._codec_declarations import CodecDeclarations
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
+from datamodel_code_generator._openapi_codec_adapters import select_adapters
 from datamodel_code_generator._openapi_codec_plan import artifact_module, plan_model_codecs
 from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
 from datamodel_code_generator._runtime.model_codecs.wire import checked_scalar
@@ -90,8 +91,18 @@ class ClientTarget:
         backend = _BACKENDS[request.model_config.output_model_type]
         protocols = plan_protocols(request, config.protocols)
         wire = _wire(request, request.batch)
+        declarations = CodecDeclarations(
+            compatibility=config.builtin_codec_compatibility,
+            exports=config.export_bindings,
+            adapters=config.codec_adapters,
+        )
+        adapted = (
+            select_adapters(request.batch, wire, declarations, "client").uses("parameter")
+            if config.codec_adapters
+            else frozenset()
+        )
         try:
-            plan = Planner(request, config, wire).plan()
+            plan = Planner(request, config, wire, adapted).plan()
         except PlanError as error:
             raise APIGenerationError(
                 tuple(replace(item, target_id=request.target_id) for item in error.diagnostics)
@@ -108,11 +119,7 @@ class ClientTarget:
             batch,
             replace(wire, schema_ids=tuple(item for item in wire.schema_ids if item[0] in uses)),
             backend,
-            declarations=CodecDeclarations(
-                compatibility=config.builtin_codec_compatibility,
-                exports=config.export_bindings,
-                adapters=config.codec_adapters,
-            ),
+            declarations=declarations,
             surface="client",
             lease=request.lease,
             sources=_sources(request),

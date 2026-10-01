@@ -58,6 +58,7 @@ from .multipart import (
 if TYPE_CHECKING:
     from collections.abc import Callable, Container, Iterable, Mapping, Sequence
 
+    from ..model_codecs.adapters import AdapterParameterCodec
     from ..model_codecs.context import CodecContext
     from ..model_codecs.media import FieldPlan
     from ..model_codecs.parameters import ParameterPlan
@@ -180,10 +181,14 @@ class ServerPlan:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ParameterSpec:
-    """One effective parameter: its wire plan and, when it has a schema, the codec that validates its argument."""
+    """One effective parameter: its wire plan and, when it has a schema, the codec that validates its argument.
+
+    A parameter a registered parameter adapter carries encodes its validated wire value through that adapter.
+    """
 
     plan: ParameterPlan
     encoder: Encoder | None = None
+    adapter: tuple[Callable[[], AdapterParameterCodec], CodecContext] | None = None
 
     def encode(self, value: object, mode: RequestValidation) -> WireValue:
         """Return the wire value of a present argument."""

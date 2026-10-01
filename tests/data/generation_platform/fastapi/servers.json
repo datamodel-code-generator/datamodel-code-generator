@@ -1824,5 +1824,201 @@
         ]
       }
     ]
+  },
+  "adapters": {
+    "input": "server-parameter-adapters.yaml",
+    "services": "adapters",
+    "config": {
+      "codec_adapters": [
+        {
+          "kind": "parameter",
+          "name": "json-cookie",
+          "import_ref": "tests.data.python.parameter_adapters:json_cookie",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "cookie"
+            ],
+            "styles": [
+              "form"
+            ],
+            "explode_values": [
+              false
+            ],
+            "value_kinds": [
+              "array"
+            ],
+            "supports_empty_containers": true
+          },
+          "uses": [
+            {
+              "schema": {
+                "pointer": "/components/schemas/Tags"
+              },
+              "direction": "request"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "json-query",
+          "import_ref": "tests.data.python.parameter_adapters:json_query",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "query"
+            ],
+            "styles": [
+              "deepObject"
+            ],
+            "explode_values": [
+              true
+            ],
+            "value_kinds": [
+              "object"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1tags/get",
+              "role": "parameter",
+              "location": "query",
+              "name": "where"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "json-header",
+          "import_ref": "tests.data.python.parameter_adapters:json_header",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "header"
+            ],
+            "styles": [
+              "simple"
+            ],
+            "explode_values": [
+              false
+            ],
+            "value_kinds": [
+              "array"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1tags/get",
+              "role": "parameter",
+              "location": "header",
+              "name": "X-Labels"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "json-path",
+          "import_ref": "tests.data.python.parameter_adapters:json_path",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "path"
+            ],
+            "styles": [
+              "simple"
+            ],
+            "explode_values": [
+              false
+            ],
+            "value_kinds": [
+              "object"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1items~1{key}/get",
+              "role": "parameter",
+              "location": "path",
+              "name": "key"
+            }
+          ]
+        }
+      ],
+      "handler_modes": [
+        [
+          "/paths/~1items~1{key}/get",
+          "async"
+        ]
+      ]
+    },
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/tags?where=%7B%22range%22%3A%7B%22min%22%3A1%7D%2C%22name%22%3A%22x%20y%22%7D",
+        "headers": {
+          "Cookie": "tags=%5B%22a%2Cb%22%2C%22c%22%5D; session=s",
+          "X-Labels": "%5B%22l1%22%2C%22l2%22%5D"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/tags"
+      },
+      {
+        "method": "GET",
+        "url": "/tags",
+        "headers": {
+          "Cookie": "tags=%5B%5D"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/tags",
+        "headers": {
+          "Cookie": "tags=%5B%22a%2Cb%22%2C%22c%22%5D; tags=%5B%5D"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/tags",
+        "headers": {
+          "Cookie": "tags=a%2Cb"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/tags",
+        "headers": {
+          "Cookie": "tags=%5B1%5D"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/tags?where=%7B%22range%22%3A%7B%22min%22%3A%22one%22%7D%7D"
+      },
+      {
+        "method": "GET",
+        "url": "/tags?where[name]=x"
+      },
+      {
+        "method": "GET",
+        "url": "/tags",
+        "headers": {
+          "X-Labels": "l1,l2"
+        }
+      },
+      {
+        "method": "GET",
+        "url": "/items/%7B%22a%22%3A1%7D"
+      },
+      {
+        "method": "GET",
+        "url": "/items/a,1"
+      },
+      {
+        "method": "GET",
+        "url": "/items/%7B%7D"
+      }
+    ]
   }
 }

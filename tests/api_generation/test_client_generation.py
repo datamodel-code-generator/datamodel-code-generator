@@ -53,6 +53,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
         "validation-ambiguous",
         "validation-adapters",
         "validation-adapters-schema",
+        "parameter-adapters",
         "validation-arguments",
         "validation-arguments-msgspec",
         "fields",

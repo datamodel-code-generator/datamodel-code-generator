@@ -78,6 +78,14 @@ class ParameterPlan:
             raise ValueError(msg)
 
 
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AdaptedParameterPlan(ParameterPlan):
+    """Describe a parameter a registered adapter carries: its location, name, and requiredness, and no builtin form."""
+
+    def __post_init__(self) -> None:
+        """Accept the parameter without a builtin form, since its adapter encodes and decodes the value."""
+
+
 def builtin_content(location: ParameterLocation, media_type: str) -> bool:
     """Return whether a builtin codec carries parameter content of this media type in this location."""
     match media_kind(media_type):
