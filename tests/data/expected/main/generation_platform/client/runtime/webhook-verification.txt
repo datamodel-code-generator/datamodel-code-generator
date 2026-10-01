@@ -1,0 +1,133 @@
+# webhooks pydantic_v2.BaseModel
+  import <package> loads []
+  import <package>.protocols loads []
+  import <package>.errors loads []
+  import <package>.options loads []
+  import <package>.webhooks loads []
+  import <package>.webhooks.keys loads ['webhook_keys']
+  helper loads ['verification', 'signatures', 'webhook_keys']
+  helper optional imports=[]
+  verify hints=['headers', 'keys', 'now', 'options', 'raw_body', 'replay_store', 'return']
+  verify_async hints=['headers', 'keys', 'now', 'options', 'raw_body', 'replay_store', 'return']
+  Standard Webhooks specification example, also in Svix's 'Verifying Webhooks Manually' documentation = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False
+  GitHub 'Validating webhook deliveries', the test values for verifying an implementation = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error
+  Slack 'Verifying requests from Slack', the step-by-step walk-through = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error
+  RFC 4231 section 4 test case 1 HMAC-SHA256 = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error
+  RFC 4231 section 4 test case 1 HMAC-SHA512 = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error
+  RFC 4231 section 4 test case 2 HMAC-SHA256 = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error
+  RFC 4231 section 4 test case 2 HMAC-SHA512 = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error
+  RFC 4231 section 4 test case 6 HMAC-SHA256 = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error
+  RFC 4231 section 4 test case 6 HMAC-SHA512 = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error
+  printf 'msg_replay3000.32503680000.{"test": 1}' | openssl dgst -sha256 -mac HMAC -macopt hexkey:31f290f6bf06298aab4f08d43c3f082cf648a362da2da4b0 -binary | openssl base64 -A = Message Message(test=1) delivery_id='msg_replay3000' timestamp=3000-01-01T00:00:00+00:00 matched_key_id='active' duplicate=False
+  printf 'msg_latest.253402300799.{"test": 9}' | openssl dgst -sha256 -mac HMAC -macopt hexkey:31f290f6bf06298aab4f08d43c3f082cf648a362da2da4b0 -binary | openssl base64 -A = Message Message(test=9) delivery_id='msg_latest' timestamp=9999-12-31T23:59:59+00:00 matched_key_id='active' duplicate=False
+  printf '32503680000123.evt-1.{"test": 7}' | openssl dgst -sha512 -hmac keyed-secret-2 -binary | openssl base64 -A | tr '+/' '-_' | tr -d '=' = Message Message(test=7) delivery_id='evt-1' timestamp=3000-01-01T00:00:00.123000+00:00 matched_key_id='rotation-new' duplicate=False
+  printf 'a11' | openssl dgst -sha256 -hmac framing-secret = Count Count(root=11) delivery_id='a' timestamp=None matched_key_id='active' duplicate=False
+  printf '{"id": "d-1"}!' | openssl dgst -sha256 -hmac callback-secret = Delivery Delivery(id='d-1') delivery_id=None timestamp=None matched_key_id='active' duplicate=False
+  printf '{"radius": 1.5}' | openssl dgst -sha256 -hmac shape-secret = Shape Shape(root=Circle(radius=1.5)) delivery_id=None timestamp=None matched_key_id='active' duplicate=False
+  printf '{"side": 2}' | openssl dgst -sha256 -hmac shape-secret = Shape Shape(root=Square(side=2.0)) delivery_id=None timestamp=None matched_key_id='active' duplicate=False
+  one changed body byte = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  trailing newline = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  CRLF body = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  new timestamp = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  new delivery id = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  GitHub changed body = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  shifted delivery id boundary = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
+  unsigned suffix dropped = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  Slack changed timestamp = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  RFC 4231 test case 1 HMAC-SHA256 with the last signature byte changed from f7 to f6 = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  RFC 4231 test case 1 HMAC-SHA512 with the last signature byte changed from 54 to 55 = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  300 seconds past = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False
+  past bound exceeded = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window'] webhook_verification_error
+  30 seconds future = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False
+  future bound exceeded = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window'] webhook_verification_error
+  zero past tolerance = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False
+  zero past tolerance exceeded = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window'] webhook_verification_error
+  zero future tolerance exceeded = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window'] webhook_verification_error
+  fractional tolerance = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False
+  fractional tolerance exceeded = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window'] webhook_verification_error
+  offset clock = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False
+  millisecond bound = Message Message(test=7) delivery_id='evt-1' timestamp=3000-01-01T00:00:00.123000+00:00 matched_key_id='rotation-new' duplicate=False
+  millisecond bound exceeded = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window'] webhook_verification_error
+  timestamp after datetime.max = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window'] webhook_verification_error
+  earliest clock = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window'] webhook_verification_error
+  bad signature first = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False
+  signature header twice = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False
+  rotated to the new key = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False
+  both keys match = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='first' duplicate=False
+  only the retired key = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  empty key set = WebhookVerificationError: WebhookVerificationError(condition='missing_key') [condition='missing_key'] webhook_verification_error
+  key id selects the new key = Message Message(test=7) delivery_id='evt-1' timestamp=3000-01-01T00:00:00.123000+00:00 matched_key_id='rotation-new' duplicate=False
+  key id selects the old key = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  unknown key id = WebhookVerificationError: WebhookVerificationError(condition='missing_key') [condition='missing_key'] webhook_verification_error
+  padded base64url = Message Message(test=7) delivery_id='evt-1' timestamp=3000-01-01T00:00:00.123000+00:00 matched_key_id='rotation-new' duplicate=False
+  comma separated signatures = Message Message(test=7) delivery_id='evt-1' timestamp=3000-01-01T00:00:00.123000+00:00 matched_key_id='rotation-new' duplicate=False
+  uppercase hex = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error
+  other version prefix = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
+  unpadded base64 = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
+  short signature = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
+  empty element = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
+  prefix only = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
+  no signature = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
+  hexadecimal timestamp = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
+  signed timestamp = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
+  spaced timestamp = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
+  twenty digit timestamp = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
+  no timestamp = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
+  delivery id outside its set = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
+  delivery id with obs-text = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
+  no delivery id = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
+  repeated timestamp = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
+  odd hex = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
+  fixed length violated = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
+  key id with a space = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
+  key id header named with a Kelvin sign = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
+  malformed before window = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
+  window before signature = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window'] webhook_verification_error
+  nine signatures = ProtocolSizeError: ProtocolSizeError(kind='signatures', limit=8, observed=9) [kind='signatures', unit='items', limit=8] protocol_size_error
+  nine malformed signatures = ProtocolSizeError: ProtocolSizeError(kind='signatures', limit=8, observed=9) [kind='signatures', unit='items', limit=8] protocol_size_error
+  nine keys = ProtocolSizeError: ProtocolSizeError(kind='keys', limit=8, observed=9) [kind='keys', unit='items', limit=8] protocol_size_error
+  nine keys allowed = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='key-0' duplicate=False
+  body limit = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False
+  body over limit = ProtocolSizeError: ProtocolSizeError(kind='body', limit=19, observed=20) [kind='body', unit='bytes', limit=19] protocol_size_error
+  header limit = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False
+  headers over limit = ProtocolSizeError: ProtocolSizeError(kind='headers', limit=128, observed=129) [kind='headers', unit='bytes', limit=128] protocol_size_error
+  one signature allowed = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False
+  text body = ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('raw_body',), condition='invalid_value'] protocol_configuration_error
+  bytearray body = ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('raw_body',), condition='invalid_value'] protocol_configuration_error
+  header mapping = ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('headers',), condition='invalid_value'] protocol_configuration_error
+  header lists = ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('headers',), condition='invalid_value'] protocol_configuration_error
+  header bytes = ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('headers',), condition='invalid_value'] protocol_configuration_error
+  header triple = ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('headers',), condition='invalid_value'] protocol_configuration_error
+  key tuple = ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('keys',), condition='invalid_value'] protocol_configuration_error
+  naive now = ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('now',), condition='invalid_value'] protocol_configuration_error
+  text now = ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('now',), condition='invalid_value'] protocol_configuration_error
+  text body and naive now = ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('raw_body',), condition='invalid_value'] protocol_configuration_error
+  options mapping = ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
+  store without claim = ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('replay_store',), condition='wrong_capability'] protocol_configuration_error
+  asyncio callable claim = ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('replay_store',), condition='wrong_capability'] protocol_configuration_error
+  asyncio callable claim async = Message Message(test=2432232314) delivery_id='msg_p5jXN8AQM9LWM0D4loKWxJek' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False
+  foreign key = ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('keys', '0'), condition='wrong_capability'] protocol_configuration_error
+  repeated key id = ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('keys', '1', 'id'), condition='invalid_value'] protocol_configuration_error
+  key id a header cannot carry = ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('keys', '0', 'id'), condition='invalid_value'] protocol_configuration_error
+  asyncio store in verify ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('replay_store',), condition='wrong_capability'] protocol_configuration_error
+  synchronous store in verify_async ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('replay_store',), condition='wrong_capability'] protocol_configuration_error
+  key integer id ! TypeError: id must be a string []
+  key empty id ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('id',), condition='invalid_value'] protocol_configuration_error
+  key id with NUL ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('id',), condition='invalid_value'] protocol_configuration_error
+  key id with CR ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('id',), condition='invalid_value'] protocol_configuration_error
+  key id with LF ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('id',), condition='invalid_value'] protocol_configuration_error
+  key bytearray secret ! TypeError: secret must be bytes []
+  key text secret ! TypeError: secret must be bytes []
+  key empty secret = HmacKey(id='key')
+  key positional=TypeError
+  key id and secret = ('active', 13)
+  key assignment ! FrozenInstanceError: HmacKey is immutable []
+  key deletion ! FrozenInstanceError: HmacKey is immutable []
+  key pickling ! TypeError: HmacKey cannot be pickled []
+  key copies are the key=True
+  key public names=['HmacKey']
+  marker event ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value'] protocol_data_error context=None
+  marker JSON ! ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error context=None
+  marker signature ! WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error context=None
+  marker key ! WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error context=None
+  markers shown=[]

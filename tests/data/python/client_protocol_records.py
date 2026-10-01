@@ -2,16 +2,21 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from functools import reduce
 from typing import TYPE_CHECKING
 
 from datamodel_code_generator._client.protocols import (
+    AsciiBytes,
     Binding,
     CountContinuation,
     CursorContinuation,
     EndCondition,
     EventDiscriminator,
     EventMapping,
+    FixedBytes,
+    HeaderName,
+    HmacSignature,
     ImmediateResult,
     InlineResult,
     LinkContinuation,
@@ -24,10 +29,13 @@ from datamodel_code_generator._client.protocols import (
     PollInterval,
     ProtocolConfiguration,
     RemoteCancel,
+    SignedLiteral,
     SourceValue,
     StreamCompletion,
     StreamHelper,
     StreamResume,
+    TimestampHeader,
+    WebhookHelper,
 )
 from datamodel_code_generator._codec_declarations import OperationRef, SchemaRef
 from datamodel_code_generator._runtime.protocols.records import (
@@ -303,4 +311,97 @@ INVALID = ProtocolConfiguration(
 
 SHAPE = ProtocolConfiguration(helpers=[DISABLED])  # ty: ignore[invalid-argument-type]
 
-RECORDS = {"disabled": DISABLED, "invalid": INVALID, "shape": SHAPE}
+DOT = SignedLiteral(literal=".")
+DIGITS = AsciiBytes(ascii_bytes="0123456789")
+STANDARD = HmacSignature(
+    kind="hmac-sha256",
+    header="webhook-signature",
+    encoding="base64",
+    prefix="v1,",
+    separator=" ",
+    key_id="none",
+    timestamp=TimestampHeader(header="webhook-timestamp", unit="seconds"),
+    delivery_id=HeaderName(header="webhook-id"),
+    signed_parts=("delivery-id", DOT, "timestamp", DOT, "raw-body"),
+    field_constraints={
+        "delivery-id": AsciiBytes(ascii_bytes="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"),
+        "timestamp": DIGITS,
+    },
+)
+BODY_ONLY = HmacSignature(
+    kind="hmac-sha256",
+    header="X-Signature",
+    encoding="hex",
+    prefix="",
+    separator="none",
+    key_id="none",
+    timestamp="none",
+    delivery_id="none",
+    signed_parts=("raw-body",),
+)
+MESSAGE = SchemaRef(pointer="/components/schemas/Message")
+PUSH = SchemaRef(pointer="/components/schemas/Push")
+WEBHOOKS = ProtocolConfiguration(
+    helpers={
+        "standard.message": WebhookHelper(event_schema=MESSAGE, signature=STANDARD),
+        "standard.rejecting": WebhookHelper(
+            event_schema=SchemaRef(pointer="/webhooks/message/post/requestBody/content/application~1json/schema"),
+            signature=STANDARD,
+            duplicates="reject",
+        ),
+        "github.push": WebhookHelper(
+            event_schema=PUSH, signature=replace(BODY_ONLY, header="X-Hub-Signature-256", prefix="sha256=")
+        ),
+        "slack.command": WebhookHelper(
+            event_schema=SchemaRef(pointer="/components/schemas/Command"),
+            signature=replace(
+                BODY_ONLY,
+                header="X-Slack-Signature",
+                prefix="v0=",
+                timestamp=TimestampHeader(header="X-Slack-Request-Timestamp", unit="seconds"),
+                signed_parts=(SignedLiteral(literal="v0:"), "timestamp", SignedLiteral(literal=":"), "raw-body"),
+                field_constraints={"timestamp": DIGITS},
+            ),
+        ),
+        "rfc.sha256": WebhookHelper(event_schema=PUSH, signature=BODY_ONLY),
+        "rfc.sha512": WebhookHelper(event_schema=PUSH, signature=replace(BODY_ONLY, kind="hmac-sha512")),
+        "keyed.event": WebhookHelper(
+            event_schema=MESSAGE,
+            signature=HmacSignature(
+                kind="hmac-sha512",
+                header="X-Signature",
+                encoding="base64url",
+                prefix="",
+                separator=",",
+                key_id=HeaderName(header="X-Key-Id"),
+                timestamp=TimestampHeader(header="X-Timestamp", unit="milliseconds"),
+                delivery_id=HeaderName(header="X-Delivery"),
+                signed_parts=["timestamp", DOT, "delivery-id", DOT, "raw-body"],  # ty: ignore[invalid-argument-type]
+                field_constraints={
+                    "timestamp": DIGITS,
+                    "delivery-id": AsciiBytes(ascii_bytes="abcdefghijklmnopqrstuvwxyz0123456789-"),
+                },
+            ),
+        ),
+        "framed.count": WebhookHelper(
+            event_schema=SchemaRef(pointer="/components/schemas/Count"),
+            signature=replace(
+                BODY_ONLY,
+                header="X-Framed-Signature",
+                delivery_id=HeaderName(header="X-Framed-Id"),
+                signed_parts=("delivery-id", "raw-body"),
+                field_constraints={"delivery-id": FixedBytes(fixed_bytes=1)},
+            ),
+        ),
+        "shapes.drawn": WebhookHelper(event_schema=SchemaRef(pointer="/components/schemas/Shape"), signature=BODY_ONLY),
+        "callbacks.delivered": WebhookHelper(
+            event_schema=SchemaRef(pointer="/components/schemas/Delivery"),
+            signature=replace(BODY_ONLY, signed_parts=("raw-body", SignedLiteral(literal="!"))),
+        ),
+        "disabled.hook": WebhookHelper(
+            enabled=False, event_schema=SchemaRef(pointer="/components/schemas/Unused"), signature=BODY_ONLY
+        ),
+    }
+)
+
+RECORDS = {"disabled": DISABLED, "invalid": INVALID, "shape": SHAPE, "webhooks": WEBHOOKS}
