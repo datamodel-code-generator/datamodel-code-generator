@@ -17,7 +17,7 @@ from adapted.model_codecs import (
     WireIssue,
     WireValue,
 )
-from adapted.models import Keeper, Pet
+from adapted_models import Keeper, Pet
 
 
 class PetAdapter:

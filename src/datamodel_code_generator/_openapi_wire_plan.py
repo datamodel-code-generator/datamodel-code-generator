@@ -219,14 +219,8 @@ def _supported_dialect(dialect: str) -> bool:
 
 
 def _logical(
-    batch: GeneratedTypeContractBatch, pointers: Mapping[SourceDocumentId, str] | None
+    batch: GeneratedTypeContractBatch, pointers: Mapping[SourceDocumentId, str]
 ) -> dict[SourceDocumentId, str]:
-    root, *others = batch.documents
-    if pointers is None:
-        return {root.id: f"{LOGICAL_ROOT}root"} | {
-            document.id: f"{LOGICAL_ROOT}documents/{index}"
-            for index, document in enumerate(sorted(others, key=lambda document: document.uri))
-        }
     logical: dict[SourceDocumentId, str] = {}
     seen: dict[str, int] = {}
     for document in batch.documents:
@@ -241,7 +235,7 @@ class _WirePlanner:
         self,
         batch: GeneratedTypeContractBatch,
         lease: SourceLease,
-        pointers: Mapping[SourceDocumentId, str] | None = None,
+        pointers: Mapping[SourceDocumentId, str],
     ) -> None:
         self.batch = batch
         self.lease = lease
@@ -694,14 +688,14 @@ def plan_wire(  # noqa: PLR0913
     uses: Sequence[TypeUseId] | None = None,
     *,
     operations: Collection[OperationId] | None = None,
-    documents: Mapping[SourceDocumentId, str] | None = None,
+    documents: Mapping[SourceDocumentId, str],
     forms: Mapping[TypeUseId, tuple[WireDeclaration, ...]] | None = None,
     styles: Mapping[TypeUseId, tuple[WireDeclaration, ...]] | None = None,
 ) -> WirePlan:
     """Build normalized offline schemas and parameter plans for the requested uses and operations.
 
-    Explicit document pointers, such as a target manifest's `/inputs/documents/<index>`, name the bundled
-    resources, so adapter source references match the manifest. The uses of URL-encoded bodies named in `forms`
+    The document pointers of the target manifest, such as `/inputs/documents/<index>`, name the bundled resources,
+    so adapter source references match the manifest. The uses of URL-encoded bodies named in `forms`
     get their member plans, and each member their encoding names the plan of a query parameter; the form-data uses
     named in `styles` get the query parameter plan of each member their encodings give a style.
     """
