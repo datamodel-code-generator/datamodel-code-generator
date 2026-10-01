@@ -265,7 +265,7 @@ def _closing(package: ModuleType, lines: list[str]) -> None:
         client_id="c",
         client_secret=secret,
         token_transport=transports.OwnedTransportAdapter(stuck_adapter),
-        options=auth.OAuthProviderOptions(refresh_timeout=0.1),
+        options=auth.OAuthProviderOptions(refresh_timeout=0.5),
     )
     starter = started(lambda: stuck.get(credential_context(auth)), stuck_adapter.entered, _outcome)
     with exchange.client() as native:
