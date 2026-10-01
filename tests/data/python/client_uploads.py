@@ -6,9 +6,11 @@ stored with the original content, and break appends, probes, and completions to 
 
 from __future__ import annotations
 
+import asyncio
 import io
 import json
 import tempfile
+import threading
 from datetime import datetime, timezone
 from hashlib import sha256
 from pathlib import Path
@@ -117,6 +119,33 @@ class _Server:
     def offered(self, offset: int) -> Callable[[httpx2.Request], httpx2.Response]:
         """Return a responder of a probe that gives an offset of the server's choice."""
         return raw_response(200, b"", None, **{"Upload-Offset": str(offset)})
+
+
+def _held(arrived: asyncio.Event, released: threading.Event) -> Callable[[httpx2.Request], httpx2.Response]:
+    """Return a responder that tells the client's loop a request arrived and answers only once released."""
+    loop = asyncio.get_running_loop()
+
+    def respond(request: httpx2.Request) -> httpx2.Response:
+        loop.call_soon_threadsafe(arrived.set)
+        released.wait(10)
+        return raw_response(503)(request)
+
+    return respond
+
+
+async def _cancelled(lines: list[str], label: str, exchange: Exchange, call: Callable[[], Any], *prior: Any) -> None:
+    """Cancel a step's task while the server holds its last request, then release the server."""
+    arrived, released = asyncio.Event(), threading.Event()
+    exchange.respond(*prior, _held(arrived, released))
+    task = asyncio.ensure_future(call())
+    await arrived.wait()
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        lines.append(f"  {label} cancelled")
+    finally:
+        released.set()
 
 
 class _Counting:
@@ -521,6 +550,36 @@ def _completions(harness: _Uploads, api: Any, server: _Server, exchange: Exchang
     handle = helper.start(harness.source(), tus_resumable=harness.tus)
     step(lines, "run", handle.run)
     step(lines, "run again", handle.run)
+    lines.append("a completion the server answered with a body that does not decode")
+    exchange.respond(server, server, server, json_response(200, {"id": 5}))
+    handle = helper.start(harness.source(), tus_resumable=harness.tus)
+    step(lines, "run", handle.run)
+    step(lines, "run again", handle.run)
+    step(lines, "resume", lambda: helper.resume(harness.source(), handle.checkpoint()))
+    lines.append("a completion cancelled while the server answers it")
+    token = harness.options.CancelToken()
+
+    def cancelled(request: httpx2.Request) -> httpx2.Response:
+        token.cancel()
+        return server(request)
+
+    exchange.respond(server, server, server, cancelled)
+    handle = helper.start(
+        harness.source(), tus_resumable=harness.tus, options=harness.options.RequestOptions(cancel_token=token)
+    )
+    step(lines, "run", handle.run)
+    step(lines, "resume", lambda: helper.resume(harness.source(), handle.checkpoint()))
+    lines.append("a checkpoint taken while the completion is in flight")
+    taken: list[Any] = []
+
+    def checkpointed(request: httpx2.Request) -> httpx2.Response:
+        taken.append(handle.checkpoint())
+        return server(request)
+
+    exchange.respond(server, server, server, checkpointed)
+    handle = helper.start(harness.source(), tus_resumable=harness.tus)
+    step(lines, "run", handle.run)
+    step(lines, "resume the checkpoint taken in flight", lambda: helper.resume(harness.source(), taken[0]))
 
 
 def _sources(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lines: list[str]) -> None:
@@ -919,6 +978,14 @@ async def _async_uploads(harness: _Uploads, server: _Server, lines: list[str]) -
         changing.changed = protocols.AsyncBytesUploadSource.from_bytes(b"x123456789")
         changed = await helper.start(changing, tus_resumable=harness.tus)
         await astep(lines, "advance over changed content", changed.advance)
+        lines.append("async completion cancelled in flight")
+        exchange.respond(server, server, server)
+        cancelled = await finish.start(content, tus_resumable=harness.tus)
+        await astep(lines, "advance", cancelled.advance)
+        await astep(lines, "advance", cancelled.advance)
+        await _cancelled(lines, "run", exchange, cancelled.run)
+        await astep(lines, "run again", cancelled.run)
+        await astep(lines, "resume", lambda: finish.resume(content, cancelled.checkpoint()))
         _drained(exchange, lines)
         lines.append("async file source")
         with tempfile.TemporaryDirectory() as directory:

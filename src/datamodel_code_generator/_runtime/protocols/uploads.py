@@ -96,6 +96,8 @@ _DIGEST: Final = 32
 _UNKNOWN: Final = frozenset({DeliveryState.MAYBE_SENT, DeliveryState.RESPONSE_STARTED})
 _STATE: Final = frozenset({"size", "sha256", "chunk", "confirmed", "phase", "delivery", "bound", "result"})
 _RESULT_FIELDS: Final = 2
+_MIN_SUCCESS: Final = 200
+_MAX_SUCCESS: Final = 299
 _BOUND_FIELDS: Final = 3
 
 
@@ -697,16 +699,45 @@ class _Upload(Generic[T]):
     ) -> T:
         """Keep the completion's result and its body, which a checkpoint saves."""
         with self._guard:
-            self._result, self._phase = data, _Phase.COMPLETE
+            self._result, self._phase, self._delivery = data, _Phase.COMPLETE, None
             self._saved = content, info.status_code, info.content_type
         return data
 
-    def _completion_failed(self, error: Exception) -> None:
-        """Keep a completion whose outcome is unknown, which is never sent again, and raise it as such."""
-        if isinstance(error, TransportError) and (delivery := error.delivery_state) in _UNKNOWN:
-            with self._guard:
-                self._phase, self._delivery = _Phase.UNKNOWN, delivery
-            raise self._unknown(phase="complete", delivery=delivery, error=error) from None
+    def _completing(self) -> int:
+        """Mark the completion unknown before it is sent, returning the session's sends so far.
+
+        A checkpoint taken while it is in flight, or after any interruption, never lets it be sent again.
+        """
+        with self._guard:
+            self._phase, self._delivery = _Phase.UNKNOWN, DeliveryState.MAYBE_SENT
+        return self._session.network_send_count
+
+    def _completion_failed(self, error: BaseException, sends: int) -> None:
+        """Let a completion that certainly did not apply be sent again; keep every other one unknown.
+
+        It did not apply when the server answered with an error status, when nothing reached the server, or when the
+        session sent nothing. A response the server started, such as a success whose body does not decode, keeps it
+        unknown with RESPONSE_STARTED.
+        """
+        info = getattr(error, "info", None)
+        status = getattr(info, "status_code", 0)
+        unapplied = (
+            (isinstance(error, (HTTPStatusError, UnexpectedStatusError)) and not _MIN_SUCCESS <= status <= _MAX_SUCCESS)
+            or getattr(error, "delivery_state", None) is DeliveryState.NOT_SENT
+            or self._session.network_send_count == sends
+        )
+        started = info is not None or getattr(error, "delivery_state", None) is DeliveryState.RESPONSE_STARTED
+        with self._guard:
+            if unapplied:
+                self._phase, self._delivery = _Phase.UPLOADING, None
+            elif started and self._phase is _Phase.UNKNOWN:
+                self._delivery = DeliveryState.RESPONSE_STARTED
+
+    def _completion_error(self, error: Exception) -> Exception:
+        """Return the error of a failed completion: its own once it may be sent again, or else an unknown outcome."""
+        if (delivery := self._delivery) is None or self._phase is not _Phase.UNKNOWN:
+            return error
+        return self._unknown(phase="complete", delivery=delivery, error=error)
 
     def checkpoint(self) -> ResumeState:
         """Return the state a later `resume` continues from, sending nothing; it works in every phase.
@@ -960,24 +991,28 @@ class UploadHandle(_Upload[T]):
         plan = self._plan
         completed = plan.completed
         assert completed is not None
+        sends = self._completing()
         try:
             with self._mapped():
-                self._core.execute_page(
-                    plan,
-                    completed.call,
-                    self._completion_request,
-                    self._completed,
-                    body=UNSET,
-                    media_type=None,
-                    options=self._limits.options,
-                    session=self._session,
-                    max_page_bytes=None,
-                )
-        except SessionLimitError:
-            raise
+                try:
+                    self._core.execute_page(
+                        plan,
+                        completed.call,
+                        self._completion_request,
+                        self._completed,
+                        body=UNSET,
+                        media_type=None,
+                        options=self._limits.options,
+                        session=self._session,
+                        max_page_bytes=None,
+                    )
+                except BaseException as error:
+                    self._completion_failed(error, sends)
+                    raise
         except Exception as error:
-            self._completion_failed(error)
-            raise
+            if (failure := self._completion_error(error)) is error:
+                raise
+            raise failure from None
 
     def _step(self) -> None:
         """Probe when due, then append one chunk, or complete once every byte is confirmed."""
@@ -1178,24 +1213,28 @@ class AsyncUploadHandle(_Upload[T]):
         plan = self._plan
         completed = plan.completed
         assert completed is not None
+        sends = self._completing()
         try:
             with self._mapped():
-                await self._core.execute_page(
-                    plan,
-                    completed.call,
-                    self._completion_request,
-                    self._completed,
-                    body=UNSET,
-                    media_type=None,
-                    options=self._limits.options,
-                    session=self._session,
-                    max_page_bytes=None,
-                )
-        except SessionLimitError:
-            raise
+                try:
+                    await self._core.execute_page(
+                        plan,
+                        completed.call,
+                        self._completion_request,
+                        self._completed,
+                        body=UNSET,
+                        media_type=None,
+                        options=self._limits.options,
+                        session=self._session,
+                        max_page_bytes=None,
+                    )
+                except BaseException as error:
+                    self._completion_failed(error, sends)
+                    raise
         except Exception as error:
-            self._completion_failed(error)
-            raise
+            if (failure := self._completion_error(error)) is error:
+                raise
+            raise failure from None
 
     async def _step(self) -> None:
         """Probe when due, then append one chunk, or complete once every byte is confirmed."""
