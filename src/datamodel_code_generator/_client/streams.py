@@ -44,14 +44,16 @@ _EVENT_STREAM: Final = "text/event-stream"
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class StreamSpec:
-    """An SSE helper ready to render: its operation, the use of each event's schema and each error's, and its schemas.
+    """An SSE helper ready to render: its operation and stream media, each event and error schema's use, its schemas.
 
-    An event's key is its discriminator value, None for a helper with one event schema. `schemas` holds the manifest
-    reference of every schema the helper decodes, in the order of its settings.
+    `media` is the event stream media type the operation declares, which the helper requests. An event's key is its
+    discriminator value, None for a helper with one event schema. `schemas` holds the manifest reference of every
+    schema the helper decodes, in the order of its settings.
     """
 
     helper: Helper
     operation: OperationSpec
+    media: str
     events: tuple[tuple[str | None, TypeUseBinding], ...]
     errors: tuple[tuple[str, TypeUseBinding], ...]
     schemas: tuple[Mapping[str, str], ...]
@@ -84,13 +86,18 @@ def _references(helper: Helper) -> Iterator[tuple[str, SchemaRef]]:
         yield where, reference
 
 
-def _stream_response(spec: OperationSpec, media: str) -> ResponseSpec | None:
-    """Return the first success response of an operation that declares a media type, or None."""
+def _essence(media: str) -> str:
+    """Return a media type's type and subtype in lowercase, without its parameters."""
+    return media.partition(";")[0].strip().lower()
+
+
+def _stream_response(spec: OperationSpec) -> ResponseSpec | None:
+    """Return the first success response of an operation that declares an event stream, whatever its parameters."""
     return next(
         (
             response
             for response in spec.responses
-            if response.success and any(item.media_type == media for item in response.media)
+            if response.success and any(_essence(item.media_type) == _EVENT_STREAM for item in response.media)
         ),
         None,
     )
@@ -129,11 +136,11 @@ class _Streams:
             message = f"The SSE helper {name!r} resumes its stream, which is not supported yet"
             problems.append(_problem("E_CLIENT_UNSUPPORTED", "target", f"{at}.resume", message, spec))
         response = None
-        if media.partition(";")[0] != _EVENT_STREAM:
+        if _essence(media) != _EVENT_STREAM:
             message = f"The media type {media!r} of {name!r} is not {_EVENT_STREAM}"
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.media", message, spec))
-        elif (response := _stream_response(spec, media)) is None:
-            message = f"{_label(spec)} declares no {media} success response for the SSE helper {name!r}"
+        elif (response := _stream_response(spec)) is None:
+            message = f"{_label(spec)} declares no {_EVENT_STREAM} success response for the SSE helper {name!r}"
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.operation", message, spec))
         problems.extend(self.terminal(helper, spec))
         locations: dict[str, SourceLocation] = {}
@@ -145,9 +152,11 @@ class _Streams:
                 locations[where] = location
         if problems or response is None:
             return None, problems
+        media = next(item.media_type for item in response.media if _essence(item.media_type) == _EVENT_STREAM)
         return StreamSpec(
             helper=helper,
             operation=spec,
+            media=media,
             events=tuple((key, self.use(spec, response, media, locations[where])) for where, key, _ in _events(helper)),
             errors=tuple((key, self.use(spec, response, media, locations[where])) for where, key, _ in _errors(helper)),
             schemas=tuple(

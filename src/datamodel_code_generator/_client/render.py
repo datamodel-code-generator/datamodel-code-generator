@@ -2550,7 +2550,7 @@ class _Helpers:
                 ),
             ),
             ("call=", f"{module.root('_operations')}.OPERATION_{spec.operation.index}"),
-            ("media=", repr(tree["media"])),
+            ("media=", repr(spec.media)),
             ("fingerprint=", repr(self.fingerprints[helper.name])),
         ]
         if not isinstance(schema := tree["event_schema"], dict):
@@ -3041,7 +3041,8 @@ discriminator maps it to; data that does not decode raises `StreamDecodeError`, 
 completion; an end before it raises `StreamInterruptedError`, a cut frame `IncompleteFrameError`, and a broken
 connection `StreamInterruptedError` with its transport failure as the cause. Streams never reconnect, so
 `StreamOptions(reconnect=True)` raises `ProtocolConfigurationError`. Close a stream with `with`, `async with`, or
-`close()`; leaving a loop early does not release its response.
+`close()`; leaving a loop early does not release its response, and closing the client with a stream open raises
+`CleanupError` once its cleanup timeout passes.
 """
 
     @staticmethod

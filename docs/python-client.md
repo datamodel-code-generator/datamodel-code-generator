@@ -860,7 +860,8 @@ typed HTTP error, an undeclared status `UnexpectedStatusError`, and a body of an
 needs and owns the response until it ends, fails, or closes: close it with `with`, `async with`, `close()`, or
 `aclose()`, since leaving a loop early releases nothing. One consumer reads a stream at a time: a step, or a close,
 while another step runs raises `ProtocolStateError`, and so does every step after a failure or `close()`; after its end
-every step stops. Closing the client closes its open streams.
+every step stops. Closing the client waits up to its `cleanup_timeout` for open streams, then closes them and raises
+`CleanupError` naming them as pending leases; their next step raises `ClientClosedError`.
 
 ### Framing and events
 
@@ -888,7 +889,8 @@ condition `transport` and the transport failure as its `cause`. `sequence` is th
 
 `open` is one session holding one logical call. The call's total timeout bounds only acquiring the response; the
 stream then ends no later than the earlier of the call's `stream_total_timeout` from the handoff and the session's
-deadline, raising `DeadlineExceededError`. Its idle timeout counts only while a step waits for bytes, comments
+deadline, raising `DeadlineExceededError` with the phase `stream` at the next step, even for an event whose bytes it
+already read, and releasing the response. Its idle timeout counts only while a step waits for bytes, comments
 included, so a pause between steps never counts, and raises `PhaseTimeoutError`. Each limit comes from the call's
 options, then the helper's `ProtocolDefaults` in `ProtocolClientOptions.defaults`, then the default below:
 

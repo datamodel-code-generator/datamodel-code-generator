@@ -26,6 +26,7 @@ from ..client.errors import (
     set_error_counters,
 )
 from ..client.options import RequestOptions
+from ..client.raw import checked
 from ..client.timing import SessionOptions
 from ..model_codecs.errors import (
     CodecBindingError,
@@ -170,19 +171,21 @@ class _Parser:
 
     A leading byte order mark is skipped, and CR, LF, and CRLF end lines, a CRLF split across chunks included. A line
     over the line limit and data over the event limit, counted in bytes before they are kept, raise ProtocolSizeError.
-    Invalid UTF-8 decodes to replacement characters. A `retry` of more than 18 digits is ignored.
+    Invalid UTF-8 decodes to replacement characters. A `retry` of more than 18 digits is ignored. The bytes kept are
+    searched for a line end once each, so a line arriving in many chunks costs time linear in its length.
     """
 
     __slots__ = (
         "_buffer",
         "_data",
-        "_data_bytes",
         "_event_id",
         "_event_type",
         "_fields",
         "_frame_bytes",
         "_lf",
+        "_lines",
         "_retry",
+        "_scanned",
         "_started",
         "max_event",
         "max_line",
@@ -193,10 +196,11 @@ class _Parser:
         self.max_line = max_line
         self.max_event = max_event
         self._buffer = bytearray()
+        self._scanned: int = 0
         self._started = False
         self._lf = False
-        self._data: list[str] = []
-        self._data_bytes = 0
+        self._data = bytearray()
+        self._lines = 0
         self._event_type = ""
         self._event_id = ""
         self._retry: int | None = None
@@ -204,7 +208,13 @@ class _Parser:
         self._fields = False
 
     def feed(self, chunk: bytes) -> None:
-        """Keep the bytes of the next chunk."""
+        """Keep the bytes of the next chunk, refusing them first when they extend the unended line over its limit.
+
+        Once the stream started, the bytes kept are all of a line that has not ended, as `next` consumed the others.
+        """
+        if self._started:
+            ended = _TERMINATOR.search(chunk)
+            _limit("line", self.max_line, len(self._buffer) + (len(chunk) if ended is None else ended.start()))
         self._buffer += chunk
 
     def next(self) -> _Frame | None:
@@ -227,7 +237,8 @@ class _Parser:
                     if buffer[position] == _LF:
                         position += 1
                         self._frame_bytes += self._frame_bytes > 0
-                if (found := _TERMINATOR.search(buffer, position)) is None:
+                if (found := _TERMINATOR.search(buffer, max(position, self._scanned))) is None:
+                    self._scanned = len(buffer)
                     _limit("line", self.max_line, len(buffer) - position)
                     return None
                 end = found.start()
@@ -240,6 +251,7 @@ class _Parser:
                     return frame
         finally:
             del buffer[:position]
+            self._scanned = max(0, self._scanned - position)
 
     def incomplete(self) -> int | None:
         """Return the bytes of the frame an end of the stream cuts, or None when it ends between frames."""
@@ -258,10 +270,12 @@ class _Parser:
             value = value[1:]
         match name:
             case b"data":
-                size = self._data_bytes + len(value) + (1 if self._data else 0)
-                _limit("event", self.max_event, size)
-                self._data.append(value.decode("utf-8", "replace"))
-                self._data_bytes = size
+                data = self._data
+                _limit("event", self.max_event, len(data) + len(value) + (1 if self._lines else 0))
+                if self._lines:
+                    data += b"\n"
+                data += value
+                self._lines += 1
             case b"event":
                 self._event_type = value.decode("utf-8", "replace")
             case b"id" if b"\x00" not in value:
@@ -274,13 +288,13 @@ class _Parser:
 
     def _dispatch(self) -> _Frame | None:
         """End a frame, returning its event unless it has no data; its type and data are cleared either way."""
-        data, self._data, self._data_bytes = self._data, [], 0
+        data, lines, self._data, self._lines = self._data, self._lines, bytearray(), 0
         event_type, self._event_type = self._event_type, ""
         self._frame_bytes = 0
         self._fields = False
-        if not data:
+        if not lines:
             return None
-        return _Frame("\n".join(data), event_type or "message", self._event_id or None, self._retry)
+        return _Frame(data.decode("utf-8", "replace"), event_type or "message", self._event_id or None, self._retry)
 
 
 def _limit(kind: Literal["line", "event"], limit: int, observed: int) -> None:
@@ -523,9 +537,11 @@ class _Events(Generic[T]):
         )
         return error
 
-    def _frame(self) -> _Frame | None:
-        """Return the next dispatched event the bytes read so far hold, or None when it needs more."""
+    def _frame(self, chunk: bytes | None = None) -> _Frame | None:
+        """Keep a chunk read, then return the next dispatched event the bytes kept hold, or None when it needs more."""
         try:
+            if chunk is not None:
+                self._frames.feed(chunk)
             return self._frames.next()
         except ProtocolSizeError as error:
             raise self._stamped(error) from None
@@ -676,10 +692,12 @@ class EventStream(_Events[T]):
         return event
 
     def _read(self) -> StreamEvent[T] | _End:
-        while (frame := self._frame()) is None:
+        checked(self._response)
+        frame = self._frame()
+        while frame is None:
             if (chunk := next(self._chunks, None)) is None:
                 return self._ended()
-            self._frames.feed(chunk)
+            frame = self._frame(chunk)
         return self._event(frame)
 
     def _release(self, failure: BaseException | None) -> None:
@@ -763,10 +781,12 @@ class AsyncEventStream(_Events[T]):
         return event
 
     async def _read(self) -> StreamEvent[T] | _End:
-        while (frame := self._frame()) is None:
+        checked(self._response)
+        frame = self._frame()
+        while frame is None:
             if (chunk := await anext(self._chunks, None)) is None:
                 return self._ended()
-            self._frames.feed(chunk)
+            frame = self._frame(chunk)
         return self._event(frame)
 
     async def _release(self, failure: BaseException | None) -> None:

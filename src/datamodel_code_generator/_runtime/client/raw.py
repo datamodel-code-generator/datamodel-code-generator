@@ -421,6 +421,14 @@ class _Raw(Generic[SourceT, HandleT]):
         self._check()
 
 
+def checked(response: _Raw[SourceT, HandleT]) -> None:
+    """Raise what stops a response's call now, before using bytes it already read: cancellation, closing, or expiry.
+
+    A stream's expiry is its call's stream deadline, as on every read.
+    """
+    response._check()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+
+
 class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
     """A raw response of a synchronous client: buffered, or a streaming handle whose body is read at most once."""
 

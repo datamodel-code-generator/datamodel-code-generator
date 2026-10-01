@@ -40,3 +40,5 @@ helpers:
     media: text/event-stream
     event_schema: {discriminator: {from: body, pointer: /type}, mapping: {counted: {pointer: /components/schemas/Counted}, created: {pointer: /components/schemas/Created}}}
     completion: {kind: eof}
+  checks.media_parameters:
+    {kind: sse, operation: /paths/~1events/get, media: "Text/Event-Stream; charset=utf-8", event_schema: {pointer: /components/schemas/Message}, completion: {kind: eof}}

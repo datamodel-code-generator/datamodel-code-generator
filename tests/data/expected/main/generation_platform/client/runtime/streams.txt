@@ -138,6 +138,20 @@
   comment over the default limit
   < closed
     ! ProtocolSizeError: ProtocolSizeError(operation_id='streamEvents', call_id='<call>', kind='line', limit=12, observed=31) [operation_id='streamEvents', kind='line', unit='bytes', limit=12] protocol_size_error
+  > GET https://api.example.com/events accept=text/event-stream
+  line a later chunk ends over the limit
+  < closed
+    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamEvents', call_id='<call>', kind='line', limit=12, observed=19) [operation_id='streamEvents', kind='line', unit='bytes', limit=12] protocol_size_error
+  > GET https://api.example.com/events accept=text/event-stream
+  line a later chunk extends over the limit
+  < closed
+    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamEvents', call_id='<call>', kind='line', limit=12, observed=13) [operation_id='streamEvents', kind='line', unit='bytes', limit=12] protocol_size_error
+  > GET https://api.example.com/events accept=text/event-stream
+  line just under the limit, one byte at a time
+    1 message id=None retry=None data=Message{'text': 'drip'} raw='{"text": "drip"}'
+  < closed
+    end
+    read in linear time: True
   stream options of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('stream_options',), condition='invalid_value'] protocol_configuration_error
   options of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
   session options of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('session_options',), condition='invalid_value'] protocol_configuration_error

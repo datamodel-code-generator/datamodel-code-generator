@@ -2,7 +2,7 @@
   > GET https://api.example.com/events
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
   idle first 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
-  idle while waiting for bytes ! PhaseTimeoutError: PhaseTimeoutError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=0.1) [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadTimeout('The read operation timed out')] phase_timeout_error
+  idle while waiting for bytes ! PhaseTimeoutError: PhaseTimeoutError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=1.0) [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadTimeout('The read operation timed out')] phase_timeout_error
   > GET https://api.example.com/events
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
   paused first 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
@@ -30,6 +30,10 @@
   < closed
     ! DeadlineExceededError: DeadlineExceededError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded_error
   > GET https://api.example.com/events accept=text/event-stream
+  buffered first 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+  buffered event after the session deadline ! DeadlineExceededError: DeadlineExceededError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded_error
+  > GET https://api.example.com/events accept=text/event-stream
   before the client closes 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
   client close with an open stream ! CleanupError: CleanupError(pending_calls=0, pending_leases=1, timeout=0.05) [] cleanup_error
@@ -56,6 +60,10 @@
   async stream total before the session deadline
   < closed
     ! DeadlineExceededError: DeadlineExceededError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded_error
+  > GET https://api.example.com/events accept=text/event-stream
+  async buffered first 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+  async buffered event after the session deadline ! DeadlineExceededError: DeadlineExceededError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded_error
   > GET https://api.example.com/events accept=text/event-stream
   async cancelled first 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
   < closed
