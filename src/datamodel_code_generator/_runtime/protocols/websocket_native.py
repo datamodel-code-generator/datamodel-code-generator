@@ -48,6 +48,7 @@ from ..client.errors import (
     TransportError,
 )
 from ..client.responses import HeadersView
+from ..client.timing import TOKEN_INTERVAL
 from ..client.transports import attempt_trace
 from .errors import (
     MAX_RAW_PREFIX,
@@ -63,7 +64,7 @@ from .websocket_types import WSFrame
 
 if TYPE_CHECKING:
     import socket
-    from collections.abc import Iterator
+    from collections.abc import Callable, Iterator
 
     from websockets.client import ClientProtocol
     from websockets.datastructures import HeadersLike
@@ -267,6 +268,14 @@ def _closed(error: ConnectionClosed, parsed: BaseException | None, limit: int) -
     )
 
 
+def _wait(deadline: Deadline | None, *, polled: bool) -> float | None:
+    """Return how long a wait may block: until the deadline, and at most the token interval when polled."""
+    remaining = None if deadline is None else deadline.remaining()
+    if polled and (remaining is None or remaining > TOKEN_INTERVAL):
+        return TOKEN_INTERVAL
+    return remaining
+
+
 def _pinging() -> ProtocolStateError:
     """Return the refusal of a ping whose payload another ping still waits for."""
     return ProtocolStateError(state="pinging", action="ping")
@@ -445,10 +454,11 @@ class NativeConnection:
             raise self._closed(error) from None
         return _frame(data)
 
-    def ping(self, payload: bytes, *, deadline: Deadline | None) -> float:
+    def ping(self, payload: bytes, *, deadline: Deadline | None, check: Callable[[], None] | None = None) -> float:
         """Send a ping and return the seconds until its pong, raising TimeoutError when the deadline passes first.
 
-        An empty payload becomes four random bytes, so pings sent at once never share one.
+        An empty payload becomes four random bytes, so pings sent at once never share one. A check runs before each
+        wait of at most the token interval, and stops the wait by raising.
         """
         connection = self._connection
         try:
@@ -457,8 +467,13 @@ class NativeConnection:
             raise self._closed(error) from None
         except ConcurrencyError:
             raise _pinging() from None
-        if not pong.wait(None if deadline is None else deadline.remaining()):
-            raise TimeoutError
+        while True:
+            if check is not None:
+                check()
+            if pong.wait(_wait(deadline, polled=check is not None)):
+                break
+            if deadline is not None and deadline.remaining() <= 0:
+                raise TimeoutError
         if (protocol := connection.protocol).state is State.CLOSED:
             raise self._closed(protocol.close_exc)
         return connection.latency

@@ -657,6 +657,24 @@ def _peers(harness: _Harness) -> None:
         peer.stop()
         hangup.stop()
     _concurrent_pings(harness)
+    _polled_pings(harness)
+
+
+def _polled_pings(harness: _Harness) -> None:
+    """Wait for a pong in slices when a cancel token is set: until the pong timeout, or until the token is cancelled."""
+    lines, options, peer = harness.lines, harness.options, RawPeer(_UPGRADE)
+    try:
+        for label, cancelled in (("polled ping unanswered", False), ("polled ping cancelled", True)):
+            token = options.CancelToken()
+            with harness.package.Client(options=harness.client(peer.url, cancel_token=token)) as api:
+                limits = harness.ws(ping_interval=None, pong_timeout=None if cancelled else 0.2, close_timeout=0.1)
+                session = api.protocols.feed.text.connect(ws_options=limits)
+                if cancelled:
+                    sent = peer.records
+                    threading.Thread(target=lambda sent=sent, token=token: (peer.wait_records(sent + 1), token.cancel())).start()
+                record(lines, label, session.ping)
+    finally:
+        peer.stop()
 
 
 def _concurrent_pings(harness: _Harness) -> None:

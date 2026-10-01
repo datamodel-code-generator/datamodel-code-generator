@@ -58,8 +58,8 @@ class _Connection:
             raise item
         return item
 
-    def ping(self, payload: bytes, *, deadline: object) -> float:
-        self.lines.append(f"    connection ping {payload!r} deadline={deadline is not None}")
+    def ping(self, payload: bytes, *, deadline: object, check: object = None) -> float:
+        self.lines.append(f"    connection ping {payload!r} deadline={deadline is not None} polled={check is not None}")
         self._fail("ping")
         return 0.25
 

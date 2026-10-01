@@ -1025,7 +1025,9 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
         self._usable("ping")
         try:
             self._checked()
-            latency = self._connection.ping(payload, deadline=self._deadline(self._socket.pong_timeout))
+            latency = self._connection.ping(
+                payload, deadline=self._deadline(self._socket.pong_timeout), check=self._check()
+            )
         except TimeoutError:
             raise self._failed(self._unanswered()) from None
         except WebSocketClosedError as closed:
