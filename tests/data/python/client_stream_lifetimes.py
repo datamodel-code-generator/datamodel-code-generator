@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import contextlib
 import errno
 import gzip
 import importlib
@@ -130,6 +129,40 @@ class _Suspending:
     async def on_event(self, event: Any) -> None:
         if event.name == "stream_end":
             await asyncio.sleep(0.05)
+
+
+class _Watched(httpx2.AsyncByteStream):
+    """Pass a body through, setting an event once its reader has taken the first chunk and asks for more."""
+
+    def __init__(self, stream: httpx2.AsyncByteStream, reading: asyncio.Event) -> None:
+        self.stream = stream
+        self.reading = reading
+
+    async def __aiter__(self) -> AsyncIterator[bytes]:
+        taken, chunks = 0, aiter(self.stream)
+        try:
+            async for chunk in chunks:
+                yield chunk
+                taken += len(chunk)
+                if taken >= _CHUNK:
+                    self.reading.set()
+        finally:
+            await chunks.aclose()
+
+    async def aclose(self) -> None:
+        await self.stream.aclose()
+
+
+class _Reading(httpx2.AsyncClient):
+    """Watch the body of each response, so a scenario stops a download only once it is past its first chunk."""
+
+    reading: asyncio.Event
+
+    async def send(self, request: httpx2.Request, **options: Any) -> httpx2.Response:
+        response = await super().send(request, **options)
+        self.reading = asyncio.Event()
+        response.stream = _Watched(response.stream, self.reading)
+        return response
 
 
 class _Owned(httpx2.Client):
@@ -440,7 +473,7 @@ async def _downloads(package: ModuleType, lines: list[str], directory: Path) -> 
     """Download whole bodies on the handle's disk thread, then show the thread gone."""
     options = _modules(package)[0]
     exchange = Exchange([])
-    http = exchange.async_client(1)
+    http = exchange.async_client(1, kind=_Reading)
     async with package.AsyncClient(http_client=http) as api:
         streaming = api.with_streaming_response
         exchange.respond(raw_response(200, b"warm", "text/plain"))
@@ -450,7 +483,7 @@ async def _downloads(package: ModuleType, lines: list[str], directory: Path) -> 
         exchange.respond(_stalled(gate))
         async with streaming.request_raw("GET", _URL) as response:
             task = asyncio.create_task(response.stream_to(held))
-            await _mid_body(directory, task)
+            await _mid_body(http, task)
             writing = [thread.name for thread in _workers()]
             gate.set()
             await task
@@ -578,25 +611,18 @@ async def _disk_failures(api: Any, exchange: Exchange, lines: list[str], directo
         lines.append(f"  async file object broken read {await aoutcome(lambda: response.stream_to(io.BytesIO()))}")
 
 
-def _size(path: Path) -> int:
-    with contextlib.suppress(FileNotFoundError):
-        return path.stat().st_size
-    return 0
-
-
-async def _mid_body(directory: Path, task: asyncio.Task[None]) -> None:
-    """Wait until the download's temporary file holds the first chunk, past the file's write buffer, or it ends."""
-    for _ in range(500):
-        if task.done() or any(_size(path) for path in directory.glob("*.part")):
-            return
-        await asyncio.sleep(0.01)
+async def _mid_body(http: _Reading, task: asyncio.Task[None]) -> None:
+    """Wait until the download has taken the body's first chunk and asks for the held rest, or until it ended."""
+    reading = asyncio.create_task(http.reading.wait())
+    await asyncio.wait((reading, task), return_when=asyncio.FIRST_COMPLETED)
+    reading.cancel()
 
 
 async def _stopped_downloads(package: ModuleType, lines: list[str], directory: Path) -> None:
     """Stop downloads mid-body by cancellation, token, limits, and closing; keep the target and remove the rest."""
     options = _modules(package)[0]
     exchange = Exchange([])
-    http = exchange.async_client(1)
+    http = exchange.async_client(1, kind=_Reading)
     target = directory / "target.bin"
     target.write_bytes(b"old")
     for label, settings in (
@@ -611,7 +637,7 @@ async def _stopped_downloads(package: ModuleType, lines: list[str], directory: P
         api = package.AsyncClient(http_client=http)
         async with api.with_streaming_response.request_raw("GET", _URL, options=settings) as response:
             task = asyncio.create_task(response.stream_to(target, overwrite=True))
-            await _mid_body(directory, task)
+            await _mid_body(http, task)
             closed = ""
             match label:
                 case "cancelled":
