@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import importlib
 import json
+import logging
 import os
 import socket
 import threading
@@ -104,6 +105,12 @@ def _sending(*messages: str | bytes, code: int | None = None, reason: str = "") 
     return talk
 
 
+def _replying(connection: ServerConnection) -> None:
+    """Answer the first message, then wait for the client."""
+    connection.recv()
+    connection.send("secret-reply")
+
+
 def _closing(connection: ServerConnection) -> None:
     connection.close()
 
@@ -178,6 +185,7 @@ def sockets(package: ModuleType, lines: list[str]) -> None:
             _sends(harness, api)
         _hooked(harness)
         _authenticated(harness)
+        _logged(harness)
         _client_close(harness)
         _handshakes(harness)
         _peers(harness)
@@ -523,6 +531,41 @@ def _authenticated(harness: _Harness) -> None:
                 session.close()
         lines.append(f"    provider {tokens.calls}")
         harness.report(*plays)
+
+
+class _Captured(logging.Handler):
+    """Keep the messages of the records the WebSocket library's client loggers emit."""
+
+    def __init__(self) -> None:
+        super().__init__(logging.DEBUG)
+        self.messages: list[str] = []
+
+    def emit(self, record: logging.LogRecord) -> None:
+        if record.name.startswith("websockets.client"):
+            self.messages.append(record.getMessage())
+
+
+def _logged(harness: _Harness) -> None:
+    """Emit no client debug records, which would hold headers and messages, even with every logger at DEBUG."""
+    lines, server = harness.lines, harness.server
+    root, captured = logging.getLogger(), _Captured()
+    level = root.level
+    root.addHandler(captured)
+    root.setLevel(logging.DEBUG)
+    try:
+        (play,) = server.play(Play(talk=_replying))
+        client_options = harness.client(auth=harness.auth.AuthConfig({"bearer": _Tokens(harness.auth)}))
+        with harness.package.Client(options=client_options) as api:
+            session = api.protocols.secure.chat.connect()
+            session.send(b"secret-payload")
+            lines.append(f"  received with debug logging {_message(session.receive())}")
+            session.close()
+        harness.report(play)
+    finally:
+        root.removeHandler(captured)
+        root.setLevel(level)
+    secrets = [message for message in captured.messages if "secret" in message or "material" in message]
+    lines.append(f"    client debug records {len(captured.messages)} with secrets {len(secrets)}")
 
 
 def _client_close(harness: _Harness) -> None:

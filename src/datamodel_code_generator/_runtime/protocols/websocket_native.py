@@ -8,6 +8,7 @@ only when the transport settings trust the environment. Only packages with WebSo
 
 from __future__ import annotations
 
+import logging
 import ssl
 import threading
 from contextvars import ContextVar
@@ -105,6 +106,17 @@ class _Evidence:
 
 
 _OPENING: Final[ContextVar[_Evidence]] = ContextVar("dcg_websocket_opening")
+
+
+class _Quiet(logging.LoggerAdapter[logging.Logger]):
+    """The library's client logger with debug records off, since they hold handshake headers and message bytes."""
+
+    def isEnabledFor(self, level: int) -> bool:  # noqa: N802 - It overrides the logging API.
+        """Refuse debug records, and defer every other level to the logger."""
+        return level > logging.DEBUG and self.logger.isEnabledFor(level)
+
+
+_LOGGER: Final = _Quiet(logging.getLogger("websockets.client"))
 
 
 def _rejected(response: Response) -> HandshakeResponse:
@@ -283,6 +295,7 @@ class _Connector:
         context = transport.proxy_ssl_context
         return {
             "origin": None,
+            "logger": _LOGGER,
             "subprotocols": list(request.subprotocols) or None,
             "compression": options.compression,
             "additional_headers": list(request.headers.items()),

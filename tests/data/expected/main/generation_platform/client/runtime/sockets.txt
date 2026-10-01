@@ -145,6 +145,9 @@
   no refresh without retries ! SecureSocketHTTPError: SecureSocketHTTPError(status_code=401, operation_id='secureSocket', call_id='<call>', retry_stop_reason='disabled') [operation_id='secureSocket', status_code=401, error_decoded=False, body_bytes=b'', truncated=False] secure_socket_http_error
     provider ['get', 'invalidate current=True']
     server GET /secure/socket [authorization: Bearer first-material, x-trace: t1] | refused
+  received with debug logging 1 text str'secret-reply' raw=b'secret-reply'
+    server GET /secure/socket [authorization: Bearer first-material] | closed 1000 ''
+    client debug records 0 with secrets 0
   client close with a session open ! CleanupError: CleanupError(pending_calls=0, pending_leases=1, timeout=0.05) [] cleanup_error
   receive after the client closed ! ClientClosedError: ClientClosedError(operation_id='roomSocket', call_id='<call>', state='CLOSING', owner='client') [operation_id='roomSocket'] client_closed_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1001 ''
