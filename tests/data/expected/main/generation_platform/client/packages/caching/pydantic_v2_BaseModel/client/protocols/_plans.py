@@ -62,7 +62,8 @@ PLAN_2: Final[CachePlan[ListUsersResponse]] = CachePlan(
     call=_operations.OPERATION_4,
     validator='etag',
     authenticated=False,
-    fingerprint='079b1b8db9dc767c4aa5c0aabf56dd69091a3a6136a5ed23072678a7f5871ea0',
+    fingerprint='7d3252dc3f8126e03c6df9096f89184192d1b2b773adf2197f3e86c95e8c9ca1',
+    vary_allowlist=frozenset(('accept-language',)),
     tags=(('users',),),
 )
 
@@ -81,5 +82,6 @@ PLAN_3: Final[CachePlan[GetSecureUserResponse]] = CachePlan(
     call=_operations.OPERATION_6,
     validator='etag',
     authenticated=True,
-    fingerprint='df2f60b85a0635f78272dd6bb4dc6a6efc294852f6da71cff817b806265ce047',
+    fingerprint='15df827e2b132c48312ba9808481c2d55962bbdc2709f3ca89123914cfee4521',
+    vary_allowlist=frozenset(('x-signature',)),
 )

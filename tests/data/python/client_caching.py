@@ -232,6 +232,8 @@ def _fresh(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) -> No
     exchange.respond(user(3, etag='"v1"', **{"cache-control": "max-age=60", "x-request-id": "r1"}))
     fetched(lines, "miss", lambda: helper.fetch(user_id=three))
     fetched(lines, "fresh hit", lambda: helper.fetch(user_id=three))
+    small = cache.options.RequestOptions(max_response_bytes=5)
+    fetched(lines, "fresh hit over the response limit", lambda: helper.fetch(user_id=three, options=small))
     for index, (label, headers, limits, stale) in enumerate((
         ("aged past max-age", {"cache-control": "max-age=60", "age": "100"}, None, True),
         ("aged past the cap", {"cache-control": "max-age=100000", "age": "400"}, None, True),
@@ -298,13 +300,23 @@ def _revalidated(cache: Caching, api: Any, exchange: Exchange, lines: list[str])
     exchange.respond(
         user(8, etag='"e"', **{"cache-control": "max-age=0"}),
         not_modified(etag='"z"'),
+        user(8, etag='"e"', **{"cache-control": "max-age=0"}),
         not_modified(etag='"e"', vary="accept-language"),
         user(8, status=404),
     )
     fetched(lines, "mismatch stored", lambda: helper.fetch(user_id=eight))
     fetched(lines, "304 of another validator", lambda: helper.fetch(user_id=eight))
+    fetched(lines, "after a refused 304 the entry is gone", lambda: helper.fetch(user_id=eight))
     fetched(lines, "304 with another vary", lambda: helper.fetch(user_id=eight))
     fetched(lines, "after the vary change", lambda: helper.fetch(user_id=eight))
+    aged = cache.user_id(25)
+    exchange.respond(
+        user(25, etag='"g"', **{"cache-control": "max-age=60", "age": "100"}),
+        not_modified(etag='"g"'),
+    )
+    fetched(lines, "aged stored", lambda: helper.fetch(user_id=aged))
+    fetched(lines, "aged revalidated by a 304 without Age", lambda: helper.fetch(user_id=aged))
+    fetched(lines, "fresh after the 304", lambda: helper.fetch(user_id=aged))
 
 
 def _vary(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -318,6 +330,11 @@ def _vary(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) -> Non
     fetched(lines, "english hit", lambda: helper.fetch(user_id=nine, accept_language=english))
     fetched(lines, "french hit", lambda: helper.fetch(user_id=nine, accept_language=french))
     fetched(lines, "no language", lambda: _miss(exchange, lambda: helper.fetch(user_id=nine)))
+    keyed = cache.user_id(43)
+    fresh = {"cache-control": "max-age=60"}
+    exchange.respond(user(43, "alice", **fresh), user(43, "bob", **fresh))
+    for label, key in (("alice key", "a"), ("bob key", "b"), ("alice key again", "a"), ("bob key again", "b")):
+        fetched(lines, label, lambda key=key: helper.fetch(user_id=keyed, options=cache.headers(X_Api_Key=key)))
     for index, (label, header, stored) in enumerate((
         ("unlisted vary", "Accept-Encoding", False),
         ("star vary", "*", False),
@@ -394,8 +411,8 @@ def _directives(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) 
     exchange.respond(user(16, etag='"f"', **{"cache-control": "max-age=60", "age": "30"}))
     fetched(lines, "directives stored", lambda: helper.fetch(user_id=sixteen))
     for label, headers, response in (
-        ("request no-cache", {"Cache_Control": "no-cache"}, not_modified(etag='"f"')),
         ("request max-age=10", {"Cache_Control": "max-age=10"}, not_modified(etag='"f"')),
+        ("request no-cache", {"Cache_Control": "no-cache"}, not_modified(etag='"f"')),
         ("request max-age=3600", {"Cache_Control": "max-age=3600"}, None),
         ("request no-store", {"Cache_Control": "no-store"}, user(16, "other", **{"cache-control": "max-age=60"})),
         ("request no-store 304", {"Cache_Control": "no-store", "If_None_Match": '"f"'}, not_modified(etag='"f"')),
@@ -732,7 +749,8 @@ def _recorded(cache: Caching, native: Any, exchange: Exchange, lines: list[str])
     hooks = Events(lines)
     validated = cache.options.RequestOptions(validation=cache.options.ValidationOptions(arguments="pydantic"))
     settings = cache.options.ClientOptions(
-        hooks=(hooks,), protocols=cache.options.ProtocolClientOptions(cache_stores={"users.profile": store})
+        hooks=(hooks,),
+        protocols=cache.options.ProtocolClientOptions(cache_stores={"users.profile": store, "users.listing": store}),
     )
     with package.Client(http_client=native, options=settings) as api:
         helper, twenty = api.protocols.users.profile, cache.user_id(21)
@@ -740,11 +758,29 @@ def _recorded(cache: Caching, native: Any, exchange: Exchange, lines: list[str])
         fetched(lines, "recorded miss", lambda: helper.fetch(user_id=twenty, options=validated))
         fetched(lines, "recorded revalidation", lambda: helper.fetch(user_id=twenty))
         fetched(lines, "recorded unstored", lambda: helper.fetch(user_id=twenty))
+        listing = api.protocols.users.listing
+        exchange.respond(
+            json_response(200, {"data": []}, etag='"l"', **{"cache-control": "max-age=0"}),
+            json_response(200, {"data": []}, vary="Accept-Language", **{"cache-control": "max-age=60"}),
+        )
+        fetched(lines, "list without vary", listing.fetch)
+        fetched(lines, "list in another vary slot", listing.fetch)
+        exchange.respond(user(21, etag='"h"', **{"cache-control": "max-age=0"}), not_modified(etag='"x"'))
+        fetched(lines, "healing stored", lambda: helper.fetch(user_id=twenty))
+        store.faults["delete"] = OSError("gone")
+        try:
+            helper.fetch(user_id=twenty)
+        except errors.CacheProtocolError as error:
+            lines.append(f"  refused 304 with a failed deletion ! {describe(error)} {error.secondary_errors!r}")
+        cancelled = cache.options.CancelToken()
+        cancelled.cancel()
+        stopped = cache.options.RequestOptions(cancel_token=cancelled)
+        fetched(lines, "cancelled before lookup", lambda: helper.fetch(user_id=twenty, options=stopped))
         for label, method, fault, responses in (
             ("lookup failure", "lookup", OSError("disk"), ()),
             ("lookup result", "lookup", "entry", ()),
             ("lookup store error", "lookup", errors.CacheStoreError(action="lookup"), ()),
-            ("fingerprint result", "fingerprint_vary", (b"a",), (user(21, **{"cache-control": "max-age=60"}),)),
+            ("fingerprint result", "fingerprint_vary", ("text",), (user(21, **{"cache-control": "max-age=60"}),)),
             ("exchange failure", "compare_exchange", RuntimeError("down"), (user(21, **{"cache-control": "max-age=60"}),)),
             ("exchange result", "compare_exchange", "yes", (user(21, **{"cache-control": "max-age=60"}),)),
             ("exchange refused", "compare_exchange", False, (user(21, **{"cache-control": "max-age=0"}, etag='"b"'),)),
@@ -818,6 +854,32 @@ def _credentials(cache: Caching, native: Any, exchange: Exchange, lines: list[st
         fetched(lines, "anonymous helper with a credential", lambda: first.protocols.users.profile.fetch(user_id=public, options=bearer))
         fetched(lines, "anonymous helper same tenant", lambda: same.protocols.users.profile.fetch(user_id=public))
         fetched(lines, "anonymous helper other tenant", lambda: other.protocols.users.profile.fetch(user_id=public))
+    alice, bob = (auth.AuthConfig({"bearer": auth.StaticTokenProvider(auth.AccessToken(name))}) for name in ("alice", "bob"))
+    two = secured.parameter(location="path", name="userId").from_wire(2)
+    varying = {"cache-control": "max-age=60", "vary": "Authorization"}
+    exchange.respond(user(2, "alice", **varying), user(2, "bob", **varying), user(2, "alice again", **varying))
+    with client("tenant-a", alice) as first, client("tenant-a", bob) as second:
+        fetched(lines, "alice varying on authorization", lambda: first.protocols.secure.profile.fetch(user_id=two))
+        fetched(lines, "bob in the same partition", lambda: second.protocols.secure.profile.fetch(user_id=two))
+        fetched(lines, "alice again", lambda: first.protocols.secure.profile.fetch(user_id=two))
+        other_auth = options.RequestOptions(auth=bob)
+        view = first.with_options(other_auth)
+        fetched(lines, "view with other auth", lambda: view.protocols.secure.profile.fetch(user_id=two))
+        fetched(
+            lines,
+            "call with other auth",
+            lambda: first.protocols.secure.profile.fetch(user_id=two, options=other_auth),
+        )
+        public = cache.user_id(1)
+        anonymous_view = first.with_options(options.RequestOptions(auth=None))
+        fetched(lines, "anonymous view", lambda: anonymous_view.protocols.users.profile.fetch(user_id=public))
+    signed_vary = {"cache-control": "max-age=60", "vary": "X-Signature"}
+    exchange.respond(user(3, "first", **signed_vary), user(3, "second", **signed_vary))
+    three = secured.parameter(location="path", name="userId").from_wire(3)
+    signing = auth.AuthConfig({"bearer": auth.StaticTokenProvider(auth.AccessToken("alice"))}, signers=(_Signer(auth),))
+    with client("tenant-a", signing) as signer:
+        fetched(lines, "vary on a signed header", lambda: signer.protocols.secure.profile.fetch(user_id=three))
+        fetched(lines, "vary on a signed header again", lambda: signer.protocols.secure.profile.fetch(user_id=three))
     failing = Recording(protocols.MemoryCacheStore(), lines)
     secret = auth.StaticCredentialProvider(auth.ApiKeyCredential("secret"))
     with auth.ClientCredentialsProvider("https://auth.example.com/token", client_id="c", client_secret=secret, audience="api") as oauth:
@@ -850,6 +912,13 @@ async def _async_stores(cache: Caching, lines: list[str]) -> None:
             store.faults[method] = fault
             exchange.respond(*responses)
             await afetched(lines, label, lambda: helper.fetch(user_id=twenty))
+        exchange.respond(user(24, etag='"h"', **{"cache-control": "max-age=0"}), not_modified(etag='"x"'))
+        await afetched(lines, "async healing stored", lambda: helper.fetch(user_id=twenty))
+        store.faults["delete"] = OSError("gone")
+        try:
+            await helper.fetch(user_id=twenty)
+        except cache.errors.CacheProtocolError as error:
+            lines.append(f"  async refused 304 with a failed deletion ! {describe(error)} {error.secondary_errors!r}")
         exchange.respond(user(24, etag='"b"', **{"cache-control": "max-age=0"}), user(24))
         await afetched(lines, "async deletable", lambda: helper.fetch(user_id=twenty))
         store.faults["delete"] = 1

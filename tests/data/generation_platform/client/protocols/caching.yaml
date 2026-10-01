@@ -25,6 +25,7 @@ helpers:
     operation: /paths/~1users/get
     validator: etag
     authenticated: false
+    vary_allowlist: [Accept-Language]
     tags: [users]
     mutations:
       create:
@@ -35,3 +36,4 @@ helpers:
     operation: /paths/~1secure~1users~1{userId}/get
     validator: etag
     authenticated: true
+    vary_allowlist: [X-Signature]

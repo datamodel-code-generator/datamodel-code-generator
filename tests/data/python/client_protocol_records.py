@@ -558,11 +558,15 @@ CACHING = ProtocolConfiguration(
             operation=USERS,
             validator="etag",
             authenticated=False,
+            vary_allowlist=("Accept-Language",),
             tags=("users",),
             mutations={"create": CacheMutation(operation="/paths/~1users/post", invalidate_tags=("users",))},
         ),
         "secure.profile": CacheHelper(
-            operation="/paths/~1secure~1users~1{userId}/get", validator="etag", authenticated=True
+            operation="/paths/~1secure~1users~1{userId}/get",
+            validator="etag",
+            authenticated=True,
+            vary_allowlist=("X-Signature",),
         ),
     }
 )

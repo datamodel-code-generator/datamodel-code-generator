@@ -27,6 +27,12 @@ helpers:
     operation: /paths/~1secure~1users~1{userId}/get
     validator: etag
     authenticated: false
+  secure.varying:
+    kind: cache
+    operation: /paths/~1secure~1users~1{userId}/get
+    validator: etag
+    authenticated: true
+    vary_allowlist: [Accept, authorization, Cookie]
   users.tagged:
     kind: cache
     operation: /paths/~1users/get

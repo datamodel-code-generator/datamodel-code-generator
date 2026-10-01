@@ -41,8 +41,8 @@ render pydantic_v2.BaseModel
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   helper users.profile cache enabled True /inputs/target_config/protocol_metadata/helpers/users.profile 8bc3cb12a7c197074fd9c76e454ce348b7992c59bb308418c3be811dea86f4ad
   helper users.dated cache enabled True /inputs/target_config/protocol_metadata/helpers/users.dated 46268d7980b99b249a57f34340a625c3ae65fd090549291665170e054c80e2b9
-  helper users.listing cache enabled True /inputs/target_config/protocol_metadata/helpers/users.listing 079b1b8db9dc767c4aa5c0aabf56dd69091a3a6136a5ed23072678a7f5871ea0
-  helper secure.profile cache enabled True /inputs/target_config/protocol_metadata/helpers/secure.profile df2f60b85a0635f78272dd6bb4dc6a6efc294852f6da71cff817b806265ce047
+  helper users.listing cache enabled True /inputs/target_config/protocol_metadata/helpers/users.listing 7d3252dc3f8126e03c6df9096f89184192d1b2b773adf2197f3e86c95e8c9ca1
+  helper secure.profile cache enabled True /inputs/target_config/protocol_metadata/helpers/secure.profile 15df827e2b132c48312ba9808481c2d55962bbdc2709f3ca89123914cfee4521
   {
     "helpers": {
       "secure.profile": {
@@ -59,7 +59,9 @@ render pydantic_v2.BaseModel
         ],
         "tags": [],
         "validator": "etag",
-        "vary_allowlist": []
+        "vary_allowlist": [
+          "X-Signature"
+        ]
       },
       "users.dated": {
         "authenticated": false,
@@ -104,7 +106,9 @@ render pydantic_v2.BaseModel
           "users"
         ],
         "validator": "etag",
-        "vary_allowlist": []
+        "vary_allowlist": [
+          "Accept-Language"
+        ]
       },
       "users.profile": {
         "authenticated": false,

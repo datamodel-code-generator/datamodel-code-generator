@@ -12,6 +12,8 @@ render pydantic_v2.BaseModel
   E_CONFIG_VALUE config protocols.helpers['users.statuses'].statuses[0] /paths/~1users~1{userId}/get: The cacheable status 404 of 'users.statuses' is no declared 2xx success of GET /users/{userId}
   E_CONFIG_VALUE config protocols.helpers['users.statuses'].statuses[1] /paths/~1users~1{userId}/get: The cacheable status 201 of 'users.statuses' is no declared 2xx success of GET /users/{userId}
   E_CONFIG_VALUE config protocols.helpers['secure.anonymous'].authenticated /paths/~1secure~1users~1{userId}/get: The cache helper 'secure.anonymous' is declared anonymous, but GET /secure/users/{userId} requires credentials
+  E_CONFIG_VALUE config protocols.helpers['secure.varying'].vary_allowlist[1] /paths/~1secure~1users~1{userId}/get: The cache helper 'secure.varying' allows a Vary on 'authorization', which credentials travel in; the auth adds it after the cache looks a request up
+  E_CONFIG_VALUE config protocols.helpers['secure.varying'].vary_allowlist[2] /paths/~1secure~1users~1{userId}/get: The cache helper 'secure.varying' allows a Vary on 'Cookie', which credentials travel in; the auth adds it after the cache looks a request up
   E_CONFIG_VALUE config protocols.helpers['users.tagged'].tags[0] /paths/~1users/get: The tag '{fields}' of 'users.tagged' names no path or query parameter 'fields' of GET /users
   E_CONFIG_VALUE config protocols.helpers['users.tagged'].tags[1] /paths/~1users/get: The tag 'page:{page}' of 'users.tagged' names the optional parameter 'page' of GET /users
   E_CONFIG_VALUE config protocols.helpers['users.tagged'].tags[2] /paths/~1users/get: The tag '{role}' of 'users.tagged' names the optional parameter 'role' of GET /users
