@@ -304,7 +304,8 @@ def uploads(package: ModuleType, lines: list[str]) -> None:
     server = _Server()
     exchange = Exchange(lines)
     with exchange.client() as native, package.Client(http_client=native, options=harness.client_options()) as api:
-        for section in (_runs, _recoveries, _offsets, _completions, _sources, _resumes, _expiry, _limits, _steps):
+        sections = (_runs, _recoveries, _offsets, _completions, _sources, _resumes, _expiry, _clock, _limits, _steps)
+        for section in sections:
             section(harness, api, server, exchange, lines)
             _drained(exchange, lines)
     run(lambda: _async_uploads(harness, server, lines))
@@ -800,6 +801,27 @@ def _expiry(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, li
     server.expires = _FUTURE
     exchange.respond(json_response(201, {"id": "x"}, **{"Upload-Expires": ""}))
     record(lines, "start with an empty expiry", lambda: helper.start(harness.source(), tus_resumable=harness.tus))
+
+
+def _clock(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lines: list[str]) -> None:
+    """Measure expiry and the session's total timeout on the client's clock, not the system's."""
+    del api
+    lines.append("the client's clock")
+    ticks = [1000.0]
+    wall = datetime(3000, 1, 1, tzinfo=timezone.utc).timestamp()
+    clock = harness.options.Clock(monotonic=lambda: ticks[0], time=lambda: wall)
+    with (
+        exchange.client() as native,
+        harness.package.Client(http_client=native, options=harness.client_options(clock=clock)) as timed,
+    ):
+        helper = timed.protocols.files.upload
+        exchange.respond(server, server)
+        handle = helper.start(harness.source(), tus_resumable=harness.tus)
+        step(lines, "advance", handle.advance)
+        state = handle.checkpoint()
+        record(lines, "resume a checkpoint whose expiry the clock passed", lambda: helper.resume(harness.source(), state))
+        ticks[0] += 601
+        step(lines, "advance once the clock passed the session's total timeout", handle.advance)
 
 
 def _limits(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lines: list[str]) -> None:

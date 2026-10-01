@@ -10,7 +10,6 @@ from __future__ import annotations
 import threading
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from enum import Enum
 from functools import partial
 from hashlib import sha256
@@ -31,7 +30,7 @@ from ..client.errors import (
     UnexpectedStatusError,
 )
 from ..client.options import RequestOptions
-from ..client.timing import SessionOptions
+from ..client.timing import SYSTEM_CLOCK, Clock, SessionOptions
 from ..model_codecs.errors import CodecError
 from ..model_codecs.media import decode_json
 from ..model_codecs.unset import UNSET
@@ -64,6 +63,7 @@ from .values import MISSING, RepeatedValueError, selected, server_expiry
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Generator, Iterator
+    from datetime import datetime
     from types import TracebackType
 
     from ..client.client import AsyncClientCore, ClientCore
@@ -219,6 +219,7 @@ class _Limits:
     deadline: Deadline | None = None
     max_network_sends: int | None = 10000
     options: RequestOptions | None = None
+    clock: Clock = SYSTEM_CLOCK
 
 
 _DEFAULTS: Final = _Limits()
@@ -275,6 +276,7 @@ def _limits(
         deadline=layered(sessions, "deadline", _DEFAULTS.deadline),
         max_network_sends=layered(sessions, "max_network_sends", _DEFAULTS.max_network_sends),
         options=request,
+        clock=core.clock,
     )
 
 
@@ -693,7 +695,7 @@ class _Upload(Generic[T]):
         if (read := plan.expires_at) is not None:
             if not isinstance(value := self._read(read, wire, info), str):
                 raise self._data_error(info, "null" if value is None else "type", read)
-            if (expires_at := server_expiry(value)) is None:
+            if (expires_at := server_expiry(value, self._limits.clock.time())) is None:
                 raise self._data_error(info, "value", read)
         return bound, expires_at
 
@@ -910,7 +912,10 @@ def _session(limits: _Limits) -> OperationSession:
     from ..client.logical import OperationSession  # noqa: PLC0415 - Only a started helper loads the call runtime.
 
     return OperationSession(
-        total_timeout=limits.total_timeout, deadline=limits.deadline, max_network_sends=limits.max_network_sends
+        total_timeout=limits.total_timeout,
+        deadline=limits.deadline,
+        max_network_sends=limits.max_network_sends,
+        clock=limits.clock,
     )
 
 
@@ -1560,7 +1565,7 @@ def _restored(core: ClientCore | AsyncClientCore, plan: UploadPlan[T, C], state:
     facts = tuple(core.checkpoint_security(call, limits.options)[0] for call in _children(plan))
     if security != sha256(canonical_json(facts)).hexdigest():
         raise _resume_error(plan, "security")
-    if expires_at is not None and expires_at <= datetime.now(timezone.utc):
+    if expires_at is not None and expires_at.timestamp() <= limits.clock.time():
         raise UploadExpiredError(expires_at=expires_at, helper_id=plan.helper_id, operation=plan.operation)
     try:
         return _decoded(plan, decode_json(state_json), payload, expires_at)
