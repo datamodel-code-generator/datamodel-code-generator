@@ -32,6 +32,8 @@ helpers:
     {kind: sse, operation: /paths/~1events/get, media: text/event-stream, event_schema: {pointer: /components/schemas/UserEvent}, completion: {kind: sentinel, value: ""}}
   completion.ndjson:
     {kind: ndjson, operation: /paths/~1records/get, media: application/x-ndjson, event_schema: {pointer: /components/schemas/UserEvent}, completion: {kind: event_type, value: done}, final_line: require_newline}
+  completion.line:
+    {kind: ndjson, operation: /paths/~1records/get, media: application/x-ndjson, event_schema: {pointer: /components/schemas/UserEvent}, completion: {kind: sentinel, value: "done\n"}, final_line: require_newline}
   final.sse:
     {kind: sse, operation: /paths/~1events/get, media: text/event-stream, event_schema: {pointer: /components/schemas/UserEvent}, completion: {kind: eof}, final_line: allow_eof}
   final.missing:

@@ -25,9 +25,12 @@ from datamodel_code_generator._generation_contract import (
     SymbolId,
     UnionType,
 )
+from datamodel_code_generator._runtime.client.paths import dot_segment, path_segments
 from datamodel_code_generator._runtime.client.retry import body_replay_safe
 from datamodel_code_generator._runtime.model_codecs.bindings import ArrayNode, MapNode, ModelNode, UnionNode
+from datamodel_code_generator._runtime.model_codecs.errors import ParameterEncodingError
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
+from datamodel_code_generator._runtime.model_codecs.parameters import AdaptedParameterPlan, path_text
 from datamodel_code_generator._runtime.protocols.records import canonical_json
 
 if TYPE_CHECKING:
@@ -43,6 +46,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._openapi_codec_plan import CodecPlan
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.bindings import ModelBinding, TypeNode, UseBinding
+    from datamodel_code_generator._runtime.model_codecs.wire import WireValue
 
 StepKind = Literal["attr", "key", "get", "root"]
 _INTEGER: Final = re.compile(r"-?[0-9]+")
@@ -50,7 +54,6 @@ _MEMBERS: Final = ("anyOf", "oneOf")
 _NULL: Final = frozenset({"null"})
 _SEQUENCES: Final = frozenset({"list", "tuple"})
 _POINTED: Final = frozenset({"body", "querystring"})
-_DOT_SEGMENTS: Final = (".", "..")
 _FOLLOWED: Final = frozenset({"next_url", "link"})
 _URL_TYPES: Final = frozenset({"string", "null"})
 _RELATION: Final = re.compile(r"[A-Za-z][A-Za-z0-9.-]*|[A-Za-z][A-Za-z0-9+.-]*:[!#-\[\]-~]+")
@@ -111,6 +114,35 @@ class _Reached:
 
 def _label(spec: OperationSpec) -> str:
     return f"{spec.contract.method.upper()} {spec.contract.path}"
+
+
+def _dot_literals(spec: OperationSpec, bindings: list[Mapping[str, Any]]) -> frozenset[int]:
+    """Return the first literal binding of each path segment the literal bindings make `.` or `..`, by index.
+
+    Only a segment whose every parameter a literal writes is judged, each literal encoded in its parameter's style; a
+    literal its parameter cannot encode is left to the type check. A segment with a parameter a registered adapter
+    carries is left to the runtime, which checks the path the adapter's text makes.
+    """
+    literals: dict[str, tuple[int, WireValue]] = {}
+    for index, item in enumerate(bindings):
+        if item["target"]["in"] == "path" and "literal" in (value := item["value"]):
+            literals.setdefault(item["target"]["name"], (index, value["literal"]))
+    if not literals:
+        return frozenset()
+    plans = {item.wire_name: item.plan for item in spec.parameters if item.location == "path"}
+    dotted: set[int] = set()
+    for segment, names in path_segments(spec.contract.path):
+        if not all(name in literals for name in names) or any(
+            isinstance(plans[name], AdaptedParameterPlan) for name in names
+        ):
+            continue
+        try:
+            texts = {name: path_text(plans[name], literals[name][1]) for name in names}
+        except ParameterEncodingError:
+            continue
+        if dot_segment(segment, texts):
+            dotted.add(min(literals[name][0] for name in names))
+    return frozenset(dotted)
 
 
 def _target_key(target: Mapping[str, Any]) -> tuple[str, ...]:
@@ -623,13 +655,15 @@ class _Pages:
     ) -> Iterator[Diagnostic]:
         """Check each binding's value against its target, and that no two writes overlap.
 
-        A binding's null is written, so its target must accept null too, and a literal dot segment is no path value. A
-        followed URL replaces the path and query, and carries a body only when it repeats the request body.
+        A binding's null is written, so its target must accept null too, and literals that make a path segment a dot
+        segment are no path values. A followed URL replaces the path and query, and carries a body only when it
+        repeats the request body.
         """
         tree = helper.tree
         continuation = tree["continuation"]
         kind = continuation["kind"]
         written = [] if kind in _FOLLOWED else [(_target_key(continuation["write"]), f"its {_WRITES[kind]}")]
+        dotted = _dot_literals(spec, tree["bindings"])
         for index, item in enumerate(tree["bindings"]):
             at, what, value, target = (
                 f"{helper.at}.bindings[{index}]",
@@ -651,10 +685,10 @@ class _Pages:
             if value.get("source") == "input":
                 continue
             if "literal" in value:
-                if target["in"] == "path" and value["literal"] in _DOT_SEGMENTS:
+                if index in dotted:
                     message = (
-                        f"The {what} of {helper.name!r} gives the dot segment {value['literal']!r}, which cannot be "
-                        f"written to the path parameter {target['name']!r} of {_label(spec)}"
+                        f"The {what} of {helper.name!r} gives {value['literal']!r}, which makes the segment of the "
+                        f"path parameter {target['name']!r} of {_label(spec)} a dot segment"
                     )
                     yield _problem("E_CONFIG_VALUE", "config", f"{at}.value.literal", message, spec)
                     continue

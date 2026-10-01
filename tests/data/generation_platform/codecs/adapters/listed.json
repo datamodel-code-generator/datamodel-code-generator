@@ -2,6 +2,11 @@
   "scopes": ["schemas", "paths"],
   "options": {"collapse_root_models": true, "enum_field_as_literal": "all"},
   "surface": "client",
+  "refusal": {"config": {"selection": {}}},
+  "config": {
+    "selection": {"exclude_operations": ["/paths/~1ordered/get"], "reason": "The header has no generated type"},
+    "validation": {"request": "schema"}
+  },
   "declarations": {
     "adapters": [
       {

@@ -10,8 +10,7 @@ from typing import Final, Literal, TypeAlias, TypedDict
 import models
 from typing_extensions import Never
 
-from .._generated import model_bindings as model_bindings_1
-from .._runtime.model_codecs.parameters import ParameterPlan
+from .._runtime.model_codecs.parameters import AdaptedParameterPlan, ParameterPlan
 from .._runtime.model_codecs.unset import Unset
 from .._runtime.model_codecs.wire import freeze_wire
 from .._runtime.server.application import Dependency, OperationPlan
@@ -68,16 +67,14 @@ class ListPets:
         arguments=(
             ParameterArgument(
                 name='limit',
-                plan=ParameterPlan(
+                plan=AdaptedParameterPlan(
                     location='query',
                     name='limit',
                     style='form',
                     explode=True,
-                    kind='integer',
-                    reserved_names=('kind', 'since', 'tags'),
                 ),
                 codec=(model_bindings.codec_0, model_bindings.CONTEXT_0),
-                adapter=(model_bindings_1.parameter_0, model_bindings_1.CONTEXT_0),
+                adapter=(model_bindings.parameter_0, model_bindings.CONTEXT_0),
                 default=freeze_wire(20),
             ),
             ParameterArgument(

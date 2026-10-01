@@ -1,0 +1,8 @@
+# protocols-stream-scope
+render pydantic_v2.BaseModel
+  APIGenerationError
+  BND_MODEL_SCOPE_REQUIRED binding /paths/~1events/get/parameters/0: The use has no generated native type
+  BND_MODEL_SCOPE_REQUIRED binding /paths/~1events/get/parameters/1: The use has no generated native type
+  BND_MODEL_SCOPE_REQUIRED binding /paths/~1events/get/responses/200: The use has no generated native type
+  BND_MODEL_SCOPE_REQUIRED binding /paths/~1feed/post/responses/200: The use has no generated native type
+  BND_MODEL_SCOPE_REQUIRED binding /paths/~1events/get/responses/200/content/text~1event-stream/schema: The use has no generated native type

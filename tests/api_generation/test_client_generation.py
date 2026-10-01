@@ -53,6 +53,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
         "validation-ambiguous",
         "validation-adapters",
         "validation-adapters-schema",
+        "parameter-adapters",
         "validation-arguments",
         "validation-arguments-msgspec",
         "fields",
@@ -71,6 +72,12 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
         "pagination-targets",
         "webhooks",
         "webhooks-schema",
+        "webhooks-public-keys",
+        "webhooks-adapters",
+        "webhooks-unsigned",
+        "streams",
+        "streams-mixed",
+        "ndjson",
         "compatibility",
     ],
 )
@@ -120,6 +127,9 @@ def test_client_render(case: str, tmp_path: Path) -> None:
         "protocols-pagination-link-checks",
         "protocols-webhook-errors",
         "protocols-webhook-checks",
+        "protocols-stream-checks",
+        "protocols-stream-scope",
+        "protocols-ndjson-checks",
     ],
 )
 def test_client_protocols(case: str, tmp_path: Path) -> None:
@@ -135,7 +145,12 @@ def test_client_protocols(case: str, tmp_path: Path) -> None:
 
 @pytest.mark.parametrize(
     ("first", "second", "expected"),
-    [("pagination", "pagination-documents", "helper-documents"), ("webhooks", "webhooks-python", "webhook-records")],
+    [
+        ("pagination", "pagination-documents", "helper-documents"),
+        ("webhooks", "webhooks-python", "webhook-records"),
+        ("webhooks-public-keys", "webhooks-public-keys-python", "webhook-public-key-records"),
+        ("webhooks-adapters", "webhooks-adapters-python", "webhook-adapter-records"),
+    ],
 )
 def test_client_helper_digests(first: str, second: str, expected: str, tmp_path: Path) -> None:
     """Digest a helper's normalized settings, so equivalent spellings and equal Python records digest alike."""
@@ -155,7 +170,18 @@ def test_client_retry_metadata_digests(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    "case", ["retries", "default-server", "empty", "auth", "pagination", "pagination-counts", "pagination-links"]
+    "case",
+    [
+        "retries",
+        "default-server",
+        "empty",
+        "auth",
+        "pagination",
+        "pagination-counts",
+        "pagination-links",
+        "streams",
+        "ndjson",
+    ],
 )
 def test_client_documentation(case: str, tmp_path: Path) -> None:
     """Keep metadata, explicit retry overrides, documentation ownership, and source distribution inputs visible."""
@@ -166,6 +192,14 @@ def test_client_documentation(case: str, tmp_path: Path) -> None:
 def test_client_auth_digests(variant: str, tmp_path: Path) -> None:
     """Keep authentication semantics in the security digest and exclude descriptions and scope ordering."""
     assert_output(client_digest_report("auth", variant, tmp_path), EXPECTED / "digests" / f"{variant}.txt")
+
+
+def test_client_parameter_adapter_digests(tmp_path: Path) -> None:
+    """Change the request digest of an operation whose adapted parameter explodes or whose adapter differs."""
+    assert_output(
+        client_digest_report("parameter-adapters", "parameter-adapters-variant", tmp_path),
+        EXPECTED / "digests" / "parameter-adapters.txt",
+    )
 
 
 def test_client_validation_digests(tmp_path: Path) -> None:

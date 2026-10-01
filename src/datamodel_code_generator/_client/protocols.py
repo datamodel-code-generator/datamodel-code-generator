@@ -32,6 +32,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._runtime.protocols.records import RequestTarget, Selector
 
 __all__ = (
+    "AdapterSignature",
     "AsciiBytes",
     "Binding",
     "Continuation",
@@ -54,11 +55,13 @@ __all__ = (
     "LiteralValue",
     "NextUrlContinuation",
     "NoResult",
+    "NoSignature",
     "OperationResult",
     "PaginationHelper",
     "PollInterval",
     "PollingHelper",
     "ProtocolConfiguration",
+    "PublicKeySignature",
     "RemoteCancel",
     "SignedLiteral",
     "Source",
@@ -97,7 +100,10 @@ KINDS: Final = (
     "queue",
 )
 _LATER: Final = frozenset({"websocket", "cache", "resumable_upload", "batch", "queue"})
-_LATER_SIGNATURES: Final = ("ed25519", "rsa-pss-sha256", "adapter", "none")
+_HMAC_SIGNATURES: Final = ("hmac-sha256", "hmac-sha512")
+_PUBLIC_KEY_SIGNATURES: Final = ("ed25519", "rsa-pss-sha256")
+_SIGNATURES: Final = (*_HMAC_SIGNATURES, *_PUBLIC_KEY_SIGNATURES)
+_FACT_CHOICES: Final = ("required", "none")
 _ENCODINGS: Final = {
     "hex": frozenset("0123456789ABCDEFabcdef"),
     "base64": frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="),
@@ -400,14 +406,14 @@ class AsciiBytes:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class HmacSignature:
-    """How an HMAC webhook signature is carried and which bytes it signs, in order.
+class _Signature:
+    """How a builtin webhook signature is carried and which bytes it signs, in order.
 
     `none` declares that a webhook has no key id, timestamp, or delivery id header, and a separator of `none` keeps
     each signature header value whole.
     """
 
-    kind: Literal["hmac-sha256", "hmac-sha512"]
+    kind: str
     header: str
     encoding: Literal["hex", "base64", "base64url"]
     prefix: str
@@ -424,13 +430,44 @@ class HmacSignature:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class HmacSignature(_Signature):
+    """How an HMAC webhook signature is carried and which bytes it signs, in order."""
+
+    kind: Literal["hmac-sha256", "hmac-sha512"]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class PublicKeySignature(_Signature):
+    """How an Ed25519 or RSA-PSS webhook signature is carried and which bytes it signs, in order."""
+
+    kind: Literal["ed25519", "rsa-pss-sha256"]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AdapterSignature:
+    """A signature the caller's verifier checks, and whether it must return each fact; `none` declares it absent."""
+
+    kind: ClassVar[Literal["adapter"]] = "adapter"
+
+    timestamp: Literal["required", "none"]
+    delivery_id: Literal["required", "none"]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class NoSignature:
+    """No signature: the helper only decodes an event, whose delivery nothing authenticates."""
+
+    kind: ClassVar[Literal["none"]] = "none"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class WebhookHelper:
-    """Verify a signed webhook delivery and decode its event."""
+    """Verify a signed webhook delivery and decode its event, or only decode an unsigned one."""
 
     kind: ClassVar[Literal["webhook"]] = "webhook"
 
     event_schema: SchemaRef | EventMapping
-    signature: HmacSignature
+    signature: HmacSignature | PublicKeySignature | AdapterSignature | NoSignature
     duplicates: Literal["report", "reject"] = "report"
     enabled: bool = True
 
@@ -476,6 +513,9 @@ _RECORDS: Final = frozenset({
     FixedBytes,
     AsciiBytes,
     HmacSignature,
+    PublicKeySignature,
+    AdapterSignature,
+    NoSignature,
     WebhookHelper,
     ProtocolConfiguration,
 })
@@ -489,6 +529,7 @@ _ROLES: Final[Mapping[tuple[type, str], str]] = {
     (EventMapping, "mapping"): "mapping",
     (StreamHelper, "error_events"): "mapping",
     (HmacSignature, "field_constraints"): "mapping",
+    (PublicKeySignature, "field_constraints"): "mapping",
     (ProtocolConfiguration, "helpers"): "mapping",
 }
 
@@ -595,11 +636,18 @@ def project(configuration: ProtocolConfiguration) -> object:
     def reference(value: Any) -> object:
         return {"pointer": value.pointer, **({} if value.document is None else {"document": value.document})}
 
+    def signature(value: HmacSignature | PublicKeySignature) -> object:
+        """Project a signature record whose class allows its kind, and refuse any other as validation refuses."""
+        kinds = _HMAC_SIGNATURES if isinstance(value, HmacSignature) else _PUBLIC_KEY_SIGNATURES
+        return members(value) if value.kind in kinds else FOREIGN
+
     def step(value: object) -> object:
         return {"page_items_count": True} if value == "page_items_count" else {"literal": convert(value)}
 
     shapes: dict[type, Callable[[Any], object]] = {
         **dict.fromkeys(_RECORDS, members),
+        HmacSignature: signature,
+        PublicKeySignature: signature,
         CountContinuation: lambda value: {**members(value), "step": step(value.step)},
         StreamResume: lambda value: {"enabled": True, **members(value)},
         BodySelector: lambda value: {"from": "body", "pointer": value.pointer},
@@ -834,6 +882,11 @@ class _Validator:  # noqa: PLR0904
     def nonempty(self, value: object, at: str) -> object:
         valid = isinstance(value, str) and value and _encodable(value)
         return value if valid else self.value(at, f"{at} must be a nonempty UTF-8 string")
+
+    def line(self, value: object, at: str) -> object:
+        if isinstance(value, str) and "\n" in value:
+            return self.value(at, f"{at} must not contain a line feed")
+        return self.nonempty(value, at)
 
     def header(self, value: object, at: str) -> object:
         return value if token(value) else self.value(at, f"{at} must be a header name")
@@ -1244,7 +1297,9 @@ class _Validator:  # noqa: PLR0904
         return INVALID if any(item is INVALID for item in schemas.values()) else schemas
 
     def completion(self, value: object, at: str, *, sse: bool) -> object:
-        variants: dict[str, Spec] = {"eof": {}, "sentinel": {"value": (self.nonempty, REQUIRED)}}
+        """Convert a completion; an NDJSON sentinel is a whole line, so it cannot contain a line feed."""
+        sentinel = self.nonempty if sse else self.line
+        variants: dict[str, Spec] = {"eof": {}, "sentinel": {"value": (sentinel, REQUIRED)}}
         if sse:
             variants["event_type"] = {"value": (self.nonempty, REQUIRED)}
         return self.tagged(value, at, "kind", variants, "a completion")
@@ -1286,7 +1341,8 @@ class _Validator:  # noqa: PLR0904
         return self.distinct(at, reasons, "a reconnect reason")
 
     def webhook(self, value: object, at: str) -> Tree | _Invalid:
-        return self.record(
+        """Convert a webhook helper, refusing to reject duplicates of deliveries that are unsigned."""
+        webhook = self.record(
             value,
             at,
             {
@@ -1298,12 +1354,14 @@ class _Validator:  # noqa: PLR0904
             },
             "a helper definition",
         )
+        if webhook is not INVALID and webhook["signature"]["kind"] == "none" and webhook["duplicates"] == "reject":
+            self.conflict(f"{at}.duplicates", f"{at}.duplicates can be 'reject' only for a signed webhook")
+            return INVALID
+        return webhook
 
     def signature(self, value: object, at: str) -> object:
-        """Convert a signature profile, refusing later kinds unread and framing that leaves a signed part ambiguous."""
-        if isinstance(value, Mapping) and (kind := value.get("kind")) in _LATER_SIGNATURES:
-            self.problems.append(_unsupported(f"{at}.kind", f"The {kind} signature is not supported yet"))
-            return INVALID
+        """Convert a signature profile, refusing framing that leaves a signed part of a builtin one ambiguous."""
+        fact = self.choice(*_FACT_CHOICES)
         settings: Spec = {
             "header": (self.header, REQUIRED),
             "encoding": (self.choice(*_ENCODINGS), REQUIRED),
@@ -1315,10 +1373,17 @@ class _Validator:  # noqa: PLR0904
             "signed_parts": (self.signed_parts, REQUIRED),
             "field_constraints": (self.constraints, {}),
         }
-        signature = self.tagged(
-            value, at, "kind", dict.fromkeys(("hmac-sha256", "hmac-sha512"), settings), "a signature"
-        )
-        if signature is not INVALID and (conflict := _ambiguity(signature, at)) is not None:
+        variants: dict[str, Spec] = {
+            **dict.fromkeys(_SIGNATURES, settings),
+            "adapter": {"timestamp": (fact, REQUIRED), "delivery_id": (fact, REQUIRED)},
+            "none": {},
+        }
+        signature = self.tagged(value, at, "kind", variants, "a signature")
+        if (
+            signature is not INVALID
+            and signature["kind"] in _SIGNATURES
+            and (conflict := _ambiguity(signature, at)) is not None
+        ):
             self.conflict(*conflict)
             return INVALID
         return signature

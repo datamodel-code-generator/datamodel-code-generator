@@ -15,9 +15,17 @@ python-client.protocols.yaml: python-client.md
 python-client.protocols.diagnostics: python-client.md
 python-client.pagination.helper: python-client.md
 python-client.pagination.diagnostics: python-client.md
+python-client.streams.helper: python-client.md
+python-client.streams.diagnostics: python-client.md
+python-client.ndjson.helper: python-client.md
+python-client.ndjson.diagnostics: python-client.md
 python-client.webhooks.usage: python-client.md
 python-client.webhooks.helper: python-client.md
 python-client.webhooks.yaml: python-client.md
+python-client.webhooks.public-keys: python-client.md
+python-client.webhooks.public-keys-yaml: python-client.md
+python-client.webhooks.adapter-yaml: python-client.md
+python-client.webhooks.adapter: python-client.md
 python-client.webhooks.diagnostics: python-client.md
 python-client.signature-style.explicit: python-client.md
 python-client.signature-style.unpack: python-client.md

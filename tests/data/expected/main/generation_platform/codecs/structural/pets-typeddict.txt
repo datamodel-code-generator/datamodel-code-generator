@@ -1,8 +1,7 @@
-diagnostic MC_PARAMETER_ENCODING /paths/~1pets/get/parameters/3/schema: A parameter value needs one unambiguous scalar kind
+refused nothing
 use /paths/~1pets/get parameter query limit: native alias models:FieldPetsGetQueryLimitParameter models=[]
 use /paths/~1pets/get parameter query tags: native alias models:FieldPetsGetQueryTagsParameter models=[]
 use /paths/~1pets/get parameter query filter: native alias models:FieldPetsGetQueryFilterParameter models=[]
-use /paths/~1pets/get parameter query choice: native alias models:FieldPetsGetQueryChoiceParameter models=[]
 use /paths/~1pets/get response_body 200: native alias models:FieldPetsGetResponse models=[('models:Owner', 'typed_dict', 'ignore', True), ('models:Pet', 'typed_dict', 'ignore', True)]
 use /paths/~1pets/post request_body: envelope typed_dict models:Pet models=[('models:Owner', 'typed_dict', 'ignore', True), ('models:Pet', 'typed_dict', 'ignore', True)]
 use /paths/~1pets/post response_body 201: native typed_dict models:Pet models=[('models:Owner', 'typed_dict', 'ignore', True), ('models:Pet', 'typed_dict', 'ignore', True)]
@@ -44,6 +43,5 @@ create-client-check: CodecConfigurationError A standard dataclass, TypedDict, or
 created-client-convert: converted {'id': 1, 'name': 'Mimi', 'status': 'new', 'kind': 'cat', 'visits': 0}
 created-client-convert-long: converted {'id': 1, 'name': 'far too long a name', 'status': 'new', 'kind': 'cat', 'visits': 0}
 created-client-convert-type: NativeValidationError native.int_type@/id['id']
-created-client-needs-schema: needs schema False ambiguous False
 create-client-serialize-long: wire={"name":"far too long a name","status":"new"}
 create-client-encode-long: WireValidationError schema.maxLength@/name

@@ -27,7 +27,7 @@ from ..model_codecs.media import (
     percent_decode,
     split_form,
 )
-from ..model_codecs.parameters import query_pairs
+from ..model_codecs.parameters import FragmentContribution, path_text, query_pairs
 from ..model_codecs.selectors import MediaSelector, RequestMedia
 from ..model_codecs.unset import Unset
 from ..model_codecs.wire import checked_wire
@@ -61,7 +61,7 @@ if TYPE_CHECKING:
     from ..model_codecs.adapters import AdapterParameterCodec
     from ..model_codecs.context import CodecContext
     from ..model_codecs.media import FieldPlan
-    from ..model_codecs.parameters import ParameterPlan, ParameterTarget
+    from ..model_codecs.parameters import ParameterPlan
     from ..model_codecs.values import DecodedValue
     from ..model_codecs.wire import WireValue
     from .checks import ArgumentCheck
@@ -181,15 +181,27 @@ class ServerPlan:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ParameterSpec:
-    """One effective parameter: its wire plan and, when it has a schema, the codec that validates its argument."""
+    """One effective parameter: its wire plan and, when it has a schema, the codec that validates its argument.
 
-    plan: ParameterPlan | ParameterTarget
+    A parameter a registered parameter adapter carries encodes its validated wire value through that adapter.
+    """
+
+    plan: ParameterPlan
     encoder: Encoder | None = None
     adapter: tuple[Callable[[], AdapterParameterCodec], CodecContext] | None = None
 
     def encode(self, value: object, mode: RequestValidation) -> WireValue:
         """Return the wire value of a present argument."""
         return checked_wire(value) if self.encoder is None else self.encoder.encode(value, mode)
+
+    def path_text(self, wire: WireValue) -> str:
+        """Return the text a path parameter's wire value substitutes for its placeholder, through its adapter if any."""
+        if (adapter := self.adapter) is None:
+            return path_text(self.plan, wire)
+        get, context = adapter
+        contribution = get().encode(wire, context)
+        fragments = contribution.ordered_fragments if isinstance(contribution, FragmentContribution) else ()
+        return "".join(fragment.value.decode("ascii") for fragment in fragments)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -828,6 +840,16 @@ class ResponseDecoder(Generic[T_co, E_co]):
     def success(self, status: int) -> bool:
         """Return whether a status is a typed success of this operation."""
         return _MIN_SUCCESS <= status <= _MAX_SUCCESS or status in self._successes
+
+    def streamed(self, info: ResponseInfo) -> None:
+        """Refuse a success whose body is not streamed in a declared media type: an undeclared status or media type."""
+        if self._branch(info, b"").media_type is None:
+            raise UnexpectedMediaTypeError(
+                info=info,
+                actual_media_type=info.content_type,
+                expected_media_types=() if self._permitted is None else (self._permitted,),
+                call_id=info.call_id,
+            )
 
     def decode(
         self,

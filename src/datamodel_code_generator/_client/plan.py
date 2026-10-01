@@ -60,11 +60,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._runtime.client.multipart import PartKind
     from datamodel_code_generator._runtime.client.security import SecurityBinding, SecuritySchemeEntry
     from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, MediaKind
-    from datamodel_code_generator._runtime.model_codecs.parameters import (
-        ParameterLocation,
-        ParameterPlan,
-        ParameterTarget,
-    )
+    from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
     from datamodel_code_generator._runtime.model_codecs.wire import WireValue
 
 Role: TypeAlias = Literal["success", "error"]
@@ -141,7 +137,7 @@ class ParameterSpec:
     python_name: str
     required: bool
     use: TypeUseBinding | None
-    plan: ParameterPlan | ParameterTarget
+    plan: ParameterPlan
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -347,18 +343,17 @@ class Planner:
     """Plan every selected operation of one client target from the accepted batch and its wire plan."""
 
     def __init__(
-        self,
-        request: TargetRequest,
-        config: ClientGenerationConfig,
-        wire: WirePlan,
-        adapted: frozenset[TypeUseId] = frozenset(),
+        self, request: TargetRequest, config: ClientGenerationConfig, wire: WirePlan, adapted: frozenset[TypeUseId]
     ) -> None:
-        """Index the batch and the wire plan, and resolve the per-operation settings to operation keys."""
+        """Index the batch and the wire plan, and resolve the per-operation settings to operation keys.
+
+        The parameters whose uses `adapted` holds go through their registered parameter adapters.
+        """
         self.request = request
         self.config = config
         self.wire = wire
         self.uses = {use.id: use for use in request.batch.type_uses}
-        self.parameter_plans = parameter_plans(request.batch, wire, adapted)
+        self.parameter_plans = parameter_plans(wire, request.operations, adapted)
         self.header_plans = dict(wire.headers)
         self.forms = {use: (fields, additional, encoded) for use, fields, additional, encoded in wire.forms}
         self.styles = {use: {plan.name: plan for plan in plans} for use, plans in wire.styles}

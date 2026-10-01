@@ -1,0 +1,73 @@
+# webhooks-unsigned
+render pydantic_v2.BaseModel
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/events/__init__.py
+  write client/resources/events/_sync.py
+  write client/resources/events/_async.py
+  write client/types/__init__.py
+  write client/types/events/__init__.py
+  write client/types/events/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/webhooks/__init__.py
+  write client/webhooks/adapted/__init__.py
+  write client/webhooks/unsigned/__init__.py
+  write client/webhooks/unsigned/message.py
+  write client/webhooks/adapted/message.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['unsigned.message', 'adapted.message'] bindings 1
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper unsigned.message webhook enabled True /inputs/target_config/protocol_metadata/helpers/unsigned.message a9f8f468ef29d188bcc1c1d555ecdb312a34ec10266c6bdddf26b017d40057bd
+  helper adapted.message webhook enabled True /inputs/target_config/protocol_metadata/helpers/adapted.message 85935bfe189d5c54aabb3b77e32a67e524d06b1f8438e3ec2543d56dd92a6cba
+  {
+    "helpers": {
+      "adapted.message": {
+        "duplicates": "report",
+        "enabled": true,
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Message"
+        },
+        "kind": "webhook",
+        "signature": {
+          "delivery_id": "none",
+          "kind": "adapter",
+          "timestamp": "none"
+        }
+      },
+      "unsigned.message": {
+        "duplicates": "report",
+        "enabled": true,
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Message"
+        },
+        "kind": "webhook",
+        "signature": {
+          "kind": "none"
+        }
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 events.list_events()
+    exports client.types.events.ListEventsResponse client.types.events.ListEventsErrorData client.types.events.ListEventsHTTPError
+    exports client.types.events.ListEventsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

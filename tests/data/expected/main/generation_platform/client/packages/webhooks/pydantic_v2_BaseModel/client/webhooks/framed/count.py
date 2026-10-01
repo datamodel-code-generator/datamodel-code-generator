@@ -21,11 +21,11 @@ from ..._runtime.protocols.signatures import (
     SignatureProfile,
 )
 from ..._runtime.protocols.verification import (
-    EventDecoder,
     WebhookPlan,
     averify_webhook,
     verify_webhook,
 )
+from ..._runtime.protocols.webhook_events import EventDecoder
 from ..._runtime.protocols.webhook_keys import HmacKey
 from ..._runtime.protocols.webhooks import (
     AsyncReplayStore,

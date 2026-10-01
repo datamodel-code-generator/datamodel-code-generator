@@ -10,6 +10,7 @@ import re
 import threading
 from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
+from decimal import Decimal, InvalidOperation
 from enum import Enum
 from hashlib import sha256
 from types import MappingProxyType
@@ -19,8 +20,10 @@ from typing_extensions import Self, TypeVar
 
 from ..client.errors import BudgetExceededError, ProtocolConfigurationError, ProtocolSizeError
 from ..client.options import RequestOptions
+from ..client.paths import dot_segment, path_segments
 from ..client.responses import ResponseInfo
 from ..client.timing import SessionOptions
+from ..model_codecs.errors import CodecAdapterError, ParameterEncodingError
 from ..model_codecs.unset import UNSET, Unset
 from .errors import PaginationCycleError, ProtocolDataError, ProtocolStateError, SessionLimitError
 from .options import PaginationOptions
@@ -43,17 +46,21 @@ from .records import (
 from .values import MISSING, Missing, Patch, resolve
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Awaitable, Callable, Generator, Iterator, Sequence
+    from collections.abc import AsyncIterator, Awaitable, Callable, Generator, Iterator, Mapping, Sequence
     from types import TracebackType
+    from typing import TypeAlias
 
     from ..client.client import AsyncClientCore, ClientCore
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan
+    from ..client.responses import HeadersView
     from ..client.timing import Deadline
     from ..client.urls import Origin
     from ..model_codecs.selectors import MediaSelector
     from ..model_codecs.wire import WireValue
     from .references import OperationRef
+
+    _PathPart: TypeAlias = tuple[str, int | None, Selector | None, int]
 
 __all__ = (
     "AsyncPager",
@@ -80,7 +87,6 @@ V = TypeVar("V")
 T_co = TypeVar("T_co", covariant=True, default=object)
 P_co = TypeVar("P_co", covariant=True, default=object)
 
-_DOT_SEGMENTS: Final = (".", "..")
 _BOOLEANS: Final = MappingProxyType({"true": True, "false": False})
 _MAX_URL_BYTES: Final = 8192
 _REFERENCE: Final = re.compile(
@@ -217,8 +223,9 @@ class PaginationPlan(Generic[T, P]):
     is written into the caller's encoded value. They skip the schema and argument checks, since the server chose them.
     A helper that `follows` a server's URLs writes no cursor and sends each later page to the URL with GET and no body,
     unless it repeats the request body with the operation's method. `headers` and `queries` name the header, cookie,
-    and query parameters it writes, which a call's options must not patch, and `dotted` the writes of read values into
-    path parameters, which must not be dot segments.
+    and query parameters it writes, which a call's options must not patch, and `dotted` the path segments a read value
+    is written to, by each parameter's name, write, selector, and position, a caller's argument without a write;
+    such a segment must not encode to a dot segment.
     """
 
     helper_id: str
@@ -233,7 +240,7 @@ class PaginationPlan(Generic[T, P]):
     writes: tuple[tuple[int | None, str | None], ...] = field(init=False)
     headers: frozenset[str] = field(init=False)
     queries: frozenset[str] = field(init=False)
-    dotted: tuple[tuple[int, Selector], ...] = field(init=False)
+    dotted: tuple[tuple[str, tuple[_PathPart, ...]], ...] = field(init=False)
     continued: OperationPlan[P, object] = field(init=False)
 
     def __post_init__(self) -> None:
@@ -291,15 +298,7 @@ class PaginationPlan(Generic[T, P]):
         object.__setattr__(self, "writes", tuple(writes))
         object.__setattr__(self, "headers", frozenset(headers))
         object.__setattr__(self, "queries", frozenset(queries))
-        object.__setattr__(
-            self,
-            "dotted",
-            tuple(
-                (index, selector)
-                for index, (target, selector) in enumerate(sources)
-                if isinstance(target, ParameterTarget) and target.location == "path" and selector is not None
-            ),
-        )
+        object.__setattr__(self, "dotted", _read_paths(call, sources))
         continued = replace(call, parameters=tuple(parameters), body=body, checks=())
         if follows and not (isinstance(rule, NextUrlPlan) and rule.repeat_request_body):
             continued = replace(continued, method="GET", body=None, retry_safety="method_default", idempotency=None)
@@ -525,6 +524,54 @@ def _selected(plan: PaginationPlan[T, P], read: Selector, wire: WireValue, info:
     return info.status_code
 
 
+def _read_paths(
+    call: OperationPlan[P, object], sources: Sequence[tuple[RequestTarget, Selector | None]]
+) -> tuple[tuple[str, tuple[_PathPart, ...]], ...]:
+    """Return the path segments read values are written to, each parameter by name, write, selector, and position.
+
+    A parameter the caller's argument fills has no write.
+    """
+    paths: dict[str, tuple[int | None, Selector | None]] = {
+        target.name: (index, selector)
+        for index, (target, selector) in enumerate(sources)
+        if isinstance(target, ParameterTarget) and target.location == "path"
+    }
+    reads = {name for name, (_, selector) in paths.items() if selector is not None}
+    return tuple(
+        (segment, tuple((name, *paths.get(name, (None, None)), _position(call, "path", name)) for name in names))
+        for segment, names in (path_segments(call.path) if reads else ())
+        if not reads.isdisjoint(names)
+    )
+
+
+def _dotted(
+    plan: PaginationPlan[T, P],
+    segment: str,
+    parts: tuple[_PathPart, ...],
+    written: tuple[WireValue, ...],
+    callers: Callable[[], Mapping[str, str]],
+) -> Selector | None:
+    """Return the selector of a read value written to a path segment that encodes to a dot segment, or None.
+
+    The caller's own path arguments in the segment keep the texts the first page sent, and each text is the request's,
+    through the parameter's registered adapter when it has one. The first read value whose encoded text is non-empty
+    is blamed, or else the first read value. A value its parameter or adapter cannot encode is left to the request,
+    which refuses it.
+    """
+    parameters = plan.call.parameters
+    try:
+        texts = {
+            name: callers()[name] if index is None else parameters[position].path_text(written[index])
+            for name, index, _, position in parts
+        }
+    except (ParameterEncodingError, CodecAdapterError):
+        return None
+    if not dot_segment(segment, texts):
+        return None
+    reads = [(name, read) for name, _, read, _ in parts if read is not None]
+    return next((read for name, read in reads if texts[name]), reads[0][1])
+
+
 def _size_error(
     plan: PaginationPlan[T, P], info: ResponseInfo, kind: Literal["cursor", "headers"], limit: int, size: int
 ) -> ProtocolSizeError:
@@ -633,6 +680,20 @@ def _more(plan: PaginationPlan[T, P], read: Selector, wire: WireValue, info: Res
     return value
 
 
+def _integer(value: object) -> int | None:
+    """Return a finite integer value without rounding it or treating a boolean as a count."""
+    if isinstance(value, int):
+        return None if isinstance(value, bool) else value
+    match value:
+        case float() if value.is_integer():
+            return int(value)
+        case Decimal() if value.is_finite() and value == value.to_integral_value():
+            return int(value)
+        case _:
+            pass
+    return None
+
+
 def _total(plan: PaginationPlan[T, P], read: Selector, wire: WireValue, info: ResponseInfo) -> int:
     """Return the total item count a page gives: a nonnegative JSON integer, or a header of signed decimal digits."""
     value = _selected(plan, read, wire, info)
@@ -646,11 +707,11 @@ def _total(plan: PaginationPlan[T, P], read: Selector, wire: WireValue, info: Re
             value = int(value)
         except ValueError:
             raise _data_error(plan, info, "value", read) from None
-    if isinstance(value, bool) or not isinstance(value, int):
+    if (count := _integer(value)) is None:
         raise _data_error(plan, info, _unfit(value), read)
-    if value < 0:
+    if count < 0:
         raise _data_error(plan, info, "value", read)
-    return value
+    return count
 
 
 class _Walk(Generic[T, P]):
@@ -660,7 +721,7 @@ class _Walk(Generic[T, P]):
     keeps the origins it may follow them to once its first fetch resolves them.
     """
 
-    __slots__ = ("delivered", "limits", "link", "origins", "plan", "request", "seed", "session", "start")
+    __slots__ = ("delivered", "limits", "link", "origins", "paths", "plan", "request", "seed", "session", "start")
 
     def __init__(
         self, plan: PaginationPlan[T, P], request: _Request, limits: _Limits, link: _Link | None = None
@@ -675,6 +736,7 @@ class _Walk(Generic[T, P]):
         self.start: int | None = None
         self.origins: frozenset[Origin] = frozenset()
         self.seed: bytes | None = None
+        self.paths: dict[str, str] | None = None
 
     def progress(self) -> ProtocolProgress:
         """Return the pages fetched, the items delivered, and the session's sends so far."""
@@ -685,6 +747,22 @@ class _Walk(Generic[T, P]):
             "network_send_count": 0 if session is None else session.network_send_count,
             "network_send_budget_used": 0 if session is None else session.network_send_budget_used,
         })
+
+    def callers(self) -> dict[str, str]:
+        """Return the texts of the caller's path arguments that share a segment with a read value, once a walk.
+
+        Each argument the first page sent is encoded again by its parameter's codec, without validation.
+        """
+        if (texts := self.paths) is None:
+            plan, arguments = self.plan, self.request.arguments
+            parameters = plan.call.parameters
+            texts = self.paths = {
+                name: parameters[position].path_text(parameters[position].encode(arguments[position], "none"))
+                for _, parts in plan.dotted
+                for name, index, _, position in parts
+                if index is None
+            }
+        return texts
 
     def session_id(self) -> str | None:
         """Return the identifier of the walk's session once it started."""
@@ -789,11 +867,17 @@ class _Walk(Generic[T, P]):
             return plan.continued
         if not isinstance(plan.continuation, CountPlan):
             return plan.call
+        call = plan.call
+        if (
+            (position := plan.writes[-1][0]) is not None
+            and call.parameters[position].plan.location in {"query", "header"}
+            and isinstance(self.request.arguments[position], Unset)
+        ):
+            return call
         from .writes import ReadMedia, ReadParameter  # noqa: PLC0415 - Only a plan loads the operation runtime.
 
-        call = plan.call
         read = self.started
-        if (position := plan.writes[-1][0]) is None:
+        if position is None:
             body = call.body
             assert body is not None
             media = tuple(
@@ -813,17 +897,48 @@ class _Walk(Generic[T, P]):
         """
         plan = self.plan
         pointer = plan.writes[-1][1]
-        if (value := wire if pointer is None else resolve(wire, pointer)) is MISSING:
+        value = wire if pointer is None else resolve(wire, pointer)
+        if value is MISSING:
             return
-        if isinstance(value, float) and value.is_integer():
-            value = int(value)
-        if isinstance(value, bool) or not isinstance(value, int):
+        if (position := _integer(value)) is None:
             rule = plan.continuation
             assert isinstance(rule, CountPlan)
             raise ProtocolDataError(
                 condition="type", location=rule.write, helper_id=plan.helper_id, operation=plan.operation
             )
-        self.start = value
+        self.start = position
+
+    def sent(self, url: str, headers: HeadersView) -> None:
+        """Read a first count request's default position after all query and header patches have been applied.
+
+        An encoded typed start overrides client and view patches, and call patches of the target are refused, so it
+        already gives the sent position without reparsing the request.
+        """
+        if self.start is not None or self.link is not None or not isinstance(rule := self.plan.continuation, CountPlan):
+            return
+        match rule.write:
+            case ParameterTarget(location="query", name=name):
+                from urllib.parse import unquote_plus, urlsplit  # noqa: PLC0415 - Only a first query is inspected.
+
+                values = tuple(
+                    unquote_plus(parts[2])
+                    for pair in urlsplit(url).query.split("&")
+                    if unquote_plus((parts := pair.partition("="))[0]) == name
+                )
+            case ParameterTarget(location="header", name=name):
+                values = headers.get_all(name)
+            case _:
+                return
+        self.start = None
+        if not values:
+            return
+        wire: WireValue = values
+        if len(values) == 1:
+            try:
+                wire = Decimal(values[0])
+            except InvalidOperation:
+                wire = values[0]
+        self.started(wire)
 
     def advance(self, rule: CountPlan, count: int, wire: WireValue, info: ResponseInfo) -> int | Missing:
         """Return the offset or page number the request after a page writes, or MISSING when the page is the last.
@@ -925,7 +1040,8 @@ class _Walk(Generic[T, P]):
         The items are checked in the wire value before the page's accessor reads them from the decoded one; a value of
         another type fails its response's validation first, in every mode. What the next request writes is the cursor
         or position, or the URL it follows without the query fields the auth manages, MISSING after the last page.
-        The bindings are read only when a page follows, and a dot segment read for a path parameter is refused.
+        The bindings are read only when a page follows, and a read value that makes a path segment a dot segment once
+        encoded is refused.
         """
         plan = self.plan
         selector = plan.items_selector
@@ -947,8 +1063,8 @@ class _Walk(Generic[T, P]):
             return Page(items=items, data=data, response=info), cursor, ()
         bound = self.bound(wire, info)
         written = bound if plan.follows else (*bound, cursor)
-        for index, read in plan.dotted:
-            if written[index] in _DOT_SEGMENTS:
+        for segment, parts in plan.dotted:
+            if (read := _dotted(plan, segment, parts, written, self.callers)) is not None:
                 raise _data_error(plan, info, "value", read)
         continuation = Continuation(kind=rule.kind, value=cursor)
         page = Page(items=items, data=data, response=info, continuation=continuation)
@@ -1307,6 +1423,7 @@ def _fetch(
         options=limits.options,
         session=session,
         max_page_bytes=limits.max_page_bytes,
+        read_request=walk.sent,
     )
 
 
@@ -1326,6 +1443,7 @@ async def _afetch(
         options=limits.options,
         session=session,
         max_page_bytes=limits.max_page_bytes,
+        read_request=walk.sent,
     )
 
 

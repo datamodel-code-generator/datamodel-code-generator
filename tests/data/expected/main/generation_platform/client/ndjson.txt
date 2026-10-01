@@ -1,0 +1,170 @@
+# ndjson
+render pydantic_v2.BaseModel
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/records/__init__.py
+  write client/resources/records/_sync.py
+  write client/resources/records/_async.py
+  write client/resources/search/__init__.py
+  write client/resources/search/_sync.py
+  write client/resources/search/_async.py
+  write client/resources/status/__init__.py
+  write client/resources/status/_sync.py
+  write client/resources/status/_async.py
+  write client/types/__init__.py
+  write client/types/records/__init__.py
+  write client/types/records/_operations.py
+  write client/types/search/__init__.py
+  write client/types/search/_operations.py
+  write client/types/status/__init__.py
+  write client/types/status/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/protocols/_plans.py
+  write client/protocols/_helpers.py
+  write client/protocols/_async_helpers.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['records.all', 'records.lenient', 'records.tagged', 'search.all'] bindings 9
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper records.all ndjson enabled True /inputs/target_config/protocol_metadata/helpers/records.all e08a809dc409a6397205f0a58c6f60003179fda3a6e995c74a4b4ffb55f233bf
+  helper records.lenient ndjson enabled True /inputs/target_config/protocol_metadata/helpers/records.lenient 6a9c73866b74cae0dcf4f235570bb56f18a7325658aaff8e416d02e9aae64fa7
+  helper records.tagged ndjson enabled True /inputs/target_config/protocol_metadata/helpers/records.tagged e48aab088550d428cfc8a3b5b2e0c23e594bba7dee87b492461ed2df63d4ad7e
+  helper search.all ndjson enabled True /inputs/target_config/protocol_metadata/helpers/search.all 8868f178172b709d45f8bb91c4c0a51560d0f13fd2fef17d7956a584cda0abb9
+  {
+    "helpers": {
+      "records.all": {
+        "completion": {
+          "kind": "eof"
+        },
+        "enabled": true,
+        "error_events": {},
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Record"
+        },
+        "final_line": "require_newline",
+        "kind": "ndjson",
+        "media": "application/x-ndjson",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1records/get"
+        },
+        "resume": {
+          "enabled": false
+        },
+        "unknown": "error"
+      },
+      "records.lenient": {
+        "completion": {
+          "kind": "eof"
+        },
+        "enabled": true,
+        "error_events": {},
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Record"
+        },
+        "final_line": "allow_eof",
+        "kind": "ndjson",
+        "media": "application/x-ndjson",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1records/get"
+        },
+        "resume": {
+          "enabled": false
+        },
+        "unknown": "error"
+      },
+      "records.tagged": {
+        "completion": {
+          "kind": "sentinel",
+          "value": "[DONE]"
+        },
+        "enabled": true,
+        "error_events": {
+          "failed": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Failure"
+          }
+        },
+        "event_schema": {
+          "discriminator": {
+            "from": "body",
+            "pointer": "/type"
+          },
+          "mapping": {
+            "created": {
+              "document": "/inputs/root",
+              "pointer": "/components/schemas/Created"
+            },
+            "deleted": {
+              "document": "/inputs/root",
+              "pointer": "/components/schemas/Deleted"
+            }
+          }
+        },
+        "final_line": "require_newline",
+        "kind": "ndjson",
+        "media": "application/x-ndjson",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1records/get"
+        },
+        "resume": {
+          "enabled": false
+        },
+        "unknown": "raw"
+      },
+      "search.all": {
+        "completion": {
+          "kind": "sentinel",
+          "value": "[DONE]"
+        },
+        "enabled": true,
+        "error_events": {},
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Record"
+        },
+        "final_line": "allow_eof",
+        "kind": "ndjson",
+        "media": "application/jsonl",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1search/post"
+        },
+        "resume": {
+          "enabled": false
+        },
+        "unknown": "error"
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 records.stream_records(query:topic=topic)
+    exports client.types.records.StreamRecordsResponse client.types.records.StreamRecordsErrorData client.types.records.StreamRecordsHTTPError
+    exports client.types.records.StreamRecordsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 search.search()
+    exports client.types.search.SearchResponse client.types.search.SearchErrorData client.types.search.SearchHTTPError
+    exports client.types.search.SearchRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/2 status.get_status()
+    exports client.types.status.GetStatusResponse client.types.status.GetStatusErrorData client.types.status.GetStatusHTTPError
+    exports client.types.status.GetStatusRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
