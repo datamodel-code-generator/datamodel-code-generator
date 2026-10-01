@@ -27,7 +27,9 @@ from datamodel_code_generator._generation_contract import (
 )
 from datamodel_code_generator._runtime.client.retry import body_replay_safe
 from datamodel_code_generator._runtime.model_codecs.bindings import ArrayNode, MapNode, ModelNode, UnionNode
+from datamodel_code_generator._runtime.model_codecs.errors import ParameterEncodingError
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
+from datamodel_code_generator._runtime.model_codecs.parameters import dot_segment, path_segments, path_text
 from datamodel_code_generator._runtime.protocols.records import canonical_json
 
 if TYPE_CHECKING:
@@ -43,6 +45,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._openapi_codec_plan import CodecPlan
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.bindings import ModelBinding, TypeNode, UseBinding
+    from datamodel_code_generator._runtime.model_codecs.wire import WireValue
 
 StepKind = Literal["attr", "key", "get", "root"]
 _INTEGER: Final = re.compile(r"-?[0-9]+")
@@ -50,7 +53,6 @@ _MEMBERS: Final = ("anyOf", "oneOf")
 _NULL: Final = frozenset({"null"})
 _SEQUENCES: Final = frozenset({"list", "tuple"})
 _POINTED: Final = frozenset({"body", "querystring"})
-_DOT_SEGMENTS: Final = (".", "..")
 _FOLLOWED: Final = frozenset({"next_url", "link"})
 _URL_TYPES: Final = frozenset({"string", "null"})
 _RELATION: Final = re.compile(r"[A-Za-z][A-Za-z0-9.-]*|[A-Za-z][A-Za-z0-9+.-]*:[!#-\[\]-~]+")
@@ -111,6 +113,19 @@ class _Reached:
 
 def _label(spec: OperationSpec) -> str:
     return f"{spec.contract.method.upper()} {spec.contract.path}"
+
+
+def _dot_literal(spec: OperationSpec, name: str, literal: WireValue) -> bool:
+    """Return whether a literal encodes a path parameter, alone in its segment, as a dot segment in its style.
+
+    A literal the parameter cannot encode is left to the type check.
+    """
+    plan = next(item.plan for item in spec.parameters if item.location == "path" and item.wire_name == name)
+    try:
+        texts = {name: path_text(plan, literal)}
+    except ParameterEncodingError:
+        return False
+    return any(names == (name,) and dot_segment(segment, texts) for segment, names in path_segments(spec.contract.path))
 
 
 def _target_key(target: Mapping[str, Any]) -> tuple[str, ...]:
@@ -623,8 +638,9 @@ class _Pages:
     ) -> Iterator[Diagnostic]:
         """Check each binding's value against its target, and that no two writes overlap.
 
-        A binding's null is written, so its target must accept null too, and a literal dot segment is no path value. A
-        followed URL replaces the path and query, and carries a body only when it repeats the request body.
+        A binding's null is written, so its target must accept null too, and a literal encoding a path parameter as a
+        dot segment is no path value. A followed URL replaces the path and query, and carries a body only when it
+        repeats the request body.
         """
         tree = helper.tree
         continuation = tree["continuation"]
@@ -651,10 +667,10 @@ class _Pages:
             if value.get("source") == "input":
                 continue
             if "literal" in value:
-                if target["in"] == "path" and value["literal"] in _DOT_SEGMENTS:
+                if target["in"] == "path" and _dot_literal(spec, target["name"], value["literal"]):
                     message = (
-                        f"The {what} of {helper.name!r} gives the dot segment {value['literal']!r}, which cannot be "
-                        f"written to the path parameter {target['name']!r} of {_label(spec)}"
+                        f"The {what} of {helper.name!r} gives {value['literal']!r}, which encodes the path parameter "
+                        f"{target['name']!r} of {_label(spec)} as a dot segment"
                     )
                     yield _problem("E_CONFIG_VALUE", "config", f"{at}.value.literal", message, spec)
                     continue

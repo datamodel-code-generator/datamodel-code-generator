@@ -593,10 +593,12 @@ header, or cookie parameter, a property of the querystring, or a member of the J
 returned is sent as it came, without its target's schema checks even under `request="schema"` validation, while a
 start cursor the caller passes is checked like any other argument. The traversal ends at a page whose cursor is missing
 or null where the helper declares that end, is one of its end values, or is empty with `empty_string: end`. A missing
-or null cursor that no end covers, missing or null items, a header repeated for a single cursor, and a dot segment
-(`.` or `..`) read for a path parameter raise `ProtocolDataError`, and a cursor over its size limit raises
-`ProtocolSizeError`, each as a failure of the page's call. A continuation returned by an earlier page of the same
-pager, or an earlier page `next_page` continued from, ends it with `PaginationCycleError` after the repeating page.
+or null cursor that no end covers, missing or null items, a header repeated for a single cursor, and a value read for
+a path parameter that encodes its segment, in the parameter's style, as a dot segment (`.` or `..`, `%2E` counting as
+`.`) raise `ProtocolDataError`, and a cursor over its size limit raises `ProtocolSizeError`, each as a failure of the
+page's call. A segment the caller's own path argument shares is checked when the next page is sent, as in any call. A
+continuation returned by an earlier page of the same pager, or an earlier page `next_page` continued from, ends it with
+`PaginationCycleError` after the repeating page.
 
 ### Offsets and page numbers
 
@@ -748,7 +750,8 @@ must read a declared property or header, and a querystring or body target's poin
 declares, through `allOf` members and nullable `anyOf` or `oneOf` ones. The JSON types a cursor reads, other than null,
 and those a binding reads or its literal has, null included, must be ones the target accepts, and a binding that can
 give null must write a JSON body or a querystring of JSON content; a cursor that can be null needs a `null` end, and
-each end value must be of a type the cursor reads. A literal `.` or `..` is no path parameter value, and a body target
+each end value must be of a type the cursor reads. A literal that encodes a path parameter filling its segment alone
+as a dot segment, such as `..`, or the empty string in the label style, is no path parameter value, and a body target
 needs a required body or one media type a call without `media_type` sends. A binding that writes the continuation's
 target or another binding's, or a body or querystring member inside or around one, fails with `E_CONFIG_CONFLICT`. An
 offset's or page number's target must accept integers, a page number advances by a literal step, `has_more` must read
@@ -779,7 +782,11 @@ E_CONFIG_CONFLICT config protocols.helpers['bindings.conflicts'].bindings[0].tar
 E_CONFIG_CONFLICT config protocols.helpers['bindings.conflicts'].bindings[2].target /paths/~1users/get: The binding 2 of 'bindings.conflicts' writes the same target as its binding 1
 E_CONFIG_CONFLICT config protocols.helpers['bindings.overlaps'].bindings[0].target /paths/~1bodies/post: The binding 0 of 'bindings.overlaps' writes a target overlapping that of its cursor
 E_CONFIG_CONFLICT config protocols.helpers['bindings.overlaps'].bindings[2].target /paths/~1bodies/post: The binding 2 of 'bindings.overlaps' writes a target overlapping that of its cursor
-E_CONFIG_VALUE config protocols.helpers['bindings.dots'].bindings[0].value.literal /paths/~1folders~1{folder}/get: The binding 0 of 'bindings.dots' gives the dot segment '..', which cannot be written to the path parameter 'folder' of GET /folders/{folder}
+E_CONFIG_VALUE config protocols.helpers['bindings.dots'].bindings[0].value.literal /paths/~1folders~1{folder}/get: The binding 0 of 'bindings.dots' gives '..', which encodes the path parameter 'folder' of GET /folders/{folder} as a dot segment
+E_CONFIG_VALUE config protocols.helpers['bindings.label_empty'].bindings[0].value.literal /paths/~1styled~1{label}~1{reserved}~1{file}.json/get: The binding 0 of 'bindings.label_empty' gives '', which encodes the path parameter 'label' of GET /styled/{label}/{reserved}/{file}.json as a dot segment
+E_CONFIG_VALUE config protocols.helpers['bindings.label_dot'].bindings[0].value.literal /paths/~1styled~1{label}~1{reserved}~1{file}.json/get: The binding 0 of 'bindings.label_dot' gives '.', which encodes the path parameter 'label' of GET /styled/{label}/{reserved}/{file}.json as a dot segment
+E_CONFIG_VALUE config protocols.helpers['bindings.reserved_dot'].bindings[0].value.literal /paths/~1styled~1{label}~1{reserved}~1{file}.json/get: The binding 0 of 'bindings.reserved_dot' gives '%2e', which encodes the path parameter 'reserved' of GET /styled/{label}/{reserved}/{file}.json as a dot segment
+E_CONFIG_VALUE config protocols.helpers['bindings.path_null'].bindings[0].target /paths/~1styled~1{label}~1{reserved}~1{file}.json/get: The binding 0 of 'bindings.path_null' can give null, which cannot be written to the path parameter 'reserved' of GET /styled/{label}/{reserved}/{file}.json
 E_CONFIG_VALUE config protocols.helpers['write.optional_body'].continuation.write /paths/~1multi/post: The cursor of 'write.optional_body' writes the request body of POST /multi, which is optional and has no media type a call without one sends
 E_CONFIG_VALUE config protocols.helpers['write.body_type'].continuation.write /paths/~1bodies/post: The cursor of 'write.body_type' reads string values, which the property '/count' of the request body of POST /bodies does not accept
 E_CLIENT_UNSUPPORTED target protocols.helpers['body.form'] /paths/~1forms/post: The pagination helper 'body.form' sends a request body other than JSON, which is not supported yet
@@ -1236,6 +1243,12 @@ What every mode still does:
   A form-data member that its direction excludes takes no part in either.
 - **Native behavior.** `none` does not undo validation a model's constructor already did, and it cannot send what the
   serializer cannot represent.
+- **Path segments.** Path arguments that make their segment `.` or `..` once encoded in their parameters' styles and
+  put into the path template, `%2E` counting as `.`, such as `..` in the simple style, the empty string in the label
+  style, or `%2e` with `allowReserved`, fail with `RequestEncodingError` at the segment's first parameter with a value,
+  with a `ParameterEncodingError` cause, before anything is sent: URL normalization in clients, proxies, and servers
+  would remove the segment and send the call to another resource, and encoding the dots does not prevent it. `...` and
+  `.a` are sent as they are.
 - **Strict records.** A `ModelValue` or `ModelInput` passed as an argument, the `RequestCodecs` factories, the header
   decoders, and a response the package returns as `DecodedValue` keep their strict schema validation in every mode.
   Read a body without any model with `with_raw_response` or `with_streaming_response` instead.

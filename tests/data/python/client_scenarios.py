@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import gzip
 import importlib
 import json
@@ -45,8 +46,7 @@ from tests.data.python.client_pagination import pagination, pagination_backends,
 from tests.data.python.client_pagination_counts import pagination_counts
 from tests.data.python.client_pagination_links import pagination_links
 from tests.data.python.client_pagination_sessions import pagination_auth, pagination_sessions
-from tests.data.python.client_pagination_targets import pagination_querystring, pagination_targets
-from tests.data.python.client_path_segments import path_segments
+from tests.data.python.client_pagination_targets import pagination_paths, pagination_querystring, pagination_targets
 from tests.data.python.client_protocol_contracts import protocol_contracts
 from tests.data.python.client_protocol_errors import protocol_errors
 from tests.data.python.client_query import query
@@ -560,6 +560,60 @@ def default_server(package: ModuleType, lines: list[str]) -> None:
         record(lines, "status", lambda: api.default.get_status())
 
 
+_DOTS: Final = (".", "..", "...", ".a", "%2e", "")
+_PATHS: Final = (
+    *(("get_archive", {"name": value}) for value in (*_DOTS, "%2E%2E", "a.b", "a/b", "../a/b?c#d")),
+    *(("get_file", {"name": value}) for value in (".", "")),
+    *(
+        ("get_pair", {"first": first, "second": second})
+        for first, second in ((".", "."), ("", ".."), (".", "a"), ("", "."), ("..", "."))
+    ),
+    *(("get_reserved", {"name": value}) for value in (*_DOTS, "%2E.", "%2e%2f", "a/..")),
+    *(("get_list", {"names": value}) for value in (["."], [".."], [".", "."], ["..", ""])),
+    *(("get_label", {"name": value}) for value in _DOTS),
+    *(("get_label_list", {"names": value}) for value in (["", ""], ["a", ""], ["."], [""])),
+    *(("get_matrix", {"name": value}) for value in _DOTS),
+    *(("get_matrix_list", {"names": value}) for value in ([".", ".."], [""])),
+    *(("get_reserved_label", {"name": value}) for value in (*_DOTS, "%2E.")),
+    *(("get_reserved_label_list", {"names": value}) for value in (["%2e"], ["%2e", "a"], ["", "%2E"])),
+    *(
+        ("get_dotted", {"first": first, "second": second})
+        for first, second in (("", ""), ("a", ""), ("", "."), (".", ""), ("%2e", ""))
+    ),
+)
+
+
+def _path_arguments(package: ModuleType, method: str, values: dict[str, object]) -> dict[str, object]:
+    (types,) = _modules(package, "types.default")
+    codecs = getattr(types, f"{method.title().replace('_', '')}RequestCodecs")
+    return {name: codecs.parameter(location="path", name=name).from_wire(value) for name, value in values.items()}
+
+
+def paths(package: ModuleType, lines: list[str]) -> None:
+    """Keep each call on its operation: a path value making its segment `.` or `..` is refused before sending.
+
+    URL normalization would remove such a segment, and `%2E` is the `.` it is equivalent to, so no encoding of these
+    values reaches the operation; every other value, `...` and `.a` among them, is sent as data.
+    """
+    exchange = Exchange(lines)
+    with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
+        for method, values in _PATHS:
+            call = functools.partial(getattr(api.default, method), **_path_arguments(package, method, values))
+            exchange.responders[:] = [raw_response(204)]
+            record(lines, f"{method} {values}", call)
+    run(lambda: _async_paths(package, lines))
+
+
+async def _async_paths(package: ModuleType, lines: list[str]) -> None:
+    exchange = Exchange(lines)
+    api: Any
+    async with package.AsyncClient(http_client=exchange.async_client(), http_client_ownership="owned") as api:
+        for method, values in _PATHS:
+            call = functools.partial(getattr(api.default, method), **_path_arguments(package, method, values))
+            exchange.responders[:] = [raw_response(204)]
+            await arecord(lines, f"async {method} {values}", call)
+
+
 _PET: Final = json.dumps({"id": 3, "name": "fox"}).encode()
 _ERROR: Final = json.dumps({"code": 7, "message": "boom"}).encode()
 _BOMB: Final = gzip.compress(bytes(2 * 1024 * 1024), mtime=0)
@@ -620,7 +674,11 @@ def codings(package: ModuleType, lines: list[str]) -> None:
         record(lines, "coding pre-read", lambda: api.pets.get_pet(pet_id=pet))
         exchange.respond(
             chunked_response(
-                200, gzip.compress(pets, mtime=0), 100, "application/json", **{"content-encoding": "gzip", "X-Rate": "1"}
+                200,
+                gzip.compress(pets, mtime=0),
+                100,
+                "application/json",
+                **{"content-encoding": "gzip", "X-Rate": "1"},
             )
         )
         record(lines, "coding chunked", lambda: len(api.pets.list_pets(x_trace=trace).root))
@@ -633,7 +691,9 @@ def codings(package: ModuleType, lines: list[str]) -> None:
         record(lines, "coding error", lambda: api.pets.list_pets(x_trace=trace))
         record(lines, "coding error truncated", lambda: api.pets.list_pets(x_trace=trace))
         record(lines, "coding redirect", lambda: api.pets.list_pets(x_trace=trace))
-        record(lines, "coding bodyless", lambda: api.pets.delete_pets_by_pet_id(pet_id=_pet(package, "DeletePetsByPetId")))
+        record(
+            lines, "coding bodyless", lambda: api.pets.delete_pets_by_pet_id(pet_id=_pet(package, "DeletePetsByPetId"))
+        )
     run(lambda: _async_codings(package, exchange, lines))
 
 
@@ -659,7 +719,6 @@ BACKENDS: Final = (
 )
 ALL_BUT_MSGSPEC: Final = BACKENDS[:-1]
 SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, list[str]], None]]]] = {
-    "path-segments": ("pagination-targets", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"), path_segments),
     "pets": ("pets", ("pydantic_v2.BaseModel", "typing.TypedDict"), pets),
     "auth-errors": ("pets", ("pydantic_v2.BaseModel",), auth_errors),
     "auth-values": ("auth", BACKENDS, auth_values),
@@ -699,6 +758,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "querystring": ("querystring", ("pydantic_v2.BaseModel",), querystring),
     "servers": ("servers", ("pydantic_v2.BaseModel",), servers),
     "default-server": ("default-server", ("pydantic_v2.BaseModel",), default_server),
+    "paths": ("paths", ("pydantic_v2.BaseModel",), paths),
     "codings": ("pets", ("pydantic_v2.BaseModel",), codings),
     "transports": ("pets", ("pydantic_v2.BaseModel",), transports),
     "lifecycle": ("pets", ("pydantic_v2.BaseModel",), lifecycle),
@@ -724,6 +784,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "pagination-auth": ("pagination", ("pydantic_v2.BaseModel",), pagination_auth),
     "pagination-limits": ("pagination-limits", ("pydantic_v2.BaseModel",), pagination_limits),
     "pagination-targets": ("pagination-targets", ("pydantic_v2.BaseModel",), pagination_targets),
+    "pagination-paths": ("pagination-paths", ("pydantic_v2.BaseModel",), pagination_paths),
     "pagination-querystring": ("pagination-querystring", ("pydantic_v2.BaseModel",), pagination_querystring),
     "pagination-counts": ("pagination-counts", ("pydantic_v2.BaseModel",), pagination_counts),
     "pagination-links": ("pagination-links", ("pydantic_v2.BaseModel",), pagination_links),

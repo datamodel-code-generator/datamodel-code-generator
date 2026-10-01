@@ -21,6 +21,8 @@ from ..client.errors import BudgetExceededError, ProtocolConfigurationError, Pro
 from ..client.options import RequestOptions
 from ..client.responses import ResponseInfo
 from ..client.timing import SessionOptions
+from ..model_codecs.errors import ParameterEncodingError
+from ..model_codecs.parameters import dot_segment, path_segments, path_text
 from ..model_codecs.unset import UNSET, Unset
 from .errors import PaginationCycleError, ProtocolDataError, ProtocolStateError, SessionLimitError
 from .options import PaginationOptions
@@ -45,15 +47,19 @@ from .values import MISSING, Missing, Patch, resolve
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Generator, Iterator, Sequence
     from types import TracebackType
+    from typing import TypeAlias
 
     from ..client.client import AsyncClientCore, ClientCore
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan
     from ..client.timing import Deadline
     from ..client.urls import Origin
+    from ..model_codecs.parameters import ParameterPlan
     from ..model_codecs.selectors import MediaSelector
     from ..model_codecs.wire import WireValue
     from .references import OperationRef
+
+    _PathWrite: TypeAlias = tuple[str, int, Selector | None, ParameterPlan]
 
 __all__ = (
     "AsyncPager",
@@ -80,7 +86,6 @@ V = TypeVar("V")
 T_co = TypeVar("T_co", covariant=True, default=object)
 P_co = TypeVar("P_co", covariant=True, default=object)
 
-_DOT_SEGMENTS: Final = (".", "..")
 _BOOLEANS: Final = MappingProxyType({"true": True, "false": False})
 _MAX_URL_BYTES: Final = 8192
 _REFERENCE: Final = re.compile(
@@ -217,8 +222,9 @@ class PaginationPlan(Generic[T, P]):
     is written into the caller's encoded value. They skip the schema and argument checks, since the server chose them.
     A helper that `follows` a server's URLs writes no cursor and sends each later page to the URL with GET and no body,
     unless it repeats the request body with the operation's method. `headers` and `queries` name the header, cookie,
-    and query parameters it writes, which a call's options must not patch, and `dotted` the writes of read values into
-    path parameters, which must not be dot segments.
+    and query parameters it writes, which a call's options must not patch, and `dotted` the path segments whose every
+    parameter is written, one at least with a read value, by each parameter's name, write, selector, and plan; such a
+    segment must not encode to a dot segment.
     """
 
     helper_id: str
@@ -233,7 +239,7 @@ class PaginationPlan(Generic[T, P]):
     writes: tuple[tuple[int | None, str | None], ...] = field(init=False)
     headers: frozenset[str] = field(init=False)
     queries: frozenset[str] = field(init=False)
-    dotted: tuple[tuple[int, Selector], ...] = field(init=False)
+    dotted: tuple[tuple[str, tuple[_PathWrite, ...]], ...] = field(init=False)
     continued: OperationPlan[P, object] = field(init=False)
 
     def __post_init__(self) -> None:
@@ -291,13 +297,21 @@ class PaginationPlan(Generic[T, P]):
         object.__setattr__(self, "writes", tuple(writes))
         object.__setattr__(self, "headers", frozenset(headers))
         object.__setattr__(self, "queries", frozenset(queries))
+        paths = {
+            target.name: (index, selector)
+            for index, (target, selector) in enumerate(sources)
+            if isinstance(target, ParameterTarget) and target.location == "path"
+        }
         object.__setattr__(
             self,
             "dotted",
             tuple(
-                (index, selector)
-                for index, (target, selector) in enumerate(sources)
-                if isinstance(target, ParameterTarget) and target.location == "path" and selector is not None
+                (
+                    segment,
+                    tuple((name, *paths[name], call.parameters[_position(call, "path", name)].plan) for name in names),
+                )
+                for segment, names in (path_segments(call.path) if paths else ())
+                if all(name in paths for name in names) and any(paths[name][1] is not None for name in names)
             ),
         )
         continued = replace(call, parameters=tuple(parameters), body=body, checks=())
@@ -523,6 +537,20 @@ def _selected(plan: PaginationPlan[T, P], read: Selector, wire: WireValue, info:
             raise _data_error(plan, info, "malformed", read)
         return values[0] if values else MISSING
     return info.status_code
+
+
+def _dotted(segment: str, writes: tuple[_PathWrite, ...], written: tuple[WireValue, ...]) -> Selector | None:
+    """Return the selector of a read value that makes its path segment a dot segment once encoded, or None.
+
+    A value its parameter cannot encode is left to the request, which refuses it.
+    """
+    try:
+        texts = {name: path_text(parameter, written[index]) for name, index, _, parameter in writes}
+    except ParameterEncodingError:
+        return None
+    if not dot_segment(segment, texts):
+        return None
+    return next((read for name, _, read, _ in writes if read is not None and texts[name]), None)
 
 
 def _size_error(
@@ -925,7 +953,8 @@ class _Walk(Generic[T, P]):
         The items are checked in the wire value before the page's accessor reads them from the decoded one; a value of
         another type fails its response's validation first, in every mode. What the next request writes is the cursor
         or position, or the URL it follows without the query fields the auth manages, MISSING after the last page.
-        The bindings are read only when a page follows, and a dot segment read for a path parameter is refused.
+        The bindings are read only when a page follows, and a read value that makes a path segment a dot segment once
+        encoded is refused.
         """
         plan = self.plan
         selector = plan.items_selector
@@ -947,8 +976,8 @@ class _Walk(Generic[T, P]):
             return Page(items=items, data=data, response=info), cursor, ()
         bound = self.bound(wire, info)
         written = bound if plan.follows else (*bound, cursor)
-        for index, read in plan.dotted:
-            if written[index] in _DOT_SEGMENTS:
+        for segment, writes in plan.dotted:
+            if (read := _dotted(segment, writes, written)) is not None:
                 raise _data_error(plan, info, "value", read)
         continuation = Continuation(kind=rule.kind, value=cursor)
         page = Page(items=items, data=data, response=info, continuation=continuation)

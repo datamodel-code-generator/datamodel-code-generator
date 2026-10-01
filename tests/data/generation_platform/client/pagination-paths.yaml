@@ -1,0 +1,84 @@
+openapi: 3.2.0
+info:
+  title: Pagination paths
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /reserved/{name}:
+    get:
+      operationId: listReserved
+      tags: [reserved]
+      parameters:
+        - {name: name, in: path, required: true, allowReserved: true, schema: {type: string}}
+      responses:
+        '200': &page
+          description: One page of users.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /labels/{name}:
+    get:
+      operationId: listLabels
+      tags: [labels]
+      parameters:
+        - {name: name, in: path, required: true, style: label, schema: {type: string}}
+      responses:
+        '200': *page
+  /files/{name}.json:
+    get:
+      operationId: listFiles
+      tags: [files]
+      parameters:
+        - {name: name, in: path, required: true, schema: {type: string}}
+      responses:
+        '200': *page
+  /pairs/{owner}{name}:
+    get:
+      operationId: listPairs
+      tags: [pairs]
+      parameters:
+        - {name: owner, in: path, required: true, schema: {type: string}}
+        - {name: name, in: path, required: true, schema: {type: string}}
+      responses:
+        '200': *page
+  /scopes/{scope}/items:
+    get:
+      operationId: listScoped
+      tags: [scopes]
+      parameters:
+        - {name: scope, in: path, required: true, style: label, schema: {type: string}}
+        - {name: cursor, in: query, schema: {type: string}}
+      responses:
+        '200': *page
+  /tags/{tags}:
+    get:
+      operationId: listTags
+      tags: [tags]
+      parameters:
+        - {name: tags, in: path, required: true, style: label, explode: true, schema: {type: array, items: {type: string}}}
+        - {name: cursor, in: query, schema: {type: string}}
+      responses:
+        '200':
+          description: One page of users.
+          headers:
+            X-Tag:
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+components:
+  schemas:
+    User:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string}
+    UserPage:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: {$ref: '#/components/schemas/User'}
+        next_cursor: {type: [string, 'null']}

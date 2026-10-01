@@ -86,6 +86,21 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/UserPage'}
+  /styled/{label}/{reserved}/{file}.json:
+    get:
+      operationId: listStyled
+      tags: [styled]
+      parameters:
+        - {name: label, in: path, required: true, style: label, schema: {type: string}}
+        - {name: reserved, in: path, required: true, allowReserved: true, schema: {type: string}}
+        - {name: file, in: path, required: true, schema: {type: string}}
+        - {name: cursor, in: query, schema: {type: string}}
+      responses:
+        '200':
+          description: One page of users.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
   /forms:
     post:
       operationId: searchForms

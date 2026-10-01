@@ -25,7 +25,15 @@ from urllib.parse import quote, unquote_plus, urlsplit
 import httpx2
 from typing_extensions import Self, TypeIs
 
-from ..model_codecs.parameters import FragmentContribution, QueryStringContribution, encode_parameter
+from ..model_codecs.errors import ParameterEncodingError
+from ..model_codecs.parameters import (
+    FragmentContribution,
+    QueryStringContribution,
+    dot_segment,
+    dotted_route,
+    encode_parameter,
+    path_segments,
+)
 from ..model_codecs.selectors import MediaSelector, ResponseMedia
 from ..model_codecs.unset import UNSET, Unset
 from .bodies import (
@@ -196,6 +204,7 @@ CLEANUP_TIMEOUT: Final = 5.0
 _ACCEPT_ENCODING: Final = ("Accept-Encoding", "gzip, deflate")
 _PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
 _TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
+_DOT_CAUSE: Final = "A path value cannot make its segment '.' or '..', which URL normalization removes"
 _OWNERSHIPS: Final = frozenset({"borrowed", "owned"})
 _BINARY: Final = "A body must be bytes or a file, stream, factory, or multipart body of the client's mode"
 _MIN_STATUS: Final = 200
@@ -441,6 +450,21 @@ def _encoding_error(
     operation: OperationPlan[object, object], location: tuple[str, str], error: BaseException | None = None
 ) -> RequestEncodingError:
     return RequestEncodingError(location=location, operation_id=operation.operation_id, cause=error)
+
+
+def _dot_parameter(template: str, path: dict[str, str]) -> str | None:
+    """Return the path parameter that makes its segment a dot segment, which URL normalization would remove.
+
+    The segment's first parameter with a value is named; a dot segment the template itself spells names none.
+    """
+    return next(
+        (
+            next((name for name in names if path[name]), names[0])
+            for segment, names in path_segments(template)
+            if dot_segment(segment, path)
+        ),
+        None,
+    )
 
 
 def _parameters(
@@ -1589,6 +1613,13 @@ class _Core(Generic[AdapterT, HandleT]):
             base = self._base(operation, settings)
             path = request.path
             route = _PLACEHOLDER.sub(lambda match: path[match[1]], operation.path) if path else operation.path
+            if (
+                path
+                and ("/." in route or "/%2" in route)
+                and dotted_route(route)
+                and (name := _dot_parameter(operation.path, path)) is not None
+            ):
+                raise _encoding_error(operation, ("path", name), ParameterEncodingError(_DOT_CAUSE))
             query = self._call_query(operation, request.query, options)
             url = f"{base}{route}{'?' if query else ''}{query}"
         headers = [*self._shared.fixed]

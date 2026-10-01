@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import importlib
-from typing import TYPE_CHECKING, Any
+from functools import partial
+from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
 
@@ -173,6 +174,75 @@ async def _async_targets(harness: Harness, lines: list[str]) -> None:
             "async header patch of the cursor",
             lambda: api.protocols.users.by_header.iterate(options=patched),
         )
+
+
+_FIRST_PAGES: Final = (("labels", ""), ("reserved", "%2e"), ("files", "."))
+_PATH_CURSORS: Final = (
+    ("reserved", "ListReserved", {"name": "r1"}, ("%2e", "%2E.", "%2e%2f", "a")),
+    ("labels", "ListLabels", {"name": "l1"}, ("", ".", "..", "a")),
+    ("files", "ListFiles", {"name": "f1"}, (".", "..")),
+    ("pairs", "ListPairs", {"owner": "", "name": "p1"}, (".", "..")),
+    ("pairs", "ListPairs", {"owner": "o", "name": "p1"}, (".",)),
+)
+
+
+def _path_arguments(harness: Harness, resource: str, operation: str, values: dict[str, str]) -> dict[str, object]:
+    return {name: harness.argument(resource, operation, "path", name, value) for name, value in values.items()}
+
+
+def pagination_paths(package: ModuleType, lines: list[str]) -> None:
+    """Refuse a server's cursor only when it encodes its path segment, in the parameter's style, as a dot segment.
+
+    A cursor its parameter cannot encode, or one making a dot segment of a segment the caller's argument shares, is
+    refused before the next page is sent as any call's path value is; a literal binding encoding to `...` is sent. A
+    caller's own dot segment is refused before the first page.
+    """
+    harness = Harness(package)
+    exchange = Exchange(lines)
+    with exchange.client() as native, package.Client(http_client=native) as api:
+        for resource, operation, values, cursors in _PATH_CURSORS:
+            helper = getattr(api.protocols, resource).all
+            arguments = _path_arguments(harness, resource, operation, values)
+            for cursor in cursors:
+                exchange.respond(users("1", cursor=cursor), users("2"))
+                drained(lines, f"{resource} {values} cursor {cursor!r}", helper.iterate(**arguments))
+                exchange.responders.clear()
+        tags = harness.argument("tags", "ListTags", "path", "tags", ["t"])
+        for tag in ("a.b", "a"):
+            exchange.respond(_tagged("1", cursor="c", headers=[("X-Tag", tag)]), users("2"))
+            drained(lines, f"tag header {tag!r}", api.protocols.tags.all.iterate(tags=tags))
+            exchange.responders.clear()
+        for resource, value in _FIRST_PAGES:
+            arguments = _path_arguments(harness, resource, f"List{resource.title()}", {"name": value})
+            exchange.respond(users("1"))
+            fetched(
+                lines,
+                f"{resource} first page {value!r}",
+                partial(getattr(api.protocols, resource).all.page, **arguments),
+            )
+            exchange.responders.clear()
+        scope = harness.argument("scopes", "ListScoped", "path", "scope", "s1")
+        exchange.respond(users("1", cursor="c"), users("2"))
+        drained(lines, "literal label scope", api.protocols.scopes.all.iterate(scope=scope))
+    run(lambda: _async_paths(harness, lines))
+
+
+async def _async_paths(harness: Harness, lines: list[str]) -> None:
+    exchange = Exchange(lines)
+    async with exchange.async_client() as native, harness.package.AsyncClient(http_client=native) as api:
+        for resource, cursor in (("reserved", "%2e"), ("labels", "..")):
+            exchange.respond(users("1", cursor=cursor), users("2"))
+            arguments = _path_arguments(harness, resource, f"List{resource.title()}", {"name": "x"})
+            await adrained(
+                lines, f"async {resource} cursor {cursor!r}", getattr(api.protocols, resource).all.iterate(**arguments)
+            )
+            exchange.responders.clear()
+        for resource, value in _FIRST_PAGES:
+            arguments = _path_arguments(harness, resource, f"List{resource.title()}", {"name": value})
+            exchange.respond(users("1"))
+            page = partial(getattr(api.protocols, resource).all.page, **arguments)
+            await afetched(lines, f"async {resource} first page {value!r}", page)
+            exchange.responders.clear()
 
 
 def pagination_querystring(package: ModuleType, lines: list[str]) -> None:

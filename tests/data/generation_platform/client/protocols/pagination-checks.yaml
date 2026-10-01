@@ -149,6 +149,80 @@ helpers:
     bindings:
       - target: {in: path, name: folder}
         value: {literal: ..}
+  bindings.label_empty:
+    kind: pagination
+    operation: /paths/~1styled~1{label}~1{reserved}~1{file}.json/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: "null"}]
+      empty_string: end
+    bindings:
+      - target: {in: path, name: label}
+        value: {literal: ''}
+  bindings.label_dot:
+    kind: pagination
+    operation: /paths/~1styled~1{label}~1{reserved}~1{file}.json/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: "null"}]
+      empty_string: end
+    bindings:
+      - target: {in: path, name: label}
+        value: {literal: '.'}
+  bindings.reserved_dot:
+    kind: pagination
+    operation: /paths/~1styled~1{label}~1{reserved}~1{file}.json/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: "null"}]
+      empty_string: end
+    bindings:
+      - target: {in: path, name: reserved}
+        value: {literal: '%2e'}
+  bindings.path_null:
+    kind: pagination
+    operation: /paths/~1styled~1{label}~1{reserved}~1{file}.json/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: "null"}]
+      empty_string: end
+    bindings:
+      - target: {in: path, name: reserved}
+        value: {literal: null}
+  bindings.styled_dots:
+    kind: pagination
+    operation: /paths/~1styled~1{label}~1{reserved}~1{file}.json/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: "null"}]
+      empty_string: end
+    bindings:
+      - target: {in: path, name: label}
+        value: {literal: '..'}
+      - target: {in: path, name: reserved}
+        value: {literal: '%2e%2e%2f'}
+      - target: {in: path, name: file}
+        value: {literal: '.'}
   write.optional_body:
     kind: pagination
     operation: /paths/~1multi/post
