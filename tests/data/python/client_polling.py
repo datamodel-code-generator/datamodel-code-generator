@@ -98,7 +98,7 @@ def _outcome(value: object) -> str:
     return describe(value) + (session if isinstance(value, BaseException) else "")
 
 
-def _measured(value: object) -> str:
+def measured(value: object) -> str:
     """Describe a step's result, giving a wait limit's exact required wait and limit."""
     if hasattr(value, "required_wait"):
         error: Any = value
@@ -437,17 +437,17 @@ def _clocked(harness: Polling, lines: list[str]) -> None:
         exchange.respond(json_response(202, {"id": "j1", "status": "queued"}, **{"Retry-After": "120"}))
         handle = helper.start(body=body)
         clock.value += 30
-        step(lines, "server delay less the clock's move", handle.status, _measured)
+        step(lines, "server delay less the clock's move", handle.status, measured)
         exchange.respond(json_response(202, {"id": "j1", "status": "queued"}, **{"Retry-After": _WALL_DATE}))
         handle = helper.start(body=body)
-        step(lines, "date delay on the client's wall clock", handle.status, _measured)
+        step(lines, "date delay on the client's wall clock", handle.status, measured)
         clock.value = 1000.0
         delayed = json_response(200, {"id": "j1", "status": "queued"}, **{"Retry-After": "30"})
         exchange.respond(json_response(202, {"id": "j1", "status": "queued"}, **{"Retry-After": "30"}), delayed)
         handle = helper.start(body=body, session_options=harness.session(total_timeout=60))
         clock.value += 31
         step(lines, "poll once the clock passes the delay", handle.status)
-        step(lines, "delay past the session", handle.status, _measured)
+        step(lines, "delay past the session", handle.status, measured)
         exchange.respond(job("queued", 202), job("done"))
         handle = helper.start(body=body, poll_options=harness.polls(interval=_PAUSE))
         step(lines, "interval on a frozen clock", handle.status)
@@ -470,7 +470,7 @@ async def _async_clocked(harness: Polling, lines: list[str]) -> None:
         handle = await helper.start(body=body, session_options=harness.session(total_timeout=60))
         clock.value += 31
         await astep(lines, "async poll once the clock passes the delay", handle.status)
-        await astep(lines, "async delay past the session", handle.status, _measured)
+        await astep(lines, "async delay past the session", handle.status, measured)
         exchange.respond(job("queued", 202), job("done"))
         handle = await helper.start(body=body, poll_options=harness.polls(interval=_PAUSE))
         await astep(lines, "async interval on a frozen clock", handle.status)
