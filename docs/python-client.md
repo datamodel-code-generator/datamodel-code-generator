@@ -304,7 +304,8 @@ explicitly before using it as a model.
 Pagination, polling, and SSE or NDJSON stream helpers of an API are declared in a helper configuration, which the client
 target reads through its `protocols` setting. The helpers are still being implemented: generation validates every
 helper, resolves its references against the selected API, and records it in the target manifest. An enabled pagination
-helper generates the [pagination helper](#pagination-helpers) below, and an enabled HMAC webhook helper the [webhook
+helper generates the [pagination helper](#pagination-helpers) below, an enabled SSE helper the
+[SSE stream helper](#sse-stream-helpers), and an enabled HMAC webhook helper the [webhook
 verification helper](#webhook-verification-helpers); any other enabled helper fails with `E_CLIENT_UNSUPPORTED`. A
 disabled helper generates nothing, so the package is the same as without it. The `websocket`, `cache`,
 `resumable_upload`, `batch`, and `queue` kinds fail with `E_CLIENT_UNSUPPORTED` whether they are enabled or not, and
@@ -814,6 +815,135 @@ E_CLIENT_UNSUPPORTED target protocols.helpers['cursor.map'].continuation.read /p
 
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.pagination.diagnostics -->
+
+## SSE stream helpers
+
+An enabled `sse` helper is generated at `client.protocols.<name>` on `Client` and `AsyncClient` alike, with one method,
+`open`. It takes the operation's parameters and its body as keywords, never field arguments, then `stream_options`,
+`options`, and `session_options`, sends the operation in a session of its own, and returns an `EventStream[T]`, or with
+one `await` an `AsyncEventStream[T]`, once the response is a declared success of the helper's media type:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.streams.helper -->
+<!-- fmt: off -->
+
+```python
+    def open(
+        self,
+        *,
+        topic: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        last_event_id: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        stream_options: StreamOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> EventStream[_dcg_type_2]:
+        """Open the event stream of GET /events, returning once its response is a declared success."""
+        return open_events(
+            self._core,
+            _plans.STREAM_0,
+            (topic, last_event_id),
+            stream_options=stream_options,
+            options=options,
+            session_options=session_options,
+        )
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.streams.helper -->
+
+```python
+with Client() as client, client.protocols.events.typed.open() as stream:
+    for event in stream:
+        print(event.sequence, event.event_type, event.data)
+```
+
+`T` is the type of the helper's event schema, or the union of its mapped schemas' types, with `UnknownEvent` when
+`unknown: raw` keeps unmapped events. Iterating a stream yields `StreamEvent[T]` records: `data`, the event's SSE
+`event_type` (`message` when the event names none), `event_id`, the last ID the stream set or None when it set none or
+an empty one, `retry_ms`, the last valid `retry` in milliseconds, `sequence`, numbering the dispatched events from 1,
+and `raw_data`, the event's data text. `data()` iterates over the data of the same events and advances the same stream;
+the asyncio `data()` is not awaited. Representations name no data, event ID, or raw data. `StreamEvent`,
+`UnknownEvent`, `EventStream`, and `AsyncEventStream` are imported from `pkg.protocols`, in every package.
+
+The response's status and `Content-Type` are checked before `open` returns: an error status raises the operation's
+typed HTTP error, an undeclared status `UnexpectedStatusError`, and a body of another media type, or none,
+`UnexpectedMediaTypeError`. Its acquisition retries like any call. A stream then reads only the bytes its next event
+needs and owns the response until it ends, fails, or closes: close it with `with`, `async with`, `close()`, or
+`aclose()`, since leaving a loop early releases nothing. One consumer reads a stream at a time: a step, or a close,
+while another step runs raises `ProtocolStateError`, and so does every step after a failure or `close()`; after its end
+every step stops. Closing the client waits up to its `cleanup_timeout` for open streams, then closes them and raises
+`CleanupError` naming them as pending leases; their next step raises `ClientClosedError`.
+
+### Framing and events
+
+The body is read as the WHATWG event-stream interpretation reads it: a leading byte order mark is skipped, CR, LF, and
+CRLF end lines, including a CRLF split between reads, lines starting with `:` are comments, `data` lines join with LF,
+`event` names the type, an `id` containing NUL is ignored, `retry` of ASCII digits sets the reconnection time (more than
+18 digits are ignored), and a blank line dispatches an event that has data. Invalid UTF-8 decodes to replacement
+characters. Each event's data is JSON decoded by its schema, through its converter alone or by the schema as the call's
+response validation selects; data that is not JSON, or that the schema or type refuses, raises `StreamDecodeError`
+with at most the event limit or 64 KiB of the data as `raw_prefix`.
+
+An event schema mapping is chosen by the event's SSE type with `discriminator: {from: event_type}`, or by the string a
+body pointer reads from the JSON data with `{from: body, pointer}`; a missing, null, or non-string body discriminator,
+and an unmapped one without `unknown: raw`, raise `StreamDecodeError`. An `error_events` key raises
+`StreamRemoteError` with the error schema's decoded `data` instead of yielding the event.
+
+The stream ends as its `completion` declares: at the end of the body for `eof`, or at the event whose raw data equals a
+`sentinel` value or whose SSE type is the `event_type` value; neither terminal event is decoded or yielded, and the
+response is released. A body that ends before a sentinel or terminal type raises `StreamInterruptedError` with the
+condition `eof`, and one that cuts a line or an event, under any completion, raises `IncompleteFrameError` with the
+bytes of the cut frame. A connection that breaks while the body is read raises `StreamInterruptedError` with the
+condition `transport` and the transport failure as its `cause`. `sequence` is the last event delivered.
+
+### Stream limits and sessions
+
+`open` is one session holding one logical call. The call's total timeout bounds only acquiring the response; the
+stream then ends no later than the earlier of the call's `stream_total_timeout` from the handoff and the session's
+deadline, raising `DeadlineExceededError` with the phase `stream` at the next step, even for an event whose bytes it
+already read, and releasing the response. Its idle timeout counts only while a step waits for bytes, comments
+included, so a pause between steps never counts, and raises `PhaseTimeoutError`. Each limit comes from the call's
+options, then the helper's `ProtocolDefaults` in `ProtocolClientOptions.defaults`, then the default below:
+
+| Limit | Default | None |
+|---|---|---|
+| `StreamOptions.idle_timeout` | The call's merged `stream_idle_timeout`, 60 seconds by default | No idle limit |
+| `StreamOptions.max_line_bytes` | 256 KiB per line | Not allowed |
+| `StreamOptions.max_event_bytes` | 1 MiB of data per event | Not allowed |
+| `SessionOptions.total_timeout` | None | No session deadline |
+| `SessionOptions.deadline` | None | No deadline |
+| `SessionOptions.max_network_sends` | 16 sends | Removes the limit |
+
+A line or event over its limit raises `ProtocolSizeError` with the kind `line` or `event` before it is kept, and a
+session without a send slot raises `SessionLimitError` without sending. Streams never reconnect yet, so
+`StreamOptions(reconnect=True)` raises `ProtocolConfigurationError` with the condition `missing_metadata`, and
+`max_reconnects` and `max_reconnect_wait` have no effect. Options of another type raise `ProtocolConfigurationError`.
+
+### Stream generation checks
+
+The helper's `media` must be `text/event-stream`, compared without case and with any parameters allowed, and a success
+response of its operation must declare an event stream media type, which the helper then requests as declared. Each
+event and error schema must exist and decode natively, without an envelope; a schema outside the selected model scopes
+fails with `BND_MODEL_SCOPE_REQUIRED`. A body discriminator must name a declared property of each mapped and error schema
+whose values can be strings, and an `event_type` completion cannot be a key of the event type mapping or the error
+events. Resuming a stream is not supported yet:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.streams.diagnostics -->
+<!-- fmt: off -->
+
+```text
+E_CONFIG_VALUE config protocols.helpers['checks.media'].media /paths/~1events/get: The media type 'text/plain' of 'checks.media' is not text/event-stream
+E_CONFIG_VALUE config protocols.helpers['checks.response'].operation /paths/~1status/get: GET /status declares no text/event-stream success response for the SSE helper 'checks.response'
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.resume'].resume /paths/~1events/get: The SSE helper 'checks.resume' resumes its stream, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['checks.schema'].event_schema /paths/~1events/get: The schema '/components/schemas/Nobody' of 'checks.schema' does not exist in its document
+E_CONFIG_CONFLICT config protocols.helpers['checks.terminal_event'].completion.value /paths/~1events/get: The completion event type 'done' of 'checks.terminal_event' is also a key of its event_schema.mapping
+E_CONFIG_CONFLICT config protocols.helpers['checks.terminal_error'].completion.value /paths/~1events/get: The completion event type 'stop' of 'checks.terminal_error' is also a key of its error_events
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.envelope'].event_schema /paths/~1events/get: The SSE helper 'checks.envelope' decodes an envelope-projected event, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['checks.discriminator_absent'].event_schema.discriminator.pointer /paths/~1events/get: The discriminator pointer '/kind' of 'checks.discriminator_absent' names no property of '/components/schemas/Created'
+E_CONFIG_VALUE config protocols.helpers['checks.discriminator_type'].event_schema.discriminator.pointer /paths/~1events/get: The discriminator of 'checks.discriminator_type' reads integer values from '/components/schemas/Counted', where only string values fit
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.streams.diagnostics -->
 
 ## Signature style
 

@@ -827,6 +827,16 @@ class ResponseDecoder(Generic[T_co, E_co]):
         """Return whether a status is a typed success of this operation."""
         return _MIN_SUCCESS <= status <= _MAX_SUCCESS or status in self._successes
 
+    def streamed(self, info: ResponseInfo) -> None:
+        """Refuse a success whose body is not streamed in a declared media type: an undeclared status or media type."""
+        if self._branch(info, b"").media_type is None:
+            raise UnexpectedMediaTypeError(
+                info=info,
+                actual_media_type=info.content_type,
+                expected_media_types=() if self._permitted is None else (self._permitted,),
+                call_id=info.call_id,
+            )
+
     def decode(
         self,
         info: ResponseInfo,

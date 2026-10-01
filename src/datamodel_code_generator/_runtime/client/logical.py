@@ -545,11 +545,17 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
         return self.snapshot_error(TransportError(delivery_state=delivery_state, phase=phase, cause=error))
 
     def handoff(self) -> None:
-        """Start stream lifetime limits and replace the completed acquisition's caps before the first body read."""
+        """Start stream lifetime limits and replace the completed acquisition's caps before the first body read.
+
+        A helper session's stream also ends no later than its session.
+        """
         self.streaming = True
         self.delivery_state = DeliveryState.RESPONSE_STARTED
         total = self.settings.stream_total_timeout
-        self.deadline = None if total is None else absolute_deadline(monotonic() + total)
+        deadline = None if total is None else absolute_deadline(monotonic() + total)
+        if (session := self.session) is not None and (limit := session.deadline) is not None:
+            deadline = limit if deadline is None or limit.at < deadline.at else deadline
+        self.deadline = deadline
         timeout = self.timeout()
         set_io_timing(self._io_context, timeout, self.deadline)
 

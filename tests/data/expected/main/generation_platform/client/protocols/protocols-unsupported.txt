@@ -5,5 +5,4 @@ render pydantic_v2.BaseModel
   E_NAME_COLLISION target protocols.helpers['jobs.run'] /paths/~1jobs/post: The polling helper 'jobs.run' reserves the argument 'state' of POST /jobs; rename them with parameter_names or body_field_names
   E_CONFIG_VALUE config protocols.helpers['labels.all'].continuation.header /paths/~1labels/get: The links of 'labels.all' come from the header 'Link', which GET /labels does not declare
   E_CLIENT_UNSUPPORTED target protocols.helpers['jobs.run']: The polling helper 'jobs.run' is not supported yet
-  E_CLIENT_UNSUPPORTED target protocols.helpers['events.watch']: The sse helper 'events.watch' is not supported yet
   E_CLIENT_UNSUPPORTED target protocols.helpers['records.watch']: The ndjson helper 'records.watch' is not supported yet

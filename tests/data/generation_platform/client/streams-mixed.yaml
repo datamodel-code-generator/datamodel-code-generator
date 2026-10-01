@@ -1,0 +1,46 @@
+openapi: 3.1.0
+info:
+  title: Mixed helpers
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /notes:
+    get:
+      operationId: listNotes
+      tags: [notes]
+      parameters:
+        - name: cursor
+          in: query
+          schema: {type: string}
+      responses:
+        '200':
+          description: One page of notes.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/NotePage'}
+  /notes/events:
+    get:
+      operationId: watchNotes
+      tags: [notes]
+      responses:
+        '200':
+          description: The notes as they change.
+          content:
+            text/event-stream:
+              schema: {type: string}
+components:
+  schemas:
+    Note:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string}
+    NotePage:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: {$ref: '#/components/schemas/Note'}
+        next_cursor: {type: [string, 'null']}
