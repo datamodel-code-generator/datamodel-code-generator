@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from functools import partial
 from time import monotonic, time
 from typing import TYPE_CHECKING, Final, Literal, TypeVar
-from urllib.parse import quote, unquote_plus, urlsplit, urlunsplit
+from urllib.parse import quote, urlsplit, urlunsplit
 
 from typing_extensions import TypeIs
 
@@ -42,7 +42,7 @@ from .errors import (
 from .responses import HeadersView
 from .security import SecurityRequirement, SecurityScheme, UnavailableSecurityScheme
 from .transports import PreparedRequest
-from .urls import URLValidationError, canonical_origin
+from .urls import URLValidationError, canonical_origin, strip_query
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -669,15 +669,11 @@ def _wire_value(material: CredentialMaterial) -> str:
     return "Basic " + base64.b64encode(encoded).decode("ascii")
 
 
-def _query_url(url: str, added: tuple[tuple[str, str], ...], removed: frozenset[str] = frozenset()) -> str:
-    if not added and not removed:
+def _query_url(url: str, added: tuple[tuple[str, str], ...]) -> str:
+    if not added:
         return url
     parsed = urlsplit(url)
-    parts = (
-        [part for part in parsed.query.split("&") if unquote_plus(part.partition("=")[0]) not in removed]
-        if parsed.query
-        else []
-    )
+    parts = parsed.query.split("&") if parsed.query else []
     parts.extend(f"{quote(name, safe='-._~')}={quote(value, safe='-._~')}" for name, value in added)
     return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, "&".join(parts), parsed.fragment))
 
@@ -689,7 +685,7 @@ def strip_managed_query(url: str, bound: BoundAuth | AsyncBoundAuth) -> str:
     cookie: patches, parameters, and raw requests naming one are refused before the first hop, and credentials and
     signatures are placed only on each outgoing copy.
     """
-    return _query_url(url, (), bound.managed_query)
+    return strip_query(url, bound.managed_query)
 
 
 def _cookie_fields(headers: list[tuple[str, str]], cookies: list[tuple[str, str]]) -> list[tuple[str, str]]:

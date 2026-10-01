@@ -2282,17 +2282,24 @@ class _Helpers:
         return _call(module.local("_runtime.protocols.pagination", "PageBinding"), entries)
 
     def continuation(self, module: Module, spec: PaginationSpec) -> Doc:
-        """Return the runtime record of a cursor continuation, or of an offset or page-number one."""
+        """Return the runtime record of a helper's cursor, offset, page-number, next-URL, or Link continuation."""
         runtime = "_runtime.protocols.pagination"
         continuation = spec.continuation
-        write = ("write=", self.target(module, continuation["write"]))
-        if (kind := continuation["kind"]) != "cursor":
+        kind = continuation["kind"]
+        if kind == "link":
+            rel = continuation["rel"]
+            entries: list[tuple[str, Doc]] = [
+                ("header=", repr(continuation["header"])),
+                *((("rel=", repr(rel)),) if rel != "next" else ()),
+            ]
+            return _call(module.local(runtime, "LinkPlan"), entries)
+        if kind in {"offset", "page"}:
             evidence = spec.evidence
             return _call(
                 module.local(runtime, "CountPlan"),
                 (
                     ("kind=", repr(kind)),
-                    write,
+                    ("write=", self.target(module, continuation["write"])),
                     ("first=", repr(continuation["first"])),
                     ("step=", repr(continuation["step"].get("literal"))),
                     (f"{evidence}=", self.selector(module, continuation[evidence])),
@@ -2300,15 +2307,16 @@ class _Helpers:
             )
         ends = [end["kind"] for end in continuation["end"]]
         values = [repr(end["value"]) for end in continuation["end"] if end["kind"] == "value"]
-        entries: list[tuple[str, Doc]] = [
+        entries = [
             ("read=", self.selector(module, continuation["read"])),
-            write,
+            *((("write=", self.target(module, continuation["write"])),) if kind == "cursor" else ()),
             *((("end_missing=", "True"),) if "missing" in ends else ()),
             *((("end_null=", "True"),) if "null" in ends else ()),
             *((("end_values=", _tuple(values)),) if values else ()),
-            *((("empty_string_ends=", "True"),) if continuation["empty_string"] == "end" else ()),
+            *((("empty_string_ends=", "True"),) if continuation.get("empty_string") == "end" else ()),
+            *((("repeat_request_body=", "True"),) if continuation.get("repeat_request_body") else ()),
         ]
-        return _call(module.local(runtime, "CursorPlan"), entries)
+        return _call(module.local(runtime, "CursorPlan" if kind == "cursor" else "NextUrlPlan"), entries)
 
     def plan(self, module: Module, index: int, spec: PaginationSpec) -> str:
         """Return a helper's plan: its identity, operation, items, continuation, fingerprint, and bindings."""
@@ -2796,14 +2804,15 @@ wait for retained cleanup; it does not authorize another send or restore an expi
     def helper_runtime(self) -> str:
         """Describe pagination sessions and their limits, or nothing for a package without helpers.
 
-        Cursors and their size limit are described only for a package with a cursor helper, and counted positions only
-        for one with an offset or page-number helper.
+        Cursors are described only for a package with a cursor helper, counted positions only for one with an offset or
+        page-number helper, and followed URLs only for one with a next-URL or Link helper; the cursor size limit
+        applies to cursors and followed URLs.
         """
         if not self.helpers:
             return ""
         kinds = {spec.continuation["kind"] for spec in self.helpers}
         cursors = "cursor" in kinds
-        size = "| cursor size | 64 KiB |\n" if cursors else ""
+        size = "| cursor size | 64 KiB |\n" if cursors or kinds & {"next_url", "link"} else ""
         rules = (
             """\
 A page's items must be a JSON array; an empty array does not end the traversal. A server's cursor, and each value a
@@ -2840,12 +2849,31 @@ another kind's options, fail construction. The session types are imported from:
 | network sends per session | 3000; None removes it |
 
 {rules}
-{self.count_runtime(kinds)}"""
+{self.count_runtime(kinds)}{self.follow_runtime(kinds)}"""
+
+    @staticmethod
+    def follow_runtime(kinds: set[str]) -> str:
+        """Describe next-URL and Link helpers, or nothing for a package without them."""
+        if not kinds & {"next_url", "link"}:
+            return ""
+        return """
+A next-URL or Link helper sends the first request as the caller gives it and each later page to the URL the last page
+gave: a GET without a body, or the operation's method and the caller's body when a next URL repeats the body, with the
+call's headers and header and cookie parameters but not its query. A relative URL resolves against the URL that returned
+the page. The reference must follow RFC 3986, without a fragment, user information, or brackets outside an IPv6 host,
+and name an HTTP or HTTPS URL at the server's origin or at one `ProtocolSecurityContext.allowed_origins` lists; anything
+else raises `ProtocolDataError`, and a resolved URL over 8 KiB, or the cursor size when smaller, `ProtocolSizeError`. A
+request to another origin carries no credential or cookie header and none of the headers or query fields the package's
+security schemes name, and authenticates only at an origin `AuthConfig.allowed_origins` lists. A Link header's values
+must parse as RFC 8288 links within the cursor size and give the relation at most once; a page without the relation is
+the last, and an empty page with a URL continues. A URL seen earlier in the session, the first page's own included, ends
+it with `PaginationCycleError` after the repeating page.
+"""
 
     @staticmethod
     def count_runtime(kinds: set[str]) -> str:
         """Describe offset and page-number helpers, or nothing for a package without them."""
-        if not kinds - {"cursor"}:
+        if not kinds & {"offset", "page"}:
             return ""
         return """
 An offset or page-number helper sends the first request as the caller gives it and starts at the position the caller
