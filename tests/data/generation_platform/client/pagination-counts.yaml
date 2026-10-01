@@ -1,0 +1,106 @@
+openapi: 3.2.0
+info:
+  title: Pagination counts
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      parameters:
+        - name: offset
+          in: query
+          schema: {type: integer}
+        - name: page
+          in: query
+          schema: {type: integer, minimum: 1}
+        - name: limit
+          in: query
+          schema: {type: integer}
+        - name: cursor
+          in: query
+          schema: {type: string}
+        - name: position
+          in: query
+          schema: {type: number}
+        - name: X-Page
+          in: header
+          schema: {type: integer}
+      responses:
+        '200':
+          description: One page of users.
+          headers:
+            X-Total-Count:
+              schema: {type: integer}
+            X-Has-More:
+              schema: {type: boolean}
+            X-Name:
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /searches:
+    post:
+      operationId: search
+      tags: [searches]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SearchQuery'}
+      responses:
+        '200':
+          description: One page of matching users.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /finds:
+    get:
+      operationId: find
+      tags: [finds]
+      parameters:
+        - name: criteria
+          in: querystring
+          content:
+            application/x-www-form-urlencoded:
+              schema:
+                type: object
+                properties:
+                  term: {type: string}
+                  start: {type: integer}
+      responses:
+        '200':
+          description: One page of found users.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+components:
+  schemas:
+    User:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string}
+    UserPage:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: {$ref: '#/components/schemas/User'}
+        has_more: {type: boolean}
+        total: {type: integer}
+        more: {}
+        count: {}
+        maybe_total: {type: [integer, 'null']}
+    SearchQuery:
+      type: object
+      required: [query]
+      properties:
+        query: {type: string}
+        window:
+          type: object
+          properties:
+            start: {type: integer}

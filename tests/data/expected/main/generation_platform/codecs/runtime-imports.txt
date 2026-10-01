@@ -68,7 +68,7 @@ protocols/replay.py: ..client.errors, .options, __future__, datetime, heapq, thr
 protocols/resume.py: ..client.errors, ..client.responses, ..model_codecs.errors, ..model_codecs.media, ..model_codecs.wire, .records, .references, __future__, base64, collections.abc, datetime, hashlib, re, typing
 protocols/values.py: ..model_codecs.unset, ..model_codecs.wire, __future__, collections.abc, dataclasses, enum, typing
 protocols/webhooks.py: ..model_codecs.unset, .options, __future__, dataclasses, datetime, typing, typing_extensions
-protocols/writes.py: ..client.operations, ..client.options, ..model_codecs.wire, .values, __future__, dataclasses, typing
+protocols/writes.py: ..client.operations, ..client.options, ..model_codecs.wire, .values, __future__, collections.abc, dataclasses, typing
 server/__init__.py: -
 server/application.py: ..model_codecs.wire, .security, __future__, collections.abc, dataclasses, fastapi, fastapi.params, fastapi.routing, inspect, starlette.middleware, starlette.responses, starlette.routing, types, typing, typing_extensions
 server/codecs.py: ..model_codecs.errors, ..model_codecs.media, __future__, collections.abc, typing, typing_extensions

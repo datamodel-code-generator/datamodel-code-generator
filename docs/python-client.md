@@ -301,13 +301,13 @@ explicitly before using it as a model.
 
 ## Protocol helper configuration
 
-Pagination, polling, and SSE or NDJSON stream helpers of an API are declared in a helper configuration, which the
-client target reads through its `protocols` setting. The helpers are still being implemented: generation validates
-every helper, resolves its references against the selected API, and records it in the target manifest. An enabled
-cursor pagination helper generates the [pagination helper](#pagination-helpers) below; any other enabled helper fails
-with `E_CLIENT_UNSUPPORTED`. A disabled helper generates nothing, so the package is the same as without it. The
-`websocket`, `webhook`, `cache`, `resumable_upload`, `batch`, and `queue` kinds fail with `E_CLIENT_UNSUPPORTED`
-whether they are enabled or not, and their settings are not read yet.
+Pagination, polling, and SSE or NDJSON stream helpers of an API are declared in a helper configuration, which the client
+target reads through its `protocols` setting. The helpers are still being implemented: generation validates every
+helper, resolves its references against the selected API, and records it in the target manifest. An enabled cursor,
+offset, or page pagination helper generates the [pagination helper](#pagination-helpers) below; any other enabled helper
+fails with `E_CLIENT_UNSUPPORTED`. A disabled helper generates nothing, so the package is the same as without it. The
+`websocket`, `webhook`, `cache`, `resumable_upload`, `batch`, and `queue` kinds fail with `E_CLIENT_UNSUPPORTED` whether
+they are enabled or not, and their settings are not read yet.
 
 | Setting | Values | Default | Where |
 |---|---|---|---|
@@ -531,9 +531,9 @@ the same metadata. The `protocols` setting itself is not recorded among the publ
 
 ## Pagination helpers
 
-An enabled pagination helper with a `cursor` continuation is generated at `client.protocols.<name>` on `Client` and
-`AsyncClient` alike; the property exists only when the package has a helper. `page` fetches the first page,
-`next_page` the page after one the helper returned, and `iterate` returns a pager, which sends nothing until it is
+An enabled pagination helper with a `cursor`, `offset`, or `page` continuation is generated at `client.protocols.<name>`
+on `Client` and `AsyncClient` alike; the property exists only when the package has a helper. `page` fetches the first
+page, `next_page` the page after one the helper returned, and `iterate` returns a pager, which sends nothing until it is
 iterated. A helper takes the operation's parameters and its body as keywords, never field arguments, then
 `pagination_options`, `options`, and `session_options`:
 
@@ -594,21 +594,61 @@ or null cursor that no end covers, missing or null items, a header repeated for 
 `ProtocolSizeError`, each as a failure of the page's call. A continuation returned by an earlier page of the same
 pager, or an earlier page `next_page` continued from, ends it with `PaginationCycleError` after the repeating page.
 
+### Offsets and page numbers
+
+An `offset` or `page` continuation counts positions instead of reading them. The first request is sent as the caller
+gives it. The traversal starts at the position the caller passes for the `write` target, read from the first request
+after its usual validation: the parameter's value, or the member at the pointer of the querystring or JSON body. An
+integral number such as `40.0` on a `number` target starts at its integer. Without one it starts at `first`, the offset
+or page number the server gives a request without one. A starting value that is not an integer fails like any invalid
+argument, with `RequestEncodingError` when validation checks it, and otherwise with `ProtocolDataError` (condition
+`type`, location the target) before anything is sent. Each request after a page writes the page's position advanced by
+the `literal` step, or for an offset by the page's item count with `page_items_count`; a page number always advances by
+a literal step, and generation refuses `page_items_count` for it. The position is written to `write` like a cursor, so
+its target must accept integers, and `Page.continuation` has the kind `offset` or `page`.
+
+```yaml
+helpers:
+  users.by_offset:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: offset
+      write: {in: query, name: offset}
+      first: 0
+      step: {page_items_count: true}
+      total: {from: header, name: X-Total-Count}
+```
+
+The traversal ends at a page whose `has_more` reads `false`, or once the items counted before the next position reach
+the `total` the page reads. For an offset they are the offsets past `first`, since a total counts the whole collection
+wherever the traversal started; for a page number they are the items delivered since the start, the only count a page
+number gives, and a page without items ends it too, since no later page can bring the count nearer. A `total` of 0 ends
+at the first page, and a position past the total ends too. `has_more` must read a JSON boolean and `total` a JSON
+integer of at least 0; a header spells `true` or `false`, or decimal digits with an optional `-`, and generation checks
+the types its declared schema gives. A missing, null, or mistyped value raises `ProtocolDataError`, and a negative
+total, from the body or a header, raises it with the condition `value`. Otherwise an empty page does not end the
+traversal, but one that continues while `page_items_count` counts items would ask for the same position again, so it
+raises `ProtocolDataError` with the condition `inconsistent`. Positions only grow, so these helpers never raise
+`PaginationCycleError`, and `max_cursor_bytes` does not apply to them.
+
 ### Bindings and request targets
 
-Each request after the first is the first request with the helper's `bindings` written in order, then the cursor. A
-binding writes a `literal`, or what its selector reads from the `initial` page's response, kept for the whole
-traversal, or from the `previous` page's; a header selector with `occurrence: all` reads every value of the header as
-an array. The bindings are read from every page that has a next page, even one a caller never continues, and a
-value its selector finds missing raises `ProtocolDataError`; a header none of whose values is present counts as
-missing under `occurrence: all` too. A `null` is written as it is to a JSON body or a querystring of JSON content, the
-only targets that can carry it. A parameter target replaces the argument. A querystring or body target writes into
-the caller's querystring or JSON body, encoded and checked as in any call, or into an empty object when the call gives
-none; a missing, null, or other non-object value on its pointer is replaced by an empty object. The querystring is
-then encoded once, so no query pair is added. The values a server gave are never checked against their targets'
-schemas. A call's `options` must not patch a header, the `Cookie` header when the helper writes a cookie, or a query
-parameter the helper writes: `iterate`, `page`, and `next_page` raise `ProtocolConfigurationError` with a `field_path`
-of `("options", "headers" or "query", <name>)` before sending. A binding with `source: input` is not supported yet.
+Each request after the first is the first request with the helper's `bindings` written in order, then the cursor or
+position. A binding writes a `literal`, or what its selector reads from the `initial` page's response, kept for the
+whole traversal, or from the `previous` page's; a header selector with `occurrence: all` reads every value of the header
+as an array. The bindings are read from every page that has a next page, even one a caller never continues, and a value
+its selector finds missing raises `ProtocolDataError`; a header none of whose values is present counts as missing under
+`occurrence: all` too. A `null` is written as it is to a JSON body or a querystring of JSON content, the only targets
+that can carry it. A parameter target replaces the argument. A querystring or body target writes into the caller's
+querystring or JSON body, encoded and checked as in any call, or into an empty object when the call gives none; a
+missing, null, or other non-object value on its pointer is replaced by an empty object. The querystring is then encoded
+once, so no query pair is added. The values a server gave are never checked against their targets' schemas. A call's
+`options` must not patch a header, the `Cookie` header when the helper writes a cookie, or a query parameter the helper
+writes: `iterate`, `page`, and `next_page` raise `ProtocolConfigurationError` with a `field_path` of `("options",
+"headers" or "query", <name>)` before sending. A binding with `source: input` is not supported yet.
 
 ### Limits and sessions
 
@@ -648,15 +688,17 @@ The operation must declare exactly one success response with one JSON media type
 operation that also declares a `204` or another success status is refused. The items pointer must name, through the
 fields of the page's models, a JSON array whose items schema is `item_schema`. The cursor and each binding's selector
 must read a declared property or header, and a querystring or body target's pointer must name a property its schema
-declares, through `allOf` members and nullable `anyOf` or `oneOf` ones. The JSON types a cursor reads, other than
-null, and those a binding reads or its literal has, null included, must be ones the target accepts, and a binding that
-can give null must write a JSON body or a querystring of JSON content; a cursor that can be null needs a `null` end,
-and each end value must be of a type the cursor reads. A literal `.` or `..` is no path parameter value, and a body
-target needs a required body or one media type a call without `media_type` sends. A binding that writes the cursor's
-target or another binding's, or a body or querystring member inside or around one, fails with `E_CONFIG_CONFLICT`.
-Helper names whose classes collide, such as `users.all_items` and `users_all.items`, fail with `E_NAME_COLLISION`.
-Bindings that read the helper's input, request bodies other than JSON, envelope-projected responses, and items or
-selector pointers that read through a union or a map are not supported yet:
+declares, through `allOf` members and nullable `anyOf` or `oneOf` ones. The JSON types a cursor reads, other than null,
+and those a binding reads or its literal has, null included, must be ones the target accepts, and a binding that can
+give null must write a JSON body or a querystring of JSON content; a cursor that can be null needs a `null` end, and
+each end value must be of a type the cursor reads. A literal `.` or `..` is no path parameter value, and a body target
+needs a required body or one media type a call without `media_type` sends. A binding that writes the continuation's
+target or another binding's, or a body or querystring member inside or around one, fails with `E_CONFIG_CONFLICT`. An
+offset's or page number's target must accept integers, a page number advances by a literal step, `has_more` must read
+booleans, and `total` must read integers from the body or a header, never the status. Helper names whose classes
+collide, such as `users.all_items` and `users_all.items`, fail with `E_NAME_COLLISION`. Bindings that read the helper's
+input, request bodies other than JSON, envelope-projected responses, and items or selector pointers that read through a
+union or a map are not supported yet:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.pagination.diagnostics -->
 <!-- fmt: off -->
