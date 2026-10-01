@@ -1089,8 +1089,8 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
     """An asyncio WebSocket session, with the synchronous session's contract.
 
     Each wait runs under the call's guard in a lane of its own, so the cancel token, the client closing, and the
-    deadline stop only the waiting task. A receive or send stopped while it waits for the connection drops it, since a
-    frame may be half read or written.
+    deadline stop only the waiting task. A receive or send they stop drops the connection, since a frame may be half
+    read or written; cancelling a receive's task leaves the session usable, as the library reads whole frames.
     """
 
     __slots__ = ("_connection", "_queue", "_response")
@@ -1168,7 +1168,9 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
             raise await self._failed(self._idle()) from None
         except WebSocketClosedError as closed:
             raise await self._end(self._peer(closed)) from None
-        except BaseException as error:  # noqa: BLE001
+        except BaseException as error:
+            if not isinstance(error, Exception):
+                raise
             raise await self._failed(self._own(error)) from None
         try:
             return self._message(frame)

@@ -229,9 +229,11 @@
   async ping once the server closed unread ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', code=1000, clean=True) [operation_id='feedSocket'] web_socket_closed_error
   async cancelled receive ! RequestCancelledError: RequestCancelledError(operation_id='roomSocket', call_id='<call>', source='cancel_token', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | no close
-  async receive cancelled by its task CancelledError
-  async receive after the cancellation ! ProtocolStateError: ProtocolStateError(operation_id='roomSocket', call_id='<call>', state='failed', action='receive') [operation_id='roomSocket'] protocol_state_error
-    server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | no close
+  async receive cancelled by its task CancelledError AsyncWebSocketSession(helper_id='feed.text', state='open', subprotocol=None)
+  async receive past wait_for ! TimeoutError:  []
+  async send after the cancelled receives = None
+    async received 1 binary bytesb'after' raw=b'after'
+    server GET /feed/socket [] | closed 1000 ''
   async receive stopped by the client closing ! ClientClosedError: ClientClosedError(operation_id='roomSocket', call_id='<call>', state='CLOSING', owner='client') [operation_id='roomSocket'] client_closed_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1001 ''
   async unanswered ping ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=0.1) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout_error

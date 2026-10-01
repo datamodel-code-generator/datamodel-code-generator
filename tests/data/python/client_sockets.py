@@ -111,6 +111,11 @@ def _replying(connection: ServerConnection) -> None:
     connection.send("secret-reply")
 
 
+def _answering(connection: ServerConnection) -> None:
+    """Send the first message back as bytes, then wait for the client."""
+    connection.send(connection.recv().encode())
+
+
 def _closing(connection: ServerConnection) -> None:
     connection.close()
 
@@ -800,14 +805,17 @@ async def _async_sockets(harness: _Harness) -> None:
         asyncio.get_running_loop().call_later(0.05, token.cancel)
         await arecord(lines, "async cancelled receive", session.receive)
         harness.report(play)
-        (play,) = server.play(Play())
-        session = await chat.connect(room=harness.room())
+        (play,) = server.play(Play(talk=_answering))
+        session = await api.protocols.feed.text.connect()
         waiting = asyncio.create_task(session.receive())
         await asyncio.sleep(0)
         waiting.cancel()
         cancelled = (await asyncio.gather(waiting, return_exceptions=True))[0]
-        lines.append(f"  async receive cancelled by its task {type(cancelled).__name__}")
-        await arecord(lines, "async receive after the cancellation", session.receive)
+        lines.append(f"  async receive cancelled by its task {type(cancelled).__name__} {session!r}")
+        await arecord(lines, "async receive past wait_for", lambda: asyncio.wait_for(session.receive(), 0.05))
+        await arecord(lines, "async send after the cancelled receives", lambda: session.send("after"))
+        lines.append(f"    async received {_message(await session.receive())}")
+        await session.aclose()
         harness.report(play)
     (play,) = server.play(Play())
     api = harness.package.AsyncClient(options=harness.client(cleanup_timeout=1.0))
