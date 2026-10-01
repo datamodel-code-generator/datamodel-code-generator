@@ -2945,8 +2945,8 @@ reference for their limits and checkpoints."""
         polling = (
             """
 A polling helper's `start` creates the operation and returns a handle: `status` polls it once and `wait` polls until
-it settles and returns its result, each poll after the wait the last response requires; `close` stops only local
-polling. See the runtime reference for their limits."""
+it settles and returns its result, each poll after the wait the last response requires; `close()` or `aclose()`
+stops only local polling. See the runtime reference for their limits."""
             if "polling" in kinds
             else ""
         )
@@ -3180,8 +3180,8 @@ cancelled operation raises `OperationFailedError` or `OperationCancelledError` w
 `wait` too. An error that settles nothing, such as a transport error, a deadline, a cancellation, or a limit, leaves
 the handle as it was: pending, so a later `status` or `wait` polls again without creating the operation again, or
 succeeded with its result fetch still due, which a later `wait` retries alone. `status` and `wait` at once raise
-`ProtocolStateError`, and so does every step after `close`, which stops only local polling. A call's options must not
-fix an idempotency key or patch a header or query parameter the helper writes.
+`ProtocolStateError`, and so does every step after `close()` or `aclose()`, which stops only local polling. A call's
+options must not fix an idempotency key or patch a header or query parameter the helper writes.
 """
 
     def pagination_runtime(self) -> str:

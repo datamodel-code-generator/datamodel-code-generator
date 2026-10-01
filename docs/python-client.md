@@ -964,10 +964,11 @@ raises the same error while the result stays missing; a missing or null immediat
 
 An error that settles nothing, such as a transport error, an HTTP error, a deadline, a cancellation, a limit, or a
 `ProtocolDataError` of a poll, leaves the handle as it was, so a later `status` or `wait` polls again without creating
-the operation again, and a failed result fetch is retried alone. `close()`, or leaving a `with` block, stops only local
-polling; the remote operation goes on, and every later step raises `ProtocolStateError` with `state='closed'`. Calling
-`status`, `wait`, or `close` while another step runs raises `ProtocolStateError` with `state='polling'`; a block that
-ends with an error while another step runs leaves the handle open and lets its own error propagate.
+the operation again, and a failed result fetch is retried alone. `close()` or `aclose()`, or leaving a `with` or
+`async with` block, stops only local polling; the remote operation goes on, and every later step raises
+`ProtocolStateError` with `state='closed'`. Calling `status`, `wait`, `close`, or `aclose` while another step runs
+raises `ProtocolStateError` with `state='polling'`; a block that ends with an error while another step runs leaves the
+handle open and lets its own error propagate.
 
 ### Waits and server delays
 
@@ -983,9 +984,10 @@ before its `deadline`, could never be waited out, so `start` raises `ProtocolCon
 than `max_wait`, or not shorter than what remains of the session's deadline or the options' deadline, raises
 `PollWaitLimitError` with the kind `wait` or `deadline`, the `required_wait`, and the `limit` before anything is sent;
 the handle stays as it was. A wait ends early for the options' `CancelToken` and the client's close, raising
-`RequestCancelledError` or `ClientClosedError` with the poll operation's `operation_id` and the session's
-`parent_session_id`. Once the client is closed, every later `status` or `wait` that needs a poll or a result fetch
-raises `ClientClosedError`. `resume_state` is None, since checkpoints of polling helpers are not supported yet.
+`RequestCancelledError` or `ClientClosedError` with the `operation_id` of the operation it waits to call, the poll's
+or the result fetch's, and the session's `parent_session_id`. Once the client is closed, every later `status` or
+`wait` that needs a poll or a result fetch raises `ClientClosedError`. `resume_state` is None, since checkpoints of
+polling helpers are not supported yet.
 
 ### Limits and sessions
 
@@ -1018,8 +1020,9 @@ pointer a property of the response's model, through every accepted create respon
 poll's for `source: previous`, or a declared header. Each declared state must have a JSON type the state reads. The
 JSON types a binding reads or its literal has must be ones its target accepts, literals that make a path segment `.` or
 `..` once encoded are no path parameter values, and every required parameter and required body of the poll and result
-operations must be written by a binding. Two bindings writing the same target, or a body or querystring member inside
-or around another's, fail with `E_CONFIG_CONFLICT`. As for pagination, no binding of the poll or the result fetch writes
+operations must be written by a binding, and a body a binding writes needs a default media type, since a poll or a
+result fetch names none. Two bindings writing the same target, or a body or querystring member inside or around
+another's, fail with `E_CONFIG_CONFLICT`. As for pagination, no binding of the poll or the result fetch writes
 a credential position: a
 cookie, the `Authorization`, `Proxy-Authorization`, `Cookie`, and `Cookie2` headers, or a header, query parameter, or
 querystring property a security scheme of the package names. An inline or immediate result reads a body pointer whose
@@ -1071,6 +1074,7 @@ E_CONFIG_VALUE config protocols.helpers['checks.credentials'].result.bindings[0]
 E_CONFIG_VALUE config protocols.helpers['checks.no_success'].accepted_statuses[0] /paths/~1archives/post: The accepted status 202 of 'checks.no_success' selects no success response of POST /archives
 E_CONFIG_VALUE config protocols.helpers['checks.no_success'].immediate_result.statuses[0] /paths/~1archives/post: The immediate status 200 of 'checks.no_success' selects no success response of POST /archives
 E_CLIENT_UNSUPPORTED target protocols.helpers['checks.no_success'].immediate_result /paths/~1archives/post: The immediate result of 'checks.no_success' reads POST /archives, whose success responses are not all one JSON model, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['checks.media'].result.bindings /paths/~1archives~1search/post: The polling helper 'checks.media' writes a request body of POST /archives/search, which has no default media type; set the operation's request_media_type
 ```
 
 <!-- fmt: on -->
