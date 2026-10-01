@@ -38,7 +38,7 @@ def verify(body: bytes, headers: list[tuple[str, str]], now: datetime) -> None:
     del wider
 
 
-async def verify_async(body: bytes, headers: list[tuple[str, str]], now: datetime) -> None:
+async def awaited_helpers(body: bytes, headers: list[tuple[str, str]], now: datetime) -> None:
     """Await the asyncio helpers with an asyncio store, keeping the same result types."""
     keys = KeySet(keys=(HmacKey(id="active", secret=b"secret"),))
     result = await message.verify_async(body, headers, keys, now=now, replay_store=AsyncMemoryReplayStore())
