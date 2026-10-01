@@ -1,0 +1,5 @@
+# protocols-querystring
+render pydantic_v2.BaseModel
+  APIGenerationError
+  E_CONFIG_VALUE config protocols.helpers['search.query'].continuation.write /paths/~1search/get: protocols.helpers['search.query'].continuation.write: GET /search owns a querystring, which a querystring target writes
+  E_CONFIG_VALUE config protocols.helpers['search.other'].continuation.write /paths/~1search/get: protocols.helpers['search.other'].continuation.write: GET /search has no querystring 'terms'

@@ -26,3 +26,4 @@ validation=ClientValidationConfig(request='native', response='schema', arguments
 default_base_url=None
 server_base_url=None
 codec_adapters=()
+protocols=None

@@ -26,3 +26,4 @@ validation=ClientValidationConfig(request='none', response='native', arguments='
 default_base_url='https://api.example.com/v1'
 server_base_url='http://localhost:8080'
 codec_adapters=()
+protocols=None

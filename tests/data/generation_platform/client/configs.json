@@ -568,5 +568,35 @@
   },
   "toml-auth-unknown": {
     "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/get\"\n[operations.runtime]\nsecurity = []\n"
+  },
+  "protocols-path": {
+    "protocols": "protocols/disabled.yaml"
+  },
+  "protocols-type": {
+    "protocols": {
+      "raw": 5
+    }
+  },
+  "protocols-records": {
+    "protocols": {
+      "python": "disabled"
+    }
+  },
+  "protocols-records-invalid": {
+    "protocols": {
+      "python": "invalid"
+    }
+  },
+  "protocols-records-shape": {
+    "protocols": {
+      "python": "shape"
+    }
+  },
+  "toml-protocols": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\nprotocols = \"client-protocols.yaml\"\n",
+    "toml_path": "config/client.toml"
+  },
+  "toml-protocols-type": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\nprotocols = 5\n"
   }
 }

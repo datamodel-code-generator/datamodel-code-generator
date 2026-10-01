@@ -299,6 +299,234 @@ raw bytes, event types, and event data; read those attributes explicitly. The pa
 and default to `object`, so an unparameterized `OperationFailedError` has `object` snapshot data. Narrow the payload
 explicitly before using it as a model.
 
+## Protocol helper configuration
+
+Pagination, polling, and SSE or NDJSON stream helpers of an API are declared in a helper configuration, which the
+client target reads through its `protocols` setting. The helpers themselves are still being implemented: generation
+validates every helper, resolves its references against the selected API, and records it in the target manifest,
+but an enabled helper fails with `E_CLIENT_UNSUPPORTED`. A disabled helper generates nothing, so the package is the
+same as without it. The `websocket`, `webhook`, `cache`, `resumable_upload`, `batch`, and `queue` kinds fail with
+`E_CLIENT_UNSUPPORTED` whether they are enabled or not, and their settings are not read yet.
+
+| Setting | Values | Default | Where |
+|---|---|---|---|
+| `protocols` | A helper file path, a `ProtocolConfiguration`, or none | None | Target file: `protocols = "client-protocols.yaml"`, relative to the target file; Python: a `Path`, relative to the working directory, or a `ProtocolConfiguration` record |
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.protocols.toml -->
+<!-- fmt: off -->
+
+```toml
+schema_version = 1
+output = "client"
+package = "client"
+model_package = "models"
+protocols = "client-protocols.yaml"
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.protocols.toml -->
+
+A setting that is neither a path nor a `ProtocolConfiguration` fails with `E_CONFIG_VALUE`. The helper file is read
+only when the target is generated, so its problems are reported then, with the target's identity. Without
+`protocols`, nothing is read and the manifest records no helpers.
+
+### The helper file
+
+The file is UTF-8 YAML holding one mapping with `schema_version: 1` and `helpers`, a mapping from each helper's name
+to its definition, in declaration order:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.protocols.yaml -->
+<!-- fmt: off -->
+
+```yaml
+schema_version: 1
+helpers:
+  users.all:
+    kind: pagination
+    enabled: false
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User, document: ../helpers.yaml}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: missing}, {kind: "null"}]
+      empty_string: value
+    bindings:
+      - target: {in: header, name: snapshot}
+        value:
+          source: initial
+          selector: {from: header, name: Snapshot, occurrence: all}
+  jobs.run:
+    kind: polling
+    enabled: false
+    create: /paths/~1jobs/post
+    accepted_statuses: [202]
+    poll: /paths/~1jobs~1{jobId}/get
+    bindings:
+      - target: {in: path, name: jobId}
+        value:
+          source: initial
+          selector: {from: body, pointer: /id}
+    state: {from: body, pointer: /status}
+    pending: [queued, running]
+    succeeded: [done]
+    failed: [failed]
+    cancelled: [cancelled]
+    result:
+      kind: inline
+      selector: {from: body, pointer: ""}
+      schema: {pointer: /components/schemas/Job}
+    interval: {seconds: 2, retry_after_header: Retry-After}
+    remote_cancel:
+      operation: /paths/~1jobs~1{jobId}/delete
+      bindings:
+        - target: {in: path, name: jobId}
+          value:
+            source: initial
+            selector: {from: body, pointer: /id}
+    immediate_result:
+      statuses: [200, 201]
+      selector: {from: body, pointer: ""}
+      schema: {pointer: /components/schemas/Job}
+    expires_at: {from: body, pointer: /expires}
+  records.watch:
+    kind: ndjson
+    enabled: false
+    operation: /paths/~1records/get
+    media: application/x-ndjson
+    event_schema: {pointer: /components/schemas/Record, document: ../helpers-external.yaml}
+    completion: {kind: sentinel, value: "[DONE]"}
+    final_line: allow_eof
+    resume:
+      enabled: true
+      cursor: {from: body, pointer: /id}
+      write: {in: query, name: after}
+      reopen_operation: /paths/~1records/get
+      delivery: at_least_once
+      missing: inherit
+      "null": clear
+      expires_at: {from: header, name: X-Expires}
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.protocols.yaml -->
+
+- A file that cannot be read, is not UTF-8 or YAML, holds more than one document, uses an anchor, an alias, or a
+  merge key, nests collections more than 64 levels deep, repeats a key in one mapping, or is not a mapping fails with
+  `E_CONFIG_VALUE`. Keys must be strings; quote `"null"`, which YAML otherwise reads as null.
+- The file is read with the generator's own YAML rules: only `true` and `false` are booleans, in any of the cases
+  `true`, `True`, and `TRUE`, so `yes` is a string; dates stay strings; and other scalars follow PyYAML's YAML 1.1
+  rules, so `1_000` is an integer. A tag that builds another type, such as `!!omap`, is not a JSON value.
+- Every key is checked at every level. A key the definition does not have, including a setting of another kind or
+  one that the chosen variant does not take, fails with `E_CONFIG_UNKNOWN`; a missing required key or a value of
+  the wrong type fails with `E_CONFIG_VALUE`; and settings that contradict each other fail with `E_CONFIG_CONFLICT`.
+- A helper name is Python identifiers separated by dots, each in NFKC form, not a keyword, not starting with `_`, and
+  not a Windows device name such as `con` or `com1`. Two names equal after NFC normalization and case folding, or
+  one name that is a dotted prefix of another, such as `users` and `users.all`, fail with `E_NAME_COLLISION`.
+- Every definition has `kind`, one of `pagination`, `polling`, `sse`, `ndjson`, `websocket`, `webhook`, `cache`,
+  `resumable_upload`, `batch`, and `queue`, and `enabled`, a boolean that defaults to `true`.
+
+### Shared values
+
+| Value | Forms |
+|---|---|
+| Operation reference | An RFC 6901 pointer string to a root path operation, or `{pointer, document?}`. A document names the root input, relative to the helper file, or to the working directory for Python records |
+| Schema reference | `{pointer, document?}` with an RFC 6901 pointer; an omitted document is the root input. A document, resolved as for operation references, must be one of the accepted input's documents |
+| Selector | `{from: body, pointer}`, an RFC 6901 pointer over wire names; `{from: header, name, occurrence?}` with `occurrence` `single` (default) or `all`; or `{from: status}`. `all` is accepted only in a binding value |
+| Request target | `{in: path\|query\|header\|cookie, name}`, `{in: querystring, name, pointer}` with the declared querystring's name, or `{in: body, pointer}` |
+| Binding | `{target, value}`, where `value` is `{source, selector}` with `source` `input`, `initial`, or `previous`, or `{literal}` with any JSON value whose text is UTF-8 and whose containers nest at most 64 levels |
+| End condition | `{kind: missing}`, `{kind: "null"}`, or `{kind: value, value}` with a JSON value other than null. A list of them is nonempty and names each condition once |
+
+A reference must select a root path operation of the input, or generation fails with `E_OPERATION_REF`; webhooks and
+path items of other documents are refused. An enabled helper whose operation the selection excludes fails with
+`E_SELECTOR_DEPENDENCY`; a disabled one may keep it. Each request target must exist in the operation it writes to:
+the declared parameter of that location and name, header names compared without case, the operation's own
+querystring, or its request body. An operation that owns a querystring takes no `in: query` target.
+
+### Helper kinds
+
+| Kind | Required | Optional |
+|---|---|---|
+| `pagination` | `operation`, `items` (a body selector), `item_schema`, `continuation` | `bindings` (`[]`), such as a snapshot token each request carries |
+| `polling` | `create`, `accepted_statuses`, `poll`, `bindings` (create to poll), `state`, `pending`, `succeeded`, `result` | `failed` and `cancelled` (`[]`), `interval` (`{seconds: 1, retry_after_header: null}`), `remote_cancel` (`{operation, bindings?}`), `immediate_result` (`{statuses, selector, schema}`), `expires_at` |
+| `sse`, `ndjson` | `operation`, `media`, `event_schema`, `completion`, and for `ndjson` `final_line` (`require_newline` or `allow_eof`) | `unknown` (`error`, the default, or `raw`), `error_events` (`{}`), `resume` (`{enabled: false}`) |
+
+A pagination `continuation` is one of these:
+
+| `kind` | Settings |
+|---|---|
+| `cursor` | `read`, `write`, `end`, and `empty_string` (`value` or `end`), which alone decides the empty string, so `end` cannot list it |
+| `offset`, `page` | `write`, `first` (an integer of at least 0), `step` (`{literal: <positive integer>}` or `{page_items_count: true}`), and exactly one of `has_more` and `total` |
+| `next_url` | `read`, `end`, and `repeat_request_body` (`false`) |
+| `link` | `header`, the response header's name, and `rel` (`next`) |
+
+Polling statuses are distinct integers from 100 to 599, and `immediate_result` cannot list an accepted status. The
+four state lists hold JSON values: a list that repeats a value fails with `E_CONFIG_VALUE`, and a value that two lists
+share fails with `E_CONFIG_CONFLICT`. `result` is `{kind: inline, selector, schema}`,
+`{kind: operation, operation, bindings?}`, or `{kind: none}`, and `interval.seconds` is positive.
+
+A stream's `event_schema` is one schema reference, or `{discriminator, mapping}` where `discriminator` is
+`{from: event_type}` (SSE only) or `{from: body, pointer}` and `mapping` names the schema of each event type.
+`unknown: raw` and `error_events` need a discriminator, and an error event cannot also be a mapped event. `completion`
+is `{kind: eof}`, `{kind: sentinel, value}`, or `{kind: event_type, value}` (SSE only). An enabled `resume` takes
+`cursor` (a selector, or `event_id` for SSE), `write`, `reopen_operation`, `delivery: at_least_once`, `bindings`
+(`[]`), `reconnect_on` (a nonempty list of `transport_interruption` and `incomplete_eof`, by default
+`[transport_interruption]`), and optionally `expires_at`; a selector cursor also takes `missing` (`inherit` or
+`error`) and `"null"` (`clear` or `error`). A disabled `resume` takes no other key.
+
+Helpers reserve the arguments `session_options`, `pagination_options`, `poll_options`, `stream_options`,
+`ws_options`, `cache_options`, `upload_options`, `batch_options`, `queue_options`, `source`, `items`, and `state`. When
+an enabled helper's operation, or its `create` operation for polling, has a parameter or field argument with one of
+these names, generation fails with `E_NAME_COLLISION` instead of renaming it; name the argument with
+`parameter_names` or `body_field_names`:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.protocols.diagnostics -->
+<!-- fmt: off -->
+
+```text
+E_NAME_COLLISION target protocols.helpers['tags.all'] /paths/~1tags/get: The pagination helper 'tags.all' reserves the argument 'items' of GET /tags; rename them with parameter_names or body_field_names
+E_NAME_COLLISION target protocols.helpers['jobs.run'] /paths/~1jobs/post: The polling helper 'jobs.run' reserves the argument 'state' of POST /jobs; rename them with parameter_names or body_field_names
+E_SELECTOR_DEPENDENCY selection protocols.helpers['audit.all'].operation /paths/~1admin~1audit/get: The enabled pagination helper 'audit.all' needs GET /admin/audit, which the selection excludes (excluded by exclude_tags 'admin')
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.protocols.diagnostics -->
+
+### Python records and the manifest
+
+`ProtocolConfiguration(schema_version=1, helpers={...})` takes `PaginationHelper`, `PollingHelper`, and
+`StreamHelper` records, which mirror the file: their fields have the file's names, with `from_` for `from`, and they
+take the client's `Selector` and `RequestTarget` records, `OperationRef` or a pointer string, and `SchemaRef`. They are
+validated as the file is, with the same diagnostics, when the client configuration is constructed. The later kinds
+have no records yet.
+
+```python
+ClientGenerationConfig(
+    output=Path("client"),
+    package="client",
+    model_package="models",
+    protocols=ProtocolConfiguration(
+        helpers={
+            "users.all": PaginationHelper(
+                enabled=False,
+                operation="/paths/~1users/get",
+                items=BodySelector(pointer="/data"),
+                item_schema=SchemaRef(pointer="/components/schemas/User"),
+                continuation=LinkContinuation(header="Link"),
+            ),
+        },
+    ),
+)
+```
+
+The manifest lists every helper in declaration order in `protocol_helpers`, disabled ones included, with its name,
+kind, `enabled`, the pointer of its metadata, and the digest of its contract, which is empty while it generates
+nothing. `inputs.target_config.protocol_metadata` holds each helper's settings with the defaults filled in and each
+reference replaced by the manifest's reference to the accepted input, so a file and the equal Python records record
+the same metadata. The `protocols` setting itself is not recorded among the public options.
+
 ## Signature style
 
 `signature_style` chooses how every operation method of the generated package declares its keyword arguments.

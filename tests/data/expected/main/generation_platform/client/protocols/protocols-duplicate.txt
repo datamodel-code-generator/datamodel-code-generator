@@ -1,0 +1,5 @@
+# protocols-duplicate
+render pydantic_v2.BaseModel
+  APIGenerationError
+  E_CONFIG_VALUE config protocols: protocols repeats the key 'schema_version'
+  E_CONFIG_VALUE config protocols.helpers['users.all']: protocols.helpers['users.all'] repeats the key 'kind'

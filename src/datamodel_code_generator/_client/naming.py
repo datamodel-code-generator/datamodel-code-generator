@@ -12,6 +12,7 @@ _CAMEL: Final = re.compile(r"([a-z0-9])([A-Z])")
 _SEPARATORS: Final = re.compile(r"_+")
 _IDENTIFIER: Final = re.compile(r"[a-z][a-z0-9_]*")
 _PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
+_TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
 RESERVED_MEMBERS: Final = frozenset({
     "aclose",
     "close",
@@ -24,6 +25,20 @@ RESERVED_MEMBERS: Final = frozenset({
     "with_streaming_response",
 })
 RESERVED_ARGUMENTS: Final = frozenset({"body", "media_type", "options", "response_media_type", "self"})
+HELPER_ARGUMENTS: Final = frozenset({
+    "batch_options",
+    "cache_options",
+    "items",
+    "pagination_options",
+    "poll_options",
+    "queue_options",
+    "session_options",
+    "source",
+    "state",
+    "stream_options",
+    "upload_options",
+    "ws_options",
+})
 WINDOWS_DEVICES: Final = frozenset({
     "aux",
     "con",
@@ -74,4 +89,24 @@ def namespace_problem(value: object) -> str | None:
         return "A resource namespace must be dotted lowercase ASCII identifiers"
     if reserved := next((part for part in value.split(".") if part in RESERVED_MEMBERS | WINDOWS_DEVICES), None):
         return f"A resource namespace cannot use the reserved name {reserved!r}"
+    return None
+
+
+def token(value: object) -> bool:
+    """Return whether a value is an HTTP token, such as a header name."""
+    return isinstance(value, str) and _TOKEN.fullmatch(value) is not None
+
+
+def folded(name: str) -> str:
+    """Return the form two helper names are compared in: NFC-normalized, then case-folded."""
+    return unicodedata.normalize("NFC", name).casefold()
+
+
+def helper_name_problem(value: str) -> str | None:
+    """Return why a helper name is invalid, or None for dotted public Python identifiers in NFKC form."""
+    for part in value.split("."):
+        if not part.isidentifier() or keyword.iskeyword(part):
+            return f"The helper name {value!r} must be Python identifiers separated by dots, without keywords"
+        if unicodedata.normalize("NFKC", part) != part or part.startswith("_") or part.casefold() in WINDOWS_DEVICES:
+            return f"The helper name {value!r} cannot use the part {part!r}"
     return None

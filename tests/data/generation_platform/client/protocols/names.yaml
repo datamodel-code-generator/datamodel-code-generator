@@ -1,0 +1,20 @@
+schema_version: 1
+helpers:
+  users.all: {kind: pagination, enabled: false, operation: /paths/~1users/get, items: {from: body, pointer: /data}, item_schema: {pointer: /components/schemas/User}, continuation: {kind: link, header: Link}}
+  1: {kind: pagination, enabled: false, operation: /paths/~1users/get, items: {from: body, pointer: /data}, item_schema: {pointer: /components/schemas/User}, continuation: {kind: link, header: Link}}
+  null: {kind: pagination, enabled: false, operation: /paths/~1users/get, items: {from: body, pointer: /data}, item_schema: {pointer: /components/schemas/User}, continuation: {kind: link, header: Link}}
+  users..all: {kind: pagination, enabled: false, operation: /paths/~1users/get, items: {from: body, pointer: /data}, item_schema: {pointer: /components/schemas/User}, continuation: {kind: link, header: Link}}
+  users.all.: {kind: pagination, enabled: false, operation: /paths/~1users/get, items: {from: body, pointer: /data}, item_schema: {pointer: /components/schemas/User}, continuation: {kind: link, header: Link}}
+  class.all: {kind: pagination, enabled: false, operation: /paths/~1users/get, items: {from: body, pointer: /data}, item_schema: {pointer: /components/schemas/User}, continuation: {kind: link, header: Link}}
+  _private: {kind: pagination, enabled: false, operation: /paths/~1users/get, items: {from: body, pointer: /data}, item_schema: {pointer: /components/schemas/User}, continuation: {kind: link, header: Link}}
+  users._all: {kind: pagination, enabled: false, operation: /paths/~1users/get, items: {from: body, pointer: /data}, item_schema: {pointer: /components/schemas/User}, continuation: {kind: link, header: Link}}
+  ｕsers.fullwidth: {kind: pagination, enabled: false, operation: /paths/~1users/get, items: {from: body, pointer: /data}, item_schema: {pointer: /components/schemas/User}, continuation: {kind: link, header: Link}}
+  files.COM1: {kind: pagination, enabled: false, operation: /paths/~1users/get, items: {from: body, pointer: /data}, item_schema: {pointer: /components/schemas/User}, continuation: {kind: link, header: Link}}
+  Users.All: {kind: pagination, enabled: false, operation: /paths/~1users/get, items: {from: body, pointer: /data}, item_schema: {pointer: /components/schemas/User}, continuation: {kind: link, header: Link}}
+  users: {kind: pagination, enabled: false, operation: /paths/~1users/get, items: {from: body, pointer: /data}, item_schema: {pointer: /components/schemas/User}, continuation: {kind: link, header: Link}}
+  users.all.more: {kind: pagination, enabled: false, operation: /paths/~1users/get, items: {from: body, pointer: /data}, item_schema: {pointer: /components/schemas/User}, continuation: {kind: link, header: Link}}
+  broken: 5
+  kindless: {enabled: true}
+  graphql: {kind: graphql}
+  typed: {kind: 5}
+  toggled: {kind: pagination, enabled: "yes", operation: /paths/~1users/get, items: {from: body, pointer: /data}, item_schema: {pointer: /components/schemas/User}, continuation: {kind: link, header: Link}}

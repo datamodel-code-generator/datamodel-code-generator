@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass, field
 from math import isfinite
+from pathlib import Path
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, TypeVar
 
 from typing_extensions import TypeIs
 
-from datamodel_code_generator._client.naming import identifier, namespace_problem
+from datamodel_code_generator._client.naming import identifier, namespace_problem, token
 from datamodel_code_generator._codec_declarations import CodecAdapterRegistration, OperationRef
 from datamodel_code_generator._runtime.client.options import (
     ArgumentValidation,
@@ -27,6 +27,7 @@ from datamodel_code_generator._target_config import (
     _ConfigValueError,  # pyright: ignore[reportPrivateUsage]
     _diagnostic,  # pyright: ignore[reportPrivateUsage]
     _operation,  # pyright: ignore[reportPrivateUsage]
+    _path,  # pyright: ignore[reportPrivateUsage]
     _records,  # pyright: ignore[reportPrivateUsage]
     _string,  # pyright: ignore[reportPrivateUsage]
     _strings,  # pyright: ignore[reportPrivateUsage]
@@ -35,9 +36,9 @@ from datamodel_code_generator._target_config import (
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
-    from pathlib import Path
 
     from datamodel_code_generator._api_types import Diagnostic, OperationSelector
+    from datamodel_code_generator._client.protocols import ProtocolConfiguration
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation
 
 Transport: TypeAlias = Literal["httpx2"]
@@ -53,7 +54,6 @@ _VALIDATION_AXES: Final = (
     ("response", "response_overrides", ("native", "schema")),
     ("arguments", "argument_overrides", ("none", "pydantic")),
 )
-_TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
 _MIN_REDIRECT: Final = 300
 _MAX_REDIRECT: Final = 399
 
@@ -158,8 +158,10 @@ class ClientGenerationConfig(TargetConfig):
     default_base_url: str | None = None
     server_base_url: str | None = None
     codec_adapters: tuple[CodecAdapterRegistration, ...] = ()
+    protocols: Path | ProtocolConfiguration | None = None
 
     toml_converters: ClassVar[Mapping[str, Converter]]
+    manifest_exclusions: ClassVar[frozenset[str]] = frozenset({"selection", "protocols"})
 
     def _problems(self) -> Iterator[Diagnostic]:
         yield from TargetConfig._problems(self)  # noqa: SLF001
@@ -183,6 +185,18 @@ class ClientGenerationConfig(TargetConfig):
                 )
         if not _tuple_of(self.codec_adapters, CodecAdapterRegistration):
             yield _diagnostic("E_CONFIG_VALUE", "codec_adapters", "codec_adapters must be a tuple of registrations")
+        if self.protocols is not None and not isinstance(self.protocols, Path):
+            yield from _protocol_problems(self.protocols)
+
+
+def _protocol_problems(value: object) -> Iterator[Diagnostic]:
+    """Validate Python helper records, loading their definitions only for a configuration that has them."""
+    from datamodel_code_generator._client.protocols import ProtocolConfiguration, protocol_problems  # noqa: PLC0415
+
+    if isinstance(value, ProtocolConfiguration):
+        yield from protocol_problems(value)
+    else:
+        yield _diagnostic("E_CONFIG_VALUE", "protocols", "protocols must be a Path, a ProtocolConfiguration, or None")
 
 
 def absolute(value: object) -> bool:
@@ -201,11 +215,6 @@ def _media(value: object) -> bool:
     except ValueError:
         return False
     return True
-
-
-def token(value: object) -> bool:
-    """Return whether a value is an HTTP token, such as a header name."""
-    return isinstance(value, str) and _TOKEN.fullmatch(value) is not None
 
 
 def _positive_seconds(value: object) -> float | None:
@@ -584,4 +593,5 @@ ClientGenerationConfig.toml_converters = MappingProxyType({
     "validation": _validation,
     "default_base_url": _string,
     "server_base_url": _string,
+    "protocols": _path,
 })

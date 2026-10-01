@@ -1,0 +1,128 @@
+schema_version: 1
+helpers:
+  items.type:
+    {kind: pagination, operation: /paths/~1users/get, items: 5, item_schema: {pointer: /components/schemas/User}, continuation: {kind: link, header: Link}}
+  items.header:
+    {kind: pagination, operation: /paths/~1users/get, items: {from: header, name: X-Items}, item_schema: {pointer: /components/schemas/User}, continuation: {kind: link, header: Link}}
+  items.untagged:
+    {kind: pagination, operation: /paths/~1users/get, items: {pointer: /data}, item_schema: {pointer: /components/schemas/User}, continuation: {kind: link, header: Link}}
+  items.pointer:
+    {kind: pagination, operation: /paths/~1users/get, items: {from: body, pointer: data}, item_schema: {pointer: /components/schemas/User}, continuation: {kind: link, header: Link}}
+  items.unknown:
+    {kind: pagination, operation: /paths/~1users/get, items: {from: body, pointer: /data, name: data}, item_schema: {pointer: /components/schemas/User}, continuation: {kind: link, header: Link}}
+  schema.pointer:
+    {kind: pagination, operation: /paths/~1users/get, items: {from: body, pointer: /data}, item_schema: {pointer: 5}, continuation: {kind: link, header: Link}}
+  schema.key:
+    {kind: pagination, operation: /paths/~1users/get, items: {from: body, pointer: /data}, item_schema: {pointer: /components/schemas/User, 1: x}, continuation: {kind: link, header: Link}}
+  schema.type:
+    {kind: pagination, operation: /paths/~1users/get, items: {from: body, pointer: /data}, item_schema: /components/schemas/User, continuation: {kind: link, header: Link}}
+  operation.missing:
+    {kind: pagination, operation: {document: ../helpers.yaml}, items: {from: body, pointer: /data}, item_schema: {pointer: /components/schemas/User}, continuation: {kind: link, header: Link}}
+  operation.type:
+    {kind: pagination, operation: 5, items: {from: body, pointer: /data}, item_schema: {pointer: /components/schemas/User}, continuation: {kind: link, header: Link}}
+  operation.absent:
+    {kind: pagination, items: {from: body, pointer: /data}, item_schema: {pointer: /components/schemas/User}, continuation: {kind: link, header: Link}}
+  helper.unknown:
+    {kind: pagination, operation: /paths/~1users/get, items: {from: body, pointer: /data}, item_schema: {pointer: /components/schemas/User}, continuation: {kind: link, header: Link}, extra: 1}
+  bindings.type:
+    {kind: pagination, operation: /paths/~1users/get, items: {from: body, pointer: /data}, item_schema: {pointer: /components/schemas/User}, continuation: {kind: link, header: Link}, bindings: {}}
+  binding.type:
+    {kind: pagination, operation: /paths/~1users/get, items: {from: body, pointer: /data}, item_schema: {pointer: /components/schemas/User}, continuation: {kind: link, header: Link}, bindings: [5]}
+  binding.state:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation: {kind: link, header: Link}
+    bindings: [{target: {in: query, name: cursor}, value: {source: state, selector: {from: status}}}]
+  binding.literal:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation: {kind: link, header: Link}
+    bindings: [{target: {in: query, name: cursor}, value: {literal: .nan}}]
+  binding.value:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation: {kind: link, header: Link}
+    bindings: [{target: {in: query, name: cursor}, value: {literal: 1, source: input}}]
+  target.location:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation: {kind: link, header: Link}
+    bindings: [{target: {in: form, name: cursor}, value: {literal: 1}}]
+  target.name:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation: {kind: link, header: Link}
+    bindings: [{target: {in: header, name: Bad Name}, value: {literal: 1}}]
+  selector.occurrence:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation: {kind: next_url, read: {from: header, name: X-Next, occurrence: all}, end: [{kind: missing}]}
+  selector.choice:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation: {kind: next_url, read: {from: header, name: X-Next, occurrence: many}, end: [{kind: missing}]}
+  selector.name:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation: {kind: next_url, read: {from: header, name: "X Next"}, end: [{kind: missing}]}
+  end.null:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation: {kind: next_url, read: {from: body, pointer: /next_url}, end: [{kind: value, value: null}]}
+  end.repeated:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation: {kind: next_url, read: {from: body, pointer: /next_url}, end: [{kind: missing}, {kind: missing}]}
+  end.empty:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation: {kind: next_url, read: {from: body, pointer: /next_url}, end: []}
+  end.kind:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation: {kind: next_url, read: {from: body, pointer: /next_url}, end: [{kind: absent}]}
+  end.type:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation: {kind: next_url, read: {from: body, pointer: /next_url}, end: [missing]}
+  link.header:
+    {kind: pagination, operation: /paths/~1users/get, items: {from: body, pointer: /data}, item_schema: {pointer: /components/schemas/User}, continuation: {kind: link, header: "Link Header"}}
+  link.rel:
+    {kind: pagination, operation: /paths/~1users/get, items: {from: body, pointer: /data}, item_schema: {pointer: /components/schemas/User}, continuation: {kind: link, header: Link, rel: ""}}
+  binding.pairs:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation: {kind: link, header: Link}
+    bindings: [{target: {in: query, name: cursor}, value: {literal: !!omap [{a: 1}]}}]
+  operation.pointer:
+    {kind: pagination, operation: paths/users, items: {from: body, pointer: /data}, item_schema: {pointer: /components/schemas/User}, continuation: {kind: link, header: Link}}
+  schema.syntax:
+    {kind: pagination, operation: /paths/~1users/get, items: {from: body, pointer: /data}, item_schema: {pointer: "/components/schemas/~2User"}, continuation: {kind: link, header: Link}}

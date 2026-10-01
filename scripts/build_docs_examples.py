@@ -139,6 +139,14 @@ def report_lines(path: Path, *prefixes: str) -> str:
     return "\n".join(selected)
 
 
+def yaml_helpers(path: Path, *names: str) -> str:
+    """Return a helper file's lines before its helpers, then the definitions of the named helpers in file order."""
+    head, _, body = read_text(path).partition("helpers:\n")
+    definitions = re.split(r"\n(?=  \S)", body)
+    kept = [block for block in definitions if block.split(":", 1)[0].strip() in names]
+    return f"{head}helpers:\n" + "\n".join(kept)
+
+
 def directory_files(path: Path) -> list[Path]:
     """Return stable file entries for generated directory examples."""
     return sorted(file for file in path.iterdir() if file.is_file())
@@ -317,6 +325,34 @@ def docs_examples() -> tuple[DocsExample, ...]:
                     "python",
                     path=EXPECTED_OPENAPI / "custom_template_dir.py",
                     strip_python_header=True,
+                ),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.protocols.toml",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "toml", json.loads(read_text(CLIENT_DATA / "configs.json"))["toml-protocols"]["toml"]
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.protocols.yaml",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "yaml",
+                yaml_helpers(CLIENT_DATA / "protocols" / "disabled.yaml", "users.all", "jobs.run", "records.watch"),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.protocols.diagnostics",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "text",
+                "\n".join(
+                    line.strip()
+                    for name in ("protocols-unsupported.txt", "protocols-references.txt")
+                    for line in read_text(EXPECTED_CLIENT / "protocols" / name).splitlines()
+                    if line.lstrip().startswith(("E_NAME_COLLISION", "E_SELECTOR_DEPENDENCY"))
                 ),
             ),
         ),

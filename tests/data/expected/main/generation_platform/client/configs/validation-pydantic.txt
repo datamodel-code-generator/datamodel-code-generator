@@ -26,3 +26,4 @@ validation=ClientValidationConfig(request='none', response='native', arguments='
 default_base_url=None
 server_base_url=None
 codec_adapters=()
+protocols=None

@@ -1,0 +1,5 @@
+schema_version: 1
+helpers:
+  users.all:
+    kind: pagination
+    bindings: [{target: {in: query, name: cursor}, value: {literal: [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}}]

@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 import shutil
+from contextlib import AbstractContextManager, nullcontext
 from dataclasses import fields
 from pathlib import Path, PurePosixPath
 from typing import Any, TypeAlias
@@ -27,6 +28,7 @@ from datamodel_code_generator._codec_declarations import OperationRef
 from datamodel_code_generator._target_config import load_target_config
 from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.format import Formatter
+from tests.data.python.client_protocol_records import RECORDS
 from tests.data.python.model_codec_adapters import declaration
 
 SOURCE = Path(__file__).parents[1] / "generation_platform" / "client"
@@ -63,8 +65,28 @@ def _operation(value: object) -> object:
     return ClientOperationConfig(**converted)
 
 
+def _working_directory(case: dict[str, Any], root: Path) -> AbstractContextManager[object]:
+    """Run a case from its root when it asks, importing `contextlib.chdir` only then, since it needs Python 3.11."""
+    if not case.get("cwd"):
+        return nullcontext()
+    from contextlib import chdir
+
+    return chdir(root)
+
+
+def _protocols(value: object, root: Path) -> object:
+    """Return a file under the case root, a record fixture, a path relative to the working directory, or a value."""
+    if isinstance(value, str):
+        return root / value
+    if not isinstance(value, dict):
+        return value
+    if "python" in value:
+        return RECORDS[value["python"]]
+    return Path(value["relative"]) if "relative" in value else value["raw"]
+
+
 def client_config(values: dict[str, Any], root: Path) -> ClientGenerationConfig:
-    """Build a client configuration from JSON fixture values."""
+    """Build a client configuration from JSON fixture values; `protocols` names a file, record, or raw value."""
     values = {"output": PACKAGE, "package": PACKAGE, "model_package": "models", "formatter_settings": ".", **values}
     converted: dict[str, Any] = {}
     for key, value in values.items():
@@ -87,6 +109,8 @@ def client_config(values: dict[str, Any], root: Path) -> ClientGenerationConfig:
                 converted[key] = tuple(declaration(kind, item) for item in value)
             case "formatters":
                 converted[key] = tuple(value)
+            case "protocols":
+                converted[key] = _protocols(value, root)
             case "validation" if isinstance(value, dict):
                 converted[key] = ClientValidationConfig(**{
                     name: tuple(item) if isinstance(item, list) else item for name, item in value.items()
@@ -102,11 +126,21 @@ def _diagnostic(item: Diagnostic) -> str:
 
 
 def _public_api(content: bytes) -> list[str]:
-    data = json.loads(content)["target_data"]["client"]
+    manifest = json.loads(content)
+    data = manifest["target_data"]["client"]
+    helpers = data["protocol_helpers"]
     lines = [
-        f"  namespace {data['namespace']} helpers {data['protocol_helpers']} bindings {len(data['binding_refs'])}",
+        f"  namespace {data['namespace']} helpers {[item['name'] for item in helpers]} "
+        f"bindings {len(data['binding_refs'])}",
         f"  refs {data['runtime_defaults_ref']} {data['selection_ref']} {data['extension_refs']}",
+        *(
+            f"  helper {item['name']} {item['kind']} enabled {item['enabled']} {item['metadata_ref']} "
+            f"{item['contract_sha256']}"
+            for item in helpers
+        ),
     ]
+    if metadata := manifest["inputs"]["target_config"]["protocol_metadata"]:
+        lines.extend(f"  {line}" for line in json.dumps(metadata, indent=2).splitlines())
     for operation in data["public_api"]:
         parameters = ", ".join(
             f"{item['location']}:{item['wire_name']}={item['python_name']}" for item in operation["parameters"]
@@ -138,14 +172,19 @@ def _render(
     root.mkdir(parents=True, exist_ok=True)
     source = shutil.copy2(SOURCE / case["input"], root / case["input"])
     for reference in case.get("references", ()):
+        (root / reference).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(SOURCE / reference, root / reference)
     try:
-        project = render_target(
-            source,
-            model_config=GenerateConfig(**model),
-            config=client_config(case.get("config", {}), root),
-            generator=ClientTarget(),
-        )
+        with _working_directory(case, root):
+            if (toml := case.get("toml")) is not None:
+                (path := root / case["toml_path"]).parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(toml, encoding="utf-8")
+                config = load_target_config(path, ClientGenerationConfig, output=root / PACKAGE)
+            else:
+                config = client_config(case.get("config", {}), root)
+            project = render_target(
+                source, model_config=GenerateConfig(**model), config=config, generator=ClientTarget()
+            )
     except APIGenerationError as error:
         return ["  APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)]
     lines: list[str] = []
@@ -211,7 +250,7 @@ def client_digest_report(first: str, second: str, root: Path) -> str:
 def client_render(case_name: str, root: Path) -> tuple[str, dict[str, Modules]]:
     """Render one fixture for each of its backends, returning a report and every backend's Python modules."""
     case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
-    lines = [f"# {case_name}"]
+    lines = [f"# {case.get('expected', case_name)}"]
     rendered: dict[str, Modules] = {}
     for backend in case.get("backends", ["pydantic_v2.BaseModel"]):
         lines.append(f"render {backend}")
@@ -254,7 +293,7 @@ def client_config_report(case_name: str, root: Path) -> str:
     case = json.loads((SOURCE / "configs.json").read_text(encoding="utf-8"))[case_name]
     try:
         if (toml := case.get("toml")) is not None:
-            path = root / "client.toml"
+            (path := root / case.get("toml_path", "client.toml")).parent.mkdir(parents=True, exist_ok=True)
             path.write_text(toml, encoding="utf-8")
             config = load_target_config(path, ClientGenerationConfig)
         else:

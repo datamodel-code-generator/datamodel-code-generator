@@ -1,0 +1,32 @@
+# protocols-stream-errors
+render pydantic_v2.BaseModel
+  APIGenerationError
+  E_CONFIG_VALUE config protocols.helpers['media.name'].media: protocols.helpers['media.name'].media must be a media type
+  E_CONFIG_VALUE config protocols.helpers['media.type'].media: protocols.helpers['media.type'].media must be a media type
+  E_CONFIG_CONFLICT config protocols.helpers['unknown.raw'].unknown: protocols.helpers['unknown.raw'].unknown can be 'raw' only with a discriminator
+  E_CONFIG_VALUE config protocols.helpers['unknown.choice'].unknown: protocols.helpers['unknown.choice'].unknown must be 'error' or 'raw'
+  E_CONFIG_CONFLICT config protocols.helpers['errors.undiscriminated'].error_events: protocols.helpers['errors.undiscriminated'].error_events need a discriminator
+  E_CONFIG_CONFLICT config protocols.helpers['errors.shared'].error_events['created']: protocols.helpers['errors.shared'].error_events['created'] is also an event of protocols.helpers['errors.shared'].event_schema.mapping
+  E_CONFIG_VALUE config protocols.helpers['errors.type'].error_events: protocols.helpers['errors.type'].error_events must be a mapping
+  E_CONFIG_VALUE config protocols.helpers['errors.key'].error_events: protocols.helpers['errors.key'].error_events has the key '', which is not a nonempty UTF-8 string
+  E_CONFIG_VALUE config protocols.helpers['mapping.empty'].event_schema.mapping: protocols.helpers['mapping.empty'].event_schema.mapping must be a nonempty mapping
+  E_CONFIG_VALUE config protocols.helpers['discriminator.pointer'].event_schema.discriminator.pointer: protocols.helpers['discriminator.pointer'].event_schema.discriminator needs 'pointer'
+  E_CONFIG_VALUE config protocols.helpers['discriminator.form'].event_schema.discriminator.pointer: protocols.helpers['discriminator.form'].event_schema.discriminator.pointer must be an RFC 6901 pointer
+  E_CONFIG_UNKNOWN config protocols.helpers['discriminator.extra'].event_schema.discriminator.pointer: protocols.helpers['discriminator.extra'].event_schema.discriminator has no key 'pointer'
+  E_CONFIG_VALUE config protocols.helpers['discriminator.ndjson'].event_schema.discriminator.from: protocols.helpers['discriminator.ndjson'].event_schema.discriminator.from must be 'body'
+  E_CONFIG_VALUE config protocols.helpers['schema.type'].event_schema: protocols.helpers['schema.type'].event_schema must be a schema reference
+  E_CONFIG_VALUE config protocols.helpers['completion.sentinel'].completion.value: protocols.helpers['completion.sentinel'].completion.value must be a nonempty UTF-8 string
+  E_CONFIG_VALUE config protocols.helpers['completion.ndjson'].completion.kind: protocols.helpers['completion.ndjson'].completion.kind must be 'eof' or 'sentinel'
+  E_CONFIG_UNKNOWN config protocols.helpers['final.sse'].final_line: protocols.helpers['final.sse'] has no key 'final_line'
+  E_CONFIG_VALUE config protocols.helpers['final.missing'].final_line: protocols.helpers['final.missing'] needs 'final_line'
+  E_CONFIG_VALUE config protocols.helpers['final.choice'].final_line: protocols.helpers['final.choice'].final_line must be 'require_newline' or 'allow_eof'
+  E_CONFIG_VALUE config protocols.helpers['resume.type'].resume: protocols.helpers['resume.type'].resume must be a mapping
+  E_CONFIG_CONFLICT config protocols.helpers['resume.disabled'].resume.cursor: protocols.helpers['resume.disabled'].resume.cursor applies only when resume is enabled
+  E_CONFIG_VALUE config protocols.helpers['resume.enabled'].resume.enabled: protocols.helpers['resume.enabled'].resume.enabled must be a boolean
+  E_CONFIG_UNKNOWN config protocols.helpers['resume.event'].resume.missing: protocols.helpers['resume.event'].resume has no key 'missing'
+  E_CONFIG_VALUE config protocols.helpers['resume.cursor'].resume.missing: protocols.helpers['resume.cursor'].resume needs 'missing'
+  E_CONFIG_VALUE config protocols.helpers['resume.cursor'].resume.null: protocols.helpers['resume.cursor'].resume needs 'null'
+  E_CONFIG_VALUE config protocols.helpers['resume.ndjson'].resume.cursor: protocols.helpers['resume.ndjson'].resume.cursor must be a selector
+  E_CONFIG_VALUE config protocols.helpers['resume.delivery'].resume.delivery: protocols.helpers['resume.delivery'].resume.delivery must be 'at_least_once'
+  E_CONFIG_VALUE config protocols.helpers['resume.reasons'].resume.reconnect_on[1]: protocols.helpers['resume.reasons'].resume.reconnect_on[1] repeats a reconnect reason
+  E_CONFIG_VALUE config protocols.helpers['resume.empty'].resume.reconnect_on: protocols.helpers['resume.empty'].resume.reconnect_on must be a nonempty list
