@@ -85,7 +85,7 @@ _CODECS: Final = {
     "typing.TypedDict": ("structural", "StructuralModelCodec"),
     "msgspec.Struct": ("structural", "StructuralModelCodec"),
 }
-_OWN_NAMES: Final = ("Final", "annotations", "cache", "_resources", "_request_view", "_response_view")
+_OWN_NAMES: Final = ("Final", "Mapping", "annotations", "cache", "_resources", "_request_view", "_response_view")
 _USE_PREFIXES: Final = ("codec", "CONTEXT", "outbound", "parameter", "validator")
 _FACTORY_PROTOCOLS: Final = {"parameter": "ParameterCodecAdapterV1", "schema": "SchemaCodecAdapterV1"}
 _PUBLIC: Final[tuple[tuple[str, tuple[str, ...]], ...]] = (
@@ -294,12 +294,17 @@ class _Renderer:
             self.factories.setdefault(adapter.registration.name, (len(self.factories), adapter))
         self.model_bindings = {model.symbol: model for _, binding in plan.bindings for model in binding.models}
         self.model_index = {symbol: index for index, symbol in enumerate(self.model_bindings)}
+        self.typed_models: dict[tuple[str, ...], int] = {}
+        for use, binding in plan.bindings:
+            if use not in self.models and sum(model.native_kind == "typed_dict" for model in binding.models) > 1:
+                self.typed_models.setdefault(tuple(model.symbol for model in binding.models), len(self.typed_models))
         count = len(plan.bindings)
         self.namespace = Namespace((
             *_RUNTIME_NAMES,
             *_OWN_NAMES,
             *(f"{prefix}_{index}" for prefix in _USE_PREFIXES for index in range(count)),
             *(f"_model_{index}" for index in range(len(self.model_bindings))),
+            *(f"_types_{index}" for index in range(len(self.typed_models))),
             *(f"_factory_{index}" for index in range(len(self.factories))),
             *(f"{direction}_{kind}" for direction in ("request", "response") for kind in ("bundle", "registry")),
         ))
@@ -357,13 +362,14 @@ class _Renderer:
     def codec(self, use: TypeUseId, binding: UseBinding, runtime: str, validator: str | None) -> tuple[str, Group]:
         if (adapter := self.models.get(use)) is None:
             codec = self.records.name(*_CODECS[binding.backend])
-            models = tuple((f"{model.symbol!r}: ", self.symbol(model.symbol)) for model in binding.models)
+            symbols = tuple(model.symbol for model in binding.models)
+            index = self.typed_models.get(symbols)
             return codec, Group(
                 f"{codec}(",
                 (
                     ("", self.use_binding(binding)),
                     ("", runtime),
-                    ("", Group("{", models, "}")),
+                    ("", self.model_types(symbols) if index is None else f"_types_{index}()"),
                     ("", f"{binding.direction}_bundle"),
                     *((("validator=", validator),) if validator else ()),
                 ),
@@ -436,6 +442,9 @@ class _Renderer:
         )
         sections.append(_function(f"validator_{index}", validator, body))
         return f"validator_{index}()"
+
+    def model_types(self, symbols: tuple[str, ...]) -> Group:
+        return Group("{", tuple((f"{symbol!r}: ", self.symbol(symbol)) for symbol in symbols), "}")
 
     def symbol(self, key: str) -> str:
         module, _, name = key.partition(":")
@@ -544,9 +553,19 @@ class _Renderer:
         ]
 
     def model_functions(self) -> list[str]:
+        """Return each model's binding, then each mapping of several TypedDict classes typed as a mapping of types.
+
+        mypy may join the classes of such a dict display into a constructor type that rejects its own entries.
+        """
         return [
-            _function(f"_model_{index}", self.records.name("bindings", "ModelBinding"), self.records.record(model))
-            for index, model in enumerate(self.model_bindings.values())
+            *(
+                _function(f"_model_{index}", self.records.name("bindings", "ModelBinding"), self.records.record(model))
+                for index, model in enumerate(self.model_bindings.values())
+            ),
+            *(
+                _function(f"_types_{index}", "Mapping[str, type]", self.model_types(symbols))
+                for symbols, index in self.typed_models.items()
+            ),
         ]
 
     def module(self, sections: list[str]) -> str:
@@ -555,6 +574,7 @@ class _Renderer:
             "",
             "from __future__ import annotations",
             "",
+            *(("from collections.abc import Mapping",) if self.typed_models else ()),
             *(("from functools import cache",) if sections else ()),
             *(("from typing import Final",) if self.plan.bindings else ()),
             "",

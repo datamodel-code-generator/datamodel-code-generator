@@ -293,7 +293,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:Item',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Item',
         fields=(
             FieldBinding(
                 field_id='models:Item.name',
@@ -316,7 +316,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldJsonNullablePostRequest',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1json~1nullable/post/requestBody/content/application~1json/schema',
         fields=(
             FieldBinding(
                 field_id='models:FieldJsonNullablePostRequest.name',
@@ -339,7 +339,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='models:Account',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Account',
         fields=(
             FieldBinding(
                 field_id='models:Account.id',
@@ -371,7 +371,12 @@ def _model_2() -> ModelBinding:
 
 @cache
 def _model_3() -> ModelBinding:
-    return ModelBinding(symbol='models:FieldTextPostRequest', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:FieldTextPostRequest',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1text/post/requestBody/content/text~1plain/schema',
+        root=LeafNode(),
+    )
 
 
 @cache
@@ -379,7 +384,7 @@ def _model_4() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldFormOptionalPostRequest',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1form~1optional/post/requestBody/content/application~1x-www-form-urlencoded/schema',
         fields=(
             FieldBinding(
                 field_id='models:FieldFormOptionalPostRequest.name',
@@ -426,7 +431,7 @@ def _model_5() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldFormEitherPostRequest',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1form~1either/post/requestBody/content/application~1x-www-form-urlencoded/schema',
         fields=(
             FieldBinding(
                 field_id='models:FieldFormEitherPostRequest.either',
@@ -461,7 +466,7 @@ def _model_6() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldFormNestedPostRequest',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1form~1nested/post/requestBody/content/application~1x-www-form-urlencoded/schema',
         fields=(
             FieldBinding(
                 field_id='models:FieldFormNestedPostRequest.point',
@@ -485,7 +490,7 @@ def _model_7() -> ModelBinding:
     return ModelBinding(
         symbol='models:Point',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1form~1nested/post/requestBody/content/application~1x-www-form-urlencoded/schema/properties/point',
         fields=(
             FieldBinding(
                 field_id='models:Point.x',
@@ -508,7 +513,7 @@ def _model_8() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldFormClosedPostRequest',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1form~1closed/post/requestBody/content/application~1x-www-form-urlencoded/schema',
         fields=(
             FieldBinding(
                 field_id='models:FieldFormClosedPostRequest.name',
@@ -524,6 +529,7 @@ def _model_8() -> ModelBinding:
             ),
         ),
         extra='forbid',
+        open=False,
     )
 
 
@@ -532,7 +538,7 @@ def _model_9() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldFormChoicePostRequest',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1form~1choice/post/requestBody/content/application~1x-www-form-urlencoded/schema',
         fields=(
             FieldBinding(
                 field_id='models:FieldFormChoicePostRequest.name',

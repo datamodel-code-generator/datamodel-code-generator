@@ -235,7 +235,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:Thing',
         native_kind='dataclass',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Thing',
         fields=(
             FieldBinding(
                 field_id='models:Thing.id',
@@ -258,7 +258,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='models:Problem',
         native_kind='dataclass',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Problem',
         fields=(
             FieldBinding(
                 field_id='models:Problem.title',
@@ -281,7 +281,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='models:Loose',
         native_kind='dataclass',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Loose',
         fields=(
             FieldBinding(
                 field_id='models:Loose.name',
@@ -304,7 +304,7 @@ def _model_3() -> ModelBinding:
     return ModelBinding(
         symbol='models:Secret',
         native_kind='dataclass',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Secret',
         fields=(
             FieldBinding(
                 field_id='models:Secret.name',

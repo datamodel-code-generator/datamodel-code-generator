@@ -65,7 +65,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldFilesFileNameExtGetPathFileNameParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1files~1%7BfileName%7D.%7Bext%7D/get/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -75,7 +75,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldFilesFileNameExtGetPathExtParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1files~1%7BfileName%7D.%7Bext%7D/get/parameters/1/schema',
         root=LeafNode(),
     )
 
@@ -85,7 +85,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldFilesFileNameExtGetQueryClassParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1files~1%7BfileName%7D.%7Bext%7D/get/parameters/2/schema',
         root=LeafNode(),
     )
 
@@ -95,7 +95,7 @@ def _model_3() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldFilesFileNameExtGetHeaderField2faParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1files~1%7BfileName%7D.%7Bext%7D/get/parameters/3/schema',
         root=LeafNode(),
     )
 

@@ -74,7 +74,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='customized_basemodel_models:FieldPetsGetResponse',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets/get/responses/200/content/application~1json/schema',
         root=ArrayNode(item=LeafNode()),
     )
 
@@ -84,7 +84,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='customized_basemodel_models:FieldPetsPetIdMovesPostResponse201LocationHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1moves/post/responses/201/headers/Location/schema',
         root=LeafNode(),
     )
 

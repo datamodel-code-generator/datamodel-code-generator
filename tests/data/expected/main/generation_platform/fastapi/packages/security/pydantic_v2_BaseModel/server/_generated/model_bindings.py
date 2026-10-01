@@ -68,7 +68,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsGetResponse',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets/get/responses/200/content/application~1json/schema',
         root=ArrayNode(item=LeafNode()),
     )
 

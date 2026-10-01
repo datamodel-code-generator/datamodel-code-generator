@@ -255,7 +255,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsGetQueryLimitParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets/get/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -265,7 +265,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsGetQueryTagsParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets/get/parameters/1/schema',
         root=ArrayNode(item=LeafNode()),
     )
 
@@ -275,7 +275,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsGetHeaderXTraceParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets/get/parameters/2/schema',
         root=LeafNode(),
     )
 
@@ -285,7 +285,7 @@ def _model_3() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsGetCookieSessionParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets/get/parameters/3/schema',
         root=LeafNode(),
     )
 
@@ -295,7 +295,7 @@ def _model_4() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsGetResponse',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets/get/responses/200/content/application~1json/schema',
         root=ArrayNode(item=ModelNode(symbol='models:Pet')),
     )
 
@@ -305,7 +305,7 @@ def _model_5() -> ModelBinding:
     return ModelBinding(
         symbol='models:Pet',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Pet',
         fields=(
             FieldBinding(
                 field_id='models:Pet.id',
@@ -352,7 +352,7 @@ def _model_6() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsGetResponse200XNextHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets/get/responses/200/headers/X-Next/schema',
         root=LeafNode(),
     )
 
@@ -362,7 +362,7 @@ def _model_7() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsGetResponse200XRateHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets/get/responses/200/headers/X-Rate/schema',
         root=LeafNode(),
     )
 
@@ -372,7 +372,7 @@ def _model_8() -> ModelBinding:
     return ModelBinding(
         symbol='models:Error',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Error',
         fields=(
             FieldBinding(
                 field_id='models:Error.code',
@@ -407,7 +407,7 @@ def _model_9() -> ModelBinding:
     return ModelBinding(
         symbol='models:NewPet',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/NewPet',
         fields=(
             FieldBinding(
                 field_id='models:NewPet.name',
@@ -439,7 +439,12 @@ def _model_9() -> ModelBinding:
 
 @cache
 def _model_10() -> ModelBinding:
-    return ModelBinding(symbol='models:FieldPetsPostRequest', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:FieldPetsPostRequest',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets/post/requestBody/content/text~1plain/schema',
+        root=LeafNode(),
+    )
 
 
 @cache
@@ -447,14 +452,19 @@ def _model_11() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsPetIdGetPathPetIdParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/parameters/0/schema',
         root=LeafNode(),
     )
 
 
 @cache
 def _model_12() -> ModelBinding:
-    return ModelBinding(symbol='models:FieldPetsPetIdGetResponse', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:FieldPetsPetIdGetResponse',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/get/responses/200/content/text~1plain/schema',
+        root=LeafNode(),
+    )
 
 
 @cache
@@ -462,7 +472,7 @@ def _model_13() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsPetIdHeadResponse200ETagHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/head/responses/200/headers/ETag/schema',
         root=LeafNode(),
     )
 
@@ -472,7 +482,7 @@ def _model_14() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsPetIdPhotoPutPathPetIdParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1photo/put/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -482,7 +492,7 @@ def _model_15() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsPetIdFilesPostPathPetIdParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/post/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -492,7 +502,7 @@ def _model_16() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsPetIdFilesGetPathPetIdParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1files/get/parameters/0/schema',
         root=LeafNode(),
     )
 

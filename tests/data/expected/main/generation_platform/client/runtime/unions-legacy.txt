@@ -1,0 +1,74 @@
+# unions-legacy pydantic_v2.BaseModel
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  circle native = FieldShapesGetResponse(root=Circle(radius=1))
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  square native = FieldShapesGetResponse(root=Square(side=2))
+  > GET https://api.example.com/holders
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  holder circle native = RefHolder(b=1, shape=Circle(radius=1))
+  > GET https://api.example.com/holders
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  holder square native = RefHolder(b=1, shape=Square(side=2))
+  > GET https://api.example.com/inline
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  inline circle native = InlineHolder(b=1, shape=Shape(radius=1))
+  > GET https://api.example.com/inline
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  inline square native = InlineHolder(b=1, shape=Shape1(side=2))
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  circle schema = FieldShapesGetResponse(root=Circle(radius=1))
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  square schema = FieldShapesGetResponse(root=Square(side=2))
+  > GET https://api.example.com/holders
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  holder circle schema = RefHolder(b=1, shape=Circle(radius=1))
+  > GET https://api.example.com/holders
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  holder square schema = RefHolder(b=1, shape=Square(side=2))
+  > GET https://api.example.com/inline
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  inline circle schema = InlineHolder(b=1, shape=Shape(radius=1))
+  > GET https://api.example.com/inline
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  inline square schema = InlineHolder(b=1, shape=Shape1(side=2))
+# unions-legacy pydantic_v2.dataclass
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  circle native = Circle(radius=1)
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  square native = Square(side=2)
+  > GET https://api.example.com/holders
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  holder circle native = RefHolder(b=1, shape=Circle(radius=1))
+  > GET https://api.example.com/holders
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  holder square native = RefHolder(b=1, shape=Square(side=2))
+  > GET https://api.example.com/inline
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  inline circle native = InlineHolder(b=1, shape=Shape(radius=1))
+  > GET https://api.example.com/inline
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  inline square native = InlineHolder(b=1, shape=Shape1(side=2))
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  circle schema = Circle(radius=1)
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  square schema = Square(side=2)
+  > GET https://api.example.com/holders
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  holder circle schema = RefHolder(b=1, shape=Circle(radius=1))
+  > GET https://api.example.com/holders
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  holder square schema = RefHolder(b=1, shape=Square(side=2))
+  > GET https://api.example.com/inline
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  inline circle schema = InlineHolder(b=1, shape=Shape(radius=1))
+  > GET https://api.example.com/inline
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  inline square schema = InlineHolder(b=1, shape=Shape1(side=2))
