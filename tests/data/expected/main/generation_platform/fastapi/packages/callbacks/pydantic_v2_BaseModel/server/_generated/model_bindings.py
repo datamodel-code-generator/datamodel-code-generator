@@ -225,7 +225,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:Subscription',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Subscription',
         fields=(
             FieldBinding(
                 field_id='models:Subscription.callbackUrl',
@@ -241,6 +241,7 @@ def _model_0() -> ModelBinding:
             ),
         ),
         extra='forbid',
+        open=False,
     )
 
 
@@ -249,7 +250,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='models:Event',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Event',
         fields=(
             FieldBinding(
                 field_id='models:Event.id',
@@ -284,14 +285,18 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldEventsGetResponse',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1events/get/responses/200/content/application~1json/schema',
         root=ArrayNode(item=ModelNode(symbol='models:Event')),
     )
 
 
 @cache
 def _model_3() -> ModelBinding:
-    return ModelBinding(symbol='models:FieldEventsGetResponse200XMapHeader', native_kind='model', schema_id=None)
+    return ModelBinding(
+        symbol='models:FieldEventsGetResponse200XMapHeader',
+        native_kind='model',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1events/get/responses/200/headers/X-Map/schema',
+    )
 
 
 @cache
@@ -299,7 +304,7 @@ def _model_4() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldSecureGetCookieTokenParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1secure/get/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -309,7 +314,7 @@ def _model_5() -> ModelBinding:
     return ModelBinding(
         symbol='models:Animal',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Animal',
         root=UnionNode(members=(ModelNode(symbol='models:Cat'), ModelNode(symbol='models:Dog'))),
     )
 
@@ -319,7 +324,7 @@ def _model_6() -> ModelBinding:
     return ModelBinding(
         symbol='models:Cat',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Cat',
         fields=(
             FieldBinding(
                 field_id='models:Cat.pet_type',
@@ -342,7 +347,7 @@ def _model_7() -> ModelBinding:
     return ModelBinding(
         symbol='models:Dog',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Dog',
         fields=(
             FieldBinding(
                 field_id='models:Dog.pet_type',
@@ -365,7 +370,7 @@ def _model_8() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldSecureGetResponse401wwwAuthenticateHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1secure/get/responses/401/headers/www-authenticate/schema',
         root=LeafNode(),
     )
 
@@ -375,7 +380,7 @@ def _model_9() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldSecureGetResponse',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1secure/get/responses/422/content/application~1json/schema',
         root=UnionNode(members=(ModelNode(symbol='models:Event'), ModelNode(symbol='models:Status'))),
     )
 
@@ -385,7 +390,7 @@ def _model_10() -> ModelBinding:
     return ModelBinding(
         symbol='models:Status',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Status',
         fields=(
             FieldBinding(
                 field_id='models:Status.state',
@@ -405,7 +410,12 @@ def _model_10() -> ModelBinding:
 
 @cache
 def _model_11() -> ModelBinding:
-    return ModelBinding(symbol='models:Näme', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:Näme',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/N%C3%A4me',
+        root=LeafNode(),
+    )
 
 
 CONTEXT_0: Final = CodecContext(

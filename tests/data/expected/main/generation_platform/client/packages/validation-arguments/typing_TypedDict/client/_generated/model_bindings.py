@@ -258,7 +258,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:Pet',
         native_kind='typed_dict',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Pet',
         fields=(
             FieldBinding(
                 field_id='models:Pet.id',
@@ -310,6 +310,7 @@ def _model_0() -> ModelBinding:
             ),
         ),
         extra='forbid',
+        open=False,
     )
 
 
@@ -318,7 +319,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='models:Problem',
         native_kind='typed_dict',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Problem',
         fields=(
             FieldBinding(
                 field_id='models:Problem.code',
@@ -341,7 +342,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='models:Account',
         native_kind='typed_dict',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Account',
         fields=(
             FieldBinding(
                 field_id='models:Account.id',
@@ -369,6 +370,7 @@ def _model_2() -> ModelBinding:
             ),
         ),
         extra='forbid',
+        open=False,
     )
 
 

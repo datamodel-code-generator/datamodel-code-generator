@@ -301,7 +301,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsGetQueryLimitParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets/get/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -311,7 +311,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsGetCookieSessionParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets/get/parameters/5/schema',
         root=LeafNode(),
     )
 
@@ -321,7 +321,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsGetResponse',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets/get/responses/200/content/application~1json/schema',
         root=ArrayNode(item=ModelNode(symbol='models:Pet')),
     )
 
@@ -331,7 +331,7 @@ def _model_3() -> ModelBinding:
     return ModelBinding(
         symbol='models:Pet',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Pet',
         fields=(
             FieldBinding(
                 field_id='models:Pet.id',
@@ -378,7 +378,7 @@ def _model_4() -> ModelBinding:
     return ModelBinding(
         symbol='models:Error',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Error',
         fields=(
             FieldBinding(
                 field_id='models:Error.code',
@@ -413,7 +413,7 @@ def _model_5() -> ModelBinding:
     return ModelBinding(
         symbol='models:NewPet',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/NewPet',
         fields=(
             FieldBinding(
                 field_id='models:NewPet.name',
@@ -448,7 +448,7 @@ def _model_6() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsMineGetResponse',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1mine/get/responses/200/content/application~1json/schema',
         root=ArrayNode(item=ModelNode(symbol='models:Pet')),
     )
 
@@ -458,7 +458,7 @@ def _model_7() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldStoreInventoryGetResponse',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1store~1inventory/get/responses/200/content/application~1json/schema',
         root=MapNode(value=LeafNode()),
     )
 

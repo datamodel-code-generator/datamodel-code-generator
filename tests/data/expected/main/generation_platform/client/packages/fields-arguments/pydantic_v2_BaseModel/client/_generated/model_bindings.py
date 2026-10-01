@@ -336,7 +336,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsPostQueryTagParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets/post/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -346,7 +346,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='models:NewPet',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/NewPet',
         fields=(
             FieldBinding(
                 field_id='models:NewPet.name',
@@ -441,7 +441,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='models:Owner',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Owner',
         fields=(
             FieldBinding(
                 field_id='models:Owner.email',
@@ -476,7 +476,7 @@ def _model_3() -> ModelBinding:
     return ModelBinding(
         symbol='models:PetForm',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/PetForm',
         fields=(
             FieldBinding(
                 field_id='models:PetForm.name',
@@ -511,7 +511,7 @@ def _model_4() -> ModelBinding:
     return ModelBinding(
         symbol='models:Pet',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Pet',
         fields=(
             FieldBinding(
                 field_id='models:Pet.id',
@@ -558,7 +558,7 @@ def _model_5() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsPetIdPatchPathPetIdParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D/patch/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -568,7 +568,7 @@ def _model_6() -> ModelBinding:
     return ModelBinding(
         symbol='models:PetPatch',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/PetPatch',
         fields=(
             FieldBinding(
                 field_id='models:PetPatch.name',
@@ -603,7 +603,7 @@ def _model_7() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsPetIdVisitsPostPathPetIdParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1visits/post/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -613,7 +613,7 @@ def _model_8() -> ModelBinding:
     return ModelBinding(
         symbol='models:Visit',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Visit',
         fields=(
             FieldBinding(
                 field_id='models:Visit.note',
@@ -648,7 +648,7 @@ def _model_9() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsPetIdOwnerPutPathPetIdParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1owner/put/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -658,7 +658,7 @@ def _model_10() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldOwnersPostRequest',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1owners/post/requestBody/content/application~1json/schema',
         root=UnionNode(members=(ModelNode(symbol='models:Owner'),), nullable=True),
     )
 
@@ -668,7 +668,7 @@ def _model_11() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsPetIdLabelsPutPathPetIdParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1labels/put/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -678,7 +678,7 @@ def _model_12() -> ModelBinding:
     return ModelBinding(
         symbol='models:Labels',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Labels',
         fields=(
             FieldBinding(
                 field_id='models:Labels.size',
@@ -702,7 +702,7 @@ def _model_13() -> ModelBinding:
     return ModelBinding(
         symbol='models:ByKind',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/ByKind',
         fields=(
             FieldBinding(
                 field_id='models:ByKind.kind',
@@ -725,7 +725,7 @@ def _model_14() -> ModelBinding:
     return ModelBinding(
         symbol='models:ByName',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/ByName',
         fields=(
             FieldBinding(
                 field_id='models:ByName.name',
@@ -748,7 +748,7 @@ def _model_15() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldSearchPostRequest',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1search/post/requestBody/content/application~1json/schema',
         root=UnionNode(members=(ModelNode(symbol='models:ByName'), ModelNode(symbol='models:ByKind'))),
     )
 
@@ -758,7 +758,7 @@ def _model_16() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldSearchPostResponse',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1search/post/responses/200/content/application~1json/schema',
         root=ArrayNode(item=ModelNode(symbol='models:Pet')),
     )
 
@@ -768,7 +768,7 @@ def _model_17() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsPetIdPhotoPutPathPetIdParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1photo/put/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -778,7 +778,7 @@ def _model_18() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsPetIdRecordsPutPathPetIdParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1records/put/parameters/0/schema',
         root=LeafNode(),
     )
 

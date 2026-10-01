@@ -84,7 +84,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldValuesGetQueryAtParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1values/get/parameters/3/schema',
         root=LeafNode(),
     )
 
@@ -94,7 +94,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldValuesGetQueryStampParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1values/get/parameters/4/schema',
         root=LeafNode(),
     )
 
@@ -104,7 +104,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldValuesGetQueryCountParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1values/get/parameters/5/schema',
         root=LeafNode(),
     )
 
@@ -114,7 +114,7 @@ def _model_3() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldValuesGetQueryHostParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1values/get/parameters/6/schema',
         root=LeafNode(),
     )
 
@@ -124,7 +124,7 @@ def _model_4() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldValuesGetQueryLabelParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1values/get/parameters/7/schema',
         root=LeafNode(),
     )
 
@@ -134,7 +134,7 @@ def _model_5() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldValuesGetQueryPointParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1values/get/parameters/8/schema',
         root=LeafNode(),
     )
 

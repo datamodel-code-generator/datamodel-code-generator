@@ -321,10 +321,19 @@ class _CodecPlanner:
         self.symbol_schemas: dict[int, str] = {}
         uses = {use.id: use for use in batch.type_uses}
         for use_id, schema_id in wire.schema_ids:
-            use = uses[use_id]
-            self.locations.setdefault(schema_id, use.schema or use_id.schema_site)
-            if use_id.role == "schema" and isinstance(use.type, GeneratedSymbolType):
-                self.symbol_schemas.setdefault(use.type.symbol, schema_id)
+            self.locations.setdefault(schema_id, uses[use_id].schema or use_id.schema_site)
+        declared = [
+            (value.symbol, location)
+            for use in batch.type_uses
+            if use.id.role == "schema"
+            and isinstance(value := use.type, GeneratedSymbolType)
+            and (location := use.schema) is not None
+        ]
+        resolved = wire.resolved(location for _, location in declared)
+        for symbol, location in declared:
+            if symbol not in self.symbol_schemas and (target := resolved.get(location)) is not None:
+                self.symbol_schemas[symbol] = schema_id = wire.schema_id(target)
+                self.locations.setdefault(schema_id, target)
         self.members: dict[int, list[FieldUseBinding]] = {}
         for member in batch.fields:
             self.members.setdefault(member.consumer, []).append(member)

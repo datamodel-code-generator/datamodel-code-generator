@@ -141,7 +141,7 @@ def _input(value: dict[str, Any], server: str | None) -> object:
         case {"url": str() as path}:
             return urlparse(f"{server}/{path}")
         case _:
-            raise AssertionError(value)
+            raise ValueError(value)
 
 
 def _mask(value: Any, server: str | None) -> Any:

@@ -259,7 +259,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsGetQueryLimitParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets/get/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -269,7 +269,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsGetResponse',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets/get/responses/200/content/application~1json/schema',
         root=ArrayNode(item=ModelNode(symbol='models:Pet')),
     )
 
@@ -279,7 +279,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='models:Pet',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Pet',
         fields=(
             FieldBinding(
                 field_id='models:Pet.id',
@@ -331,6 +331,7 @@ def _model_2() -> ModelBinding:
             ),
         ),
         extra='forbid',
+        open=False,
     )
 
 
@@ -339,7 +340,7 @@ def _model_3() -> ModelBinding:
     return ModelBinding(
         symbol='models:Problem',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Problem',
         fields=(
             FieldBinding(
                 field_id='models:Problem.code',
@@ -362,7 +363,7 @@ def _model_4() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsPetIdCardGetPathPetIdParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1card/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -372,7 +373,7 @@ def _model_5() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsPetIdCardPutRequestTokenXCountEncodingHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1card/put/requestBody/content/multipart~1form-data/encoding/token/headers/X-Count/schema',
         root=LeafNode(),
     )
 
@@ -382,7 +383,7 @@ def _model_6() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldPetsPetIdCardPutRequestTokenXTraceEncodingHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1%7BpetId%7D~1card/put/requestBody/content/multipart~1form-data/encoding/token/headers/X-Trace/schema',
         root=LeafNode(),
     )
 
@@ -392,14 +393,19 @@ def _model_7() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldNotesPostQueryTagParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1notes/post/parameters/0/schema',
         root=LeafNode(),
     )
 
 
 @cache
 def _model_8() -> ModelBinding:
-    return ModelBinding(symbol='models:FieldPhotosPutRequest', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:FieldPhotosPutRequest',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1photos/put/requestBody/content/application~1json/schema',
+        root=LeafNode(),
+    )
 
 
 @cache
@@ -407,7 +413,7 @@ def _model_9() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldAccountsAccountIdGetPathAccountIdParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1accounts~1%7BaccountId%7D/get/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -417,7 +423,7 @@ def _model_10() -> ModelBinding:
     return ModelBinding(
         symbol='models:Account',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Account',
         fields=(
             FieldBinding(
                 field_id='models:Account.id',
@@ -445,6 +451,7 @@ def _model_10() -> ModelBinding:
             ),
         ),
         extra='forbid',
+        open=False,
     )
 
 

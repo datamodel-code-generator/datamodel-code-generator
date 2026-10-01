@@ -75,6 +75,7 @@ from tests.data.python.client_selectors import selectors
 from tests.data.python.client_signatures import keywords, signatures
 from tests.data.python.client_stream_lifetimes import stream_lifetimes
 from tests.data.python.client_transports import lifecycle, transports
+from tests.data.python.client_unions import schema_unions, unions
 from tests.data.python.client_validation import arguments, validation
 from tests.data.python.client_webhook_contracts import webhook_contracts
 from tests.data.python.client_webhook_errors import webhook_errors
@@ -749,6 +750,11 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "webhook-verification": ("webhooks", ("pydantic_v2.BaseModel",), webhook_verification),
     "webhook-backends": ("webhooks", BACKENDS, webhook_backends),
     "webhook-replay": ("webhooks", ("pydantic_v2.BaseModel",), webhook_replay),
+    "unions": ("unions", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), unions),
+    "unions-tagged": ("unions-tagged", ("msgspec.Struct",), unions),
+    "unions-schema": ("unions-schema", BACKENDS, schema_unions),
+    "unions-legacy": ("unions-legacy", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), unions),
+    "unions-legacy-schema": ("unions-legacy-schema", BACKENDS, schema_unions),
 }
 
 

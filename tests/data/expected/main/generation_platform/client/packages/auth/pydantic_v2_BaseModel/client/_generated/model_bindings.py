@@ -564,7 +564,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldApiKeyCookieParametersGetCookieThemeParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1api-key~1cookie-parameters/get/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -574,7 +574,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldApiKeyCookieParametersGetQueryPageParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1api-key~1cookie-parameters/get/parameters/1/schema',
         root=LeafNode(),
     )
 
@@ -584,7 +584,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldApiKeyCookieParametersGetHeaderXTraceParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1api-key~1cookie-parameters/get/parameters/2/schema',
         root=LeafNode(),
     )
 
@@ -594,7 +594,7 @@ def _model_3() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldApiKeyCookieParametersGetQueryFilterParameter',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1api-key~1cookie-parameters/get/parameters/3/schema',
         fields=(
             FieldBinding(
                 field_id='models:FieldApiKeyCookieParametersGetQueryFilterParameter.kind',
