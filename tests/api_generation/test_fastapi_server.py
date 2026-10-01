@@ -9,6 +9,7 @@ import pytest
 pytest.importorskip("fastapi")
 
 from tests.conftest import assert_generated_modules_output, assert_output
+from tests.data.python.fastapi_charsets import text_charsets
 from tests.data.python.fastapi_openapi import SCENARIOS, fastapi_openapi_report
 from tests.data.python.fastapi_server import fastapi_server_report
 from tests.data.python.fastapi_upstream import fastapi_upstream_report
@@ -50,3 +51,8 @@ def test_fastapi_openapi(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPa
 def test_fastapi_upstream(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Close uploaded files and end parse errors, disconnects, and cancellations as FastAPI and Starlette do."""
     assert_output(fastapi_upstream_report(tmp_path, monkeypatch), EXPECTED / "uploads.txt")
+
+
+def test_text_charsets(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Use the selected Content-Type for both decoding requests and encoding responses."""
+    assert_output(text_charsets(tmp_path, monkeypatch), EXPECTED.parent.parent / "http_boundaries/charsets.txt")

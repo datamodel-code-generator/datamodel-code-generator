@@ -184,12 +184,23 @@ def _json_scalar(value: JSONScalar, strings: Callable[[str], str]) -> str:
             return str(number)
 
 
-def decode_text(data: bytes) -> str:
-    """Decode a UTF-8 text body without normalizing its contents."""
+def charset(media_type: str) -> str:
+    """Return a normalized media type's charset, defaulting to UTF-8."""
+    if ";" not in media_type:
+        return "utf-8"
+    for parameter in _PARAMETER.finditer(media_type):
+        if parameter["name"] == "charset":
+            return parameter["value"].strip('"')
+    return "utf-8"
+
+
+def decode_text(data: bytes, encoding: str = "utf-8") -> str:
+    """Decode a text body in its selected charset without normalizing its contents."""
     try:
-        return data.decode("utf-8")
-    except UnicodeDecodeError:
-        raise issue(code="text.encoding", message="Text must be UTF-8") from None
+        return data.decode(encoding)
+    except (LookupError, UnicodeError):
+        message = "Text must be UTF-8" if encoding == "utf-8" else f"Text must be {encoding}"
+        raise issue(code="text.encoding", message=message) from None
 
 
 def lexical(value: WireValue, kind: LexicalKind) -> str:
