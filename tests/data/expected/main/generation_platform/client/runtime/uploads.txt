@@ -424,6 +424,7 @@ refused checkpoints and sources
   resume with missing bound values ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   resume with a path value of dots ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/id')] protocol_data_error
   resume with a path value of another shape ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  resume with a path value of dots and bytes for a source ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/id')] protocol_data_error
   resume with digests of other content ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', offset=4) [condition='inconsistent'] upload_source_changed_error [offset=4] expected=4 actual=4
 a checkpoint of another security partition
   resume ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error

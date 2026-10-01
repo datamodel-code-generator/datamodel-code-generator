@@ -676,17 +676,8 @@ class _Upload(Generic[T]):
             binding.literal if binding.selector is None else self._read(binding.selector, wire, info)
             for binding in bindings
         )
-        self._dotted(targeted, written, info)
+        _dotted(self._plan, targeted, written, info)
         return written
-
-    def _dotted(self, targeted: _Targeted[Any], written: tuple[WireValue, ...], info: ResponseInfo | None) -> None:
-        """Refuse read values that make a path segment a dot segment once encoded."""
-        from .writes import dotted_read  # noqa: PLC0415 - A plan loaded the operation runtime.
-
-        parameters = targeted.call.parameters
-        for segment, parts in targeted.dotted:
-            if (read := dotted_read(parameters, segment, parts, written, dict)) is not None:
-                raise self._data_error(info, "value", read)
 
     def _created(
         self, _data: object, wire: WireValue, _content: bytes, info: ResponseInfo, _url: str, _managed: frozenset[str]
@@ -880,6 +871,20 @@ class _Upload(Generic[T]):
         self, call: OperationPlan[Any, object], options: RequestOptions | None
     ) -> tuple[WireValue, bool]:
         raise NotImplementedError
+
+
+def _dotted(
+    plan: UploadPlan[Any, Any], targeted: _Targeted[Any], written: tuple[WireValue, ...], info: ResponseInfo | None
+) -> None:
+    """Refuse read values that make a path segment a dot segment once encoded, as data a server gave."""
+    from .writes import dotted_read  # noqa: PLC0415 - A plan loaded the operation runtime.
+
+    parameters = targeted.call.parameters
+    for segment, parts in targeted.dotted:
+        if (read := dotted_read(parameters, segment, parts, written, dict)) is not None:
+            raise ProtocolDataError(
+                condition="value", location=read, helper_id=plan.helper_id, operation=plan.operation, info=info
+            )
 
 
 def _probed_again(error: Exception) -> bool:
@@ -1549,14 +1554,14 @@ def _restored(core: ClientCore | AsyncClientCore, plan: UploadPlan[T, C], state:
         raise _resume_error(plan, "malformed") from None
 
 
-def _checked(core: ClientCore | AsyncClientCore, handle: _Upload[T], saved: _Saved) -> None:
+def _checked(
+    core: ClientCore | AsyncClientCore, plan: UploadPlan[Any, Any], options: RequestOptions | None, saved: _Saved
+) -> None:
     """Prepare each request the saved values write as its call would, refusing values that cannot be sent.
 
     Read values that make a path segment a dot segment raise ProtocolDataError, as if a server gave them; any other
     refusal of a saved value makes the checkpoint malformed.
     """
-    plan = handle._plan  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    options = handle._limits.options  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     from ..client.errors import RequestEncodingError  # noqa: PLC0415 - Only a resume checks saved values.
 
     probe, append, completion = saved.bound
@@ -1568,7 +1573,7 @@ def _checked(core: ClientCore | AsyncClientCore, handle: _Upload[T], saved: _Sav
     if (completed := plan.completed) is not None:
         requests.append((completed, completion, (), None))
     for targeted, values, extra, payload in requests:
-        handle._dotted(targeted, values, None)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+        _dotted(plan, targeted, values, None)
         arguments, body = targeted.request((*values, *extra))
         try:
             core.checked_page(targeted.call, _fixed(arguments, body if payload is None else payload), None, options)
@@ -1609,9 +1614,13 @@ def _resume_start(
     state: object,
     limits: _Limits,
 ) -> tuple[_Saved, UploadIdentity]:
-    """Check the checkpoint, then the source, before any read or send; the source must be the checkpoint's content."""
+    """Check the checkpoint, its layout and saved values, then the source, before any read or send.
+
+    The source must be the checkpoint's content.
+    """
     saved = _restored(core, plan, state, limits)
     _layout(plan, limits, saved.identity.size, saved.chunk)
+    _checked(core, plan, limits.options, saved)
     identity = _identity(plan, source)
     if identity != saved.identity:
         raise _changed(plan, saved.identity, identity)
@@ -1637,7 +1646,6 @@ def resume_upload(  # noqa: PLR0913
     handle = UploadHandle(
         core, plan, limits, _session(limits), cast("UploadSource", source), identity, saved.chunk, saved.digests
     )
-    _checked(core, handle, saved)
     _resumed(handle, saved, core)
     if handle._phase is not _Phase.UPLOADING:  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
         handle._settled()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
@@ -1666,7 +1674,6 @@ async def aresume_upload(  # noqa: PLR0913
     handle = AsyncUploadHandle(
         core, plan, limits, _session(limits), cast("AsyncUploadSource", source), identity, saved.chunk, saved.digests
     )
-    _checked(core, handle, saved)
     _resumed(handle, saved, core)
     if handle._phase is not _Phase.UPLOADING:  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
         handle._settled()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001

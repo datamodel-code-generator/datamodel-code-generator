@@ -742,6 +742,9 @@ def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
     ):
         broken = protocols.ResumeState(**fingerprints, state={**saved, **change}, payload=state_payload(exported))
         record(lines, f"resume with {label}", lambda broken=broken: helper.resume(harness.source(), broken))
+    dots = {**saved, "bound": [["..", "1.0.0"], [upload, "1.0.0"], []]}
+    dotted = protocols.ResumeState(**fingerprints, state=dots, payload=state_payload(exported))
+    record(lines, "resume with a path value of dots and bytes for a source", lambda: helper.resume(_CONTENT, dotted))
     digests = state_payload(exported)
     other = protocols.ResumeState(**fingerprints, state=saved, payload=digests[:32] + bytes(32) + digests[64:])
     step(lines, "resume with digests of other content", lambda: helper.resume(harness.source(), other))

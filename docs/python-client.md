@@ -1262,17 +1262,19 @@ bound to the helper and to the security the call runs under, as pagination check
 call cannot authenticate or the client has a credential partition. Model values are never saved; a saved result is
 decoded again.
 
-`resume(source, state)` starts a new session and never creates the upload again. It checks the call's options, then
-the checkpoint: not a `ResumeState` raises `ProtocolConfigurationError`; another helper's raises
-`ResumeStateError(condition='fingerprint')`, another security's `ResumeStateError(condition='security')`, one past
-the server's expiry `UploadExpiredError`, and one whose state does not fit the helper
+`resume(source, state)` starts a new session and never creates the upload again. It checks the call's options, then the
+checkpoint: not a `ResumeState` raises `ProtocolConfigurationError`; another helper's raises
+`ResumeStateError(condition='fingerprint')`, another security's `ResumeStateError(condition='security')`, one past the
+server's expiry `UploadExpiredError`, and one whose state does not fit the helper
 `ResumeStateError(condition='malformed')`. A checkpoint keeps its chunk size, which must not exceed the call's
-`UploadOptions.chunk_bytes`, since an append holds one chunk in memory, and its chunk count must not exceed
-`max_parts`; either raises `ProtocolConfigurationError` with the option's `field_path`. Then the source: an identity
-other than the checkpoint's raises
-`UploadSourceChangedError`, and the source is read once and compared with the saved digests. Then it probes the
-server's offset once, which must not be below the saved one, and returns the handle; nothing is read or sent for a
-complete checkpoint, and a completion of unknown outcome raises `UploadDeliveryUnknownError` again.
+`UploadOptions.chunk_bytes`, since an append holds one chunk in memory, and its chunk count must not exceed `max_parts`;
+either raises `ProtocolConfigurationError` with the option's `field_path`. Then the saved values each call writes: a
+value that makes a path segment `.` or `..` raises `ProtocolDataError`, as if a server gave it, and one that cannot be
+sent `ResumeStateError(condition='malformed')`. Then the source: a one-shot input raises `NonResumableSourceError`, and
+an identity other than the checkpoint's raises `UploadSourceChangedError`, and the source is read once and compared with
+the saved digests. Then it probes the server's offset once, which must not be below the saved one, and returns the
+handle; nothing is read or sent for a complete checkpoint, and a completion of unknown outcome raises
+`UploadDeliveryUnknownError` again.
 
 A server's expiry is read once from the create response at `create.expires_at`, an RFC 3339 date-time with an offset
 or an HTTP date; a missing, null, or unparsable value raises `ProtocolDataError` from `start`. It bounds only
