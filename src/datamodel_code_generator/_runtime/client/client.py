@@ -488,6 +488,8 @@ def _secret(spec: ParameterSpec, value: WireValue, headers: frozenset[str], quer
             secret = name in queries
         case "querystring":
             secret = isinstance(value, Mapping) and not queries.isdisjoint(value)
+        case _:
+            pass
     return secret
 
 
