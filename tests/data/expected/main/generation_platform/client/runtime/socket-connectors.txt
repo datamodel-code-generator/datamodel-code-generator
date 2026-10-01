@@ -38,6 +38,7 @@
     connection close 1000 '' timeout=5.0
   broken evidence with a status ! AdapterContractError: AdapterContractError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=HandshakeResponse()] adapter_contract_error
   refusal with 101 ! AdapterContractError: AdapterContractError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=HandshakeResponse()] adapter_contract_error
+  refusal with 103 ! AdapterContractError: AdapterContractError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=HandshakeResponse()] adapter_contract_error
     connection abort
   broken evidence with a connection ! AdapterContractError: AdapterContractError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error
     connection abort
