@@ -852,15 +852,25 @@ class _Sockets(Generic[SendT, RecvT]):
         )
 
     def _checked_close(self, code: object, reason: object) -> None:
-        """Refuse a close code a client may not send, or a reason over 123 UTF-8 bytes."""
+        """Refuse a close code a client may not send, or a reason that is not at most 123 bytes of strict UTF-8."""
         if type(code) is not int or (code not in {_NORMAL, _GOING_AWAY} and code not in _APPLICATION_CODES):
             raise self._stamped(ProtocolConfigurationError(field_path=("code",), condition="invalid_value"))
-        if not isinstance(reason, str) or len(reason.encode("utf-8", "surrogatepass")) > MAX_CLOSE_REASON:
+        if (encoded := _utf8(reason)) is None or len(encoded) > MAX_CLOSE_REASON:
             raise self._stamped(ProtocolConfigurationError(field_path=("reason",), condition="invalid_value"))
 
     def _checked_ping(self, payload: object) -> None:
         if not isinstance(payload, bytes) or len(payload) > _MAX_PING:
             raise self._stamped(ProtocolConfigurationError(field_path=("payload",), condition="invalid_value"))
+
+
+def _utf8(value: object) -> bytes | None:
+    """Return a string as strict UTF-8, or None for another value or a string with a lone surrogate."""
+    if not isinstance(value, str):
+        return None
+    try:
+        return value.encode("utf-8")
+    except UnicodeEncodeError:
+        return None
 
 
 def _slice(deadline: Deadline | None, polled: bool) -> float | None:  # noqa: FBT001

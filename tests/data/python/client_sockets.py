@@ -414,6 +414,7 @@ def _closing_sessions(harness: _Harness, api: Any) -> None:
         ("reserved close code", lambda: session.close(1005)),
         ("close code of another type", lambda: session.close("1000")),
         ("close reason over 123 bytes", lambda: session.close(4000, "x" * 124)),
+        ("close reason with a lone surrogate", lambda: session.close(4000, "\ud800")),
         ("ping payload over 125 bytes", lambda: session.ping(b"x" * 126)),
         ("ping payload of another type", lambda: session.ping("probe")),
     ):
