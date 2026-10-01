@@ -313,8 +313,11 @@ def _isolated(root: Path, package: _Package, blocked: list[str], cases: list[dic
         [sys.executable, "-c", _ISOLATED, str(root), json.dumps(blocked), json.dumps(calls)],
         capture_output=True,
         text=True,
-        check=True,
+        check=False,
     )
+    if result.returncode:
+        msg = f"The isolated codec run exited with {result.returncode}:\n{result.stderr}"
+        raise RuntimeError(msg)
     return result.stdout.splitlines()
 
 
