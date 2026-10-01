@@ -3486,15 +3486,16 @@ imported from:
 | open timeout | 5 seconds, also capped by the connect, read, and write timeouts and the deadline; None removes it |
 | idle timeout | the call's `stream_idle_timeout` (60 seconds); None removes it |
 | message size | 1 MiB, decompressed |
-| received frames buffered | 16 |
+| received frames buffered before reading pauses | 16 |
 | send timeout | 30 seconds, waiting for earlier sends included; None removes it |
 | ping interval and pong timeout | 20 seconds each; None removes them |
 | close timeout | 5 seconds |
 | session total timeout | None |
 | network sends per session | 16, for handshakes and token requests; None removes it |
 
-The connection belongs to the session until it closes or fails, and closing the client closes it. One `receive`
-waits at a time, and a second one raises `ConcurrentReceiveError`; sends go one at a time in arrival order beside it. A
+The connection and the handshake's limiter permit belong to the session until it closes or fails, and closing the
+client closes it. One `receive` waits at a time, and a second one raises `ConcurrentReceiveError`; sends go one at a
+time in arrival order beside it. Cancelling an asyncio `receive` leaves the session usable; a cancelled send fails it. A
 message is JSON coded by the helper's schema, UTF-8 text, or bytes, in the frame kind the helper declares; one that does
 not decode raises `StreamDecodeError` and closes the connection with 1002, and one over the size limit raises
 `ProtocolSizeError` after the connection closed with 1009. A receive that waits longer than the idle timeout raises

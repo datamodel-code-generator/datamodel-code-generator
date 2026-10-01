@@ -1393,8 +1393,10 @@ never imports the WebSocket library.
 The handshake is one logical call of the operation, with its retries, `Retry-After`, redirects, authentication and
 token refresh, limiter, hooks, and deadline, as any call has. Only a 101 response whose headers validate opens the
 session: any other response is read up to `max_error_body_bytes` and raises the operation's typed `HTTPStatusError`,
-or `UnexpectedStatusError` for an undeclared status, so 101 need not be declared. URLs keep their `https` or `http`
-server and are opened as `wss` or `ws`. When the helper offers subprotocols, the server must select one of them, or
+or `UnexpectedStatusError` for an undeclared status, so 101 need not be declared. The handshake's limiter permit is
+held for the whole session and released when it closes or fails. URLs keep their `https` or `http` server and are
+opened as `wss` or `ws`; a redirect to a `wss` or `ws` location follows the shared redirect policy as the `https` or
+`http` URL it names. When the helper offers subprotocols, the server must select one of them, or
 `connect` raises `WebSocketHandshakeError` with the condition `negotiation`; `session.subprotocol` is the selected one
 and `session.response` the 101 response. Credentials are sent as the operation's security declares, on every attempt
 and only to the server's origin or the security context's allowed origins. Headers the handshake manages, such as
@@ -1435,7 +1437,7 @@ then the default below:
 | `WSOptions.open_timeout` | 5 seconds, also capped by the connect, read, and write timeouts and the deadline | No open limit |
 | `WSOptions.idle_timeout` | The call's merged `stream_idle_timeout`, 60 seconds by default | No idle limit |
 | `WSOptions.max_message_bytes` | 1 MiB per message, after decompression | Not allowed |
-| `WSOptions.max_queue` | 16 received messages buffered | Not allowed |
+| `WSOptions.max_queue` | 16 frames: the high-water mark of received frames, above which reading pauses | Not allowed |
 | `WSOptions.send_timeout` | 30 seconds, waiting for earlier sends included | No send limit |
 | `WSOptions.ping_interval`, `pong_timeout` | 20 seconds each | No keepalive pings |
 | `WSOptions.close_timeout` | 5 seconds | Not allowed |
