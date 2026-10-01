@@ -307,6 +307,7 @@ def _handshake_failures(harness: _Harness, connector: _Connector, api: Any) -> N
     for label, items in (
         ("status then 101", (harness.rejected(503), _Connection(harness, subprotocol="chat.v2"))),
         ("broken evidence with a status", (broken(harness.rejected(503)),)),
+        ("refusal with 101", (harness.rejected(101),)),
         ("broken evidence with a connection", (broken(_Connection(harness)),)),
         ("headers of another type", (bad_headers,)),
         ("subprotocol of another type", (bad_subprotocol,)),

@@ -53,7 +53,8 @@ class Play:
 
     def report(self) -> str:
         """Return what the server saw, once the play ended."""
-        self.done.wait(10)
+        if not self.done.wait(10):
+            return f"    server {self.request} | not ended"
         return f"    server {self.request} | {self.closed}"
 
 

@@ -500,9 +500,9 @@ class _Handshakes(Generic[OpenedT]):
 
     @staticmethod
     def _rejected(response: HandshakeResponse, context: AttemptIOContext) -> None:
-        """Record the response a refused handshake got, unless its connector broke its trace."""
+        """Record the response a refused handshake got, unless its connector broke its trace or refused with a 101."""
         trace = attempt_trace(context)
-        if trace.broken:
+        if trace.broken or response.status_code == _SWITCHING:
             raise AdapterContractError(delivery_state=DeliveryState.RESPONSE_STARTED, cause=response)
         trace.response_headers_received(
             http_version="HTTP/1.1", status_code=response.status_code, headers=response.headers
