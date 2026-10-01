@@ -50,6 +50,7 @@ from .errors import (
     HTTPStatusError,
     LimiterExecutionError,
     PhaseTimeoutError,
+    ProtocolConfigurationError,
     ProtocolError,
     ProtocolSizeError,
     RedirectPolicyError,
@@ -443,6 +444,12 @@ def _encoding_error(
     return RequestEncodingError(location=location, operation_id=operation.operation_id, cause=error)
 
 
+def _unsaved(plan: _PagePlan, path: tuple[str, ...]) -> ProtocolConfigurationError:
+    return ProtocolConfigurationError(
+        field_path=path, condition="wrong_capability", helper_id=plan.helper_id, operation=plan.operation
+    )
+
+
 def _parameters(
     operation: OperationPlan[object, object], arguments: tuple[object, ...], mode: RequestValidation
 ) -> _Request:
@@ -652,8 +659,8 @@ def _page(  # noqa: PLR0913
     plan: _PagePlan,
     *,
     page_limited: bool,
-) -> tuple[T, WireValue]:
-    """Return a page's value and wire value, or raise the error of a page or response over its size limit."""
+) -> tuple[T, WireValue, bytes]:
+    """Return a page's value, wire value, and body, or raise the error of a page or response over its size limit."""
     settings = call.settings
     if body.overflow:
         limit = settings.max_response_bytes
@@ -671,13 +678,15 @@ def _page(  # noqa: PLR0913
         raise ResponseTooLargeError(info=info, representation="decoded", limit=limit, observed_bytes=body.size)
     if (problem := body.problem) is not None and body.success:
         raise problem
-    return decoder.decode_page(
+    content = body.content
+    data, wire = decoder.decode_page(
         info,
-        body.content,
+        content,
         truncated=body.truncated or problem is not None,
         problem=problem,
         native=settings.validation.response == "native",
     )
+    return data, wire, content
 
 
 RAW_DECODER: Final[ResponseDecoder[object, object]] = ResponseDecoder((), (), HTTPStatusError)
@@ -1658,6 +1667,118 @@ class _Core(Generic[AdapterT, HandleT]):
             origins.update((origin.scheme, origin.host, origin.port) for origin in security.allowed_origins)
         return frozenset(origins)
 
+    def checkpoint_security(
+        self, operation: OperationPlan[object, object], options: RequestOptions | None
+    ) -> tuple[WireValue, bool]:
+        """Return what a helper's checkpoint is bound to, and whether it may leave the process.
+
+        It is the credential partition and allowed origins of the client's protocol security context, the origin of the
+        operation's server, the security requirements the operation declares, and the schemes the call's auth gives
+        credentials for. A checkpoint of a call that may authenticate is exported only under a credential partition.
+        """
+        settings = self._call_settings(options, operation.operation_id)
+        security = None if (protocols := self._shared.protocols) is None else protocols.security
+        context = None if isinstance(security, Unset) else security
+        declared, auth = operation.security, settings.auth
+        facts: WireValue = {
+            "partition": None if context is None else context.credential_partition,
+            "origins": ()
+            if context is None
+            else tuple(sorted((origin.scheme, origin.host, origin.port) for origin in context.allowed_origins)),
+            "server": request_origin(self._base(operation, settings)),
+            "requirements": None
+            if declared is None
+            else tuple(
+                tuple((requirement.scheme.name, *requirement.required_scopes) for requirement in alternative)
+                for alternative in declared.alternatives
+            ),
+            "credentials": None if auth is None else tuple(sorted(auth.credentials)),
+        }
+        return facts, context is not None or (declared is None and auth is None)
+
+    def unsaved_parameters(self, operation: OperationPlan[object, object]) -> frozenset[int]:
+        """Return the positions of the parameters a checkpoint never saves.
+
+        They are cookies, the headers the client treats as credentials, and the positions of declared security schemes.
+        """
+        headers, queries = _secret_names(self._shared.security_schemes)
+        return frozenset(
+            index
+            for index, spec in enumerate(operation.parameters)
+            if (location := spec.plan.location) == "cookie"
+            or (location == "header" and spec.plan.name.lower() in headers)
+            or (location == "query" and spec.plan.name in queries)
+        )
+
+    def saved_request(  # noqa: PLR0913, PLR0917
+        self,
+        plan: _PagePlan,
+        operation: OperationPlan[object, object],
+        arguments: tuple[object, ...],
+        body: object,
+        media_type: str | MediaSelector | None,
+        options: RequestOptions | None,
+    ) -> tuple[tuple[WireValue | Unset, ...], tuple[WireValue, str, str | None] | None]:
+        """Return the wire values of a helper call's arguments, and of its JSON body with its declared media type.
+
+        They are encoded and checked as the call's first request encodes them; a body sent through a media selector
+        also gives the selector's concrete media type. A cookie, a header the client treats as a credential, and a
+        parameter in the position of a declared security scheme are never saved, so a call giving one cannot be
+        checkpointed.
+        """
+        validation = self._call_settings(options, operation.operation_id).validation
+        if validation.arguments == "pydantic":
+            arguments, body = operation.checked(arguments, body, media_type)
+        unsaved = self.unsaved_parameters(operation)
+        saved: list[WireValue | Unset] = []
+        for index, (spec, value) in enumerate(zip(operation.parameters, arguments, strict=True)):
+            parameter = spec.plan
+            location = parameter.location
+            if isinstance(value, Unset):
+                saved.append(value)
+                continue
+            if index in unsaved:
+                raise _unsaved(plan, ("arguments", location, parameter.name))
+            try:
+                saved.append(spec.encode(value, validation.request))
+            except (*DATA_ERRORS, ValueError, TypeError) as error:
+                raise _encoding_error(operation, (location, parameter.name), error) from None
+        request = operation.body
+        if request is None or isinstance(body, Unset):
+            return tuple(saved), None
+        media = request.selected(operation.operation_id, media_type, operation.codecs)[0]
+        try:
+            wire = media.wire(body, validation.request)
+        except (*DATA_ERRORS, ValueError, TypeError) as error:
+            raise RequestEncodingError(location=("body",), operation_id=operation.operation_id, cause=error) from None
+        concrete = media_type.concrete_media if isinstance(media_type, MediaSelector) else None
+        return tuple(saved), (wire, media.media_type, concrete)
+
+    def saved_page(
+        self,
+        operation: OperationPlan[T, object],
+        content: bytes,
+        status_code: int,
+        content_type: str | None,
+        options: RequestOptions | None,
+    ) -> tuple[T, WireValue]:
+        """Decode a page a helper saved in a checkpoint as its response decoded it, without any other response metadata.
+
+        The page's response metadata is not saved, so it is decoded under its status and media type alone.
+        """
+        settings = self._call_settings(options, operation.operation_id)
+        info = ResponseInfo(
+            status_code=status_code,
+            headers=HeadersView(() if content_type is None else (("Content-Type", content_type),)),
+            call_id="",
+            elapsed=0.0,
+            content_type=content_type,
+            resource_attempt_count=0,
+            network_send_count=0,
+            network_send_budget_used=0,
+        )
+        return operation.responses.decode_page(info, content, native=settings.validation.response == "native")
+
     def _page_request(
         self,
         call: _SessionCall,
@@ -2226,7 +2347,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         plan: _PagePlan,
         operation: OperationPlan[T, object],
         request: Callable[[], tuple[tuple[object, ...], object, str | None]],
-        build: Callable[[T, WireValue, ResponseInfo, str, frozenset[str]], R],
+        build: Callable[[T, WireValue, bytes, ResponseInfo, str, frozenset[str]], R],
         *,
         body: object,
         media_type: str | MediaSelector | None,
@@ -2237,8 +2358,8 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         """Execute one page of a helper session as a child logical call, building what the page's response gives.
 
         The page reads at most `max_page_bytes` of its body, and its arguments, body, and any URL a server gave are
-        taken when the call prepares; `body` is the caller's. What the page gives is built with the URL of the hop
-        that returned it and the query fields the call's auth manages.
+        taken when the call prepares; `body` is the caller's. What the page gives is built from its decoded body
+        and its bytes, with the URL of the hop that returned it and the query fields the call's auth manages.
         """
         settings = self._call_settings(options, operation.operation_id)
         if page_limited := (limit := settings.max_response_bytes) is None or max_page_bytes <= limit:
@@ -2251,8 +2372,8 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         def receive(response: TransportResponse, info: ResponseInfo) -> tuple[Response[T], R]:
             received = self._read(response, info, decoder, call)
             call.check("decode")
-            data, wire = _page(decoder, info, received, call, plan, page_limited=page_limited)
-            result = build(data, wire, info, call.url, call.managed_query())
+            data, wire, content = _page(decoder, info, received, call, plan, page_limited=page_limited)
+            result = build(data, wire, content, info, call.url, call.managed_query())
             call.check("decode")
             return Response(data=data, info=info), result
 
@@ -3064,7 +3185,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         plan: _PagePlan,
         operation: OperationPlan[T, object],
         request: Callable[[], tuple[tuple[object, ...], object, str | None]],
-        build: Callable[[T, WireValue, ResponseInfo, str, frozenset[str]], R],
+        build: Callable[[T, WireValue, bytes, ResponseInfo, str, frozenset[str]], R],
         *,
         body: object,
         media_type: str | MediaSelector | None,
@@ -3075,8 +3196,8 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         """Execute one page of a helper session as a child logical call, building what the page's response gives.
 
         The page reads at most `max_page_bytes` of its body, and its arguments, body, and any URL a server gave are
-        taken when the call prepares; `body` is the caller's. What the page gives is built with the URL of the hop
-        that returned it and the query fields the call's auth manages.
+        taken when the call prepares; `body` is the caller's. What the page gives is built from its decoded body
+        and its bytes, with the URL of the hop that returned it and the query fields the call's auth manages.
         """
         settings = self._call_settings(options, operation.operation_id)
         if page_limited := (limit := settings.max_response_bytes) is None or max_page_bytes <= limit:
@@ -3090,8 +3211,8 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         async def receive(response: AsyncTransportResponse, info: ResponseInfo) -> tuple[Response[T], R]:
             received = await self._read(response, info, decoder, call)
             call.check("decode")
-            data, wire = _page(decoder, info, received, call, plan, page_limited=page_limited)
-            result = build(data, wire, info, call.url, call.managed_query())
+            data, wire, content = _page(decoder, info, received, call, plan, page_limited=page_limited)
+            result = build(data, wire, content, info, call.url, call.managed_query())
             call.check("decode")
             return Response(data=data, info=info), result
 

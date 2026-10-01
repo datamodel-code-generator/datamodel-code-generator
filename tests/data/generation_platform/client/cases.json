@@ -2296,5 +2296,22 @@
       "protocols": "protocols/pagination-link-checks.yaml"
     },
     "modules": false
+  },
+  "pagination-resume": {
+    "input": "pagination-resume.yaml",
+    "references": [
+      "protocols/pagination-resume.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-resume.yaml",
+      "validation": {
+        "request_overrides": [
+          "schema"
+        ],
+        "argument_overrides": [
+          "pydantic"
+        ]
+      }
+    }
   }
 }

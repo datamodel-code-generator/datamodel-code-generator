@@ -538,8 +538,8 @@ the same metadata. The `protocols` setting itself is not recorded among the publ
 An enabled pagination helper, whatever its continuation, is generated at `client.protocols.<name>` on `Client` and
 `AsyncClient` alike; the property exists only when the package has a helper. `page` fetches the first
 page, `next_page` the page after one the helper returned, and `iterate` returns a pager, which sends nothing until it is
-iterated. A helper takes the operation's parameters and its body as keywords, never field arguments, then
-`pagination_options`, `options`, and `session_options`:
+iterated; `resume` returns a pager continuing a pager's checkpoint. A helper takes the operation's parameters and its
+body as keywords, never field arguments, then `pagination_options`, `options`, and `session_options`:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.pagination.helper -->
 <!-- fmt: off -->
@@ -738,6 +738,67 @@ mixing items with pages raise `ProtocolStateError`. After a failure, cancellatio
 every step raises `ProtocolStateError`, and nothing is fetched again. Hooks and limiters see each page's call with the
 session's `parent_session_id`, which its errors carry too; an error `next_page` raises before its session starts, such
 as for a page it did not return, has `parent_session_id=None`.
+
+### Checkpoints and resume
+
+`pager.checkpoint()` returns a `ResumeState` without sending, on `Pager` and `AsyncPager` alike, and on a pager that
+failed or was closed; a pager fetching a page raises `ProtocolStateError`. The helper's
+`resume(state, *, pagination_options=None, options=None, session_options=None)` is not awaited, even on `AsyncClient`,
+and returns a pager in a session of its own that sends nothing until it is iterated:
+
+```python
+from pkg.errors import SessionLimitError
+from pkg.protocols import PaginationOptions, import_state
+
+with Client() as client:
+    helper = client.protocols.users.all
+    pager = helper.iterate()
+    first = next(pager)
+    saved = pager.checkpoint().export()
+    for user in helper.resume(import_state(saved)):
+        print(user.id)
+    try:
+        list(helper.iterate(pagination_options=PaginationOptions(max_items=100)))
+    except SessionLimitError as error:
+        if error.resume_state is not None:
+            rest = list(helper.resume(error.resume_state, pagination_options=PaginationOptions(max_items=None)))
+```
+
+| Saved | Never saved |
+|---|---|
+| The wire values of the call's parameters, as its first request encoded and checked them | The call's `options`, headers, query patches, and cookies, and anything its auth adds |
+| The JSON body, when the next request sends it, with its declared media type and any selector's concrete type | The body of a next-URL or Link helper that does not repeat it, once its first page is fetched |
+| The last page's index, the items fetched so far, its continuation and binding values, and the digests of the continuations its pages returned | The session, its deadline, and its send counters |
+| The last page's body, status, and media type while items of it are left | Model objects, which are decoded again from the body |
+
+A call that gives a cookie parameter, a header the client treats as a credential, or a parameter at the position of a
+declared security scheme cannot be checkpointed: `checkpoint()` raises `ProtocolConfigurationError` with a `field_path`
+of `("arguments", <location>, <name>)`, and its limit and cycle errors keep `resume_state=None`. Otherwise
+`SessionLimitError` and `PaginationCycleError` keep a checkpoint of where the pager stopped as `resume_state`, with the
+item a limit refused still to come.
+
+A resumed pager first delivers the items left of the saved page, decoded again under the call's response validation,
+and then continues with the saved continuation, bindings, and request; with items left it iterates items only, so
+`iter_pages()` raises `ProtocolStateError`. Its pages continue with `next_page` as any other. Pages and items count on
+from the checkpoint against the resumed call's limits, so a limit that stopped the pager stops it again unless it is
+raised, while the session's timeout, deadline, and sends start afresh. The cycle history carries over, so a resumed cycle
+raises `PaginationCycleError` again without sending.
+
+`resume` checks the state before returning, without sending:
+
+| Rejected state | Exception |
+|---|---|
+| Not a `ResumeState` | `ProtocolConfigurationError(field_path=("state",), condition="invalid_value")` |
+| Another helper's, or one generated differently | `ResumeStateError(condition="fingerprint")` |
+| Made under another credential partition, allowed origins, server origin, declared security, or configured auth schemes | `ResumeStateError(condition="security")` |
+| An expiry that has passed | `ResumeStateError(condition="expired")` |
+| A state, saved argument, body, or page that does not fit the helper, a value for a parameter that is never saved included | `ResumeStateError(condition="malformed")` |
+| A cursor over the resumed call's `max_cursor_bytes`, a URL a server could not have given, or a dot segment for a path parameter | `ProtocolSizeError` or `ProtocolDataError`, as for a page |
+
+`ResumeState.export()` of a helper's checkpoint requires `ProtocolSecurityContext.credential_partition` when the
+operation declares security or the call configures auth, and raises `ProtocolConfigurationError` with
+`condition="security_partition"` otherwise; such a state still resumes in the same process. The saved body is not
+encrypted, so store exported states as the call's own data.
 
 ### Generation checks
 

@@ -2169,14 +2169,29 @@ class _Registry(_Typing):
         )
 
 
+_RESUME_RUNTIME: Final = """
+A pager's `checkpoint()` returns a `ResumeState` without sending, and the helper's `resume(state)` returns a pager in a
+session of its own that sends nothing until it is iterated. A checkpoint saves the wire values of the call's arguments
+and of the JSON body later pages send, the last page's position, continuation, binding values, and cycle history, and
+the body of a page with items left, which `resume` decodes again and delivers first. It never saves the call's options,
+its session, or anything its auth adds; a call giving a cookie, a credential header, or a parameter at a security
+scheme's position cannot be checkpointed and raises `ProtocolConfigurationError`. Pages and items count on from the
+checkpoint against the resumed call's limits, while its sends and timeout start afresh. `resume` raises
+`ResumeStateError` before sending for another helper's checkpoint, one made under another credential partition, allowed
+origins, server, declared security, or configured auth, and a malformed state, and checks the saved continuation as one
+a server just gave. `SessionLimitError` and `PaginationCycleError` keep a checkpoint of where the pager stopped as
+`resume_state` when the call can be checkpointed. `ResumeState.export()` requires
+`ProtocolSecurityContext.credential_partition` when the operation declares security or the call configures auth;
+`import_state` reads the export back.
+"""
 _HELPER_OPTIONS: Final = (
     ("pagination_options", ".", "PaginationOptions"),
     ("options", "..options", "RequestOptions"),
     ("session_options", "..options", "SessionOptions"),
 )
-_HELPER_CALLS: Final[dict[bool, tuple[str, str, str]]] = {
-    False: ("first_page", "iterate_pages", "following_page"),
-    True: ("afirst_page", "aiterate_pages", "afollowing_page"),
+_HELPER_CALLS: Final[dict[bool, tuple[str, str, str, str]]] = {
+    False: ("first_page", "iterate_pages", "following_page", "resume_pages"),
+    True: ("afirst_page", "aiterate_pages", "afollowing_page", "aresume_pages"),
 }
 
 
@@ -2412,7 +2427,7 @@ class _Helpers:
         return "\n\n".join((head, *members))
 
     def methods(self, module: Module, index: int, spec: PaginationSpec, *, asynchronous: bool) -> list[str]:  # noqa: PLR0914
-        """Return a pagination helper's page, iterate, and next_page methods."""
+        """Return a pagination helper's page, iterate, next_page, and resume methods."""
         operation = replace(spec.operation, fields=())
         resources = self.resources
         runtime = "_runtime.protocols.pagination"
@@ -2433,7 +2448,9 @@ class _Helpers:
             *((f"{argument.name}=", argument.name) for argument in body),
             *((f"{name}=", name) for name, _, _ in _HELPER_OPTIONS),
         ]
-        first, iterate, following = (module.local(runtime, name) for name in _HELPER_CALLS[asynchronous])
+        first, iterate, following, resume = (module.local(runtime, name) for name in _HELPER_CALLS[asynchronous])
+        keywords = [argument.parameter(module) for argument in options]
+        forwarded = [(f"{name}=", name) for name, _, _ in _HELPER_OPTIONS]
         route = f"{operation.contract.method.upper()} {operation.contract.path}"
         signature = tuple(argument.parameter(module) for argument in (*arguments, *body, *options))
         wait = "await " if asynchronous else ""
@@ -2452,12 +2469,7 @@ class _Helpers:
                 layout(
                     Group(
                         f"    {'async ' if asynchronous else ''}def next_page(",
-                        items((
-                            "self",
-                            f"page: {page_type}",
-                            "*",
-                            *(argument.parameter(module) for argument in options),
-                        )),
+                        items(("self", f"page: {page_type}", "*", *keywords)),
                         f") -> {page_type} | None:",
                     ),
                     4,
@@ -2467,19 +2479,31 @@ class _Helpers:
                 '        """Fetch the page after a page of this helper, or return None after the last page."""',
                 f"        return {wait}"
                 + layout(
-                    _call(
-                        following,
-                        (
-                            ("", "self._core"),
-                            ("", plan),
-                            ("", "page"),
-                            *((f"{name}=", name) for name, _, _ in _HELPER_OPTIONS),
-                        ),
-                    ),
+                    _call(following, (("", "self._core"), ("", plan), ("", "page"), *forwarded)),
                     8,
                     7 + len(wait),
                     WIDTH,
                 ),
+            )),
+            "\n".join((
+                layout(
+                    Group(
+                        "    def resume(",
+                        items((
+                            "self",
+                            f"state: {module.local('_runtime.protocols.resume', 'ResumeState')}",
+                            "*",
+                            *keywords,
+                        )),
+                        f") -> {pager}:",
+                    ),
+                    4,
+                    0,
+                    WIDTH,
+                ),
+                '        """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""',
+                "        return "
+                + layout(_call(resume, (("", "self._core"), ("", plan), ("", "state"), *forwarded)), 8, 7, WIDTH),
             )),
         ]
 
@@ -2615,7 +2639,8 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
 `client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.
 A pagination helper's `page` fetches the first page and `next_page` the page after one it returned, each in a
 session of its own; `iterate` returns a pager, which sends nothing until it is iterated and fetches each page only
-once the previous one is consumed. See the runtime reference for their limits.
+once the previous one is consumed, and `resume` returns one continuing a pager's `checkpoint()`. See the runtime
+reference for their limits and checkpoints.
 
 ```json
 {json.dumps(helpers, indent=2, ensure_ascii=True)}
@@ -2834,7 +2859,8 @@ total timeout, and idempotency key; the session bounds all of them. Each limit c
 `ProtocolClientOptions.defaults` for the helper, then the default below. Defaults naming a helper the package lacks, or
 another kind's options, fail construction. The session types are imported from:
 
-- `{self.config.package}.protocols`: `PaginationOptions`, `Page`, `Pager`, and `AsyncPager`
+- `{self.config.package}.protocols`: `PaginationOptions`, `Page`, `Pager`, `AsyncPager`, `ResumeState`, and
+  `import_state`
 - `{self.config.package}.options`: `SessionOptions`
 
 | Limit | Effective default |
@@ -2846,7 +2872,7 @@ another kind's options, fail construction. The session types are imported from:
 | network sends per session | 3000; None removes it |
 
 {rules}
-{self.count_runtime(kinds)}{self.follow_runtime(kinds)}"""
+{self.count_runtime(kinds)}{self.follow_runtime(kinds)}{_RESUME_RUNTIME}"""
 
     @staticmethod
     def follow_runtime(kinds: set[str]) -> str:

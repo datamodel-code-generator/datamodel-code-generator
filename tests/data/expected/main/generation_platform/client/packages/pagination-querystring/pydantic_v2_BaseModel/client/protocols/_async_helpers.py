@@ -15,7 +15,9 @@ from .._runtime.protocols.pagination import (
     afirst_page,
     afollowing_page,
     aiterate_pages,
+    aresume_pages,
 )
+from .._runtime.protocols.resume import ResumeState
 from ..model_codecs import ModelValue
 from ..options import UNSET, RequestOptions, SessionOptions, Unset
 from ..types.default import LookupResponse, SearchResponse
@@ -137,6 +139,24 @@ class AsyncSearchAllPagination:
             session_options=session_options,
         )
 
+    def resume(
+        self,
+        state: ResumeState,
+        *,
+        pagination_options: PaginationOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> AsyncPager[str, SearchResponse]:
+        """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
+        return aresume_pages(
+            self._core,
+            _plans.PLAN_0,
+            state,
+            pagination_options=pagination_options,
+            options=options,
+            session_options=session_options,
+        )
+
 
 class AsyncSearchFixedPagination:
     """The search.fixed pagination helper of GET /search."""
@@ -194,6 +214,24 @@ class AsyncSearchFixedPagination:
             self._core,
             _plans.PLAN_1,
             page,
+            pagination_options=pagination_options,
+            options=options,
+            session_options=session_options,
+        )
+
+    def resume(
+        self,
+        state: ResumeState,
+        *,
+        pagination_options: PaginationOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> AsyncPager[str, SearchResponse]:
+        """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
+        return aresume_pages(
+            self._core,
+            _plans.PLAN_1,
+            state,
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -261,6 +299,24 @@ class AsyncSearchNextPagination:
             session_options=session_options,
         )
 
+    def resume(
+        self,
+        state: ResumeState,
+        *,
+        pagination_options: PaginationOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> AsyncPager[str, SearchResponse]:
+        """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
+        return aresume_pages(
+            self._core,
+            _plans.PLAN_2,
+            state,
+            pagination_options=pagination_options,
+            options=options,
+            session_options=session_options,
+        )
+
 
 class AsyncLookupAllPagination:
     """The lookup.all pagination helper of GET /lookup."""
@@ -318,6 +374,24 @@ class AsyncLookupAllPagination:
             self._core,
             _plans.PLAN_3,
             page,
+            pagination_options=pagination_options,
+            options=options,
+            session_options=session_options,
+        )
+
+    def resume(
+        self,
+        state: ResumeState,
+        *,
+        pagination_options: PaginationOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> AsyncPager[str, LookupResponse]:
+        """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
+        return aresume_pages(
+            self._core,
+            _plans.PLAN_3,
+            state,
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,

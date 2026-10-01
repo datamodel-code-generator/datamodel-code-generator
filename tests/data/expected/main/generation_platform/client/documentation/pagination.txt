@@ -647,7 +647,8 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
 `client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.
 A pagination helper's `page` fetches the first page and `next_page` the page after one it returned, each in a
 session of its own; `iterate` returns a pager, which sends nothing until it is iterated and fetches each page only
-once the previous one is consumed. See the runtime reference for their limits.
+once the previous one is consumed, and `resume` returns one continuing a pager's `checkpoint()`. See the runtime
+reference for their limits and checkpoints.
 
 ```json
 [
@@ -913,7 +914,8 @@ total timeout, and idempotency key; the session bounds all of them. Each limit c
 `ProtocolClientOptions.defaults` for the helper, then the default below. Defaults naming a helper the package lacks, or
 another kind's options, fail construction. The session types are imported from:
 
-- `client.protocols`: `PaginationOptions`, `Page`, `Pager`, and `AsyncPager`
+- `client.protocols`: `PaginationOptions`, `Page`, `Pager`, `AsyncPager`, `ResumeState`, and
+  `import_state`
 - `client.options`: `SessionOptions`
 
 | Limit | Effective default |
@@ -932,3 +934,17 @@ cursor that no condition covers, or a missing binding value, raises `ProtocolDat
 the session ends it with `PaginationCycleError` after the repeating page. A limit reached while pages remain raises
 `SessionLimitError` with the progress so far; a pager then refuses further steps. A call's options must not patch a
 header, the cookies, or a query parameter the helper writes.
+
+A pager's `checkpoint()` returns a `ResumeState` without sending, and the helper's `resume(state)` returns a pager in a
+session of its own that sends nothing until it is iterated. A checkpoint saves the wire values of the call's arguments
+and of the JSON body later pages send, the last page's position, continuation, binding values, and cycle history, and
+the body of a page with items left, which `resume` decodes again and delivers first. It never saves the call's options,
+its session, or anything its auth adds; a call giving a cookie, a credential header, or a parameter at a security
+scheme's position cannot be checkpointed and raises `ProtocolConfigurationError`. Pages and items count on from the
+checkpoint against the resumed call's limits, while its sends and timeout start afresh. `resume` raises
+`ResumeStateError` before sending for another helper's checkpoint, one made under another credential partition, allowed
+origins, server, declared security, or configured auth, and a malformed state, and checks the saved continuation as one
+a server just gave. `SessionLimitError` and `PaginationCycleError` keep a checkpoint of where the pager stopped as
+`resume_state` when the call can be checkpointed. `ResumeState.export()` requires
+`ProtocolSecurityContext.credential_partition` when the operation declares security or the call configures auth;
+`import_state` reads the export back.

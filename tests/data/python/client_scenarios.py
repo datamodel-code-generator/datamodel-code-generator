@@ -44,6 +44,7 @@ from tests.data.python.client_oauth_store import oauth_refresh_store
 from tests.data.python.client_pagination import pagination, pagination_backends, pagination_limits
 from tests.data.python.client_pagination_counts import pagination_counts
 from tests.data.python.client_pagination_links import pagination_links
+from tests.data.python.client_pagination_resume import pagination_resume
 from tests.data.python.client_pagination_sessions import pagination_auth, pagination_sessions
 from tests.data.python.client_pagination_targets import pagination_querystring, pagination_targets
 from tests.data.python.client_protocol_contracts import protocol_contracts
@@ -724,6 +725,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "pagination-querystring": ("pagination-querystring", ("pydantic_v2.BaseModel",), pagination_querystring),
     "pagination-counts": ("pagination-counts", ("pydantic_v2.BaseModel",), pagination_counts),
     "pagination-links": ("pagination-links", ("pydantic_v2.BaseModel",), pagination_links),
+    "pagination-resume": ("pagination-resume", ("pydantic_v2.BaseModel",), pagination_resume),
     "protocol-errors": ("pets", ("pydantic_v2.BaseModel",), protocol_errors),
     "evolution": ("evolution", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"), evolution),
     "evolution-schema": (
