@@ -7,8 +7,16 @@ from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
 
-from tests.data.python.client_pagination import Harness, adrained, afetched, drained, fetched
-from tests.data.python.client_runtime import Exchange, arecord, json_response, record, run
+from tests.data.python.client_pagination import (
+    Harness,
+    adrained,
+    afetched,
+    drained,
+    fetched,
+    headed_page,
+    user_page,
+)
+from tests.data.python.client_runtime import Exchange, arecord, record, run
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -61,20 +69,9 @@ _URL_REFUSALS: Final[tuple[tuple[str, object], ...]] = (
 )
 
 
-def _page(*ids: str, **members: object) -> Callable[[httpx2.Request], httpx2.Response]:
-    """Return a responder of one page of users with the given members."""
-    return json_response(200, {"data": [{"id": value} for value in ids], **members})
-
-
-def _headed(*ids: str, headers: tuple[tuple[str, str], ...], **members: object) -> Callable[[httpx2.Request], Any]:
-    """Return a responder of one page of users with repeatable response headers."""
-    payload = {"data": [{"id": value} for value in ids], **members}
-    return lambda _: httpx2.Response(200, headers=list(headers), json=payload)
-
-
 def _links(*values: str, ids: tuple[str, ...] = ("1",)) -> Callable[[httpx2.Request], Any]:
     """Return a responder of one page of users with one Link field per value."""
-    return _headed(*ids, headers=tuple(("Link", value) for value in values))
+    return headed_page(*ids, headers=tuple(("Link", value) for value in values))
 
 
 def pagination_links(package: ModuleType, lines: list[str]) -> None:
@@ -105,25 +102,25 @@ def _urls(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> N
     }
     patched = harness.options.RequestOptions(headers=(("X-Client", "c"),), query=(("debug", "1"),))
     exchange.respond(
-        _page("1", next=f"{_SERVER}/users?limit=2&cursor=b%2Fc"),
-        _page(next="?cursor=c"),
-        _page("2", next="../v1/./users/../users?cursor=d"),
-        _page("3", next="//api.example.com/v1/users?cursor=e"),
-        _page("4"),
+        user_page("1", next=f"{_SERVER}/users?limit=2&cursor=b%2Fc"),
+        user_page(next="?cursor=c"),
+        user_page("2", next="../v1/./users/../users?cursor=d"),
+        user_page("3", next="//api.example.com/v1/users?cursor=e"),
+        user_page("4"),
     )
     drained(lines, "followed URLs", users.follow.iterate(**arguments, options=patched))
     exchange.respond(
-        _headed("1", headers=(("X-Next", "/v1/users?cursor=h"),)),
-        _page("2"),
+        headed_page("1", headers=(("X-Next", "/v1/users?cursor=h"),)),
+        user_page("2"),
     )
     drained(lines, "header URL", users.headed.iterate())
     for label, members in (("null URL", {"maybe_next": None}), ("empty URL", {"maybe_next": ""})):
-        exchange.respond(_page("1", **members))
+        exchange.respond(user_page("1", **members))
         drained(lines, label, users.nullable.iterate())
-    exchange.respond(_page("1"))
+    exchange.respond(user_page("1"))
     drained(lines, "missing URL without its end", users.nullable.iterate())
     for label, value in (("integer URL", 7), ("object URL", {"href": "/v1/users"})):
-        exchange.respond(_page("1", loose_next=value))
+        exchange.respond(user_page("1", loose_next=value))
         drained(lines, label, users.loose.iterate())
 
 
@@ -131,12 +128,12 @@ def _refusals(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) 
     """Refuse a URL with a fragment, user information, another scheme or origin, bad syntax, or too many bytes."""
     helper = api.protocols.users.follow
     for label, value in _URL_REFUSALS:
-        exchange.respond(_page("1", next=value))
+        exchange.respond(user_page("1", next=value))
         drained(lines, label, helper.iterate())
     limits = harness.protocols.PaginationOptions(max_cursor_bytes=40)
-    exchange.respond(_page("1", next="users?cursor=0123456789"))
+    exchange.respond(user_page("1", next="users?cursor=0123456789"))
     drained(lines, "resolved URL over the cursor size", helper.iterate(pagination_options=limits))
-    exchange.respond(*(_page(str(index), next=f"{'a' * 2000}/") for index in range(5)))
+    exchange.respond(*(user_page(str(index), next=f"{'a' * 2000}/") for index in range(5)))
     drained(lines, "relative path growing past 8 KiB", helper.iterate())
 
 
@@ -144,19 +141,19 @@ def _vectors(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -
     """Read Link fields strictly: relation lists and case, quoted strings, parameters, and malformed fields."""
     users = api.protocols.users
     for label, values in _LINK_VECTORS:
-        exchange.respond(_links(*values), _page("2"))
+        exchange.respond(_links(*values), user_page("2"))
         drained(lines, label, users.linked.iterate())
         exchange.responders.clear()
-    exchange.respond(_links('<?page=2>; rel="HTTPS://EXAMPLE.COM/REL/MORE"'), _page("2"))
+    exchange.respond(_links('<?page=2>; rel="HTTPS://EXAMPLE.COM/REL/MORE"'), user_page("2"))
     drained(lines, "extension relation", users.related.iterate())
     limits = harness.protocols.PaginationOptions(max_cursor_bytes=48)
     exchange.respond(_links("<?page=2>; rel=next", "<?page=9>; rel=last; title=long"))
     drained(lines, "Link fields over the cursor size", users.linked.iterate(pagination_options=limits))
     trace = harness.argument("users", "ListUsers", "header", "X-Trace", "mine")
     exchange.respond(
-        _headed("1", headers=(("Link", "<?page=2>; rel=next"), ("X-Snapshot", "s1"))),
-        _headed("2", headers=(("Link", "<?page=3>; rel=next"), ("X-Snapshot", "s2"))),
-        _page("3"),
+        headed_page("1", headers=(("Link", "<?page=2>; rel=next"), ("X-Snapshot", "s1"))),
+        headed_page("2", headers=(("Link", "<?page=3>; rel=next"), ("X-Snapshot", "s2"))),
+        user_page("3"),
     )
     drained(lines, "snapshot kept from the first page", users.snapshot.iterate(x_trace=trace))
 
@@ -171,28 +168,32 @@ def _bodies(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
     """Repeat the caller's body with the operation's method only when asked to, and GET the URL otherwise."""
     searches = api.protocols.searches
     body = _search(harness, {"query": "a"})
-    exchange.respond(_page("1", next="?page=2", token="t1"), _page("2", next="?page=3", token="t2"), _page("3"))
+    exchange.respond(
+        user_page("1", next="?page=2", token="t1"), user_page("2", next="?page=3", token="t2"), user_page("3")
+    )
     drained(lines, "repeated body", searches.repeated.iterate(body=body))
-    exchange.respond(_page("1", next="?page=2"), _page("2"))
+    exchange.respond(user_page("1", next="?page=2"), user_page("2"))
     drained(lines, "fetched without the body", searches.fetched.iterate(body=body))
 
 
 def _cycles(api: Any, exchange: Exchange, lines: list[str]) -> None:
     """End with PaginationCycleError at a URL an earlier page gave, however the server spelled it."""
     helper = api.protocols.users.follow
-    exchange.respond(_page("1", next="?cursor=a"), _page("2", next="?cursor=b"), _page("3", next="?cursor=a"))
+    exchange.respond(
+        user_page("1", next="?cursor=a"), user_page("2", next="?cursor=b"), user_page("3", next="?cursor=a")
+    )
     drained(lines, "repeated URL", helper.iterate())
-    exchange.respond(_page("1", next="?cursor=a"), _page("2", next=f"{_SERVER}/users?cursor=a"))
+    exchange.respond(user_page("1", next="?cursor=a"), user_page("2", next=f"{_SERVER}/users?cursor=a"))
     drained(lines, "repeated URL spelled absolutely", helper.iterate())
     for label, value in (("own URL", f"{_SERVER}/users"), ("empty reference", "")):
-        exchange.respond(_page("1", next=value))
+        exchange.respond(user_page("1", next=value))
         drained(lines, label, helper.iterate())
 
 
 def _pages(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Fetch followed pages one call at a time, refusing a URL of a server the call no longer selects."""
     helper = api.protocols.users.headed
-    exchange.respond(_headed("1", headers=(("X-Next", "?cursor=2"),)), _page("2"))
+    exchange.respond(headed_page("1", headers=(("X-Next", "?cursor=2"),)), user_page("2"))
     first = fetched(lines, "first followed page", helper.page)
     second = fetched(lines, "next followed page", lambda: helper.next_page(first))
     fetched(lines, "after the last followed page", lambda: helper.next_page(second))
@@ -211,7 +212,7 @@ def _guarded(harness: Harness, *, asynchronous: bool) -> tuple[tuple[str, Any, t
     """Return rows of client options, responders, and the start of a traversal or an ordinary call, for either mode.
 
     They follow URLs to allowed origins and back, without the server's credentials, cookies, or the positions of the
-    package's security schemes, authenticate only where the auth allows, and redirect.
+    package's security schemes at any origin, authenticate only where the auth allows, and redirect.
     """
     options, auth = harness.options, importlib.import_module(f"{harness.package.__name__}.auth")
     other = harness.protocols.Origin(scheme="https", host="other.example.com", port=443)
@@ -231,10 +232,10 @@ def _guarded(harness: Harness, *, asynchronous: bool) -> tuple[tuple[str, Any, t
             "allowed origin and back",
             _secured(harness, other),
             (
-                _page("1", next=f"{_OTHER}/v1/users?cursor=2"),
-                _page("2", next="?cursor=3"),
-                _page("3", next=f"{_SERVER}/users?cursor=4"),
-                _page("4", next="https://third.example.com/v1/users"),
+                user_page("1", next=f"{_OTHER}/v1/users?cursor=2"),
+                user_page("2", next="?cursor=3"),
+                user_page("3", next=f"{_SERVER}/users?cursor=4"),
+                user_page("4", next="https://third.example.com/v1/users"),
             ),
             lambda api: api.protocols.users.follow.iterate(**arguments),
         ),
@@ -242,22 +243,22 @@ def _guarded(harness: Harness, *, asynchronous: bool) -> tuple[tuple[str, Any, t
             "scheme credentials kept from another origin",
             _secured(harness, other, headers=patched),
             (
-                _page("1", next=f"{_OTHER}/v1/users?api_key=k&cursor=2"),
-                _page("2", next=f"{_SERVER}/users?api_key=k&cursor=3"),
-                _page("3"),
+                user_page("1", next=f"{_OTHER}/v1/users?api_key=k&cursor=2"),
+                user_page("2", next=f"{_SERVER}/users?api_key=k&cursor=3"),
+                user_page("3"),
             ),
             lambda api: api.protocols.users.follow.iterate(),
         ),
         (
             "same origin bearer",
             _secured(harness, other, auth=auth.AuthConfig({"bearer": token})),
-            (_links("<?page=2>; rel=next"), _page("2")),
+            (_links("<?page=2>; rel=next"), user_page("2")),
             lambda api: api.protocols.secure.users.iterate(),
         ),
         (
             "bearer the auth keeps from another origin",
             _secured(harness, other, auth=auth.AuthConfig({"bearer": token})),
-            (_links(secure), _page("2")),
+            (_links(secure), user_page("2")),
             lambda api: api.protocols.secure.users.iterate(),
         ),
         (
@@ -267,13 +268,25 @@ def _guarded(harness: Harness, *, asynchronous: bool) -> tuple[tuple[str, Any, t
                 other,
                 auth=auth.AuthConfig({"bearer": token}, allowed_origins=("https://api.example.com", _OTHER)),
             ),
-            (_links(secure), _page("2")),
+            (_links(secure), user_page("2")),
             lambda api: api.protocols.secure.users.iterate(),
+        ),
+        (
+            "other scheme's query key at the same origin",
+            _secured(harness, other, auth=auth.AuthConfig({"bearer": token})),
+            (_links("<?api_key=leak&page=2>; rel=next"), user_page("2")),
+            lambda api: api.protocols.secure.users.iterate(),
+        ),
+        (
+            "scheme query key without auth at the same origin",
+            options.ClientOptions(),
+            (user_page("1", next="/v1/users?cursor=2&api_key=leak"), user_page("2")),
+            lambda api: api.protocols.users.follow.iterate(),
         ),
         (
             "query key repeated by the URL",
             options.ClientOptions(auth=auth.AuthConfig({"query_key": key})),
-            (_page("1", next="/v1/keyed/users?api_key=key&cursor=2"), _page("2")),
+            (user_page("1", next="/v1/keyed/users?api_key=key&cursor=2"), user_page("2")),
             lambda api: api.protocols.keyed.users.iterate(),
         ),
         (
@@ -281,8 +294,8 @@ def _guarded(harness: Harness, *, asynchronous: bool) -> tuple[tuple[str, Any, t
             options.ClientOptions(redirects=options.RedirectOptions(enabled=True)),
             (
                 lambda _: httpx2.Response(302, headers={"Location": "/v2/people"}),
-                _page("1", next="?cursor=2"),
-                _page("2"),
+                user_page("1", next="?cursor=2"),
+                user_page("2"),
             ),
             lambda api: api.protocols.users.follow.iterate(),
         ),
@@ -291,7 +304,7 @@ def _guarded(harness: Harness, *, asynchronous: bool) -> tuple[tuple[str, Any, t
             options.ClientOptions(headers=patched, redirects=redirects),
             (
                 lambda _: httpx2.Response(302, headers={"Location": f"{_OTHER}/v1/users?api_key=k&page=1"}),
-                _page("1"),
+                user_page("1"),
             ),
             lambda api: api.users.with_response.list_users,
         ),
@@ -337,11 +350,11 @@ async def _async_links(harness: Harness, lines: list[str]) -> None:
     exchange = Exchange(lines)
     async with exchange.async_client() as native, package.AsyncClient(http_client=native) as api:
         users = api.protocols.users
-        exchange.respond(_page("1", next="?cursor=2"), _page(next="/v1/users?cursor=3"), _page("2"))
+        exchange.respond(user_page("1", next="?cursor=2"), user_page(next="/v1/users?cursor=3"), user_page("2"))
         await adrained(lines, "async followed URLs", users.follow.iterate())
         exchange.respond(_links("<?page=2>; rel=next"), _links("<?page=2>; rel=next", ids=("2",)))
         await adrained(lines, "async repeated link", users.linked.iterate())
-        exchange.respond(_links("<?page=2>; rel=next"), _page("2"))
+        exchange.respond(_links("<?page=2>; rel=next"), user_page("2"))
         first = await afetched(lines, "async first linked page", users.linked.page)
         second = await afetched(lines, "async next linked page", lambda: users.linked.next_page(first))
         await afetched(lines, "async after the last linked page", lambda: users.linked.next_page(second))

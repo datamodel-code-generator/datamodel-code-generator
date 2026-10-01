@@ -93,6 +93,13 @@ class RequestCodecs(Generic[BodyT_co, ParameterT_co, PartT_co, RequestMediaT_co,
             raise CodecSelectionError(msg)
         return accessor()
 
+    def request_media(self, declared_media: str, concrete_media: str) -> RequestMediaT_co:
+        """Return the selector of a declared request media type for a concrete one, as the select method checks it.
+
+        It raises CodecSelectionError when the concrete type does not dispatch to the declared one.
+        """
+        return self._request_media(declared_media, concrete_media)
+
     def _request_media(self, declared_media: str, concrete_media: str) -> RequestMediaT_co:
         declared, concrete = _chosen(self._requests, declared_media, concrete_media, winner=True)
         return cast("RequestMediaT_co", select_media(RequestMedia, declared, concrete, self))
@@ -100,6 +107,12 @@ class RequestCodecs(Generic[BodyT_co, ParameterT_co, PartT_co, RequestMediaT_co,
     def _response_media(self, declared_media: str, concrete_media: str) -> ResponseMediaT_co:
         declared, concrete = _chosen(self._responses, declared_media, concrete_media, winner=False)
         return cast("ResponseMediaT_co", select_media(ResponseMedia, declared, concrete, self))
+
+
+def request_media(codecs: object, declared_media: str, concrete_media: str) -> MediaSelector:
+    """Return the selector an operation's request codecs make for a declared and a concrete media type."""
+    owner = cast("RequestCodecs[object, object, object, MediaSelector, object]", codecs)
+    return owner.request_media(declared_media, concrete_media)
 
 
 def _chosen(

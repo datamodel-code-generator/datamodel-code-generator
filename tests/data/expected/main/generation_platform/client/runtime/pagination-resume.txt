@@ -1,0 +1,321 @@
+# pagination-resume pydantic_v2.BaseModel
+  before any page saved {"arguments": [[], [], [3], ["t"], [], []], "body": [], "page": null} payload=b''
+  > GET https://api.example.com/v1/users?limit=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  first items = ['1']
+  mid page saved {"arguments": [[], [], [3], ["t"], [], []], "body": [], "page": [0, 3, ["a"], [], null, [["ac8d8342bbb2362d13f0a559a3621bb407011368895164b628a54f7fc33fc43c", 0]], [2, 200, "application/json"]]} payload=b'{"data":[{"id":"1"},{"id":"2"},{"id":"3"}],"next_cursor":"a"}'
+  state repr ResumeState(version=1) progress {'pages': 1, 'items': 1, 'network_send_count': 1, 'network_send_budget_used': 1}
+  resumed progress {'pages': 1, 'items': 1, 'network_send_count': 0, 'network_send_budget_used': 0}
+  resumed pages ! ProtocolStateError: ProtocolStateError(state='items', action='iter_pages') [] protocol_state_error
+  > GET https://api.example.com/v1/users?cursor=a&limit=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  > GET https://api.example.com/v1/users?cursor=b&limit=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  resumed items ['2', '3', '4', '5']
+  resumed progress after {'pages': 3, 'items': 5, 'network_send_count': 2, 'network_send_budget_used': 2}
+  > GET https://api.example.com/v1/users?cursor=a&limit=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  > GET https://api.example.com/v1/users?cursor=b&limit=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  original items ['2', '3', '4', '5']
+  resumed again = ['2', '3']
+  resumed checkpoint saved {"arguments": [[], [], [3], ["t"], [], []], "body": [], "page": [0, 3, ["a"], [], null, [["ac8d8342bbb2362d13f0a559a3621bb407011368895164b628a54f7fc33fc43c", 0]], null]} payload=b''
+  > GET https://api.example.com/v1/users?cursor=a&limit=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  resumed again rest ['4']
+  > GET https://api.example.com/v1/users?limit=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  resumed before any page ['1']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  last page first = ['1']
+  resumed last page ['2']
+  closed saved {"arguments": [[], [], [], [], [], []], "body": [], "page": null} payload=b''
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  first page ['1', '2']
+  pages saved {"arguments": [[], [], [], [], [], []], "body": [], "page": [0, 2, ["a"], [], null, [["ac8d8342bbb2362d13f0a559a3621bb407011368895164b628a54f7fc33fc43c", 0]], null]} payload=b''
+  > GET https://api.example.com/v1/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  resumed page = [3] continuation=Continuation(kind='cursor') status=200 sends=1
+  > GET https://api.example.com/v1/users?cursor=b
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  next page of a resumed page = [4] continuation=None status=200 sends=1
+  resumed page progress {'pages': 2, 'items': 3, 'network_send_count': 1, 'network_send_budget_used': 1}
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  second page failing ['1'] ! ListUsersHTTPError: ListUsersHTTPError(status_code=503, operation_id='listUsers', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='listUsers', status_code=503, error_decoded=False, body_bytes=b'{"message":"busy"}', truncated=False] list_users_http_error
+  > GET https://api.example.com/v1/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  resumed after the failed page ['2']
+  checkpoint while fetching ! ProtocolStateError: ProtocolStateError(state='fetching', action='checkpoint') [] protocol_state_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  checkpointed while fetching ['1']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  item limit ! SessionLimitError: SessionLimitError(kind='items', limit=2) [kind='items', limit=2] session_limit_error resume_state=ResumeState
+  item limit saved {"arguments": [[], [], [], [], [], []], "body": [], "page": [0, 3, ["a"], [], null, [["ac8d8342bbb2362d13f0a559a3621bb407011368895164b628a54f7fc33fc43c", 0]], [1, 200, "application/json"]]} payload=b'{"data":[{"id":"1"},{"id":"2"},{"id":"3"}],"next_cursor":"a"}'
+  same item limit [] ! SessionLimitError: SessionLimitError(kind='items', limit=2) [kind='items', limit=2] session_limit_error
+  > GET https://api.example.com/v1/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  raised item limit ['3', '4']
+    progress {'pages': 2, 'items': 4, 'network_send_count': 1, 'network_send_budget_used': 1}
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  page limit ! SessionLimitError: SessionLimitError(kind='pages', limit=2) [kind='pages', limit=2] session_limit_error resume_state=ResumeState
+  > GET https://api.example.com/v1/users?cursor=b
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  raised page limit ['3']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  send limit ! SessionLimitError: SessionLimitError(kind='network_sends', limit=1) [kind='network_sends', limit=1] session_limit_error resume_state=ResumeState
+  > GET https://api.example.com/v1/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  new session budget ['2'] ! SessionLimitError: SessionLimitError(kind='network_sends', limit=1) [kind='network_sends', limit=1] session_limit_error
+    progress {'pages': 2, 'items': 2, 'network_send_count': 1, 'network_send_budget_used': 1}
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  cycle ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=1, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next_cursor')] pagination_cycle_error resume_state=ResumeState
+  resumed cycle [] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=1, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next_cursor')] pagination_cycle_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  snapshot first = ['1']
+  snapshot saved {"arguments": [[], [], [], [], [], []], "body": [], "page": [0, 1, ["a"], ["s1"], null, [["ac8d8342bbb2362d13f0a559a3621bb407011368895164b628a54f7fc33fc43c", 0]], null]} payload=b''
+  > GET https://api.example.com/v1/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: s1] b''
+  > GET https://api.example.com/v1/users?cursor=b
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: s1] b''
+  resumed snapshot ['2', '3']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  offset first = ['1', '2']
+  offsets saved {"arguments": [[], [], [], [], [], []], "body": [], "page": [0, 2, [2], [], null, [["d4735e3a265e16eee03f59718b9b5d03019c07d8b6c51f90da3a666eec13ab35", 0]], null]} payload=b''
+  > GET https://api.example.com/v1/users?offset=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  resumed offsets ['3']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  followed first = ['1']
+  followed saved {"arguments": [[], [], [], [], [], []], "body": [], "page": [0, 1, ["https://api.example.com/v1/users?cursor=2"], [], null, [["0c3a930eb80fe3523dd90bc7d80292e67ba11e9ff420dc7191943386103b5a47", 0], ["4a8fa21a8b9d61d2b8fb1b17bde2cdfaf9e2ebfdb23862f89c0b7e1e1d9d9851", 0]], null]} payload=b''
+  > GET https://api.example.com/v1/users?cursor=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  resumed followed ['2']
+  followed at another server ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  linked first = ['1']
+  linked saved {"arguments": [[], [], [], [], [], []], "body": [], "page": [0, 1, ["https://api.example.com/v1/users?page=2"], [], null, [["4a8fa21a8b9d61d2b8fb1b17bde2cdfaf9e2ebfdb23862f89c0b7e1e1d9d9851", 0], ["d5592343d3ebf893f9c26e6d71da16e8ba832f709b7898987c871e9922a9a1d8", 0]], null]} payload=b''
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  resumed linked ['2']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  echoed key followed first = ['1']
+  followed without the echoed key saved {"arguments": [[], [], [], [], [], []], "body": [], "page": [0, 1, ["https://api.example.com/v1/users?cursor=2"], [], null, [["0c3a930eb80fe3523dd90bc7d80292e67ba11e9ff420dc7191943386103b5a47", 0], ["4a8fa21a8b9d61d2b8fb1b17bde2cdfaf9e2ebfdb23862f89c0b7e1e1d9d9851", 0]], null]} payload=b''
+  > GET https://api.example.com/v1/users?cursor=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  resumed without the echoed key ['2']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  echoed key linked first = ['1']
+  linked without the echoed key saved {"arguments": [[], [], [], [], [], []], "body": [], "page": [0, 1, ["https://api.example.com/v1/users?page=2"], [], null, [["4a8fa21a8b9d61d2b8fb1b17bde2cdfaf9e2ebfdb23862f89c0b7e1e1d9d9851", 0], ["d5592343d3ebf893f9c26e6d71da16e8ba832f709b7898987c871e9922a9a1d8", 0]], null]} payload=b''
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  resumed link without the echoed key ['2']
+  > GET https://api.example.com/v1/users?cursor=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  crafted URL with a key ['2']
+  > POST https://api.example.com/v1/searches
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 13] b'{"query":"a"}'
+  search first = ['1']
+  search saved {"arguments": [], "body": [{"query": "a"}, "application/json", null], "page": [0, 1, ["c1"], [], null, [["b32a2bd4df0aed7e435a79c9ebbaa1a15f4d63c50208cd5b7b5ad8dbddd667ad", 0]], null]} payload=b''
+  > POST https://api.example.com/v1/searches
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 27] b'{"query":"a","cursor":"c1"}'
+  > POST https://api.example.com/v1/searches
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 27] b'{"query":"a","cursor":"c2"}'
+  resumed search ['2', '3']
+  > GET https://api.example.com/v1/archive/start
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  archive first = ['1']
+  > GET https://api.example.com/v1/archive/a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  resumed archive ['2']
+  pydantic arguments saved {"arguments": [[], [], [2], [], [], []], "body": [], "page": null} payload=b''
+  cookie argument ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('arguments', 'cookie', 'session'), condition='wrong_capability'] protocol_configuration_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cookie: session=secret] b''
+  cookie limit ! SessionLimitError: SessionLimitError(kind='pages', limit=1) [kind='pages', limit=1] session_limit_error resume_state=NoneType
+  argument its schema refuses ! RequestEncodingError: RequestEncodingError(operation_id='listUsers', location='query.cursor') [operation_id='listUsers', location=('query', 'cursor'), cause=ModelProjectionError('The value at / does not have its bound shape')] request_encoding_error
+  body its schema refuses ! RequestEncodingError: RequestEncodingError(operation_id='search', location='body') [operation_id='search', location=('body',), cause=ModelProjectionError('The value at / does not have its bound shape')] request_encoding_error
+  > POST https://api.example.com/v1/searches
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json; charset=utf-8, content-length: 13] b'{"query":"a"}'
+  selected media first = ['1']
+  selected media saved {"arguments": [], "body": [{"query": "a"}, "application/json", "application/json; charset=utf-8"], "page": [0, 1, ["c1"], [], null, [["b32a2bd4df0aed7e435a79c9ebbaa1a15f4d63c50208cd5b7b5ad8dbddd667ad", 0]], null]} payload=b''
+  > POST https://api.example.com/v1/searches
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json; charset=utf-8, content-length: 27] b'{"query":"a","cursor":"c1"}'
+  resumed selected media ['2']
+  not a state ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('state',), condition='invalid_value'] protocol_configuration_error
+  another helper's state ! ResumeStateError: ResumeStateError(condition='fingerprint') [condition='fingerprint'] resume_state_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  long cursor first = ['1']
+  cursor over the resumed limit ! ProtocolSizeError: ProtocolSizeError(kind='cursor', limit=4, observed=6) [kind='cursor', unit='bytes', limit=4] protocol_size_error
+  > GET https://api.example.com/v1/archive/start
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  archive = ['1']
+  dot segment cursor ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/next_cursor')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  followed = ['1']
+  URL at another origin ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/next')] protocol_data_error
+  expired state ! ResumeStateError: ResumeStateError(condition='expired') [condition='expired'] resume_state_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  malformed source = ['1']
+  unknown member ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  arguments not an array ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  negative page index ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  bad history digest ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  text status ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  cookie value ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  undeclared body ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  too many items left ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  payload without items left ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  payload it cannot decode ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  > POST https://api.example.com/v1/searches
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 13] b'{"query":"a"}'
+  search source = ['1']
+  undeclared body media ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  short body ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  cursor over its maxLength ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  limit of another type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  header with a line break ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  header with a NUL ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  path argument '.' ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  path argument '..' ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  body its schema refuses ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  media type its selector refuses ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  unparsable media type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  media type with a line break ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  literal binding first = ['1']
+  > GET https://api.example.com/v1/users?cursor=a&limit=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  literal binding from the plan ['2']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  snapshot source = ['1']
+  bound header with a line break ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  offset source = ['1', '2']
+  offset -5 ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  offset 7 ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  page size source = ['1']
+  saved page over the resumed page limit ! ProtocolSizeError: ProtocolSizeError(kind='page', limit=10, observed=50) [kind='page', unit='bytes', limit=10] protocol_size_error
+  query key argument ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('arguments', 'query', 'api_key'), condition='wrong_capability'] protocol_configuration_error
+  header key argument ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('arguments', 'header', 'X-Api-Key'), condition='wrong_capability'] protocol_configuration_error
+  proxy credential argument ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('arguments', 'header', 'Proxy-Authorization'), condition='wrong_capability'] protocol_configuration_error
+  querystring with a key field ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('arguments', 'querystring', 'filter'), condition='wrong_capability'] protocol_configuration_error
+  querystring saved {"arguments": [[{"term": "a"}]], "body": [], "page": null} payload=b''
+  saved querystring with a key field ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  > GET https://api.example.com/v1/users?offset=10
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  offset from 10 taking 2 = ['1', '2']
+  > GET https://api.example.com/v1/users?offset=12
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  offset resumed after 2 ['3']
+  > GET https://api.example.com/v1/users?offset=10
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  offset from 10 taking 1 = ['1']
+  > GET https://api.example.com/v1/users?offset=12
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  offset resumed after 1 ['2', '3']
+  > GET https://api.example.com/v1/users?page=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  page number from 3 taking 2 = ['1', '2']
+  > GET https://api.example.com/v1/users?page=4
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  page number resumed after 2 ['3']
+  > GET https://api.example.com/v1/users?page=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  page number from 3 taking 1 = ['1']
+  > GET https://api.example.com/v1/users?page=4
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  page number resumed after 1 ['2', '3']
+  resumed with another body media type ! ConfigurationError: ConfigurationError(operation_id='search', field_path='headers.Content-Type', condition='conflicts_with_body_media') [operation_id='search', field_path=('headers', 'Content-Type'), condition='conflicts_with_body_media'] configuration_error
+  resumed with a query patch ! ConfigurationError: ConfigurationError(operation_id='query', field_path='query', condition='conflicts_with_querystring') [operation_id='query', field_path=('query',), condition='conflicts_with_querystring'] configuration_error
+  anonymous export ! ProtocolConfigurationError: ProtocolConfigurationError(condition='security_partition') [field_path=('protocols', 'security'), condition='security_partition'] protocol_configuration_error
+  anonymous resumes anonymous = mappingproxy({'pages': 0, 'items': 0, 'network_send_count': 0, 'network_send_budget_used': 0})
+  tenant export = True
+  tenant resumes anonymous ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error
+  tenant resumes tenant = mappingproxy({'pages': 0, 'items': 0, 'network_send_count': 0, 'network_send_budget_used': 0})
+  other tenant export = True
+  other tenant resumes anonymous ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error
+  other tenant resumes tenant ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error
+  other tenant resumes other tenant = mappingproxy({'pages': 0, 'items': 0, 'network_send_count': 0, 'network_send_budget_used': 0})
+  bearer export ! ProtocolConfigurationError: ProtocolConfigurationError(condition='security_partition') [field_path=('protocols', 'security'), condition='security_partition'] protocol_configuration_error
+  bearer resumes anonymous ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error
+  bearer resumes tenant ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error
+  bearer resumes other tenant ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error
+  bearer resumes bearer = mappingproxy({'pages': 0, 'items': 0, 'network_send_count': 0, 'network_send_budget_used': 0})
+  > GET https://api.example.com/v1/secure/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
+  bearer resumed ['1']
+  bearer tenant export = True
+  bearer tenant resumes anonymous ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error
+  bearer tenant resumes tenant ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error
+  bearer tenant resumes other tenant ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error
+  bearer tenant resumes bearer ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error
+  bearer tenant resumes bearer tenant = mappingproxy({'pages': 0, 'items': 0, 'network_send_count': 0, 'network_send_budget_used': 0})
+  > GET https://api.example.com/v1/secure/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
+  bearer tenant resumed ['1']
+  audience a checkpointed
+  audience a again resumes = mappingproxy({'pages': 0, 'items': 0, 'network_send_count': 0, 'network_send_budget_used': 0})
+  audience b resumes ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error
+  other scopes resumes ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error
+  static token checkpointed
+  static token again resumes = mappingproxy({'pages': 0, 'items': 0, 'network_send_count': 0, 'network_send_budget_used': 0})
+  auth origins resumes ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error
+  selection resumes ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error
+  anonymous schemes resumes ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error
+  signer resumes ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error
+  signer baseline checkpointed
+  signer of another class resumes = mappingproxy({'pages': 0, 'items': 0, 'network_send_count': 0, 'network_send_budget_used': 0})
+  signer managing another header resumes ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async first 1
+  async mid page saved {"arguments": [[], [], [], [], [], []], "body": [], "page": [0, 2, ["a"], [], null, [["ac8d8342bbb2362d13f0a559a3621bb407011368895164b628a54f7fc33fc43c", 0]], [1, 200, "application/json"]]} payload=b'{"data":[{"id":"1"},{"id":"2"}],"next_cursor":"a"}'
+  > GET https://api.example.com/v1/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async resumed items ['2', '3']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async resumed pages ['[2]']
+  async another helper's state ! ResumeStateError: ResumeStateError(condition='fingerprint') [condition='fingerprint'] resume_state_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async followed without the echoed key saved {"arguments": [[], [], [], [], [], []], "body": [], "page": [0, 1, ["https://api.example.com/v1/users?cursor=2"], [], null, [["0c3a930eb80fe3523dd90bc7d80292e67ba11e9ff420dc7191943386103b5a47", 0], ["4a8fa21a8b9d61d2b8fb1b17bde2cdfaf9e2ebfdb23862f89c0b7e1e1d9d9851", 0]], null]} payload=b''
+  > GET https://api.example.com/v1/users?cursor=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async resumed without the echoed key ['2']
+  async granted checkpoint resumes = mappingproxy({'pages': 0, 'items': 0, 'network_send_count': 0, 'network_send_budget_used': 0})
+  async static token resumes a synchronous one = mappingproxy({'pages': 0, 'items': 0, 'network_send_count': 0, 'network_send_budget_used': 0})

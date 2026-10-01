@@ -245,6 +245,7 @@ def stream_uses(
 def plan_streams(  # noqa: PLR0913, PLR0917
     specs: tuple[StreamSpec, ...],
     protocols: Protocols | None,
+    plan: ClientPlan,
     codecs: CodecPlan,
     wire: WirePlan,
     request: TargetRequest,
@@ -257,7 +258,7 @@ def plan_streams(  # noqa: PLR0913, PLR0917
     if protocols is None or not specs:
         return ()
     bindings = dict(codecs.bindings)
-    pages = _Pages(protocols, codecs, wire, request)
+    pages = _Pages(protocols, plan, codecs, wire, request)
     planned: list[StreamSpec] = []
     for spec in specs:
         helper, operation = spec.helper, spec.operation

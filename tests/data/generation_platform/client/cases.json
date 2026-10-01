@@ -2382,6 +2382,106 @@
     },
     "modules": false
   },
+  "pagination-resume": {
+    "input": "pagination-resume.yaml",
+    "references": [
+      "protocols/pagination-resume.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-resume.yaml",
+      "validation": {
+        "request_overrides": [
+          "schema"
+        ],
+        "argument_overrides": [
+          "pydantic"
+        ]
+      }
+    }
+  },
+  "protocols-pagination-resume-checks": {
+    "input": "pagination-resume.yaml",
+    "references": [
+      "protocols/pagination-resume-checks.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-resume-checks.yaml"
+    },
+    "modules": false
+  },
+  "polling": {
+    "input": "polling.yaml",
+    "references": [
+      "protocols/polling.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/polling.yaml",
+      "selection": {
+        "exclude_tags": [
+          "archives"
+        ],
+        "reason": "Archives have no success response"
+      }
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ]
+    ]
+  },
+  "polling-plans": {
+    "input": "polling.yaml",
+    "references": [
+      "protocols/polling.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/polling.yaml",
+      "selection": {
+        "exclude_tags": [
+          "archives"
+        ],
+        "reason": "Archives have no success response"
+      }
+    },
+    "backends": [
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
+  "protocols-polling-checks": {
+    "input": "polling.yaml",
+    "references": [
+      "protocols/polling-checks.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/polling-checks.yaml"
+    },
+    "modules": false
+  },
   "streams": {
     "input": "streams.yaml",
     "references": [

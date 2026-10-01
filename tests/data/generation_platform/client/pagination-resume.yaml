@@ -1,0 +1,166 @@
+openapi: 3.2.0
+info:
+  title: Pagination resume
+  version: 1.0.0
+servers:
+  - url: https://api.example.com/v1
+paths:
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      parameters:
+        - name: cursor
+          in: query
+          schema: {type: string, maxLength: 8}
+        - name: offset
+          in: query
+          schema: {type: integer}
+        - name: limit
+          in: query
+          schema: {type: integer}
+        - name: X-Trace
+          in: header
+          schema: {type: string}
+        - name: session
+          in: cookie
+          schema: {type: string}
+        - name: page
+          in: query
+          schema: {type: integer}
+      responses:
+        '200':
+          description: One page of users.
+          headers:
+            Link:
+              schema: {type: string}
+            X-Snapshot:
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /searches:
+    post:
+      operationId: search
+      tags: [searches]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SearchQuery'}
+      responses:
+        '200':
+          description: One page of matching users.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /archive/{cursor}:
+    get:
+      operationId: listArchive
+      tags: [archive]
+      parameters:
+        - name: cursor
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: One page of archived users.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /secure/users:
+    get:
+      operationId: listSecureUsers
+      tags: [secure]
+      security:
+        - bearer: []
+      parameters:
+        - name: cursor
+          in: query
+          schema: {type: string}
+      responses:
+        '200':
+          description: One page of users for a bearer.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /keyed/users:
+    get:
+      operationId: listKeyedUsers
+      tags: [keyed]
+      parameters:
+        - name: cursor
+          in: query
+          schema: {type: string}
+        - name: api_key
+          in: query
+          schema: {type: string}
+        - name: X-Api-Key
+          in: header
+          schema: {type: string}
+        - name: Proxy-Authorization
+          in: header
+          schema: {type: string}
+      responses:
+        '200':
+          description: One page of users for a key.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /queries:
+    get:
+      operationId: query
+      tags: [queries]
+      parameters:
+        - name: filter
+          in: querystring
+          content:
+            application/x-www-form-urlencoded:
+              schema:
+                type: object
+                properties:
+                  term: {type: string}
+                  cursor: {type: string}
+                  api_key: {type: string}
+      responses:
+        '200':
+          description: One page of users matching a query.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+    query_key:
+      type: apiKey
+      in: query
+      name: api_key
+    header_key:
+      type: apiKey
+      in: header
+      name: X-Api-Key
+  schemas:
+    User:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string}
+    UserPage:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: {$ref: '#/components/schemas/User'}
+        next_cursor: {type: [string, 'null']}
+        next: {type: string}
+        has_more: {type: boolean}
+    SearchQuery:
+      type: object
+      required: [query]
+      properties:
+        query: {type: string}
+        cursor: {type: string}

@@ -1,0 +1,246 @@
+openapi: 3.2.0
+info:
+  title: Long-running operations
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /jobs:
+    post:
+      operationId: createJob
+      tags: [jobs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/JobRequest'}
+      responses:
+        '202':
+          description: The job was accepted.
+          headers:
+            Retry-After:
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Job'}
+        '200':
+          description: The job completed at once.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Job'}
+  /jobs/{jobId}:
+    get:
+      operationId: getJob
+      tags: [jobs]
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: {type: string}
+        - name: X-Trace
+          in: header
+          schema: {type: string}
+        - name: verbose
+          in: query
+          schema: {type: boolean}
+        - name: since
+          in: query
+          schema: {type: integer}
+        - name: session
+          in: cookie
+          schema: {type: string}
+        - name: X-Api-Key
+          in: header
+          schema: {type: string}
+        - name: api_key
+          in: query
+          schema: {type: string}
+      responses:
+        '200':
+          description: The job.
+          headers:
+            Retry-After:
+              schema: {type: string}
+            X-State:
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Job'}
+    delete:
+      operationId: cancelJob
+      tags: [jobs]
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: {type: string}
+        - name: X-Reason
+          in: header
+          schema: {type: string}
+      responses:
+        '202':
+          description: The job is being cancelled.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Job'}
+        '204':
+          description: The job was cancelled.
+  /jobs/{jobId}/report:
+    get:
+      operationId: getReport
+      tags: [jobs]
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: The job's report.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Report'}
+  /reports:
+    post:
+      operationId: findReport
+      tags: [reports]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ReportQuery'}
+      responses:
+        '200':
+          description: The report of a job.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Report'}
+  /reports/latest:
+    get:
+      operationId: latestReport
+      tags: [reports]
+      responses:
+        '200':
+          description: The latest report.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Report'}
+  /exports:
+    post:
+      operationId: startExport
+      tags: [exports]
+      responses:
+        '202':
+          description: The export was accepted.
+          headers:
+            Operation-Id:
+              schema: {type: string}
+    delete:
+      operationId: cancelExports
+      tags: [exports]
+      responses:
+        '204':
+          description: The exports were cancelled.
+  /exports/status:
+    get:
+      operationId: exportStatus
+      tags: [exports]
+      parameters:
+        - name: criteria
+          in: querystring
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: {type: string}
+                  api_key: {type: string}
+      responses:
+        '200':
+          description: The state of an export.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ExportState'}
+  /exports/find:
+    get:
+      operationId: findExport
+      tags: [exports]
+      parameters:
+        - name: filter
+          in: querystring
+          required: true
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: {type: string}
+      responses:
+        '200':
+          description: The state of an export.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ExportState'}
+  /notes:
+    post:
+      operationId: addNote
+      tags: [reports]
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema: {type: string}
+      responses:
+        '200':
+          description: The report of a note.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Report'}
+  /archives:
+    post:
+      operationId: archive
+      tags: [archives]
+      responses:
+        '409':
+          description: Already archived.
+components:
+  securitySchemes:
+    keyHeader: {type: apiKey, in: header, name: X-Api-Key}
+    keyQuery: {type: apiKey, in: query, name: api_key}
+  schemas:
+    JobRequest:
+      type: object
+      required: [name]
+      properties:
+        name: {type: string}
+    Job:
+      type: object
+      properties:
+        id: {type: string}
+        status: {description: The job's state.}
+        progress: {type: integer, minimum: 0}
+        expires: {description: The server's expiry of the job.}
+        result: {$ref: '#/components/schemas/Report'}
+        summary:
+          anyOf:
+            - {$ref: '#/components/schemas/Report'}
+            - {type: 'null'}
+        export: {$ref: '#/components/schemas/ExportState'}
+        labels:
+          type: object
+          additionalProperties: {type: string}
+    Report:
+      type: object
+      required: [rows]
+      properties:
+        rows: {type: integer}
+    ReportQuery:
+      type: object
+      required: [job]
+      properties:
+        job: {type: string}
+    ExportState:
+      type: object
+      required: [state]
+      properties:
+        state: {type: integer}

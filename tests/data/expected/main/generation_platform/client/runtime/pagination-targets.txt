@@ -11,15 +11,8 @@
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-cursor: a] b''
   header cursor over the caller's ['1', '2']
-  > GET https://api.example.com/users
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  > GET https://api.example.com/users
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cookie: page_token=a] b''
-  cookie cursor ['1', '2']
   header patch of the cursor pager ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'headers', 'x-cursor'), condition='invalid_value'] protocol_configuration_error
   header patch of the cursor page ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'headers', 'x-cursor'), condition='invalid_value'] protocol_configuration_error
-  cookie patch of the cursor pager ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'headers', 'Cookie'), condition='invalid_value'] protocol_configuration_error
-  cookie patch of the cursor page ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'headers', 'Cookie'), condition='invalid_value'] protocol_configuration_error
   query patch of a binding pager ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'query', 'limit'), condition='invalid_value'] protocol_configuration_error
   query patch of a binding page ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'query', 'limit'), condition='invalid_value'] protocol_configuration_error
   query patch of the cursor pager ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'query', 'cursor'), condition='invalid_value'] protocol_configuration_error

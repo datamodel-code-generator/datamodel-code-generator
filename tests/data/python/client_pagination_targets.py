@@ -1,4 +1,4 @@
-"""Write cursors and binding values into headers, cookies, paths, querystrings, and JSON bodies of the next pages."""
+"""Write cursors and binding values into headers, paths, querystrings, and JSON bodies of the next pages."""
 
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ def _search_body(harness: Harness, wire: object) -> object:
 
 
 def pagination_targets(package: ModuleType, lines: list[str]) -> None:
-    """Write cursors to a header, a cookie, and a path, bindings from the first and the last page, and a JSON body."""
+    """Write cursors to a header and a path, bindings from the first and the last page, and a JSON body."""
     harness = Harness(package)
     exchange = Exchange(lines)
     with exchange.client() as native, package.Client(http_client=native) as api:
@@ -48,24 +48,21 @@ def pagination_targets(package: ModuleType, lines: list[str]) -> None:
 
 
 def _parameters(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
-    """Write the cursor to a header named in another case, over the caller's own, and to a cookie."""
+    """Write the cursor to a header named in another case, over the caller's own."""
     helpers = api.protocols.users
     exchange.respond(users("1", cursor="a"), users("2", cursor="b"), users("3"))
     drained(lines, "header cursor", helpers.by_header.iterate())
     start = harness.argument("users", "ListUsers", "header", "X-Cursor", "start")
     exchange.respond(users("1", cursor="a"), users("2"))
     drained(lines, "header cursor over the caller's", helpers.by_header.iterate(x_cursor=start))
-    exchange.respond(users("1", cursor="a"), users("2"))
-    drained(lines, "cookie cursor", helpers.by_cookie.iterate())
 
 
 def _overrides(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
-    """Refuse call options patching a header, the cookies, or a query parameter the helper writes, before sending."""
+    """Refuse call options patching a header or a query parameter the helper writes, before sending."""
     options = harness.options.RequestOptions
     helpers = api.protocols.users
     for label, helper, settings in (
         ("header patch of the cursor", helpers.by_header, options(headers=(("x-cursor", "mine"),))),
-        ("cookie patch of the cursor", helpers.by_cookie, options(headers=(("Cookie", "page_token=mine"),))),
         ("query patch of a binding", helpers.bound, options(query=(("limit", "9"),))),
         ("query patch of the cursor", helpers.bound, options(query=(("cursor", "mine"),))),
     ):

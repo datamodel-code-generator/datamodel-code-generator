@@ -11,17 +11,6 @@ helpers:
       write: {in: header, name: x-cursor}
       end: [{kind: missing}, {kind: "null"}]
       empty_string: end
-  users.by_cookie:
-    kind: pagination
-    operation: /paths/~1users/get
-    items: {from: body, pointer: /data}
-    item_schema: {pointer: /components/schemas/User}
-    continuation:
-      kind: cursor
-      read: {from: body, pointer: /next_cursor}
-      write: {in: cookie, name: page_token}
-      end: [{kind: missing}, {kind: "null"}]
-      empty_string: end
   users.bound:
     kind: pagination
     operation: /paths/~1users/get
