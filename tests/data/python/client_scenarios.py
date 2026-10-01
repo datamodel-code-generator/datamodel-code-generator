@@ -56,6 +56,7 @@ from tests.data.python.client_pagination_targets import (
 )
 from tests.data.python.client_parameter_adapters import parameter_adapters
 from tests.data.python.client_polling import polling
+from tests.data.python.client_polling_resume import polling_resume
 from tests.data.python.client_protocol_contracts import protocol_contracts
 from tests.data.python.client_protocol_errors import protocol_errors
 from tests.data.python.client_query import query
@@ -812,6 +813,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "pagination-links": ("pagination-links", ("pydantic_v2.BaseModel",), pagination_links),
     "pagination-resume": ("pagination-resume", ("pydantic_v2.BaseModel",), pagination_resume),
     "polling": ("polling", ("pydantic_v2.BaseModel",), polling),
+    "polling-resume": ("polling", ("pydantic_v2.BaseModel",), polling_resume),
     "streams": ("streams", ("pydantic_v2.BaseModel",), streams),
     "stream-events": ("streams", ("pydantic_v2.BaseModel",), event_stream_lifetimes),
     "stream-backends": ("streams", BACKENDS, stream_backends),

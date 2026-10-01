@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 import re
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Final, Literal
 
 from ..model_codecs.unset import Unset
@@ -241,7 +241,12 @@ def _integer(value: str) -> float | None:
     return result if math.isfinite(result) else None
 
 
-def _date(value: str, received_wall_time: float) -> float | None:
+def http_date(value: str, received_wall_time: float) -> datetime | None:
+    """Return the UTC time an HTTP date gives, a leap second being the second after it, or None for another value.
+
+    A two-digit year is the latest that is at most 50 years after the receipt wall time. An impossible date raises
+    ValueError, and one past the last representable time OverflowError.
+    """
     matched = next((matched for pattern in _HTTP_DATES if (matched := pattern.fullmatch(value)) is not None), None)
     if matched is None:
         return None
@@ -263,7 +268,7 @@ def _date(value: str, received_wall_time: float) -> float | None:
         ):
             year -= 100
     date = datetime(year, month, day, hour, minute, min(second, _LEAP_SECOND - 1), tzinfo=timezone.utc)
-    return date.timestamp() + (second == _LEAP_SECOND)
+    return date + timedelta(seconds=second == _LEAP_SECOND)
 
 
 def _seconds(value: str, received_wall_time: float) -> float | None:
@@ -271,10 +276,10 @@ def _seconds(value: str, received_wall_time: float) -> float | None:
     if (integer := _integer(normalized)) is not None:
         return integer
     try:
-        date = _date(normalized, received_wall_time)
+        date = http_date(normalized, received_wall_time)
     except (ValueError, OverflowError, OSError):
         return None
-    return None if date is None else max(0.0, date - received_wall_time)
+    return None if date is None else max(0.0, date.timestamp() - received_wall_time)
 
 
 def _maximum(values: Iterable[str], parse: Callable[[str], float | None]) -> float | None:

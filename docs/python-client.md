@@ -155,7 +155,9 @@ itself, and it cannot be modified.
 
 `PollSnapshot[P]` is an immutable poll result with `state: WireValue`, `terminal: bool`, `data: P`, and
 `response: ResponseInfo`. The state is frozen, and the state and data are excluded from the representation. `P` is
-covariant, so a `PollSnapshot[Pet]` is also a `PollSnapshot[object]`.
+covariant, so a `PollSnapshot[Pet]` is also a `PollSnapshot[object]`. `CancelReceipt[C]` is the immutable response of
+a remote cancel request, with `data: C` and `response: ResponseInfo`; the data is excluded from the representation, and
+`C` is covariant too.
 
 `ProgressKey` is `Literal['pages', 'items', 'polls', 'reconnects', 'parts', 'confirmed_bytes', 'network_send_count',
 'network_send_budget_used', 'messages_sent', 'messages_received']`, and `ProtocolProgress` is
@@ -309,10 +311,9 @@ helper, resolves its references against the selected API, and records it in the 
 helper generates the [pagination helper](#pagination-helpers) below, an enabled polling helper the
 [polling helper](#polling-helpers), an enabled SSE helper the [SSE stream helper](#sse-stream-helpers), an enabled
 NDJSON helper the [NDJSON stream helper](#ndjson-stream-helpers), and an enabled webhook helper the
-[webhook verification helper](#webhook-verification-helpers); any other enabled helper fails with `E_CLIENT_UNSUPPORTED`.
-A disabled helper generates nothing, so the package is the same as without it. The `websocket`, `cache`,
-`resumable_upload`, `batch`, and `queue` kinds fail with `E_CLIENT_UNSUPPORTED` whether they are enabled or not, and
-their settings are not read yet.
+[webhook verification helper](#webhook-verification-helpers). A disabled helper generates nothing, so the package is
+the same as without it. The `websocket`, `cache`, `resumable_upload`, `batch`, and `queue` kinds fail with
+`E_CLIENT_UNSUPPORTED` whether they are enabled or not, and their settings are not read yet.
 
 | Setting | Values | Default | Where |
 |---|---|---|---|
@@ -970,7 +971,8 @@ fetch, raises `SessionLimitError` again before sending. `close()` or `aclose()`,
 `async with` block, stops only local polling; the remote operation goes on, and every later step raises
 `ProtocolStateError` with `state='closed'`. Calling `status`, `wait`, `close`, or `aclose` while another step runs
 raises `ProtocolStateError` with `state='polling'`; a block that ends with an error while another step runs leaves the
-handle open and lets its own error propagate.
+handle open and lets its own error propagate. `checkpoint()` and `cancel_remote()` are not steps: they run while
+another thread or task is in `status` or `wait`, such as one sleeping until its next poll.
 
 ### Waits and server delays
 
@@ -988,8 +990,8 @@ than `max_wait`, or not shorter than what remains of the session's deadline or t
 the handle stays as it was. A wait ends early for the options' `CancelToken` and the client's close, raising
 `RequestCancelledError` or `ClientClosedError` with the `operation_id` of the operation it waits to call, the poll's
 or the result fetch's, and the session's `parent_session_id`. Once the client is closed, every later `status` or
-`wait` that needs a poll or a result fetch raises `ClientClosedError`. `resume_state` is None, since checkpoints of
-polling helpers are not supported yet.
+`wait` that needs a poll or a result fetch raises `ClientClosedError`. `PollWaitLimitError.resume_state` holds a
+[checkpoint](#checkpoints-and-resume-of-operations) of the handle as it stood.
 
 ### Limits and sessions
 
@@ -1008,10 +1010,153 @@ call's options, then the helper's `ProtocolDefaults` in `ProtocolClientOptions.d
 | `SessionOptions.max_network_sends` | 2000 sends | Removes the limit |
 
 A poll or a result fetch past a limit raises `SessionLimitError` with the kind `polls` or `network_sends` and the
-progress so far, before sending; a create request the session has no slot for raises it too. The options of `start`
-apply to every call of the handle. They must not fix an idempotency key, from the client, a view, or the call, and
+progress so far, before sending, keeping a checkpoint of the handle as `resume_state`; a create request the session
+has no slot for raises it too, with `resume_state=None`, since nothing was created. The options of `start` apply to
+every call of the handle. They must not fix an idempotency key, from the client, a view, or the call, and
 must not patch a header or a query parameter a binding writes; `start` raises `ProtocolConfigurationError` before
 sending, as it does for options of another type.
+
+### Checkpoints and resume of operations
+
+`handle.checkpoint()` returns a `ResumeState` without sending, on `LroHandle` and `AsyncLroHandle` alike, also after
+`close`. While another thread or task runs `status` or `wait`, it saves the handle as the last poll or fetch that
+settled left it, never waiting for a step and never refusing; a poll in flight is not saved, so a resumed handle polls
+again. The helper's `resume(state, *, poll_options=None, options=None, session_options=None)` is not awaited, even on
+`AsyncClient`, and returns the handle type `start` returns, in a session of its own, without sending: it never creates
+the operation again, and `status` or `wait` sends its first poll.
+
+```python
+from pkg.errors import PollWaitLimitError
+from pkg.protocols import PollOptions, import_state
+
+with Client() as client:
+    helper = client.protocols.jobs.run
+    handle = helper.start(body=job)
+    saved = handle.checkpoint().export()
+    report = helper.resume(import_state(saved)).wait()
+    try:
+        helper.start(body=job).wait()
+    except PollWaitLimitError as error:
+        if error.resume_state is not None:
+            later = helper.resume(error.resume_state, poll_options=PollOptions(max_wait=None))
+```
+
+| Saved | Never saved |
+|---|---|
+| The phase: pending, succeeded, failed, or cancelled | The create request, its body, and its idempotency key, since resume never sends it |
+| The polls so far, and the wait left before the next poll or result fetch, in milliseconds rounded up and at most 2^53 - 1, which a longer server delay saves | The session, its deadline, and its send counters |
+| The values the next poll, the result fetch, and a remote cancel write, read from the responses so far | The call's `options`, and anything its auth adds |
+| A settled operation's final poll and its state value, and the create response of an immediate result or the fetched result, as body, status, and media type | Model objects, which are decoded again, and any other response metadata |
+| The server's expiry an `expires_at` helper read, as the state's expiry | |
+
+A resumed pending handle waits out the saved wait, then polls with the saved values; a resumed handle whose result
+fetch is due fetches it once. A settled one sends nothing: `wait` returns the result decoded again from its saved body
+under the call's response validation, or raises `OperationFailedError` or `OperationCancelledError` again, and
+`status` returns the final poll, whose `response` holds only the saved status and `Content-Type` and an empty
+`call_id`. Polls count on from the checkpoint against the resumed call's `max_polls`, so a poll limit that stopped the
+handle stops it again unless it is raised, while the session's timeout, deadline, and sends start afresh. A literal
+binding sends the plan's value, never a saved one.
+
+`resume` checks the resumed call's options as `start` does, then the state, before returning:
+
+| Rejected state | Exception |
+|---|---|
+| Not a `ResumeState` | `ProtocolConfigurationError(field_path=("state",), condition="invalid_value")` |
+| Another helper's, or one generated differently | `ResumeStateError(condition="fingerprint")` |
+| Made under another credential partition, allowed origins, or auth, or with other server origins or declared security of the poll, result fetch, or remote cancel operation, as for [pagers](#checkpoints-and-resume) | `ResumeStateError(condition="security")` |
+| An expiry that has passed | `ResumeStateError(condition="expired")` |
+| A state or saved body that does not fit the helper: an unknown phase or member, a wait over 2^53 - 1 milliseconds, a saved state value of another phase or none the helper declares, a body that does not decode or does not carry the result, an immediate result of a status the helper does not declare, or a saved value that cannot be encoded into the next poll, result fetch, or remote cancel, such as one with CR, LF, or NUL in a header | `ResumeStateError(condition="malformed")` |
+| A saved body over the resumed call's `max_response_bytes` of its operation | `ProtocolSizeError(kind="body")`, as receiving it would |
+| A dot segment (`.` or `..`) a saved value would write to a path parameter | `ProtocolDataError`, as for a server's value |
+
+A pending checkpoint saves the result fetch's `initial` values before the final poll gives its others: `resume` encodes
+each one written to a parameter as the fetch encodes it, while one written into the fetch's querystring or body is
+checked only when the fetch request is built, which refuses a value it cannot send before sending. `ResumeState.export()` requires `ProtocolSecurityContext.credential_partition`
+when one of these operations declares security or the call configures auth, as for pagers; the saved bodies are not
+encrypted, so store exported states as the call's own data.
+
+### Remote cancellation and expiry
+
+A helper that declares `remote_cancel` generates a handle class of its own, a subclass of `LroHandle` or
+`AsyncLroHandle`, which `start` and `resume` return. Only it has `cancel_remote()`, a coroutine on the asyncio handle,
+which returns a `CancelReceipt[C]`, imported from `pkg.protocols`, where `C` is the cancel operation's response type;
+helpers without `remote_cancel` have no such method:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.polling.handle -->
+<!-- fmt: off -->
+
+```python
+class JobsTrackedHandle(LroHandle[_dcg_type_1, GetJobResponse]):
+    """A handle of the jobs.tracked polling helper, which also cancels the operation with DELETE /jobs/{jobId}."""
+
+    __slots__ = ()
+
+    def cancel_remote(self) -> CancelReceipt[CancelJobResponse]:
+        """Ask the server to cancel the operation; the handle keeps its last poll until it polls again."""
+        return self._cancel_remote(_plans.CANCEL_5)
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.polling.handle -->
+
+`cancel_remote()` sends the cancel operation once, at once, as a call of the handle's session, writing its bindings'
+values: what its selectors read from the create response for `source: initial`, or from the latest response, the
+create response and then each pending poll, for `source: previous`. A missing value in one of those responses fails
+it as a poll binding's does. The receipt is immutable, with read-only `data` and `response`. The request does not
+settle the operation: the handle keeps its phase, its last poll, and the time of its next poll, and only the next
+`status` or `wait` tells whether the operation was cancelled. It counts no poll; a session without a send slot raises
+`SessionLimitError` with a checkpoint, and any other error leaves the handle as it was. It runs while another thread or
+task is in `status` or `wait`, so a waiting operation can be cancelled from elsewhere: it reads the values to send when
+it starts, and the `wait` goes on until a poll tells it the operation settled. A settled operation raises
+`ProtocolStateError` with its phase as the `state`, and a closed handle with `state='closed'`, both without sending.
+`close()` never sends the cancel request.
+
+The concrete handle classes are not exported from `pkg.protocols`: use the type `start` and `resume` return, or
+annotate a handle as `LroHandle[T, P]` or `AsyncLroHandle[T, P]`, which they subclass, without `cancel_remote`.
+
+`expires_at` is a selector of the server's expiry of the operation, read once from the accepted create response: a
+string giving an RFC 3339 date-time with an offset or an HTTP date, where a leap second is the second after the one
+before it. A missing, null, non-string, or unparsable value fails `start` with `ProtocolDataError` after the create
+response, as a missing binding value does; the remote operation was created all the same, and nothing cancels it. The expiry, in UTC,
+becomes the expiry of every checkpoint of the handle, so `import_state` and `resume` refuse them afterwards with
+`ResumeStateError(condition="expired")`; it does not stop a live handle from polling. Without `expires_at`, checkpoints
+never expire, and no expiry is assumed. An immediate result has none.
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.polling.tracked -->
+<!-- fmt: off -->
+
+```yaml
+schema_version: 1
+helpers:
+  jobs.tracked:
+    kind: polling
+    create: /paths/~1jobs/post
+    accepted_statuses: [202]
+    poll: /paths/~1jobs~1{jobId}/get
+    bindings:
+      - target: {in: path, name: jobId}
+        value: {source: initial, selector: {from: body, pointer: /id}}
+    state: {from: body, pointer: /status}
+    pending: [queued, running]
+    succeeded: [done]
+    failed: [failed]
+    cancelled: [cancelled]
+    result:
+      kind: inline
+      selector: {from: body, pointer: /result}
+      schema: {pointer: /components/schemas/Report}
+    remote_cancel:
+      operation: /paths/~1jobs~1{jobId}/delete
+      bindings:
+        - target: {in: path, name: jobId}
+          value: {source: previous, selector: {from: body, pointer: /id}}
+        - target: {in: header, name: X-Reason}
+          value: {literal: requested}
+    expires_at: {from: body, pointer: /expires}
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.polling.tracked -->
 
 ### Generation checks
 
@@ -1029,18 +1174,19 @@ a credential position: a
 cookie, the `Authorization`, `Proxy-Authorization`, `Cookie`, and `Cookie2` headers, or a header, query parameter, or
 querystring property a security scheme of the package names. An inline or immediate result reads a body pointer whose
 schema is the declared `schema`; an immediate result needs a result kind other than `none`, success responses of
-`create` that are all one JSON model, and the type of the result. Bindings that read the helper's input, request
-bodies other than JSON written by a binding, `remote_cancel`, `expires_at`, and pointers that read through a union or a
-map are not supported yet:
+`create` that are all one JSON model, and the type of the result. A `remote_cancel` operation must declare a success
+response, and its bindings are checked as the poll's, against the same responses; `expires_at` must read strings from
+every accepted create response. Bindings that read the helper's input, request bodies other than JSON written by a
+binding, and pointers that read through a union or a map are not supported yet:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.polling.diagnostics -->
 <!-- fmt: off -->
 
 ```text
-E_CLIENT_UNSUPPORTED target protocols.helpers['checks.later'].remote_cancel /paths/~1jobs/post: The polling helper 'checks.later' declares remote cancellation, which is not supported yet
-E_CLIENT_UNSUPPORTED target protocols.helpers['checks.later'].expires_at /paths/~1jobs/post: The polling helper 'checks.later' declares a server expiry, which is not supported yet
 E_CONFIG_VALUE config protocols.helpers['checks.later'].accepted_statuses[1] /paths/~1jobs/post: The accepted status 201 of 'checks.later' selects no success response of POST /jobs
 E_CONFIG_VALUE config protocols.helpers['checks.later'].accepted_statuses[2] /paths/~1jobs/post: The accepted status 404 of 'checks.later' selects no success response of POST /jobs
+E_CONFIG_VALUE config protocols.helpers['checks.later'].expires_at /paths/~1jobs/post: The expiry of 'checks.later' reads integer values, where only a string gives a date and time
+E_CONFIG_VALUE config protocols.helpers['checks.later'].remote_cancel.operation /paths/~1archives/post: POST /archives must declare a success response for the remote cancel of 'checks.later'
 E_CONFIG_VALUE config protocols.helpers['checks.poll'].poll /paths/~1exports/post: POST /exports must declare exactly one JSON success response for the polling helper 'checks.poll'
 E_CONFIG_VALUE config protocols.helpers['checks.states'].pending[0] /paths/~1exports~1status/get: The state 'zero' of 'checks.states' is string, which its state never reads
 E_CONFIG_VALUE config protocols.helpers['checks.states'].failed[0] /paths/~1exports~1status/get: The state True of 'checks.states' is boolean, which its state never reads
@@ -1077,6 +1223,9 @@ E_CONFIG_VALUE config protocols.helpers['checks.no_success'].accepted_statuses[0
 E_CONFIG_VALUE config protocols.helpers['checks.no_success'].immediate_result.statuses[0] /paths/~1archives/post: The immediate status 200 of 'checks.no_success' selects no success response of POST /archives
 E_CLIENT_UNSUPPORTED target protocols.helpers['checks.no_success'].immediate_result /paths/~1archives/post: The immediate result of 'checks.no_success' reads POST /archives, whose success responses are not all one JSON model, which is not supported yet
 E_CONFIG_VALUE config protocols.helpers['checks.media'].result.bindings /paths/~1archives~1search/post: The polling helper 'checks.media' writes a request body of POST /archives/search, which has no default media type; set the operation's request_media_type
+E_CONFIG_VALUE config protocols.helpers['checks.cancel'].expires_at /paths/~1jobs/post: The expiry of 'checks.cancel' reads the header 'Expires', which POST /jobs does not declare
+E_CONFIG_VALUE config protocols.helpers['checks.cancel'].remote_cancel.bindings[0].target /paths/~1jobs~1{jobId}/delete: The cancel binding 0 of 'checks.cancel' gives integer values, which the header parameter 'X-Reason' of DELETE /jobs/{jobId} does not accept
+E_CONFIG_VALUE config protocols.helpers['checks.cancel'].remote_cancel.bindings /paths/~1jobs~1{jobId}/delete: DELETE /jobs/{jobId} requires the path parameter 'jobId', which no binding of 'checks.cancel' writes
 ```
 
 <!-- fmt: on -->

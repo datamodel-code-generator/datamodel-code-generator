@@ -16,6 +16,7 @@ from .._runtime.protocols.options import (
 from .._runtime.protocols.records import (
     BodySelector,
     BodyTarget,
+    CancelReceipt,
     Continuation,
     HeaderSelector,
     ParameterTarget,
@@ -59,6 +60,7 @@ __all__ = [
     "AsyncReplayStore",
     "BodySelector",
     "BodyTarget",
+    "CancelReceipt",
     "Continuation",
     "EventStream",
     "HeaderSelector",

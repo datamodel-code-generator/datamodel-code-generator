@@ -395,6 +395,23 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
+            example_id="python-client.polling.handle",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "python",
+                blocks(
+                    CLIENT_PACKAGES / "polling" / "pydantic_v2_BaseModel" / "client" / "protocols" / "_helpers.py",
+                    "class JobsTrackedHandle(",
+                    separator="\n\n\n",
+                ),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.polling.tracked",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced("yaml", yaml_helpers(CLIENT_DATA / "protocols" / "polling.yaml", "jobs.tracked")),
+        ),
+        DocsExample(
             example_id="python-client.polling.diagnostics",
             path=DOCS / "python-client.md",
             render=lambda: fenced(

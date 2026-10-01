@@ -75,6 +75,7 @@ helpers:
     succeeded: [1]
     failed: [2]
     result: {kind: none}
+    remote_cancel: {operation: /paths/~1exports/delete}
   exports.latest:
     kind: polling
     create: /paths/~1exports/post
@@ -85,3 +86,28 @@ helpers:
     pending: [0]
     succeeded: [1]
     result: {kind: operation, operation: /paths/~1reports~1latest/get}
+  jobs.tracked:
+    kind: polling
+    create: /paths/~1jobs/post
+    accepted_statuses: [202]
+    poll: /paths/~1jobs~1{jobId}/get
+    bindings:
+      - target: {in: path, name: jobId}
+        value: {source: initial, selector: {from: body, pointer: /id}}
+    state: {from: body, pointer: /status}
+    pending: [queued, running]
+    succeeded: [done]
+    failed: [failed]
+    cancelled: [cancelled]
+    result:
+      kind: inline
+      selector: {from: body, pointer: /result}
+      schema: {pointer: /components/schemas/Report}
+    remote_cancel:
+      operation: /paths/~1jobs~1{jobId}/delete
+      bindings:
+        - target: {in: path, name: jobId}
+          value: {source: previous, selector: {from: body, pointer: /id}}
+        - target: {in: header, name: X-Reason}
+          value: {literal: requested}
+    expires_at: {from: body, pointer: /expires}

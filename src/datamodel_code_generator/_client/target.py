@@ -331,11 +331,16 @@ class _TargetData:
         """Return the digest of a polling helper's contract closure: its signature and settings, operations, and uses.
 
         The signature spells the create call's arguments and the result type, and the uses are the create responses',
-        the poll's, and the result fetch's.
+        the poll's, the result fetch's, and the remote cancel's.
         """
         operation, helper, fetch = spec.operation, spec.helper, spec.fetch
         body = operation.body
-        uses = (*spec.create_uses, spec.poll_use, *(() if spec.fetch_use is None else (spec.fetch_use,)))
+        uses = (
+            *spec.create_uses,
+            spec.poll_use,
+            *(() if spec.fetch_use is None else (spec.fetch_use,)),
+            *spec.cancel_uses,
+        )
         signature = {
             "name": helper.name,
             "parameters": [(item.python_name, item.required, self.type(item.use)) for item in operation.parameters],
@@ -352,7 +357,7 @@ class _TargetData:
             "signatures": [signature],
             "operations": [
                 documents.operation(item.contract.id)
-                for item in (operation, spec.poll, *(() if fetch is None else (fetch,)))
+                for item in (operation, spec.poll, *(item for item in (fetch, spec.cancel) if item is not None))
             ],
             "schemas": list(spec.schemas),
             "type_uses": [self.contract(use) for use in uses],
