@@ -91,6 +91,10 @@ class _Signer:
         return request
 
 
+class _OtherSigner(_Signer):
+    """A signer of another class that declares what another signer declares."""
+
+
 class _Checkpointing:
     """A hook that checkpoints a pager once, while one of its pages is being fetched."""
 
@@ -118,9 +122,10 @@ def pagination_resume(package: ModuleType, lines: list[str]) -> None:
         _malformed(harness, api, exchange, lines)
         _validated(harness, api, exchange, lines)
         _credentials(harness, api, lines)
+        _starts(harness, api, exchange, lines)
     _security(harness, exchange, lines)
-    _identities(harness, exchange, lines)
-    run(lambda: _async_resume(harness, lines))
+    static = _identities(harness, exchange, lines)
+    run(lambda: _async_resume(harness, lines, static))
 
 
 def _items(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -281,6 +286,32 @@ def _continuations(harness: Harness, api: Any, exchange: Exchange, lines: list[s
     path = archive.iterate(cursor=harness.argument("archive", "ListArchive", "path", "cursor", "start"))
     _taken(lines, "archive first", path, 1)
     drained(lines, "resumed archive", archive.resume(path.checkpoint()))
+
+
+def _starts(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Resume offsets and page numbers from a caller's start, after a whole page and in the middle of one.
+
+    The resumed call's own options are refused as the call refuses them, not as the checkpoint's.
+    """
+    users = api.protocols.users
+    for label, helper, name, start in (
+        ("offset", users.offsets, "offset", 10),
+        ("page number", users.numbered, "page", 3),
+    ):
+        for taken in (2, 1):
+            exchange.respond(user_page("1", "2", has_more=True), user_page("3", has_more=False))
+            pager = helper.iterate(**{name: harness.argument("users", "ListUsers", "query", name, start)})
+            _taken(lines, f"{label} from {start} taking {taken}", pager, taken)
+            drained(lines, f"{label} resumed after {taken}", helper.resume(pager.checkpoint()))
+    options = harness.options.RequestOptions
+    searches = api.protocols.searches.all
+    saved = searches.iterate(body=_body(harness, "searches", "Search", {"query": "a"})).checkpoint()
+    framed = options(headers=(("Content-Type", "text/plain"),))
+    record(lines, "resumed with another body media type", lambda: searches.resume(saved, options=framed))
+    queries = api.protocols.queries.all
+    filtered = queries.iterate(filter=harness.argument("queries", "Query", "querystring", "filter", {"term": "a"}))
+    patched = options(query=(("debug", "1"),))
+    record(lines, "resumed with a query patch", lambda: queries.resume(filtered.checkpoint(), options=patched))
 
 
 def _body(harness: Harness, resource: str, operation: str, wire: object) -> object:
@@ -523,19 +554,26 @@ def _credentials(harness: Harness, api: Any, lines: list[str]) -> None:
     )
 
 
-def _identities(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
-    """Bind checkpoints to the auth's identity under one partition: grants, origins, selection, and signers."""
+def _identities(harness: Harness, exchange: Exchange, lines: list[str]) -> Any:
+    """Bind checkpoints to the auth's identity under one partition: grants, origins, selection, and signers.
+
+    A provider's or signer's class is no part of it; the static token's checkpoint is returned for asyncio clients.
+    """
     package, options, protocols = harness.package, harness.options, harness.protocols
     auth = importlib.import_module(f"{package.__name__}.auth")
-    secret = auth.StaticCredentialProvider(auth.ApiKeyCredential("secret"))
     token = auth.StaticTokenProvider(auth.AccessToken("token"))
 
     def granted(**grant: Any) -> Any:
         return auth.ClientCredentialsProvider(
-            "https://auth.example.com/token", client_id="client", client_secret=secret, **grant
+            "https://auth.example.com/token",
+            client_id="client",
+            client_secret=auth.StaticCredentialProvider(auth.ApiKeyCredential("secret")),
+            **grant,
         )
 
-    signer = _Signer(auth.SignerCapabilities(("https://api.example.com",), ("X-Signature",), (), False))
+    capabilities = auth.SignerCapabilities(("https://api.example.com",), ("X-Signature",), (), False)
+    signer, other = _Signer(capabilities), _OtherSigner(capabilities)
+    managed = _Signer(auth.SignerCapabilities(("https://api.example.com",), ("X-Other",), (), False))
     configurations = (
         ("audience a", True, auth.AuthConfig({"bearer": granted(audience="a", scopes=("read",))})),
         ("audience a again", False, auth.AuthConfig({"bearer": granted(audience="a", scopes=("read",))})),
@@ -547,21 +585,27 @@ def _identities(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
         ("selection", False, auth.AuthConfig({"bearer": token}, selection=0)),
         ("anonymous schemes", False, auth.AuthConfig({"bearer": token}, anonymous_schemes=("bearer",))),
         ("signer", False, auth.AuthConfig({"bearer": token}, signers=(signer,))),
+        ("signer baseline", True, auth.AuthConfig({"bearer": token}, signers=(signer,))),
+        ("signer of another class", False, auth.AuthConfig({"bearer": token}, signers=(other,))),
+        ("signer managing another header", False, auth.AuthConfig({"bearer": token}, signers=(managed,))),
     )
     tenant = options.ProtocolClientOptions(security=protocols.ProtocolSecurityContext(credential_partition="tenant"))
     source: Any = None
+    static: Any = None
     for label, starts, configuration in configurations:
         settings = options.ClientOptions(auth=configuration, protocols=tenant)
         with exchange.client() as native, package.Client(http_client=native, options=settings) as api:
             helper = api.protocols.secure.users
             if starts:
                 source = helper.iterate().checkpoint()
+                static = static if label != "static token" else source
                 lines.append(f"  {label} checkpointed")
                 continue
             record(lines, f"{label} resumes", lambda helper=helper, source=source: helper.resume(source).progress)
+    return static
 
 
-async def _async_resume(harness: Harness, lines: list[str]) -> None:
+async def _async_resume(harness: Harness, lines: list[str], static: Any) -> None:
     """Checkpoint and resume asyncio pagers, in items and in pages, without awaiting either."""
     exchange = Exchange(lines)
     async with exchange.async_client() as native, harness.package.AsyncClient(http_client=native) as api:
@@ -597,3 +641,14 @@ async def _async_resume(harness: Harness, lines: list[str]) -> None:
         helper = api.protocols.secure.users
         saved = helper.iterate().checkpoint()
         record(lines, "async granted checkpoint resumes", lambda: helper.resume(saved).progress)
+    token = auth.AsyncStaticTokenProvider(auth.AccessToken("token"))
+    settings = options.ClientOptions(auth=auth.AuthConfig({"bearer": token}), protocols=settings.protocols)
+    async with (
+        exchange.async_client() as native,
+        harness.package.AsyncClient(http_client=native, options=settings) as api,
+    ):
+        record(
+            lines,
+            "async static token resumes a synchronous one",
+            lambda: api.protocols.secure.users.resume(static).progress,
+        )

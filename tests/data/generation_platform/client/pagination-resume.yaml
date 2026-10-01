@@ -25,6 +25,9 @@ paths:
         - name: session
           in: cookie
           schema: {type: string}
+        - name: page
+          in: query
+          schema: {type: integer}
       responses:
         '200':
           description: One page of users.

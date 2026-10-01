@@ -19,7 +19,13 @@ from typing import TYPE_CHECKING, Final, Generic, Literal, cast, final
 
 from typing_extensions import Self, TypeVar
 
-from ..client.errors import BudgetExceededError, ProtocolConfigurationError, ProtocolSizeError, SDKError
+from ..client.errors import (
+    BudgetExceededError,
+    ProtocolConfigurationError,
+    ProtocolSizeError,
+    RequestEncodingError,
+    SDKError,
+)
 from ..client.options import RequestOptions
 from ..client.responses import ResponseInfo
 from ..client.timing import SessionOptions
@@ -1217,10 +1223,14 @@ def _resent(
 
 
 def _checked(core: ClientCore | AsyncClientCore, walk: _Walk[T, P]) -> None:
-    """Prepare the request a walk sends next as its call would, refusing one that cannot be sent."""
+    """Prepare the request a walk sends next as its call would, refusing one whose saved values cannot be sent.
+
+    Only the encoding and validation of the saved values is the checkpoint's; any other refusal, such as one of the
+    resumed call's options, is raised as the call raises it.
+    """
     try:
         core.checked_page(walk.operation(), walk.next_request, walk.request.media_type, walk.limits.options)
-    except (SDKError, CodecError):
+    except (RequestEncodingError, ProtocolDataError, CodecError):
         raise _MalformedError from None
 
 
@@ -1229,14 +1239,14 @@ def _walked(
 ) -> tuple[_Walk[T, P], tuple[T, ...], int]:
     """Return the walk of a checkpoint's decoded state, with the items it left of its last page and their position.
 
-    The next request is prepared as its call would prepare it, without sending, and so is the first one whenever the
-    body it saved is sent again.
+    The next request is prepared as its call would prepare it, without sending, and so is the first one, which gives an
+    offset or page number its start, unless a followed URL replaced it without the body the checkpoint left out.
     """
     _require(isinstance(state, Mapping) and frozenset(state) == _STATE)
     fields = cast("Mapping[str, WireValue]", state)
     request = _resent(core, plan, fields["arguments"], fields["body"])
     first = _Walk(plan, request, limits, core)
-    if (page := fields["page"]) is None or plan.continued.body is not None:
+    if (page := fields["page"]) is None or not plan.follows or plan.continued.body is not None:
         _checked(core, first)
     if page is None:
         _require(not payload)

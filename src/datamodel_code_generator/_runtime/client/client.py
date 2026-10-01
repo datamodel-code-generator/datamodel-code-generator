@@ -18,7 +18,7 @@ from contextlib import (
     suppress,
 )
 from dataclasses import dataclass, replace
-from functools import lru_cache, partial
+from functools import partial
 from time import monotonic, time
 from typing import TYPE_CHECKING, ClassVar, Final, Generic, Literal, TypeVar
 from urllib.parse import quote, unquote_plus, urlsplit
@@ -446,26 +446,32 @@ def _encoding_error(
 
 
 def _auth_identity(auth: AuthConfig) -> WireValue:
-    """Return what identifies an auth configuration without its secrets.
+    """Return what identifies an auth configuration without its secrets or its providers' classes.
 
-    It is each scheme's provider type, with the audience and requested scopes of an OAuth grant, the selection, the
-    anonymous schemes, the origins credentials may go to, and the types of the signers.
+    It is the schemes it gives credentials for, with the audience and requested scopes of an OAuth grant, the
+    selection, the anonymous settings, the origins credentials may go to, and what each signer declares it manages.
     """
     from .auth import OwnedCredentialProvider  # noqa: PLC0415 - Only a checkpoint identifies the auth.
     from .grants import grant_identity  # noqa: PLC0415 - Only a checkpoint identifies the auth.
 
-    providers = (
-        (name, provider.provider if isinstance(provider, OwnedCredentialProvider) else provider)
-        for name, provider in sorted(auth.credentials.items())
-    )
+    capabilities = (signer.capabilities for signer in auth.signers)
     return {
         "credentials": tuple(
-            (name, type(provider).__qualname__, grant_identity(provider)) for name, provider in providers
+            (name, grant_identity(provider.provider if isinstance(provider, OwnedCredentialProvider) else provider))
+            for name, provider in sorted(auth.credentials.items())
         ),
         "selection": None if isinstance(auth.selection, Unset) else auth.selection,
         "anonymous": (auth.send_on_anonymous, tuple(sorted(auth.anonymous_schemes))),
         "origins": tuple(sorted(auth.allowed_origins)),
-        "signers": tuple(type(signer).__qualname__ for signer in auth.signers),
+        "signers": tuple(
+            (
+                tuple(sorted(item.allowed_origins)),
+                tuple(sorted(item.managed_headers)),
+                tuple(sorted(item.managed_query)),
+                item.requires_body_digest,
+            )
+            for item in capabilities
+        ),
     }
 
 
@@ -754,23 +760,6 @@ def _draw() -> float:
 
 _EMPTY_ORIGINS: Final[frozenset[Origin]] = frozenset()
 _EMPTY_NAMES: Final[frozenset[str]] = frozenset()
-_CREDENTIAL_HEADERS: Final = frozenset({"authorization", "proxy-authorization", "cookie", "cookie2"})
-
-
-@lru_cache(maxsize=32)
-def _secret_names(schemes: tuple[SecuritySchemeEntry, ...]) -> tuple[frozenset[str], frozenset[str]]:
-    """Return the lowercase header names and the query names that carry credentials in a package's requests.
-
-    They are the credential and cookie headers and the positions of the package's declared security schemes, however
-    a request came to fill them.
-    """
-    from .security import SecurityScheme  # noqa: PLC0415 - Only a request to another origin needs the schemes.
-
-    declared = [scheme for scheme in schemes if isinstance(scheme, SecurityScheme)]
-    return (
-        _CREDENTIAL_HEADERS.union(scheme.wire_name.lower() for scheme in declared if scheme.location == "header"),
-        frozenset(scheme.wire_name for scheme in declared if scheme.location == "query"),
-    )
 
 
 def _uncredentialed(
@@ -781,7 +770,9 @@ def _uncredentialed(
     The credential and cookie headers and every header and query field a declared security scheme names are removed,
     whether the auth placed them or a patch, a parameter, or the server's URL carried them.
     """
-    names, query = _secret_names(schemes)
+    from .security import secret_names  # noqa: PLC0415 - Only a request to another origin needs the schemes.
+
+    names, query = secret_names(schemes)
     kept = tuple((name, value) for name, value in headers if name.lower() not in names)
     return kept, strip_query(url, query)
 
@@ -1726,7 +1717,7 @@ class _Core(Generic[AdapterT, HandleT]):
         """Return what a helper's checkpoint is bound to, and whether it may leave the process.
 
         It is the credential partition and allowed origins of the client's protocol security context, the origin of the
-        operation's server, the security requirements and scopes the operation declares, and the identity of the
+        operation's server, the security schemes, kinds, and scopes the operation requires, and the identity of the
         call's auth, never a secret. A checkpoint of a call that may authenticate leaves only under a partition.
         """
         settings = self._call_settings(options, operation.operation_id)
@@ -1741,7 +1732,10 @@ class _Core(Generic[AdapterT, HandleT]):
             "requirements": None
             if declared is None
             else tuple(
-                tuple((requirement.scheme.name, *requirement.required_scopes) for requirement in alternative)
+                tuple(
+                    (requirement.scheme.name, requirement.scheme.kind, *requirement.required_scopes)
+                    for requirement in alternative
+                )
                 for alternative in declared.alternatives
             ),
             "auth": None if auth is None else _auth_identity(auth),
@@ -1756,7 +1750,9 @@ class _Core(Generic[AdapterT, HandleT]):
         It is a cookie, a header the client treats as a credential, a query parameter at the position of a declared
         security scheme, or a querystring whose value has a field at such a position.
         """
-        headers, queries = _secret_names(self._shared.security_schemes)
+        from .security import secret_names  # noqa: PLC0415 - Only a checkpoint needs the schemes.
+
+        headers, queries = secret_names(self._shared.security_schemes)
         return next(
             (
                 (spec.plan.location, spec.plan.name)

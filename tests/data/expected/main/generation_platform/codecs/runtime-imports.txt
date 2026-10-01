@@ -32,7 +32,7 @@ client/responses.py: __future__, collections.abc, dataclasses, typing, typing_ex
 client/retry.py: ..model_codecs.unset, .errors, .hooks, .options, .responses, __future__, collections.abc, dataclasses, datetime, math, re, typing
 client/rotation.py: ..model_codecs.unset, .admission, .auth, .errors, .oauth, .options, .refresh, __future__, asyncio, collections.abc, dataclasses, datetime, hashlib, json, time, typing, urllib.parse
 client/scopes.py: __future__, re, typing
-client/security.py: __future__, dataclasses, typing
+client/security.py: __future__, dataclasses, functools, typing
 client/tasks.py: __future__, asyncio, contextvars, typing
 client/timing.py: ..model_codecs.unset, .errors, __future__, dataclasses, math, threading, time, typing
 client/transports.py: .bodies, .errors, .evidence, .responses, .timing, __future__, collections.abc, dataclasses, inspect, time, typing, typing_extensions

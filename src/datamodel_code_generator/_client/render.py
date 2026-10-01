@@ -2176,16 +2176,17 @@ and of the JSON body later pages send, the last page's position, continuation, b
 the body of a page with items left, which `resume` decodes again and delivers first. It never saves the call's options,
 its session, or anything its auth adds; a call giving a cookie, a credential header, or a parameter or querystring field
 at a security scheme's position cannot be checkpointed and raises `ProtocolConfigurationError`, and no helper writes a
-cursor or binding to such a position. Pages and items count on from the checkpoint against the resumed call's limits,
-while its sends and timeout start afresh. `resume` builds the saved arguments and body as their codecs build a caller's,
-takes literal bindings from the helper, and prepares the request it sends next without sending. It raises
-`ResumeStateError` before sending for another helper's checkpoint, one made under another credential partition, allowed
-origins, server, declared security, or auth identity, and a malformed state, a value or media type its codec or selector
-refuses, a request that cannot be prepared, and an offset or page number other than the one the pages reach included,
-and checks the saved continuation and page as a server's. `SessionLimitError` and `PaginationCycleError` keep a
-checkpoint of where the pager stopped as `resume_state` when the call can be checkpointed. `ResumeState.export()`
-requires `ProtocolSecurityContext.credential_partition` when the operation declares security or the call configures
-auth; `import_state` reads the export back.
+cursor or binding to such a position or to any cookie, since cookies commonly carry session state. Pages and items count
+on from the checkpoint against the resumed call's limits, while its sends and timeout start afresh. `resume` builds the
+saved arguments and body as their codecs build a caller's, takes literal bindings from the helper, and prepares the
+request it sends next without sending. It raises `ResumeStateError` before sending for another helper's checkpoint, one
+made under another credential partition, allowed origins, server, declared security, or auth identity, and a malformed
+state, a value or media type its codec or selector refuses, a saved value that cannot be encoded into a request, and an
+offset or page number other than the one the pages reach included, while a refusal of the resumed call's options is
+raised as the call raises it, and checks the saved continuation and page as a server's. `SessionLimitError` and
+`PaginationCycleError` keep a checkpoint of where the pager stopped as `resume_state` when the call can be checkpointed.
+`ResumeState.export()` requires `ProtocolSecurityContext.credential_partition` when the operation declares security or
+the call configures auth; `import_state` reads the export back.
 """
 _HELPER_OPTIONS: Final = (
     ("pagination_options", ".", "PaginationOptions"),

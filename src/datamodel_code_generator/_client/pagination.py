@@ -26,7 +26,7 @@ from datamodel_code_generator._generation_contract import (
     UnionType,
 )
 from datamodel_code_generator._runtime.client.retry import body_replay_safe
-from datamodel_code_generator._runtime.client.security import SecurityScheme
+from datamodel_code_generator._runtime.client.security import secret_names
 from datamodel_code_generator._runtime.model_codecs.bindings import ArrayNode, MapNode, ModelNode, UnionNode
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._runtime.protocols.records import canonical_json
@@ -57,7 +57,6 @@ _URL_TYPES: Final = frozenset({"string", "null"})
 _RELATION: Final = re.compile(r"[A-Za-z][A-Za-z0-9.-]*|[A-Za-z][A-Za-z0-9+.-]*:[!#-\[\]-~]+")
 _WRITES: Final = MappingProxyType({"cursor": "cursor", "offset": "offset", "page": "page number"})
 _EVIDENCE: Final = MappingProxyType({"has_more": "boolean", "total": "integer"})
-_CREDENTIAL_HEADERS: Final = frozenset({"authorization", "proxy-authorization", "cookie", "cookie2"})
 _Types: TypeAlias = frozenset[str] | None
 
 
@@ -196,11 +195,7 @@ class _Pages:
         The positions of the package's security schemes, with the credential headers, are where no helper writes.
         """
         self.protocols = protocols
-        schemes = [scheme for scheme in plan.security_schemes if isinstance(scheme, SecurityScheme)]
-        self.secret_headers = _CREDENTIAL_HEADERS.union(
-            scheme.wire_name.lower() for scheme in schemes if scheme.location == "header"
-        )
-        self.secret_queries = frozenset(scheme.wire_name for scheme in schemes if scheme.location == "query")
+        self.secret_headers, self.secret_queries = secret_names(plan.security_schemes)
         self.wire = wire
         self.request = request
         self.bindings: Mapping[object, UseBinding] = dict(codecs.bindings)

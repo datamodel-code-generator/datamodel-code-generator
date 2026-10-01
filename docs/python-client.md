@@ -793,9 +793,9 @@ raises `PaginationCycleError` again without sending.
 |---|---|
 | Not a `ResumeState` | `ProtocolConfigurationError(field_path=("state",), condition="invalid_value")` |
 | Another helper's, or one generated differently | `ResumeStateError(condition="fingerprint")` |
-| Made under another credential partition, allowed origins, server origin, or declared security and scopes, or under another auth: a provider type, an OAuth grant's audience or requested scopes, `allowed_origins`, `selection`, `send_on_anonymous`, `anonymous_schemes`, or signer types | `ResumeStateError(condition="security")` |
+| Made under another credential partition, allowed origins, server origin, or declared security schemes, kinds, and scopes, or under another auth: the schemes it gives credentials for, an OAuth grant's audience or requested scopes, `allowed_origins`, `selection`, `send_on_anonymous`, `anonymous_schemes`, or the origins, headers, query fields, and body digest the signers declare. The classes of providers and signers are no part of it, so a synchronous client's checkpoint resumes in an asyncio client with the same settings | `ResumeStateError(condition="security")` |
 | An expiry that has passed | `ResumeStateError(condition="expired")` |
-| A state, saved argument, body, or page that does not fit the helper: a value its codec refuses, a media type the operation's select method refuses, a dot segment for a path argument, a value for a parameter that is never saved, an offset or page number other than the one the saved pages reach, or a first or next request that cannot be prepared, such as one with CR, LF, or NUL in a header | `ResumeStateError(condition="malformed")` |
+| A state, saved argument, body, or page that does not fit the helper: a value its codec refuses, a media type the operation's select method refuses, a dot segment for a path argument, a value for a parameter that is never saved, an offset or page number other than the one the saved pages reach from the first request's start, or a saved value that cannot be encoded into the first or next request, such as one with CR, LF, or NUL in a header. A refusal of the resumed call's own options is raised as the call raises it | `ResumeStateError(condition="malformed")` |
 | A cursor over the resumed call's `max_cursor_bytes`, a URL a server could not have given, a dot segment a server value would write to a path parameter, or a saved page over the resumed call's `max_page_bytes` | `ProtocolSizeError` or `ProtocolDataError`, as for a page |
 
 `ResumeState.export()` of a helper's checkpoint requires `ProtocolSecurityContext.credential_partition` when the
@@ -823,7 +823,9 @@ registered name such as `next` or an absolute URI. A next-URL or Link helper's b
 querystring parameter, which the URL replaces, or the body without `repeat_request_body`, fails with `E_CONFIG_VALUE`.
 So does a cursor, position, or binding, a literal one included, that writes a cookie, the `Authorization`,
 `Proxy-Authorization`, `Cookie`, or `Cookie2` header, or a header, query parameter, or querystring property at the
-position of a declared security scheme: credentials are never written from what a server or a checkpoint gives.
+position of a declared security scheme: credentials are never written from what a server or a checkpoint gives. Every
+cookie counts, declared as a scheme or not, because cookies commonly carry session state; this removes the cookie
+cursors and cookie bindings earlier versions of the helpers wrote.
 Helper names whose classes collide, such as `users.all_items` and `users_all.items`, fail with `E_NAME_COLLISION`.
 Bindings that read the helper's input, request bodies other than JSON, envelope-projected responses, and items or
 selector pointers that read through a union or a map are not supported yet:
