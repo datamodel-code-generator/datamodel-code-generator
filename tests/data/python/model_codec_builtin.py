@@ -18,7 +18,7 @@ from pydantic import BaseModel
 from datamodel_code_generator import SchemaParseError
 from datamodel_code_generator.api_types import APIGenerationError
 from tests.data.python.client_generation import generate_client
-from tests.data.python.generated_packages import generated_root, import_generated
+from tests.data.python.generated_packages import generated_root, import_generated_codecs
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -45,6 +45,12 @@ def _uses(root: Path, package: str) -> list[str]:
     """Return the use key of each binding in a generated package's manifest, in the order of its codecs."""
     manifest = json.loads((root / package / MANIFEST).read_text(encoding="utf-8"))
     return [_use_key(item["use_id"]) for item in manifest["bindings"]]
+
+
+def copied_input(source: Path, root: Path) -> Path:
+    """Copy a fixture document under the generation root, so it shares a drive with the target on every platform."""
+    (inputs := root / "inputs").mkdir(parents=True, exist_ok=True)
+    return shutil.copy2(source, inputs / source.name)
 
 
 def generate_package(
@@ -75,7 +81,7 @@ class GeneratedCodecs:
     def __init__(self, name: str, root: Path) -> None:
         """Import the package generated under a root, its bindings, and the runtime modules reports read."""
         self.name = name
-        import_generated(name)
+        import_generated_codecs(name, root)
         self.bindings = importlib.import_module(f"{name}._generated.model_bindings")
         self.public = importlib.import_module(f"{name}.model_codecs")
         self.media = importlib.import_module(f"{name}._runtime.model_codecs.media")
@@ -309,6 +315,7 @@ def builtin_codec_report(source: Path, cases: Path, root: Path) -> str:
     A fixture's `refusal` configuration first reports the diagnostics of a generation the target refuses; its
     `config` then generates the package that runs the cases.
     """
+    source = copied_input(source, root)
     fixture = json.loads(cases.read_text(encoding="utf-8"))
     package = fixture["package"]
     lines: list[str] = []
@@ -327,6 +334,7 @@ def builtin_codec_report(source: Path, cases: Path, root: Path) -> str:
 
 def backend_comparison_report(source: Path, cases: Path, root: Path) -> str:
     """Run one set of wire cases through the codecs generated for every backend, grouping backends that agree."""
+    source = copied_input(source, root)
     fixture = json.loads(cases.read_text(encoding="utf-8"))
     outcomes: dict[str, dict[str, str]] = {case["name"]: {} for case in fixture["cases"]}
     for backend in fixture["backends"]:
@@ -492,6 +500,7 @@ def builtin_codec_startup_report(source: Path, cases: Path, root: Path) -> str:
     Each case edits the generated files as a stale or hand-edited package would: it rebinds model names in the
     models module, or changes the binding, models, bundle, or directional view of one generated codec.
     """
+    source = copied_input(source, root)
     fixture = json.loads(cases.read_text(encoding="utf-8"))
     package = fixture["package"]
     generated = root / "generated"
