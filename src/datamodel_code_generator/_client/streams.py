@@ -16,6 +16,7 @@ from datamodel_code_generator._client.pagination import (  # pyright: ignore[rep
     _Pages,
     _problem,
 )
+from datamodel_code_generator._client.plan import schema_use, schema_uses
 from datamodel_code_generator._generation_contract import (
     BindingCaptureError,
     DeclarationId,
@@ -33,7 +34,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
     from datamodel_code_generator._codec_declarations import SchemaRef
-    from datamodel_code_generator._generation_contract import SourceDocumentId
     from datamodel_code_generator._openapi_codec_plan import CodecPlan
     from datamodel_code_generator._openapi_wire_plan import WirePlan
 
@@ -127,16 +127,12 @@ class _Streams:
     """Check every enabled stream helper against its operation and bind the schemas of its events."""
 
     def __init__(self, protocols: Protocols, request: TargetRequest, wire: WirePlan) -> None:
-        """Index the documents by manifest pointer and the value use of each schema by its location."""
+        """Index the documents by manifest pointer and the value use of each schema by its location and direction."""
         self.protocols = protocols
         self.request = request
         self.wire = wire
         self.documents = {pointer: document for document, pointer in request.documents.pointers.items()}
-        self.schemas: dict[tuple[SourceDocumentId, str], TypeUseBinding] = {
-            (use.id.use_site.document, use.id.use_site.pointer): use
-            for use in request.batch.type_uses
-            if use.id.role == "schema" and use.id.projection == "value"
-        }
+        self.schemas = schema_uses(request.batch.type_uses)
 
     def location(self, reference: SchemaRef) -> SourceLocation | None:
         """Return the resolved location of a schema reference, or None when its document has no such pointer."""
@@ -202,7 +198,7 @@ class _Streams:
 
     def use(self, spec: OperationSpec, response: ResponseSpec, media: str, location: SourceLocation) -> TypeUseBinding:
         """Return the use that reads a schema as the stream response's events, bound as the schema's value use is."""
-        schema = self.schemas.get((location.document, location.pointer))
+        schema = schema_use(self.schemas, location, "response")
         use = TypeUseId(
             owner=spec.contract.id,
             role="response_body",
@@ -245,6 +241,7 @@ def stream_uses(
 def plan_streams(  # noqa: PLR0913, PLR0917
     specs: tuple[StreamSpec, ...],
     protocols: Protocols | None,
+    plan: ClientPlan,
     codecs: CodecPlan,
     wire: WirePlan,
     request: TargetRequest,
@@ -257,7 +254,7 @@ def plan_streams(  # noqa: PLR0913, PLR0917
     if protocols is None or not specs:
         return ()
     bindings = dict(codecs.bindings)
-    pages = _Pages(protocols, codecs, wire, request)
+    pages = _Pages(protocols, plan, codecs, wire, request)
     planned: list[StreamSpec] = []
     for spec in specs:
         helper, operation = spec.helper, spec.operation

@@ -12,6 +12,17 @@
       }
     },
     {
+      "use": "schema value /components/schemas/Base",
+      "schema": "/components/schemas/Base",
+      "declaration": "/components/schemas/Base",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "BaseRequest"
+      }
+    },
+    {
       "use": "schema value /components/schemas/Child",
       "schema": "/components/schemas/Child",
       "declaration": "/components/schemas/Child",
@@ -20,6 +31,17 @@
       "type": {
         "node": "GeneratedSymbolType",
         "symbol": "Child"
+      }
+    },
+    {
+      "use": "schema value /components/schemas/Child",
+      "schema": "/components/schemas/Child",
+      "declaration": "/components/schemas/Child",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "ChildRequest"
       }
     },
     {

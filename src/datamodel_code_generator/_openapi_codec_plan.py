@@ -371,7 +371,8 @@ class _CodecPlanner:
             and use.schema is not None
             and ((resolved := self.wire.schema(use.schema)[0]).document, resolved.pointer)
             == (document, binding.schema.pointer)
-            and (use.id.role == "schema" if binding.direction == "neutral" else use.id.direction == binding.direction)
+            and use.id.direction == binding.direction
+            and (binding.direction != "neutral" or use.id.role == "schema")
         }
         source = SourceLocation(document or self.batch.documents[0].id, binding.schema.pointer, "schema")
         if len(symbols) != 1:
