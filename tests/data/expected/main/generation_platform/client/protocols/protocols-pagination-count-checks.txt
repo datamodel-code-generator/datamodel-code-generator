@@ -1,0 +1,16 @@
+# protocols-pagination-count-checks
+render pydantic_v2.BaseModel
+  APIGenerationError
+  E_CONFIG_VALUE config protocols.helpers['step.items'].continuation.step /paths/~1users/get: The page number of 'step.items' advances by a literal step, never by the page's item count
+  E_CONFIG_VALUE config protocols.helpers['write.string'].continuation.write /paths/~1users/get: The offset of 'write.string' gives integer values, which the query parameter 'cursor' of GET /users does not accept
+  E_CONFIG_VALUE config protocols.helpers['write.page_string'].continuation.write /paths/~1users/get: The page number of 'write.page_string' gives integer values, which the query parameter 'cursor' of GET /users does not accept
+  E_CONFIG_CONFLICT config protocols.helpers['write.bound'].bindings[0].target /paths/~1users/get: The binding 0 of 'write.bound' writes the same target as its offset
+  E_CONFIG_VALUE config protocols.helpers['has_more.integer'].continuation.has_more /paths/~1users/get: The has_more of 'has_more.integer' reads integer values, where only boolean values fit
+  E_CONFIG_VALUE config protocols.helpers['has_more.status'].continuation.has_more /paths/~1users/get: The has_more of 'has_more.status' reads integer values, where only boolean values fit
+  E_CONFIG_VALUE config protocols.helpers['has_more.absent'].continuation.has_more /paths/~1users/get: The has_more pointer '/nothing' of 'has_more.absent' names no property of the GET /users response
+  E_CONFIG_VALUE config protocols.helpers['has_more.header'].continuation.has_more /paths/~1users/get: The has_more of 'has_more.header' reads integer values, where only boolean values fit
+  E_CONFIG_VALUE config protocols.helpers['total.boolean'].continuation.total /paths/~1users/get: The total of 'total.boolean' reads boolean values, where only integer values fit
+  E_CONFIG_VALUE config protocols.helpers['total.null'].continuation.total /paths/~1users/get: The total of 'total.null' reads null values, where only integer values fit
+  E_CONFIG_VALUE config protocols.helpers['total.string_header'].continuation.total /paths/~1users/get: The total of 'total.string_header' reads string values, where only integer values fit
+  E_CONFIG_VALUE config protocols.helpers['total.undeclared'].continuation.total /paths/~1users/get: The total of 'total.undeclared' reads the header 'X-Missing', which GET /users does not declare
+  E_CONFIG_VALUE config protocols.helpers['total.status'].continuation.total /paths/~1users/get: The total of 'total.status' reads the response status, which counts no items

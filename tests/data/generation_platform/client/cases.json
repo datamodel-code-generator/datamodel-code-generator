@@ -2316,5 +2316,36 @@
         "response": "schema"
       }
     }
+  },
+  "pagination-counts": {
+    "input": "pagination-counts.yaml",
+    "references": [
+      "protocols/pagination-counts.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-counts.yaml",
+      "validation": {
+        "request_overrides": [
+          "schema"
+        ]
+      }
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
+  "protocols-pagination-count-checks": {
+    "input": "pagination-counts.yaml",
+    "references": [
+      "protocols/pagination-count-checks.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-count-checks.yaml"
+    },
+    "modules": false
   }
 }

@@ -1,4 +1,4 @@
-"""Cursor pagination: pages, the pagers over them, and the helper session their child calls share.
+"""Cursor, offset, and page-number pagination: pages, the pagers over them, and the session their child calls share.
 
 A pager sends nothing until it is iterated and fetches a page only once the previous one is consumed. Every page is
 read, decoded, and closed inside its own child call, so abandoning a pager holds no response.
@@ -55,6 +55,7 @@ if TYPE_CHECKING:
 
 __all__ = (
     "AsyncPager",
+    "CountPlan",
     "CursorPlan",
     "Page",
     "PageBinding",
@@ -76,6 +77,7 @@ T_co = TypeVar("T_co", covariant=True, default=object)
 P_co = TypeVar("P_co", covariant=True, default=object)
 
 _DOT_SEGMENTS: Final = (".", "..")
+_BOOLEANS: Final = MappingProxyType({"true": True, "false": False})
 
 
 @final
@@ -93,11 +95,32 @@ class CursorPlan:
     end_null: bool = False
     end_values: tuple[WireValue, ...] = ()
     empty_string_ends: bool = False
+    kind: Literal["cursor"] = field(default="cursor", init=False)
     ends: frozenset[bytes] = field(init=False)
 
     def __post_init__(self) -> None:
         """Keep the canonical JSON of each end value."""
         object.__setattr__(self, "ends", frozenset(canonical_json(value) for value in self.end_values))
+
+
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CountPlan:
+    """How a helper counts the offset or page number each request after the first writes, and what ends the traversal.
+
+    The first request is the caller's, at the position the caller's own value for the target gives, or else at
+    `first`; the request after a page writes the page's position advanced by `step`, or by its item count when `step`
+    is None. The page is the last when `has_more` reads false, or once the items before the next position reach what
+    `total` reads: the offsets past `first` for an offset, the items delivered since the start for a page number, which
+    also ends at a page without items. A header spells a JSON boolean or a signed decimal count.
+    """
+
+    kind: Literal["offset", "page"]
+    write: RequestTarget
+    first: int
+    step: int | None
+    has_more: Selector | None = None
+    total: Selector | None = None
 
 
 @final
@@ -138,8 +161,8 @@ def _position(call: OperationPlan[P, object], location: str, name: str) -> int:
 class PaginationPlan(Generic[T, P]):
     """Everything fixed about one generated pagination helper: its identity, call, items, continuation, and bindings.
 
-    Pages after the first call `continued`, the same operation taking each binding's value and then the cursor as the
-    wire values the server sent: a parameter's replaces its argument, and a querystring property or a JSON body member
+    Pages after the first call `continued`, the same operation taking each binding's value and then the cursor or
+    position as wire values: a parameter's replaces its argument, and a querystring property or a JSON body member
     is written into the caller's encoded value. They skip the schema and argument checks, since the server chose them.
     `headers` and `queries` name the header, cookie, and query parameters it writes, which a call's options must not
     patch, and `dotted` the writes of read values into path parameters, which must not be dot segments.
@@ -150,7 +173,7 @@ class PaginationPlan(Generic[T, P]):
     call: OperationPlan[P, object]
     items: Callable[[P], Sequence[T] | None]
     items_selector: BodySelector
-    continuation: CursorPlan
+    continuation: CursorPlan | CountPlan
     fingerprint: str
     bindings: tuple[PageBinding, ...] = ()
     writes: tuple[tuple[int | None, str | None], ...] = field(init=False)
@@ -160,7 +183,7 @@ class PaginationPlan(Generic[T, P]):
     continued: OperationPlan[P, object] = field(init=False)
 
     def __post_init__(self) -> None:
-        """Find where each binding and then the cursor is written, and derive the operation pages after the first call.
+        """Find where each binding and then the continuation is written, and derive the operation of later pages.
 
         A write is a parameter's argument position with no pointer, a querystring's with a pointer into its value, or
         no position with a pointer into the JSON body. Every media of a body written to is JSON.
@@ -174,7 +197,8 @@ class PaginationPlan(Generic[T, P]):
         queries: set[str] = set()
         patched = False
         rule = self.continuation
-        sources = (*((binding.target, binding.selector) for binding in self.bindings), (rule.write, rule.read))
+        read = rule.read if isinstance(rule, CursorPlan) else None
+        sources = (*((binding.target, binding.selector) for binding in self.bindings), (rule.write, read))
         for target, _ in sources:
             if isinstance(target, BodyTarget):
                 writes.append((None, target.pointer))
@@ -408,7 +432,7 @@ def _limits(
 def _data_error(
     plan: PaginationPlan[T, P],
     info: ResponseInfo,
-    condition: Literal["missing", "null", "value", "malformed"],
+    condition: Literal["missing", "null", "type", "value", "malformed", "inconsistent"],
     location: Selector,
 ) -> ProtocolDataError:
     return ProtocolDataError(
@@ -418,6 +442,10 @@ def _data_error(
 
 def _absence(value: WireValue | Missing) -> Literal["missing", "null"]:
     return "missing" if value is MISSING else "null"
+
+
+def _unfit(value: WireValue | Missing) -> Literal["missing", "null", "type"]:
+    return "type" if value is not MISSING and value is not None else _absence(value)
 
 
 def _selected(plan: PaginationPlan[T, P], read: Selector, wire: WireValue, info: ResponseInfo) -> WireValue | Missing:
@@ -437,12 +465,13 @@ def _selected(plan: PaginationPlan[T, P], read: Selector, wire: WireValue, info:
     return info.status_code
 
 
-def _cursor(plan: PaginationPlan[T, P], wire: WireValue, info: ResponseInfo, limit: int) -> WireValue | Missing:
+def _cursor(
+    plan: PaginationPlan[T, P], rule: CursorPlan, wire: WireValue, info: ResponseInfo, limit: int
+) -> WireValue | Missing:
     """Return the cursor a page gives, or MISSING when an end condition ends the traversal at this page.
 
     A cursor over its size limit, in UTF-8 bytes for a string and canonical JSON bytes otherwise, is refused.
     """
-    rule = plan.continuation
     read = rule.read
     value = _selected(plan, read, wire, info)
     if value is MISSING or value is None:
@@ -465,13 +494,43 @@ def _cursor(plan: PaginationPlan[T, P], wire: WireValue, info: ResponseInfo, lim
     return value
 
 
+def _more(plan: PaginationPlan[T, P], read: Selector, wire: WireValue, info: ResponseInfo) -> bool:
+    """Return whether a page says more pages follow: a JSON boolean, or a header spelling one."""
+    value = _selected(plan, read, wire, info)
+    if isinstance(read, HeaderSelector) and isinstance(value, str):
+        value = _BOOLEANS.get(value, value)
+    if not isinstance(value, bool):
+        raise _data_error(plan, info, _unfit(value), read)
+    return value
+
+
+def _total(plan: PaginationPlan[T, P], read: Selector, wire: WireValue, info: ResponseInfo) -> int:
+    """Return the total item count a page gives: a nonnegative JSON integer, or a header of signed decimal digits."""
+    value = _selected(plan, read, wire, info)
+    if (
+        isinstance(read, HeaderSelector)
+        and isinstance(value, str)
+        and (digits := value.removeprefix("-")).isascii()
+        and digits.isdigit()
+    ):
+        try:
+            value = int(value)
+        except ValueError:
+            raise _data_error(plan, info, "value", read) from None
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise _data_error(plan, info, _unfit(value), read)
+    if value < 0:
+        raise _data_error(plan, info, "value", read)
+    return value
+
+
 class _Walk(Generic[T, P]):
     """The pages of one helper call: its request, limits, session, the last page's link, and the items delivered.
 
     Its continuations are remembered by digest along the line of pages it extends.
     """
 
-    __slots__ = ("delivered", "limits", "link", "plan", "request", "session")
+    __slots__ = ("delivered", "limits", "link", "plan", "request", "session", "start")
 
     def __init__(
         self, plan: PaginationPlan[T, P], request: _Request, limits: _Limits, link: _Link | None = None
@@ -483,6 +542,7 @@ class _Walk(Generic[T, P]):
         self.link = link
         self.delivered = 0 if link is None else link.items
         self.session: OperationSession | None = None
+        self.start: int | None = None
 
     def progress(self) -> ProtocolProgress:
         """Return the pages fetched, the items delivered, and the session's sends so far."""
@@ -563,10 +623,12 @@ class _Walk(Generic[T, P]):
             raise self.limit(limit, "pages")
         if link is not None and link.seen is not None:
             plan = self.plan
+            rule = plan.continuation
+            assert isinstance(rule, CursorPlan)
             raise PaginationCycleError(
                 page_index=link.index,
                 first_seen_page_index=link.seen,
-                location=plan.continuation.read,
+                location=rule.read,
                 helper_id=plan.helper_id,
                 operation=plan.operation,
                 parent_session_id=self.session_id(),
@@ -585,14 +647,80 @@ class _Walk(Generic[T, P]):
         return session
 
     def operation(self) -> OperationPlan[P, object]:
-        """Return the operation the next page calls: the helper's for the first page, its continued one after it."""
-        return self.plan.call if self.link is None else self.plan.continued
+        """Return the operation the next page calls: the helper's for the first page, its continued one after it.
+
+        The first page of an offset or page-number helper reads the position the caller's own value for its target
+        gives, from the parameter or the JSON body media the position is written to.
+        """
+        plan = self.plan
+        if self.link is not None:
+            return plan.continued
+        if isinstance(plan.continuation, CursorPlan):
+            return plan.call
+        from .writes import ReadMedia, ReadParameter  # noqa: PLC0415 - Only a plan loads the operation runtime.
+
+        call = plan.call
+        read = self.started
+        if (position := plan.writes[-1][0]) is None:
+            body = call.body
+            assert body is not None
+            media = tuple(
+                ReadMedia(media_type=media.media_type, kind=media.kind, encoder=media.encoder, read=read)
+                for media in body.media
+            )
+            return replace(call, body=replace(body, media=media))
+        parameters = list(call.parameters)
+        spec = parameters[position]
+        parameters[position] = ReadParameter(plan=spec.plan, encoder=spec.encoder, read=read)
+        return replace(call, parameters=tuple(parameters))
+
+    def started(self, wire: WireValue) -> None:
+        """Start at the position the caller's first request sends, refusing one that is not an integer.
+
+        The value is read where the position is written; a querystring or body without that member sends none.
+        """
+        plan = self.plan
+        pointer = plan.writes[-1][1]
+        if (value := wire if pointer is None else resolve(wire, pointer)) is MISSING:
+            return
+        if isinstance(value, float) and value.is_integer():
+            value = int(value)
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise ProtocolDataError(
+                condition="type", location=plan.continuation.write, helper_id=plan.helper_id, operation=plan.operation
+            )
+        self.start = value
+
+    def advance(self, rule: CountPlan, count: int, wire: WireValue, info: ResponseInfo) -> int | Missing:
+        """Return the offset or page number the request after a page writes, or MISSING when the page is the last.
+
+        The first page is at the walk's start. A page number ends at a page without items once a total counts the
+        items, since none of the pages after it can bring the total nearer. A page that continues without items while
+        each step counts the items would ask for its own position again, so it is refused.
+        """
+        plan, link = self.plan, self.link
+        position = (rule.first if self.start is None else self.start) if link is None else cast("int", link.cursor)
+        following = position + (count if (step := rule.step) is None else step)
+        if (read := rule.has_more) is not None:
+            more = _more(plan, read, wire, info)
+        else:
+            assert rule.total is not None
+            total = _total(plan, rule.total, wire, info)
+            if rule.kind == "offset":
+                more = following - rule.first < total
+            else:
+                more = bool(count) and count + (0 if link is None else link.items) < total
+        if not more:
+            return MISSING
+        if step is None and not count:
+            raise _data_error(plan, info, "inconsistent", plan.items_selector)
+        return following
 
     def next_request(self) -> tuple[tuple[object, ...], object]:
         """Return the next page's arguments and body: the first page's, with the last page's writes.
 
-        Each binding's value and then the cursor replace a parameter's argument, or are written by pointer into the
-        caller's querystring or body.
+        Each binding's value and then the cursor or position replace a parameter's argument, or are written by pointer
+        into the caller's querystring or body.
         """
         request = self.request
         if (link := self.link) is None:
@@ -633,11 +761,12 @@ class _Walk(Generic[T, P]):
     def build(
         self, data: P, wire: WireValue, info: ResponseInfo
     ) -> tuple[Page[T, P], WireValue | Missing, tuple[WireValue, ...]]:
-        """Return a decoded page, its cursor, and its bindings' values, refusing missing or null items and bad cursors.
+        """Return a decoded page, what the next request writes, and its bindings' values, refusing bad items and ends.
 
         The items are checked in the wire value before the page's accessor reads them from the decoded one; a value of
-        another type fails its response's validation first, in every mode. The bindings are read only when a page
-        follows, and a dot segment read for a path parameter is refused.
+        another type fails its response's validation first, in every mode. What the next request writes is the cursor
+        or position, MISSING after the last page. The bindings are read only when a page follows, and a dot segment
+        read for a path parameter is refused.
         """
         plan = self.plan
         selector = plan.items_selector
@@ -647,15 +776,22 @@ class _Walk(Generic[T, P]):
             or (native := plan.items(data)) is None
         ):
             raise _data_error(plan, info, _absence(selected), selector)
-        if isinstance(cursor := _cursor(plan, wire, info, self.limits.max_cursor_bytes), Missing):
-            return Page(items=tuple(native), data=data, response=info), cursor, ()
+        items = tuple(native)
+        rule = plan.continuation
+        cursor = (
+            _cursor(plan, rule, wire, info, self.limits.max_cursor_bytes)
+            if isinstance(rule, CursorPlan)
+            else self.advance(rule, len(items), wire, info)
+        )
+        if isinstance(cursor, Missing):
+            return Page(items=items, data=data, response=info), cursor, ()
         bound = self.bound(wire, info)
         written = (*bound, cursor)
         for index, read in plan.dotted:
             if written[index] in _DOT_SEGMENTS:
                 raise _data_error(plan, info, "value", read)
-        continuation = Continuation(kind="cursor", value=cursor)
-        page = Page(items=tuple(native), data=data, response=info, continuation=continuation)
+        continuation = Continuation(kind=rule.kind, value=cursor)
+        page = Page(items=items, data=data, response=info, continuation=continuation)
         return page, cursor, bound
 
     def record(self, page: Page[T, P], cursor: WireValue | Missing, bound: tuple[WireValue, ...]) -> Page[T, P]:
