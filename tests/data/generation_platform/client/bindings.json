@@ -1176,18 +1176,6 @@
       "typing.TypedDict"
     ]
   },
-  "field-ownership-custom-base": {
-    "source": "generation_platform/binding/field-ownership.json",
-    "backends": [
-      "pydantic_v2.BaseModel",
-      "typing.TypedDict"
-    ],
-    "model": {
-      "base_class_map": {
-        "A": "app.bases.Base"
-      }
-    }
-  },
   "functional-name-collision": {
     "source": "generation_platform/binding/functional-name-collision.json",
     "backends": [
