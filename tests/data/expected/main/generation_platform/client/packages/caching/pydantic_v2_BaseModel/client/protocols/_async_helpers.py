@@ -6,7 +6,8 @@ from __future__ import annotations
 from functools import cached_property
 from typing import Literal
 
-from models import FieldSecureUsersUserIdGetPathUserIdParameter as _dcg_type_6
+from models import FieldCartsCurrentGetCookieCartParameter as _dcg_type_6
+from models import FieldSecureUsersUserIdGetPathUserIdParameter as _dcg_type_7
 from models import FieldUsersGetQueryPageParameter as _dcg_type_4
 from models import FieldUsersGetQueryRoleParameter as _dcg_type_5
 from models import FieldUsersUserIdGetHeaderAcceptLanguageParameter as _dcg_type_1
@@ -19,6 +20,7 @@ from .._runtime.protocols.cache import afetch, ainvalidate, amutate
 from .._runtime.protocols.caches import CacheResult
 from ..model_codecs import ModelValue, RequestMedia
 from ..options import UNSET, RequestOptions, Unset
+from ..types.carts import GetCurrentCartResponse
 from ..types.secure import GetSecureUserResponse
 from ..types.users import (
     CreateUserResponse,
@@ -41,6 +43,11 @@ class AsyncProtocolHelpers:
     def users(self) -> AsyncUsersProtocols:
         """The users protocol helpers."""
         return AsyncUsersProtocols(self._core)
+
+    @cached_property
+    def carts(self) -> AsyncCartsProtocols:
+        """The carts protocol helpers."""
+        return AsyncCartsProtocols(self._core)
 
     @cached_property
     def secure(self) -> AsyncSecureProtocols:
@@ -69,6 +76,19 @@ class AsyncUsersProtocols:
     def listing(self) -> AsyncUsersListingCache:
         """The users.listing cache helper."""
         return AsyncUsersListingCache(self._core)
+
+
+class AsyncCartsProtocols:
+    """The carts protocol helpers."""
+
+    def __init__(self, core: AsyncClientCore) -> None:
+        """Keep the client core its helpers send through."""
+        self._core = core
+
+    @cached_property
+    def current(self) -> AsyncCartsCurrentCache:
+        """The carts.current cache helper."""
+        return AsyncCartsCurrentCache(self._core)
 
 
 class AsyncSecureProtocols:
@@ -248,6 +268,34 @@ class AsyncUsersListingCacheMutations:
         )
 
 
+class AsyncCartsCurrentCache:
+    """The carts.current cache helper of GET /carts/current."""
+
+    def __init__(self, core: AsyncClientCore) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+    async def fetch(
+        self,
+        *,
+        cart: _dcg_type_6 | ModelValue[_dcg_type_6],
+        cache_options: CacheOptions | None = None,
+        options: RequestOptions | None = None,
+    ) -> CacheResult[GetCurrentCartResponse]:
+        """Fetch GET /carts/current through the helper's cache, revalidating a stale entry."""
+        return await afetch(
+            self._core,
+            _plans.PLAN_3,
+            (cart,),
+            cache_options=cache_options,
+            options=options,
+        )
+
+    async def invalidate(self, tags: tuple[str, ...]) -> int:
+        """Remove the stored entries that carry any of the tags, returning how many."""
+        return await ainvalidate(self._core, _plans.PLAN_3, tags)
+
+
 class AsyncSecureProfileCache:
     """The secure.profile cache helper of GET /secure/users/{userId}."""
 
@@ -258,14 +306,14 @@ class AsyncSecureProfileCache:
     async def fetch(
         self,
         *,
-        user_id: _dcg_type_6 | ModelValue[_dcg_type_6],
+        user_id: _dcg_type_7 | ModelValue[_dcg_type_7],
         cache_options: CacheOptions | None = None,
         options: RequestOptions | None = None,
     ) -> CacheResult[GetSecureUserResponse]:
         """Fetch GET /secure/users/{userId} through the helper's cache, revalidating a stale entry."""
         return await afetch(
             self._core,
-            _plans.PLAN_3,
+            _plans.PLAN_4,
             (user_id,),
             cache_options=cache_options,
             options=options,
@@ -273,4 +321,4 @@ class AsyncSecureProfileCache:
 
     async def invalidate(self, tags: tuple[str, ...]) -> int:
         """Remove the stored entries that carry any of the tags, returning how many."""
-        return await ainvalidate(self._core, _plans.PLAN_3, tags)
+        return await ainvalidate(self._core, _plans.PLAN_4, tags)

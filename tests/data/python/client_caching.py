@@ -189,6 +189,11 @@ class Caching:
         types = importlib.import_module(f"{self.package.__name__}.types.users")
         return types.GetUserRequestCodecs.parameter(location="header", name="Accept-Language").from_wire(value)
 
+    def cart(self, value: str) -> object:
+        """Return the cart cookie argument of a wire value."""
+        types = importlib.import_module(f"{self.package.__name__}.types.carts")
+        return types.GetCurrentCartRequestCodecs.parameter(location="cookie", name="cart").from_wire(value)
+
     def page(self, value: int) -> object:
         """Return the page argument of a listing."""
         types = importlib.import_module(f"{self.package.__name__}.types.users")
@@ -447,6 +452,8 @@ def _validators(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) 
         ("other caller date", {"If_Modified_Since": _PAST}),
     ):
         fetched(lines, label, lambda: helper.fetch(user_id=seventeen, options=cache.headers(**headers)))
+    twice = cache.options.RequestOptions(headers=(("If-None-Match", '"g"'), ("If-None-Match", '"h"')))
+    fetched(lines, "caller validator twice", lambda: helper.fetch(user_id=seventeen, options=twice))
     cold = cache.user_id(18)
     exchange.respond(not_modified(etag='"g"'))
     fetched(lines, "cold 304", lambda: helper.fetch(user_id=cold, options=matching))
@@ -673,6 +680,13 @@ def _memory(cache: Caching, lines: list[str]) -> None:
     found("fresh large after both", b"f")
     put("tagged", b"t", None, entry("t", tags=("a", "b")))
     lines.append(f"  memory invalidate {store.invalidate(('b', 'c'))} {store.invalidate(('b',))}")
+    store = protocols.MemoryCacheStore(max_entries=1)
+    put("expired then deleted", b"d", None, entry("d", freshness_seconds=0))
+    lines.append(f"  memory delete expired {store.delete(b'd', 'd')}")
+    put("fresh after a deleted expired", b"a", None, entry("a"))
+    put("full after a deleted expired", b"b", None, entry("b"))
+    found("least recently used after a deleted expired", b"a")
+    found("newest after a deleted expired", b"b")
     for label, call in (
         ("lookup key", lambda: store.lookup("k", bare)),
         ("fingerprint names", lambda: store.fingerprint_vary(["a"], bare)),
@@ -767,11 +781,13 @@ def _recorded(cache: Caching, native: Any, exchange: Exchange, lines: list[str])
         fetched(lines, "list in another vary slot", listing.fetch)
         exchange.respond(user(21, etag='"h"', **{"cache-control": "max-age=0"}), not_modified(etag='"x"'))
         fetched(lines, "healing stored", lambda: helper.fetch(user_id=twenty))
-        store.faults["delete"] = OSError("gone")
-        try:
-            helper.fetch(user_id=twenty)
-        except errors.CacheProtocolError as error:
-            lines.append(f"  refused 304 with a failed deletion ! {describe(error)} {error.secondary_errors!r}")
+        for label, fault in (("a failed deletion", OSError("gone")), ("a deletion result", 1)):
+            exchange.respond(*(() if label == "a failed deletion" else (not_modified(etag='"x"'),)))
+            store.faults["delete"] = fault
+            try:
+                helper.fetch(user_id=twenty)
+            except errors.CacheProtocolError as error:
+                lines.append(f"  refused 304 with {label} ! {describe(error)} {[describe(item) for item in error.secondary_errors]}")
         cancelled = cache.options.CancelToken()
         cancelled.cancel()
         stopped = cache.options.RequestOptions(cancel_token=cancelled)
@@ -873,6 +889,25 @@ def _credentials(cache: Caching, native: Any, exchange: Exchange, lines: list[st
         public = cache.user_id(1)
         anonymous_view = first.with_options(options.RequestOptions(auth=None))
         fetched(lines, "anonymous view", lambda: anonymous_view.protocols.users.profile.fetch(user_id=public))
+    fresh = {"cache-control": "max-age=60"}
+    four, five = (secured.parameter(location="path", name="userId").from_wire(value) for value in (4, 5))
+    exchange.respond(user(4, "u", **fresh), user(4, "service", **fresh), user(5, "service", **fresh), user(5, "u", **fresh))
+    with client("tenant-a") as service:
+        helper = service.protocols.secure.profile
+        delegated = service.with_options(cache.headers(X_On_Behalf_Of="user-u")).protocols.secure.profile
+        fetched(lines, "on behalf of u", lambda: delegated.fetch(user_id=four))
+        fetched(lines, "service after u", lambda: helper.fetch(user_id=four))
+        fetched(lines, "on behalf of u again", lambda: delegated.fetch(user_id=four))
+        fetched(lines, "service again", lambda: helper.fetch(user_id=four))
+        fetched(lines, "service first", lambda: helper.fetch(user_id=five))
+        fetched(lines, "on behalf of u after the service", lambda: delegated.fetch(user_id=five))
+        forged = service.with_options(cache.headers(Authorization="Bearer mallory")).protocols.secure.profile
+        fetched(lines, "view patching the bound authorization", lambda: forged.fetch(user_id=four))
+    exchange.respond(user(44, "alice", **fresh), user(44, "bob", **fresh))
+    with client("tenant-a", None, **{"carts.current": store}) as shopper:
+        carts = shopper.protocols.carts.current
+        for label, cart in (("alice cart", "alice"), ("bob cart", "bob"), ("alice cart again", "alice")):
+            fetched(lines, label, lambda cart=cart: carts.fetch(cart=cache.cart(cart)))
     signed_vary = {"cache-control": "max-age=60", "vary": "X-Signature"}
     exchange.respond(user(3, "first", **signed_vary), user(3, "second", **signed_vary))
     three = secured.parameter(location="path", name="userId").from_wire(3)
@@ -914,11 +949,13 @@ async def _async_stores(cache: Caching, lines: list[str]) -> None:
             await afetched(lines, label, lambda: helper.fetch(user_id=twenty))
         exchange.respond(user(24, etag='"h"', **{"cache-control": "max-age=0"}), not_modified(etag='"x"'))
         await afetched(lines, "async healing stored", lambda: helper.fetch(user_id=twenty))
-        store.faults["delete"] = OSError("gone")
-        try:
-            await helper.fetch(user_id=twenty)
-        except cache.errors.CacheProtocolError as error:
-            lines.append(f"  async refused 304 with a failed deletion ! {describe(error)} {error.secondary_errors!r}")
+        for label, fault in (("a failed deletion", OSError("gone")), ("a deletion result", 1)):
+            exchange.respond(*(() if label == "a failed deletion" else (not_modified(etag='"x"'),)))
+            store.faults["delete"] = fault
+            try:
+                await helper.fetch(user_id=twenty)
+            except cache.errors.CacheProtocolError as error:
+                lines.append(f"  async refused 304 with {label} ! {describe(error)} {[describe(item) for item in error.secondary_errors]}")
         exchange.respond(user(24, etag='"b"', **{"cache-control": "max-age=0"}), user(24))
         await afetched(lines, "async deletable", lambda: helper.fetch(user_id=twenty))
         store.faults["delete"] = 1
@@ -929,6 +966,22 @@ async def _async_stores(cache: Caching, lines: list[str]) -> None:
         exchange.respond(user(24, "dog"))
         store.faults["invalidate"] = OSError("down")
         await arecord(lines, "async rename invalidation failure", lambda: helper.mutations.rename(user_id=twenty, body=cache.rename("dog")))
+    fresh = {"cache-control": "max-age=60"}
+    secured = importlib.import_module(f"{package.__name__}.types.secure").GetSecureUserRequestCodecs
+    argument = secured.parameter(location="path", name="userId").from_wire(1)
+    token = auth.AuthConfig({"bearer": auth.AsyncStaticTokenProvider(auth.AccessToken("token"))})
+    partitioned = options.ProtocolClientOptions(
+        security=protocols.ProtocolSecurityContext(credential_partition="tenant"),
+        cache_stores={"secure.profile": protocols.AsyncMemoryCacheStore()},
+    )
+    exchange.respond(user(1, "service", **fresh), user(1, "u", **fresh))
+    async with exchange.async_client() as native, package.AsyncClient(
+        http_client=native, options=options.ClientOptions(auth=token, protocols=partitioned)
+    ) as service:
+        delegated = service.with_options(cache.headers(X_On_Behalf_Of="user-u")).protocols.secure.profile
+        await afetched(lines, "async service", lambda: service.protocols.secure.profile.fetch(user_id=argument))
+        await afetched(lines, "async on behalf of u", lambda: delegated.fetch(user_id=argument))
+        await afetched(lines, "async on behalf of u again", lambda: delegated.fetch(user_id=argument))
     failing = AsyncRecording(protocols.MemoryCacheStore(), lines)
     failing.faults["lookup"] = OSError("down")
     secret = auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("secret"))
@@ -937,8 +990,6 @@ async def _async_stores(cache: Caching, lines: list[str]) -> None:
         security=protocols.ProtocolSecurityContext(credential_partition="tenant"), cache_stores={"secure.profile": failing}
     )
     config = options.ClientOptions(auth=auth.AuthConfig({"bearer": oauth}), protocols=protocol)
-    secured = importlib.import_module(f"{package.__name__}.types.secure").GetSecureUserRequestCodecs
-    argument = secured.parameter(location="path", name="userId").from_wire(1)
     async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as granted:
         await afetched(lines, "async granted", lambda: granted.protocols.secure.profile.fetch(user_id=argument))
     await oauth.aclose()

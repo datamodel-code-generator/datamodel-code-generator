@@ -15,12 +15,17 @@
   write client/resources/users/__init__.py
   write client/resources/users/_sync.py
   write client/resources/users/_async.py
+  write client/resources/carts/__init__.py
+  write client/resources/carts/_sync.py
+  write client/resources/carts/_async.py
   write client/resources/secure/__init__.py
   write client/resources/secure/_sync.py
   write client/resources/secure/_async.py
   write client/types/__init__.py
   write client/types/users/__init__.py
   write client/types/users/_operations.py
+  write client/types/carts/__init__.py
+  write client/types/carts/_operations.py
   write client/types/secure/__init__.py
   write client/types/secure/_operations.py
   write client/_generated/__init__.py
@@ -35,14 +40,31 @@
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['users.profile', 'users.dated', 'users.listing', 'secure.profile'] bindings 19
+  namespace client helpers ['users.profile', 'users.dated', 'users.listing', 'carts.current', 'secure.profile'] bindings 21
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   helper users.profile cache enabled True /inputs/target_config/protocol_metadata/helpers/users.profile 8bc3cb12a7c197074fd9c76e454ce348b7992c59bb308418c3be811dea86f4ad
   helper users.dated cache enabled True /inputs/target_config/protocol_metadata/helpers/users.dated 46268d7980b99b249a57f34340a625c3ae65fd090549291665170e054c80e2b9
   helper users.listing cache enabled True /inputs/target_config/protocol_metadata/helpers/users.listing 7d3252dc3f8126e03c6df9096f89184192d1b2b773adf2197f3e86c95e8c9ca1
+  helper carts.current cache enabled True /inputs/target_config/protocol_metadata/helpers/carts.current a4259a7989ae081629e28007104f79281e69bc308a67a3944f9da1c7567be14d
   helper secure.profile cache enabled True /inputs/target_config/protocol_metadata/helpers/secure.profile 15df827e2b132c48312ba9808481c2d55962bbdc2709f3ca89123914cfee4521
   {
     "helpers": {
+      "carts.current": {
+        "authenticated": true,
+        "enabled": true,
+        "kind": "cache",
+        "mutations": {},
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1carts~1current/get"
+        },
+        "statuses": [
+          200
+        ],
+        "tags": [],
+        "validator": "etag",
+        "vary_allowlist": []
+      },
       "secure.profile": {
         "authenticated": true,
         "enabled": true,
@@ -170,7 +192,10 @@
   /selection/selected_operations/5 users.create_user()
     exports client.types.users.CreateUserResponse client.types.users.CreateUserErrorData client.types.users.CreateUserHTTPError
     exports client.types.users.CreateUserRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/6 secure.get_secure_user(path:userId=user_id)
+  /selection/selected_operations/6 carts.get_current_cart(cookie:cart=cart)
+    exports client.types.carts.GetCurrentCartResponse client.types.carts.GetCurrentCartErrorData client.types.carts.GetCurrentCartHTTPError
+    exports client.types.carts.GetCurrentCartRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/7 secure.get_secure_user(path:userId=user_id)
     exports client.types.secure.GetSecureUserResponse client.types.secure.GetSecureUserErrorData client.types.secure.GetSecureUserHTTPError
     exports client.types.secure.GetSecureUserRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
@@ -279,6 +304,17 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
     "auth_challenge_less_401": false
   },
   {
+    "operation": "carts.get_current_cart",
+    "method": "GET",
+    "path": "/carts/current",
+    "retry_safety": "method_default",
+    "idempotency": null,
+    "retry_after_ms_header": null,
+    "should_retry_header": null,
+    "security": null,
+    "auth_challenge_less_401": false
+  },
+  {
     "operation": "secure.get_secure_user",
     "method": "GET",
     "path": "/secure/users/{userId}",
@@ -325,6 +361,13 @@ entries. See the runtime reference for their limits.
     "operation": "users.list_users",
     "method": "GET",
     "path": "/users"
+  },
+  {
+    "helper": "carts.current",
+    "kind": "cache",
+    "operation": "carts.get_current_cart",
+    "method": "GET",
+    "path": "/carts/current"
   },
   {
     "helper": "secure.profile",

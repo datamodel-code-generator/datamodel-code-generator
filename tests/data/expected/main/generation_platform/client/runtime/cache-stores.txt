@@ -63,6 +63,12 @@
   memory fresh large after both None
   memory tagged True
   memory invalidate 1 0
+  memory expired then deleted True
+  memory delete expired True
+  memory fresh after a deleted expired True
+  memory full after a deleted expired True
+  memory least recently used after a deleted expired None
+  memory newest after a deleted expired b
   memory lookup key ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('base_key',), condition='invalid_value'] protocol_configuration_error
   memory fingerprint names ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('names',), condition='invalid_value'] protocol_configuration_error
   memory exchange key ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('base_key',), condition='invalid_value'] protocol_configuration_error
@@ -175,7 +181,17 @@
     event attempt_end status=304
     event call_end status=304
     delete
-  refused 304 with a failed deletion ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent'] cache_protocol_error (CacheStoreError(),)
+  refused 304 with a failed deletion ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent'] cache_protocol_error ["CacheStoreError: CacheStoreError(action='delete') [cause=OSError('gone')] cache_store_error"]
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/21
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
+    event response_headers status=304
+    event attempt_end status=304
+    event call_end status=304
+    delete
+  refused 304 with a deletion result ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent'] cache_protocol_error ["CacheStoreError: CacheStoreError(action='delete') [] cache_store_error"]
   cancelled before lookup ! RequestCancelledError: RequestCancelledError(operation_id='getUser', call_id='<call>', source='cancel_token', delivery_state='NOT_SENT') [operation_id='getUser', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] request_cancelled_error
     lookup key=32 headers=['Accept-Encoding', 'Accept']
   lookup failure ! CacheStoreError: CacheStoreError(action='lookup') [cause=OSError('disk')] cache_store_error
@@ -367,6 +383,28 @@
   view with other auth ! ProtocolConfigurationError: ProtocolConfigurationError(condition='security_partition') [field_path=('options', 'auth'), condition='security_partition'] protocol_configuration_error
   call with other auth ! ProtocolConfigurationError: ProtocolConfigurationError(condition='security_partition') [field_path=('options', 'auth'), condition='security_partition'] protocol_configuration_error
   anonymous view = fresh_cache 1:anonymous status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '27')]
+  > GET https://api.example.com/secure/users/4
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-on-behalf-of: user-u, authorization: Bearer token] b''
+  on behalf of u = network 4:u status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '19'), ('content-type', 'application/json')]
+  > GET https://api.example.com/secure/users/4
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
+  service after u = network 4:service status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '25'), ('content-type', 'application/json')]
+  on behalf of u again = fresh_cache 4:u status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '19')]
+  service again = fresh_cache 4:service status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '25')]
+  > GET https://api.example.com/secure/users/5
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
+  service first = network 5:service status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '25'), ('content-type', 'application/json')]
+  > GET https://api.example.com/secure/users/5
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-on-behalf-of: user-u, authorization: Bearer token] b''
+  on behalf of u after the service = network 5:u status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '19'), ('content-type', 'application/json')]
+  view patching the bound authorization ! AuthConfigurationError: AuthConfigurationError(operation_id='getSecureUser', call_id='<call>', condition='managed_field') [operation_id='getSecureUser', field_path=('auth',), condition='managed_field'] auth_configuration_error
+  > GET https://api.example.com/carts/current
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cookie: cart=alice] b''
+  alice cart = network 44:alice status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '24'), ('content-type', 'application/json')]
+  > GET https://api.example.com/carts/current
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cookie: cart=bob] b''
+  bob cart = network 44:bob status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '22'), ('content-type', 'application/json')]
+  alice cart again = fresh_cache 44:alice status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '24')]
   > GET https://api.example.com/secure/users/3
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer alice, x-signature: signed] b''
   vary on a signed header = network 3:first status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'X-Signature'), ('content-length', '23'), ('content-type', 'application/json')]
@@ -450,7 +488,17 @@
     event attempt_end status=304
     event call_end status=304
     delete
-  async refused 304 with a failed deletion ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent'] cache_protocol_error (CacheStoreError(),)
+  async refused 304 with a failed deletion ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent'] cache_protocol_error ["CacheStoreError: CacheStoreError(action='delete') [cause=OSError('gone')] cache_store_error"]
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/24
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
+    event response_headers status=304
+    event attempt_end status=304
+    event call_end status=304
+    delete
+  async refused 304 with a deletion result ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent'] cache_protocol_error ["CacheStoreError: CacheStoreError(action='delete') [] cache_store_error"]
     lookup key=32 headers=['Accept-Encoding', 'Accept']
     event call_start status=None
     event attempt_start status=None
@@ -485,5 +533,12 @@
     event call_end status=200
     invalidate ('user:24',)
   async rename invalidation failure ! CacheInvalidationError: CacheInvalidationError(action='invalidate') [cause=OSError('down')] cache_invalidation_error
+  > GET https://api.example.com/secure/users/1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
+  async service = network 1:service status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '25'), ('content-type', 'application/json')]
+  > GET https://api.example.com/secure/users/1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-on-behalf-of: user-u, authorization: Bearer token] b''
+  async on behalf of u = network 1:u status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '19'), ('content-type', 'application/json')]
+  async on behalf of u again = fresh_cache 1:u status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '19')]
     lookup key=32 headers=['Accept-Encoding', 'Accept']
   async granted ! CacheStoreError: CacheStoreError(action='lookup') [cause=OSError('down')] cache_store_error

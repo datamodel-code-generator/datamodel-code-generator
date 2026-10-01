@@ -8,6 +8,7 @@ from typing import Final
 from .. import _operations
 from .._runtime.protocols.cache import CacheMutationPlan, CachePlan
 from .._runtime.protocols.references import OperationRef
+from ..types.carts import GetCurrentCartResponse
 from ..types.secure import GetSecureUserResponse
 from ..types.users import (
     CreateUserResponse,
@@ -76,10 +77,20 @@ MUTATION_2_0: Final[CacheMutationPlan[CreateUserResponse]] = CacheMutationPlan(
 )
 
 
-PLAN_3: Final[CachePlan[GetSecureUserResponse]] = CachePlan(
+PLAN_3: Final[CachePlan[GetCurrentCartResponse]] = CachePlan(
+    helper_id='carts.current',
+    operation=OperationRef(pointer='/paths/~1carts~1current/get'),
+    call=_operations.OPERATION_6,
+    validator='etag',
+    authenticated=True,
+    fingerprint='a4259a7989ae081629e28007104f79281e69bc308a67a3944f9da1c7567be14d',
+)
+
+
+PLAN_4: Final[CachePlan[GetSecureUserResponse]] = CachePlan(
     helper_id='secure.profile',
     operation=OperationRef(pointer='/paths/~1secure~1users~1{userId}/get'),
-    call=_operations.OPERATION_6,
+    call=_operations.OPERATION_7,
     validator='etag',
     authenticated=True,
     fingerprint='15df827e2b132c48312ba9808481c2d55962bbdc2709f3ca89123914cfee4521',

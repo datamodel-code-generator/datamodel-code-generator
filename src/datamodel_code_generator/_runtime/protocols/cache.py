@@ -90,6 +90,7 @@ _FIELD_LISTS: Final = frozenset({"no-cache", "private"})
 _REQUEST_DIRECTIVES: Final = frozenset({"max-age", "no-cache", "no-store"})
 _REFUSED: Final = ("Range", "If-Range", "If-Match", "If-Unmodified-Since")
 _NOT_VARIED: Final = frozenset({"cache-control", "if-modified-since", "if-none-match"})
+_VARIED_LOCATIONS: Final = frozenset({"cookie", "header"})
 _VALIDATORS: Final[tuple[tuple[Literal["If-None-Match", "If-Modified-Since"], str], ...]] = (
     ("If-None-Match", "etag"),
     ("If-Modified-Since", "last-modified"),
@@ -261,7 +262,9 @@ class _Fetch(Generic[T]):
         """Prepare the fetch's request, refuse what a cache cannot answer, and derive its base key.
 
         A request carrying credentials needs the client's credential partition and a helper declared authenticated,
-        and an anonymous one a helper declared anonymous.
+        and an anonymous one a helper declared anonymous. The base key names the headers its entries vary on beyond a
+        response's Vary: each one a header patch or a header parameter fills, and Cookie for a cookie parameter. A
+        request patching other headers than a stored one never shares its entries, whichever was stored first.
         """
         self.plan = plan
         self.started = monotonic()
@@ -287,8 +290,12 @@ class _Fetch(Generic[T]):
         if credentials is not None and partition is None:
             raise _configuration(plan, ("protocols", "security"), "security_partition")
         patched = {name.lower() for layer in self.settings.headers for name, _ in layer}
-        declared = {spec.plan.name.lower() for spec in plan.call.parameters if spec.plan.location == "header"}
-        self.implicit = frozenset(patched | declared) - _NOT_VARIED
+        declared = {
+            spec.plan.name.lower() if spec.plan.location == "header" else "cookie"
+            for spec in plan.call.parameters
+            if spec.plan.location in _VARIED_LOCATIONS
+        }
+        self.implicit = implicit = frozenset(patched | declared) - _NOT_VARIED
         url = prepared.url
         self.base_key = sha256(
             canonical_json({
@@ -297,13 +304,14 @@ class _Fetch(Generic[T]):
                 "accept": headers.get("accept"),
                 "partition": "anonymous" if partition is None else partition,
                 "credentials": credentials,
+                "varied": sorted(implicit),
             })
         ).digest()
 
     def found(self, entry: object) -> CacheEntry | None:
         """Keep a looked-up entry, refusing another result, and return it when this helper may use it.
 
-        A usable entry refuses a validator header the caller gave with another value than the entry's.
+        A usable entry refuses a validator header the caller gave other than once with the entry's value.
         """
         if entry is not None and not isinstance(entry, CacheEntry):
             raise _store_error(self.plan, "lookup")
@@ -312,7 +320,7 @@ class _Fetch(Generic[T]):
             return None
         headers = self.request.headers
         for header, stored in _VALIDATORS:
-            if (given := headers.get(header)) is not None and given != entry.headers.get(stored):
+            if (given := headers.get_all(header)) and given != (entry.headers.get(stored),):
                 raise CacheValidatorConflictError(
                     header_name=header, helper_id=plan.helper_id, operation=plan.operation
                 )
@@ -401,8 +409,8 @@ class _Fetch(Generic[T]):
         It is refused for an unlisted status, a redirect, a body over the limit, a Set-Cookie, an unsupported or
         malformed Cache-Control, no-store, a Vary outside the allowlist or `*`, a Vary naming a header credentials
         travel in, a revalidation whose Vary changed, and a response that is neither fresh nor revalidatable. The
-        entry varies on the response's Vary and on every header a patch or a declared parameter fills, and its date
-        and age are those of the response received, so a 304 without Age makes the entry's age 0.
+        entry varies on the response's Vary and on the headers its base key names, and its date and age are those of
+        the response received, so a 304 without Age makes the entry's age 0.
         """
         plan, headers, now = self.plan, received.headers, time()
         directives = _directives(headers.get_all("cache-control"))
@@ -664,7 +672,7 @@ def fetch(
         if (usable := state.usable) is not None:
             version = usable.version
             try:
-                _run(plan, "delete", lambda: store.delete(key, version))
+                _checked(plan, "delete", type(_run(plan, "delete", lambda: store.delete(key, version))) is bool)
             except CacheStoreError as failure:
                 add_secondary(error, failure)
         raise
@@ -711,7 +719,7 @@ async def afetch(
         if (usable := state.usable) is not None:
             version = usable.version
             try:
-                await _arun(plan, "delete", lambda: store.delete(key, version))
+                _checked(plan, "delete", type(await _arun(plan, "delete", lambda: store.delete(key, version))) is bool)
             except CacheStoreError as failure:
                 add_secondary(error, failure)
         raise

@@ -1169,7 +1169,7 @@ anything is looked up.
 
 A stale entry is revalidated with its validator as `validator` declares; a fetch that gives `If-None-Match` or
 `If-Modified-Since` itself sends it once, and raises `CacheValidatorConflictError` before sending when a usable entry
-has another validator. A 304 updates the entry's headers, except `Content-Type`, `Content-Encoding`, `Content-Length`,
+has another validator or the header is given more than once. A 304 updates the entry's headers, except `Content-Type`, `Content-Encoding`, `Content-Length`,
 and hop-by-hop fields, and its freshness. A 304 without a usable entry, after a redirect, or with an `ETag` or
 `Last-Modified` other than the entry's raises `CacheProtocolError`; no request is sent again.
 
@@ -1188,9 +1188,12 @@ declared capabilities, never a secret. Calls with different partitions, schemes,
 entry; give each tenant or permission set its own `ProtocolSecurityContext.credential_partition`. Token refreshes keep
 the key. Among the entries of one key, the store selects the one whose `Vary` fingerprints match the request's headers
 before auth; the store computes the fingerprints as keyed hashes, so header values never become keys. Besides the
-response's `Vary`, an entry varies on every header a client, view, or call header patch names and every declared header
-parameter, except `Cache-Control`, `If-None-Match`, and `If-Modified-Since`, so a caller's own `X-Api-Key` patch keeps
-callers apart.
+response's `Vary`, an entry varies on every header a client, view, or call header patch names, every declared header
+parameter, and `Cookie` when the operation declares a cookie parameter, except `Cache-Control`, `If-None-Match`, and
+`If-Modified-Since`. The key names these headers too, so a caller's own `X-Api-Key` or `X-On-Behalf-Of` patch keeps
+callers apart whichever of them fetched first. A header patch whose value is new on every call, such as a request ID or
+a `traceparent`, therefore disables caching for that helper: each fetch misses and stores an entry no other fetch can
+use.
 
 !!! warning "Credentials the cache cannot see"
     The auth adds its credentials after the cache looks a request up, so a response whose `Vary` names a header the
@@ -1218,7 +1221,8 @@ fingerprint; a looked-up entry of another fingerprint or status is not used, and
 Its representation names only the status.
 
 `MemoryCacheStore(max_entries=128, max_bytes=16 MiB)` and `AsyncMemoryCacheStore` keep entries in the process, with a
-secret of their own for the fingerprints. When an entry needs room, expired entries are evicted first, then the least
+secret of their own for the fingerprints. A lookup fingerprints the request once for each set of `Vary` names among the
+key's entries. When an entry needs room, expired entries are evicted first, the earliest expired first, then the least
 recently used ones; an entry larger than `max_bytes`, counted in body bytes and header characters, is not stored.
 
 ### Invalidation

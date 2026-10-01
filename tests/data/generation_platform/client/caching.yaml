@@ -142,6 +142,21 @@ paths:
               schema: {type: string}
         '204':
           description: No report.
+  /carts/current:
+    get:
+      operationId: getCurrentCart
+      tags: [carts]
+      parameters:
+        - name: cart
+          in: cookie
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: The cart the cookie names.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/User'}
   /secure/users/{userId}:
     get:
       operationId: getSecureUser

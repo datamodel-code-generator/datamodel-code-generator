@@ -2,4 +2,5 @@
   users.profile same True
   users.dated same True
   users.listing same True
+  carts.current same True
   secure.profile same True

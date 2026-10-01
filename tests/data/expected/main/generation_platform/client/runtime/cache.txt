@@ -294,6 +294,7 @@
   matching caller date = revalidated 17:cat status=200 network=304 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=0'), ('last-modified', 'Wed, 21 Oct 2015 07:28:00 GMT'), ('content-type', 'application/json'), ('etag', '"g"'), ('Content-Length', '22')]
   other caller validator ! CacheValidatorConflictError: CacheValidatorConflictError(condition='binding_mismatch') [field_path=('If-None-Match',), condition='binding_mismatch'] cache_validator_conflict_error
   other caller date ! CacheValidatorConflictError: CacheValidatorConflictError(condition='binding_mismatch') [field_path=('If-Modified-Since',), condition='binding_mismatch'] cache_validator_conflict_error
+  caller validator twice ! CacheValidatorConflictError: CacheValidatorConflictError(condition='binding_mismatch') [field_path=('If-None-Match',), condition='binding_mismatch'] cache_validator_conflict_error
   > GET https://api.example.com/users/18
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "g"] b''
   cold 304 ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent'] cache_protocol_error

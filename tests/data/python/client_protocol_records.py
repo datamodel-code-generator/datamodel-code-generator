@@ -562,6 +562,7 @@ CACHING = ProtocolConfiguration(
             tags=("users",),
             mutations={"create": CacheMutation(operation="/paths/~1users/post", invalidate_tags=("users",))},
         ),
+        "carts.current": CacheHelper(operation="/paths/~1carts~1current/get", validator="etag", authenticated=True),
         "secure.profile": CacheHelper(
             operation="/paths/~1secure~1users~1{userId}/get",
             validator="etag",

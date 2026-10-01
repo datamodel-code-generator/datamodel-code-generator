@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import hmac
 from collections import OrderedDict
-from datetime import datetime, timezone
 from hashlib import sha256
+from heapq import heapify, heappop, heappush
+from math import inf
 from secrets import token_bytes
 from threading import Lock
+from time import time
 from typing import TYPE_CHECKING, Final, TypeAlias
 
 from ..client.errors import ProtocolConfigurationError
@@ -43,15 +45,21 @@ def _size(entry: CacheEntry) -> int:
     return len(entry.body) + sum(len(name) + len(value) for name, value in entry.headers)
 
 
-def _expired(entry: CacheEntry, now: datetime) -> bool:
-    age = entry.initial_age_seconds + max(0.0, (now - entry.response_time).total_seconds())
-    return age >= entry.freshness_seconds
+def _expiry(entry: CacheEntry) -> float:
+    """Return the instant an entry's age reaches its freshness lifetime, minus infinity for one stored stale."""
+    remaining = entry.freshness_seconds - entry.initial_age_seconds
+    return entry.response_time.timestamp() + remaining if remaining > 0 else -inf
 
 
 class _Entries:
-    """The entries of one store by slot, in least-recently-used order, with the secret of their fingerprints."""
+    """The entries of one store by slot, in least-recently-used order, with the secret of their fingerprints.
 
-    __slots__ = ("_bytes", "_entries", "_keys", "_lock", "_max_bytes", "_max_entries", "_secret")
+    Each base key's slots are grouped by their Vary names, and a heap orders the slots by when their entries expire;
+    a heap item whose entry was replaced or removed is skipped when it surfaces, and the heap is rebuilt once such
+    items outnumber the entries.
+    """
+
+    __slots__ = ("_bytes", "_entries", "_expiries", "_keys", "_lock", "_max_bytes", "_max_entries", "_secret")
 
     def __init__(self, max_entries: int, max_bytes: int) -> None:
         positive_count(max_entries, "max_entries")
@@ -59,7 +67,8 @@ class _Entries:
         self._max_entries = max_entries
         self._max_bytes = max_bytes
         self._entries: OrderedDict[_Slot, CacheEntry] = OrderedDict()
-        self._keys: dict[bytes, set[_Slot]] = {}
+        self._keys: dict[bytes, dict[tuple[str, ...], set[_Slot]]] = {}
+        self._expiries: list[tuple[float, _Slot]] = []
         self._bytes = 0
         self._secret = token_bytes(32)
         self._lock = Lock()
@@ -78,15 +87,23 @@ class _Entries:
         )
 
     def lookup(self, base_key: object, request_headers: HeadersView) -> CacheEntry | None:
-        """Return the most recently stored entry of the key whose fingerprints match, marking it recently used."""
+        """Return the most recently stored entry of the key whose fingerprints match, marking it recently used.
+
+        The request is fingerprinted once for each set of Vary names the key's entries use, however many entries
+        share it.
+        """
         base_key = _key(base_key)
+        entries = self._entries
         with self._lock:
-            candidates = self._keys.get(base_key, ())
-            for slot in sorted(candidates, key=lambda slot: self._entries[slot].stored_at, reverse=True):
-                if self.fingerprint_vary(slot[1], request_headers) == slot[2]:
-                    self._entries.move_to_end(slot)
-                    return self._entries[slot]
-        return None
+            found: tuple[_Slot, CacheEntry] | None = None
+            for names in self._keys.get(base_key, ()):
+                slot = (base_key, names, self.fingerprint_vary(names, request_headers))
+                if (entry := entries.get(slot)) is not None and (found is None or entry.stored_at > found[1].stored_at):
+                    found = slot, entry
+            if found is None:
+                return None
+            entries.move_to_end(found[0])
+            return found[1]
 
     def compare_exchange(self, base_key: object, expected_version: object, entry: object) -> bool:
         """Store the entry in its slot when the slot holds the expected version, evicting what it needs room for.
@@ -105,11 +122,15 @@ class _Entries:
                 return False
             if current is not None:
                 self._remove(slot)
-            if len(self._entries) >= self._max_entries or self._bytes + size > self._max_bytes:
-                self._evict(size)
+            self._evict(size)
             self._entries[slot] = entry
-            self._keys.setdefault(base_key, set()).add(slot)
+            self._keys.setdefault(base_key, {}).setdefault(entry.vary, set()).add(slot)
             self._bytes += size
+            expiries = self._expiries
+            heappush(expiries, (_expiry(entry), slot))
+            if len(expiries) > 2 * len(self._entries):
+                expiries[:] = [(_expiry(stored), stored_slot) for stored_slot, stored in self._entries.items()]
+                heapify(expiries)
             return True
 
     def delete(self, base_key: object, version: object) -> bool:
@@ -117,7 +138,15 @@ class _Entries:
         base_key = _key(base_key)
         _argument(isinstance(version, str), "version")
         with self._lock:
-            slot = next((slot for slot in self._keys.get(base_key, ()) if self._entries[slot].version == version), None)
+            slot = next(
+                (
+                    slot
+                    for slots in self._keys.get(base_key, {}).values()
+                    for slot in slots
+                    if self._entries[slot].version == version
+                ),
+                None,
+            )
             if slot is None:
                 return False
             self._remove(slot)
@@ -132,21 +161,28 @@ class _Entries:
                 self._remove(slot)
             return len(removed)
 
+    def _fits(self, size: int) -> bool:
+        return len(self._entries) < self._max_entries and self._bytes + size <= self._max_bytes
+
     def _evict(self, size: int) -> None:
-        """Remove expired entries, then the least recently used ones, until an entry of the size fits."""
-        now = datetime.now(timezone.utc)
-        for victim in [*(item for item, stored in self._entries.items() if _expired(stored, now)), *self._entries]:
-            if len(self._entries) < self._max_entries and self._bytes + size <= self._max_bytes:
-                return
-            if victim in self._entries:
-                self._remove(victim)
+        """Remove expired entries, earliest expired first, then the least recently used ones, until the size fits."""
+        entries, expiries, now = self._entries, self._expiries, time()
+        while not self._fits(size) and expiries and expiries[0][0] <= now:
+            slot = heappop(expiries)[1]
+            if (stored := entries.get(slot)) is not None and _expiry(stored) <= now:
+                self._remove(slot)
+        while not self._fits(size):
+            self._remove(next(iter(entries)))
 
     def _remove(self, slot: _Slot) -> None:
         self._bytes -= _size(self._entries.pop(slot))
-        slots = self._keys[slot[0]]
+        groups = self._keys[slot[0]]
+        slots = groups[slot[1]]
         slots.discard(slot)
         if not slots:
-            del self._keys[slot[0]]
+            del groups[slot[1]]
+            if not groups:
+                del self._keys[slot[0]]
 
 
 class MemoryCacheStore:
