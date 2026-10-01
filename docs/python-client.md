@@ -1635,6 +1635,8 @@ Its representation names only the status.
 secret of their own for the fingerprints. A lookup fingerprints the request once for each set of `Vary` names among the
 key's entries. When an entry needs room, expired entries are evicted first, the earliest expired first, then the least
 recently used ones; an entry larger than `max_bytes`, counted in body bytes and header characters, is not stored.
+A store may be shared by clients on different clocks, so it judges which entries have expired for eviction by the
+system wall clock. Whether a fetch may use an entry is decided by the fetching client's clock.
 
 ### Invalidation
 
@@ -2331,8 +2333,9 @@ validation.
 ## Timeouts, cancellation, and send limits
 
 The generated package's `options` module provides `ClientOptions`, `RequestOptions`, `TimeoutOptions`, `Deadline`,
-and `CancelToken`. These settings apply to typed operations and `request_raw`, including their response and streaming
-views. The following examples use a generated package named `pets` and take the service URL from their caller.
+`CancelToken`, and `Clock`. These settings apply to typed operations and `request_raw`, including their response and
+streaming views. The following examples use a generated package named `pets` and take the service URL from their
+caller.
 
 | Option | Effective default | Meaning |
 |---|---|---|
@@ -2345,6 +2348,7 @@ views. The following examples use a generated package named `pets` and take the 
 | `stream_total_timeout` | `None` | Total stream lifetime after handoff |
 | `cleanup_timeout` | `5` | Separate positive, finite budget for releasing resources |
 | `limiter` | `None` | An application-provided `Limiter` or `AsyncLimiter` |
+| `clock` | `Clock()`, the system clock | Client only: the time and jitter sources of every call, described in [Clocks and retry jitter](#clocks-and-retry-jitter) |
 
 Omitted fields remain `UNSET` until resolution. Each field inherits in this order: request, `with_options` view,
 client, generated default. `TimeoutOptions` merges each phase separately. For example, a client's
@@ -2367,8 +2371,9 @@ the SDK would first acquire a token.
 ### A budget shared by every phase
 
 `Deadline.after(10)` fixes the expiry when it is created. Reusing that object across calls shares the same expiry;
-each call's `total_timeout` starts again at call entry. `Deadline.at` is the readonly monotonic timestamp, and
-`remaining()` returns the seconds left, never a negative number. Do not compare `at` with wall-clock timestamps.
+each call's `total_timeout` starts again at call entry. `Deadline.at` is the readonly monotonic timestamp on the
+deadline's clock, `Deadline.clock`, and `remaining()` returns the seconds left on that clock, never a negative number.
+Do not compare `at` with wall-clock timestamps.
 
 ```python
 from pets import Client
@@ -2479,6 +2484,65 @@ within `cleanup_timeout`, for a download's file work to finish.
 
 `stream_to(file_object)` writes to a borrowed file on the calling thread or event loop and never closes, seeks, or
 truncates it; bytes already written stay there. A failed write closes the response before the failure propagates.
+
+### Clocks and retry jitter
+
+`ClientOptions(clock=Clock(...))` replaces the time and jitter sources of every call a client makes. Views and requests
+cannot change it. Each of the three sources is a function that takes no arguments:
+
+| Source | Default | Read for |
+|---|---|---|
+| `monotonic` | `time.monotonic` | Deadlines, elapsed times, retry targets, idempotency key retention, token expiry, hook event durations, and protocol helper sessions, poll intervals, a polling checkpoint's `wait_ms`, and stream deadlines |
+| `time` | `time.time` | Placing a wall-clock instant on the monotonic scale once: an HTTP-date `Retry-After` or polling delay header at receipt, an idempotency key's `first_used_at` at call entry, and an access token's `expires_at`; a resumed pager's or polling handle's check of its state's `expires_at`; and a cache fetch's request, response, and age times |
+| `random` | A secure uniform draw | The fraction in `[0, 1)` of a full-jitter backoff, drawn only when a retry needs one |
+
+A source that cannot be called raises `ConfigurationError` with the `field_path` `("clock", name)`. OAuth providers
+and flows keep their own time through `OAuthProviderOptions(clock=...)`, since one provider can serve several clients.
+A client and the providers it uses must agree on wall time, because an access token's `expires_at` passes between them
+as a UTC datetime. A key from `IdempotencyKey.new()` takes its first use from the system clock; pass `first_used_at`
+yourself for a client with another clock. `import_state` has no client, so it checks an expiry by the system clock.
+
+A deadline remembers its clock. `Deadline.after(seconds, clock=clock)` creates it on that clock, the system clock by
+default, and `remaining()` reads that clock, so an adapter, limiter, or provider that receives it measures it
+correctly. A call given a deadline made on another `Clock` object moves it onto its own clock by the time remaining at
+call entry. A deadline made on the client's own `Clock` object stays the same object, so
+`DeadlineExceededError.deadline_at` equals its `at`.
+
+The client still waits in real time. A retry sleep, a wait before a poll, a device flow's poll interval, or a wait for
+a token refresh ends once its clock reaches the target or once as much real time has passed as the wait measured on its
+clock when it began, whichever comes first, so a frozen clock still waits as long as the policy chose. An I/O timeout
+or an asyncio deadline timer lasts the time left that was measured on the clock when it started. Closing a client and its cleanup
+limits use the system clock, and closing an OAuth provider waits for its running token requests until their sessions
+end on the provider's clock or in real time, whichever comes first.
+
+A test clock that should skip a wait advances itself, for example from a hook when a retry is scheduled:
+
+```python
+from pets import Client
+from pets.hooks import CallEvent
+from pets.options import ClientOptions, Clock, RetryOptions
+
+
+class SteppedClock:
+    def __init__(self) -> None:
+        self.now = 0.0
+
+    def __call__(self) -> float:
+        return self.now
+
+    def on_event(self, event: CallEvent) -> None:
+        if event.name == "retry_scheduled" and event.duration is not None:
+            self.now += event.duration
+
+
+def instant_retries(url: str) -> Client:
+    stepped = SteppedClock()
+    clock = Clock(monotonic=stepped, random=lambda: 0.5)
+    return Client(options=ClientOptions(base_url=url, retry=RetryOptions(), hooks=(stepped,), clock=clock))
+```
+
+Each retry of this client is scheduled at half its backoff cap and starts at once, while its hooks and errors report
+the delays the retry policy chose.
 
 ## Application concurrency limits
 

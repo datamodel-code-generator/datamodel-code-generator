@@ -301,6 +301,31 @@ security
   keyed tenant resumes anonymous ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error session=False
   keyed tenant resumes keyed ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error session=False
   keyed tenant resumes keyed tenant = LroHandle(phase='pending', polls=0)
+checkpoints on the client clock
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  saved wait less the clock's move wait_ms=90000
+  resumed wait past the limit ! PollWaitLimitError kind='wait' required_wait=90.0 limit=60.0
+  > GET https://api.example.com/jobs/j1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
+  > GET https://api.example.com/jobs/j1/report
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  resumed wait once the clock passes it = Report(rows=3)
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  two-digit year by the client's wall clock expires_at=2099-01-01T00:00:00+00:00
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  expiry before the client's wall clock = mappingproxy({'polls': 0, 'network_send_count': 0, 'network_send_budget_used': 0})
+  expiry at the client's wall clock ! ResumeStateError: ResumeStateError(condition='expired') [condition='expired'] resume_state_error session=False
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  async resumed wait past the limit ! PollWaitLimitError kind='wait' required_wait=90.0 limit=60.0
+  > GET https://api.example.com/jobs/j1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
+  > GET https://api.example.com/jobs/j1/report
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async resumed wait once the clock passes it = Report(rows=3)
 async resume
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'

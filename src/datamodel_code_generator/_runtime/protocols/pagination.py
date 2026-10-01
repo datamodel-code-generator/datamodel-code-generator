@@ -11,7 +11,6 @@ import threading
 from collections.abc import Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
-from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from enum import Enum
 from hashlib import sha256
@@ -30,7 +29,7 @@ from ..client.errors import (
 from ..client.options import RequestOptions
 from ..client.paths import dot_segment, path_segments
 from ..client.responses import ResponseInfo
-from ..client.timing import SessionOptions
+from ..client.timing import SYSTEM_CLOCK, SessionOptions
 from ..model_codecs.errors import CodecError
 from ..model_codecs.media import decode_json
 from ..model_codecs.unset import UNSET, Unset
@@ -66,7 +65,7 @@ if TYPE_CHECKING:
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan
     from ..client.responses import HeadersView
-    from ..client.timing import Deadline
+    from ..client.timing import Clock, Deadline
     from ..client.urls import Origin
     from ..model_codecs.selectors import MediaSelector
     from ..model_codecs.wire import WireValue
@@ -393,6 +392,7 @@ class _Limits:
     deadline: Deadline | None = None
     max_network_sends: int | None = 3000
     options: RequestOptions | None = None
+    clock: Clock = SYSTEM_CLOCK
 
 
 _DEFAULTS: Final = _Limits()
@@ -446,6 +446,7 @@ def _limits(
         deadline=layered(sessions, "deadline", _DEFAULTS.deadline),
         max_network_sends=layered(sessions, "max_network_sends", _DEFAULTS.max_network_sends),
         options=request,
+        clock=core.clock,
     )
 
 
@@ -804,6 +805,7 @@ class _Walk(Generic[T, P]):
                 total_timeout=limits.total_timeout,
                 deadline=limits.deadline,
                 max_network_sends=limits.max_network_sends,
+                clock=limits.clock,
             )
         if (limit := session.send_limit) is not None and session.network_send_budget_used >= limit:
             raise self.limit(limit, "network_sends")
@@ -1152,8 +1154,9 @@ def _restored(
 ) -> tuple[_Walk[T, P], tuple[T, ...], int]:
     """Return the walk a checkpoint continues, with the items it left of its last page and the position among them.
 
-    The checkpoint must be this helper's, made under the security the call runs with, and unexpired. Its continuation
-    is checked as one a server just gave, and a state or saved page that does not fit the helper is malformed.
+    The checkpoint must be this helper's, made under the security the call runs with, and unexpired by the client's
+    wall clock. Its continuation is checked as one a server just gave, and a state or saved page that does not fit the
+    helper is malformed.
     """
     if not isinstance(state, ResumeState):
         raise _invalid(plan, ("state",))
@@ -1162,7 +1165,7 @@ def _restored(
         raise _resume_error(plan, "fingerprint")
     if security != sha256(canonical_json(core.checkpoint_security(plan.call, limits.options)[0])).hexdigest():
         raise _resume_error(plan, "security")
-    if expires_at is not None and expires_at <= datetime.now(timezone.utc):
+    if expires_at is not None and expires_at.timestamp() <= core.clock.time():
         raise _resume_error(plan, "expired")
     try:
         return _walked(core, plan, decode_json(state_json), payload, limits)

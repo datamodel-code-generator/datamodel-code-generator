@@ -124,6 +124,7 @@ def pagination_resume(package: ModuleType, lines: list[str]) -> None:
         _credentials(harness, api, lines)
         _starts(harness, api, exchange, lines)
     _security(harness, exchange, lines)
+    _clocked(harness, exchange, lines)
     static = _identities(harness, exchange, lines)
     run(lambda: _async_resume(harness, lines, static))
 
@@ -472,6 +473,22 @@ def _security(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
             if label.startswith("bearer"):
                 exchange.respond(user_page("1"))
                 drained(lines, f"{label} resumed", helper.resume(state))
+
+
+def _clocked(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
+    """Check a state's expiry by the resuming client's wall clock, refusing it once that clock reaches the expiry."""
+    options = harness.options
+    expiry = _PAST.timestamp()
+    for label, now in (("before", expiry - 1), ("at", expiry)):
+        settings = harness.client_options(clock=options.Clock(time=lambda now=now: now))
+        with exchange.client() as native, harness.package.Client(http_client=native, options=settings) as api:
+            helper = api.protocols.users.all
+            state = _crafted(harness, helper.iterate().checkpoint(), expires_at=_PAST)
+            record(
+                lines,
+                f"expiry {label} the client's wall clock",
+                lambda helper=helper, state=state: helper.resume(state).progress,
+            )
 
 
 def _validated(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:

@@ -21,6 +21,8 @@ _FUTURE: Final = "Fri, 01 Jan 2100 00:00:00 GMT"
 _LATER: Final = "Fri, 01 Jan 2100 01:00:00 GMT"
 _MODIFIED: Final = "Wed, 21 Oct 2015 07:28:00 GMT"
 _EPOCH: Final = datetime(2020, 1, 1, tzinfo=timezone.utc)
+_WALL: Final = 1_000_000_000.0
+_WALL_DATE: Final = "Sun, 09 Sep 2001 01:46:40 GMT"
 
 
 def user(
@@ -211,7 +213,9 @@ class Caching:
 
     def headers(self, **values: str) -> object:
         """Return request options patching headers, with underscores spelled as hyphens."""
-        return self.options.RequestOptions(headers=tuple((name.replace("_", "-"), value) for name, value in values.items()))
+        return self.options.RequestOptions(
+            headers=tuple((name.replace("_", "-"), value) for name, value in values.items())
+        )
 
 
 def caching(package: ModuleType, lines: list[str]) -> None:
@@ -229,6 +233,65 @@ def caching(package: ModuleType, lines: list[str]) -> None:
         _validators(cache, api, exchange, lines)
         _invalidated(cache, api, exchange, lines)
     run(lambda: _async_caching(cache, lines))
+    _clocked(cache, lines)
+
+
+class _Clock:
+    """A wall clock source that moves only when a scenario sets it."""
+
+    def __init__(self) -> None:
+        self.value = _WALL
+
+    def __call__(self) -> float:
+        return self.value
+
+
+def _clocked_options(cache: Caching, clock: _Clock, store: object) -> object:
+    """Return client options lending the profile helper a store, on a client whose wall clock is the given one."""
+    options = cache.options
+    stores = options.ProtocolClientOptions(cache_stores={"users.profile": store})
+    return options.ClientOptions(protocols=stores, clock=options.Clock(time=clock))
+
+
+_DATED: Final = {"cache-control": "max-age=60", "date": _WALL_DATE, "age": "30"}
+
+
+def _clocked(cache: Caching, lines: list[str]) -> None:
+    """Age a stored entry from its Date and Age on the client's wall clock, keeping it fresh until max-age."""
+    exchange, clock = Exchange(lines), _Clock()
+    lines.append("freshness on the client clock")
+    with (
+        exchange.client() as native,
+        cache.package.Client(
+            http_client=native, options=_clocked_options(cache, clock, cache.protocols.MemoryCacheStore())
+        ) as api,
+    ):
+        helper, argument = api.protocols.users.profile, cache.user_id(50)
+        exchange.respond(user(50, etag='"w"', **_DATED), not_modified(etag='"w"'))
+        fetched(lines, "dated miss", lambda: helper.fetch(user_id=argument))
+        clock.value += 29
+        fetched(lines, "fresh until max-age less its age", lambda: helper.fetch(user_id=argument))
+        clock.value += 2
+        fetched(lines, "stale past max-age", lambda: helper.fetch(user_id=argument))
+    run(lambda: _async_clocked(cache, lines))
+
+
+async def _async_clocked(cache: Caching, lines: list[str]) -> None:
+    """Age an asyncio fetch's stored entry on the client's wall clock."""
+    exchange, clock = Exchange(lines), _Clock()
+    async with (
+        exchange.async_client() as native,
+        cache.package.AsyncClient(
+            http_client=native, options=_clocked_options(cache, clock, cache.protocols.AsyncMemoryCacheStore())
+        ) as api,
+    ):
+        helper, argument = api.protocols.users.profile, cache.user_id(51)
+        exchange.respond(user(51, etag='"x"', **_DATED), not_modified(etag='"x"'))
+        await afetched(lines, "async dated miss", lambda: helper.fetch(user_id=argument))
+        clock.value += 29
+        await afetched(lines, "async fresh until max-age less its age", lambda: helper.fetch(user_id=argument))
+        clock.value += 2
+        await afetched(lines, "async stale past max-age", lambda: helper.fetch(user_id=argument))
 
 
 def _fresh(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -604,9 +667,19 @@ def _records(cache: Caching, lines: list[str]) -> None:
     record(lines, "entry headers", lambda: protocols.CacheEntry(headers={}, **_stamp()))
     info = responses.ResponseInfo(status_code=200, headers=headers, call_id="c", elapsed=0.0, content_type=None)
     record(lines, "result", lambda: protocols.CacheResult(data=1, source="network", response=info, network_status=200))
-    record(lines, "result source", lambda: protocols.CacheResult(data=1, source="disk", response=info, network_status=None))
-    record(lines, "result response", lambda: protocols.CacheResult(data=1, source="network", response=1, network_status=None))
-    record(lines, "result status", lambda: protocols.CacheResult(data=1, source="network", response=info, network_status="1"))
+    record(
+        lines, "result source", lambda: protocols.CacheResult(data=1, source="disk", response=info, network_status=None)
+    )
+    record(
+        lines,
+        "result response",
+        lambda: protocols.CacheResult(data=1, source="network", response=1, network_status=None),
+    )
+    record(
+        lines,
+        "result status",
+        lambda: protocols.CacheResult(data=1, source="network", response=info, network_status="1"),
+    )
     record(lines, "options", lambda: protocols.CacheOptions(max_entry_bytes=1, max_ttl=0.5))
     record(lines, "options zero bytes", lambda: protocols.CacheOptions(max_entry_bytes=0))
     record(lines, "options boolean ttl", lambda: protocols.CacheOptions(max_ttl=True))
@@ -619,7 +692,9 @@ def _records(cache: Caching, lines: list[str]) -> None:
     record(lines, "store error", lambda: errors.CacheStoreError(action="lookup"))
     record(lines, "invalidation tags", lambda: errors.CacheInvalidationError(tags=["a"]))
     manual = errors.CacheInvalidationError(tags=("a",))
-    lines.append(f"  manual invalidation error {manual.action} {manual.has_completed_result} {manual.completed_result!r}")
+    lines.append(
+        f"  manual invalidation error {manual.action} {manual.has_completed_result} {manual.completed_result!r}"
+    )
     record(lines, "manual invalidation result", manual.require_result)
     completed = errors.CacheInvalidationError(tags=("a",), completed_result=None)
     lines.append(f"  completed invalidation error {completed.has_completed_result}")
@@ -638,11 +713,18 @@ def _memory(cache: Caching, lines: list[str]) -> None:
     english, french, bare = view((("Accept-Language", "en"),)), view((("accept-language", " fr "),)), view()
     empty = view((("Accept-Language", ""),))
     names = ("accept-language",)
-    prints = {label: store.fingerprint_vary(names, value) for label, value in (("en", english), ("fr", french), ("none", bare), ("empty", empty))}
-    lines.append(f"  memory fingerprints {[len(value[0]) for value in prints.values()]} distinct={len(set(prints.values()))}")
+    prints = {
+        label: store.fingerprint_vary(names, value)
+        for label, value in (("en", english), ("fr", french), ("none", bare), ("empty", empty))
+    }
+    lines.append(
+        f"  memory fingerprints {[len(value[0]) for value in prints.values()]} distinct={len(set(prints.values()))}"
+    )
 
     def entry(version: str, *, vary: tuple[str, ...] = (), prints: tuple[bytes, ...] = (), **fields: object) -> object:
-        return protocols.CacheEntry(headers=view(), **_stamp(version=version, vary=vary, vary_fingerprints=prints, **fields))
+        return protocols.CacheEntry(
+            headers=view(), **_stamp(version=version, vary=vary, vary_fingerprints=prints, **fields)
+        )
 
     def put(label: str, key: bytes, expected: str | None, value: object) -> None:
         lines.append(f"  memory {label} {store.compare_exchange(key, expected, value)}")
@@ -724,13 +806,19 @@ def _settings(cache: Caching, native: Any, exchange: Exchange, lines: list[str])
         ("synchronous store", package.AsyncClient, {"users.profile": protocols.MemoryCacheStore()}),
     ):
         protocol = options.ProtocolClientOptions(cache_stores=settings)
-        record(lines, label, lambda client=client, protocol=protocol: client(options=options.ClientOptions(protocols=protocol)))
+        record(
+            lines,
+            label,
+            lambda client=client, protocol=protocol: client(options=options.ClientOptions(protocols=protocol)),
+        )
     for label, defaults in (
         ("session defaults", protocols.ProtocolDefaults(session=options.SessionOptions(max_network_sends=1))),
         ("pagination defaults", protocols.ProtocolDefaults(options=protocols.PaginationOptions(max_pages=1))),
     ):
         protocol = options.ProtocolClientOptions(defaults={"users.profile": defaults})
-        record(lines, label, lambda protocol=protocol: package.Client(options=options.ClientOptions(protocols=protocol)))
+        record(
+            lines, label, lambda protocol=protocol: package.Client(options=options.ClientOptions(protocols=protocol))
+        )
     three = cache.user_id(3)
     with package.Client(http_client=native) as bare:
         helper = bare.protocols.users.profile
@@ -750,7 +838,9 @@ def _settings(cache: Caching, native: Any, exchange: Exchange, lines: list[str])
     raised = protocols.CacheOptions(max_entry_bytes=1000)
     fetched(lines, "call entry limit", lambda: helper.fetch(user_id=three, cache_options=raised))
     fetched(lines, "call entry limit hit", lambda: helper.fetch(user_id=three, cache_options=raised))
-    fetched(lines, "pagination options", lambda: helper.fetch(user_id=three, cache_options=protocols.PaginationOptions()))
+    fetched(
+        lines, "pagination options", lambda: helper.fetch(user_id=three, cache_options=protocols.PaginationOptions())
+    )
     fetched(lines, "text options", lambda: helper.fetch(user_id=three, options="x"))
     client.close()
     fetched(lines, "closed client", lambda: helper.fetch(user_id=three))
@@ -787,7 +877,9 @@ def _recorded(cache: Caching, native: Any, exchange: Exchange, lines: list[str])
             try:
                 helper.fetch(user_id=twenty)
             except errors.CacheProtocolError as error:
-                lines.append(f"  refused 304 with {label} ! {describe(error)} {[describe(item) for item in error.secondary_errors]}")
+                lines.append(
+                    f"  refused 304 with {label} ! {describe(error)} {[describe(item) for item in error.secondary_errors]}"
+                )
         cancelled = cache.options.CancelToken()
         cancelled.cancel()
         stopped = cache.options.RequestOptions(cancel_token=cancelled)
@@ -797,14 +889,24 @@ def _recorded(cache: Caching, native: Any, exchange: Exchange, lines: list[str])
             ("lookup result", "lookup", "entry", ()),
             ("lookup store error", "lookup", errors.CacheStoreError(action="lookup"), ()),
             ("fingerprint result", "fingerprint_vary", ("text",), (user(21, **{"cache-control": "max-age=60"}),)),
-            ("exchange failure", "compare_exchange", RuntimeError("down"), (user(21, **{"cache-control": "max-age=60"}),)),
+            (
+                "exchange failure",
+                "compare_exchange",
+                RuntimeError("down"),
+                (user(21, **{"cache-control": "max-age=60"}),),
+            ),
             ("exchange result", "compare_exchange", "yes", (user(21, **{"cache-control": "max-age=60"}),)),
             ("exchange refused", "compare_exchange", False, (user(21, **{"cache-control": "max-age=0"}, etag='"b"'),)),
         ):
             store.faults[method] = fault
             exchange.respond(*responses)
             fetched(lines, label, lambda: helper.fetch(user_id=twenty))
-        exchange.respond(user(21, etag='"b"', **{"cache-control": "max-age=0"}), user(21), user(21, etag='"b"', **{"cache-control": "max-age=0"}), user(21))
+        exchange.respond(
+            user(21, etag='"b"', **{"cache-control": "max-age=0"}),
+            user(21),
+            user(21, etag='"b"', **{"cache-control": "max-age=0"}),
+            user(21),
+        )
         fetched(lines, "deletable stored", lambda: helper.fetch(user_id=twenty))
         store.faults["delete"] = 1
         fetched(lines, "delete result", lambda: helper.fetch(user_id=twenty))
@@ -812,7 +914,9 @@ def _recorded(cache: Caching, native: Any, exchange: Exchange, lines: list[str])
         store.faults["delete"] = OSError("gone")
         fetched(lines, "delete failure", lambda: helper.fetch(user_id=twenty))
         racer = cache.user_id(22)
-        exchange.respond(user(22, **{"cache-control": "max-age=60"}), user(22, "dog", **{"cache-control": "max-age=60"}))
+        exchange.respond(
+            user(22, **{"cache-control": "max-age=60"}), user(22, "dog", **{"cache-control": "max-age=60"})
+        )
         fetched(lines, "race stored", lambda: helper.fetch(user_id=racer))
         record(lines, "race cleared", lambda: helper.invalidate(("user:22",)))
         store.racing = replace(store.last, version="racer", body=b'{"id":22,"name":"racer"}')
@@ -831,7 +935,9 @@ def _recorded(cache: Caching, native: Any, exchange: Exchange, lines: list[str])
     hooks.failing = True
     with package.Client(http_client=native, options=settings) as api:
         exchange.respond(user(23, **{"cache-control": "max-age=60"}), user(23, **{"cache-control": "max-age=60"}))
-        fetched(lines, "hook failure stores nothing", lambda: api.protocols.users.profile.fetch(user_id=cache.user_id(23)))
+        fetched(
+            lines, "hook failure stores nothing", lambda: api.protocols.users.profile.fetch(user_id=cache.user_id(23))
+        )
         hooks.failing = False
         fetched(lines, "after a hook failure", lambda: api.protocols.users.profile.fetch(user_id=cache.user_id(23)))
         fetched(lines, "hit without events", lambda: api.protocols.users.profile.fetch(user_id=cache.user_id(23)))
@@ -845,7 +951,9 @@ def _credentials(cache: Caching, native: Any, exchange: Exchange, lines: list[st
 
     def client(partition: str | None, config: object = token, **stores: object) -> Any:
         security = None if partition is None else protocols.ProtocolSecurityContext(credential_partition=partition)
-        protocol = options.ProtocolClientOptions(security=security, cache_stores=stores or {"secure.profile": store, "users.profile": store})
+        protocol = options.ProtocolClientOptions(
+            security=security, cache_stores=stores or {"secure.profile": store, "users.profile": store}
+        )
         return package.Client(http_client=native, options=options.ClientOptions(auth=config, protocols=protocol))
 
     secured = importlib.import_module(f"{package.__name__}.types.secure").GetSecureUserRequestCodecs
@@ -867,10 +975,16 @@ def _credentials(cache: Caching, native: Any, exchange: Exchange, lines: list[st
         public = cache.user_id(1)
         fetched(lines, "anonymous helper", lambda: first.protocols.users.profile.fetch(user_id=public))
         bearer = cache.headers(Authorization="Bearer x")
-        fetched(lines, "anonymous helper with a credential", lambda: first.protocols.users.profile.fetch(user_id=public, options=bearer))
+        fetched(
+            lines,
+            "anonymous helper with a credential",
+            lambda: first.protocols.users.profile.fetch(user_id=public, options=bearer),
+        )
         fetched(lines, "anonymous helper same tenant", lambda: same.protocols.users.profile.fetch(user_id=public))
         fetched(lines, "anonymous helper other tenant", lambda: other.protocols.users.profile.fetch(user_id=public))
-    alice, bob = (auth.AuthConfig({"bearer": auth.StaticTokenProvider(auth.AccessToken(name))}) for name in ("alice", "bob"))
+    alice, bob = (
+        auth.AuthConfig({"bearer": auth.StaticTokenProvider(auth.AccessToken(name))}) for name in ("alice", "bob")
+    )
     two = secured.parameter(location="path", name="userId").from_wire(2)
     varying = {"cache-control": "max-age=60", "vary": "Authorization"}
     exchange.respond(user(2, "alice", **varying), user(2, "bob", **varying), user(2, "alice again", **varying))
@@ -891,7 +1005,9 @@ def _credentials(cache: Caching, native: Any, exchange: Exchange, lines: list[st
         fetched(lines, "anonymous view", lambda: anonymous_view.protocols.users.profile.fetch(user_id=public))
     fresh = {"cache-control": "max-age=60"}
     four, five = (secured.parameter(location="path", name="userId").from_wire(value) for value in (4, 5))
-    exchange.respond(user(4, "u", **fresh), user(4, "service", **fresh), user(5, "service", **fresh), user(5, "u", **fresh))
+    exchange.respond(
+        user(4, "u", **fresh), user(4, "service", **fresh), user(5, "service", **fresh), user(5, "u", **fresh)
+    )
     with client("tenant-a") as service:
         helper = service.protocols.secure.profile
         delegated = service.with_options(cache.headers(X_On_Behalf_Of="user-u")).protocols.secure.profile
@@ -917,7 +1033,9 @@ def _credentials(cache: Caching, native: Any, exchange: Exchange, lines: list[st
         fetched(lines, "vary on a signed header again", lambda: signer.protocols.secure.profile.fetch(user_id=three))
     failing = Recording(protocols.MemoryCacheStore(), lines)
     secret = auth.StaticCredentialProvider(auth.ApiKeyCredential("secret"))
-    with auth.ClientCredentialsProvider("https://auth.example.com/token", client_id="c", client_secret=secret, audience="api") as oauth:
+    with auth.ClientCredentialsProvider(
+        "https://auth.example.com/token", client_id="c", client_secret=secret, audience="api"
+    ) as oauth:
         signed = auth.AuthConfig({"bearer": oauth}, signers=(_Signer(auth),))
         with client("tenant-a", signed, **{"secure.profile": failing}) as granted:
             failing.faults["lookup"] = OSError("down")
@@ -934,14 +1052,21 @@ async def _async_stores(cache: Caching, lines: list[str]) -> None:
     )
     async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=settings) as api:
         helper, twenty = api.protocols.users.profile, cache.user_id(24)
-        exchange.respond(user(24, etag='"a"', **{"cache-control": "max-age=0"}), user(24), json_response(404, {"message": "no"}))
+        exchange.respond(
+            user(24, etag='"a"', **{"cache-control": "max-age=0"}), user(24), json_response(404, {"message": "no"})
+        )
         await afetched(lines, "async recorded stored", lambda: helper.fetch(user_id=twenty))
         await afetched(lines, "async recorded unstored", lambda: helper.fetch(user_id=twenty))
         await afetched(lines, "async recorded error", lambda: helper.fetch(user_id=twenty))
         for label, method, fault, responses in (
             ("async lookup failure", "lookup", OSError("disk"), ()),
             ("async lookup store error", "lookup", cache.errors.CacheStoreError(action="lookup"), ()),
-            ("async fingerprint result", "fingerprint_vary", (), (user(24, vary="accept-language", **{"cache-control": "max-age=60"}),)),
+            (
+                "async fingerprint result",
+                "fingerprint_vary",
+                (),
+                (user(24, vary="accept-language", **{"cache-control": "max-age=60"}),),
+            ),
             ("async exchange result", "compare_exchange", "yes", (user(24, **{"cache-control": "max-age=60"}),)),
         ):
             store.faults[method] = fault
@@ -955,7 +1080,9 @@ async def _async_stores(cache: Caching, lines: list[str]) -> None:
             try:
                 await helper.fetch(user_id=twenty)
             except cache.errors.CacheProtocolError as error:
-                lines.append(f"  async refused 304 with {label} ! {describe(error)} {[describe(item) for item in error.secondary_errors]}")
+                lines.append(
+                    f"  async refused 304 with {label} ! {describe(error)} {[describe(item) for item in error.secondary_errors]}"
+                )
         exchange.respond(user(24, etag='"b"', **{"cache-control": "max-age=0"}), user(24))
         await afetched(lines, "async deletable", lambda: helper.fetch(user_id=twenty))
         store.faults["delete"] = 1
@@ -965,7 +1092,11 @@ async def _async_stores(cache: Caching, lines: list[str]) -> None:
             await arecord(lines, label, lambda: helper.invalidate(("users",)))
         exchange.respond(user(24, "dog"))
         store.faults["invalidate"] = OSError("down")
-        await arecord(lines, "async rename invalidation failure", lambda: helper.mutations.rename(user_id=twenty, body=cache.rename("dog")))
+        await arecord(
+            lines,
+            "async rename invalidation failure",
+            lambda: helper.mutations.rename(user_id=twenty, body=cache.rename("dog")),
+        )
     fresh = {"cache-control": "max-age=60"}
     secured = importlib.import_module(f"{package.__name__}.types.secure").GetSecureUserRequestCodecs
     argument = secured.parameter(location="path", name="userId").from_wire(1)
@@ -975,9 +1106,12 @@ async def _async_stores(cache: Caching, lines: list[str]) -> None:
         cache_stores={"secure.profile": protocols.AsyncMemoryCacheStore()},
     )
     exchange.respond(user(1, "service", **fresh), user(1, "u", **fresh))
-    async with exchange.async_client() as native, package.AsyncClient(
-        http_client=native, options=options.ClientOptions(auth=token, protocols=partitioned)
-    ) as service:
+    async with (
+        exchange.async_client() as native,
+        package.AsyncClient(
+            http_client=native, options=options.ClientOptions(auth=token, protocols=partitioned)
+        ) as service,
+    ):
         delegated = service.with_options(cache.headers(X_On_Behalf_Of="user-u")).protocols.secure.profile
         await afetched(lines, "async service", lambda: service.protocols.secure.profile.fetch(user_id=argument))
         await afetched(lines, "async on behalf of u", lambda: delegated.fetch(user_id=argument))
@@ -987,7 +1121,8 @@ async def _async_stores(cache: Caching, lines: list[str]) -> None:
     secret = auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("secret"))
     oauth = auth.AsyncClientCredentialsProvider("https://auth.example.com/token", client_id="c", client_secret=secret)
     protocol = options.ProtocolClientOptions(
-        security=protocols.ProtocolSecurityContext(credential_partition="tenant"), cache_stores={"secure.profile": failing}
+        security=protocols.ProtocolSecurityContext(credential_partition="tenant"),
+        cache_stores={"secure.profile": failing},
     )
     config = options.ClientOptions(auth=auth.AuthConfig({"bearer": oauth}), protocols=protocol)
     async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as granted:
@@ -1000,12 +1135,17 @@ def cache_backends(package: ModuleType, lines: list[str]) -> None:
     cache = Caching(package)
     exchange = Exchange(lines)
     store = cache.protocols.MemoryCacheStore()
-    with exchange.client() as native, package.Client(http_client=native, options=cache.stores(users__profile=store, users__listing=store)) as api:
+    with (
+        exchange.client() as native,
+        package.Client(http_client=native, options=cache.stores(users__profile=store, users__listing=store)) as api,
+    ):
         helper, one = api.protocols.users.profile, cache.user_id(1)
         exchange.respond(
             user(1, etag='"a"', **{"cache-control": "max-age=0"}),
             not_modified(etag='"a"', **{"cache-control": "max-age=60"}),
-            json_response(200, {"data": [{"id": 1, "name": "a"}, {"id": 2, "name": "b"}]}, **{"cache-control": "max-age=60"}),
+            json_response(
+                200, {"data": [{"id": 1, "name": "a"}, {"id": 2, "name": "b"}]}, **{"cache-control": "max-age=60"}
+            ),
         )
         fetched(lines, "backend miss", lambda: helper.fetch(user_id=one))
         fetched(lines, "backend revalidated", lambda: helper.fetch(user_id=one))

@@ -165,7 +165,7 @@ class _Entries:
         return len(self._entries) < self._max_entries and self._bytes + size <= self._max_bytes
 
     def _evict(self, size: int) -> None:
-        """Remove expired entries, earliest expired first, then the least recently used ones, until the size fits."""
+        """Remove entries expired by the system wall clock, earliest first, then the least recently used, to fit."""
         entries, expiries, now = self._entries, self._expiries, time()
         while not self._fits(size) and expiries and expiries[0][0] <= now:
             slot = heappop(expiries)[1]

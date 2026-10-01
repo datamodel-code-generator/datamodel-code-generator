@@ -347,3 +347,18 @@
   async request no-store = network 20:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
   async manual invalidation = 0
   async manual invalidation of a list ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('tags',), condition='invalid_value'] protocol_configuration_error
+freshness on the client clock
+  > GET https://api.example.com/users/50
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  dated miss = network 50:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"w"'), ('cache-control', 'max-age=60'), ('date', 'Sun, 09 Sep 2001 01:46:40 GMT'), ('age', '30'), ('content-length', '22'), ('content-type', 'application/json')]
+  fresh until max-age less its age = fresh_cache 50:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('etag', '"w"'), ('cache-control', 'max-age=60'), ('date', 'Sun, 09 Sep 2001 01:46:40 GMT'), ('content-type', 'application/json'), ('Content-Length', '22')]
+  > GET https://api.example.com/users/50
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "w"] b''
+  stale past max-age = revalidated 50:cat status=200 network=304 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('date', 'Sun, 09 Sep 2001 01:46:40 GMT'), ('content-type', 'application/json'), ('etag', '"w"'), ('Content-Length', '22')]
+  > GET https://api.example.com/users/51
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async dated miss = network 51:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"x"'), ('cache-control', 'max-age=60'), ('date', 'Sun, 09 Sep 2001 01:46:40 GMT'), ('age', '30'), ('content-length', '22'), ('content-type', 'application/json')]
+  async fresh until max-age less its age = fresh_cache 51:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('etag', '"x"'), ('cache-control', 'max-age=60'), ('date', 'Sun, 09 Sep 2001 01:46:40 GMT'), ('content-type', 'application/json'), ('Content-Length', '22')]
+  > GET https://api.example.com/users/51
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "x"] b''
+  async stale past max-age = revalidated 51:cat status=200 network=304 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('date', 'Sun, 09 Sep 2001 01:46:40 GMT'), ('content-type', 'application/json'), ('etag', '"x"'), ('Content-Length', '22')]

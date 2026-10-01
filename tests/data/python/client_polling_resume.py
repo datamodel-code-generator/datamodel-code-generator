@@ -10,7 +10,7 @@ import math
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Final
 
-from tests.data.python.client_polling import Polling, astep, job, report, step
+from tests.data.python.client_polling import Polling, astep, job, measured, report, step
 from tests.data.python.client_runtime import Exchange, json_response, raw_response, run
 
 if TYPE_CHECKING:
@@ -100,7 +100,69 @@ def polling_resume(package: ModuleType, lines: list[str]) -> None:
         _cancels(harness, api, exchange, lines)
         _expiries(harness, api, exchange, lines)
     _security(harness, exchange, lines)
+    _clocked(harness, lines)
     run(lambda: _async_resume(harness, lines))
+
+
+class _Clock:
+    """A clock source that moves only when a scenario sets it."""
+
+    def __init__(self, value: float) -> None:
+        self.value = value
+
+    def __call__(self) -> float:
+        return self.value
+
+
+def _clocked(harness: Polling, lines: list[str]) -> None:
+    """Save and restore a pending wait, read a server's expiry, and refuse an expired state on the client's clock."""
+    exchange = Exchange(lines)
+    clock, wall = _Clock(1000.0), _Clock(datetime(2060, 1, 1, tzinfo=timezone.utc).timestamp())
+    settings = harness.client_options(clock=harness.options.Clock(monotonic=clock, time=wall))
+    body = harness.body
+    lines.append("checkpoints on the client clock")
+    with exchange.client() as native, harness.package.Client(http_client=native, options=settings) as api:
+        helper = api.protocols.jobs.run
+        exchange.respond(json_response(202, {"id": "j1", "status": "queued"}, **{"Retry-After": "120"}))
+        handle = helper.start(body=body)
+        clock.value += 30
+        state = handle.checkpoint()
+        lines.append(f"  saved wait less the clock's move wait_ms={_envelope(state)['state']['wait_ms']}")
+        resumed = helper.resume(state)
+        step(lines, "resumed wait past the limit", resumed.status, measured)
+        clock.value += 90
+        exchange.respond(job("done"), report(3))
+        step(lines, "resumed wait once the clock passes it", resumed.wait)
+        tracked = api.protocols.jobs.tracked
+        exchange.respond(_tracked("queued", 202, expires="Thursday, 01-Jan-99 00:00:00 GMT"))
+        state = tracked.start(body=body).checkpoint()
+        lines.append(f"  two-digit year by the client's wall clock expires_at={_envelope(state)['expires_at']}")
+        exchange.respond(_tracked("queued", 202, expires="2000-01-01T00:00:00Z"))
+        state = tracked.start(body=body).checkpoint()
+        for label, now in (("before", _PAST.timestamp() - 1), ("at", _PAST.timestamp())):
+            wall.value = now
+            step(lines, f"expiry {label} the client's wall clock", lambda state=state: tracked.resume(state).progress)
+    run(lambda: _async_clocked(harness, lines))
+
+
+async def _async_clocked(harness: Polling, lines: list[str]) -> None:
+    """Restore an asyncio handle's saved wait on the client's clock."""
+    exchange = Exchange(lines)
+    clock = _Clock(1000.0)
+    settings = harness.client_options(clock=harness.options.Clock(monotonic=clock))
+    async with (
+        exchange.async_client() as native,
+        harness.package.AsyncClient(http_client=native, options=settings) as api,
+    ):
+        helper = api.protocols.jobs.run
+        exchange.respond(json_response(202, {"id": "j1", "status": "queued"}, **{"Retry-After": "120"}))
+        handle = await helper.start(body=harness.body)
+        clock.value += 30
+        resumed = helper.resume(handle.checkpoint())
+        await astep(lines, "async resumed wait past the limit", resumed.status, measured)
+        clock.value += 90
+        exchange.respond(job("done"), report(3))
+        await astep(lines, "async resumed wait once the clock passes it", resumed.wait)
 
 
 def _pending(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -> None:
