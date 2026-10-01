@@ -826,8 +826,8 @@
       {
         "render": "pydantic_v2.BaseModel default",
         "id": "argument-list",
-        "old": "[[UUID,",
-        "new": "[UUID,"
+        "old": "[[UUID, Literal['uuid.UUID', True, 1]]",
+        "new": "[UUID"
       },
       {
         "render": "pydantic_v2.BaseModel default",

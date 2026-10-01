@@ -36,7 +36,7 @@ render pydantic_v2.BaseModel default
 change pydantic_v2.BaseModel default argument-list
   @@ -14 +14 @@
   -    handler: Callable[[UUID, Literal['uuid.UUID', True, 1]], str]
-  +    handler: Callable[UUID, Literal['uuid.UUID', True, 1]], str]
+  +    handler: Callable[UUID, str]
   @@ -24 +23,0 @@
   -  FieldBinding(field_id='models:Bindings.handler', native_name='handler', wire_name='handler', validation_key='handler', validation_keys=('handler',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change pydantic_v2.BaseModel default literal-value
