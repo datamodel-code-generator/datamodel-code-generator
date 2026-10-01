@@ -274,22 +274,27 @@ def _uncapped(
 
 
 def _closing_wait(package: ModuleType, options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
+    """Close the client after the retry sleep checked the call and read what is left, just before it waits.
+
+    Once the retry is scheduled, the sleep reads the clock to bound its real time, then again after its check.
+    """
     exchange = Exchange([])
-    armed = False
+    reads = 0
     close_failures: list[str] = []
 
     def scheduled() -> None:
-        nonlocal armed
-        armed = True
+        nonlocal reads
+        reads = 2
 
     def clock() -> float:
-        nonlocal armed
-        if armed:
-            armed = False
-            try:
-                api.close()
-            except errors.CleanupError as error:
-                close_failures.append(type(error).__name__)
+        nonlocal reads
+        if reads:
+            reads -= 1
+            if not reads:
+                try:
+                    api.close()
+                except errors.CleanupError as error:
+                    close_failures.append(type(error).__name__)
         return monotonic()
 
     events = _Events(scheduled=scheduled)
