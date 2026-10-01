@@ -1703,6 +1703,7 @@ class _Core(Generic[AdapterT, HandleT]):
         request: Callable[[], tuple[tuple[object, ...], object, str | None]],
         media_type: str | MediaSelector | None,
         options: RequestOptions | None,
+        read_request: Callable[[str, HeadersView], None],
     ) -> tuple[PreparedRequest[EncodedAttempt], object]:
         """Return a page's request, sent to the URL a server gave when the walk follows one.
 
@@ -1723,6 +1724,7 @@ class _Core(Generic[AdapterT, HandleT]):
             narrowed=False,
             url=url,
         )
+        read_request(prepared.url, prepared.headers)
         if url is None:
             return prepared, deferred
         server = call.server_origin = request_origin(self._base(operation, call.settings))
@@ -2272,6 +2274,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         options: RequestOptions | None,
         session: OperationSession,
         max_page_bytes: int,
+        read_request: Callable[[str, HeadersView], None],
     ) -> R:
         """Execute one page of a helper session as a child logical call, building what the page's response gives.
 
@@ -2285,7 +2288,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         call = _SessionCall(settings, self._scope, operation, session)
         events = call.events = self._started(call, operation.path, options)
         decoder = call.decoder = operation.responses
-        prepare = partial(self._page_request, call, request, media_type, options)
+        prepare = partial(self._page_request, call, request, media_type, options, read_request)
 
         def receive(response: TransportResponse, info: ResponseInfo) -> tuple[Response[T], R]:
             received = self._read(response, info, decoder, call)
@@ -3117,6 +3120,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         options: RequestOptions | None,
         session: OperationSession,
         max_page_bytes: int,
+        read_request: Callable[[str, HeadersView], None],
     ) -> R:
         """Execute one page of a helper session as a child logical call, building what the page's response gives.
 
@@ -3131,7 +3135,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         self._running(call.operation_id, call.call_id)
         events = call.events = await self._started(call, operation.path, options)
         decoder = call.decoder = operation.responses
-        prepare = partial(self._page_request, call, request, media_type, options)
+        prepare = partial(self._page_request, call, request, media_type, options, read_request)
 
         async def receive(response: AsyncTransportResponse, info: ResponseInfo) -> tuple[Response[T], R]:
             received = await self._read(response, info, decoder, call)
