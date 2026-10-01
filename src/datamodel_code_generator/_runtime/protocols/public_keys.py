@@ -29,9 +29,13 @@ _SHA256: Final = SHA256()
 
 
 def _checked(id: object, public_key: object, kind: type) -> tuple[tuple[str, object], ...]:  # noqa: A002
-    """Return the attributes of a valid id and the public key itself, refusing another class of key by its name only."""
+    """Return the attributes of a valid id and the public key itself, refusing another class of key by its name only.
+
+    The key's real class must derive from the cryptography class, so an object claiming that class is refused; a class
+    registered with the cryptography class is accepted, since the application supplies its own keys.
+    """
     checked = checked_key_id(id)
-    if not isinstance(public_key, kind):
+    if not issubclass(type(public_key), kind):
         msg = f"public_key must be an {kind.__name__}"
         raise TypeError(msg)
     return ("_id", checked), ("_public_key", public_key)
@@ -105,7 +109,8 @@ def _key_id(key: Ed25519Key | RSAPSSKey) -> str:
 def _verified(verify: Callable[[bytes], None], signatures: tuple[bytes, ...]) -> bool:
     """Return whether a signature verifies, trying each in order; only InvalidSignature moves on to the next.
 
-    UnsupportedAlgorithm raises UnsupportedKeyError, and any other error propagates.
+    UnsupportedAlgorithm raises UnsupportedKeyError after its handler ends, so neither the backend's error nor its
+    frames are chained to it; any other error propagates.
     """
     for signature in signatures:
         try:
@@ -113,9 +118,11 @@ def _verified(verify: Callable[[bytes], None], signatures: tuple[bytes, ...]) ->
         except InvalidSignature:
             continue
         except UnsupportedAlgorithm:
-            raise UnsupportedKeyError from None
+            break
         return True
-    return False
+    else:
+        return False
+    raise UnsupportedKeyError
 
 
 def _ed25519(key: Ed25519Key, parts: tuple[bytes, ...], signatures: tuple[bytes, ...]) -> bool:

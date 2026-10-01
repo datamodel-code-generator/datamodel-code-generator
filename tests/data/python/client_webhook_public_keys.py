@@ -136,9 +136,9 @@ RFC_8032: Final = (
 )
 
 
-def _wycheproof(case: int, comment: str, body: bytes, signature: str) -> Signed:
+def _wycheproof(case: int, result: str, comment: str, body: bytes, signature: str) -> Signed:
     return Signed(
-        source=f"Wycheproof RSA-PSS 2048 SHA-256 MGF1 32 tcId {case}, {comment}",
+        source=f"Wycheproof RSA-PSS 2048 SHA-256 MGF1 32 tcId {case}, result {result}, comment {comment!r}",
         helper="wycheproof.rsa",
         public_key=_WYCHEPROOF_KEY,
         body=body,
@@ -150,7 +150,8 @@ def _wycheproof(case: int, comment: str, body: bytes, signature: str) -> Signed:
 WYCHEPROOF_VALID: Final = (
     _wycheproof(
         1,
-        "valid signature of the empty message",
+        "valid",
+        "valid signature",
         b"",
         "4f01e0c12b08625ecac89a69231906edf826380f37c959a96690d046316d68ffce9d5c471694fcebfc6b45534864689256e4fc81c78e"
         "583f675d0c94b449647451e81beff01a11a516d5e5ce3f1a910437cb8a3a5096b19fb15f4524a35b23d89cdba12cf5b71aac1047b28c"
@@ -160,7 +161,8 @@ WYCHEPROOF_VALID: Final = (
     ),
     _wycheproof(
         4,
-        "valid signature of 313233343030",
+        "valid",
+        "valid signature",
         b"123400",
         "68caf07e71ee654ffabf07d342fc4059deb4f7e5970746c423b1e8f668d5332275cc35eb61270aebd27855b1e80d59def47fe8882867"
         "fd33c2308c91976baa0b1df952caa78db4828ab81e79949bf145cbdfd1c4987ed036f81e8442081016f20fa4b587574884ca6f604595"
@@ -170,7 +172,8 @@ WYCHEPROOF_VALID: Final = (
     ),
     _wycheproof(
         73,
-        "valid signature of 313233343030 whose salt is all 0",
+        "valid",
+        "salt is all 0",
         b"123400",
         "1591ae743c58ceb723a76f502e21ff6a65c24cabf5f527bab5a6f2a69f20c776fd2251e43ad22e09b1486ceb1935b2dc2ade95e233f2"
         "96cc0e5a8af8109659be76b6bfdf37e14837fd6c34bfed1f19ec9d21f974b984fe4d4773896ebcc7fb862fd641cd0d77178485c70c2d"
@@ -182,7 +185,8 @@ WYCHEPROOF_VALID: Final = (
 WYCHEPROOF_INVALID: Final = (
     _wycheproof(
         62,
-        "invalid: first byte of m_hash modified",
+        "invalid",
+        "first byte of m_hash modified",
         b"123400",
         "67d1d1c0a398148625317c3f5e44b738bdf461c27a59594b39ebb2aebef233c7809379e54411411b82d2e7ac88f989b58373d532c758"
         "baea121878ce9759441738d121881c1fa2d04421f02dd565b12770d844611ed1873a0b64d822709a6b78d6d3892b294404bce6711001"
@@ -192,7 +196,8 @@ WYCHEPROOF_INVALID: Final = (
     ),
     _wycheproof(
         67,
-        "invalid: s_len changed to 0",
+        "invalid",
+        "s_len changed to 0",
         b"123400",
         "5e91b5dcbf02d6f19621d41a83dc8f15ea83c0edb83765ef029b0acac2e1ec8918b1d2afe1fadf11c48d27594cb9c01fed79d90e5d5a"
         "8085c438450111aa7d9fa39c2345b14fc3c2cb34128f86db5eb00bdf8dfe38d61f29a41fe31342e7aaefcb4b122eb5d63c2f5c263c8d"
@@ -202,7 +207,8 @@ WYCHEPROOF_INVALID: Final = (
     ),
     _wycheproof(
         71,
-        "invalid: s_len changed to 33",
+        "invalid",
+        "s_len changed to 33",
         b"123400",
         "563e94111eade9526d1f2e93da16ee171273291abfb90aeb94ae7b95f16395949ef3d3f0994852de035cebf8cd002b76579d0758325c"
         "6750ffc917be419174d255a2b798ce287f6240a97d4fcae47e88308658898ce37407e9684caca197c46ec9f66a0ba4e8aecf6a7ae749"
@@ -212,7 +218,8 @@ WYCHEPROOF_INVALID: Final = (
     ),
     _wycheproof(
         104,
-        "invalid: prepending 0's to signature, 258 bytes",
+        "invalid",
+        "prepending 0's to signature",
         b"123400",
         "000068caf07e71ee654ffabf07d342fc4059deb4f7e5970746c423b1e8f668d5332275cc35eb61270aebd27855b1e80d59def47fe888"
         "2867fd33c2308c91976baa0b1df952caa78db4828ab81e79949bf145cbdfd1c4987ed036f81e8442081016f20fa4b587574884ca6f60"
@@ -222,7 +229,8 @@ WYCHEPROOF_INVALID: Final = (
     ),
     _wycheproof(
         106,
-        "invalid: truncated signature, 254 bytes",
+        "invalid",
+        "truncated signature",
         b"123400",
         "68caf07e71ee654ffabf07d342fc4059deb4f7e5970746c423b1e8f668d5332275cc35eb61270aebd27855b1e80d59def47fe8882867"
         "fd33c2308c91976baa0b1df952caa78db4828ab81e79949bf145cbdfd1c4987ed036f81e8442081016f20fa4b587574884ca6f604595"
@@ -232,7 +240,8 @@ WYCHEPROOF_INVALID: Final = (
     ),
     _wycheproof(
         108,
-        "invalid: PKCS #1 v1.5 signature with SHA-256",
+        "invalid",
+        "PKCS #1 v1.5 signature with SHA-256",
         b"123400",
         "1758eb94588e6fc4f50c1be1afcaa41027869f304cad513b1fb12c2f446d63cdc05c4830a7e3e630da7b2da4f7867cc173bf6420f973"
         "2277282596de41ded32e21d0cc31441174da8765f57419c7764ea758f55bc17646eb100c435d1ac0eed6fc7ba6de5f832094ee2f4799"
@@ -312,6 +321,20 @@ RSA_3072: Final = Signed(
     now=KEYED.now.replace(microsecond=456000),
     key_id="rsa-3072",
 )
+
+
+class _Claiming:
+    """An object whose __class__ claims another class, which isinstance believes and type() does not."""
+
+    def __init__(self, claimed: type, **attributes: object) -> None:
+        """Keep the claimed class and the attributes the impostor offers."""
+        self.claimed = claimed
+        vars(self).update(attributes)
+
+    @property
+    def __class__(self) -> type:
+        """Claim the class."""
+        return self.claimed
 
 
 class _Recording:
@@ -489,6 +512,16 @@ def _wrappers(hooks: PublicKeyWebhooks) -> None:
         ("Ed25519 key after an RSA-PSS key", valid, hooks.key_set(rsa, ed25519)),
         ("RSA-PSS key for Ed25519", STANDARD_ED25519, hooks.key_set(rsa)),
         ("Ed25519 key for HMAC", GITHUB, hooks.key_set(ed25519)),
+        (
+            "object claiming to be an Ed25519 key",
+            STANDARD_ED25519,
+            hooks.protocols.KeySet(keys=(_Claiming(hooks.keys.Ed25519Key, id="active", public_key=_ED25519_KEY),)),
+        ),
+        (
+            "object claiming to be an HMAC key",
+            GITHUB,
+            hooks.protocols.KeySet(keys=(_Claiming(hooks.keys.HmacKey, id="active", secret=GITHUB.secret),)),
+        ),
     ):
         hooks.check(label, vector, keys=keys)
 
@@ -512,6 +545,8 @@ def _keys(hooks: PublicKeyWebhooks) -> None:
         ("RSA Ed25519 key", rsa, {"id": "key", "public_key": _ED25519_KEY}),
         ("RSA id with NUL", rsa, {"id": "a\x00b", "public_key": _WYCHEPROOF_KEY}),
         ("RSA no public key", rsa, {"id": "key", "public_key": None}),
+        ("Ed25519 object claiming the key class", ed25519, {"id": "key", "public_key": _Claiming(Ed25519PublicKey)}),
+        ("RSA object claiming the key class", rsa, {"id": "key", "public_key": _Claiming(RSAPublicKey)}),
     ):
         record(hooks.lines, f"key {label}", lambda wrapper=wrapper, arguments=arguments: wrapper(**arguments))
     hooks.lines.append(f"  private keys asked for their public keys={private_ed25519.calls + private_rsa.calls}")

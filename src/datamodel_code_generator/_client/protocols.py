@@ -98,7 +98,9 @@ KINDS: Final = (
     "queue",
 )
 _LATER: Final = frozenset({"websocket", "cache", "resumable_upload", "batch", "queue"})
-_SIGNATURES: Final = ("hmac-sha256", "hmac-sha512", "ed25519", "rsa-pss-sha256")
+_HMAC_SIGNATURES: Final = ("hmac-sha256", "hmac-sha512")
+_PUBLIC_KEY_SIGNATURES: Final = ("ed25519", "rsa-pss-sha256")
+_SIGNATURES: Final = (*_HMAC_SIGNATURES, *_PUBLIC_KEY_SIGNATURES)
 _LATER_SIGNATURES: Final = ("adapter", "none")
 _ENCODINGS: Final = {
     "hex": frozenset("0123456789ABCDEFabcdef"),
@@ -613,11 +615,18 @@ def project(configuration: ProtocolConfiguration) -> object:
     def reference(value: Any) -> object:
         return {"pointer": value.pointer, **({} if value.document is None else {"document": value.document})}
 
+    def signature(value: HmacSignature | PublicKeySignature) -> object:
+        """Project a signature record whose class allows its kind, and refuse any other as validation refuses."""
+        kinds = _HMAC_SIGNATURES if isinstance(value, HmacSignature) else _PUBLIC_KEY_SIGNATURES
+        return members(value) if value.kind in kinds else FOREIGN
+
     def step(value: object) -> object:
         return {"page_items_count": True} if value == "page_items_count" else {"literal": convert(value)}
 
     shapes: dict[type, Callable[[Any], object]] = {
         **dict.fromkeys(_RECORDS, members),
+        HmacSignature: signature,
+        PublicKeySignature: signature,
         CountContinuation: lambda value: {**members(value), "step": step(value.step)},
         StreamResume: lambda value: {"enabled": True, **members(value)},
         BodySelector: lambda value: {"from": "body", "pointer": value.pointer},

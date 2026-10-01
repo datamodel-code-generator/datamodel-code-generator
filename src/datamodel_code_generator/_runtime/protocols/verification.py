@@ -215,7 +215,7 @@ def _checked_keys(keys: KeySet[K], profile: SignatureProfile[K], helper_id: str)
     """Return each key with its id, refusing a key of another profile, a repeated id, and one a header cannot carry."""
     algorithm, candidates, seen = profile.algorithm, list[tuple[K, str]](), set[str]()
     for index, key in enumerate(keys.keys):
-        if not _instance(key, algorithm.key_type):
+        if type(key) is not algorithm.key_type:
             raise _configuration(("keys", str(index)), "wrong_capability", helper_id)
         if (identity := algorithm.key_id(key)) in seen or (
             profile.key_id is not None and not _VISIBLE.fullmatch(identity)
@@ -274,11 +274,15 @@ def _matches(  # noqa: PLR0913, PLR0917
     signatures: tuple[bytes, ...],
     helper_id: str,
 ) -> bool:
-    """Return whether a key made one of the signatures, refusing a key its backend cannot use by its index."""
+    """Return whether a key made one of the signatures, refusing a key its backend cannot use by its index.
+
+    The refusal is raised after the handler ends, so it chains no error of the key's backend.
+    """
     try:
         return algorithm.matches(key, parts, signatures)
     except UnsupportedKeyError:
-        raise _configuration(("keys", str(index)), "wrong_capability", helper_id) from None
+        pass
+    raise _configuration(("keys", str(index)), "wrong_capability", helper_id)
 
 
 def _authenticate(  # noqa: PLR0913, PLR0914

@@ -307,6 +307,34 @@ INVALID = ProtocolConfiguration(
             ),
         ),
         "jobs.run": object(),  # ty: ignore[invalid-argument-type]
+        "hooks.hmac": WebhookHelper(
+            event_schema=USER,
+            signature=HmacSignature(
+                kind="ed25519",  # ty: ignore[invalid-argument-type]
+                header="X-Signature",
+                encoding="hex",
+                prefix="",
+                separator="none",
+                key_id="none",
+                timestamp="none",
+                delivery_id="none",
+                signed_parts=("raw-body",),
+            ),
+        ),
+        "hooks.public": WebhookHelper(
+            event_schema=USER,
+            signature=PublicKeySignature(
+                kind="hmac-sha256",  # ty: ignore[invalid-argument-type]
+                header="X-Signature",
+                encoding="hex",
+                prefix="",
+                separator="none",
+                key_id="none",
+                timestamp="none",
+                delivery_id="none",
+                signed_parts=("raw-body",),
+            ),
+        ),
     },
 )
 
