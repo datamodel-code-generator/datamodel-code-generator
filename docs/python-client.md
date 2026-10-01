@@ -323,16 +323,18 @@ explicitly before using it as a model.
 
 ## Protocol helper configuration
 
-Pagination, polling, and SSE or NDJSON stream helpers of an API are declared in a helper configuration, which the client
-target reads through its `protocols` setting. The helpers are still being implemented: generation validates every
-helper, resolves its references against the selected API, and records it in the target manifest. An enabled pagination
-helper generates the [pagination helper](#pagination-helpers) below, an enabled polling helper the
-[polling helper](#polling-helpers), an enabled SSE helper the [SSE stream helper](#sse-stream-helpers), an enabled
-NDJSON helper the [NDJSON stream helper](#ndjson-stream-helpers), and an enabled webhook helper the
+Pagination, polling, SSE or NDJSON stream, and resumable upload helpers of an API are declared in a helper
+configuration, which the client target reads through its `protocols` setting. The helpers are still being implemented:
+generation validates every helper, resolves its references against the selected API, and records it in the target
+manifest. An enabled pagination helper generates the [pagination helper](#pagination-helpers) below, an enabled polling
+helper the [polling helper](#polling-helpers), an enabled `offset` upload helper the [upload helper](#upload-helpers),
+an enabled SSE helper the [SSE stream helper](#sse-stream-helpers), an enabled NDJSON helper the
+[NDJSON stream helper](#ndjson-stream-helpers), and an enabled webhook helper the
 [webhook verification helper](#webhook-verification-helpers); any other enabled helper fails with `E_CLIENT_UNSUPPORTED`.
-A disabled helper generates nothing, so the package is the same as without it. The `websocket`, `cache`,
-`resumable_upload`, `batch`, and `queue` kinds fail with `E_CLIENT_UNSUPPORTED` whether they are enabled or not, and
-their settings are not read yet.
+A disabled helper generates nothing, so the package is the same as without it. The `websocket`, `cache`, `batch`, and
+`queue` kinds, and the `parts` profile of `resumable_upload`, fail with `E_CLIENT_UNSUPPORTED` whether they are enabled
+or not, and their settings are not read yet; an upload helper's `abort` and `create.session_url` are refused the same
+way.
 
 | Setting | Values | Default | Where |
 |---|---|---|---|
