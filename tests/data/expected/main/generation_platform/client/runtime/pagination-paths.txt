@@ -43,15 +43,38 @@
   files {'name': 'f1'} cursor '..' ['1', '2']
   > GET https://api.example.com/pairs/p1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  pairs {'owner': '', 'name': 'p1'} cursor '.' ['1'] ! RequestEncodingError: RequestEncodingError(operation_id='listPairs', call_id='<call>', location='path.name') [operation_id='listPairs', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  pairs {'owner': '', 'name': 'p1'} cursor '.' [] ! ProtocolDataError: ProtocolDataError(operation_id='listPairs', call_id='<call>', condition='value') [operation_id='listPairs', condition='value', location=BodySelector(pointer='/next_cursor')] protocol_data_error
   > GET https://api.example.com/pairs/p1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  pairs {'owner': '', 'name': 'p1'} cursor '..' ['1'] ! RequestEncodingError: RequestEncodingError(operation_id='listPairs', call_id='<call>', location='path.name') [operation_id='listPairs', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  pairs {'owner': '', 'name': 'p1'} cursor '..' [] ! ProtocolDataError: ProtocolDataError(operation_id='listPairs', call_id='<call>', condition='value') [operation_id='listPairs', condition='value', location=BodySelector(pointer='/next_cursor')] protocol_data_error
   > GET https://api.example.com/pairs/op1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/pairs/o.
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   pairs {'owner': 'o', 'name': 'p1'} cursor '.' ['1', '2']
+  > GET https://api.example.com/pairs/.p1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  pairs {'owner': '.', 'name': 'p1'} cursor '' [] ! ProtocolDataError: ProtocolDataError(operation_id='listPairs', call_id='<call>', condition='value') [operation_id='listPairs', condition='value', location=BodySelector(pointer='/next_cursor')] protocol_data_error
+  > GET https://api.example.com/pairs/.p1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/pairs/.a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  pairs {'owner': '.', 'name': 'p1'} cursor 'a' ['1', '2']
+  > GET https://api.example.com/joined/pj1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  joined {'prefix': 'p', 'name': 'j1'} cursor '' [] ! ProtocolDataError: ProtocolDataError(operation_id='listJoined', call_id='<call>', condition='value') [operation_id='listJoined', condition='value', location=BodySelector(pointer='/next_cursor')] protocol_data_error
+  > GET https://api.example.com/joined/pj1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/joined/..a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  joined {'prefix': 'p', 'name': 'j1'} cursor 'a' ['1', '2']
+  > GET https://api.example.com/pairs/op1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/pairs/oa
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/pairs/ob
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  pairs with the owner on three pages ['1', '2', '3']
   > GET https://api.example.com/tags/.t
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   tag header 'a.b' ['1'] ! RequestEncodingError: RequestEncodingError(operation_id='listTags', call_id='<call>', location='path.tags') [operation_id='listTags', location=('path', 'tags'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error

@@ -142,6 +142,10 @@
   > GET https://api.example.com/v1/dotted/%252e.
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   get_dotted {'first': '%2e', 'second': ''} = None
+  > GET https://api.example.com/v1/static/a
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  get_static {'name': 'a'} = None
+  get_static {'name': '..'} ! RequestEncodingError: RequestEncodingError(operation_id='getStatic', call_id='<call>', location='path.name') [operation_id='getStatic', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
   async get_archive {'name': '.'} ! RequestEncodingError: RequestEncodingError(operation_id='getArchive', call_id='<call>', location='path.name') [operation_id='getArchive', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
   async get_archive {'name': '..'} ! RequestEncodingError: RequestEncodingError(operation_id='getArchive', call_id='<call>', location='path.name') [operation_id='getArchive', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
   > GET https://api.example.com/v1/archive/...
@@ -285,3 +289,7 @@
   > GET https://api.example.com/v1/dotted/%252e.
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async get_dotted {'first': '%2e', 'second': ''} = None
+  > GET https://api.example.com/v1/static/a
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  async get_static {'name': 'a'} = None
+  async get_static {'name': '..'} ! RequestEncodingError: RequestEncodingError(operation_id='getStatic', call_id='<call>', location='path.name') [operation_id='getStatic', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error

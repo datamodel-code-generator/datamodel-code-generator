@@ -52,9 +52,6 @@ _TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
 _COOKIE_OCTETS: Final = re.compile(r"[\x21\x23-\x2B\x2D-\x3A\x3C-\x5B\x5D-\x7E]*")
 _HEADER_CONTROL: Final = re.compile(r"[\x00-\x08\x0A-\x1F\x7F]")
 _OWS: Final = " \t"
-_PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
-_DOT_SEGMENT: Final = re.compile(r"(?:\.|%2[Ee]){1,2}")
-_DOTTED_ROUTE: Final = re.compile(r"/(?:\.|%2[Ee]){1,2}(?=/|$)")
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -357,28 +354,6 @@ def encode_parameter(plan: ParameterPlan, value: WireValue) -> EncodedParameterC
 def path_text(plan: ParameterPlan, value: WireValue) -> str:
     """Return the text a path parameter's value substitutes for its placeholder in the path template."""
     return "".join(text for _, text in _pairs(plan, freeze_wire(value)))
-
-
-def path_segments(template: str) -> tuple[tuple[str, tuple[str, ...]], ...]:
-    """Return each segment of a path template that has parameters, with their names in order."""
-    return tuple(
-        (segment, names)
-        for segment in template.split("/")
-        if (names := tuple(match[1] for match in _PLACEHOLDER.finditer(segment)))
-    )
-
-
-def dot_segment(segment: str, texts: Mapping[str, str]) -> bool:
-    """Return whether a path template segment with its parameters' texts is `.` or `..`, which normalization removes.
-
-    `%2E` counts as the `.` it is equivalent to.
-    """
-    return _DOT_SEGMENT.fullmatch(_PLACEHOLDER.sub(lambda match: texts[match[1]], segment)) is not None
-
-
-def dotted_route(route: str) -> bool:
-    """Return whether a built path has a `.` or `..` segment, `%2E` counting as `.`."""
-    return _DOTTED_ROUTE.search(route) is not None
 
 
 def query_pairs(plan: ParameterPlan, value: WireValue) -> tuple[str, ...]:

@@ -51,6 +51,15 @@ paths:
         - {name: cursor, in: query, schema: {type: string}}
       responses:
         '200': *page
+  /joined/{prefix}{name}:
+    get:
+      operationId: listJoined
+      tags: [joined]
+      parameters:
+        - {name: prefix, in: path, required: true, schema: {type: string}}
+        - {name: name, in: path, required: true, schema: {type: string}}
+      responses:
+        '200': *page
   /tags/{tags}:
     get:
       operationId: listTags

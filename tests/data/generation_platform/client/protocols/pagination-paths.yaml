@@ -72,3 +72,17 @@ helpers:
     bindings:
       - target: {in: path, name: tags}
         value: {source: previous, selector: {from: header, name: X-Tag, occurrence: all}}
+  joined.all:
+    kind: pagination
+    operation: /paths/~1joined~1{prefix}{name}/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: path, name: name}
+      end: [{kind: missing}, {kind: "null"}]
+      empty_string: value
+    bindings:
+      - target: {in: path, name: prefix}
+        value: {literal: ..}

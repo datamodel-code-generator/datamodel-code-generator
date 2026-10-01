@@ -101,6 +101,20 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/UserPage'}
+  /joined/{first}{second}:
+    get:
+      operationId: listJoined
+      tags: [joined]
+      parameters:
+        - {name: first, in: path, required: true, schema: {type: string}}
+        - {name: second, in: path, required: true, schema: {type: string}}
+        - {name: cursor, in: query, schema: {type: string}}
+      responses:
+        '200':
+          description: One page of users.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
   /forms:
     post:
       operationId: searchForms

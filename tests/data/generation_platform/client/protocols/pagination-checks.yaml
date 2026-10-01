@@ -223,6 +223,38 @@ helpers:
         value: {literal: '%2e%2e%2f'}
       - target: {in: path, name: file}
         value: {literal: '.'}
+  bindings.joined_dots:
+    kind: pagination
+    operation: /paths/~1joined~1{first}{second}/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: "null"}]
+      empty_string: end
+    bindings:
+      - target: {in: path, name: first}
+        value: {literal: '.'}
+      - target: {in: path, name: second}
+        value: {literal: '.'}
+  bindings.joined_text:
+    kind: pagination
+    operation: /paths/~1joined~1{first}{second}/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: "null"}]
+      empty_string: end
+    bindings:
+      - target: {in: path, name: first}
+        value: {literal: '.'}
+      - target: {in: path, name: second}
+        value: {literal: 'a'}
   write.optional_body:
     kind: pagination
     operation: /paths/~1multi/post

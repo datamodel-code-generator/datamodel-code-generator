@@ -26,14 +26,7 @@ import httpx2
 from typing_extensions import Self, TypeIs
 
 from ..model_codecs.errors import ParameterEncodingError
-from ..model_codecs.parameters import (
-    FragmentContribution,
-    QueryStringContribution,
-    dot_segment,
-    dotted_route,
-    encode_parameter,
-    path_segments,
-)
+from ..model_codecs.parameters import FragmentContribution, QueryStringContribution, encode_parameter
 from ..model_codecs.selectors import MediaSelector, ResponseMedia
 from ..model_codecs.unset import UNSET, Unset
 from .bodies import (
@@ -103,6 +96,7 @@ from .options import (
     network_send_limit,
     resolve_transport_options,
 )
+from .paths import PLACEHOLDER, dot_segment, dotted_route, path_segments
 from .raw import AsyncRawResponse, RawResponse
 from .redirects import RedirectState, redirect_target
 from .responses import HeadersView, Response, ResponseInfo
@@ -202,7 +196,6 @@ MAX_RESPONSE_BYTES: Final = 16 * 1024 * 1024
 MAX_ERROR_BODY_BYTES: Final = 64 * 1024
 CLEANUP_TIMEOUT: Final = 5.0
 _ACCEPT_ENCODING: Final = ("Accept-Encoding", "gzip, deflate")
-_PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
 _TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
 _DOT_CAUSE: Final = "A path value cannot make its segment '.' or '..', which URL normalization removes"
 _OWNERSHIPS: Final = frozenset({"borrowed", "owned"})
@@ -443,7 +436,7 @@ def _server_url(operation: OperationPlan[object, object], selection: ServerSelec
             raise ConfigurationError(
                 field_path=("server", "variables", name), condition="not_allowed", operation_id=operation_id
             )
-    return checked_base_url(_PLACEHOLDER.sub(lambda match: values[match[1]], server.url), ("server",)).rstrip("/")
+    return checked_base_url(PLACEHOLDER.sub(lambda match: values[match[1]], server.url), ("server",)).rstrip("/")
 
 
 def _encoding_error(
@@ -1612,7 +1605,7 @@ class _Core(Generic[AdapterT, HandleT]):
         if url is None:
             base = self._base(operation, settings)
             path = request.path
-            route = _PLACEHOLDER.sub(lambda match: path[match[1]], operation.path) if path else operation.path
+            route = PLACEHOLDER.sub(lambda match: path[match[1]], operation.path) if path else operation.path
             if (
                 path
                 and ("/." in route or "/%2" in route)

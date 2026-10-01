@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import functools
 import gzip
 import importlib
 import json
 import zlib
+from functools import partial
 from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
@@ -46,7 +46,12 @@ from tests.data.python.client_pagination import pagination, pagination_backends,
 from tests.data.python.client_pagination_counts import pagination_counts
 from tests.data.python.client_pagination_links import pagination_links
 from tests.data.python.client_pagination_sessions import pagination_auth, pagination_sessions
-from tests.data.python.client_pagination_targets import pagination_paths, pagination_querystring, pagination_targets
+from tests.data.python.client_pagination_targets import (
+    pagination_paths,
+    pagination_querystring,
+    pagination_targets,
+    path_arguments,
+)
 from tests.data.python.client_protocol_contracts import protocol_contracts
 from tests.data.python.client_protocol_errors import protocol_errors
 from tests.data.python.client_query import query
@@ -580,13 +585,12 @@ _PATHS: Final = (
         ("get_dotted", {"first": first, "second": second})
         for first, second in (("", ""), ("a", ""), ("", "."), (".", ""), ("%2e", ""))
     ),
+    *(("get_static", {"name": value}) for value in ("a", "..")),
 )
 
 
-def _path_arguments(package: ModuleType, method: str, values: dict[str, object]) -> dict[str, object]:
-    (types,) = _modules(package, "types.default")
-    codecs = getattr(types, f"{method.title().replace('_', '')}RequestCodecs")
-    return {name: codecs.parameter(location="path", name=name).from_wire(value) for name, value in values.items()}
+def _arguments(package: ModuleType, method: str, values: dict[str, object]) -> dict[str, object]:
+    return path_arguments(package, "default", method.title().replace("_", ""), values)
 
 
 def paths(package: ModuleType, lines: list[str]) -> None:
@@ -598,7 +602,7 @@ def paths(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
         for method, values in _PATHS:
-            call = functools.partial(getattr(api.default, method), **_path_arguments(package, method, values))
+            call = partial(getattr(api.default, method), **_arguments(package, method, values))
             exchange.responders[:] = [raw_response(204)]
             record(lines, f"{method} {values}", call)
     run(lambda: _async_paths(package, lines))
@@ -609,7 +613,7 @@ async def _async_paths(package: ModuleType, lines: list[str]) -> None:
     api: Any
     async with package.AsyncClient(http_client=exchange.async_client(), http_client_ownership="owned") as api:
         for method, values in _PATHS:
-            call = functools.partial(getattr(api.default, method), **_path_arguments(package, method, values))
+            call = partial(getattr(api.default, method), **_arguments(package, method, values))
             exchange.responders[:] = [raw_response(204)]
             await arecord(lines, f"async {method} {values}", call)
 

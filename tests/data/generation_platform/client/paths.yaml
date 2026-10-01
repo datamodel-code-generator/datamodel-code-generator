@@ -109,3 +109,11 @@ paths:
       responses:
         '204':
           description: Found.
+  /static/./{name}:
+    get:
+      operationId: getStatic
+      parameters:
+        - {name: name, in: path, required: true, schema: {type: string}}
+      responses:
+        '204':
+          description: Found.
