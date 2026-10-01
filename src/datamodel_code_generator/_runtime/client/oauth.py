@@ -13,7 +13,6 @@ import sys
 from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from time import monotonic
 from typing import TYPE_CHECKING, Final, Generic, Literal, TypeVar, get_args
 from urllib.parse import parse_qsl, quote_plus, urlencode, urlsplit
 
@@ -42,7 +41,7 @@ from .errors import (
     UnsupportedAsyncBackendError,
 )
 from .scopes import scope_tuple
-from .timing import ResolvedTimeoutOptions, absolute_deadline, finite_number
+from .timing import ResolvedTimeoutOptions, absolute_deadline, finite_number, on_clock
 from .transports import (
     AsyncTransportAdapter,
     AttemptIOContext,
@@ -62,7 +61,7 @@ if TYPE_CHECKING:
     from .bodies import EncodedAttempt
     from .options import ResolvedTransportOptions, TimeoutOptions, TransportOptions
     from .responses import HeadersView
-    from .timing import Deadline
+    from .timing import Clock, Deadline
 
 ClientAuthMethod = Literal["none", "client_secret_basic", "client_secret_post"]
 Outcome = Literal["success", "rejected", "http_status", "malformed_response", "unsent", "lost"]
@@ -317,27 +316,36 @@ def _phase(value: float | Unset | None) -> float:
     return value
 
 
+def receipt(clock: Clock) -> tuple[datetime, float]:
+    """Return the UTC wall-clock time and the monotonic time of a receipt on the clock."""
+    return datetime.fromtimestamp(clock.time(), timezone.utc), clock.monotonic()
+
+
 @dataclass(frozen=True, slots=True)
 class Session:
-    """One exchange's provider-owned budget: its absolute deadline and each phase's configured cap."""
+    """One exchange's provider-owned budget: its absolute deadline, each phase's configured cap, and its clock."""
 
     deadline: Deadline
     total: float
     phases: tuple[float, float, float, float]
+    clock: Clock
     limited: bool = False
 
     @classmethod
-    def start(cls, refresh_timeout: float, phase_timeout: TimeoutOptions, limit: Deadline | None = None) -> Session:
-        """Start the budget now, independently of any resource caller's deadline, ending by an explicit limit."""
+    def start(
+        cls, refresh_timeout: float, phase_timeout: TimeoutOptions, clock: Clock, limit: Deadline | None = None
+    ) -> Session:
+        """Start the budget now on the provider's clock, ending by an explicit limit moved onto that clock."""
         phases = (
             _phase(phase_timeout.connect),
             _phase(phase_timeout.read),
             _phase(phase_timeout.write),
             _phase(phase_timeout.pool),
         )
-        if limit is not None and limit.at < monotonic() + refresh_timeout:
-            return cls(limit, refresh_timeout, phases, limited=True)
-        return cls(absolute_deadline(monotonic() + refresh_timeout), refresh_timeout, phases)
+        now = clock.monotonic()
+        if limit is not None and (limit := on_clock(limit, clock)).at < now + refresh_timeout:
+            return cls(limit, refresh_timeout, phases, clock, limited=True)
+        return cls(absolute_deadline(now + refresh_timeout, clock=clock), refresh_timeout, phases, clock)
 
     def context(self, trace: AttemptTrace) -> tuple[AttemptIOContext, tuple[bool, ...]]:
         """Clamp each phase to the remaining session and record which caps the session selected."""
@@ -665,7 +673,7 @@ class TokenEndpoint:
             except Exception as error:  # noqa: BLE001 - Classified by the secret provider's failure contract.
                 raise _provider_failure(error, state) from None
         request = token_request(target.url, authentication.client_id, authentication.method, fields, secret)
-        trace = AttemptTrace()
+        trace = AttemptTrace(clock=session.clock)
         context, caps = session.context(trace)
         with self._lock:
             self._open()
@@ -682,14 +690,14 @@ class TokenEndpoint:
         try:
             status, headers = _head(response.status_code, response.headers)
             body = _read(response.iter_raw_bytes(), session.deadline)
-            received, receipt = datetime.now(timezone.utc), monotonic()
+            received, received_at = receipt(session.clock)
         except _SessionExpiredError:
             return expired(session, DeliveryState.RESPONSE_STARTED, status)
         except Exception as error:  # noqa: BLE001 - A failure after the response started leaves the outcome unknown.
             return _failed(error, DeliveryState.RESPONSE_STARTED, caps, session, status)
         finally:
             _quiet(response.close)
-        return _answered(status, headers, body, received, receipt)
+        return _answered(status, headers, body, received, received_at)
 
     def close(self) -> None:
         """Close an owned transport once; a borrowed one stays open, and no transport is created afterwards."""
@@ -782,7 +790,7 @@ class AsyncTokenEndpoint:
             except Exception as error:  # noqa: BLE001 - Classified by the secret provider's failure contract.
                 raise _provider_failure(error, state) from None
         request = token_request(target.url, authentication.client_id, authentication.method, fields, secret)
-        trace = AttemptTrace()
+        trace = AttemptTrace(clock=session.clock)
         context, caps = session.context(trace)
         self._open()
         if session.deadline.remaining() <= 0 or not progress.start():
@@ -798,14 +806,14 @@ class AsyncTokenEndpoint:
         try:
             status, headers = _head(response.status_code, response.headers)
             body = await _aread(response.iter_raw_bytes(), session.deadline)
-            received, receipt = datetime.now(timezone.utc), monotonic()
+            received, received_at = receipt(session.clock)
         except _SessionExpiredError:
             return expired(session, DeliveryState.RESPONSE_STARTED, status)
         except Exception as error:  # noqa: BLE001 - A failure after the response started leaves the outcome unknown.
             return _failed(error, DeliveryState.RESPONSE_STARTED, caps, session, status)
         finally:
             await _aquiet(response.aclose)
-        return _answered(status, headers, body, received, receipt)
+        return _answered(status, headers, body, received, received_at)
 
     async def aclose(self) -> None:
         """Close an owned transport once; a borrowed one stays open, and no transport is created afterwards."""

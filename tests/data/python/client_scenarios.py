@@ -17,6 +17,7 @@ from tests.data.python.client_auth_flows import auth_flows
 from tests.data.python.client_auth_options import auth_options
 from tests.data.python.client_auth_values import auth_values
 from tests.data.python.client_bodies import bodies
+from tests.data.python.client_caching import cache_backends, cache_stores, caching
 from tests.data.python.client_body_digest import body_digest
 from tests.data.python.client_body_replay import body_replay, multipart_replay
 from tests.data.python.client_body_replay_faults import body_replay_faults
@@ -31,7 +32,7 @@ from tests.data.python.client_headers import headers
 from tests.data.python.client_hooks import hooks
 from tests.data.python.client_limiter_faults import limiter_faults
 from tests.data.python.client_limiters import limiters
-from tests.data.python.client_multipart import multipart
+from tests.data.python.client_multipart import multipart, split_parts
 from tests.data.python.client_native import native_faults, native_wire
 from tests.data.python.client_native_signing import native_signing
 from tests.data.python.client_oauth_accounting import oauth_accounting
@@ -46,6 +47,7 @@ from tests.data.python.client_pagination import pagination, pagination_backends,
 from tests.data.python.client_pagination_count_values import pagination_count_defaults, pagination_count_values
 from tests.data.python.client_pagination_counts import pagination_counts
 from tests.data.python.client_pagination_links import pagination_links
+from tests.data.python.client_pagination_resume import pagination_resume
 from tests.data.python.client_pagination_sessions import pagination_auth, pagination_sessions
 from tests.data.python.client_pagination_targets import (
     pagination_paths,
@@ -54,6 +56,8 @@ from tests.data.python.client_pagination_targets import (
     path_arguments,
 )
 from tests.data.python.client_parameter_adapters import parameter_adapters
+from tests.data.python.client_polling import polling
+from tests.data.python.client_polling_resume import polling_resume
 from tests.data.python.client_protocol_contracts import protocol_contracts
 from tests.data.python.client_protocol_errors import protocol_errors
 from tests.data.python.client_query import query
@@ -82,11 +86,13 @@ from tests.data.python.client_runtime import (
 )
 from tests.data.python.client_selectors import selectors
 from tests.data.python.client_signatures import keywords, signatures
+from tests.data.python.client_socket_connectors import socket_connectors
+from tests.data.python.client_sockets import sockets
 from tests.data.python.client_stream_lifetimes import stream_lifetimes
-from tests.data.python.client_streams import ndjson, ndjson_backends, stream_backends, streams
+from tests.data.python.client_streams import ndjson, ndjson_backends, ndjson_split, stream_backends, streams
 from tests.data.python.client_streams import stream_lifetimes as event_stream_lifetimes
 from tests.data.python.client_transports import lifecycle, transports
-from tests.data.python.client_unions import schema_unions, unions
+from tests.data.python.client_unions import schema_unions, split_unions, unions
 from tests.data.python.client_validation import arguments, validation
 from tests.data.python.client_webhook_adapters import (
     webhook_adapter_imports,
@@ -734,6 +740,7 @@ BACKENDS: Final = (
     "msgspec.Struct",
 )
 ALL_BUT_MSGSPEC: Final = BACKENDS[:-1]
+STRUCTURAL: Final = BACKENDS[2:]
 SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, list[str]], None]]]] = {
     "no-success": ("no-success", BACKENDS, no_success),
     "no-success-unpack": ("no-success-unpack", BACKENDS, no_success),
@@ -786,6 +793,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "stream-lifetimes": ("pets", ("pydantic_v2.BaseModel",), stream_lifetimes),
     "bodies": ("pets", ("pydantic_v2.BaseModel",), bodies),
     "multipart": ("media", ("pydantic_v2.BaseModel", "typing.TypedDict"), multipart),
+    "multipart-split": ("multipart-split", STRUCTURAL, split_parts),
     "selectors": ("media", ("pydantic_v2.BaseModel", "typing.TypedDict"), selectors),
     "headers": ("pets", ("pydantic_v2.BaseModel",), headers),
     "query": ("pets", ("pydantic_v2.BaseModel",), query),
@@ -811,12 +819,21 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "pagination-count-defaults": ("pagination-counts", BACKENDS, pagination_count_defaults),
     "pagination-counts": ("pagination-counts", ("pydantic_v2.BaseModel",), pagination_counts),
     "pagination-links": ("pagination-links", ("pydantic_v2.BaseModel",), pagination_links),
+    "pagination-resume": ("pagination-resume", ("pydantic_v2.BaseModel",), pagination_resume),
+    "polling": ("polling", ("pydantic_v2.BaseModel",), polling),
+    "polling-resume": ("polling", ("pydantic_v2.BaseModel",), polling_resume),
     "streams": ("streams", ("pydantic_v2.BaseModel",), streams),
     "stream-events": ("streams", ("pydantic_v2.BaseModel",), event_stream_lifetimes),
     "stream-backends": ("streams", BACKENDS, stream_backends),
     "ndjson": ("ndjson", ("pydantic_v2.BaseModel",), ndjson),
     "ndjson-backends": ("ndjson", BACKENDS, ndjson_backends),
+    "ndjson-split": ("ndjson-split", STRUCTURAL, ndjson_split),
+    "sockets": ("sockets", ("pydantic_v2.BaseModel",), sockets),
+    "socket-connectors": ("sockets", ("pydantic_v2.BaseModel",), socket_connectors),
     "protocol-errors": ("pets", ("pydantic_v2.BaseModel",), protocol_errors),
+    "cache": ("caching", ("pydantic_v2.BaseModel",), caching),
+    "cache-stores": ("caching", ("pydantic_v2.BaseModel",), cache_stores),
+    "cache-backends": ("caching-backends", BACKENDS, cache_backends),
     "evolution": ("evolution", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"), evolution),
     "evolution-schema": (
         "evolution-schema",
@@ -851,6 +868,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "unions-schema": ("unions-schema", BACKENDS, schema_unions),
     "unions-legacy": ("unions-legacy", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), unions),
     "unions-legacy-schema": ("unions-legacy-schema", BACKENDS, schema_unions),
+    "unions-split": ("unions-split", BACKENDS, split_unions),
 }
 
 

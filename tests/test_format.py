@@ -47,6 +47,7 @@ NOT_SUBCLASS_FORMATTER = "tests.data.python.custom_formatters.not_subclass"
 ADD_COMMENT_FORMATTER = "tests.data.python.custom_formatters.add_comment"
 ADD_LICENSE_FORMATTER = "tests.data.python.custom_formatters.add_license"
 FAKE_RUFF_PATH = "/opt/fake-ruff/bin/ruff"
+PARITY_BUCKETS = 8
 BLACK_VERSION_DEPENDENT_NORMALIZED_EXPECTED_FILES = {
     "main/jsonschema/custom_file_header_path_prepend_multi_file/__init__.py",
     "main/jsonschema/custom_file_header_path_prepend_multi_file/order.py",
@@ -2144,15 +2145,19 @@ def test_apply_builtin_formatter_handles_simple_edge_cases(code: str, expected_c
     assert apply_builtin_formatter(code) == expected_code
 
 
-def test_apply_builtin_formatter_matches_black_isort_for_normalized_expected_files(tmp_path: Path) -> None:
-    """Keep built-in formatting aligned with black + isort for generated model outputs."""
+@pytest.mark.parametrize("bucket", range(PARITY_BUCKETS))
+def test_apply_builtin_formatter_matches_black_isort_for_normalized_expected_files(bucket: int, tmp_path: Path) -> None:
+    """Keep built-in formatting aligned with black + isort for generated model outputs.
+
+    Each bucket checks every PARITY_BUCKETS-th expected file, so the buckets together check every file once.
+    """
     expected_path = Path(__file__).parent / "data" / "expected"
     isort_config = isort.Config(settings_path=str(tmp_path))
     black_mode = black.FileMode(line_length=88, string_normalization=False)
     checked_files = 0
     mismatches: list[str] = []
 
-    for path in sorted(expected_path.rglob("*.py")):
+    for path in sorted(expected_path.rglob("*.py"))[bucket::PARITY_BUCKETS]:
         relative_path = path.relative_to(expected_path).as_posix()
         if relative_path in BLACK_VERSION_DEPENDENT_NORMALIZED_EXPECTED_FILES:
             continue
@@ -2173,7 +2178,7 @@ def test_apply_builtin_formatter_matches_black_isort_for_normalized_expected_fil
         if apply_builtin_formatter(code) != black_isort_code:
             mismatches.append(relative_path)  # pragma: no cover
 
-    assert checked_files > 1000
+    assert checked_files > 1000 // PARITY_BUCKETS
     assert not mismatches
 
 

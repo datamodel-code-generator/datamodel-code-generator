@@ -1,0 +1,30 @@
+# ndjson-split dataclasses.dataclass
+  > GET https://api.example.com/records accept=application/x-ndjson
+  split records
+    1  id=None retry=None data=NoteResponse{'type': 'note', 'text': 'a', 'id': 1} raw='{"type": "note", "text": "a", "id": 1}'
+    2  id=None retry=None data=NoteResponse{'type': 'note', 'text': 'b', 'id': None} raw='{"type": "note", "text": "b"}'
+  < closed
+    end
+  > GET https://api.example.com/records accept=application/x-ndjson
+  < closed
+  split error record None FailureResponse{'type': 'failed', 'message': 'nope', 'trace': 't'}
+# ndjson-split typing.TypedDict
+  > GET https://api.example.com/records accept=application/x-ndjson
+  split records
+    1  id=None retry=None data=dict{'type': 'note', 'text': 'a', 'id': 1} raw='{"type": "note", "text": "a", "id": 1}'
+    2  id=None retry=None data=dict{'type': 'note', 'text': 'b'} raw='{"type": "note", "text": "b"}'
+  < closed
+    end
+  > GET https://api.example.com/records accept=application/x-ndjson
+  < closed
+  split error record None dict{'type': 'failed', 'message': 'nope', 'trace': 't'}
+# ndjson-split msgspec.Struct
+  > GET https://api.example.com/records accept=application/x-ndjson
+  split records
+    1  id=None retry=None data=NoteResponse{'type': 'note', 'text': 'a', 'id': 1} raw='{"type": "note", "text": "a", "id": 1}'
+    2  id=None retry=None data=NoteResponse{'type': 'note', 'text': 'b', 'id': UNSET} raw='{"type": "note", "text": "b"}'
+  < closed
+    end
+  > GET https://api.example.com/records accept=application/x-ndjson
+  < closed
+  split error record None FailureResponse{'type': 'failed', 'message': 'nope', 'trace': 't'}

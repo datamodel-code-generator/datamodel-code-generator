@@ -287,11 +287,13 @@ def _faults(
     connect = errors.PhaseTimeoutError(effective_timeout=5.0, delivery_state=errors.DeliveryState.NOT_SENT, phase="connect")
     read = errors.PhaseTimeoutError(effective_timeout=15.0, delivery_state=errors.DeliveryState.MAYBE_SENT, phase="read")
 
-    def flow(*replies: object, secret: object = None, total: float = 30.0, evidence: bool = False) -> Any:
+    def flow(
+        *replies: object, secret: object = None, total: float = 30.0, evidence: bool = False, clock: Any = None
+    ) -> Any:
         return auth.DeviceAuthorizationFlow(
             _DEVICE, _TOKEN, client_id="c", client_secret=secret,
             client_auth_method="client_secret_post" if secret else "none",
-            options=auth.OAuthProviderOptions(refresh_timeout=total),
+            options=auth.OAuthProviderOptions(refresh_timeout=total, **({} if clock is None else {"clock": clock})),
             token_transport=Adapter(transports, *replies, evidence=evidence),
         )
 
@@ -314,6 +316,11 @@ def _faults(
             "unlimited sends",
             flow(begun, pending, _reply(responses, 200, GRANTED)),
             lambda: options.SessionOptions(max_network_sends=None),
+        ),
+        (
+            "poll intervals on a frozen clock",
+            flow(begun, pending, _reply(responses, 200, GRANTED), clock=options.Clock(monotonic=lambda: 1000.0)),
+            lambda: None,
         ),
         (
             "session deadline",
@@ -434,11 +441,21 @@ async def _async_flows(
         lines.append(f"    begin again = {await _aoutcome(lambda: device.begin(()))}")
     begun = _areply(responses, 200, {**_QUICK, "interval": 5})
 
-    def flow(*replies: object, hold: asyncio.Event | None = None) -> Any:
+    def flow(*replies: object, hold: asyncio.Event | None = None, clock: Any = None) -> Any:
         return auth.AsyncDeviceAuthorizationFlow(
             _DEVICE, _TOKEN, client_id="c", client_auth_method="none",
+            options=auth.OAuthProviderOptions(**({} if clock is None else {"clock": clock})),
             token_transport=AsyncAdapter(transports, *replies, hold=hold),
         )
+
+    async with flow(
+        _areply(responses, 200, {**_QUICK, "interval": 0.05}),
+        _areply(responses, 400, _PENDING),
+        _areply(responses, 200, GRANTED),
+        clock=options.Clock(monotonic=lambda: 1000.0),
+    ) as device:
+        await device.begin(())
+        lines.append(f"  async poll intervals on a frozen clock = {await atoken_outcome(device.poll)}")
 
     async with flow(begun) as device:
         await device.begin(())

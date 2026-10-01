@@ -1,0 +1,2133 @@
+# polling-plans
+render pydantic_v2.dataclass
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/jobs/__init__.py
+  write client/resources/jobs/_sync.py
+  write client/resources/jobs/_async.py
+  write client/resources/reports/__init__.py
+  write client/resources/reports/_sync.py
+  write client/resources/reports/_async.py
+  write client/resources/exports/__init__.py
+  write client/resources/exports/_sync.py
+  write client/resources/exports/_async.py
+  write client/types/__init__.py
+  write client/types/jobs/__init__.py
+  write client/types/jobs/_operations.py
+  write client/types/reports/__init__.py
+  write client/types/reports/_operations.py
+  write client/types/exports/__init__.py
+  write client/types/exports/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_generated/security.py
+  write client/_operations.py
+  write client/protocols/_plans.py
+  write client/protocols/_helpers.py
+  write client/protocols/_async_helpers.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['jobs.run', 'jobs.inline', 'jobs.report', 'exports.run', 'exports.latest', 'jobs.tracked'] bindings 29
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper jobs.run polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.run 24289285eaa1a7738b03f88ae62ee3e289e27957ee484f04ee263c367aeab56c
+  helper jobs.inline polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.inline 5fea397a06bb22105880524715ed73e50bcb242bc08ca79bb48ef5967802224c
+  helper jobs.report polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.report 7ea22820f1865a72c6dffd0234d4923c8a529ac7fa2bab1f58a7df1fe8237844
+  helper exports.run polling enabled True /inputs/target_config/protocol_metadata/helpers/exports.run 15de553ebe67ec7e0e5f14265908a64d09c5d2d755dd94b1b7bbd75fa0ece6f1
+  helper exports.latest polling enabled True /inputs/target_config/protocol_metadata/helpers/exports.latest 9bf25a03f62542341578ea21c4fe0c8cb467de6b6bfe96b724f0f2273f44c154
+  helper jobs.tracked polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.tracked 8e22ecfd8a9ea1abfb2666c2adc0203a875b0a470683991884dbb530d8d51530
+  {
+    "helpers": {
+      "exports.latest": {
+        "accepted_statuses": [
+          202
+        ],
+        "bindings": [],
+        "cancelled": [],
+        "create": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1exports/post"
+        },
+        "enabled": true,
+        "failed": [],
+        "interval": {
+          "retry_after_header": null,
+          "seconds": 1.0
+        },
+        "kind": "polling",
+        "pending": [
+          0
+        ],
+        "poll": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1exports~1status/get"
+        },
+        "result": {
+          "bindings": [],
+          "kind": "operation",
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1reports~1latest/get"
+          }
+        },
+        "state": {
+          "from": "body",
+          "pointer": "/state"
+        },
+        "succeeded": [
+          1
+        ]
+      },
+      "exports.run": {
+        "accepted_statuses": [
+          202
+        ],
+        "bindings": [
+          {
+            "target": {
+              "in": "querystring",
+              "name": "criteria",
+              "pointer": "/id"
+            },
+            "value": {
+              "selector": {
+                "from": "header",
+                "name": "Operation-Id",
+                "occurrence": "single"
+              },
+              "source": "initial"
+            }
+          }
+        ],
+        "cancelled": [],
+        "create": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1exports/post"
+        },
+        "enabled": true,
+        "failed": [
+          2
+        ],
+        "interval": {
+          "retry_after_header": null,
+          "seconds": 1.0
+        },
+        "kind": "polling",
+        "pending": [
+          0
+        ],
+        "poll": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1exports~1status/get"
+        },
+        "remote_cancel": {
+          "bindings": [],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1exports/delete"
+          }
+        },
+        "result": {
+          "kind": "none"
+        },
+        "state": {
+          "from": "body",
+          "pointer": "/state"
+        },
+        "succeeded": [
+          1
+        ]
+      },
+      "jobs.inline": {
+        "accepted_statuses": [
+          202
+        ],
+        "bindings": [
+          {
+            "target": {
+              "in": "path",
+              "name": "jobId"
+            },
+            "value": {
+              "selector": {
+                "from": "body",
+                "pointer": "/id"
+              },
+              "source": "previous"
+            }
+          },
+          {
+            "target": {
+              "in": "query",
+              "name": "verbose"
+            },
+            "value": {
+              "literal": true
+            }
+          }
+        ],
+        "cancelled": [],
+        "create": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs/post"
+        },
+        "enabled": true,
+        "failed": [],
+        "immediate_result": {
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Report"
+          },
+          "selector": {
+            "from": "body",
+            "pointer": "/result"
+          },
+          "statuses": [
+            200
+          ]
+        },
+        "interval": {
+          "retry_after_header": null,
+          "seconds": 1.0
+        },
+        "kind": "polling",
+        "pending": [
+          "pending"
+        ],
+        "poll": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs~1{jobId}/get"
+        },
+        "result": {
+          "kind": "inline",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Report"
+          },
+          "selector": {
+            "from": "body",
+            "pointer": "/result"
+          }
+        },
+        "state": {
+          "from": "header",
+          "name": "X-State",
+          "occurrence": "single"
+        },
+        "succeeded": [
+          "done"
+        ]
+      },
+      "jobs.report": {
+        "accepted_statuses": [
+          202
+        ],
+        "bindings": [
+          {
+            "target": {
+              "in": "path",
+              "name": "jobId"
+            },
+            "value": {
+              "selector": {
+                "from": "body",
+                "pointer": "/id"
+              },
+              "source": "initial"
+            }
+          },
+          {
+            "target": {
+              "in": "query",
+              "name": "since"
+            },
+            "value": {
+              "selector": {
+                "from": "status"
+              },
+              "source": "previous"
+            }
+          }
+        ],
+        "cancelled": [],
+        "create": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs/post"
+        },
+        "enabled": true,
+        "failed": [],
+        "interval": {
+          "retry_after_header": null,
+          "seconds": 1.0
+        },
+        "kind": "polling",
+        "pending": [
+          "queued"
+        ],
+        "poll": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs~1{jobId}/get"
+        },
+        "result": {
+          "bindings": [
+            {
+              "target": {
+                "in": "body",
+                "pointer": "/job"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "previous"
+              }
+            }
+          ],
+          "kind": "operation",
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1reports/post"
+          }
+        },
+        "state": {
+          "from": "body",
+          "pointer": "/status"
+        },
+        "succeeded": [
+          "done"
+        ]
+      },
+      "jobs.run": {
+        "accepted_statuses": [
+          202
+        ],
+        "bindings": [
+          {
+            "target": {
+              "in": "path",
+              "name": "jobId"
+            },
+            "value": {
+              "selector": {
+                "from": "body",
+                "pointer": "/id"
+              },
+              "source": "initial"
+            }
+          },
+          {
+            "target": {
+              "in": "header",
+              "name": "X-Trace"
+            },
+            "value": {
+              "selector": {
+                "from": "body",
+                "pointer": "/status"
+              },
+              "source": "previous"
+            }
+          }
+        ],
+        "cancelled": [
+          "cancelled"
+        ],
+        "create": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs/post"
+        },
+        "enabled": true,
+        "failed": [
+          "failed"
+        ],
+        "interval": {
+          "retry_after_header": "Retry-After",
+          "seconds": 2.0
+        },
+        "kind": "polling",
+        "pending": [
+          "queued",
+          "running"
+        ],
+        "poll": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs~1{jobId}/get"
+        },
+        "result": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "jobId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "kind": "operation",
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1jobs~1{jobId}~1report/get"
+          }
+        },
+        "state": {
+          "from": "body",
+          "pointer": "/status"
+        },
+        "succeeded": [
+          "done"
+        ]
+      },
+      "jobs.tracked": {
+        "accepted_statuses": [
+          202
+        ],
+        "bindings": [
+          {
+            "target": {
+              "in": "path",
+              "name": "jobId"
+            },
+            "value": {
+              "selector": {
+                "from": "body",
+                "pointer": "/id"
+              },
+              "source": "initial"
+            }
+          }
+        ],
+        "cancelled": [
+          "cancelled"
+        ],
+        "create": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs/post"
+        },
+        "enabled": true,
+        "expires_at": {
+          "from": "body",
+          "pointer": "/expires"
+        },
+        "failed": [
+          "failed"
+        ],
+        "interval": {
+          "retry_after_header": null,
+          "seconds": 1.0
+        },
+        "kind": "polling",
+        "pending": [
+          "queued",
+          "running"
+        ],
+        "poll": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs~1{jobId}/get"
+        },
+        "remote_cancel": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "jobId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "previous"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "X-Reason"
+              },
+              "value": {
+                "literal": "requested"
+              }
+            }
+          ],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1jobs~1{jobId}/delete"
+          }
+        },
+        "result": {
+          "kind": "inline",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Report"
+          },
+          "selector": {
+            "from": "body",
+            "pointer": "/result"
+          }
+        },
+        "state": {
+          "from": "body",
+          "pointer": "/status"
+        },
+        "succeeded": [
+          "done"
+        ]
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 jobs.create_job()
+    exports client.types.jobs.CreateJobResponse client.types.jobs.CreateJobErrorData client.types.jobs.CreateJobHTTPError
+    exports client.types.jobs.CreateJobRequestCodecs client.types.jobs.decode_create_job_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 jobs.get_job(path:jobId=job_id, header:X-Trace=x_trace, query:verbose=verbose, query:since=since, cookie:session=session, header:X-Api-Key=x_api_key, query:api_key=api_key)
+    exports client.types.jobs.GetJobResponse client.types.jobs.GetJobErrorData client.types.jobs.GetJobHTTPError
+    exports client.types.jobs.GetJobRequestCodecs client.types.jobs.decode_get_job_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/2 jobs.cancel_job(path:jobId=job_id, header:X-Reason=x_reason)
+    exports client.types.jobs.CancelJobResponse client.types.jobs.CancelJobErrorData client.types.jobs.CancelJobHTTPError
+    exports client.types.jobs.CancelJobRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/3 jobs.get_report(path:jobId=job_id)
+    exports client.types.jobs.GetReportResponse client.types.jobs.GetReportErrorData client.types.jobs.GetReportHTTPError
+    exports client.types.jobs.GetReportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/4 reports.find_report()
+    exports client.types.reports.FindReportResponse client.types.reports.FindReportErrorData client.types.reports.FindReportHTTPError
+    exports client.types.reports.FindReportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/5 reports.latest_report()
+    exports client.types.reports.LatestReportResponse client.types.reports.LatestReportErrorData client.types.reports.LatestReportHTTPError
+    exports client.types.reports.LatestReportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/6 exports.start_export()
+    exports client.types.exports.StartExportResponse client.types.exports.StartExportErrorData client.types.exports.StartExportHTTPError
+    exports client.types.exports.StartExportRequestCodecs client.types.exports.decode_start_export_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/7 exports.cancel_exports()
+    exports client.types.exports.CancelExportsResponse client.types.exports.CancelExportsErrorData client.types.exports.CancelExportsHTTPError
+    exports client.types.exports.CancelExportsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/8 exports.export_status(querystring:criteria=criteria)
+    exports client.types.exports.ExportStatusResponse client.types.exports.ExportStatusErrorData client.types.exports.ExportStatusHTTPError
+    exports client.types.exports.ExportStatusRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/9 exports.find_export(querystring:filter=filter)
+    exports client.types.exports.FindExportResponse client.types.exports.FindExportErrorData client.types.exports.FindExportHTTPError
+    exports client.types.exports.FindExportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/10 reports.add_note()
+    exports client.types.reports.AddNoteResponse client.types.reports.AddNoteErrorData client.types.reports.AddNoteHTTPError
+    exports client.types.reports.AddNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+  S_OPERATION_EXCLUDED selection /paths/~1archives/post: POST /archives is excluded by exclude_tags 'archives': Archives have no success response
+  S_OPERATION_EXCLUDED selection /paths/~1archives~1search/post: POST /archives/search is excluded by exclude_tags 'archives': Archives have no success response
+render dataclasses.dataclass
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/jobs/__init__.py
+  write client/resources/jobs/_sync.py
+  write client/resources/jobs/_async.py
+  write client/resources/reports/__init__.py
+  write client/resources/reports/_sync.py
+  write client/resources/reports/_async.py
+  write client/resources/exports/__init__.py
+  write client/resources/exports/_sync.py
+  write client/resources/exports/_async.py
+  write client/types/__init__.py
+  write client/types/jobs/__init__.py
+  write client/types/jobs/_operations.py
+  write client/types/reports/__init__.py
+  write client/types/reports/_operations.py
+  write client/types/exports/__init__.py
+  write client/types/exports/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_generated/security.py
+  write client/_operations.py
+  write client/protocols/_plans.py
+  write client/protocols/_helpers.py
+  write client/protocols/_async_helpers.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['jobs.run', 'jobs.inline', 'jobs.report', 'exports.run', 'exports.latest', 'jobs.tracked'] bindings 29
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper jobs.run polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.run d7dc0ac7caac20083d6ed9519284d9884d8cfb20f53ff8d6c7a6f008a08f16cc
+  helper jobs.inline polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.inline e212519205a6cc89c1cfa2c56f1b106e80546bc523c40d0cd8d2e55a9a0fc749
+  helper jobs.report polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.report ea093fc7dcb976e1cb3d690205ff108767c4f81211603b4650fa67ad709ba017
+  helper exports.run polling enabled True /inputs/target_config/protocol_metadata/helpers/exports.run 50af37368a1673503b7a138328edfbaa9cfd09774d58148db3a69dde8a18a44b
+  helper exports.latest polling enabled True /inputs/target_config/protocol_metadata/helpers/exports.latest 33fd3a8143fa230110b585f90026e0f866360e41e39c90381e6f6dd232cf3b5b
+  helper jobs.tracked polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.tracked b73fcfc8cf4bc6f8a64aebeae185cfa59e8d9e85cedea9d69b4e3534bd1d43de
+  {
+    "helpers": {
+      "exports.latest": {
+        "accepted_statuses": [
+          202
+        ],
+        "bindings": [],
+        "cancelled": [],
+        "create": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1exports/post"
+        },
+        "enabled": true,
+        "failed": [],
+        "interval": {
+          "retry_after_header": null,
+          "seconds": 1.0
+        },
+        "kind": "polling",
+        "pending": [
+          0
+        ],
+        "poll": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1exports~1status/get"
+        },
+        "result": {
+          "bindings": [],
+          "kind": "operation",
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1reports~1latest/get"
+          }
+        },
+        "state": {
+          "from": "body",
+          "pointer": "/state"
+        },
+        "succeeded": [
+          1
+        ]
+      },
+      "exports.run": {
+        "accepted_statuses": [
+          202
+        ],
+        "bindings": [
+          {
+            "target": {
+              "in": "querystring",
+              "name": "criteria",
+              "pointer": "/id"
+            },
+            "value": {
+              "selector": {
+                "from": "header",
+                "name": "Operation-Id",
+                "occurrence": "single"
+              },
+              "source": "initial"
+            }
+          }
+        ],
+        "cancelled": [],
+        "create": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1exports/post"
+        },
+        "enabled": true,
+        "failed": [
+          2
+        ],
+        "interval": {
+          "retry_after_header": null,
+          "seconds": 1.0
+        },
+        "kind": "polling",
+        "pending": [
+          0
+        ],
+        "poll": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1exports~1status/get"
+        },
+        "remote_cancel": {
+          "bindings": [],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1exports/delete"
+          }
+        },
+        "result": {
+          "kind": "none"
+        },
+        "state": {
+          "from": "body",
+          "pointer": "/state"
+        },
+        "succeeded": [
+          1
+        ]
+      },
+      "jobs.inline": {
+        "accepted_statuses": [
+          202
+        ],
+        "bindings": [
+          {
+            "target": {
+              "in": "path",
+              "name": "jobId"
+            },
+            "value": {
+              "selector": {
+                "from": "body",
+                "pointer": "/id"
+              },
+              "source": "previous"
+            }
+          },
+          {
+            "target": {
+              "in": "query",
+              "name": "verbose"
+            },
+            "value": {
+              "literal": true
+            }
+          }
+        ],
+        "cancelled": [],
+        "create": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs/post"
+        },
+        "enabled": true,
+        "failed": [],
+        "immediate_result": {
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Report"
+          },
+          "selector": {
+            "from": "body",
+            "pointer": "/result"
+          },
+          "statuses": [
+            200
+          ]
+        },
+        "interval": {
+          "retry_after_header": null,
+          "seconds": 1.0
+        },
+        "kind": "polling",
+        "pending": [
+          "pending"
+        ],
+        "poll": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs~1{jobId}/get"
+        },
+        "result": {
+          "kind": "inline",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Report"
+          },
+          "selector": {
+            "from": "body",
+            "pointer": "/result"
+          }
+        },
+        "state": {
+          "from": "header",
+          "name": "X-State",
+          "occurrence": "single"
+        },
+        "succeeded": [
+          "done"
+        ]
+      },
+      "jobs.report": {
+        "accepted_statuses": [
+          202
+        ],
+        "bindings": [
+          {
+            "target": {
+              "in": "path",
+              "name": "jobId"
+            },
+            "value": {
+              "selector": {
+                "from": "body",
+                "pointer": "/id"
+              },
+              "source": "initial"
+            }
+          },
+          {
+            "target": {
+              "in": "query",
+              "name": "since"
+            },
+            "value": {
+              "selector": {
+                "from": "status"
+              },
+              "source": "previous"
+            }
+          }
+        ],
+        "cancelled": [],
+        "create": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs/post"
+        },
+        "enabled": true,
+        "failed": [],
+        "interval": {
+          "retry_after_header": null,
+          "seconds": 1.0
+        },
+        "kind": "polling",
+        "pending": [
+          "queued"
+        ],
+        "poll": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs~1{jobId}/get"
+        },
+        "result": {
+          "bindings": [
+            {
+              "target": {
+                "in": "body",
+                "pointer": "/job"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "previous"
+              }
+            }
+          ],
+          "kind": "operation",
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1reports/post"
+          }
+        },
+        "state": {
+          "from": "body",
+          "pointer": "/status"
+        },
+        "succeeded": [
+          "done"
+        ]
+      },
+      "jobs.run": {
+        "accepted_statuses": [
+          202
+        ],
+        "bindings": [
+          {
+            "target": {
+              "in": "path",
+              "name": "jobId"
+            },
+            "value": {
+              "selector": {
+                "from": "body",
+                "pointer": "/id"
+              },
+              "source": "initial"
+            }
+          },
+          {
+            "target": {
+              "in": "header",
+              "name": "X-Trace"
+            },
+            "value": {
+              "selector": {
+                "from": "body",
+                "pointer": "/status"
+              },
+              "source": "previous"
+            }
+          }
+        ],
+        "cancelled": [
+          "cancelled"
+        ],
+        "create": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs/post"
+        },
+        "enabled": true,
+        "failed": [
+          "failed"
+        ],
+        "interval": {
+          "retry_after_header": "Retry-After",
+          "seconds": 2.0
+        },
+        "kind": "polling",
+        "pending": [
+          "queued",
+          "running"
+        ],
+        "poll": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs~1{jobId}/get"
+        },
+        "result": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "jobId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "kind": "operation",
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1jobs~1{jobId}~1report/get"
+          }
+        },
+        "state": {
+          "from": "body",
+          "pointer": "/status"
+        },
+        "succeeded": [
+          "done"
+        ]
+      },
+      "jobs.tracked": {
+        "accepted_statuses": [
+          202
+        ],
+        "bindings": [
+          {
+            "target": {
+              "in": "path",
+              "name": "jobId"
+            },
+            "value": {
+              "selector": {
+                "from": "body",
+                "pointer": "/id"
+              },
+              "source": "initial"
+            }
+          }
+        ],
+        "cancelled": [
+          "cancelled"
+        ],
+        "create": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs/post"
+        },
+        "enabled": true,
+        "expires_at": {
+          "from": "body",
+          "pointer": "/expires"
+        },
+        "failed": [
+          "failed"
+        ],
+        "interval": {
+          "retry_after_header": null,
+          "seconds": 1.0
+        },
+        "kind": "polling",
+        "pending": [
+          "queued",
+          "running"
+        ],
+        "poll": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs~1{jobId}/get"
+        },
+        "remote_cancel": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "jobId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "previous"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "X-Reason"
+              },
+              "value": {
+                "literal": "requested"
+              }
+            }
+          ],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1jobs~1{jobId}/delete"
+          }
+        },
+        "result": {
+          "kind": "inline",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Report"
+          },
+          "selector": {
+            "from": "body",
+            "pointer": "/result"
+          }
+        },
+        "state": {
+          "from": "body",
+          "pointer": "/status"
+        },
+        "succeeded": [
+          "done"
+        ]
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 jobs.create_job()
+    exports client.types.jobs.CreateJobResponse client.types.jobs.CreateJobErrorData client.types.jobs.CreateJobHTTPError
+    exports client.types.jobs.CreateJobRequestCodecs client.types.jobs.decode_create_job_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 jobs.get_job(path:jobId=job_id, header:X-Trace=x_trace, query:verbose=verbose, query:since=since, cookie:session=session, header:X-Api-Key=x_api_key, query:api_key=api_key)
+    exports client.types.jobs.GetJobResponse client.types.jobs.GetJobErrorData client.types.jobs.GetJobHTTPError
+    exports client.types.jobs.GetJobRequestCodecs client.types.jobs.decode_get_job_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/2 jobs.cancel_job(path:jobId=job_id, header:X-Reason=x_reason)
+    exports client.types.jobs.CancelJobResponse client.types.jobs.CancelJobErrorData client.types.jobs.CancelJobHTTPError
+    exports client.types.jobs.CancelJobRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/3 jobs.get_report(path:jobId=job_id)
+    exports client.types.jobs.GetReportResponse client.types.jobs.GetReportErrorData client.types.jobs.GetReportHTTPError
+    exports client.types.jobs.GetReportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/4 reports.find_report()
+    exports client.types.reports.FindReportResponse client.types.reports.FindReportErrorData client.types.reports.FindReportHTTPError
+    exports client.types.reports.FindReportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/5 reports.latest_report()
+    exports client.types.reports.LatestReportResponse client.types.reports.LatestReportErrorData client.types.reports.LatestReportHTTPError
+    exports client.types.reports.LatestReportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/6 exports.start_export()
+    exports client.types.exports.StartExportResponse client.types.exports.StartExportErrorData client.types.exports.StartExportHTTPError
+    exports client.types.exports.StartExportRequestCodecs client.types.exports.decode_start_export_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/7 exports.cancel_exports()
+    exports client.types.exports.CancelExportsResponse client.types.exports.CancelExportsErrorData client.types.exports.CancelExportsHTTPError
+    exports client.types.exports.CancelExportsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/8 exports.export_status(querystring:criteria=criteria)
+    exports client.types.exports.ExportStatusResponse client.types.exports.ExportStatusErrorData client.types.exports.ExportStatusHTTPError
+    exports client.types.exports.ExportStatusRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/9 exports.find_export(querystring:filter=filter)
+    exports client.types.exports.FindExportResponse client.types.exports.FindExportErrorData client.types.exports.FindExportHTTPError
+    exports client.types.exports.FindExportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/10 reports.add_note()
+    exports client.types.reports.AddNoteResponse client.types.reports.AddNoteErrorData client.types.reports.AddNoteHTTPError
+    exports client.types.reports.AddNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
+  S_OPERATION_EXCLUDED selection /paths/~1archives/post: POST /archives is excluded by exclude_tags 'archives': Archives have no success response
+  S_OPERATION_EXCLUDED selection /paths/~1archives~1search/post: POST /archives/search is excluded by exclude_tags 'archives': Archives have no success response
+render typing.TypedDict
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/jobs/__init__.py
+  write client/resources/jobs/_sync.py
+  write client/resources/jobs/_async.py
+  write client/resources/reports/__init__.py
+  write client/resources/reports/_sync.py
+  write client/resources/reports/_async.py
+  write client/resources/exports/__init__.py
+  write client/resources/exports/_sync.py
+  write client/resources/exports/_async.py
+  write client/types/__init__.py
+  write client/types/jobs/__init__.py
+  write client/types/jobs/_operations.py
+  write client/types/reports/__init__.py
+  write client/types/reports/_operations.py
+  write client/types/exports/__init__.py
+  write client/types/exports/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_generated/security.py
+  write client/_operations.py
+  write client/protocols/_plans.py
+  write client/protocols/_helpers.py
+  write client/protocols/_async_helpers.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['jobs.run', 'jobs.inline', 'jobs.report', 'exports.run', 'exports.latest', 'jobs.tracked'] bindings 29
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper jobs.run polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.run bb2aabfb97bda394960302b7bcf50e56f249be6f3cf8da4fedfcf12aeac35654
+  helper jobs.inline polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.inline 9bd57b6e06ad3ad2835714a582ee3d690824cc1af861bbb965c0822a1dc39581
+  helper jobs.report polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.report 2111d549b92439d14e3774232a2de81bcac29e6399d7a6829bf3db6981879264
+  helper exports.run polling enabled True /inputs/target_config/protocol_metadata/helpers/exports.run 5543014b8af1fb331a0882734ea4df99f5a320c71e03002920c0a79831ef8ebe
+  helper exports.latest polling enabled True /inputs/target_config/protocol_metadata/helpers/exports.latest 1fa514fef220c92b2b8ea0723a22f8d01a4d38a7676f7acf036550c0614b9141
+  helper jobs.tracked polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.tracked f1bc9eaee96465f7763d99297a449dfc001f22c64d5d6405ec8273b0c0cb1b08
+  {
+    "helpers": {
+      "exports.latest": {
+        "accepted_statuses": [
+          202
+        ],
+        "bindings": [],
+        "cancelled": [],
+        "create": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1exports/post"
+        },
+        "enabled": true,
+        "failed": [],
+        "interval": {
+          "retry_after_header": null,
+          "seconds": 1.0
+        },
+        "kind": "polling",
+        "pending": [
+          0
+        ],
+        "poll": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1exports~1status/get"
+        },
+        "result": {
+          "bindings": [],
+          "kind": "operation",
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1reports~1latest/get"
+          }
+        },
+        "state": {
+          "from": "body",
+          "pointer": "/state"
+        },
+        "succeeded": [
+          1
+        ]
+      },
+      "exports.run": {
+        "accepted_statuses": [
+          202
+        ],
+        "bindings": [
+          {
+            "target": {
+              "in": "querystring",
+              "name": "criteria",
+              "pointer": "/id"
+            },
+            "value": {
+              "selector": {
+                "from": "header",
+                "name": "Operation-Id",
+                "occurrence": "single"
+              },
+              "source": "initial"
+            }
+          }
+        ],
+        "cancelled": [],
+        "create": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1exports/post"
+        },
+        "enabled": true,
+        "failed": [
+          2
+        ],
+        "interval": {
+          "retry_after_header": null,
+          "seconds": 1.0
+        },
+        "kind": "polling",
+        "pending": [
+          0
+        ],
+        "poll": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1exports~1status/get"
+        },
+        "remote_cancel": {
+          "bindings": [],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1exports/delete"
+          }
+        },
+        "result": {
+          "kind": "none"
+        },
+        "state": {
+          "from": "body",
+          "pointer": "/state"
+        },
+        "succeeded": [
+          1
+        ]
+      },
+      "jobs.inline": {
+        "accepted_statuses": [
+          202
+        ],
+        "bindings": [
+          {
+            "target": {
+              "in": "path",
+              "name": "jobId"
+            },
+            "value": {
+              "selector": {
+                "from": "body",
+                "pointer": "/id"
+              },
+              "source": "previous"
+            }
+          },
+          {
+            "target": {
+              "in": "query",
+              "name": "verbose"
+            },
+            "value": {
+              "literal": true
+            }
+          }
+        ],
+        "cancelled": [],
+        "create": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs/post"
+        },
+        "enabled": true,
+        "failed": [],
+        "immediate_result": {
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Report"
+          },
+          "selector": {
+            "from": "body",
+            "pointer": "/result"
+          },
+          "statuses": [
+            200
+          ]
+        },
+        "interval": {
+          "retry_after_header": null,
+          "seconds": 1.0
+        },
+        "kind": "polling",
+        "pending": [
+          "pending"
+        ],
+        "poll": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs~1{jobId}/get"
+        },
+        "result": {
+          "kind": "inline",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Report"
+          },
+          "selector": {
+            "from": "body",
+            "pointer": "/result"
+          }
+        },
+        "state": {
+          "from": "header",
+          "name": "X-State",
+          "occurrence": "single"
+        },
+        "succeeded": [
+          "done"
+        ]
+      },
+      "jobs.report": {
+        "accepted_statuses": [
+          202
+        ],
+        "bindings": [
+          {
+            "target": {
+              "in": "path",
+              "name": "jobId"
+            },
+            "value": {
+              "selector": {
+                "from": "body",
+                "pointer": "/id"
+              },
+              "source": "initial"
+            }
+          },
+          {
+            "target": {
+              "in": "query",
+              "name": "since"
+            },
+            "value": {
+              "selector": {
+                "from": "status"
+              },
+              "source": "previous"
+            }
+          }
+        ],
+        "cancelled": [],
+        "create": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs/post"
+        },
+        "enabled": true,
+        "failed": [],
+        "interval": {
+          "retry_after_header": null,
+          "seconds": 1.0
+        },
+        "kind": "polling",
+        "pending": [
+          "queued"
+        ],
+        "poll": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs~1{jobId}/get"
+        },
+        "result": {
+          "bindings": [
+            {
+              "target": {
+                "in": "body",
+                "pointer": "/job"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "previous"
+              }
+            }
+          ],
+          "kind": "operation",
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1reports/post"
+          }
+        },
+        "state": {
+          "from": "body",
+          "pointer": "/status"
+        },
+        "succeeded": [
+          "done"
+        ]
+      },
+      "jobs.run": {
+        "accepted_statuses": [
+          202
+        ],
+        "bindings": [
+          {
+            "target": {
+              "in": "path",
+              "name": "jobId"
+            },
+            "value": {
+              "selector": {
+                "from": "body",
+                "pointer": "/id"
+              },
+              "source": "initial"
+            }
+          },
+          {
+            "target": {
+              "in": "header",
+              "name": "X-Trace"
+            },
+            "value": {
+              "selector": {
+                "from": "body",
+                "pointer": "/status"
+              },
+              "source": "previous"
+            }
+          }
+        ],
+        "cancelled": [
+          "cancelled"
+        ],
+        "create": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs/post"
+        },
+        "enabled": true,
+        "failed": [
+          "failed"
+        ],
+        "interval": {
+          "retry_after_header": "Retry-After",
+          "seconds": 2.0
+        },
+        "kind": "polling",
+        "pending": [
+          "queued",
+          "running"
+        ],
+        "poll": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs~1{jobId}/get"
+        },
+        "result": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "jobId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "kind": "operation",
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1jobs~1{jobId}~1report/get"
+          }
+        },
+        "state": {
+          "from": "body",
+          "pointer": "/status"
+        },
+        "succeeded": [
+          "done"
+        ]
+      },
+      "jobs.tracked": {
+        "accepted_statuses": [
+          202
+        ],
+        "bindings": [
+          {
+            "target": {
+              "in": "path",
+              "name": "jobId"
+            },
+            "value": {
+              "selector": {
+                "from": "body",
+                "pointer": "/id"
+              },
+              "source": "initial"
+            }
+          }
+        ],
+        "cancelled": [
+          "cancelled"
+        ],
+        "create": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs/post"
+        },
+        "enabled": true,
+        "expires_at": {
+          "from": "body",
+          "pointer": "/expires"
+        },
+        "failed": [
+          "failed"
+        ],
+        "interval": {
+          "retry_after_header": null,
+          "seconds": 1.0
+        },
+        "kind": "polling",
+        "pending": [
+          "queued",
+          "running"
+        ],
+        "poll": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs~1{jobId}/get"
+        },
+        "remote_cancel": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "jobId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "previous"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "X-Reason"
+              },
+              "value": {
+                "literal": "requested"
+              }
+            }
+          ],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1jobs~1{jobId}/delete"
+          }
+        },
+        "result": {
+          "kind": "inline",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Report"
+          },
+          "selector": {
+            "from": "body",
+            "pointer": "/result"
+          }
+        },
+        "state": {
+          "from": "body",
+          "pointer": "/status"
+        },
+        "succeeded": [
+          "done"
+        ]
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 jobs.create_job()
+    exports client.types.jobs.CreateJobResponse client.types.jobs.CreateJobErrorData client.types.jobs.CreateJobHTTPError
+    exports client.types.jobs.CreateJobRequestCodecs client.types.jobs.decode_create_job_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 jobs.get_job(path:jobId=job_id, header:X-Trace=x_trace, query:verbose=verbose, query:since=since, cookie:session=session, header:X-Api-Key=x_api_key, query:api_key=api_key)
+    exports client.types.jobs.GetJobResponse client.types.jobs.GetJobErrorData client.types.jobs.GetJobHTTPError
+    exports client.types.jobs.GetJobRequestCodecs client.types.jobs.decode_get_job_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/2 jobs.cancel_job(path:jobId=job_id, header:X-Reason=x_reason)
+    exports client.types.jobs.CancelJobResponse client.types.jobs.CancelJobErrorData client.types.jobs.CancelJobHTTPError
+    exports client.types.jobs.CancelJobRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/3 jobs.get_report(path:jobId=job_id)
+    exports client.types.jobs.GetReportResponse client.types.jobs.GetReportErrorData client.types.jobs.GetReportHTTPError
+    exports client.types.jobs.GetReportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/4 reports.find_report()
+    exports client.types.reports.FindReportResponse client.types.reports.FindReportErrorData client.types.reports.FindReportHTTPError
+    exports client.types.reports.FindReportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/5 reports.latest_report()
+    exports client.types.reports.LatestReportResponse client.types.reports.LatestReportErrorData client.types.reports.LatestReportHTTPError
+    exports client.types.reports.LatestReportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/6 exports.start_export()
+    exports client.types.exports.StartExportResponse client.types.exports.StartExportErrorData client.types.exports.StartExportHTTPError
+    exports client.types.exports.StartExportRequestCodecs client.types.exports.decode_start_export_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/7 exports.cancel_exports()
+    exports client.types.exports.CancelExportsResponse client.types.exports.CancelExportsErrorData client.types.exports.CancelExportsHTTPError
+    exports client.types.exports.CancelExportsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/8 exports.export_status(querystring:criteria=criteria)
+    exports client.types.exports.ExportStatusResponse client.types.exports.ExportStatusErrorData client.types.exports.ExportStatusHTTPError
+    exports client.types.exports.ExportStatusRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/9 exports.find_export(querystring:filter=filter)
+    exports client.types.exports.FindExportResponse client.types.exports.FindExportErrorData client.types.exports.FindExportHTTPError
+    exports client.types.exports.FindExportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/10 reports.add_note()
+    exports client.types.reports.AddNoteResponse client.types.reports.AddNoteErrorData client.types.reports.AddNoteHTTPError
+    exports client.types.reports.AddNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
+  S_OPERATION_EXCLUDED selection /paths/~1archives/post: POST /archives is excluded by exclude_tags 'archives': Archives have no success response
+  S_OPERATION_EXCLUDED selection /paths/~1archives~1search/post: POST /archives/search is excluded by exclude_tags 'archives': Archives have no success response
+render msgspec.Struct
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/jobs/__init__.py
+  write client/resources/jobs/_sync.py
+  write client/resources/jobs/_async.py
+  write client/resources/reports/__init__.py
+  write client/resources/reports/_sync.py
+  write client/resources/reports/_async.py
+  write client/resources/exports/__init__.py
+  write client/resources/exports/_sync.py
+  write client/resources/exports/_async.py
+  write client/types/__init__.py
+  write client/types/jobs/__init__.py
+  write client/types/jobs/_operations.py
+  write client/types/reports/__init__.py
+  write client/types/reports/_operations.py
+  write client/types/exports/__init__.py
+  write client/types/exports/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_generated/security.py
+  write client/_operations.py
+  write client/protocols/_plans.py
+  write client/protocols/_helpers.py
+  write client/protocols/_async_helpers.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['jobs.run', 'jobs.inline', 'jobs.report', 'exports.run', 'exports.latest', 'jobs.tracked'] bindings 29
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper jobs.run polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.run cff194986c5917a912658db834f02ea0d5da2dc018f25621ac51954818672e28
+  helper jobs.inline polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.inline 80e5c6d4c175f021be599aa6433bc6b69487dbf5696ebffa001f58d444921c3f
+  helper jobs.report polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.report 40a55aa2fbf94e454a951e208440651473ecb54da693f095872fa1a400bbe7eb
+  helper exports.run polling enabled True /inputs/target_config/protocol_metadata/helpers/exports.run 1ec2eb275b18a0faeb6dfaeefcea7b51b7374489abae2d75af3713a16842f728
+  helper exports.latest polling enabled True /inputs/target_config/protocol_metadata/helpers/exports.latest a82f26fa670603c7c98c014de2c5609b980635a56aaf35661e9e57432f57781e
+  helper jobs.tracked polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.tracked c4e42605eaa65a4a134357b0f526dd6c684cc4f2f79fffe35653f3618e9980a4
+  {
+    "helpers": {
+      "exports.latest": {
+        "accepted_statuses": [
+          202
+        ],
+        "bindings": [],
+        "cancelled": [],
+        "create": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1exports/post"
+        },
+        "enabled": true,
+        "failed": [],
+        "interval": {
+          "retry_after_header": null,
+          "seconds": 1.0
+        },
+        "kind": "polling",
+        "pending": [
+          0
+        ],
+        "poll": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1exports~1status/get"
+        },
+        "result": {
+          "bindings": [],
+          "kind": "operation",
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1reports~1latest/get"
+          }
+        },
+        "state": {
+          "from": "body",
+          "pointer": "/state"
+        },
+        "succeeded": [
+          1
+        ]
+      },
+      "exports.run": {
+        "accepted_statuses": [
+          202
+        ],
+        "bindings": [
+          {
+            "target": {
+              "in": "querystring",
+              "name": "criteria",
+              "pointer": "/id"
+            },
+            "value": {
+              "selector": {
+                "from": "header",
+                "name": "Operation-Id",
+                "occurrence": "single"
+              },
+              "source": "initial"
+            }
+          }
+        ],
+        "cancelled": [],
+        "create": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1exports/post"
+        },
+        "enabled": true,
+        "failed": [
+          2
+        ],
+        "interval": {
+          "retry_after_header": null,
+          "seconds": 1.0
+        },
+        "kind": "polling",
+        "pending": [
+          0
+        ],
+        "poll": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1exports~1status/get"
+        },
+        "remote_cancel": {
+          "bindings": [],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1exports/delete"
+          }
+        },
+        "result": {
+          "kind": "none"
+        },
+        "state": {
+          "from": "body",
+          "pointer": "/state"
+        },
+        "succeeded": [
+          1
+        ]
+      },
+      "jobs.inline": {
+        "accepted_statuses": [
+          202
+        ],
+        "bindings": [
+          {
+            "target": {
+              "in": "path",
+              "name": "jobId"
+            },
+            "value": {
+              "selector": {
+                "from": "body",
+                "pointer": "/id"
+              },
+              "source": "previous"
+            }
+          },
+          {
+            "target": {
+              "in": "query",
+              "name": "verbose"
+            },
+            "value": {
+              "literal": true
+            }
+          }
+        ],
+        "cancelled": [],
+        "create": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs/post"
+        },
+        "enabled": true,
+        "failed": [],
+        "immediate_result": {
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Report"
+          },
+          "selector": {
+            "from": "body",
+            "pointer": "/result"
+          },
+          "statuses": [
+            200
+          ]
+        },
+        "interval": {
+          "retry_after_header": null,
+          "seconds": 1.0
+        },
+        "kind": "polling",
+        "pending": [
+          "pending"
+        ],
+        "poll": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs~1{jobId}/get"
+        },
+        "result": {
+          "kind": "inline",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Report"
+          },
+          "selector": {
+            "from": "body",
+            "pointer": "/result"
+          }
+        },
+        "state": {
+          "from": "header",
+          "name": "X-State",
+          "occurrence": "single"
+        },
+        "succeeded": [
+          "done"
+        ]
+      },
+      "jobs.report": {
+        "accepted_statuses": [
+          202
+        ],
+        "bindings": [
+          {
+            "target": {
+              "in": "path",
+              "name": "jobId"
+            },
+            "value": {
+              "selector": {
+                "from": "body",
+                "pointer": "/id"
+              },
+              "source": "initial"
+            }
+          },
+          {
+            "target": {
+              "in": "query",
+              "name": "since"
+            },
+            "value": {
+              "selector": {
+                "from": "status"
+              },
+              "source": "previous"
+            }
+          }
+        ],
+        "cancelled": [],
+        "create": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs/post"
+        },
+        "enabled": true,
+        "failed": [],
+        "interval": {
+          "retry_after_header": null,
+          "seconds": 1.0
+        },
+        "kind": "polling",
+        "pending": [
+          "queued"
+        ],
+        "poll": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs~1{jobId}/get"
+        },
+        "result": {
+          "bindings": [
+            {
+              "target": {
+                "in": "body",
+                "pointer": "/job"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "previous"
+              }
+            }
+          ],
+          "kind": "operation",
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1reports/post"
+          }
+        },
+        "state": {
+          "from": "body",
+          "pointer": "/status"
+        },
+        "succeeded": [
+          "done"
+        ]
+      },
+      "jobs.run": {
+        "accepted_statuses": [
+          202
+        ],
+        "bindings": [
+          {
+            "target": {
+              "in": "path",
+              "name": "jobId"
+            },
+            "value": {
+              "selector": {
+                "from": "body",
+                "pointer": "/id"
+              },
+              "source": "initial"
+            }
+          },
+          {
+            "target": {
+              "in": "header",
+              "name": "X-Trace"
+            },
+            "value": {
+              "selector": {
+                "from": "body",
+                "pointer": "/status"
+              },
+              "source": "previous"
+            }
+          }
+        ],
+        "cancelled": [
+          "cancelled"
+        ],
+        "create": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs/post"
+        },
+        "enabled": true,
+        "failed": [
+          "failed"
+        ],
+        "interval": {
+          "retry_after_header": "Retry-After",
+          "seconds": 2.0
+        },
+        "kind": "polling",
+        "pending": [
+          "queued",
+          "running"
+        ],
+        "poll": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs~1{jobId}/get"
+        },
+        "result": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "jobId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "kind": "operation",
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1jobs~1{jobId}~1report/get"
+          }
+        },
+        "state": {
+          "from": "body",
+          "pointer": "/status"
+        },
+        "succeeded": [
+          "done"
+        ]
+      },
+      "jobs.tracked": {
+        "accepted_statuses": [
+          202
+        ],
+        "bindings": [
+          {
+            "target": {
+              "in": "path",
+              "name": "jobId"
+            },
+            "value": {
+              "selector": {
+                "from": "body",
+                "pointer": "/id"
+              },
+              "source": "initial"
+            }
+          }
+        ],
+        "cancelled": [
+          "cancelled"
+        ],
+        "create": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs/post"
+        },
+        "enabled": true,
+        "expires_at": {
+          "from": "body",
+          "pointer": "/expires"
+        },
+        "failed": [
+          "failed"
+        ],
+        "interval": {
+          "retry_after_header": null,
+          "seconds": 1.0
+        },
+        "kind": "polling",
+        "pending": [
+          "queued",
+          "running"
+        ],
+        "poll": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1jobs~1{jobId}/get"
+        },
+        "remote_cancel": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "jobId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "previous"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "X-Reason"
+              },
+              "value": {
+                "literal": "requested"
+              }
+            }
+          ],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1jobs~1{jobId}/delete"
+          }
+        },
+        "result": {
+          "kind": "inline",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Report"
+          },
+          "selector": {
+            "from": "body",
+            "pointer": "/result"
+          }
+        },
+        "state": {
+          "from": "body",
+          "pointer": "/status"
+        },
+        "succeeded": [
+          "done"
+        ]
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 jobs.create_job()
+    exports client.types.jobs.CreateJobResponse client.types.jobs.CreateJobErrorData client.types.jobs.CreateJobHTTPError
+    exports client.types.jobs.CreateJobRequestCodecs client.types.jobs.decode_create_job_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 jobs.get_job(path:jobId=job_id, header:X-Trace=x_trace, query:verbose=verbose, query:since=since, cookie:session=session, header:X-Api-Key=x_api_key, query:api_key=api_key)
+    exports client.types.jobs.GetJobResponse client.types.jobs.GetJobErrorData client.types.jobs.GetJobHTTPError
+    exports client.types.jobs.GetJobRequestCodecs client.types.jobs.decode_get_job_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/2 jobs.cancel_job(path:jobId=job_id, header:X-Reason=x_reason)
+    exports client.types.jobs.CancelJobResponse client.types.jobs.CancelJobErrorData client.types.jobs.CancelJobHTTPError
+    exports client.types.jobs.CancelJobRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/3 jobs.get_report(path:jobId=job_id)
+    exports client.types.jobs.GetReportResponse client.types.jobs.GetReportErrorData client.types.jobs.GetReportHTTPError
+    exports client.types.jobs.GetReportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/4 reports.find_report()
+    exports client.types.reports.FindReportResponse client.types.reports.FindReportErrorData client.types.reports.FindReportHTTPError
+    exports client.types.reports.FindReportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/5 reports.latest_report()
+    exports client.types.reports.LatestReportResponse client.types.reports.LatestReportErrorData client.types.reports.LatestReportHTTPError
+    exports client.types.reports.LatestReportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/6 exports.start_export()
+    exports client.types.exports.StartExportResponse client.types.exports.StartExportErrorData client.types.exports.StartExportHTTPError
+    exports client.types.exports.StartExportRequestCodecs client.types.exports.decode_start_export_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/7 exports.cancel_exports()
+    exports client.types.exports.CancelExportsResponse client.types.exports.CancelExportsErrorData client.types.exports.CancelExportsHTTPError
+    exports client.types.exports.CancelExportsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/8 exports.export_status(querystring:criteria=criteria)
+    exports client.types.exports.ExportStatusResponse client.types.exports.ExportStatusErrorData client.types.exports.ExportStatusHTTPError
+    exports client.types.exports.ExportStatusRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/9 exports.find_export(querystring:filter=filter)
+    exports client.types.exports.FindExportResponse client.types.exports.FindExportErrorData client.types.exports.FindExportHTTPError
+    exports client.types.exports.FindExportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/10 reports.add_note()
+    exports client.types.reports.AddNoteResponse client.types.reports.AddNoteErrorData client.types.reports.AddNoteHTTPError
+    exports client.types.reports.AddNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'msgspec>=0.18']
+  S_OPERATION_EXCLUDED selection /paths/~1archives/post: POST /archives is excluded by exclude_tags 'archives': Archives have no success response
+  S_OPERATION_EXCLUDED selection /paths/~1archives~1search/post: POST /archives/search is excluded by exclude_tags 'archives': Archives have no success response

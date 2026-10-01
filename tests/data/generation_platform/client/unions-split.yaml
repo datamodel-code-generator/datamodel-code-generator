@@ -1,0 +1,47 @@
+openapi: 3.1.0
+info:
+  title: Split union members
+  version: "1"
+servers:
+  - url: https://api.example.com
+paths:
+  /shapes:
+    post:
+      operationId: shape
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/Circle"
+                - $ref: "#/components/schemas/Square"
+      responses:
+        "200":
+          description: A shape told apart by its required properties, split into request and response models.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Circle"
+                  - $ref: "#/components/schemas/Square"
+components:
+  schemas:
+    Circle:
+      type: object
+      required: [radius]
+      properties:
+        radius:
+          type: integer
+        id:
+          type: integer
+          readOnly: true
+    Square:
+      type: object
+      required: [side]
+      properties:
+        side:
+          type: integer
+        secret:
+          type: string
+          writeOnly: true

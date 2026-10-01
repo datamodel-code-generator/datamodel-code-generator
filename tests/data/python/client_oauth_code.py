@@ -170,6 +170,7 @@ def _configuration(auth: ModuleType, options: ModuleType, transports: ModuleType
         ("boolean refreshes", lambda: auth.OAuthProviderOptions(max_concurrent_refreshes=True)),
         ("loopback flag type", lambda: auth.OAuthProviderOptions(allow_insecure_loopback=1)),
         ("transport type", lambda: auth.OAuthProviderOptions(transport={})),
+        ("clock type", lambda: auth.OAuthProviderOptions(clock=object())),
         (
             "unverified tls",
             lambda: flow(

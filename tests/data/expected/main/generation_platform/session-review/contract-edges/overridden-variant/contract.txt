@@ -12,6 +12,17 @@
       }
     },
     {
+      "use": "schema value /components/schemas/Pet",
+      "schema": "/components/schemas/Pet",
+      "declaration": "/components/schemas/Pet",
+      "media": null,
+      "state": "bound None",
+      "type": {
+        "node": "GeneratedSymbolType",
+        "symbol": "PetResponse"
+      }
+    },
+    {
       "use": "schema value /components/schemas/Pet/properties/id",
       "schema": "/components/schemas/Pet/properties/id",
       "declaration": "/components/schemas/Pet/properties/id",

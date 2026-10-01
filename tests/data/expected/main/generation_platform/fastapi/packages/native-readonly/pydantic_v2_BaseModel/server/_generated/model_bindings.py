@@ -93,7 +93,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:AccountRequest',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Account',
         fields=(
             FieldBinding(
                 field_id='models:AccountRequest.name',

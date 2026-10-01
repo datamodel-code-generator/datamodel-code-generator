@@ -110,6 +110,26 @@ def test_client_typing_pagination(backend: DataModelType, tmp_path: Path) -> Non
 
 
 @pytest.mark.parametrize(
+    "backend",
+    [
+        DataModelType.PydanticV2BaseModel,
+        DataModelType.PydanticV2Dataclass,
+        DataModelType.DataclassesDataclass,
+        DataModelType.TypingTypedDict,
+        DataModelType.MsgspecStruct,
+    ],
+)
+def test_client_typing_polling(backend: DataModelType, tmp_path: Path) -> None:
+    """Check polling helpers: typed results and polls, sync and asyncio handles, and misuses of each."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(
+        client_typing_report(tmp_path, backend, "polling", ("polling",)),
+        EXPECTED / f"{backend.value.replace('.', '-')}-polling.txt",
+    )
+
+
+@pytest.mark.parametrize(
     "case", ["pagination-targets", "pagination-querystring", "pagination-counts", "pagination-links", "streams-mixed"]
 )
 def test_client_typing_package(case: str, tmp_path: Path) -> None:
@@ -174,6 +194,26 @@ def test_client_typing_adapters(tmp_path: Path) -> None:
         DataModelType.MsgspecStruct,
     ],
 )
+def test_client_typing_caches(backend: DataModelType, tmp_path: Path) -> None:
+    """Check cache helpers: typed results in both modes, stores, invalidation, mutations, and misuses of each."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(
+        client_typing_report(tmp_path, backend, "caching-typing", ("cache_helpers",)),
+        EXPECTED / f"{backend.value.replace('.', '-')}-caches.txt",
+    )
+
+
+@pytest.mark.parametrize(
+    "backend",
+    [
+        DataModelType.PydanticV2BaseModel,
+        DataModelType.PydanticV2Dataclass,
+        DataModelType.DataclassesDataclass,
+        DataModelType.TypingTypedDict,
+        DataModelType.MsgspecStruct,
+    ],
+)
 def test_client_typing_streams(backend: DataModelType, tmp_path: Path) -> None:
     """Check SSE helpers: typed events and data, unknown events, sync and asyncio streams, and misuses of each."""
     if not os.environ.get(ENABLED):
@@ -201,6 +241,29 @@ def test_client_typing_ndjson(backend: DataModelType, tmp_path: Path) -> None:
     assert_output(
         client_typing_report(tmp_path, backend, "ndjson", ("ndjson",)),
         EXPECTED / f"{backend.value.replace('.', '-')}-ndjson.txt",
+    )
+
+
+@pytest.mark.parametrize(
+    ("backend", "case"),
+    [
+        (DataModelType.PydanticV2BaseModel, "sockets"),
+        (DataModelType.PydanticV2Dataclass, "sockets"),
+        (DataModelType.DataclassesDataclass, "sockets-schema"),
+        (DataModelType.TypingTypedDict, "sockets-schema"),
+        (DataModelType.MsgspecStruct, "sockets"),
+    ],
+)
+def test_client_typing_sockets(backend: DataModelType, case: str, tmp_path: Path) -> None:
+    """Check WebSocket helpers: typed sessions, messages, and receipts, sync and asyncio, and misuses of each.
+
+    Dataclasses and TypedDict decode the received union by its schemas, so their package validates responses so.
+    """
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(
+        client_typing_report(tmp_path, backend, case, ("sockets",)),
+        EXPECTED / f"{backend.value.replace('.', '-')}-sockets.txt",
     )
 
 

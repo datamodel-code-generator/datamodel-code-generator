@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal, TypeAlias
+from functools import lru_cache
+from typing import Final, Literal, TypeAlias
+
+CREDENTIAL_HEADERS: Final = frozenset({"authorization", "proxy-authorization", "cookie", "cookie2"})
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -40,3 +43,17 @@ class SecurityBinding:
 
     schemes: tuple[SecuritySchemeEntry, ...]
     alternatives: tuple[tuple[SecurityRequirement, ...], ...]
+
+
+@lru_cache(maxsize=32)
+def secret_names(schemes: tuple[SecuritySchemeEntry, ...]) -> tuple[frozenset[str], frozenset[str]]:
+    """Return the lowercase header names and the query names that carry credentials in a package's requests.
+
+    They are the credential and cookie headers and the positions of the package's declared security schemes, however
+    a request came to fill them.
+    """
+    declared = [scheme for scheme in schemes if isinstance(scheme, SecurityScheme)]
+    return (
+        CREDENTIAL_HEADERS.union(scheme.wire_name.lower() for scheme in declared if scheme.location == "header"),
+        frozenset(scheme.wire_name for scheme in declared if scheme.location == "query"),
+    )

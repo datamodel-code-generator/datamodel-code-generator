@@ -1,0 +1,44 @@
+schema_version: 1
+helpers:
+  users.profile:
+    kind: cache
+    operation: /paths/~1users~1{userId}/get
+    validator: both
+    authenticated: false
+    vary_allowlist: [Accept-Language]
+    tags: ["user:{userId}", users]
+    mutations:
+      rename:
+        operation: /paths/~1users~1{userId}/patch
+        invalidate_tags: ["user:{userId}"]
+      remove:
+        operation: /paths/~1users~1{userId}/delete
+        invalidate_tags: ["user:{userId}", users]
+  users.dated:
+    kind: cache
+    operation: /paths/~1users~1{userId}/get
+    validator: last_modified
+    authenticated: false
+    statuses: [200, 203]
+  users.listing:
+    kind: cache
+    operation: /paths/~1users/get
+    validator: etag
+    authenticated: false
+    vary_allowlist: [Accept-Language]
+    tags: [users]
+    mutations:
+      create:
+        operation: /paths/~1users/post
+        invalidate_tags: [users]
+  carts.current:
+    kind: cache
+    operation: /paths/~1carts~1current/get
+    validator: etag
+    authenticated: true
+  secure.profile:
+    kind: cache
+    operation: /paths/~1secure~1users~1{userId}/get
+    validator: etag
+    authenticated: true
+    vary_allowlist: [X-Signature]

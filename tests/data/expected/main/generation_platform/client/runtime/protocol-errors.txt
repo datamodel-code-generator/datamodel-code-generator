@@ -114,6 +114,49 @@
     counters=(2, 1, 1, 3, 4, 1, ('refresh-1',), 1, 3)
     hints=True/True/True retained=True progress copied=True
     str=StreamRemoteError(operation_id='protocol', call_id='call-1', sequence=9) repr=StreamRemoteError() secret=False progress shown=False
+  ConcurrentReceiveError: base=ProtocolStateError sdk=True reason=concurrent_receive_error
+    chain=['ConcurrentReceiveError', 'ProtocolStateError', 'ProtocolError', 'SDKError']
+    fields=action,call_id,cause,helper_id,info,operation,operation_id,parent_session_id,secondary_errors,state
+    context=True/True/True/True/True call=protocol/call-1/session-1
+    counters=(2, 1, 1, 3, 4, 1, ('refresh-1',), 1, 3)
+    hints=True/True/True retained=True progress copied=True
+    str=ConcurrentReceiveError(operation_id='protocol', call_id='call-1', state='receiving', action='receive') repr=ConcurrentReceiveError() secret=False progress shown=False
+  WebSocketClosedError: base=ProtocolError sdk=True reason=web_socket_closed_error
+    chain=['WebSocketClosedError', 'ProtocolError', 'SDKError']
+    fields=call_id,cause,clean,code,helper_id,info,operation,operation_id,parent_session_id,reason,secondary_errors
+    context=True/True/True/True/True call=protocol/call-1/session-1
+    counters=(2, 1, 1, 3, 4, 1, ('refresh-1',), 1, 3)
+    hints=True/True/True retained=True progress copied=True
+    str=WebSocketClosedError(operation_id='protocol', call_id='call-1', code=4001, clean=False) repr=WebSocketClosedError() secret=False progress shown=False
+  WebSocketHandshakeError: base=TransportError sdk=True reason=web_socket_handshake_error
+    chain=['WebSocketHandshakeError', 'TransportError', 'SDKError']
+    fields=call_id,cause,condition,delivery_state,helper_id,info,operation,operation_id,parent_session_id,phase,retry_stop_reason,secondary_errors
+    context=True/True/True/True/True call=protocol/call-1/session-1
+    counters=(2, 1, 1, 3, 4, 1, ('refresh-1',), 1, 3)
+    hints=True/True/True retained=True progress copied=True
+    str=WebSocketHandshakeError(operation_id='protocol', call_id='call-1', delivery_state='RESPONSE_STARTED', phase='connect', condition='negotiation') repr=WebSocketHandshakeError() secret=False progress shown=False
+  WebSocketProxyError: base=TransportError sdk=True reason=web_socket_proxy_error
+    chain=['WebSocketProxyError', 'TransportError', 'SDKError']
+    fields=call_id,cause,delivery_state,helper_id,info,operation,operation_id,parent_session_id,phase,proxy_status_code,retry_stop_reason,secondary_errors
+    context=True/True/True/True/True call=protocol/call-1/session-1
+    counters=(2, 1, 1, 3, 4, 1, ('refresh-1',), 1, 3)
+    hints=True/True/True retained=True progress copied=True
+    str=WebSocketProxyError(operation_id='protocol', call_id='call-1', delivery_state='NOT_SENT', phase='connect', proxy_status_code=407) repr=WebSocketProxyError() secret=False progress shown=False
+  HandshakeResponse: base=ProtocolError sdk=True reason=handshake_response
+    chain=['HandshakeResponse', 'ProtocolError', 'SDKError']
+    fields=body_prefix,call_id,cause,headers,helper_id,info,operation,operation_id,parent_session_id,secondary_errors,status_code,truncated
+    context=True/True/True/True/True call=protocol/call-1/session-1
+    counters=(2, 1, 1, 3, 4, 1, ('refresh-1',), 1, 3)
+    hints=True/True/True retained=True progress copied=True
+    str=HandshakeResponse(operation_id='protocol', call_id='call-1', status_code=503) repr=HandshakeResponse() secret=False progress shown=False
+  DeliveryUnknownError: base=ProtocolError sdk=True reason=delivery_unknown_error
+    chain=['DeliveryUnknownError', 'ProtocolError', 'SDKError']
+    fields=call_id,cause,delivery_state,helper_id,info,message_id,operation,operation_id,parent_session_id,resume_state,secondary_errors
+    context=True/True/True/True/True call=protocol/call-1/session-1
+    counters=(2, 1, 1, 3, 4, 1, ('refresh-1',), 1, 3)
+    hints=True/True/True retained=True progress copied=True
+    str=DeliveryUnknownError(operation_id='protocol', call_id='call-1', delivery_state='MAYBE_SENT') repr=DeliveryUnknownError() secret=False progress shown=False
+    resume hint=True identity=True
   progress copy={'pages': 1, 'items': 0, 'network_send_count': 2} type=mappingproxy hint=True
   progress mutation ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
   every progress key = 10
@@ -201,6 +244,15 @@
   remote event type ! ValueError: event_type must be a string or None []
   remote missing data ! TypeError: StreamRemoteError.__init__() missing 1 required keyword-only argument: 'data' []
   remote sequence ! ValueError: sequence must be a nonnegative integer []
+  closed reason over 123 bytes ! ValueError: reason must be at most 123 UTF-8 bytes []
+  closed code negative ! ValueError: code must be a nonnegative integer []
+  closed clean integer ! ValueError: clean must be a bool []
+  handshake condition unknown ! ValueError: condition must be one of its declared values []
+  handshake operation pointer ! ValueError: operation must be an OperationRef or None []
+  proxy status ! ValueError: proxy_status_code must be an HTTP status []
+  handshake response headers ! ValueError: headers must be a HeadersView []
+  handshake response prefix ! ValueError: body_prefix must be at most 65536 bytes []
+  delivery unknown not sent ! ValueError: delivery_state must be MAYBE_SENT or RESPONSE_STARTED []
   context helper ! ValueError: helper_id must be a string or None []
   context counters ! ValueError: network_send_count must be a nonnegative integer []
   positional message ! TypeError: ProtocolStateError.__init__() takes 1 positional argument but 2 positional arguments (and 2 keyword-only arguments) were given []
