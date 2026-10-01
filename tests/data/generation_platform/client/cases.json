@@ -2000,5 +2000,45 @@
         ]
       }
     }
+  },
+  "pagination-querystring": {
+    "input": "querystring.yaml",
+    "references": [
+      "protocols/pagination-querystring.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-querystring.yaml"
+    }
+  },
+  "pagination-targets": {
+    "input": "pagination-targets.yaml",
+    "references": [
+      "protocols/pagination-targets.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-targets.yaml",
+      "validation": {
+        "request_overrides": [
+          "schema"
+        ]
+      }
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
+  "protocols-pagination-querystring-checks": {
+    "input": "querystring.yaml",
+    "references": [
+      "protocols/pagination-querystring-checks.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-querystring-checks.yaml"
+    },
+    "modules": false
   }
 }

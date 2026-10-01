@@ -65,6 +65,8 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
         "helpers",
         "pagination",
         "pagination-plans",
+        "pagination-querystring",
+        "pagination-targets",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:
@@ -108,6 +110,7 @@ def test_client_render(case: str, tmp_path: Path) -> None:
         "protocols-references",
         "protocols-querystring",
         "protocols-pagination-checks",
+        "protocols-pagination-querystring-checks",
     ],
 )
 def test_client_protocols(case: str, tmp_path: Path) -> None:

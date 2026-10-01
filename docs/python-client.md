@@ -584,14 +584,31 @@ early holds no response. Its `progress` reports the pages fetched, the items del
 ### Cursors and end conditions
 
 A page's items must be a JSON array at the `items` pointer; an empty array does not end the traversal. The cursor is
-read from the page's body, a response header, or its status, and written to the query or path parameter of `write`.
-A cursor the server returned is sent as it came, without that parameter's schema checks even under `request="schema"`
-validation, while a start cursor the caller passes is checked like any other argument. The traversal ends at a page whose cursor is missing or null where the helper
-declares that end, is one of its end values, or is empty with `empty_string: end`. A missing or null cursor that no end
-covers, missing or null items, and a header repeated for a single cursor raise `ProtocolDataError`, and a cursor over
-its size limit raises `ProtocolSizeError`, each as a failure of the page's call. A continuation returned by an earlier
-page of the same pager, or an earlier page `next_page` continued from, ends it with `PaginationCycleError` after the
-repeating page.
+read from the page's body, a response header, or its status, and written to the target of `write`: a path, query,
+header, or cookie parameter, a property of the querystring, or a member of the JSON request body. A cursor the server
+returned is sent as it came, without its target's schema checks even under `request="schema"` validation, while a
+start cursor the caller passes is checked like any other argument. The traversal ends at a page whose cursor is missing
+or null where the helper declares that end, is one of its end values, or is empty with `empty_string: end`. A missing
+or null cursor that no end covers, missing or null items, a header repeated for a single cursor, and a dot segment
+(`.` or `..`) read for a path parameter raise `ProtocolDataError`, and a cursor over its size limit raises
+`ProtocolSizeError`, each as a failure of the page's call. A continuation returned by an earlier page of the same
+pager, or an earlier page `next_page` continued from, ends it with `PaginationCycleError` after the repeating page.
+
+### Bindings and request targets
+
+Each request after the first is the first request with the helper's `bindings` written in order, then the cursor. A
+binding writes a `literal`, or what its selector reads from the `initial` page's response, kept for the whole
+traversal, or from the `previous` page's; a header selector with `occurrence: all` reads every value of the header as
+an array. The bindings are read from every page that has a next page, even one a caller never continues, and a
+value its selector finds missing raises `ProtocolDataError`; a header none of whose values is present counts as
+missing under `occurrence: all` too. A `null` is written as it is to a JSON body or a querystring of JSON content, the
+only targets that can carry it. A parameter target replaces the argument. A querystring or body target writes into
+the caller's querystring or JSON body, encoded and checked as in any call, or into an empty object when the call gives
+none; a missing, null, or other non-object value on its pointer is replaced by an empty object. The querystring is
+then encoded once, so no query pair is added. The values a server gave are never checked against their targets'
+schemas. A call's `options` must not patch a header, the `Cookie` header when the helper writes a cookie, or a query
+parameter the helper writes: `iterate`, `page`, and `next_page` raise `ProtocolConfigurationError` with a `field_path`
+of `("options", "headers" or "query", <name>)` before sending. A binding with `source: input` is not supported yet.
 
 ### Limits and sessions
 
@@ -613,8 +630,8 @@ call's options, then the helper's `ProtocolDefaults` in `ProtocolClientOptions.d
 A limit reached while pages remain raises `SessionLimitError` with the progress so far; the last page ends normally
 even exactly at a limit. An item limit is exact for items, while `iter_pages` checks it before each fetch, so a page
 that crosses it is delivered whole, and `page` or `next_page` with `max_items=0` raises
-`SessionLimitError(kind="items", limit=0)` without sending. A retry the session has no slot for is not made, and the page's error keeps
-`retry_stop_reason="parent_budget_exhausted"`; so does a rejected token's recovery when the session lacks slots for
+`SessionLimitError(kind="items", limit=0)` without sending. A retry the session has no slot for is not made, and the
+page's error keeps `retry_stop_reason="parent_budget_exhausted"`; so does a rejected token's recovery when the session lacks slots for
 the new token request and the resend. Defaults naming a helper the package lacks, or giving it another kind's options,
 fail the client's construction with `ProtocolConfigurationError`, and so do options of another type, and an idempotency
 key fixed by the client's options, `with_options`, or the call, when a helper is called.
@@ -629,20 +646,39 @@ as for a page it did not return, has `parent_session_id=None`.
 
 The operation must declare exactly one success response with one JSON media type and a schema, read natively, so an
 operation that also declares a `204` or another success status is refused. The items pointer must name, through the
-fields of the page's models, a JSON array whose items schema is `item_schema`. The cursor must read a declared property
-or header, whose JSON types the target parameter accepts; a cursor that can be null needs a `null` end, and each end
-value must be of a type the cursor reads. Helper names whose classes collide, such as `users.all_items` and
-`users_all.items`, fail with `E_NAME_COLLISION`. Bindings, cursors written to a header, a cookie, the querystring, or
-the body, request bodies other than JSON, envelope-projected responses, and items or cursor pointers that read through
-a union or a map are not supported yet:
+fields of the page's models, a JSON array whose items schema is `item_schema`. The cursor and each binding's selector
+must read a declared property or header, and a querystring or body target's pointer must name a property its schema
+declares, through `allOf` members and nullable `anyOf` or `oneOf` ones. The JSON types a cursor reads, other than
+null, and those a binding reads or its literal has, null included, must be ones the target accepts, and a binding that
+can give null must write a JSON body or a querystring of JSON content; a cursor that can be null needs a `null` end,
+and each end value must be of a type the cursor reads. A literal `.` or `..` is no path parameter value, and a body
+target needs a required body or one media type a call without `media_type` sends. A binding that writes the cursor's
+target or another binding's, or a body or querystring member inside or around one, fails with `E_CONFIG_CONFLICT`.
+Helper names whose classes collide, such as `users.all_items` and `users_all.items`, fail with `E_NAME_COLLISION`.
+Bindings that read the helper's input, request bodies other than JSON, envelope-projected responses, and items or
+selector pointers that read through a union or a map are not supported yet:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.pagination.diagnostics -->
 <!-- fmt: off -->
 
 ```text
 E_NAME_COLLISION target protocols.helpers['users_all.items'] /paths/~1users/get: The helper name 'users_all.items' gives the class name 'UsersAllItemsPagination', which 'users.all_items' already gives
-E_CLIENT_UNSUPPORTED target protocols.helpers['bindings.given'].bindings[0] /paths/~1users/get: The pagination helper 'bindings.given' with a binding to a header target is not supported yet
-E_CLIENT_UNSUPPORTED target protocols.helpers['write.header'].continuation.write /paths/~1users/get: The pagination helper 'write.header' writing its cursor to a header target is not supported yet
+E_CLIENT_UNSUPPORTED target protocols.helpers['bindings.input'].bindings[0].value.source /paths/~1users/get: The binding 0 of 'bindings.input' reads the helper's input, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['bindings.reads'].bindings[0].value.selector /paths/~1users/get: The binding 0 pointer '/nothing' of 'bindings.reads' names no property of the GET /users response
+E_CONFIG_VALUE config protocols.helpers['bindings.reads'].bindings[1].value.selector /paths/~1users/get: The binding 1 of 'bindings.reads' reads the header 'X-Missing', which GET /users does not declare
+E_CLIENT_UNSUPPORTED target protocols.helpers['bindings.reads'].bindings[2].value.selector /paths/~1users/get: The binding 2 pointer '/grouped/admins' of 'bindings.reads' reads through a union or map, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['bindings.types'].bindings[0].target /paths/~1users/get: The binding 0 of 'bindings.types' gives integer values, which the header parameter 'X-Cursor' of GET /users does not accept
+E_CONFIG_VALUE config protocols.helpers['bindings.types'].bindings[1].target /paths/~1users/get: The binding 1 of 'bindings.types' gives string values, which the query parameter 'size' of GET /users does not accept
+E_CONFIG_VALUE config protocols.helpers['bindings.types'].bindings[2].target /paths/~1users/get: The binding 2 of 'bindings.types' gives array values, which the cookie parameter 'session' of GET /users does not accept
+E_CONFIG_VALUE config protocols.helpers['bindings.null'].bindings[0].target /paths/~1users/get: The binding 0 of 'bindings.null' can give null, which cannot be written to the header parameter 'X-Cursor' of GET /users
+E_CONFIG_VALUE config protocols.helpers['bindings.null'].bindings[1].target /paths/~1users/get: The binding 1 of 'bindings.null' can give null, which cannot be written to the query parameter 'size' of GET /users
+E_CONFIG_CONFLICT config protocols.helpers['bindings.conflicts'].bindings[0].target /paths/~1users/get: The binding 0 of 'bindings.conflicts' writes the same target as its cursor
+E_CONFIG_CONFLICT config protocols.helpers['bindings.conflicts'].bindings[2].target /paths/~1users/get: The binding 2 of 'bindings.conflicts' writes the same target as its binding 1
+E_CONFIG_CONFLICT config protocols.helpers['bindings.overlaps'].bindings[0].target /paths/~1bodies/post: The binding 0 of 'bindings.overlaps' writes a target overlapping that of its cursor
+E_CONFIG_CONFLICT config protocols.helpers['bindings.overlaps'].bindings[2].target /paths/~1bodies/post: The binding 2 of 'bindings.overlaps' writes a target overlapping that of its cursor
+E_CONFIG_VALUE config protocols.helpers['bindings.dots'].bindings[0].value.literal /paths/~1folders~1{folder}/get: The binding 0 of 'bindings.dots' gives the dot segment '..', which cannot be written to the path parameter 'folder' of GET /folders/{folder}
+E_CONFIG_VALUE config protocols.helpers['write.optional_body'].continuation.write /paths/~1multi/post: The cursor of 'write.optional_body' writes the request body of POST /multi, which is optional and has no media type a call without one sends
+E_CONFIG_VALUE config protocols.helpers['write.body_type'].continuation.write /paths/~1bodies/post: The cursor of 'write.body_type' reads string values, which the property '/count' of the request body of POST /bodies does not accept
 E_CLIENT_UNSUPPORTED target protocols.helpers['body.form'] /paths/~1forms/post: The pagination helper 'body.form' sends a request body other than JSON, which is not supported yet
 E_CONFIG_VALUE config protocols.helpers['responses.twice'].operation /paths/~1twice/get: GET /twice must declare exactly one JSON success response for the pagination helper 'responses.twice'
 E_CLIENT_UNSUPPORTED target protocols.helpers['responses.hidden'] /paths/~1hidden/get: The pagination helper 'responses.hidden' reads an envelope-projected response, which is not supported yet

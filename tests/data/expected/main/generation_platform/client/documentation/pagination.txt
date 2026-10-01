@@ -925,8 +925,10 @@ another kind's options, fail construction. The session types are imported from:
 | session total timeout | 300 seconds; None removes it |
 | network sends per session | 3000; None removes it |
 
-A page's items must be a JSON array; an empty array does not end the traversal. A server's cursor is sent as it came,
-without its parameter's schema checks. The cursor ends the traversal only through the declared end conditions, and a
-missing or null cursor that no condition covers raises `ProtocolDataError`. A continuation seen earlier in the session
-ends it with `PaginationCycleError` after the repeating page. A limit reached while pages remain raises
-`SessionLimitError` with the progress so far; a pager then refuses further steps.
+A page's items must be a JSON array; an empty array does not end the traversal. A server's cursor, and each value a
+binding reads, is sent as it came, without its target's schema checks; a dot segment for a path parameter raises
+`ProtocolDataError`. The cursor ends the traversal only through the declared end conditions, and a missing or null
+cursor that no condition covers, or a missing binding value, raises `ProtocolDataError`. A continuation seen earlier in
+the session ends it with `PaginationCycleError` after the repeating page. A limit reached while pages remain raises
+`SessionLimitError` with the progress so far; a pager then refuses further steps. A call's options must not patch a
+header, the cookies, or a query parameter the helper writes.

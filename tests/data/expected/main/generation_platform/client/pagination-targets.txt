@@ -1,0 +1,341 @@
+# pagination-targets
+render pydantic_v2.BaseModel
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/users/__init__.py
+  write client/resources/users/_sync.py
+  write client/resources/users/_async.py
+  write client/resources/folders/__init__.py
+  write client/resources/folders/_sync.py
+  write client/resources/folders/_async.py
+  write client/resources/searches/__init__.py
+  write client/resources/searches/_sync.py
+  write client/resources/searches/_async.py
+  write client/types/__init__.py
+  write client/types/users/__init__.py
+  write client/types/users/_operations.py
+  write client/types/folders/__init__.py
+  write client/types/folders/_operations.py
+  write client/types/searches/__init__.py
+  write client/types/searches/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/protocols/_plans.py
+  write client/protocols/_helpers.py
+  write client/protocols/_async_helpers.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['users.by_header', 'users.by_cookie', 'users.bound', 'searches.all', 'folders.all'] bindings 14
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper users.by_header pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.by_header fceab37a7e44a2bdc88a009d9167fedebf64f0ddef1db4001ec6cfd15d451051
+  helper users.by_cookie pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.by_cookie ccc8eb93f663cd2130f0cf37480a42a6b468aa841e0211f14b9eaa8bc8bed0c7
+  helper users.bound pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.bound f646e2e0fc83539cd3e1c79e865bb2e6abf9c8fdb78398b271347a92f087a266
+  helper searches.all pagination enabled True /inputs/target_config/protocol_metadata/helpers/searches.all c4db06f7416ec70da81d8a4e299cd1c4936b4b7e82e96e42b1f29e0178d5070d
+  helper folders.all pagination enabled True /inputs/target_config/protocol_metadata/helpers/folders.all 08cc3df7352c94d1ce9ce8b3ad4139ef28adbdcaa69eab2f6db9087baabe09ba
+  {
+    "helpers": {
+      "folders.all": {
+        "bindings": [],
+        "continuation": {
+          "empty_string": "end",
+          "end": [
+            {
+              "kind": "missing"
+            },
+            {
+              "kind": "null"
+            }
+          ],
+          "kind": "cursor",
+          "read": {
+            "from": "body",
+            "pointer": "/next_cursor"
+          },
+          "write": {
+            "in": "path",
+            "name": "folder"
+          }
+        },
+        "enabled": true,
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/User"
+        },
+        "items": {
+          "from": "body",
+          "pointer": "/data"
+        },
+        "kind": "pagination",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1folders~1{folder}/get"
+        }
+      },
+      "searches.all": {
+        "bindings": [
+          {
+            "target": {
+              "in": "body",
+              "pointer": "/after"
+            },
+            "value": {
+              "selector": {
+                "from": "body",
+                "pointer": "/last"
+              },
+              "source": "previous"
+            }
+          },
+          {
+            "target": {
+              "in": "body",
+              "pointer": "/size"
+            },
+            "value": {
+              "literal": 10
+            }
+          },
+          {
+            "target": {
+              "in": "body",
+              "pointer": "/filter"
+            },
+            "value": {
+              "literal": {
+                "states": [
+                  "open"
+                ]
+              }
+            }
+          },
+          {
+            "target": {
+              "in": "body",
+              "pointer": "/range/from"
+            },
+            "value": {
+              "literal": "a"
+            }
+          }
+        ],
+        "continuation": {
+          "empty_string": "end",
+          "end": [
+            {
+              "kind": "missing"
+            }
+          ],
+          "kind": "cursor",
+          "read": {
+            "from": "body",
+            "pointer": "/next"
+          },
+          "write": {
+            "in": "body",
+            "pointer": "/page/cursor"
+          }
+        },
+        "enabled": true,
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/User"
+        },
+        "items": {
+          "from": "body",
+          "pointer": "/data"
+        },
+        "kind": "pagination",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1searches/post"
+        }
+      },
+      "users.bound": {
+        "bindings": [
+          {
+            "target": {
+              "in": "header",
+              "name": "X-Snapshot"
+            },
+            "value": {
+              "selector": {
+                "from": "header",
+                "name": "x-snapshot",
+                "occurrence": "single"
+              },
+              "source": "initial"
+            }
+          },
+          {
+            "target": {
+              "in": "query",
+              "name": "code"
+            },
+            "value": {
+              "selector": {
+                "from": "status"
+              },
+              "source": "previous"
+            }
+          },
+          {
+            "target": {
+              "in": "query",
+              "name": "limit"
+            },
+            "value": {
+              "literal": 5
+            }
+          },
+          {
+            "target": {
+              "in": "query",
+              "name": "tags"
+            },
+            "value": {
+              "selector": {
+                "from": "header",
+                "name": "X-Tag",
+                "occurrence": "all"
+              },
+              "source": "previous"
+            }
+          }
+        ],
+        "continuation": {
+          "empty_string": "end",
+          "end": [
+            {
+              "kind": "missing"
+            },
+            {
+              "kind": "null"
+            }
+          ],
+          "kind": "cursor",
+          "read": {
+            "from": "body",
+            "pointer": "/next_cursor"
+          },
+          "write": {
+            "in": "query",
+            "name": "cursor"
+          }
+        },
+        "enabled": true,
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/User"
+        },
+        "items": {
+          "from": "body",
+          "pointer": "/data"
+        },
+        "kind": "pagination",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1users/get"
+        }
+      },
+      "users.by_cookie": {
+        "bindings": [],
+        "continuation": {
+          "empty_string": "end",
+          "end": [
+            {
+              "kind": "missing"
+            },
+            {
+              "kind": "null"
+            }
+          ],
+          "kind": "cursor",
+          "read": {
+            "from": "body",
+            "pointer": "/next_cursor"
+          },
+          "write": {
+            "in": "cookie",
+            "name": "page_token"
+          }
+        },
+        "enabled": true,
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/User"
+        },
+        "items": {
+          "from": "body",
+          "pointer": "/data"
+        },
+        "kind": "pagination",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1users/get"
+        }
+      },
+      "users.by_header": {
+        "bindings": [],
+        "continuation": {
+          "empty_string": "end",
+          "end": [
+            {
+              "kind": "missing"
+            },
+            {
+              "kind": "null"
+            }
+          ],
+          "kind": "cursor",
+          "read": {
+            "from": "body",
+            "pointer": "/next_cursor"
+          },
+          "write": {
+            "in": "header",
+            "name": "x-cursor"
+          }
+        },
+        "enabled": true,
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/User"
+        },
+        "items": {
+          "from": "body",
+          "pointer": "/data"
+        },
+        "kind": "pagination",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1users/get"
+        }
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 users.list_users(query:cursor=cursor, query:limit=limit, query:code=code, query:tags=tags, header:X-Cursor=x_cursor, header:X-Snapshot=x_snapshot, cookie:page_token=page_token)
+    exports client.types.users.ListUsersResponse client.types.users.ListUsersErrorData client.types.users.ListUsersHTTPError
+    exports client.types.users.ListUsersRequestCodecs client.types.users.decode_list_users_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 folders.list_folder(path:folder=folder)
+    exports client.types.folders.ListFolderResponse client.types.folders.ListFolderErrorData client.types.folders.ListFolderHTTPError
+    exports client.types.folders.ListFolderRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/2 searches.search()
+    exports client.types.searches.SearchResponse client.types.searches.SearchErrorData client.types.searches.SearchHTTPError
+    exports client.types.searches.SearchRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

@@ -14,7 +14,7 @@ from models import JobRequest as _dcg_type_0
 from ... import _operations
 from ..._runtime.client.client import ClientCore
 from ...model_codecs import ModelValue, RequestMedia, ResponseMedia
-from ...options import RequestOptions, Unset
+from ...options import RequestOptions
 from ...responses import RawResponse, Response
 from ...types.jobs import (
     CancelJobResponse,
