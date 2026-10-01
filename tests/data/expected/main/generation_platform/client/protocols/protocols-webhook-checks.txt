@@ -1,0 +1,10 @@
+# protocols-webhook-checks
+render pydantic_v2.BaseModel
+  APIGenerationError
+  E_NAME_COLLISION target protocols.helpers['keys.message']: The webhook helper name 'keys.message' is taken by the module of the webhook key types
+  E_NAME_COLLISION target protocols.helpers['cased.second']: The webhook helper name 'cased.second' gives the package 'cased', which differs from 'Cased' only in case
+  E_CONFIG_VALUE config protocols.helpers['missing.schema'].event_schema: The event_schema '/components/schemas/Missing' of 'missing.schema' does not exist in its document
+  E_CONFIG_VALUE config protocols.helpers['unused.schema'].event_schema: The event_schema '/components/schemas/Unused' of 'unused.schema' is not the schema of a JSON request body of any webhook or callback operation
+  E_CONFIG_VALUE config protocols.helpers['form.event'].event_schema: The event_schema '/components/schemas/Form' of 'form.event' is not the schema of a JSON request body of any webhook or callback operation
+  E_CLIENT_UNSUPPORTED target protocols.helpers['mapped.event'].event_schema: The webhook helper 'mapped.event' with an event mapping is not supported yet
+  E_CLIENT_UNSUPPORTED target protocols.helpers['audit.event'].event_schema: The webhook helper 'audit.event' decodes an envelope-projected event, which is not supported yet

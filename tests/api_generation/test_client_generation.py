@@ -69,6 +69,8 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
         "pagination-plans",
         "pagination-querystring",
         "pagination-targets",
+        "webhooks",
+        "webhooks-schema",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:
@@ -115,6 +117,8 @@ def test_client_render(case: str, tmp_path: Path) -> None:
         "protocols-pagination-querystring-checks",
         "protocols-pagination-count-checks",
         "protocols-pagination-link-checks",
+        "protocols-webhook-errors",
+        "protocols-webhook-checks",
     ],
 )
 def test_client_protocols(case: str, tmp_path: Path) -> None:
@@ -128,12 +132,13 @@ def test_client_protocols(case: str, tmp_path: Path) -> None:
         assert_generated_modules_output(modules, EXPECTED / "packages" / "helpers" / backend)
 
 
-def test_client_helper_digests(tmp_path: Path) -> None:
-    """Digest a helper's normalized settings, so an explicit root document and an omitted one digest alike."""
-    assert_output(
-        client_helper_digest_report("pagination", "pagination-documents", tmp_path),
-        EXPECTED / "digests" / "helper-documents.txt",
-    )
+@pytest.mark.parametrize(
+    ("first", "second", "expected"),
+    [("pagination", "pagination-documents", "helper-documents"), ("webhooks", "webhooks-python", "webhook-records")],
+)
+def test_client_helper_digests(first: str, second: str, expected: str, tmp_path: Path) -> None:
+    """Digest a helper's normalized settings, so equivalent spellings and equal Python records digest alike."""
+    assert_output(client_helper_digest_report(first, second, tmp_path), EXPECTED / "digests" / f"{expected}.txt")
 
 
 def test_client_signature_style_digests(tmp_path: Path) -> None:

@@ -159,14 +159,15 @@ def helper_problems(
 ) -> Iterator[Diagnostic]:
     """Refuse enabled helpers whose entry operation takes a reserved argument or whose name gives a taken class name.
 
-    Then report each enabled helper's own problems in declaration order: those of a checked helper, or else that its
-    kind is not supported yet.
+    Webhook helpers send nothing, so neither applies to them. Then report each enabled helper's own problems in
+    declaration order: those of a checked helper, or else that its kind is not supported yet.
     """
     if protocols is None:
         return
     enabled = tuple(helper for helper in protocols.helpers if helper.enabled)
+    sending = tuple(helper for helper in enabled if helper.links)
     specs = {spec.contract.id: spec for spec in plan.operations}
-    for helper in enabled:
+    for helper in sending:
         spec = specs[protocols.operations[helper.links[0].ref].id]
         names = (*(parameter.python_name for parameter in spec.parameters), *spec.field_names)
         if taken := sorted(HELPER_ARGUMENTS.intersection(names)):
@@ -177,7 +178,7 @@ def helper_problems(
             )
             entry = OperationRef(pointer=spec.contract.id.use_site.pointer)
             yield _problem("E_NAME_COLLISION", "target", helper.at, message, entry)
-    yield from _class_problems(enabled, protocols)
+    yield from _class_problems(sending, protocols)
     for helper in enabled:
         if (problems := checked.get(helper.name)) is not None:
             yield from problems

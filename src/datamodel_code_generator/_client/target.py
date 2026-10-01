@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import fields, is_dataclass, replace
+from functools import partial
 from typing import TYPE_CHECKING, Final
 
 from typing_extensions import TypeIs
@@ -33,6 +34,7 @@ from datamodel_code_generator._client.protocol_plan import (
 from datamodel_code_generator._client.render import ClientRenderer
 from datamodel_code_generator._client.security import security_contract
 from datamodel_code_generator._client.validation import admission_problems, allowed, argument_uses
+from datamodel_code_generator._client.webhooks import plan_webhooks, webhook_files, webhook_uses
 from datamodel_code_generator._codec_declarations import CodecDeclarations
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._openapi_codec_plan import artifact_module, plan_model_codecs
@@ -50,7 +52,8 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.pagination import PaginationSpec
     from datamodel_code_generator._client.plan import ClientPlan, MediaSpec, OperationSpec, PartSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
-    from datamodel_code_generator._generation_contract import GeneratedTypeContractBatch, TypeUseBinding
+    from datamodel_code_generator._client.webhooks import WebhookSpec
+    from datamodel_code_generator._generation_contract import GeneratedTypeContractBatch, TypeUseBinding, TypeUseId
     from datamodel_code_generator._openapi_codec_plan import CodecBackend, CodecPlan
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterPlan
@@ -93,11 +96,14 @@ class ClientTarget:
             raise APIGenerationError(
                 tuple(replace(item, target_id=request.target_id) for item in error.diagnostics)
             ) from None
-        uses = frozenset(plan_uses(plan))
+        events, hooked = webhook_uses(protocols, request)
+        received = frozenset(event.use.id for event in events)
+        uses = frozenset(plan_uses(plan)) | received
         batch = request.batch
         if parts := tuple(part_uses(plan)):
             batch = replace(batch, type_uses=(*batch.type_uses, *parts))
-            wire = _wire(request, batch, parts)
+        if parts or events:
+            wire = _wire(request, batch, parts, received)
         codecs = plan_model_codecs(
             batch,
             replace(wire, schema_ids=tuple(item for item in wire.schema_ids if item[0] in uses)),
@@ -116,10 +122,12 @@ class ClientTarget:
             raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
         plan, named = plan_fields(plan, codecs, batch, wire)
         helpers, checked = plan_pagination(protocols, plan, codecs, wire, request)
+        webhooks = plan_webhooks(events, codecs, config, hooked)
+        ordinary = replace(codecs, bindings=tuple(item for item in codecs.bindings if item[0] not in received))
         if refused := (
             *named,
-            *admission_problems(config.validation, codecs, argument_uses(plan)),
-            *helper_problems(protocols, plan, checked),
+            *admission_problems(config.validation, ordinary, argument_uses(plan)),
+            *helper_problems(protocols, plan, {**checked, **hooked}),
         ):
             raise APIGenerationError(
                 tuple(
@@ -130,6 +138,7 @@ class ClientTarget:
         data = _TargetData(plan, config, request, codecs, wire)
         metadata = helper_metadata(protocols, request)
         fingerprints = {spec.helper.name: data.fingerprint(spec, metadata[spec.helper.name]) for spec in helpers}
+        fingerprints.update((spec.helper.name, data.webhook(spec, metadata[spec.helper.name])) for spec in webhooks)
         renderer = ClientRenderer(
             config=config,
             package=request.layout.package,
@@ -139,6 +148,7 @@ class ClientTarget:
             codecs=codecs,
             helpers=helpers,
             fingerprints=fingerprints,
+            webhooks=partial(webhook_files, webhooks, dict(codecs.imports), fingerprints),
         )
         validation = config.validation
         return TargetRender(
@@ -164,9 +174,15 @@ class ClientTarget:
 
 
 def _wire(
-    request: TargetRequest, batch: GeneratedTypeContractBatch, parts: tuple[TypeUseBinding, ...] = ()
+    request: TargetRequest,
+    batch: GeneratedTypeContractBatch,
+    parts: tuple[TypeUseBinding, ...] = (),
+    received: frozenset[TypeUseId] = frozenset(),
 ) -> WirePlan:
-    """Plan the wire of the selected operations' uses and of the parts they send; forms get their member plans."""
+    """Plan the wire of the selected operations' uses, the parts they send, and the webhook events they receive.
+
+    Forms get their member plans.
+    """
     return plan_wire(
         batch,
         request.lease,
@@ -174,6 +190,7 @@ def _wire(
             *(use for operation in request.operations for use in operation_uses(operation)),
             *encoding_header_uses(request),
             *(part.id for part in parts),
+            *received,
         ],
         operations=frozenset(operation.id for operation in request.operations),
         documents=request.documents.pointers,
@@ -272,6 +289,24 @@ class _TargetData:
             "operations": [self.request.documents.operation(operation.contract.id)],
             "schemas": [spec.item_schema],
             "type_uses": [self.contract(spec.page)],
+            "adapters": [],
+        })
+
+    def webhook(self, spec: WebhookSpec, settings: JSONValue) -> str:
+        """Return the digest of a webhook helper's contract closure: its signature, settings, schema, and event use."""
+        signature = {
+            "name": spec.helper.name,
+            "event": self.type(spec.use),
+            "key": "HmacKey",
+            "validate": spec.validate,
+            "settings": settings,
+        }
+        return _digest({
+            "kind": "webhook",
+            "signatures": [signature],
+            "operations": [],
+            "schemas": [spec.event_schema],
+            "type_uses": [self.contract(spec.use)],
             "adapters": [],
         })
 

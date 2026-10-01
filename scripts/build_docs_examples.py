@@ -383,6 +383,51 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
+            example_id="python-client.webhooks.usage",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "python", blocks(CLIENT_DATA / "typing" / "webhook_helpers.py", "def receive(", separator="\n\n\n")
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.webhooks.helper",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "python",
+                blocks(
+                    CLIENT_PACKAGES
+                    / "webhooks"
+                    / "pydantic_v2_BaseModel"
+                    / "client"
+                    / "webhooks"
+                    / "standard"
+                    / "message.py",
+                    "def verify(",
+                    limit=1,
+                    separator="\n\n\n",
+                ),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.webhooks.yaml",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "yaml", yaml_helpers(CLIENT_DATA / "protocols" / "webhooks.yaml", "standard.message")
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.webhooks.diagnostics",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "text",
+                "\n".join(
+                    line.strip()
+                    for line in read_text(EXPECTED_CLIENT / "protocols" / "protocols-webhook-errors.txt").splitlines()
+                    if line.lstrip().startswith("E_CONFIG_CONFLICT")
+                ),
+            ),
+        ),
+        DocsExample(
             example_id="python-client.signature-style.explicit",
             path=DOCS / "python-client.md",
             render=lambda: fenced(

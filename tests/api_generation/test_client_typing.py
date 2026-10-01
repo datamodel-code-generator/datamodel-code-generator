@@ -111,3 +111,23 @@ def test_client_typing_package(case: str, tmp_path: Path) -> None:
         client_typing_report(tmp_path, DataModelType.PydanticV2BaseModel, case, ()),
         EXPECTED / f"pydantic_v2-BaseModel-{case}.txt",
     )
+
+
+@pytest.mark.parametrize(
+    "backend",
+    [
+        DataModelType.PydanticV2BaseModel,
+        DataModelType.PydanticV2Dataclass,
+        DataModelType.DataclassesDataclass,
+        DataModelType.TypingTypedDict,
+        DataModelType.MsgspecStruct,
+    ],
+)
+def test_client_typing_webhooks(backend: DataModelType, tmp_path: Path) -> None:
+    """Check webhook helpers: event and key types in both modes, replay stores, and misuses of each."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(
+        client_typing_report(tmp_path, backend, "webhooks-typing", ("webhook_helpers",)),
+        EXPECTED / f"{backend.value.replace('.', '-')}-webhooks.txt",
+    )

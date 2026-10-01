@@ -2498,8 +2498,12 @@ class ClientRenderer:
         codecs: CodecPlan,
         helpers: tuple[PaginationSpec, ...] = (),
         fingerprints: Mapping[str, str] | None = None,
+        webhooks: Callable[[Mapping[TypeUseId, UseAccessors]], tuple[tuple[PurePosixPath, str], ...]],
     ) -> None:
-        """Keep the plans and helpers; the model bindings module and its accessors are rendered when first used."""
+        """Keep the plans and helpers; the model bindings module and its accessors are rendered when first used.
+
+        The webhook modules are rendered from the use accessors.
+        """
         self.config = config
         self.package = package
         self.plan = plan
@@ -2508,6 +2512,7 @@ class ClientRenderer:
         self.codecs = codecs
         self.helpers = helpers
         self.fingerprints = fingerprints or {}
+        self.webhooks = webhooks
 
     @cached_property
     def bindings(self) -> RenderedBindings:
@@ -2954,6 +2959,7 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
             )
         files.append(self.file(PurePosixPath("_operations.py"), "operations", registry.module()))
         helpers = self.helper_files(resources)
+        helpers += tuple(self.file(path, "webhooks", text) for path, text in self.webhooks(self.accessors))
         runtime = runtime_sources(file.text for file in (*files, *helpers))
         documentation = PurePosixPath() if config.package_mode == "standalone" else PurePosixPath("_generated_docs")
         reference = documentation / ("docs/runtime.md" if config.package_mode == "standalone" else "runtime.md")

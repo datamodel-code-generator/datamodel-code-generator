@@ -1,0 +1,410 @@
+# webhooks
+render pydantic_v2.BaseModel
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/subscriptions/__init__.py
+  write client/resources/subscriptions/_sync.py
+  write client/resources/subscriptions/_async.py
+  write client/types/__init__.py
+  write client/types/subscriptions/__init__.py
+  write client/types/subscriptions/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/webhooks/__init__.py
+  write client/webhooks/keys.py
+  write client/webhooks/callbacks/__init__.py
+  write client/webhooks/framed/__init__.py
+  write client/webhooks/github/__init__.py
+  write client/webhooks/keyed/__init__.py
+  write client/webhooks/rfc/__init__.py
+  write client/webhooks/shapes/__init__.py
+  write client/webhooks/slack/__init__.py
+  write client/webhooks/standard/__init__.py
+  write client/webhooks/standard/message.py
+  write client/webhooks/standard/rejecting.py
+  write client/webhooks/github/push.py
+  write client/webhooks/slack/command.py
+  write client/webhooks/rfc/sha256.py
+  write client/webhooks/rfc/sha512.py
+  write client/webhooks/keyed/event.py
+  write client/webhooks/framed/count.py
+  write client/webhooks/shapes/drawn.py
+  write client/webhooks/callbacks/delivered.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['standard.message', 'standard.rejecting', 'github.push', 'slack.command', 'rfc.sha256', 'rfc.sha512', 'keyed.event', 'framed.count', 'shapes.drawn', 'callbacks.delivered', 'disabled.hook'] bindings 8
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper standard.message webhook enabled True /inputs/target_config/protocol_metadata/helpers/standard.message e92c80a927e02bb1fed74e0600977f0a1b46766235cf4b0fb0e77463372386a4
+  helper standard.rejecting webhook enabled True /inputs/target_config/protocol_metadata/helpers/standard.rejecting ae2bab957d03832074379745f6784ed859374f1ff767285d724d48dad8a9dd65
+  helper github.push webhook enabled True /inputs/target_config/protocol_metadata/helpers/github.push b3503b9ba500e823ea8d342423f0340b415f99316a903ef06465f0ea75bff662
+  helper slack.command webhook enabled True /inputs/target_config/protocol_metadata/helpers/slack.command cff3a7891465caf2223a52341574f8b9b066f4d956c156db57a216a25d16a597
+  helper rfc.sha256 webhook enabled True /inputs/target_config/protocol_metadata/helpers/rfc.sha256 379e6e1bef4cdd432afeeb7cabc4475e09bc9730536af9e924da0905e9e31c98
+  helper rfc.sha512 webhook enabled True /inputs/target_config/protocol_metadata/helpers/rfc.sha512 506f476e3744f8a5cd3f4f0dd506651ae3737e2028a2b27b6e46d56bcb3b971e
+  helper keyed.event webhook enabled True /inputs/target_config/protocol_metadata/helpers/keyed.event 681d4b02266138ab82091301238fb7e9f36a682eb6b97a81091af013b10d3eb5
+  helper framed.count webhook enabled True /inputs/target_config/protocol_metadata/helpers/framed.count a885f291296ccb8dba2a67b9a6a49d41bcbd38c774acf642ac5ecfd049de78e0
+  helper shapes.drawn webhook enabled True /inputs/target_config/protocol_metadata/helpers/shapes.drawn 50f662c017a31a0a343473b817c052da38711731ecb217d3acd2430353a64e80
+  helper callbacks.delivered webhook enabled True /inputs/target_config/protocol_metadata/helpers/callbacks.delivered 92b202f75aa4ef19b94f9e6f5c1ebaf8dcb18133c18751b07f4b8eef16da8933
+  helper disabled.hook webhook enabled False /inputs/target_config/protocol_metadata/helpers/disabled.hook d468fea8a34e1c29a2702e39a91077d9174a7c55353f956bd4dc2af67acc2006
+  {
+    "helpers": {
+      "callbacks.delivered": {
+        "duplicates": "report",
+        "enabled": true,
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Delivery"
+        },
+        "kind": "webhook",
+        "signature": {
+          "delivery_id": "none",
+          "encoding": "hex",
+          "field_constraints": {},
+          "header": "X-Signature",
+          "key_id": "none",
+          "kind": "hmac-sha256",
+          "prefix": "",
+          "separator": "none",
+          "signed_parts": [
+            "raw-body",
+            {
+              "literal": "!"
+            }
+          ],
+          "timestamp": "none"
+        }
+      },
+      "disabled.hook": {
+        "duplicates": "report",
+        "enabled": false,
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Unused"
+        },
+        "kind": "webhook",
+        "signature": {
+          "delivery_id": "none",
+          "encoding": "hex",
+          "field_constraints": {},
+          "header": "X-Signature",
+          "key_id": "none",
+          "kind": "hmac-sha256",
+          "prefix": "",
+          "separator": "none",
+          "signed_parts": [
+            "raw-body"
+          ],
+          "timestamp": "none"
+        }
+      },
+      "framed.count": {
+        "duplicates": "report",
+        "enabled": true,
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Count"
+        },
+        "kind": "webhook",
+        "signature": {
+          "delivery_id": {
+            "header": "X-Framed-Id"
+          },
+          "encoding": "hex",
+          "field_constraints": {
+            "delivery-id": {
+              "fixed_bytes": 1
+            }
+          },
+          "header": "X-Framed-Signature",
+          "key_id": "none",
+          "kind": "hmac-sha256",
+          "prefix": "",
+          "separator": "none",
+          "signed_parts": [
+            "delivery-id",
+            "raw-body"
+          ],
+          "timestamp": "none"
+        }
+      },
+      "github.push": {
+        "duplicates": "report",
+        "enabled": true,
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Push"
+        },
+        "kind": "webhook",
+        "signature": {
+          "delivery_id": "none",
+          "encoding": "hex",
+          "field_constraints": {},
+          "header": "X-Hub-Signature-256",
+          "key_id": "none",
+          "kind": "hmac-sha256",
+          "prefix": "sha256=",
+          "separator": "none",
+          "signed_parts": [
+            "raw-body"
+          ],
+          "timestamp": "none"
+        }
+      },
+      "keyed.event": {
+        "duplicates": "report",
+        "enabled": true,
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Message"
+        },
+        "kind": "webhook",
+        "signature": {
+          "delivery_id": {
+            "header": "X-Delivery"
+          },
+          "encoding": "base64url",
+          "field_constraints": {
+            "delivery-id": {
+              "ascii_bytes": "abcdefghijklmnopqrstuvwxyz0123456789-"
+            },
+            "timestamp": {
+              "ascii_bytes": "0123456789"
+            }
+          },
+          "header": "X-Signature",
+          "key_id": {
+            "header": "X-Key-Id"
+          },
+          "kind": "hmac-sha512",
+          "prefix": "",
+          "separator": ",",
+          "signed_parts": [
+            "timestamp",
+            {
+              "literal": "."
+            },
+            "delivery-id",
+            {
+              "literal": "."
+            },
+            "raw-body"
+          ],
+          "timestamp": {
+            "header": "X-Timestamp",
+            "unit": "milliseconds"
+          }
+        }
+      },
+      "rfc.sha256": {
+        "duplicates": "report",
+        "enabled": true,
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Push"
+        },
+        "kind": "webhook",
+        "signature": {
+          "delivery_id": "none",
+          "encoding": "hex",
+          "field_constraints": {},
+          "header": "X-Signature",
+          "key_id": "none",
+          "kind": "hmac-sha256",
+          "prefix": "",
+          "separator": "none",
+          "signed_parts": [
+            "raw-body"
+          ],
+          "timestamp": "none"
+        }
+      },
+      "rfc.sha512": {
+        "duplicates": "report",
+        "enabled": true,
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Push"
+        },
+        "kind": "webhook",
+        "signature": {
+          "delivery_id": "none",
+          "encoding": "hex",
+          "field_constraints": {},
+          "header": "X-Signature",
+          "key_id": "none",
+          "kind": "hmac-sha512",
+          "prefix": "",
+          "separator": "none",
+          "signed_parts": [
+            "raw-body"
+          ],
+          "timestamp": "none"
+        }
+      },
+      "shapes.drawn": {
+        "duplicates": "report",
+        "enabled": true,
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Shape"
+        },
+        "kind": "webhook",
+        "signature": {
+          "delivery_id": "none",
+          "encoding": "hex",
+          "field_constraints": {},
+          "header": "X-Signature",
+          "key_id": "none",
+          "kind": "hmac-sha256",
+          "prefix": "",
+          "separator": "none",
+          "signed_parts": [
+            "raw-body"
+          ],
+          "timestamp": "none"
+        }
+      },
+      "slack.command": {
+        "duplicates": "report",
+        "enabled": true,
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Command"
+        },
+        "kind": "webhook",
+        "signature": {
+          "delivery_id": "none",
+          "encoding": "hex",
+          "field_constraints": {
+            "timestamp": {
+              "ascii_bytes": "0123456789"
+            }
+          },
+          "header": "X-Slack-Signature",
+          "key_id": "none",
+          "kind": "hmac-sha256",
+          "prefix": "v0=",
+          "separator": "none",
+          "signed_parts": [
+            {
+              "literal": "v0:"
+            },
+            "timestamp",
+            {
+              "literal": ":"
+            },
+            "raw-body"
+          ],
+          "timestamp": {
+            "header": "X-Slack-Request-Timestamp",
+            "unit": "seconds"
+          }
+        }
+      },
+      "standard.message": {
+        "duplicates": "report",
+        "enabled": true,
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Message"
+        },
+        "kind": "webhook",
+        "signature": {
+          "delivery_id": {
+            "header": "webhook-id"
+          },
+          "encoding": "base64",
+          "field_constraints": {
+            "delivery-id": {
+              "ascii_bytes": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
+            },
+            "timestamp": {
+              "ascii_bytes": "0123456789"
+            }
+          },
+          "header": "webhook-signature",
+          "key_id": "none",
+          "kind": "hmac-sha256",
+          "prefix": "v1,",
+          "separator": " ",
+          "signed_parts": [
+            "delivery-id",
+            {
+              "literal": "."
+            },
+            "timestamp",
+            {
+              "literal": "."
+            },
+            "raw-body"
+          ],
+          "timestamp": {
+            "header": "webhook-timestamp",
+            "unit": "seconds"
+          }
+        }
+      },
+      "standard.rejecting": {
+        "duplicates": "reject",
+        "enabled": true,
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/webhooks/message/post/requestBody/content/application~1json/schema"
+        },
+        "kind": "webhook",
+        "signature": {
+          "delivery_id": {
+            "header": "webhook-id"
+          },
+          "encoding": "base64",
+          "field_constraints": {
+            "delivery-id": {
+              "ascii_bytes": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
+            },
+            "timestamp": {
+              "ascii_bytes": "0123456789"
+            }
+          },
+          "header": "webhook-signature",
+          "key_id": "none",
+          "kind": "hmac-sha256",
+          "prefix": "v1,",
+          "separator": " ",
+          "signed_parts": [
+            "delivery-id",
+            {
+              "literal": "."
+            },
+            "timestamp",
+            {
+              "literal": "."
+            },
+            "raw-body"
+          ],
+          "timestamp": {
+            "header": "webhook-timestamp",
+            "unit": "seconds"
+          }
+        }
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 subscriptions.subscribe(query:dry_run=dry_run)
+    exports client.types.subscriptions.SubscribeResponse client.types.subscriptions.SubscribeErrorData client.types.subscriptions.SubscribeHTTPError
+    exports client.types.subscriptions.SubscribeRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

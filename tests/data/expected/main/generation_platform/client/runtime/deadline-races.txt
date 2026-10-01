@@ -102,10 +102,16 @@
   deadline stops body release after RuntimeError resources = (1, 1, True, ())
   deadline stops body release after RuntimeError and a late close failure = ('DeadlineExceededError', 1, 1, 1, 'cleanup', None, 'AdapterExecutionError', (), None, None)
   deadline stops body release after RuntimeError and a late close failure permit = (1, False)
-  deadline stops body release after RuntimeError and a late close failure resources = (1, 1, True, ('RuntimeError',))
+  deadline stops body release after RuntimeError and a late close failure resources = (1, 1, True, ('BodyFactoryError',))
   deadline stops body release after _Interrupted = ('_Interrupted', None, None, None, None, None, 'NoneType', (), None, None)
   deadline stops body release after _Interrupted permit = (1, False)
   deadline stops body release after _Interrupted resources = (1, 1, True, ())
+  deadline stops owned stream release after a limiter failure = ('DeadlineExceededError', 0, 0, 0, 'cleanup', None, 'LimiterExecutionError', (), None, None)
+  deadline stops owned stream release after a limiter failure closed = False
+  deadline stops owned stream release after a limiter failure resources = (0, True, ())
+  deadline stops owned stream release after a limiter failure and a late close failure = ('DeadlineExceededError', 0, 0, 0, 'cleanup', None, 'LimiterExecutionError', (), None, None)
+  deadline stops owned stream release after a limiter failure and a late close failure closed = False
+  deadline stops owned stream release after a limiter failure and a late close failure resources = (0, True, ('RuntimeError',))
   deadline stops multipart binding = ('DeadlineExceededError', 0, 0, 0, 'encode', None, 'NoneType', ('BodyFactoryError',), None, None)
   deadline stops multipart binding late failure = (0, ('BodyFactoryError',))
   token stops multipart binding = ('RequestCancelledError', 0, 0, 0, None, 'cancel_token', 'NoneType', ('BodyFactoryError',), None, None)
