@@ -8,10 +8,10 @@ import shutil
 from contextlib import AbstractContextManager, nullcontext
 from dataclasses import fields
 from pathlib import Path, PurePosixPath
-from typing import Any, TypeAlias
+from typing import TYPE_CHECKING, Any, TypeAlias
 
 from datamodel_code_generator import DataModelType, GenerateConfig
-from datamodel_code_generator._api_generation import render_target
+from datamodel_code_generator._api_generation import generate_target, render_target
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationSelection
 from datamodel_code_generator._client.config import (
     BodyFieldName,
@@ -30,6 +30,9 @@ from datamodel_code_generator.enums import OpenAPIScope
 from datamodel_code_generator.format import Formatter
 from tests.data.python.client_protocol_records import RECORDS
 from tests.data.python.model_codec_adapters import declaration
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 SOURCE = Path(__file__).parents[1] / "generation_platform" / "client"
 PACKAGE = "client"
@@ -118,6 +121,34 @@ def client_config(values: dict[str, Any], root: Path) -> ClientGenerationConfig:
             case _:
                 converted[key] = value
     return ClientGenerationConfig(**converted)
+
+
+def generate_client(
+    source: Path,
+    root: Path,
+    package: str,
+    backend: str,
+    model: Mapping[str, Any] | None = None,
+    config: Mapping[str, Any] | None = None,
+) -> None:
+    """Generate a client package and its `<package>_models` module under a root, from fixture option values."""
+    generate_target(
+        source,
+        model_config=GenerateConfig(**{
+            "output": root / f"{package}_models.py",
+            "input_file_type": "openapi",
+            "target_python_version": "3.11",
+            "openapi_scopes": [OpenAPIScope.Schemas, OpenAPIScope.Api],
+            "output_model_type": DataModelType(backend),
+            "disable_timestamp": True,
+            "formatters": [Formatter.BUILTIN],
+            **(model or {}),
+        }),
+        config=client_config(
+            {"output": package, "package": package, "model_package": f"{package}_models", **(config or {})}, root
+        ),
+        generator=ClientTarget(),
+    )
 
 
 def _diagnostic(item: Diagnostic) -> str:

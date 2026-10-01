@@ -18,7 +18,7 @@ from pydantic import BaseModel
 
 from datamodel_code_generator import SchemaParseError
 from datamodel_code_generator.api_types import APIGenerationError
-from tests.data.python.client_runtime import generate_client
+from tests.data.python.client_generation import generate_client
 from tests.data.python.generated_packages import forget_generated, import_generated
 
 if TYPE_CHECKING:
