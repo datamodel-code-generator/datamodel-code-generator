@@ -53,6 +53,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
         "validation-ambiguous",
         "validation-adapters",
         "validation-adapters-schema",
+        "parameter-adapters",
         "validation-arguments",
         "validation-arguments-msgspec",
         "fields",
@@ -191,6 +192,14 @@ def test_client_documentation(case: str, tmp_path: Path) -> None:
 def test_client_auth_digests(variant: str, tmp_path: Path) -> None:
     """Keep authentication semantics in the security digest and exclude descriptions and scope ordering."""
     assert_output(client_digest_report("auth", variant, tmp_path), EXPECTED / "digests" / f"{variant}.txt")
+
+
+def test_client_parameter_adapter_digests(tmp_path: Path) -> None:
+    """Change the request digest of an operation whose adapted parameter explodes or whose adapter differs."""
+    assert_output(
+        client_digest_report("parameter-adapters", "parameter-adapters-variant", tmp_path),
+        EXPECTED / "digests" / "parameter-adapters.txt",
+    )
 
 
 def test_client_validation_digests(tmp_path: Path) -> None:

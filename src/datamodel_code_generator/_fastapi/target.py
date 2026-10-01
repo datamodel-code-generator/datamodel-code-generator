@@ -161,6 +161,7 @@ class _Stage:
             surface="server",
             lease=request.lease,
             sources=_sources(request),
+            selection=self.adapters,
         )
         selected = {operation.contract.id for operation in plan.operations}
         if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:

@@ -42,8 +42,8 @@ querystring-triplet: CodecAdapterError A parameter adapter returned an empty or 
 querystring-fragments: CodecAdapterError A parameter adapter returned a contribution for another location
 decode: wire={"a":1}
 decode-unset: UNSET
-decode-raise: CodecAdapterError A parameter adapter failed to decode a value (from RuntimeError)
+decode-raise: CodecAdapterError A parameter adapter failed to decode a value
 decode-error: ParameterEncodingError The value cannot be decoded
-decode-object: CodecAdapterError A parameter adapter returned a value outside the wire domain (from TypeError)
+decode-object: CodecAdapterError A parameter adapter returned a value outside the wire domain
 decode-empty: CodecAdapterError A parameter adapter returned an empty array or object its capabilities exclude
 decode-querystring: wire={"a":"1"}

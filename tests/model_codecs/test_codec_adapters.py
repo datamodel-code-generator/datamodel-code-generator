@@ -42,6 +42,7 @@ EXPECTED = DATA / "expected/main/generation_platform/codecs/adapters"
         ("dynamic", "dynamic"),
         ("unplanned", "unplanned"),
         ("unplanned", "unplanned-client"),
+        ("unplanned", "unplanned-server"),
     ],
 )
 def test_codec_adapters(source: str, cases: str, tmp_path: PathType) -> None:
@@ -50,13 +51,3 @@ def test_codec_adapters(source: str, cases: str, tmp_path: PathType) -> None:
         adapter_codec_report(ADAPTERS / f"{source}.yaml", ADAPTERS / f"{cases}.json", tmp_path),
         EXPECTED / f"{cases}.txt",
     )
-
-
-@pytest.mark.xfail(
-    reason="#4268: the FastAPI target asserts on a parameter adapter whose parameter has no builtin form",
-    raises=AssertionError,
-    strict=True,
-)
-def test_codec_adapters_unplanned_server_parameter(tmp_path: PathType) -> None:
-    """Generate a server whose cookie adapter takes over a parameter without a builtin form, which fails today."""
-    adapter_codec_report(ADAPTERS / "unplanned.yaml", ADAPTERS / "unplanned-server.json", tmp_path)
