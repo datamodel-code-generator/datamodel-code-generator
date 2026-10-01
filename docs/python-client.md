@@ -103,6 +103,7 @@ Webhook exceptions have keyword-only constructors and the following additional f
 | `WebhookReplayError` | `ProtocolError` | `delivery_id: str`, `namespace: str` |
 | `ProtocolStoreError` | `ProtocolError` | `action: Literal['lookup', 'fingerprint_vary', 'compare_exchange', 'delete', 'invalidate', 'claim', 'put', 'get', 'open', 'read', 'close', 'purge_terminal', 'admit', 'record', 'reset', 'snapshot']`, `entry_id: str \| None = None` |
 | `WebhookStoreError` | `ProtocolStoreError` | No additional fields |
+| `CircuitStoreError` | `ProtocolStoreError` | No additional fields; see [Circuit breakers](#circuit-breakers) |
 | `ReplayStoreFullError` | `WebhookStoreError` | `max_entries: int` |
 
 All fields without a displayed default are required. They also accept the shared context fields
@@ -267,6 +268,8 @@ client = Client(options=options)
 | `ProtocolClientOptions.defaults` | `Mapping[str, ProtocolDefaults]`, default `UNSET` | Keys are helper names: Python identifiers separated by dots, without keywords or empty parts. The mapping is copied into a read-only mapping, and its values keep their identity |
 | `ProtocolDefaults.session` | `SessionOptions`, default `UNSET` | Session limits of that helper |
 | `ProtocolDefaults.options` | `PaginationOptions \| PollOptions \| StreamOptions`, default `UNSET` | Kind-specific options of that helper |
+| `ProtocolClientOptions.circuit` | `CircuitBreakerOptions`, default `UNSET` | `UNSET` leaves circuit breaking off; see [Circuit breakers](#circuit-breakers) |
+| `ProtocolClientOptions.circuit_store` | `CircuitStore \| AsyncCircuitStore \| None`, default `UNSET` | A borrowed store of circuit states; `None` or `UNSET` gives the client a memory store of its own when the breaker is enabled |
 
 Invalid values inside `ProtocolClientOptions` and `ProtocolDefaults` raise `ProtocolConfigurationError`. Explicit
 call options take precedence over these defaults, which take precedence over the effective defaults above.
@@ -294,6 +297,7 @@ Invalid field values raise `ValueError`.
 | `StreamInterruptedError` | `ProtocolError` | `condition: Literal['eof', 'transport']`, `sequence: int`, `resume_state: ResumeState \| None = None` |
 | `IncompleteFrameError` | `StreamInterruptedError` | `buffered_bytes: int`; `condition` is always `eof` |
 | `StreamRemoteError[E]` | `ProtocolError` | `event_type: str \| None`, `data: E`, a read-only property, `sequence: int` |
+| `CircuitOpenError` | `ProtocolError` | `key: CircuitKey`, `retry_at: float`, the nonnegative monotonic time of the circuit's next admission |
 
 A field whose value is fixed is not a constructor argument, so passing it raises `TypeError`. `progress` is
 copied into a read-only mapping. Messages and representations exclude locations, progress, resume state, snapshots,
@@ -2361,6 +2365,116 @@ def keyed_view(client: Client, value: str, first_used_at: datetime) -> Client:
 Use the returned view in a `with` block and call an operation with the matching declaration. Supply the persisted
 first-use time, not the time of the newest retry. An attached key whose retention has expired stops replay even for
 a normally safe method.
+
+## Circuit breakers
+
+A circuit breaker stops calls to a failing backend before they send anything. It applies only to operations whose
+generation settings name a circuit group, and only when the client enables it; ordinary calls of other operations and
+packages without groups take no circuit step, load no circuit code, and read no clock.
+
+### Declare circuit groups
+
+`RuntimeOperationMetadata.circuit_group: str | None = None` puts an operation into a group. A group is a nonsecret
+name with non-whitespace text and no control characters; several operations may share one. With the internal
+generator entry point shown in [Declare API guarantees during generation](#declare-api-guarantees-during-generation):
+
+```python
+ClientOperationConfig(ref="/paths/~1status/get", runtime=RuntimeOperationMetadata(circuit_group="backend"))
+```
+
+The flat target-file entry is:
+
+```toml
+[[operations]]
+ref = "/paths/~1status/get"
+
+[operations.runtime]
+circuit_group = "backend"
+```
+
+An invalid group receives `E_CONFIG_VALUE`. The group is part of the operation's request digest, and the generated
+README lists each group's operations. Only a package that declares a group gets `Client.reset_circuit` and
+`AsyncClient.reset_circuit`, whose `group` parameter is a `Literal` of its groups.
+
+### Enable the breaker
+
+```python
+from pkg import Client
+from pkg.options import ClientOptions, ProtocolClientOptions
+from pkg.protocols import CircuitBreakerOptions, ProtocolSecurityContext
+
+options = ClientOptions(
+    protocols=ProtocolClientOptions(
+        circuit=CircuitBreakerOptions(enabled=True),
+        security=ProtocolSecurityContext(credential_partition="tenant-a"),
+    ),
+)
+client = Client(options=options)
+```
+
+`CircuitBreakerOptions(*, enabled: bool = False, failure_threshold: int = 5, cooldown: float = 30)` is immutable.
+`failure_threshold` is a positive integer and `cooldown` positive finite seconds; booleans are refused, and an invalid
+value raises `ProtocolConfigurationError(condition='invalid_value')`. Only one half-open probe runs at a time, and no
+field changes that. `resolved()` returns the `ResolvedCircuitBreakerOptions(failure_threshold, cooldown)` a store
+receives. These types come from `pkg.protocols`; importing and constructing them sends nothing and creates no store.
+
+### Circuits, outcomes, and states
+
+Each circuit is keyed by `CircuitKey(origin, credential_partition, group)`: the `Origin` of the call's URL before any
+redirect, the client's `ProtocolSecurityContext.credential_partition` (`"anonymous"` without a context), and the
+operation's group. A call that authenticates needs a security context, or it raises
+`ProtocolConfigurationError(field_path=('protocols', 'security'), condition='security_partition')` before any
+credential or send. `request_raw` has no operation, so it never passes a circuit.
+
+A call passes its circuit once its request is encoded, before credentials, limiter permits, and sends. Its outcome is
+recorded once, after its redirects and retries, so a call that retried three times counts once:
+
+| Outcome | Calls |
+|---|---|
+| Failure | Connect, read, and write transport failures, including their phase timeouts and broken connections, and a final 500, 502, 503, or 504 response, typed or raw |
+| Success | Any other final response, such as 2xx, 3xx, 404, or 501 |
+| Neutral | Pool timeouts and other transport failures, 429, cancellation, deadlines, client closing, authentication and token failures, configuration, encoding, decoding, and validation errors |
+
+A streaming call completes when its response is handed over; a later read failure is not recorded.
+
+| State | Admission | Transitions |
+|---|---|---|
+| Closed | Every call | A success resets the consecutive failures to 0; reaching `failure_threshold` opens the circuit for `cooldown` seconds |
+| Open | `CircuitOpenError` until the cooldown ends, then one probe | The first call after the cooldown becomes the probe and the circuit half-open |
+| Half-open | `CircuitOpenError` while the probe runs | A successful probe closes the circuit; a failed probe reopens it for another cooldown; a neutral or cancelled probe frees the slot for the next call |
+
+`CircuitOpenError` keeps the circuit's `key` and `retry_at`, the monotonic time of its next admission; while a probe
+runs, `retry_at` is the time of the refusal. The refused call consumes no send, attempt, token exchange, or limiter
+permit, and is never retried. Every transition and reset advances the circuit's generation, and an outcome of a call
+admitted in an earlier generation is ignored, so a call admitted before the circuit opened cannot close it.
+
+### Stores and resets
+
+Without `circuit_store`, each client creates one memory store when it is constructed with the breaker enabled; its
+views share it, and other clients do not. `MemoryCircuitStore()` and `AsyncMemoryCircuitStore()` from
+`pkg.protocols` can be passed to several clients to share their circuits. A custom store implements `CircuitStore`
+with synchronous methods for `Client`, or `AsyncCircuitStore` with coroutine methods for `AsyncClient`:
+
+| Method | Contract |
+|---|---|
+| `admit(key, *, now, options) -> CircuitPermit` | Atomically admit a call, or raise `CircuitOpenError`; take the single half-open slot when due |
+| `record(permit, outcome, *, now) -> None` | Apply `'success'`, `'failure'`, or `'neutral'` once; ignore a permit of another generation |
+| `reset(key) -> None` | Close the circuit and advance its generation |
+| `snapshot(key) -> CircuitSnapshot` | Return `state`, `consecutive_failures`, `retry_at`, and `generation` |
+
+`CircuitPermit(key, generation, probe, permit_id)` and `CircuitSnapshot(state, consecutive_failures, retry_at,
+generation)` are immutable records; a wrong field type raises `TypeError` and an invalid value `ValueError`. `now` is
+the SDK's monotonic time, which is local to the process: a store shared across processes must map its callers into one
+clock domain. A store is borrowed and never closed. A store missing a method, or whose methods do not match the
+client's mode, raises `ProtocolConfigurationError(field_path=('protocols', 'circuit_store'),
+condition='wrong_capability')` when the client is constructed. A store failure raises `CircuitStoreError` with the
+failure as its cause, or becomes a secondary error of a call that already failed; an admission that is not a permit
+for the key is also a `CircuitStoreError`. No request is resent because of a store failure.
+
+`client.reset_circuit(group, origin=Origin(...))`, awaited on `AsyncClient`, closes one circuit of this client's
+partition without sending anything. A group the package does not declare raises
+`ProtocolConfigurationError(field_path=('group',), condition='unknown_field')`, and an origin that is not an `Origin`
+raises one with `condition='invalid_value'`. Without an enabled breaker, a reset does nothing.
 
 ## Body replay and resource ownership
 

@@ -142,7 +142,14 @@ if TYPE_CHECKING:
 
     from ..model_codecs.parameters import ParameterFragment
     from ..model_codecs.wire import WireValue
-    from ..protocols.options import ProtocolClientOptions, ProtocolDefaults, ProtocolSecurityContext
+    from ..protocols.circuits import Breaker
+    from ..protocols.options import (
+        CircuitKey,
+        CircuitPermit,
+        ProtocolClientOptions,
+        ProtocolDefaults,
+        ProtocolSecurityContext,
+    )
     from ..protocols.references import OperationRef
     from .auth import (
         AsyncCloseableCredentialProvider,
@@ -217,6 +224,7 @@ class ClientDefaults:
     validation: ValidationModes = DEFAULT_VALIDATION
     security_schemes: tuple[SecuritySchemeEntry, ...] = ()
     helpers: tuple[tuple[str, str], ...] = ()
+    circuit_groups: frozenset[str] = frozenset()
 
 
 _DEFAULT_SERVER: Final = ServerSelection()
@@ -780,6 +788,47 @@ def _draw() -> float:
 
 
 _EMPTY_ORIGINS: Final[frozenset[Origin]] = frozenset()
+
+
+def _circuit(breaker: Breaker, call: _Call, url: str) -> CircuitKey | None:
+    """Return the key of a call's circuit, or None for a call of an operation outside every circuit group."""
+    if (operation := call.operation) is None or (group := operation.circuit_group) is None:
+        return None
+    return breaker.call_key(url, group, authenticated=call.auth is not None)
+
+
+def _admission(breaker: Breaker, call: _Call, url: str) -> tuple[Breaker, CircuitPermit] | None:
+    """Pass a call through its circuit, returning the breaker and permit to record its outcome with."""
+    return None if (key := _circuit(breaker, call, url)) is None else (breaker, breaker.admit(key))
+
+
+async def _aadmission(breaker: Breaker, call: _Call, url: str) -> tuple[Breaker, CircuitPermit] | None:
+    """Pass an asyncio call through its circuit, returning the breaker and permit to record its outcome with."""
+    return None if (key := _circuit(breaker, call, url)) is None else (breaker, await breaker.aadmit(key))
+
+
+def _circuit_recorded(admission: tuple[Breaker, CircuitPermit], result: object, call: _Call) -> None:
+    """Record a returned call's final status, discarding its raw response when the store fails."""
+    info = call.last_info
+    assert info is not None
+    try:
+        admission[0].record(admission[1], None, info.status_code)
+    except BaseException as error:
+        if isinstance(result, RawResponse):
+            result.discard(error)
+        raise
+
+
+async def _acircuit_recorded(admission: tuple[Breaker, CircuitPermit], result: object, call: _Call) -> None:
+    """Record a returned asyncio call's final status, discarding its raw response when the store fails."""
+    info = call.last_info
+    assert info is not None
+    try:
+        await admission[0].arecord(admission[1], None, info.status_code)
+    except BaseException as error:
+        if isinstance(result, AsyncRawResponse):
+            await result.discard(error)
+        raise
 
 
 def _uncredentialed(
@@ -1378,12 +1427,14 @@ class _SessionWait(LogicalCallContext):
 class _Shared(Generic[AdapterT]):
     """What a client shares with its views: the transport, the fixed headers, and whether the transport was closed.
 
-    It also keeps the client's protocol helper settings.
+    It also keeps the client's protocol helper settings and the breaker of its grouped operations' circuits.
     """
 
     __slots__ = (
         "adapter",
         "adapter_closed",
+        "breaker",
+        "circuit_groups",
         "closing_tasks",
         "fixed",
         "loop",
@@ -1410,6 +1461,16 @@ class _Shared(Generic[AdapterT]):
         self.closing_tasks: dict[Scope[AsyncRawResponse], asyncio.Task[list[Exception]]] | None = None
         self.loop: asyncio.AbstractEventLoop | None = None
         self.protocols: ProtocolClientOptions | None = None
+        self.breaker: Breaker | None = None
+        self.circuit_groups = defaults.circuit_groups
+
+    def protect(self, protocols: ProtocolClientOptions | None, *, asynchronous: bool) -> None:
+        """Keep the client's protocol settings and create its breaker when they enable one."""
+        self.protocols = protocols
+        if protocols is not None and not isinstance(protocols.circuit, Unset):
+            from ..protocols.circuits import breaker  # noqa: PLC0415 - Only circuit settings load the breaker.
+
+            self.breaker = breaker(protocols, asynchronous=asynchronous)
 
 
 class _Core(Generic[AdapterT, HandleT]):
@@ -1457,6 +1518,18 @@ class _Core(Generic[AdapterT, HandleT]):
         if session is None:
             return _Call(settings, self._scope, operation)
         return _SessionCall(settings, self._scope, operation, session)
+
+    def circuit_key(self, group: object, origin: object) -> CircuitKey | None:
+        """Return the key of one of the package's circuit groups at an origin, or None when no breaker is enabled."""
+        from ..protocols import options  # noqa: PLC0415 - Only circuit resets load the protocol settings.
+
+        if not isinstance(group, str) or group not in self._shared.circuit_groups:
+            raise ProtocolConfigurationError(field_path=("group",), condition="unknown_field")
+        if not isinstance(origin, options.Origin):
+            raise ProtocolConfigurationError(field_path=("origin",), condition="invalid_value")
+        if (breaker := self._shared.breaker) is None:
+            return None
+        return breaker.key((origin.scheme, origin.host, origin.port), group)
 
     def view(self, options: object) -> Self:
         """Return a view with the options layered on these, sharing the transport and counting its calls here too."""
@@ -2452,7 +2525,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         transport = _transport(options, http_client, transport_adapter)
         adapter, owned = _adapter(http_client, http_client_ownership, transport_adapter, transport)
         shared = _Shared(defaults, adapter, transport, trusted=isinstance(adapter, Httpx2Transport))
-        shared.protocols = protocols
+        shared.protect(protocols, asynchronous=False)
         result = cls(shared, settings, Scope(), owned=owned)
         if settings.auth is not None:
             result._adopt_auth(settings.auth)
@@ -2734,7 +2807,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         """Return a block that sends a raw request on entry and yields its streaming response until exit."""
         return _streamed(lambda: self.request_raw(method, url, body=body, options=options, stream=True))
 
-    def _run(
+    def _run(  # noqa: PLR0912
         self,
         call: _Call,
         body: object,
@@ -2742,9 +2815,14 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         receive: Callable[[TransportResponse, ResponseInfo], T],
         options: RequestOptions | None,
     ) -> T:
-        """Own entry capture, the single encode, every hop, and final source release."""
+        """Own entry capture, the single encode, every hop, and final source release.
+
+        A call of a grouped operation passes its circuit once encoded, before any credential or send, and records its
+        outcome there once its hops and retries end.
+        """
         entry: BodyBindings | None = None
         source: BodySource | None = None
+        admission: tuple[Breaker, CircuitPermit] | None = None
         try:
             entry = (
                 capture_body(body)
@@ -2770,9 +2848,16 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                 abandoned, entry = entry, None
                 _released(abandoned.close, call.operation_id, call.call_id)
             call.check("encode")
+            if (breaker := self._shared.breaker) is not None:
+                admission = _admission(breaker, call, request.url)
             result = self._exchange(request, source, call, receive)
+            if admission is not None:
+                admitted, admission = admission, None
+                _circuit_recorded(admitted, result, call)
         except BaseException as error:  # noqa: BLE001
             failure = call.failure(error)
+            if admission is not None:
+                admission[0].record(admission[1], failure, None)
             if source is not None:
                 call.retry_blocked |= not _discarded(source.close, failure)
             if entry is not None:
@@ -3207,6 +3292,13 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             received.problem = error
         return received
 
+    def reset_circuit(self, group: object, origin: object) -> None:
+        """Close a circuit group's circuit at an origin for this client's partition, sending nothing."""
+        if (key := self.circuit_key(group, origin)) is not None:
+            breaker = self._shared.breaker
+            assert breaker is not None
+            breaker.reset(key)
+
     def close(self) -> None:
         """Stop new calls, wait for the active ones and open handles, and close the transport this client owns."""
         scope = self._scope
@@ -3286,7 +3378,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         transport = _transport(options, http_client, transport_adapter)
         adapter, owned = _async_adapter(http_client, http_client_ownership, transport_adapter, transport)
         shared = _Shared(defaults, adapter, transport, trusted=isinstance(adapter, AsyncHttpx2Transport))
-        shared.protocols = protocols
+        shared.protect(protocols, asynchronous=True)
         with suppress(RuntimeError):
             shared.loop = asyncio.get_running_loop()
         result = cls(shared, settings, Scope(), owned=owned)
@@ -3590,7 +3682,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         """Return a block that sends a raw request on entry and yields its streaming response until exit."""
         return _astreamed(lambda: self.request_raw(method, url, body=body, options=options, stream=True))
 
-    async def _run(
+    async def _run(  # noqa: PLR0912
         self,
         call: _Call,
         body: object,
@@ -3598,9 +3690,10 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         receive: Callable[[AsyncTransportResponse, ResponseInfo], Awaitable[T]],
         options: RequestOptions | None,
     ) -> T:
-        """Own entry capture, the single encode, every hop, and final source release."""
+        """Own entry capture, the single encode, every hop, and final source release, passing grouped calls' circuit."""
         entry: AsyncBodyBindings | None = None
         source: AsyncBodySource | None = None
+        admission: tuple[Breaker, CircuitPermit] | None = None
         try:
             entry = (
                 await capture_async_body(body, cleanup=call.cleanup)
@@ -3626,9 +3719,16 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 abandoned, entry = entry, None
                 await call.cleanup(abandoned.aclose)
             call.check("encode")
+            if (breaker := self._shared.breaker) is not None:
+                admission = await _aadmission(breaker, call, request.url)
             result = await self._exchange(request, source, call, receive)
+            if admission is not None:
+                admitted, admission = admission, None
+                await _acircuit_recorded(admitted, result, call)
         except BaseException as error:  # noqa: BLE001
             failure = call.failure(error)
+            if admission is not None:
+                await admission[0].arecord(admission[1], failure, None)
             if source is not None:
                 await call.cleanup(source.aclose, error=failure)
             if entry is not None:
@@ -4070,6 +4170,13 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         except ProtocolError as error:
             received.problem = error
         return received
+
+    async def reset_circuit(self, group: object, origin: object) -> None:
+        """Close a circuit group's circuit at an origin for this client's partition, sending nothing."""
+        if (key := self.circuit_key(group, origin)) is not None:
+            breaker = self._shared.breaker
+            assert breaker is not None
+            await breaker.areset(key)
 
     async def aclose(self) -> None:
         """Stop new calls, wait for the active ones and open handles, and close the transport this client owns."""

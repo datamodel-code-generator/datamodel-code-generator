@@ -2893,6 +2893,10 @@ class WebhookStoreError(ProtocolStoreError):
     """A replay store operation that failed, so the webhook cannot be accepted."""
 
 
+class CircuitStoreError(ProtocolStoreError):
+    """A circuit store operation that failed or returned the wrong type; no request is resent because of it."""
+
+
 class ReplayStoreFullError(WebhookStoreError):
     """A replay store with no space for a new claim while every retained entry is still live."""
 

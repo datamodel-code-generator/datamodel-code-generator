@@ -81,6 +81,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
         "streams-mixed",
         "ndjson",
         "compatibility",
+        "circuits",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:
@@ -186,6 +187,7 @@ def test_client_retry_metadata_digests(tmp_path: Path) -> None:
         "polling",
         "streams",
         "ndjson",
+        "circuits",
     ],
 )
 def test_client_documentation(case: str, tmp_path: Path) -> None:
@@ -270,6 +272,10 @@ def test_client_body_arguments_digests(tmp_path: Path) -> None:
         "toml-retry-header-missing",
         "toml-retry-replay-missing",
         "toml-retry-scope-missing",
+        "circuit-values",
+        "circuit-invalid",
+        "toml-circuit-values",
+        "toml-circuit-type",
         "protocols-path",
         "protocols-type",
         "protocols-records",

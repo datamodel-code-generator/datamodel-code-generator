@@ -1,0 +1,476 @@
+# circuits pydantic_v2.BaseModel
+# values
+  value default = CircuitBreakerOptions(enabled=False, failure_threshold=5, cooldown=30.0)
+  value enabled int ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('enabled',), condition='invalid_value'] protocol_configuration_error
+  value threshold zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('failure_threshold',), condition='invalid_value'] protocol_configuration_error
+  value threshold bool ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('failure_threshold',), condition='invalid_value'] protocol_configuration_error
+  value cooldown zero ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('cooldown',), condition='invalid_value'] protocol_configuration_error
+  value cooldown infinite ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('cooldown',), condition='invalid_value'] protocol_configuration_error
+  value cooldown text ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('cooldown',), condition='invalid_value'] protocol_configuration_error
+  value resolved = ResolvedCircuitBreakerOptions(failure_threshold=2, cooldown=5.0)
+  value protocols circuit ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('circuit',), condition='invalid_value'] protocol_configuration_error
+  value key = CircuitKey(group='backend')
+  value key origin ! TypeError: origin has the wrong type []
+  value key partition ! TypeError: credential_partition must be a string []
+  value permit = CircuitPermit(key=CircuitKey(group='backend'), generation=0, probe=False)
+  value permit generation ! ValueError: generation must be nonnegative []
+  value permit probe ! TypeError: probe has the wrong type []
+  value permit key ! TypeError: key has the wrong type []
+  value snapshot = CircuitSnapshot(state='open', consecutive_failures=5, retry_at=3.5, generation=1)
+  value snapshot state ! ValueError: state must be closed, open, or half_open []
+  value snapshot retry_at ! TypeError: retry_at has the wrong type []
+  value snapshot counts ! ValueError: counts must be nonnegative []
+  value open error = CircuitOpenError: CircuitOpenError(group='backend') [] circuit_open_error
+  value open error key ! ValueError: key must be a CircuitKey []
+  value store error = CircuitStoreError: CircuitStoreError(action='admit') [] circuit_store_error
+  open error fields backend 2.5 None
+  store repeated probe half_open failures=1 retry_at=None generation=2
+  store admit key ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('key',), condition='invalid_value'] protocol_configuration_error
+  store record permit ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('permit',), condition='invalid_value'] protocol_configuration_error
+  store reset key ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('key',), condition='invalid_value'] protocol_configuration_error
+  store snapshot key ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('key',), condition='invalid_value'] protocol_configuration_error
+  store unknown = 'closed failures=0 retry_at=None generation=0'
+  store foreign permit = None
+# construction
+  partial store ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('protocols', 'circuit_store'), condition='wrong_capability'] protocol_configuration_error
+  async store for sync client ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('protocols', 'circuit_store'), condition='wrong_capability'] protocol_configuration_error
+  sync store for async client ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('protocols', 'circuit_store'), condition='wrong_capability'] protocol_configuration_error
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  disabled 0 ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  disabled 1 ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  disabled 2 ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  disabled 3 ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  disabled 4 ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  disabled 5 ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+  disabled reset = None
+  unknown group ! ProtocolConfigurationError: ProtocolConfigurationError(condition='unknown_field') [field_path=('group',), condition='unknown_field'] protocol_configuration_error
+  group type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='unknown_field') [field_path=('group',), condition='unknown_field'] protocol_configuration_error
+  origin type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('origin',), condition='invalid_value'] protocol_configuration_error
+# opening
+    admit backend anonymous api.example.com generation=0 probe=False threshold=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  failure 0 ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+    admit backend anonymous api.example.com generation=0 probe=False threshold=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  failure 1 ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+    admit backend anonymous api.example.com generation=0 probe=False threshold=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  failure 2 ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+    admit backend anonymous api.example.com generation=0 probe=False threshold=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  failure 3 ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+    admit backend anonymous api.example.com generation=0 probe=False threshold=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  failure 4 ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+  opened open failures=5 retry_at=1030.0 generation=1
+  open ! CircuitOpenError: CircuitOpenError(operation_id='getStatus', call_id='<call>', group='backend') [operation_id='getStatus'] circuit_open_error
+  open fields backend 1030.0 sends=0 attempts=0
+  > GET https://api.example.com/health
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  ungrouped = Status(state='up')
+    admit search anonymous api.example.com generation=0 probe=False threshold=5
+  > GET https://api.example.com/search
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    record success generation=0 probe=False
+  other group = Status(state='up')
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  raw request = 503
+  cooling ! CircuitOpenError: CircuitOpenError(operation_id='getStatus', call_id='<call>', group='backend') [operation_id='getStatus'] circuit_open_error
+    admit backend anonymous api.example.com generation=2 probe=True threshold=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=2 probe=True
+  probe failure ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+  reopened open failures=6 retry_at=1060.0 generation=3
+    admit backend anonymous api.example.com generation=4 probe=True threshold=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record success generation=4 probe=True
+  probe success = Status(state='up')
+  closed closed failures=0 retry_at=None generation=5
+# counting
+    admit backend anonymous api.example.com generation=0 probe=False threshold=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  reset count 0 ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+    admit backend anonymous api.example.com generation=0 probe=False threshold=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  reset count 1 ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+    admit backend anonymous api.example.com generation=0 probe=False threshold=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  reset count 2 ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+    admit backend anonymous api.example.com generation=0 probe=False threshold=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  reset count 3 ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+    admit backend anonymous api.example.com generation=0 probe=False threshold=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record success generation=0 probe=False
+  reset count 4 = Status(state='up')
+    admit backend anonymous api.example.com generation=0 probe=False threshold=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  reset count 5 ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+    admit backend anonymous api.example.com generation=0 probe=False threshold=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  reset count 6 ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+    admit backend anonymous api.example.com generation=0 probe=False threshold=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  reset count 7 ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+    admit backend anonymous api.example.com generation=0 probe=False threshold=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  reset count 8 ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+  after reset closed failures=4 retry_at=None generation=0
+    admit backend anonymous api.example.com generation=0 probe=False threshold=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  retried once ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='max_retries_exhausted') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+  retried closed failures=1 retry_at=None generation=0
+    admit backend anonymous api.example.com generation=0 probe=False threshold=100
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record neutral generation=0 probe=False
+  classify too many ! GetStatusHTTPError: GetStatusHTTPError(status_code=429, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=429, error_decoded=True, error_data=FieldStatusGetResponse(root='slow'), body_bytes=b'slow', truncated=False] get_status_http_error
+    admit backend anonymous api.example.com generation=0 probe=False threshold=100
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record neutral generation=0 probe=False
+  classify parse failure ! DecodeError: DecodeError(status_code=200, operation_id='getStatus', call_id='<call>') [operation_id='getStatus', body_bytes=b'{', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] decode_error
+    admit backend anonymous api.example.com generation=0 probe=False threshold=100
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record neutral generation=0 probe=False
+  classify validation ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='getStatus', call_id='<call>') [operation_id='getStatus', body_bytes=b'{"state":5}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.string_type) at /state')] response_validation_error
+    admit backend anonymous api.example.com generation=0 probe=False threshold=100
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record success generation=0 probe=False
+  classify missing ! GetStatusHTTPError: GetStatusHTTPError(status_code=404, operation_id='getStatus', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getStatus', status_code=404, error_decoded=True, error_data=FieldStatusGetResponse(root='gone'), body_bytes=b'gone', truncated=False] get_status_http_error
+    admit backend anonymous api.example.com generation=0 probe=False threshold=100
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  classify bad gateway ! GetStatusHTTPError: GetStatusHTTPError(status_code=502, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=502, error_decoded=True, error_data=FieldStatusGetResponse(root='x'), body_bytes=b'x', truncated=False] get_status_http_error
+    admit backend anonymous api.example.com generation=0 probe=False threshold=100
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  classify internal ! GetStatusHTTPError: GetStatusHTTPError(status_code=500, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=500, error_decoded=True, error_data=FieldStatusGetResponse(root='x'), body_bytes=b'x', truncated=False] get_status_http_error
+    admit backend anonymous api.example.com generation=0 probe=False threshold=100
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record success generation=0 probe=False
+  classify not implemented ! GetStatusHTTPError: GetStatusHTTPError(status_code=501, operation_id='getStatus', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getStatus', status_code=501, error_decoded=True, error_data=FieldStatusGetResponse(root='x'), body_bytes=b'x', truncated=False] get_status_http_error
+    admit backend anonymous api.example.com generation=0 probe=False threshold=100
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  classify gateway timeout ! GetStatusHTTPError: GetStatusHTTPError(status_code=504, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=504, error_decoded=True, error_data=FieldStatusGetResponse(root='x'), body_bytes=b'x', truncated=False] get_status_http_error
+    admit backend anonymous api.example.com generation=0 probe=False threshold=100
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record neutral generation=0 probe=False
+  classify pool timeout ! PhaseTimeoutError: PhaseTimeoutError(operation_id='getStatus', call_id='<call>', delivery_state='MAYBE_SENT', phase='pool', effective_timeout=5.0) [operation_id='getStatus', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='pool', cause=PoolTimeout('failed')] phase_timeout_error
+    admit backend anonymous api.example.com generation=0 probe=False threshold=100
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  classify connect error ! TransportError: TransportError(operation_id='getStatus', call_id='<call>', delivery_state='MAYBE_SENT', phase='connect') [operation_id='getStatus', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='connect', cause=ConnectError('failed')] transport_error
+    admit backend anonymous api.example.com generation=0 probe=False threshold=100
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  classify read error ! TransportError: TransportError(operation_id='getStatus', call_id='<call>', delivery_state='MAYBE_SENT', phase='read') [operation_id='getStatus', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='read', cause=ReadError('failed')] transport_error
+    admit backend anonymous api.example.com generation=0 probe=False threshold=100
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  classify broken body ! TransportError: TransportError(operation_id='getStatus', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read') [operation_id='getStatus', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read', cause=ReadError('connection reset')] transport_error
+    admit backend anonymous api.example.com generation=0 probe=False threshold=100
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  raw status = 503
+    admit backend anonymous api.example.com generation=0 probe=False threshold=100
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record success generation=0 probe=False
+  streaming status 200
+  classified closed failures=0 retry_at=None generation=0
+# resets
+    admit backend anonymous api.example.com generation=0 probe=False threshold=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+    admit backend anonymous api.example.com generation=0 probe=False threshold=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+    admit backend anonymous api.example.com generation=0 probe=False threshold=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+    admit backend anonymous api.example.com generation=0 probe=False threshold=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+    admit backend anonymous api.example.com generation=0 probe=False threshold=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  opening ['GetStatusHTTPError', 'GetStatusHTTPError', 'GetStatusHTTPError', 'GetStatusHTTPError', 'GetStatusHTTPError']
+  before reset ! CircuitOpenError: CircuitOpenError(operation_id='getStatus', call_id='<call>', group='backend') [operation_id='getStatus'] circuit_open_error
+  reset closed failures=0 retry_at=None generation=2
+    admit backend anonymous api.example.com generation=2 probe=False threshold=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=2 probe=False
+  stale failure ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+  stale closed failures=0 retry_at=None generation=3
+    admit backend anonymous api.example.com generation=3 probe=False threshold=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=3 probe=False
+    admit backend anonymous api.example.com generation=3 probe=False threshold=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=3 probe=False
+    admit backend anonymous api.example.com generation=3 probe=False threshold=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=3 probe=False
+    admit backend anonymous api.example.com generation=3 probe=False threshold=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=3 probe=False
+    admit backend anonymous api.example.com generation=3 probe=False threshold=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=3 probe=False
+  reopening ['GetStatusHTTPError', 'GetStatusHTTPError', 'GetStatusHTTPError', 'GetStatusHTTPError', 'GetStatusHTTPError']
+    admit backend anonymous api.example.com generation=5 probe=True threshold=5
+    record neutral generation=5 probe=True
+  cancelled probe ! RequestCancelledError: RequestCancelledError(operation_id='getStatus', call_id='<call>', source='cancel_token', delivery_state='NOT_SENT') [operation_id='getStatus', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] request_cancelled_error
+  after cancel half_open failures=5 retry_at=None generation=5
+    admit backend anonymous api.example.com generation=5 probe=True threshold=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record success generation=5 probe=True
+  next probe = Status(state='up')
+# partitions
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  first ['GetStatusHTTPError', 'GetStatusHTTPError', 'GetStatusHTTPError', 'GetStatusHTTPError', 'GetStatusHTTPError']
+  own store open ! CircuitOpenError: CircuitOpenError(operation_id='getStatus', call_id='<call>', group='backend') [operation_id='getStatus'] circuit_open_error
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  other client = Status(state='up')
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  third ['GetStatusHTTPError', 'GetStatusHTTPError', 'GetStatusHTTPError', 'GetStatusHTTPError', 'GetStatusHTTPError']
+  shared store ! CircuitOpenError: CircuitOpenError(operation_id='getStatus', call_id='<call>', group='backend') [operation_id='getStatus'] circuit_open_error
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  other partition = Status(state='up')
+  shared open closed
+  auth without partition ! ProtocolConfigurationError: ProtocolConfigurationError(operation_id='getAccount', call_id='<call>', condition='security_partition') [operation_id='getAccount', field_path=('protocols', 'security'), condition='security_partition'] protocol_configuration_error
+  > GET https://api.example.com/health
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  ungrouped with auth = Status(state='up')
+    admit backend tenant-a api.example.com generation=0 probe=False threshold=5
+  > GET https://api.example.com/account
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token-secret] b''
+    record success generation=0 probe=False
+  auth with partition = Status(state='up')
+# store_failures
+  admit raises ! CircuitStoreError: CircuitStoreError(operation_id='getStatus', call_id='<call>', action='admit') [operation_id='getStatus', cause=RuntimeError('store down')] circuit_store_error
+  admit raises secondary []
+  admit store error ! CircuitStoreError: CircuitStoreError(operation_id='getStatus', call_id='<call>', action='admit') [operation_id='getStatus'] circuit_store_error
+  admit store error secondary []
+  admit wrong type ! CircuitStoreError: CircuitStoreError(operation_id='getStatus', call_id='<call>', action='admit') [operation_id='getStatus'] circuit_store_error
+  admit wrong type secondary []
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  record after success ! CircuitStoreError: CircuitStoreError(operation_id='getStatus', call_id='<call>', action='record') [operation_id='getStatus', cause=RuntimeError('store down')] circuit_store_error
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  record after success secondary []
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  record after failure ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  record after failure secondary ['CircuitStoreError']
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  raw record failure ! CircuitStoreError: CircuitStoreError(operation_id='getStatus', call_id='<call>', action='record') [operation_id='getStatus', cause=RuntimeError('store down')] circuit_store_error
+  reset failure ! CircuitStoreError: CircuitStoreError(action='reset') [cause=RuntimeError('store down')] circuit_store_error
+# async
+    admit backend generation=0 probe=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  async failure 0 ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+    admit backend generation=0 probe=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  async failure 1 ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+    admit backend generation=0 probe=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  async failure 2 ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+    admit backend generation=0 probe=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  async failure 3 ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+    admit backend generation=0 probe=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  async failure 4 ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+  async open ! CircuitOpenError: CircuitOpenError(operation_id='getStatus', call_id='<call>', group='backend') [operation_id='getStatus'] circuit_open_error
+    admit backend generation=2 probe=True
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record success generation=2 probe=True
+  async probes [('CircuitOpenError', 19), ('Status', 1)]
+  async closed closed failures=0 retry_at=None generation=3
+    admit backend generation=3 probe=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=3 probe=False
+  async reopen GetStatusHTTPError secondary []
+    admit backend generation=3 probe=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=3 probe=False
+  async reopen GetStatusHTTPError secondary []
+    admit backend generation=3 probe=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=3 probe=False
+  async reopen GetStatusHTTPError secondary []
+    admit backend generation=3 probe=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=3 probe=False
+  async reopen GetStatusHTTPError secondary []
+    admit backend generation=3 probe=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=3 probe=False
+  async reopen GetStatusHTTPError secondary []
+  async reset closed failures=0 retry_at=None generation=5
+    admit backend generation=5 probe=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=5 probe=False
+  async raw 503 closed failures=1 retry_at=None generation=5
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  async default store = Status(state='up')
+  > GET https://api.example.com/health
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async ungrouped = Status(state='up')
+  async disabled reset = None
+  async admit raises ! CircuitStoreError: CircuitStoreError(operation_id='getStatus', call_id='<call>', action='admit') [operation_id='getStatus', cause=RuntimeError('store down')] circuit_store_error
+  async admit wrong type ! CircuitStoreError: CircuitStoreError(operation_id='getStatus', call_id='<call>', action='admit') [operation_id='getStatus'] circuit_store_error
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  async record after success ! CircuitStoreError: CircuitStoreError(operation_id='getStatus', call_id='<call>', action='record') [operation_id='getStatus', cause=RuntimeError('store down')] circuit_store_error
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  async record after failure ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  async raw record failure ! CircuitStoreError: CircuitStoreError(operation_id='getStatus', call_id='<call>', action='record') [operation_id='getStatus', cause=RuntimeError('store down')] circuit_store_error
+  async reset failure ! CircuitStoreError: CircuitStoreError(action='reset') [cause=RuntimeError('store down')] circuit_store_error
+    admit backend generation=0 probe=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  async cancel setup GetStatusHTTPError secondary []
+    admit backend generation=0 probe=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  async cancel setup GetStatusHTTPError secondary []
+    admit backend generation=0 probe=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  async cancel setup GetStatusHTTPError secondary []
+    admit backend generation=0 probe=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  async cancel setup GetStatusHTTPError secondary []
+    admit backend generation=0 probe=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+    record failure generation=0 probe=False
+  async cancel setup GetStatusHTTPError secondary []
+    admit backend generation=2 probe=True
+    record neutral generation=2 probe=True
+  async cancelled probe ! RequestCancelledError: RequestCancelledError(operation_id='getStatus', call_id='<call>', source='cancel_token', delivery_state='NOT_SENT') [operation_id='getStatus', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] request_cancelled_error
+  async after cancel half_open failures=5 retry_at=None generation=2

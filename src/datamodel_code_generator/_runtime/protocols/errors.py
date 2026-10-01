@@ -13,6 +13,7 @@ from typing_extensions import TypeIs, TypeVar
 
 from ..client.errors import ProtocolError, error_choice, error_count, error_string, error_time
 from ..client.responses import ResponseInfo  # noqa: TC001 - Public annotations support get_type_hints().
+from .options import CircuitKey
 from .records import (
     PROGRESS_KEYS,
     PollSnapshot,
@@ -25,6 +26,7 @@ from .references import OperationRef  # noqa: TC001 - Public annotations support
 from .resume import ResumeState, ResumeStateError, ResumeStateTooLargeError
 
 __all__ = (
+    "CircuitOpenError",
     "IncompleteFrameError",
     "OperationCancelledError",
     "OperationFailedError",
@@ -95,6 +97,12 @@ def _raw_prefix(value: object) -> None:
     if not isinstance(value, bytes) or len(value) > MAX_RAW_PREFIX:
         msg = "raw_prefix must be at most 65536 bytes"
         raise ValueError(msg)
+
+
+def _circuit_key(value: object) -> None:
+    if not isinstance(value, CircuitKey):
+        msg = "key must be a CircuitKey"
+        raise ValueError(msg)  # noqa: TRY004 - Exception constructors reject invalid fields with ValueError.
 
 
 def _flag(value: object, field: str) -> None:
@@ -447,6 +455,61 @@ class PollingStateError(ProtocolDataError):
             auth_refresh_pending=auth_refresh_pending,
             wire_send_count=wire_send_count,
         )
+
+
+class CircuitOpenError(ProtocolError):
+    """An open circuit, or a half-open one already probing, refused the call before any credential or send."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        key: CircuitKey,
+        retry_at: float,
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep the circuit's key and the monotonic time at which it admits a call again."""
+        _circuit_key(key)
+        when = error_time(retry_at, "retry_at")
+        super().__init__(
+            helper_id=helper_id,
+            operation=operation,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self.key = key
+        self.retry_at = when
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("group", self.key.group))
 
 
 class PollWaitLimitError(ProtocolError):

@@ -26,6 +26,7 @@ from ._runtime.client.errors import (
     BodyNotReplayableError,
     BodyProtocolError,
     BudgetExceededError,
+    CircuitStoreError,
     CleanupError,
     ClientClosedError,
     ConfigurationError,
@@ -71,6 +72,7 @@ from ._runtime.client.errors import (
 
 if TYPE_CHECKING:
     from ._runtime.protocols.errors import (
+        CircuitOpenError,
         IncompleteFrameError,
         OperationCancelledError,
         OperationFailedError,
@@ -109,6 +111,8 @@ __all__ = [
     'BodyNotReplayableError',
     'BodyProtocolError',
     'BudgetExceededError',
+    'CircuitOpenError',
+    'CircuitStoreError',
     'CleanupError',
     'ClientClosedError',
     'ConfigurationError',
@@ -167,6 +171,7 @@ __all__ = [
     'WebhookVerificationError',
 ]
 _PROTOCOL_ERRORS = frozenset({
+    'CircuitOpenError',
     'IncompleteFrameError',
     'OperationCancelledError',
     'OperationFailedError',

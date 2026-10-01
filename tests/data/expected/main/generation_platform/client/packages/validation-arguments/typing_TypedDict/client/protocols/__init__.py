@@ -6,11 +6,18 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .._runtime.protocols.options import (
+    AsyncCircuitStore,
+    CircuitBreakerOptions,
+    CircuitKey,
+    CircuitPermit,
+    CircuitSnapshot,
+    CircuitStore,
     Origin,
     PaginationOptions,
     PollOptions,
     ProtocolDefaults,
     ProtocolSecurityContext,
+    ResolvedCircuitBreakerOptions,
     StreamOptions,
 )
 from .._runtime.protocols.records import (
@@ -41,6 +48,7 @@ from .._runtime.protocols.webhooks import (
 )
 
 if TYPE_CHECKING:
+    from .._runtime.protocols.circuits import AsyncMemoryCircuitStore, MemoryCircuitStore
     from .._runtime.protocols.pagination import AsyncPager, Page, Pager
     from .._runtime.protocols.polling import AsyncLroHandle, LroHandle
     from .._runtime.protocols.replay import AsyncMemoryReplayStore, MemoryReplayStore
@@ -52,18 +60,26 @@ if TYPE_CHECKING:
     )
 
 __all__ = [
+    "AsyncCircuitStore",
     "AsyncEventStream",
     "AsyncLroHandle",
+    "AsyncMemoryCircuitStore",
     "AsyncMemoryReplayStore",
     "AsyncPager",
     "AsyncReplayStore",
     "BodySelector",
     "BodyTarget",
+    "CircuitBreakerOptions",
+    "CircuitKey",
+    "CircuitPermit",
+    "CircuitSnapshot",
+    "CircuitStore",
     "Continuation",
     "EventStream",
     "HeaderSelector",
     "KeySet",
     "LroHandle",
+    "MemoryCircuitStore",
     "MemoryReplayStore",
     "OperationRef",
     "Origin",
@@ -80,6 +96,7 @@ __all__ = [
     "QuerystringTarget",
     "ReplayStore",
     "RequestTarget",
+    "ResolvedCircuitBreakerOptions",
     "ResolvedWebhookOptions",
     "ResumeState",
     "Selector",
@@ -109,6 +126,10 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import streams
 
         return getattr(streams, name)
+    if name in {"AsyncMemoryCircuitStore", "MemoryCircuitStore"}:
+        from .._runtime.protocols import circuits
+
+        return getattr(circuits, name)
     if name == "MemoryReplayStore":
         from .._runtime.protocols.replay import MemoryReplayStore
 

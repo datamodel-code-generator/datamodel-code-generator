@@ -248,6 +248,7 @@ _ERROR_NAMES: Final = (
     "BodyNotReplayableError",
     "BodyProtocolError",
     "BudgetExceededError",
+    "CircuitStoreError",
     "CleanupError",
     "ClientClosedError",
     "ConfigurationError",
@@ -291,6 +292,7 @@ _ERROR_NAMES: Final = (
     "WebhookVerificationError",
 )
 _PROTOCOL_ERROR_NAMES: Final = (
+    "CircuitOpenError",
     "IncompleteFrameError",
     "OperationCancelledError",
     "OperationFailedError",
@@ -346,11 +348,18 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .._runtime.protocols.options import (
+    AsyncCircuitStore,
+    CircuitBreakerOptions,
+    CircuitKey,
+    CircuitPermit,
+    CircuitSnapshot,
+    CircuitStore,
     Origin,
     PaginationOptions,
     PollOptions,
     ProtocolDefaults,
     ProtocolSecurityContext,
+    ResolvedCircuitBreakerOptions,
     StreamOptions,
 )
 from .._runtime.protocols.records import (
@@ -381,24 +390,33 @@ from .._runtime.protocols.webhooks import (
 )
 
 if TYPE_CHECKING:
+    from .._runtime.protocols.circuits import AsyncMemoryCircuitStore, MemoryCircuitStore
     from .._runtime.protocols.pagination import AsyncPager, Page, Pager
     from .._runtime.protocols.polling import AsyncLroHandle, LroHandle
     from .._runtime.protocols.replay import AsyncMemoryReplayStore, MemoryReplayStore
     from .._runtime.protocols.streams import AsyncEventStream, EventStream, StreamEvent, UnknownEvent
 
 __all__ = [
+    "AsyncCircuitStore",
     "AsyncEventStream",
     "AsyncLroHandle",
+    "AsyncMemoryCircuitStore",
     "AsyncMemoryReplayStore",
     "AsyncPager",
     "AsyncReplayStore",
     "BodySelector",
     "BodyTarget",
+    "CircuitBreakerOptions",
+    "CircuitKey",
+    "CircuitPermit",
+    "CircuitSnapshot",
+    "CircuitStore",
     "Continuation",
     "EventStream",
     "HeaderSelector",
     "KeySet",
     "LroHandle",
+    "MemoryCircuitStore",
     "MemoryReplayStore",
     "OperationRef",
     "Origin",
@@ -415,6 +433,7 @@ __all__ = [
     "QuerystringTarget",
     "ReplayStore",
     "RequestTarget",
+    "ResolvedCircuitBreakerOptions",
     "ResolvedWebhookOptions",
     "ResumeState",
     "Selector",
@@ -444,6 +463,10 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import streams
 
         return getattr(streams, name)
+    if name in {"AsyncMemoryCircuitStore", "MemoryCircuitStore"}:
+        from .._runtime.protocols import circuits
+
+        return getattr(circuits, name)
     if name == "MemoryReplayStore":
         from .._runtime.protocols.replay import MemoryReplayStore
 
@@ -846,6 +869,11 @@ class Module:
         ))
 
 
+def circuit_groups(plan: ClientPlan) -> tuple[str, ...]:
+    """Return the circuit groups a client's operations declare, sorted."""
+    return tuple(sorted({group for spec in plan.operations if (group := spec.circuit_group) is not None}))
+
+
 class _Typing:
     """Spell the payload types of a planned client: model types with their projection, or schema-less surfaces."""
 
@@ -1011,10 +1039,19 @@ class _Resources(_Typing):
                 f"{module.local('_runtime.client.options', 'ValidationModes')}({arguments})",
             ))
         name = module.local("_runtime.client.client", "ClientDefaults")
-        if not (helpers := (*self.helpers, *self.streams)):
+        helpers = (*self.helpers, *self.streams)
+        if not helpers and not self.circuit_groups:
             return f"{name}({', '.join(f'{prefix}{value}' for prefix, value in entries)})"
-        entries.append(("helpers=", _tuple(repr((spec.helper.name, spec.helper.kind)) for spec in helpers)))
+        if helpers:
+            entries.append(("helpers=", _tuple(repr((spec.helper.name, spec.helper.kind)) for spec in helpers)))
+        if groups := self.circuit_groups:
+            entries.append(("circuit_groups=", f"frozenset({{{', '.join(map(repr, groups))}}})"))
         return layout(_call(name, entries), 0, len("_DEFAULTS = "), WIDTH)
+
+    @cached_property
+    def circuit_groups(self) -> tuple[str, ...]:
+        """Return the circuit groups the package's operations declare, sorted."""
+        return circuit_groups(self.plan)
 
     def client(self, *, asynchronous: bool) -> str:
         """Return a root client module: its constructor, lazy resource attributes, and close methods."""
@@ -1031,6 +1068,10 @@ class _Resources(_Typing):
         helpers_module = f".protocols.{_helpers_module(asynchronous=asynchronous)}"
         if protocols is not None:
             lazy.append((protocols, helpers_module))
+        circuit_groups = None
+        if groups := self.circuit_groups:
+            lazy.append(("Origin", ".protocols"))
+            circuit_groups = f"{module.name('typing', 'Literal')}[{', '.join(map(repr, groups))}]"
         values = {
             "defaults": self.defaults(module),
             "options": module.local("options", "ClientOptions"),
@@ -1068,6 +1109,7 @@ class _Resources(_Typing):
             ],
             protocols=protocols,
             protocols_module=helpers_module,
+            circuit_groups=circuit_groups,
             **values,
         )
 
@@ -1974,6 +2016,8 @@ class _Registry(_Typing):
             entries.append(("security=", f"{module.local('_generated', 'security')}.OPERATION_{spec.index}"))
         if spec.auth_challenge_less_401:
             entries.append(("auth_challenge_less_401=", "True"))
+        if spec.circuit_group is not None:
+            entries.append(("circuit_group=", repr(spec.circuit_group)))
         if (spec.body is not None and spec.body.media) or success_media(spec.responses, ranges=True):
             entries.append(("codecs=", module.local(f"types.{spec.resource}", f"{spec.pascal}RequestCodecs")))
         if self.checks is not None and (branches := self.checks.branches.get(spec.index)):
@@ -2908,7 +2952,26 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
 ```json
 {json.dumps(metadata, indent=2, ensure_ascii=True)}
 ```
-{self.helper_readme()}"""
+{self.helper_readme()}{self.circuit_readme()}"""
+
+    def circuit_readme(self) -> str:
+        """Describe the package's circuit groups, or nothing when no operation declares one."""
+        if not (groups := circuit_groups(self.plan)):
+            return ""
+        members = {
+            group: [f"{spec.resource}.{spec.name}" for spec in self.plan.operations if spec.circuit_group == group]
+            for group in groups
+        }
+        return f"""
+## Circuit groups
+
+Calls of these operations pass a circuit of their group when `ProtocolClientOptions(circuit=CircuitBreakerOptions(
+enabled=True))` enables the breaker; `Client.reset_circuit(group, origin=...)` closes one. See the runtime reference.
+
+```json
+{json.dumps(members, indent=2, ensure_ascii=True)}
+```
+"""
 
     def helper_readme(self) -> str:
         """Describe the package's protocol helpers, or nothing when it has none."""
@@ -3137,7 +3200,46 @@ A limiter permit is acquired before opening a body and released when its respons
 bounded wait, retains unfinished owned work, and preserves the primary error, attaching secondary failures where
 possible. Client/view closure refuses new work and interrupts active calls at observation points. Retrying close can
 wait for retained cleanup; it does not authorize another send or restore an expired logical deadline.
-{self.helper_runtime()}{self.stream_runtime()}"""  # noqa: S608
+{self.helper_runtime()}{self.stream_runtime()}{self.circuit_runtime()}"""  # noqa: S608
+
+    def circuit_runtime(self) -> str:
+        """Describe circuit breaking, or nothing for a package whose operations declare no circuit group."""
+        if not circuit_groups(self.plan):
+            return ""
+        return f"""
+## Circuit breakers
+
+Import `CircuitBreakerOptions` and the circuit store types from `{self.config.package}.protocols`. A circuit breaker
+runs only for operations with a circuit group and only when `ProtocolClientOptions(circuit=CircuitBreakerOptions(
+enabled=True))` is passed in `ClientOptions(protocols=...)`; otherwise calls take no circuit step.
+
+| Setting | Default |
+|---|---|
+| `enabled` | False |
+| `failure_threshold` | 5 consecutive failed calls |
+| `cooldown` | 30 seconds |
+| half-open probes | 1 at a time, fixed |
+| `circuit_store` | None: a memory store of this client, shared with its views |
+
+Each call of a grouped operation passes the circuit of its group, the origin of its URL, and the client's
+`ProtocolSecurityContext.credential_partition` (`anonymous` without a context) once its request is encoded and before
+any credential, limiter permit, or send. An authenticated call needs a security context, or it raises
+`ProtocolConfigurationError` before sending. An open circuit raises `CircuitOpenError` with its `key` and the monotonic
+`retry_at` of its next admission; the call consumes no send, attempt, or token exchange, and is never retried.
+
+A call's outcome is recorded once, after its redirects and retries. Connect, read, and write transport failures and a
+final 500, 502, 503, or 504 response are failures; any other response is a success, which resets the count. Pool
+timeouts, 429, cancellation, deadlines, auth and token failures, and configuration, encoding, decoding, and validation
+errors leave the circuit unchanged. A streaming call completes when its response is handed over. The threshold of
+consecutive failures opens the circuit for the cooldown; then one call probes it, closing it on success and reopening
+it on failure, while other calls raise `CircuitOpenError`; a cancelled or neutral probe frees the slot.
+
+`circuit_store` borrows a `CircuitStore` (an `AsyncCircuitStore` for `AsyncClient`) and never closes it; clients
+sharing one store share circuits with the same key. Its methods receive the SDK's monotonic `now`, which is process
+local. A store failure raises `CircuitStoreError`, or becomes a secondary error of a call that already failed; no
+request is resent because of it. `reset_circuit(group, origin=Origin(...))` closes one circuit of this client's
+partition without sending anything, and permits admitted before it cannot change the state after it.
+"""
 
     def helper_runtime(self) -> str:
         """Describe the sessions of the package's pagination and polling helpers, or nothing without helpers."""

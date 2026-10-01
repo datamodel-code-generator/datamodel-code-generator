@@ -3606,5 +3606,44 @@
         }
       ]
     }
+  },
+  "circuits": {
+    "input": "circuits.yaml",
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1status/get",
+          "runtime": {
+            "circuit_group": "backend"
+          }
+        },
+        {
+          "ref": "/paths/~1account/get",
+          "runtime": {
+            "circuit_group": "backend"
+          }
+        },
+        {
+          "ref": "/paths/~1search/get",
+          "runtime": {
+            "circuit_group": "search"
+          }
+        }
+      ]
+    },
+    "modules": [
+      [
+        "client",
+        "_client.py"
+      ],
+      [
+        "client",
+        "_async_client.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
   }
 }
