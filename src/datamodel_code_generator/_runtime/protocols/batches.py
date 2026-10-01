@@ -740,6 +740,15 @@ class BatchIterator(_Batches[R]):
         work.exception()
         return self._slots.popleft()
 
+    def _interrupt(self) -> None:
+        """Stop reading and sending at an interruption, cancelling requests not started; those in flight stay to await.
+
+        Their records are returned by the following steps, which then raise ProtocolStateError of state `cancelled`.
+        """
+        self._halt()
+        self._cancelled = True
+        self._slots = deque(batch for batch in self._slots if not batch.work.cancel())
+
     def _finish(self) -> None:
         """Stop sending: cancel requests not started, wait for those in flight, and drop their results."""
         self._done = True
@@ -759,7 +768,7 @@ class BatchIterator(_Batches[R]):
             try:
                 batch = self._head()
             except BaseException:
-                self._finish()
+                self._interrupt()
                 raise
             if batch is None:
                 self._finish()

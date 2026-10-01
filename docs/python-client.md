@@ -1245,7 +1245,8 @@ iteration. Neither closes the client. A step of an `AsyncBatchIterator` that is 
 `anext`, cancels the requests in flight and reads and sends nothing more; the following steps return a
 `<Helper>DeliveryUnknown` record per item of the cancelled requests, or raise `BatchDeliveryUnknownError` with
 `raise_on_error`, then raise `ProtocolStateError` with `state='cancelled'`, so the items read but never sent are not
-dropped silently. Calling a step while another one runs raises `ProtocolStateError` with `state='iterating'`.
+dropped silently. A `BatchIterator` interrupted while it reads the items, such as by `KeyboardInterrupt` from the
+caller's iterator, cancels the requests not started and ends the same way after the records of those in flight. Calling a step while another one runs raises `ProtocolStateError` with `state='iterating'`.
 
 ### Limits and sessions
 

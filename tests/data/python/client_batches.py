@@ -421,7 +421,19 @@ def _interruption(harness: _Batches, lines: list[str]) -> None:
             next(iterator)
         except _Interrupt:
             lines.append("  interrupted while reading")
-        record(lines, "after the interruption", lambda: _record(next(iterator)))
+        records = 0
+        try:
+            while True:
+                next(iterator)
+                records += 1
+        except Exception as error:  # noqa: BLE001
+            lines.append(f"  after the interruption, at most 2 records {records <= 2} ! {describe(error)}")
+        closed = api.protocols.users.create.iterate(
+            harness.users(6), batch_options=harness.batch(batch_size=2, parallelism=2)
+        )
+        lines.append(f"  first before closing {_record(next(closed))}")
+        closed.close()
+        record(lines, "after closing", lambda: next(closed))
 
 
 def _failing_source(items: list[Any]) -> Iterator[Any]:

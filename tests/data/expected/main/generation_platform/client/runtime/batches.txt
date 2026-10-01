@@ -245,7 +245,9 @@ requests in flight after a failure
   deadline while answered: 1 requests
     > u0000 POST /users/batch items=2 last=u0001 bytes=73
   interrupted while reading
-  after the interruption ! StopIteration:  []
+  after the interruption, at most 2 records True ! ProtocolStateError: ProtocolStateError(state='cancelled', action='next') [] protocol_state_error
+  first before closing error #0 id='u0000' status=200 error=taken
+  after closing ! StopIteration:  []
 records
   success UsersCreateSuccess outcome=success id=u0004 token=None value=user 4
   failure UsersCreateError outcome=error error=taken
