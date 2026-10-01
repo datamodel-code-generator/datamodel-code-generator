@@ -76,13 +76,14 @@ def verify(
 ) -> VerifiedWebhook[_dcg_type_0]:
     """Verify a delivery and decode its event, claiming it in a store.
 
-    Deliveries outside the timestamp window are rejected, and a replay store keeps a
-    claim until the window closes. Duplicates are detected only until the claim expires.
-    The claim is made after decoding, before your code processes the event: if
-    processing then fails, a retried delivery is a duplicate, or rejected under
-    duplicates: reject, until the claim expires, so make processing durable or
-    idempotent before acknowledging, or use a store whose claims you can release.
-    Without a replay store, duplicate=False does not mean the delivery is new.
+    Deliveries outside the timestamp window are rejected. The window closes at the
+    timestamp plus past_tolerance, while a replay store keeps a claim until the
+    timestamp plus past_tolerance and future_tolerance. Duplicates are detected only
+    until the claim expires. The claim is made after decoding, before your code
+    processes the event: if processing then fails, a retried delivery is a duplicate, or
+    rejected under duplicates: reject, until the claim expires, so make processing
+    durable or idempotent before acknowledging, or use a store whose claims you can
+    release. Without a replay store, duplicate=False does not mean the delivery is new.
     """
     return verify_webhook(
         _PLAN,
@@ -106,13 +107,14 @@ async def verify_async(
 ) -> VerifiedWebhook[_dcg_type_0]:
     """Verify a delivery and decode its event, claiming it in an asyncio store.
 
-    Deliveries outside the timestamp window are rejected, and a replay store keeps a
-    claim until the window closes. Duplicates are detected only until the claim expires.
-    The claim is made after decoding, before your code processes the event: if
-    processing then fails, a retried delivery is a duplicate, or rejected under
-    duplicates: reject, until the claim expires, so make processing durable or
-    idempotent before acknowledging, or use a store whose claims you can release.
-    Without a replay store, duplicate=False does not mean the delivery is new.
+    Deliveries outside the timestamp window are rejected. The window closes at the
+    timestamp plus past_tolerance, while a replay store keeps a claim until the
+    timestamp plus past_tolerance and future_tolerance. Duplicates are detected only
+    until the claim expires. The claim is made after decoding, before your code
+    processes the event: if processing then fails, a retried delivery is a duplicate, or
+    rejected under duplicates: reject, until the claim expires, so make processing
+    durable or idempotent before acknowledging, or use a store whose claims you can
+    release. Without a replay store, duplicate=False does not mean the delivery is new.
     """
     return await averify_webhook(
         _PLAN,

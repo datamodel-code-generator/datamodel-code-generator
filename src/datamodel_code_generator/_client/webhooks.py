@@ -306,8 +306,9 @@ class _Webhooks:
         event, key, plan = self.plan(module, spec)
         algorithm = _ALGORITHMS[signature["kind"]][1]
         window = (
-            "Deliveries outside the timestamp window are rejected, and a replay store keeps a claim until the window "
-            "closes."
+            "Deliveries outside the timestamp window are rejected. The window closes at the timestamp plus "
+            "past_tolerance, while a replay store keeps a claim until the timestamp plus past_tolerance and "
+            "future_tolerance."
             if signature["timestamp"] != "none"
             else "This webhook has no timestamp, so replay protection has no time window: a replay store keeps a "
             "claim for replay_ttl after now."
