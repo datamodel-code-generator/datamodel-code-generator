@@ -13,13 +13,16 @@ from enum import Enum
 from typing import TYPE_CHECKING, Final
 
 from ..model_codecs.unset import Unset
+from .records import BodySelector, HeaderSelector
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from ..client.responses import ResponseInfo
     from ..model_codecs.wire import WireValue
+    from .records import Selector
 
-__all__ = ("MISSING", "Missing", "Patch", "resolve")
+__all__ = ("MISSING", "Missing", "Patch", "resolve", "selected")
 
 
 class Missing(Enum):
@@ -46,6 +49,25 @@ def resolve(value: WireValue, pointer: str) -> WireValue | Missing:
             return MISSING
         value = value[key]
     return value
+
+
+def selected(
+    read: Selector, wire: WireValue, info: ResponseInfo, repeated: Callable[[], BaseException]
+) -> WireValue | Missing:
+    """Return what a selector reads from a response, or MISSING; every occurrence of a header is an array of them.
+
+    A header selected once that the response repeats raises the error `repeated` returns.
+    """
+    if isinstance(read, BodySelector):
+        return resolve(wire, read.pointer)
+    if isinstance(read, HeaderSelector):
+        values = info.headers.get_all(read.name)
+        if read.occurrence == "all":
+            return tuple(values) if values else MISSING
+        if len(values) > 1:
+            raise repeated()
+        return values[0] if values else MISSING
+    return info.status_code
 
 
 def _patched(value: WireValue, tokens: list[str], new: WireValue) -> WireValue:

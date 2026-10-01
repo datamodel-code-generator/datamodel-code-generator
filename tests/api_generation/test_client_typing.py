@@ -100,6 +100,26 @@ def test_client_typing_pagination(backend: DataModelType, tmp_path: Path) -> Non
     )
 
 
+@pytest.mark.parametrize(
+    "backend",
+    [
+        DataModelType.PydanticV2BaseModel,
+        DataModelType.PydanticV2Dataclass,
+        DataModelType.DataclassesDataclass,
+        DataModelType.TypingTypedDict,
+        DataModelType.MsgspecStruct,
+    ],
+)
+def test_client_typing_polling(backend: DataModelType, tmp_path: Path) -> None:
+    """Check polling helpers: typed results and polls, sync and asyncio handles, and misuses of each."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(
+        client_typing_report(tmp_path, backend, "polling", ("polling",)),
+        EXPECTED / f"{backend.value.replace('.', '-')}-polling.txt",
+    )
+
+
 @pytest.mark.parametrize("case", ["pagination-targets", "pagination-querystring", "pagination-counts"])
 def test_client_typing_package(case: str, tmp_path: Path) -> None:
     """Check packages whose helpers write each kind of request target, bindings, and positions, with no samples."""

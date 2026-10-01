@@ -2347,5 +2347,66 @@
       "protocols": "protocols/pagination-count-checks.yaml"
     },
     "modules": false
+  },
+  "polling": {
+    "input": "polling.yaml",
+    "references": [
+      "protocols/polling.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/polling.yaml"
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ]
+    ]
+  },
+  "polling-plans": {
+    "input": "polling.yaml",
+    "references": [
+      "protocols/polling.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/polling.yaml"
+    },
+    "backends": [
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
+  "protocols-polling-checks": {
+    "input": "polling.yaml",
+    "references": [
+      "protocols/polling-checks.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/polling-checks.yaml"
+    },
+    "modules": false
   }
 }

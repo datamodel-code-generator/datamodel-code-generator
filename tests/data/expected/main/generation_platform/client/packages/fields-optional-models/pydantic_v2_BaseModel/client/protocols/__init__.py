@@ -42,9 +42,11 @@ from .._runtime.protocols.webhooks import (
 
 if TYPE_CHECKING:
     from .._runtime.protocols.pagination import AsyncPager, Page, Pager
+    from .._runtime.protocols.polling import AsyncLroHandle, LroHandle
     from .._runtime.protocols.replay import AsyncMemoryReplayStore, MemoryReplayStore
 
 __all__ = [
+    "AsyncLroHandle",
     "AsyncMemoryReplayStore",
     "AsyncPager",
     "AsyncReplayStore",
@@ -53,6 +55,7 @@ __all__ = [
     "Continuation",
     "HeaderSelector",
     "KeySet",
+    "LroHandle",
     "MemoryReplayStore",
     "OperationRef",
     "Origin",
@@ -83,11 +86,15 @@ __all__ = [
 
 
 def __getattr__(name: str) -> object:
-    """Load a memory store or a pagination type only when its public class is requested."""
+    """Load a memory store, a pagination type, or a polling handle only when its public class is requested."""
     if name in {"AsyncPager", "Page", "Pager"}:
         from .._runtime.protocols import pagination
 
         return getattr(pagination, name)
+    if name in {"AsyncLroHandle", "LroHandle"}:
+        from .._runtime.protocols import polling
+
+        return getattr(polling, name)
     if name == "MemoryReplayStore":
         from .._runtime.protocols.replay import MemoryReplayStore
 

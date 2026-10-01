@@ -68,6 +68,8 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
         "pagination-plans",
         "pagination-querystring",
         "pagination-targets",
+        "polling",
+        "polling-plans",
         "webhooks",
         "webhooks-schema",
         "compatibility",
@@ -116,6 +118,7 @@ def test_client_render(case: str, tmp_path: Path) -> None:
         "protocols-pagination-checks",
         "protocols-pagination-querystring-checks",
         "protocols-pagination-count-checks",
+        "protocols-polling-checks",
         "protocols-webhook-errors",
         "protocols-webhook-checks",
     ],
@@ -152,7 +155,9 @@ def test_client_retry_metadata_digests(tmp_path: Path) -> None:
     )
 
 
-@pytest.mark.parametrize("case", ["retries", "default-server", "empty", "auth", "pagination", "pagination-counts"])
+@pytest.mark.parametrize(
+    "case", ["retries", "default-server", "empty", "auth", "pagination", "pagination-counts", "polling"]
+)
 def test_client_documentation(case: str, tmp_path: Path) -> None:
     """Keep metadata, explicit retry overrides, documentation ownership, and source distribution inputs visible."""
     assert_output(client_documentation_report(case, tmp_path), EXPECTED / "documentation" / f"{case}.txt")

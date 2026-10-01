@@ -14,6 +14,7 @@ from datamodel_code_generator._client._compiled_templates import resource as res
 from datamodel_code_generator._client._compiled_templates import types as types_template
 from datamodel_code_generator._client.naming import helper_classes, pascal
 from datamodel_code_generator._client.plan import media_range, member_parts, reachable, success_media
+from datamodel_code_generator._client.polling import PollingSpec
 from datamodel_code_generator._client.validation import allowed
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._generation_contract import UnionType
@@ -27,7 +28,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping, Sequence
 
     from datamodel_code_generator._client.config import ClientGenerationConfig, ClientValidationConfig
-    from datamodel_code_generator._client.pagination import PaginationSpec
+    from datamodel_code_generator._client.pagination import ItemStep, PaginationSpec
     from datamodel_code_generator._client.plan import (
         ClientPlan,
         FieldBranch,
@@ -380,9 +381,11 @@ from .._runtime.protocols.webhooks import (
 
 if TYPE_CHECKING:
     from .._runtime.protocols.pagination import AsyncPager, Page, Pager
+    from .._runtime.protocols.polling import AsyncLroHandle, LroHandle
     from .._runtime.protocols.replay import AsyncMemoryReplayStore, MemoryReplayStore
 
 __all__ = [
+    "AsyncLroHandle",
     "AsyncMemoryReplayStore",
     "AsyncPager",
     "AsyncReplayStore",
@@ -391,6 +394,7 @@ __all__ = [
     "Continuation",
     "HeaderSelector",
     "KeySet",
+    "LroHandle",
     "MemoryReplayStore",
     "OperationRef",
     "Origin",
@@ -421,11 +425,15 @@ __all__ = [
 
 
 def __getattr__(name: str) -> object:
-    """Load a memory store or a pagination type only when its public class is requested."""
+    """Load a memory store, a pagination type, or a polling handle only when its public class is requested."""
     if name in {"AsyncPager", "Page", "Pager"}:
         from .._runtime.protocols import pagination
 
         return getattr(pagination, name)
+    if name in {"AsyncLroHandle", "LroHandle"}:
+        from .._runtime.protocols import polling
+
+        return getattr(polling, name)
     if name == "MemoryReplayStore":
         from .._runtime.protocols.replay import MemoryReplayStore
 
@@ -964,7 +972,7 @@ class _Resources(_Typing):
         validation: ClientValidationConfig,
         *,
         unpacked: bool = False,
-        helpers: tuple[PaginationSpec, ...] = (),
+        helpers: tuple[PaginationSpec | PollingSpec, ...] = (),
     ) -> None:
         """Keep the typing context, User-Agent, validation, unpacked methods' TypedDicts, and protocol helpers."""
         super().__init__(plan, codecs, accessors)
@@ -2178,6 +2186,9 @@ _HELPER_CALLS: Final[dict[bool, tuple[str, str, str]]] = {
     False: ("first_page", "iterate_pages", "following_page"),
     True: ("afirst_page", "aiterate_pages", "afollowing_page"),
 }
+_POLL_OPTIONS: Final = (("poll_options", ".", "PollOptions"), *_HELPER_OPTIONS[1:])
+_POLLING: Final = "_runtime.protocols.polling"
+_STATES: Final = ("pending", "succeeded", "failed", "cancelled")
 
 
 class _Helpers:
@@ -2190,37 +2201,61 @@ class _Helpers:
         self.fingerprints = fingerprints
 
     @staticmethod
-    def page(module: Module, spec: PaginationSpec) -> str:
-        """Return the type of a helper's page response: its operation's response alias."""
-        operation = spec.operation
+    def page(module: Module, spec: PaginationSpec | PollingSpec) -> str:
+        """Return the type of a helper's page or create response: its operation's response alias."""
+        return _Helpers.response(module, spec.operation)
+
+    @staticmethod
+    def response(module: Module, operation: OperationSpec) -> str:
+        """Return the response alias of an operation."""
         return module.local(f"types.{operation.resource}", f"{operation.pascal}Response")
 
+    @staticmethod
+    def result(module: Module, spec: PollingSpec) -> str:
+        """Return the type of a polling helper's result: the inline value's, the fetch's response, or None."""
+        if spec.fetch is not None:
+            return _Helpers.response(module, spec.fetch)
+        return "None" if spec.value is None else module.types.static(spec.value)
+
     def plans(self) -> str:
-        """Return the module of every helper's items accessor and plan."""
+        """Return the module of every helper's accessors and plan."""
+        names = ("PLAN_{}", "_items_{}", "_result_{}", "_immediate_{}")
         module = Module(
-            {name for index in range(len(self.helpers)) for name in (f"PLAN_{index}", f"_items_{index}")},
+            {name.format(index) for index in range(len(self.helpers)) for name in names},
             self.resources.symbols,
             level=2,
         )
         sections: list[str] = []
         for index, spec in enumerate(self.helpers):
-            sections.extend((self.accessor(module, index, spec), self.plan(module, index, spec)))
+            if isinstance(spec, PollingSpec):
+                sections.extend(self.polling(module, index, spec))
+            else:
+                sections.extend((self.items(module, index, spec), self.plan(module, index, spec)))
+        kinds = sorted({spec.helper.kind for spec in self.helpers})
         return types_template.render(
-            docstring="The plans of this package's pagination helpers; regenerate them instead of editing.",
+            docstring=(
+                f"The plans of this package's {kinds[0] if len(kinds) == 1 else 'protocol'} helpers; regenerate them "
+                "instead of editing."
+            ),
             imports=module.imports(),
             sections=sections,
         )
 
-    def accessor(self, module: Module, index: int, spec: PaginationSpec) -> str:
-        """Return a helper's typed items accessor, returning None where an optional step is None."""
+    def items(self, module: Module, index: int, spec: PaginationSpec) -> str:
+        """Return a pagination helper's typed items accessor."""
         sequence = module.name("collections.abc", "Sequence")
         returns = f"{sequence}[{module.types.static(spec.item)}] | None"
-        lines = [
-            _function(f"def _items_{index}(", (f"data: {self.page(module, spec)}",), returns, stub=False),
-            f'    """Return the items of one page of {spec.helper.name}."""',
-        ]
-        expression, last = "data", len(spec.steps) - 1
-        for position, step in enumerate(spec.steps):
+        what = f"the items of one page of {spec.helper.name}"
+        return self.accessor(module, f"_items_{index}", self.page(module, spec), returns, what, spec.steps)
+
+    @staticmethod
+    def accessor(  # noqa: PLR0913, PLR0917
+        module: Module, name: str, data: str, returns: str, what: str, steps: tuple[ItemStep, ...]
+    ) -> str:
+        """Return a typed accessor reading a value through its steps, returning None where an optional step is None."""
+        lines = [_function(f"def {name}(", (f"data: {data}",), returns, stub=False), f'    """Return {what}."""']
+        expression, last = "data", len(steps) - 1
+        for position, step in enumerate(steps):
             match step.kind:
                 case "key":
                     expression = f"{expression}[{step.name!r}]"
@@ -2345,12 +2380,82 @@ class _Helpers:
         )
         return head + layout(value, 0, len(head), WIDTH)
 
+    @staticmethod
+    def reference(module: Module, operation: OperationSpec) -> str:
+        """Return the runtime reference of an operation."""
+        return (
+            f"{module.local('_runtime.protocols.references', 'OperationRef')}"
+            f"(pointer={operation.contract.id.use_site.pointer!r})"
+        )
+
+    def polling(self, module: Module, index: int, spec: PollingSpec) -> list[str]:  # noqa: PLR0914
+        """Return a polling helper's result accessors and its plan.
+
+        The plan names the create, poll, and result operations, the states, the bindings, the interval, and the
+        immediate result, each only when the helper declares it.
+        """
+        helper, operations = spec.helper, module.root("_operations")
+        tree, name = helper.tree, helper.name
+        result, poll, create = self.result(module, spec), self.response(module, spec.poll), self.page(module, spec)
+        sections: list[str] = []
+        entries: list[tuple[str, Doc]] = [
+            ("helper_id=", repr(name)),
+            ("operation=", self.reference(module, spec.operation)),
+            ("create=", f"{operations}.OPERATION_{spec.operation.index}"),
+            ("accepted=", _tuple(map(repr, tree["accepted_statuses"]))),
+            ("poll_operation=", self.reference(module, spec.poll)),
+            ("poll=", f"{operations}.OPERATION_{spec.poll.index}"),
+            ("state=", self.selector(module, tree["state"])),
+            *(
+                (f"{state}=", _tuple(repr(_wire(value)) for value in values))
+                for state in _STATES
+                if (values := tree[state])
+            ),
+            ("fingerprint=", repr(self.fingerprints[name])),
+        ]
+        if bindings := tree["bindings"]:
+            entries.append(("bindings=", _tuple([self.binding(module, item) for item in bindings])))
+        records = "_runtime.protocols.records"
+        if spec.result == "inline":
+            what = f"the result of {name} in its final poll"
+            sections.append(self.accessor(module, f"_result_{index}", poll, f"{result} | None", what, spec.steps))
+            pointer = tree["result"]["selector"]["pointer"]
+            entries.extend((
+                ("inline=", f"_result_{index}"),
+                ("inline_selector=", f"{module.local(records, 'BodySelector')}(pointer={pointer!r})"),
+            ))
+        if (fetch := spec.fetch) is not None:
+            entries.extend((
+                ("fetch_operation=", self.reference(module, fetch)),
+                ("fetch=", f"{operations}.OPERATION_{fetch.index}"),
+            ))
+            if bindings := tree["result"]["bindings"]:
+                entries.append(("fetch_bindings=", _tuple([self.binding(module, item) for item in bindings])))
+        if (steps := spec.immediate) is not None:
+            immediate = tree["immediate_result"]
+            what = f"the result of {name} in an immediate create response"
+            sections.append(self.accessor(module, f"_immediate_{index}", create, f"{result} | None", what, steps))
+            pointer = immediate["selector"]["pointer"]
+            entries.extend((
+                ("immediate=", f"_immediate_{index}"),
+                ("immediate_statuses=", _tuple(map(repr, immediate["statuses"]))),
+                ("immediate_selector=", f"{module.local(records, 'BodySelector')}(pointer={pointer!r})"),
+            ))
+        interval = tree["interval"]
+        entries.append(("interval=", repr(float(interval["seconds"]))))
+        if (header := interval["retry_after_header"]) is not None:
+            entries.append(("retry_after_header=", repr(header)))
+        plan = module.local(_POLLING, "PollingPlan")
+        head = f"PLAN_{index}: {module.name('typing', 'Final')}[{plan}[{result}, {poll}, {create}]] = "
+        sections.append(head + layout(_call(plan, entries), 0, len(head), WIDTH))
+        return sections
+
     def module(self, *, asynchronous: bool) -> str:
         """Return the sync or asyncio module of the helper namespaces and the helpers."""
         prefix = "Async" if asynchronous else ""
         root = f"{prefix}ProtocolHelpers"
         nodes: dict[tuple[str, ...], dict[str, tuple[str, str]]] = {(): {}}
-        leaves: dict[str, PaginationSpec] = {}
+        leaves: dict[str, PaginationSpec | PollingSpec] = {}
         for spec in self.helpers:
             helper = spec.helper
             for parts, class_name in helper_classes(helper.name, helper.kind):
@@ -2368,19 +2473,22 @@ class _Helpers:
             name = f"{prefix}{''.join(map(pascal, parts))}Protocols" if parts else root
             members = [
                 f"    @{cached}\n    def {attribute}(self) -> {child}:\n"
-                f'        """The {dotted} {"pagination helper" if child in leaves else "protocol helpers"}."""\n'
+                f'        """The {dotted} {f"{leaf.helper.kind} helper" if leaf else "protocol helpers"}."""\n'
                 f"        return {child}(self._core)"
                 for attribute, (child, dotted) in children.items()
+                for leaf in (leaves.get(child),)
             ]
             what = f"the {'.'.join(parts)} protocol helpers" if parts else "the protocol helpers of this API"
             sections.append(self.node(name, what, core, members))
         sections.extend(
             self.node(
                 name,
-                f"the {spec.helper.name} pagination helper of {spec.operation.contract.method.upper()} "
+                f"the {spec.helper.name} {spec.helper.kind} helper of {spec.operation.contract.method.upper()} "
                 f"{spec.operation.contract.path}",
                 core,
-                self.methods(module, index, spec, asynchronous=asynchronous),
+                self.start(module, index, spec, asynchronous=asynchronous)
+                if isinstance(spec, PollingSpec)
+                else self.methods(module, index, spec, asynchronous=asynchronous),
                 leaf=True,
             )
             for index, (name, spec) in enumerate(leaves.items())
@@ -2475,6 +2583,37 @@ class _Helpers:
             )),
         ]
 
+    def start(self, module: Module, index: int, spec: PollingSpec, *, asynchronous: bool) -> list[str]:
+        """Return a polling helper's start method, which creates the operation and returns its handle."""
+        operation = replace(spec.operation, fields=())
+        resources = self.resources
+        arguments = [resources.parameter(module, parameter) for parameter in operation.parameters]
+        body = resources.requests(module, operation, asynchronous=asynchronous)[1]
+        options = [
+            _Argument(name, f"{module.namespace.name(source, kind)} | None", "none")
+            for name, source, kind in _POLL_OPTIONS
+        ]
+        handle = module.local(_POLLING, "AsyncLroHandle" if asynchronous else "LroHandle")
+        returns = f"{handle}[{self.result(module, spec)}, {self.response(module, spec.poll)}]"
+        passed = [
+            ("", "self._core"),
+            ("", f"{module.namespace.name('.', '_plans')}.PLAN_{index}"),
+            ("", _tuple(parameter.python_name for parameter in operation.parameters)),
+            *((f"{argument.name}=", argument.name) for argument in body),
+            *((f"{name}=", name) for name, _, _ in _POLL_OPTIONS),
+        ]
+        start = module.local(_POLLING, "astart_operation" if asynchronous else "start_operation")
+        route = f"{operation.contract.method.upper()} {operation.contract.path}"
+        signature = tuple(argument.parameter(module) for argument in (*arguments, *body, *options))
+        wait = "await " if asynchronous else ""
+        return [
+            "\n".join((
+                _signature("start", signature, returns, asynchronous=asynchronous, stub=False),
+                f'        """Create the operation of {route} and return the handle that polls it."""',
+                f"        return {wait}{layout(_call(start, passed), 8, 7 + len(wait), WIDTH)}",
+            ))
+        ]
+
 
 class ClientRenderer:
     """Render every module of one client package from its plan, codec plan, and wire plan."""
@@ -2488,7 +2627,7 @@ class ClientRenderer:
         batch: GeneratedTypeContractBatch,
         wire: WirePlan,
         codecs: CodecPlan,
-        helpers: tuple[PaginationSpec, ...] = (),
+        helpers: tuple[PaginationSpec | PollingSpec, ...] = (),
         fingerprints: Mapping[str, str] | None = None,
         webhooks: Callable[[Mapping[TypeUseId, UseAccessors]], tuple[tuple[PurePosixPath, str], ...]],
     ) -> None:
@@ -2601,13 +2740,28 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
             }
             for spec in self.helpers
         ]
+        kinds = {spec.helper.kind for spec in self.helpers}
+        pagination = (
+            """
+A pagination helper's `page` fetches the first page and `next_page` the page after one it returned, each in a
+session of its own; `iterate` returns a pager, which sends nothing until it is iterated and fetches each page only
+once the previous one is consumed. See the runtime reference for their limits."""
+            if "pagination" in kinds
+            else ""
+        )
+        polling = (
+            """
+A polling helper's `start` creates the operation and returns a handle: `status` polls it once and `wait` polls until
+it settles and returns its result, each poll after the wait the last response requires; `close` stops only local
+polling. See the runtime reference for their limits."""
+            if "polling" in kinds
+            else ""
+        )
         return f"""
 ## Protocol helpers
 
-`client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.
-A pagination helper's `page` fetches the first page and `next_page` the page after one it returned, each in a
-session of its own; `iterate` returns a pager, which sends nothing until it is iterated and fetches each page only
-once the previous one is consumed. See the runtime reference for their limits.
+`client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.\
+{pagination}{polling}
 
 ```json
 {json.dumps(helpers, indent=2, ensure_ascii=True)}
@@ -2791,14 +2945,57 @@ wait for retained cleanup; it does not authorize another send or restore an expi
 {self.helper_runtime()}"""  # noqa: S608
 
     def helper_runtime(self) -> str:
-        """Describe pagination sessions and their limits, or nothing for a package without helpers.
+        """Describe the sessions of the package's pagination and polling helpers, or nothing without helpers."""
+        return self.pagination_runtime() + self.polling_runtime()
+
+    def polling_runtime(self) -> str:
+        """Describe polling sessions and their limits, or nothing for a package without polling helpers."""
+        if not any(isinstance(spec, PollingSpec) for spec in self.helpers):
+            return ""
+        return f"""
+## Polling sessions
+
+A polling helper's `start` and the handle it returns are one session. The create call, every poll, and the result
+fetch are logical calls of their own, with their own retries, total timeout, and idempotency key; the session bounds
+all of them. Each limit comes from the call's options, then `ProtocolClientOptions.defaults` for the helper, then the
+default below. The session types are imported from:
+
+- `{self.config.package}.protocols`: `PollOptions`, `PollSnapshot`, `LroHandle`, and `AsyncLroHandle`
+- `{self.config.package}.options`: `SessionOptions`
+
+| Limit | Effective default |
+|---|---|
+| polls per session | 1000; None removes it |
+| poll interval | the helper's declared interval, 1 second unless declared |
+| allowed wait before a poll | 60 seconds; None removes it |
+| session total timeout | 600 seconds; None removes it |
+| network sends per session | 2000; None removes it |
+
+`start` sends the create request once, resent only as shared retries allow. An accepted status returns a pending
+handle, a declared immediate status a handle that already holds the result, and any other success status raises
+`ProtocolDataError`. Each poll waits until the interval after the last response has passed, or the longer delay the
+helper's declared delay header gives, and never polls early: a wait longer than the allowed wait, or not shorter than
+what remains of the session, raises `PollWaitLimitError` without sending. A poll's state must equal a declared state
+value, JSON type included; any other value raises `PollingStateError`, and success is never inferred.
+
+`wait` returns the result: read from the final poll, fetched once by the result operation, or None. A failed or
+cancelled operation raises `OperationFailedError` or `OperationCancelledError` with its last poll, on every later
+`wait` too. An error that settles nothing, such as a transport error, a deadline, a cancellation, or a limit, leaves
+the handle pending, so a later `status` or `wait` polls again without creating the operation again; a failed result
+fetch is retried alone. `status` and `wait` at once raise `ProtocolStateError`, and so does every step after `close`,
+which stops only local polling. A call's options must not fix an idempotency key or patch a header or query parameter
+the helper writes.
+"""
+
+    def pagination_runtime(self) -> str:
+        """Describe pagination sessions and their limits, or nothing for a package without pagination helpers.
 
         Cursors and their size limit are described only for a package with a cursor helper, and counted positions only
         for one with an offset or page-number helper.
         """
-        if not self.helpers:
+        if not (pages := [spec for spec in self.helpers if not isinstance(spec, PollingSpec)]):
             return ""
-        kinds = {spec.continuation["kind"] for spec in self.helpers}
+        kinds = {spec.continuation["kind"] for spec in pages}
         cursors = "cursor" in kinds
         size = "| cursor size | 64 KiB |\n" if cursors else ""
         rules = (

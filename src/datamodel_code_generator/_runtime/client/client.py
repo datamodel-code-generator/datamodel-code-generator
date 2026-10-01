@@ -1266,6 +1266,17 @@ class _Core(Generic[AdapterT, HandleT]):
         """Return whether a call's effective options, its own, a view's, or the client's, fix an idempotency key."""
         return isinstance(self._call_settings(options, None).idempotency_key, IdempotencyKey)
 
+    def waiting(self, options: RequestOptions | None, session: OperationSession) -> LogicalCallContext:
+        """Return a context a helper waits in between the child calls of its session, sending nothing.
+
+        Its sleeps wake when the client closes or the options' cancel token is cancelled, and end by the earlier of the
+        options' deadline and the session's; the options' total timeout bounds each child call, not the waits between.
+        """
+        call = LogicalCallContext(replace(self._call_settings(options, None), total_timeout=None), self._scope)
+        if (limit := session.deadline) is not None and ((deadline := call.deadline) is None or limit.at < deadline.at):
+            call.deadline = limit
+        return call
+
     def protocol_defaults(self, name: str) -> ProtocolDefaults | None:
         """Return the defaults the client's protocol settings give one helper, or None."""
         if (protocols := self._shared.protocols) is None or isinstance(defaults := protocols.defaults, Unset):
@@ -2109,15 +2120,17 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         media_type: str | MediaSelector | None,
         options: RequestOptions | None,
         session: OperationSession,
-        max_page_bytes: int,
+        max_page_bytes: int | None,
     ) -> R:
         """Execute one page of a helper session as a child logical call, building what the page's response gives.
 
-        The page reads at most `max_page_bytes` of its body, and its arguments and body are taken when the call
-        prepares; `body` is the caller's.
+        The page reads at most `max_page_bytes` of its body, or the ordinary response limit without one, and its
+        arguments and body are taken when the call prepares; `body` is the caller's.
         """
         settings = self._call_settings(options, operation.operation_id)
-        if page_limited := (limit := settings.max_response_bytes) is None or max_page_bytes <= limit:
+        if page_limited := max_page_bytes is not None and (
+            (limit := settings.max_response_bytes) is None or max_page_bytes <= limit
+        ):
             settings = replace(settings, max_response_bytes=max_page_bytes)
         call = _SessionCall(settings, self._scope, operation, session)
         events = call.events = self._started(call, operation.path, options)
@@ -2949,15 +2962,17 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         media_type: str | MediaSelector | None,
         options: RequestOptions | None,
         session: OperationSession,
-        max_page_bytes: int,
+        max_page_bytes: int | None,
     ) -> R:
         """Execute one page of a helper session as a child logical call, building what the page's response gives.
 
-        The page reads at most `max_page_bytes` of its body, and its arguments and body are taken when the call
-        prepares; `body` is the caller's.
+        The page reads at most `max_page_bytes` of its body, or the ordinary response limit without one, and its
+        arguments and body are taken when the call prepares; `body` is the caller's.
         """
         settings = self._call_settings(options, operation.operation_id)
-        if page_limited := (limit := settings.max_response_bytes) is None or max_page_bytes <= limit:
+        if page_limited := max_page_bytes is not None and (
+            (limit := settings.max_response_bytes) is None or max_page_bytes <= limit
+        ):
             settings = replace(settings, max_response_bytes=max_page_bytes)
         call = _SessionCall(settings, self._scope, operation, session)
         self._running(call.operation_id, call.call_id)

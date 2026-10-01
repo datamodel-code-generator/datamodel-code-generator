@@ -39,7 +39,7 @@ from .records import (
     frozen_wire,
     record_instance,
 )
-from .values import MISSING, Missing, Patch, resolve
+from .values import MISSING, Missing, Patch, resolve, selected
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Generator, Iterator, Sequence
@@ -453,16 +453,7 @@ def _selected(plan: PaginationPlan[T, P], read: Selector, wire: WireValue, info:
 
     A header selected once that the response repeats is refused.
     """
-    if isinstance(read, BodySelector):
-        return resolve(wire, read.pointer)
-    if isinstance(read, HeaderSelector):
-        values = info.headers.get_all(read.name)
-        if read.occurrence == "all":
-            return tuple(values) if values else MISSING
-        if len(values) > 1:
-            raise _data_error(plan, info, "malformed", read)
-        return values[0] if values else MISSING
-    return info.status_code
+    return selected(read, wire, info, lambda: _data_error(plan, info, "malformed", read))
 
 
 def _cursor(

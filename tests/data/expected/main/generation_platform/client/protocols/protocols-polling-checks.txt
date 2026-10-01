@@ -1,0 +1,36 @@
+# protocols-polling-checks
+render pydantic_v2.BaseModel
+  APIGenerationError
+  E_CLIENT_UNSUPPORTED target protocols.helpers['checks.later'].remote_cancel /paths/~1jobs/post: The polling helper 'checks.later' declares remote cancellation, which is not supported yet
+  E_CLIENT_UNSUPPORTED target protocols.helpers['checks.later'].expires_at /paths/~1jobs/post: The polling helper 'checks.later' declares a server expiry, which is not supported yet
+  E_CONFIG_VALUE config protocols.helpers['checks.later'].accepted_statuses[1] /paths/~1jobs/post: The accepted status 201 of 'checks.later' selects no success response of POST /jobs
+  E_CONFIG_VALUE config protocols.helpers['checks.later'].accepted_statuses[2] /paths/~1jobs/post: The accepted status 404 of 'checks.later' selects no success response of POST /jobs
+  E_CONFIG_VALUE config protocols.helpers['checks.poll'].poll /paths/~1exports/post: POST /exports must declare exactly one JSON success response for the polling helper 'checks.poll'
+  E_CONFIG_VALUE config protocols.helpers['checks.states'].pending[0] /paths/~1exports~1status/get: The state 'zero' of 'checks.states' is string, which its state never reads
+  E_CONFIG_VALUE config protocols.helpers['checks.states'].failed[0] /paths/~1exports~1status/get: The state True of 'checks.states' is boolean, which its state never reads
+  E_CONFIG_VALUE config protocols.helpers['checks.unread'].state /paths/~1exports~1status/get: The state of 'checks.unread' reads the header 'X-State', which GET /exports/status does not declare
+  E_CONFIG_VALUE config protocols.helpers['checks.bindings'].bindings[0].target /paths/~1jobs~1{jobId}/get: The binding 0 of 'checks.bindings' writes the cookie 'session' of GET /jobs/{jobId}, which no helper writes
+  E_CONFIG_CONFLICT config protocols.helpers['checks.bindings'].bindings[2].target /paths/~1jobs~1{jobId}/get: The binding 2 of 'checks.bindings' writes the same target as its binding 1
+  E_CLIENT_UNSUPPORTED target protocols.helpers['checks.bindings'].bindings[3].value.source /paths/~1jobs~1{jobId}/get: The binding 3 of 'checks.bindings' reads the helper's input, which is not supported yet
+  E_CONFIG_VALUE config protocols.helpers['checks.bindings'].bindings[4].value.selector /paths/~1jobs/post: The binding 4 pointer '/nothing' of 'checks.bindings' names no property of the POST /jobs response
+  E_CONFIG_VALUE config protocols.helpers['checks.bindings'].bindings[5].target /paths/~1jobs~1{jobId}/get: The binding 5 of 'checks.bindings' gives integer values, which the header parameter 'X-Trace' of GET /jobs/{jobId} does not accept
+  E_CONFIG_VALUE config protocols.helpers['checks.dots'].bindings[0].value.literal /paths/~1jobs~1{jobId}/get: The binding 0 of 'checks.dots' gives the dot segment '..', which cannot be written to the path parameter 'jobId' of GET /jobs/{jobId}
+  E_CONFIG_VALUE config protocols.helpers['checks.bodyless'].bindings[0].value.selector /paths/~1exports/post: The binding 0 of 'checks.bodyless' reads the body of the 202 response of POST /exports, which is no JSON model
+  E_CONFIG_VALUE config protocols.helpers['checks.required'].bindings /paths/~1exports~1find/get: GET /exports/find requires the querystring parameter 'filter', which no binding of 'checks.required' writes
+  E_CONFIG_VALUE config protocols.helpers['checks.required'].result.bindings /paths/~1reports/post: POST /reports requires a request body, which no binding of 'checks.required' writes
+  E_CONFIG_VALUE config protocols.helpers['checks.unwritten'].bindings /paths/~1jobs~1{jobId}/get: GET /jobs/{jobId} requires the path parameter 'jobId', which no binding of 'checks.unwritten' writes
+  E_CLIENT_UNSUPPORTED target protocols.helpers['checks.unwritten'].result.bindings /paths/~1notes/post: The polling helper 'checks.unwritten' writes a request body of POST /notes other than JSON, which is not supported yet
+  E_CONFIG_CONFLICT config protocols.helpers['checks.overlaps'].result.bindings[1].target /paths/~1reports/post: The result binding 1 of 'checks.overlaps' writes a target overlapping that of its result binding 0
+  E_CONFIG_VALUE config protocols.helpers['checks.fetch'].result.operation /paths/~1exports/post: POST /exports must declare exactly one JSON success response for the result of 'checks.fetch'
+  E_CONFIG_VALUE config protocols.helpers['checks.header'].result.selector /paths/~1jobs~1{jobId}/get: The result of 'checks.header' reads a header, where only a body pointer reads a result
+  E_CLIENT_UNSUPPORTED target protocols.helpers['checks.union'].result.selector /paths/~1jobs~1{jobId}/get: The result pointer '/labels/rows' of 'checks.union' reads through a union or map, which is not supported yet
+  E_CONFIG_VALUE config protocols.helpers['checks.absent'].result.selector /paths/~1jobs~1{jobId}/get: The result pointer '/nothing' of 'checks.absent' names no property of the GET /jobs/{jobId} response
+  E_CONFIG_VALUE config protocols.helpers['checks.missing_schema'].result.schema /paths/~1jobs~1{jobId}/get: The result schema '/components/schemas/Missing' of 'checks.missing_schema' does not exist in its document
+  E_CONFIG_VALUE config protocols.helpers['checks.other_schema'].result.schema /paths/~1jobs~1{jobId}/get: The result schema '/components/schemas/Report' of 'checks.other_schema' is not the schema its pointer reads
+  E_CONFIG_VALUE config protocols.helpers['checks.none_immediate'].immediate_result /paths/~1jobs/post: The immediate result of 'checks.none_immediate' gives a result, which a helper without a result never has
+  E_CONFIG_VALUE config protocols.helpers['checks.immediate'].immediate_result.statuses[0] /paths/~1jobs/post: The immediate status 201 of 'checks.immediate' selects no success response of POST /jobs
+  E_CONFIG_VALUE config protocols.helpers['checks.immediate'].immediate_result.selector /paths/~1jobs/post: The immediate result of 'checks.immediate' reads models.ExportState, which is not its result type models.Report
+  E_CONFIG_VALUE config protocols.helpers['checks.immediate_models'].immediate_result.statuses[0] /paths/~1exports/post: The immediate status 200 of 'checks.immediate_models' selects no success response of POST /exports
+  E_CLIENT_UNSUPPORTED target protocols.helpers['checks.immediate_models'].immediate_result /paths/~1exports/post: The immediate result of 'checks.immediate_models' reads POST /exports, whose success responses are not all one JSON model, which is not supported yet
+  E_CONFIG_VALUE config protocols.helpers['checks.immediate_header'].immediate_result.selector /paths/~1jobs/post: The immediate result of 'checks.immediate_header' reads a header, where only a body pointer reads a result
+  E_CONFIG_VALUE config protocols.helpers['checks.progress'].immediate_result.selector /paths/~1jobs/post: The immediate result of 'checks.progress' reads models.Report, which is not its result type int
