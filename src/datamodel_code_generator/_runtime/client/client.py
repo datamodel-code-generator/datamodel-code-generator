@@ -478,17 +478,17 @@ def _auth_identity(auth: AuthConfig) -> WireValue:
 def _secret(spec: ParameterSpec, value: WireValue, headers: frozenset[str], queries: frozenset[str]) -> bool:
     """Return whether an argument carries credentials: a cookie, a credential header, or a scheme's query field."""
     name = spec.plan.name
+    secret = False
     match spec.plan.location:
         case "cookie":
-            return True
+            secret = True
         case "header":
-            return name.lower() in headers
+            secret = name.lower() in headers
         case "query":
-            return name in queries
+            secret = name in queries
         case "querystring":
-            return isinstance(value, Mapping) and not queries.isdisjoint(value)
-        case _:
-            return False
+            secret = isinstance(value, Mapping) and not queries.isdisjoint(value)
+    return secret
 
 
 def _coded(operation: OperationPlan[object, object], spec: ParameterSpec, code: Callable[[], R]) -> R:
