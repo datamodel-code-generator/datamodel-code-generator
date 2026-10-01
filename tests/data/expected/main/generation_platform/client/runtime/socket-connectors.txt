@@ -91,6 +91,8 @@
   receive the session's close interrupted: TransportError
     connection close 1000 '' timeout=5.0
   receive the session's close ended: ProtocolStateError closed
+    connection close 1000 '' timeout=5.0
+  iteration the session's close ended: returned
     connection close 1001 '' timeout=5.0
   client close with a receive waiting ! CleanupError: CleanupError(pending_calls=0, pending_leases=1, timeout=0.05) [] cleanup_error
   receive the client's close ended: ClientClosedError CLOSING
@@ -99,6 +101,8 @@
     connection close 1000 '' timeout=5.0
     connection abort
   receive cancelled at the token interval ! RequestCancelledError: RequestCancelledError(operation_id='feedSocket', call_id='<call>', source='cancel_token', delivery_state='RESPONSE_STARTED') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
+    open wss://api.example.com/feed/socket [('Accept-Encoding', 'gzip, deflate')] subprotocols=() WebSocketOpenRequest(subprotocols=()) ResolvedWSOptions(open_timeout=5.0, idle_timeout=60.0, max_message_bytes=1048576, max_queue=16, send_timeout=30.0, ping_interval=20.0, pong_timeout=20.0, close_timeout=5.0, resume_ack_timeout=30.0, max_ack_buffer_messages=16, max_ack_buffer_bytes=16777216, max_unacked=100, compression=None, reconnect=False, max_reconnects=5) ResolvedWebSocketTransportOptions(ssl_context=None, proxy_ssl_context=None, trust_env=False)
+    connection close 1000 '' timeout=5.0
   borrowed connector left open
   async session AsyncWebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2') received 1
     connection send text=True b'{"text":"hi"}' deadline=True
@@ -143,6 +147,8 @@
   async redirect without a parent send slot ! SessionLimitError: SessionLimitError(operation_id='feedSocket', call_id='<call>', kind='network_sends', limit=1) [operation_id='feedSocket', kind='network_sends', limit=1, cause=BudgetExceededError()] session_limit_error
     connection close 1000 '' timeout=5.0
   async receive the session's close interrupted ! TransportError: TransportError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='write') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='write'] transport_error
+    connection close 1000 '' timeout=5.0
+  async iteration the session's close ended = []
     connection send text=True b'first' deadline=True
     connection abort
   async send cancelled by its task CancelledError AsyncWebSocketSession(helper_id='feed.text', state='failed', subprotocol=None)

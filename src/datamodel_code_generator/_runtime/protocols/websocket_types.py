@@ -13,15 +13,18 @@ from typing_extensions import TypeVar
 from ..client.responses import HeadersView  # noqa: TC001 - Public annotations support get_type_hints().
 
 if TYPE_CHECKING:
+    from ssl import SSLContext
+
     from ..client.timing import Deadline
     from ..client.transports import AttemptIOContext
-    from .options import ResolvedWebSocketTransportOptions, ResolvedWSOptions
 
 __all__ = (
     "AsyncWebSocketConnection",
     "AsyncWebSocketConnector",
     "Message",
     "PingReceipt",
+    "ResolvedWSOptions",
+    "ResolvedWebSocketTransportOptions",
     "WSFrame",
     "WebSocketConnection",
     "WebSocketConnector",
@@ -29,6 +32,37 @@ __all__ = (
 )
 
 T_co = TypeVar("T_co", covariant=True, default=object)
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ResolvedWSOptions:
+    """The effective WebSocket limits a connector receives, every default and inherited value already applied."""
+
+    open_timeout: float | None
+    idle_timeout: float | None
+    max_message_bytes: int
+    max_queue: int
+    send_timeout: float | None
+    ping_interval: float | None
+    pong_timeout: float | None
+    close_timeout: float
+    resume_ack_timeout: float
+    max_ack_buffer_messages: int
+    max_ack_buffer_bytes: int
+    max_unacked: int
+    compression: Literal["deflate"] | None
+    reconnect: bool
+    max_reconnects: int | None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ResolvedWebSocketTransportOptions:
+    """The effective WebSocket transport settings a connector receives; the proxy URL never appears in the repr."""
+
+    ssl_context: SSLContext | None
+    proxy: str | None = field(repr=False)
+    proxy_ssl_context: SSLContext | None
+    trust_env: bool
 
 
 @final

@@ -1,0 +1,128 @@
+# sockets
+render pydantic_v2.BaseModel
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/rooms/__init__.py
+  write client/resources/rooms/_sync.py
+  write client/resources/rooms/_async.py
+  write client/resources/feed/__init__.py
+  write client/resources/feed/_sync.py
+  write client/resources/feed/_async.py
+  write client/resources/secure/__init__.py
+  write client/resources/secure/_sync.py
+  write client/resources/secure/_async.py
+  write client/types/__init__.py
+  write client/types/rooms/__init__.py
+  write client/types/rooms/_operations.py
+  write client/types/feed/__init__.py
+  write client/types/feed/_operations.py
+  write client/types/secure/__init__.py
+  write client/types/secure/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_generated/security.py
+  write client/_operations.py
+  write client/protocols/_plans.py
+  write client/protocols/_helpers.py
+  write client/protocols/_async_helpers.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['rooms.chat', 'feed.text', 'secure.chat'] bindings 6
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper rooms.chat websocket enabled True /inputs/target_config/protocol_metadata/helpers/rooms.chat 049a45f601982c55143f3607c398fc9e6a3e1804c630513568a26fe62491903f
+  helper feed.text websocket enabled True /inputs/target_config/protocol_metadata/helpers/feed.text 1139843f41802aa1cd77a42f398b1455d9abd682e6307a99a72f997eed479f8c
+  helper secure.chat websocket enabled True /inputs/target_config/protocol_metadata/helpers/secure.chat 856093054c4e0bcd493290e65f4f1d34633225d1d01dc214e77e51b21bdbac45
+  {
+    "helpers": {
+      "feed.text": {
+        "compression": false,
+        "enabled": true,
+        "kind": "websocket",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1feed~1socket/get"
+        },
+        "receive": {
+          "codec": "bytes",
+          "frame": "binary"
+        },
+        "send": {
+          "codec": "utf8",
+          "frame": "text"
+        },
+        "subprotocols": []
+      },
+      "rooms.chat": {
+        "compression": true,
+        "enabled": true,
+        "kind": "websocket",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1rooms~1{room}~1socket/get"
+        },
+        "receive": {
+          "codec": "json",
+          "frame": "text",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ServerMessage"
+          }
+        },
+        "send": {
+          "codec": "json",
+          "frame": "text",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ClientMessage"
+          }
+        },
+        "subprotocols": [
+          "chat.v2",
+          "chat.v1"
+        ]
+      },
+      "secure.chat": {
+        "compression": false,
+        "enabled": true,
+        "kind": "websocket",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1secure~1socket/get"
+        },
+        "receive": {
+          "codec": "utf8",
+          "frame": "text"
+        },
+        "send": {
+          "codec": "bytes",
+          "frame": "binary"
+        },
+        "subprotocols": []
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 rooms.room_socket(path:room=room, query:since=since)
+    exports client.types.rooms.RoomSocketResponse client.types.rooms.RoomSocketErrorData client.types.rooms.RoomSocketHTTPError
+    exports client.types.rooms.RoomSocketRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 feed.feed_socket()
+    exports client.types.feed.FeedSocketResponse client.types.feed.FeedSocketErrorData client.types.feed.FeedSocketHTTPError
+    exports client.types.feed.FeedSocketRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/2 secure.secure_socket(header:X-Trace=x_trace)
+    exports client.types.secure.SecureSocketResponse client.types.secure.SecureSocketErrorData client.types.secure.SecureSocketHTTPError
+    exports client.types.secure.SecureSocketRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'websockets>=17.1', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

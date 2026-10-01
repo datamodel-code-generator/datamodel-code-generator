@@ -431,6 +431,31 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
+            example_id="python-client.websocket.helper",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "python",
+                blocks(
+                    CLIENT_PACKAGES / "sockets" / "pydantic_v2_BaseModel" / "client" / "protocols" / "_helpers.py",
+                    "    def connect(",
+                    limit=1,
+                ),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.websocket.diagnostics",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "text",
+                "\n".join(
+                    line.strip()
+                    for name in ("protocols-socket-checks.txt", "protocols-socket-errors.txt")
+                    for line in read_text(EXPECTED_CLIENT / "protocols" / name).splitlines()
+                    if line.lstrip().startswith("E_")
+                ),
+            ),
+        ),
+        DocsExample(
             example_id="python-client.webhooks.usage",
             path=DOCS / "python-client.md",
             render=lambda: fenced(

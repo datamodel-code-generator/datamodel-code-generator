@@ -230,6 +230,13 @@ booleans. Durations are finite numbers of seconds, excluding booleans; integers 
 | | `reconnect` | `False` | `bool` |
 | | `max_reconnects` | `5` | Nonnegative integer or `None` |
 | | `max_reconnect_wait` | `60` seconds | Positive duration or `None` |
+| `WSOptions` | `open_timeout`, `idle_timeout`, `send_timeout`, `ping_interval`, `pong_timeout` | See [WebSocket limits](#websocket-limits) | Positive duration or `None` |
+| | `close_timeout`, `resume_ack_timeout` | `5` and `30` seconds | Positive duration |
+| | `max_message_bytes`, `max_queue` | `1048576` and `16` | Positive integer |
+| | `max_ack_buffer_messages`, `max_ack_buffer_bytes`, `max_unacked` | `16`, `16777216`, and `100` | Positive integer |
+| | `compression` | `None` | `"deflate"` or `None` |
+| | `reconnect` | `False` | `bool` |
+| | `max_reconnects` | `5` | Nonnegative integer or `None` |
 
 `ProtocolSecurityContext(*, credential_partition: str, allowed_origins: tuple[Origin, ...] = ())` names the
 nonsecret credential partition of helper state and the origins permitted in addition to the same origin. The
@@ -266,7 +273,9 @@ client = Client(options=options)
 | `ProtocolClientOptions.security` | `ProtocolSecurityContext \| None`, default `UNSET` | `None` means anonymous use. Its `allowed_origins` are the origins beyond the server's that a next-URL or Link pagination helper may follow a URL to |
 | `ProtocolClientOptions.defaults` | `Mapping[str, ProtocolDefaults]`, default `UNSET` | Keys are helper names: Python identifiers separated by dots, without keywords or empty parts. The mapping is copied into a read-only mapping, and its values keep their identity |
 | `ProtocolDefaults.session` | `SessionOptions`, default `UNSET` | Session limits of that helper |
-| `ProtocolDefaults.options` | `PaginationOptions \| PollOptions \| StreamOptions`, default `UNSET` | Kind-specific options of that helper |
+| `ProtocolDefaults.options` | `PaginationOptions \| PollOptions \| StreamOptions \| WSOptions`, default `UNSET` | Kind-specific options of that helper |
+| `ProtocolClientOptions.websocket_connector` | `WebSocketConnector \| AsyncWebSocketConnector \| None`, default `UNSET` | A borrowed connector that opens WebSocket connections; see [connectors and transports](#connectors-and-transports) |
+| `ProtocolClientOptions.websocket_transport` | `WebSocketTransportOptions`, default `UNSET` | TLS contexts, proxy, and `trust_env` of WebSocket connections |
 
 Invalid values inside `ProtocolClientOptions` and `ProtocolDefaults` raise `ProtocolConfigurationError`. Explicit
 call options take precedence over these defaults, which take precedence over the effective defaults above.
@@ -294,6 +303,12 @@ Invalid field values raise `ValueError`.
 | `StreamInterruptedError` | `ProtocolError` | `condition: Literal['eof', 'transport']`, `sequence: int`, `resume_state: ResumeState \| None = None` |
 | `IncompleteFrameError` | `StreamInterruptedError` | `buffered_bytes: int`; `condition` is always `eof` |
 | `StreamRemoteError[E]` | `ProtocolError` | `event_type: str \| None`, `data: E`, a read-only property, `sequence: int` |
+| `ConcurrentReceiveError` | `ProtocolStateError` | None; `state` is always `receiving` and `action` always `receive` |
+| `WebSocketClosedError` | `ProtocolError` | `code: int \| None`, `reason: str` of at most 123 UTF-8 bytes, `clean: bool` |
+| `WebSocketHandshakeError` | `TransportError` | `condition: Literal['invalid_message', 'invalid_header', 'upgrade', 'negotiation', 'security', 'size']`, `delivery_state`, `retry_stop_reason = None`; `phase` is always `connect` |
+| `WebSocketProxyError` | `TransportError` | `proxy_status_code: int \| None = None`, `retry_stop_reason = None`; `phase` is always `connect` and `delivery_state` `NOT_SENT` |
+| `HandshakeResponse` | `ProtocolError` | `status_code: int`, `headers: HeadersView`, `body_prefix: bytes` of at most 65536 bytes, `truncated: bool`; raised only by connectors |
+| `DeliveryUnknownError` | `ProtocolError` | `delivery_state`, `MAYBE_SENT` or `RESPONSE_STARTED`, `resume_state: ResumeState \| None = None`, `message_id: str \| None = None` |
 
 A field whose value is fixed is not a constructor argument, so passing it raises `TypeError`. `progress` is
 copied into a read-only mapping. Messages and representations exclude locations, progress, resume state, snapshots,
@@ -303,15 +318,15 @@ explicitly before using it as a model.
 
 ## Protocol helper configuration
 
-Pagination, polling, and SSE or NDJSON stream helpers of an API are declared in a helper configuration, which the client
+Pagination, polling, SSE or NDJSON stream, and WebSocket helpers of an API are declared in a helper configuration, which the client
 target reads through its `protocols` setting. The helpers are still being implemented: generation validates every
 helper, resolves its references against the selected API, and records it in the target manifest. An enabled pagination
 helper generates the [pagination helper](#pagination-helpers) below, an enabled SSE helper the
 [SSE stream helper](#sse-stream-helpers), an enabled NDJSON helper the [NDJSON stream helper](#ndjson-stream-helpers),
-and an enabled webhook helper the
+an enabled WebSocket helper the [WebSocket helper](#websocket-helpers), and an enabled webhook helper the
 [webhook verification helper](#webhook-verification-helpers); any other enabled helper fails with `E_CLIENT_UNSUPPORTED`.
-A disabled helper generates nothing, so the package is the same as without it. The `websocket`, `cache`,
-`resumable_upload`, `batch`, and `queue` kinds fail with `E_CLIENT_UNSUPPORTED` whether they are enabled or not, and
+A disabled helper generates nothing, so the package is the same as without it. The `cache`, `resumable_upload`,
+`batch`, and `queue` kinds fail with `E_CLIENT_UNSUPPORTED` whether they are enabled or not, and
 their settings are not read yet.
 
 | Setting | Values | Default | Where |
@@ -458,6 +473,7 @@ querystring, or its request body. An operation that owns a querystring takes no 
 | `pagination` | `operation`, `items` (a body selector), `item_schema`, `continuation` | `bindings` (`[]`), such as a snapshot token each request carries |
 | `polling` | `create`, `accepted_statuses`, `poll`, `bindings` (create to poll), `state`, `pending`, `succeeded`, `result` | `failed` and `cancelled` (`[]`), `interval` (`{seconds: 1, retry_after_header: null}`), `remote_cancel` (`{operation, bindings?}`), `immediate_result` (`{statuses, selector, schema}`), `expires_at` |
 | `sse`, `ndjson` | `operation`, `media`, `event_schema`, `completion`, and for `ndjson` `final_line` (`require_newline` or `allow_eof`) | `unknown` (`error`, the default, or `raw`), `error_events` (`{}`), `resume` (`{enabled: false}`) |
+| `websocket` | `operation` (a GET without a body), `send`, `receive` (each `{codec: json\|utf8\|bytes, frame?, schema?}`) | `subprotocols` (`[]`), `compression` (`false`) |
 | `webhook` | `event_schema`, `signature` (see [webhook verification helpers](#webhook-verification-helpers)) | `duplicates` (`report`, the default, or `reject`, which needs a signature) |
 
 A pagination `continuation` is one of these:
@@ -503,8 +519,8 @@ E_SELECTOR_DEPENDENCY selection protocols.helpers['audit.all'].operation /paths/
 
 ### Python records and the manifest
 
-`ProtocolConfiguration(schema_version=1, helpers={...})` takes `PaginationHelper`, `PollingHelper`, `StreamHelper`, and
-`WebhookHelper` records, which mirror the file: their fields have the file's names, with `from_` for `from`, and they
+`ProtocolConfiguration(schema_version=1, helpers={...})` takes `PaginationHelper`, `PollingHelper`, `StreamHelper`,
+`WebSocketHelper`, whose `send` and `receive` are `WebSocketMessage` records, and `WebhookHelper` records, which mirror the file: their fields have the file's names, with `from_` for `from`, and they
 take the client's `Selector` and `RequestTarget` records, `OperationRef` or a pointer string, and `SchemaRef`. A
 webhook's `HmacSignature` (`hmac-sha256` or `hmac-sha512`) or `PublicKeySignature` (`ed25519` or `rsa-pss-sha256`) has
 the same fields and takes `HeaderName`, `TimestampHeader`, `SignedLiteral`, `FixedBytes`, and `AsciiBytes` records, or
@@ -1043,6 +1059,180 @@ E_CONFIG_VALUE config protocols.helpers['checks.discriminator_absent'].event_sch
 
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.ndjson.diagnostics -->
+
+## WebSocket helpers
+
+An enabled `websocket` helper is generated at `client.protocols.<name>` on `Client` and `AsyncClient` alike, with one
+method, `connect`. Its channel is a GET operation, whose handshake request the helper sends: the operation gives the
+URL, the parameters, the servers, and the security. `connect` takes the operation's parameters as keywords, then
+`ws_options`, `options`, and `session_options`, and returns a `WebSocketSession[S, R]`, or with one `await` an
+`AsyncWebSocketSession[S, R]`, once the server accepted the handshake:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.websocket.helper -->
+<!-- fmt: off -->
+
+```python
+    def connect(
+        self,
+        *,
+        room: _dcg_type_0 | ModelValue[_dcg_type_0],
+        since: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        ws_options: WSOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> WebSocketSession[_dcg_type_2 | ModelValue[_dcg_type_2], _dcg_type_3]:
+        """Open the WebSocket of GET /rooms/{room}/socket, returning once its handshake got a valid 101."""
+        return connect_socket(
+            self._core,
+            _plans.SOCKET_0,
+            (room, since),
+            ws_options=ws_options,
+            options=options,
+            session_options=session_options,
+        )
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.websocket.helper -->
+
+```python
+with Client() as client, client.protocols.rooms.chat.connect(room="lobby") as session:
+    session.send(ClientMessage(text="hi"))
+    for message in session:
+        print(message.sequence, message.data)
+```
+
+```yaml
+helpers:
+  rooms.chat:
+    kind: websocket
+    operation: /paths/~1rooms~1{room}~1socket/get
+    subprotocols: [chat.v2, chat.v1]
+    compression: true
+    send: {codec: json, schema: {pointer: /components/schemas/ClientMessage}}
+    receive: {codec: json, schema: {pointer: /components/schemas/ServerMessage}}
+```
+
+`send` and `receive` declare how the messages of each direction are coded: `codec: json` with a `schema`, whose value
+is sent as compact UTF-8 JSON and received through the schema's codec, `codec: utf8` for `str` text, or
+`codec: bytes`. `frame` is `text` or `binary`; it defaults to `text` for JSON and UTF-8 messages and to `binary` for
+bytes, and only JSON messages may choose. `S` is the send schema's argument type, `T | ModelValue[T]`, or `str` or
+`bytes`, and `R` the received type; a union schema carries several message types. `subprotocols` lists the offered
+subprotocols in order (`[]` by default), and `compression` (`false` by default) permits
+`WSOptions(compression="deflate")`.
+
+`WebSocketSession`, `AsyncWebSocketSession`, `Message`, `PingReceipt`, `WSOptions`, and `WebSocketTransportOptions` are
+imported from `pkg.protocols`, and the WebSocket exceptions from `pkg.errors`. A package without WebSocket helpers
+never imports the WebSocket library.
+
+### Handshakes
+
+The handshake is one logical call of the operation, with its retries, `Retry-After`, redirects, authentication and
+token refresh, limiter, hooks, and deadline, as any call has. Only a 101 response whose headers validate opens the
+session: any other response is read up to `max_error_body_bytes` and raises the operation's typed `HTTPStatusError`,
+or `UnexpectedStatusError` for an undeclared status, so 101 need not be declared. URLs keep their `https` or `http`
+server and are opened as `wss` or `ws`. When the helper offers subprotocols, the server must select one of them, or
+`connect` raises `WebSocketHandshakeError` with the condition `negotiation`; `session.subprotocol` is the selected one
+and `session.response` the 101 response. Credentials are sent as the operation's security declares, on every attempt
+and only to the server's origin or the security context's allowed origins. Headers the handshake manages, such as `Upgrade`, `Connection`, and
+`Sec-WebSocket-*`, given through request options or parameters raise `ConfigurationError` with the condition `managed`
+before anything is sent. The handshake's hooks end with the call outcome `handed_off`, and the session's end emits
+`stream_end`.
+
+### Sessions
+
+| Method | Behavior |
+|---|---|
+| `send(value)` | Encodes one message and sends it as one message of the declared frame |
+| `receive()` | Returns the next `Message[R]`: `data`, `frame` (`text` or `binary`), `sequence` from 1, and `raw` bytes |
+| Iteration | Yields messages until the server closes normally |
+| `ping(payload=b"")` | Sends a ping of at most 125 bytes and returns a `PingReceipt` with the pong's `latency` in seconds |
+| `close(code=1000, reason="")`, `aclose` | Closes with 1000, 1001, or a code from 3000 to 4999 and a reason of at most 123 UTF-8 bytes; repeats do nothing |
+| `with`, `async with` | Closes the session on exit |
+| `progress` | `reconnects`, the session's network sends, `messages_sent`, and `messages_received` |
+
+The session owns the connection until it closes or fails, and closing the client closes it after the client's cleanup
+wait. One `receive` waits at a time: another raises `ConcurrentReceiveError`, while one send may run beside it, and
+sends go one at a time in arrival order. A received message of another frame kind, or one that does not decode, raises
+`StreamDecodeError` with at most 64 KiB of it as `raw_prefix` and closes the connection with 1002. A server's closure
+raises `WebSocketClosedError` with its `code`, `reason`, and `clean`, which is true for a normal closure that alone
+ends iteration; after it, `receive`, `send`, and `ping` raise it again. After any other failure, every step raises
+`ProtocolStateError`, as it does after `close()`. Representations
+never show messages, URLs, headers, or close reasons.
+
+### WebSocket limits
+
+Each limit comes from the call's `ws_options`, then the helper's `ProtocolDefaults` in `ProtocolClientOptions.defaults`,
+then the default below:
+
+| Limit | Default | None |
+|---|---|---|
+| `WSOptions.open_timeout` | 5 seconds, also capped by the connect, read, and write timeouts and the deadline | No open limit |
+| `WSOptions.idle_timeout` | The call's merged `stream_idle_timeout`, 60 seconds by default | No idle limit |
+| `WSOptions.max_message_bytes` | 1 MiB per message, after decompression | Not allowed |
+| `WSOptions.max_queue` | 16 received messages buffered | Not allowed |
+| `WSOptions.send_timeout` | 30 seconds, waiting for earlier sends included | No send limit |
+| `WSOptions.ping_interval`, `pong_timeout` | 20 seconds each | No keepalive pings |
+| `WSOptions.close_timeout` | 5 seconds | Not allowed |
+| `SessionOptions.total_timeout`, `deadline` | None | No session deadline |
+| `SessionOptions.max_network_sends` | 16 sends, for handshakes and token requests | Removes the limit |
+
+A message over `max_message_bytes` raises `ProtocolSizeError` with the kind `message` after the connection closed with
+1009. A receive that waits longer than the idle timeout raises `PhaseTimeoutError` with the phase `read` and closes with
+1001, and a missed pong closes with 1011 and raises `WebSocketClosedError` with `clean` false. The session deadline
+bounds every wait and raises `DeadlineExceededError`. A send that sent nothing before its timeout raises
+`PhaseTimeoutError` with the phase `write` and keeps the session open; one that may have reached the server raises
+`DeliveryUnknownError` with the delivery state `MAYBE_SENT`, closes the session, and is never sent again. A send to a
+connection the server closed raises `WebSocketClosedError`. Sessions never reconnect yet, so
+`WSOptions(reconnect=True)` raises `ProtocolConfigurationError` with the condition `missing_metadata`, as `compression`
+does for a helper that does not permit it with `invalid_value`; the resume and acknowledgment limits have no effect
+yet. Options of another type raise `ProtocolConfigurationError`.
+
+### Connectors and transports
+
+Without a connector, the client opens its connections with the `websockets` library, which a package with WebSocket
+helpers depends on, so generation prints it among the packages to add. `ProtocolClientOptions(websocket_connector=...)`
+borrows a `WebSocketConnector`, or an `AsyncWebSocketConnector` for `AsyncClient`, which is never closed: its `open`
+receives a `WebSocketOpenRequest` with the `ws` or `wss` URL, the headers, and the offered subprotocols, the attempt's
+context, the resolved `WSOptions`, and the resolved transport settings, and opens one connection or raises
+`HandshakeResponse` with a response other than 101, which the client turns into the call's result. A connector of the
+other kind raises `ProtocolConfigurationError` with the condition `wrong_capability` when the client is constructed.
+
+`websocket_transport=WebSocketTransportOptions(...)` sets the `ssl_context` of the server connection, an HTTP or HTTPS
+`proxy` URL, which the representation hides, the `proxy_ssl_context` of an HTTPS proxy, and `trust_env`, which lets
+environment proxies apply. A proxy that refuses or breaks the tunnel raises `WebSocketProxyError`; SOCKS proxies are
+not supported.
+
+### WebSocket generation checks
+
+The operation must be a GET without a request body, and each JSON message's schema must exist and code natively,
+without an envelope; a schema outside the selected model scopes fails with `BND_MODEL_SCOPE_REQUIRED`. Message
+definitions, frames, and subprotocol tokens are checked as the helper file is read:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.websocket.diagnostics -->
+<!-- fmt: off -->
+
+```text
+E_CONFIG_VALUE config protocols.helpers['checks.method'].operation /paths/~1chat/post: The WebSocket helper 'checks.method' opens POST /chat, which is not a GET operation
+E_CONFIG_VALUE config protocols.helpers['checks.body'].operation /paths/~1upload/get: The WebSocket helper 'checks.body' opens GET /upload, which takes a request body
+E_CONFIG_VALUE config protocols.helpers['checks.schema'].send.schema /paths/~1chat/get: The schema '/components/schemas/Nobody' of 'checks.schema' does not exist in its document
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.envelope'].receive.schema /paths/~1chat/get: The WebSocket helper 'checks.envelope' codes an envelope-projected message, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['codec.unknown'].send.codec: protocols.helpers['codec.unknown'].send.codec must be 'json', 'utf8' or 'bytes'
+E_CONFIG_VALUE config protocols.helpers['codec.schema_missing'].send.schema: protocols.helpers['codec.schema_missing'].send needs 'schema' for JSON messages
+E_CONFIG_CONFLICT config protocols.helpers['codec.schema_extra'].send.schema: protocols.helpers['codec.schema_extra'].send.schema applies only to JSON messages
+E_CONFIG_CONFLICT config protocols.helpers['frame.text'].send.frame: protocols.helpers['frame.text'].send.frame must be 'text' for utf8 messages
+E_CONFIG_CONFLICT config protocols.helpers['frame.binary'].receive.frame: protocols.helpers['frame.binary'].receive.frame must be 'binary' for bytes messages
+E_CONFIG_VALUE config protocols.helpers['frame.json'].receive.frame: protocols.helpers['frame.json'].receive.frame must be 'text' or 'binary'
+E_CONFIG_VALUE config protocols.helpers['subprotocols.token'].subprotocols[0]: protocols.helpers['subprotocols.token'].subprotocols[0] must be a subprotocol token
+E_CONFIG_VALUE config protocols.helpers['subprotocols.token'].subprotocols[1]: protocols.helpers['subprotocols.token'].subprotocols[1] must be a subprotocol token
+E_CONFIG_VALUE config protocols.helpers['subprotocols.repeated'].subprotocols[1]: protocols.helpers['subprotocols.repeated'].subprotocols[1] repeats a subprotocol
+E_CONFIG_VALUE config protocols.helpers['message.type'].compression: protocols.helpers['message.type'].compression must be a boolean
+E_CONFIG_VALUE config protocols.helpers['message.type'].send: protocols.helpers['message.type'].send must be a message definition
+E_CONFIG_UNKNOWN config protocols.helpers['message.type'].receive.extra: protocols.helpers['message.type'].receive has no key 'extra'
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.websocket.diagnostics -->
 
 ## Signature style
 

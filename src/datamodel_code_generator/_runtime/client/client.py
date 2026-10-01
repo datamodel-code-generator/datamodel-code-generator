@@ -308,10 +308,10 @@ def _protocol_options(
         from ..protocols.options import checked_defaults  # noqa: PLC0415 - Only helper defaults load the helper settings.
 
         checked_defaults(helpers, defaults.helpers)
-    if protocols.websocket_connector is not None and not isinstance(protocols.websocket_connector, Unset):
+    if (connector := protocols.websocket_connector) is not None and not isinstance(connector, Unset):
         from ..protocols.options import checked_connector  # noqa: PLC0415 - Only a connector loads the helper settings.
 
-        checked_connector(protocols, asynchronous=asynchronous)
+        checked_connector(connector, asynchronous=asynchronous)
     return protocols
 
 

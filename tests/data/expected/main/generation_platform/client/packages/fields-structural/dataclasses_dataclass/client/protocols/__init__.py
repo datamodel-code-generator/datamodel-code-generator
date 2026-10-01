@@ -12,6 +12,8 @@ from .._runtime.protocols.options import (
     ProtocolDefaults,
     ProtocolSecurityContext,
     StreamOptions,
+    WebSocketTransportOptions,
+    WSOptions,
 )
 from .._runtime.protocols.records import (
     BodySelector,
@@ -39,6 +41,18 @@ from .._runtime.protocols.webhooks import (
     Verifier,
     WebhookOptions,
 )
+from .._runtime.protocols.websocket_types import (
+    AsyncWebSocketConnection,
+    AsyncWebSocketConnector,
+    Message,
+    PingReceipt,
+    ResolvedWebSocketTransportOptions,
+    ResolvedWSOptions,
+    WebSocketConnection,
+    WebSocketConnector,
+    WebSocketOpenRequest,
+    WSFrame,
+)
 
 if TYPE_CHECKING:
     from .._runtime.protocols.pagination import AsyncPager, Page, Pager
@@ -49,12 +63,16 @@ if TYPE_CHECKING:
         StreamEvent,
         UnknownEvent,
     )
+    from .._runtime.protocols.websocket import AsyncWebSocketSession, WebSocketSession
 
 __all__ = [
     "AsyncEventStream",
     "AsyncMemoryReplayStore",
     "AsyncPager",
     "AsyncReplayStore",
+    "AsyncWebSocketConnection",
+    "AsyncWebSocketConnector",
+    "AsyncWebSocketSession",
     "BodySelector",
     "BodyTarget",
     "Continuation",
@@ -62,12 +80,14 @@ __all__ = [
     "HeaderSelector",
     "KeySet",
     "MemoryReplayStore",
+    "Message",
     "OperationRef",
     "Origin",
     "Page",
     "Pager",
     "PaginationOptions",
     "ParameterTarget",
+    "PingReceipt",
     "PollOptions",
     "PollSnapshot",
     "ProgressKey",
@@ -77,6 +97,8 @@ __all__ = [
     "QuerystringTarget",
     "ReplayStore",
     "RequestTarget",
+    "ResolvedWSOptions",
+    "ResolvedWebSocketTransportOptions",
     "ResolvedWebhookOptions",
     "ResumeState",
     "Selector",
@@ -87,13 +109,20 @@ __all__ = [
     "VerifiedSignature",
     "VerifiedWebhook",
     "Verifier",
+    "WSFrame",
+    "WSOptions",
+    "WebSocketConnection",
+    "WebSocketConnector",
+    "WebSocketOpenRequest",
+    "WebSocketSession",
+    "WebSocketTransportOptions",
     "WebhookOptions",
     "import_state",
 ]
 
 
 def __getattr__(name: str) -> object:
-    """Load a memory store, a pagination type, or a stream type only when its public class is requested."""
+    """Load a memory store, a pagination or stream type, or a WebSocket session only when its class is requested."""
     if name in {"AsyncPager", "Page", "Pager"}:
         from .._runtime.protocols import pagination
 
@@ -102,6 +131,10 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import streams
 
         return getattr(streams, name)
+    if name in {"AsyncWebSocketSession", "WebSocketSession"}:
+        from .._runtime.protocols import websocket
+
+        return getattr(websocket, name)
     if name == "MemoryReplayStore":
         from .._runtime.protocols.replay import MemoryReplayStore
 

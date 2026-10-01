@@ -32,7 +32,6 @@ __all__ = ("DEPENDENCY", "SocketSpec", "plan_sockets", "socket_uses")
 
 DEPENDENCY: Final = "websockets>=17.1"
 _JSON: Final = "application/json"
-_PYTHON: Final = (3, 11)
 _DIRECTIONS: Final = ("send", "receive")
 
 
@@ -76,9 +75,6 @@ class _Sockets(_Streams):
         elif spec.body is not None:
             message = f"The WebSocket helper {name!r} opens {_label(spec)}, which takes a request body"
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.operation", message, spec))
-        if self.request.model_config.target_python_version.version_key < _PYTHON:
-            message = f"The WebSocket helper {name!r} needs a target Python version of 3.11 or later"
-            problems.append(_problem("E_CLIENT_UNSUPPORTED", "target", at, message, spec))
         locations: dict[str, SourceLocation] = {}
         for direction, where, reference in _references(helper):
             if (location := self.location(reference)) is None:

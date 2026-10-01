@@ -67,8 +67,7 @@ if TYPE_CHECKING:
 
     from ..client.timing import Deadline
     from ..client.transports import AttemptIOContext, TransportTraceSink
-    from .options import ResolvedWebSocketTransportOptions, ResolvedWSOptions
-    from .websocket_types import WebSocketOpenRequest
+    from .websocket_types import ResolvedWebSocketTransportOptions, ResolvedWSOptions, WebSocketOpenRequest
 
 __all__ = ("AsyncNativeConnection", "AsyncNativeConnector", "NativeConnection", "NativeConnector")
 
@@ -208,12 +207,9 @@ def _failure(error: Exception, evidence: _Evidence, timeout: float | None) -> Ex
         attempt_trace(evidence.context).proven_not_sent = True
     failure: Exception = TransportError(delivery_state=delivery, phase="connect", cause=error)
     match error:
-        case TimeoutError():
-            capped = timeout is not None
-            failure = (
-                PhaseTimeoutError(effective_timeout=timeout, phase="connect", delivery_state=delivery, cause=error)
-                if capped
-                else failure
+        case TimeoutError() if timeout is not None:
+            failure = PhaseTimeoutError(
+                effective_timeout=timeout, phase="connect", delivery_state=delivery, cause=error
             )
         case InvalidProxyStatus():
             failure = WebSocketProxyError(proxy_status_code=error.response.status_code, cause=error)
@@ -232,7 +228,8 @@ def _condition(error: InvalidHandshake) -> HandshakeCondition:
     """Return what a handshake broke: a size limit of its response, its upgrade, a header, or its negotiation."""
     if isinstance(error, InvalidMessage):
         return "size" if isinstance(error.__cause__, SecurityError) else "invalid_message"
-    return next((name for kind, name in _CONDITIONS if isinstance(error, kind)), "invalid_message")
+    found: list[HandshakeCondition] = [name for kind, name in _CONDITIONS if isinstance(error, kind)]
+    return found[0] if found else "invalid_message"
 
 
 def _closed(error: ConnectionClosed, parsed: BaseException | None, limit: int) -> Exception:

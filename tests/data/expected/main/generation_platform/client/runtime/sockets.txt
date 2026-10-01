@@ -94,6 +94,8 @@
   ping after closing ! ProtocolStateError: ProtocolStateError(operation_id='roomSocket', call_id='<call>', state='closed', action='ping') [operation_id='roomSocket'] protocol_state_error
   iteration after closing []
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 4000 'bye'
+    server GET /feed/socket [] | closed 1000 ''
+  ping once the server closed unread ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', code=1000, clean=True) [operation_id='feedSocket'] web_socket_closed_error
   fragmented 1 text str'100000' raw=b'100000'
     server GET /secure/socket [authorization: Bearer first-material] | closed 1000 ''
   send past its timeout ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='write', effective_timeout=1e-09) [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='write'] phase_timeout_error
@@ -105,6 +107,7 @@
     hook response_headers outcome=None status=101
     hook attempt_end outcome=None status=101
     hook call_end outcome=handed_off status=101
+  connect = WebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2')
     hook stream_end outcome=success status=101
   receive ! WebSocketClosedError: WebSocketClosedError(operation_id='roomSocket', call_id='<call>', code=1000, clean=True) [operation_id='roomSocket'] web_socket_closed_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1000 ''
@@ -114,6 +117,7 @@
     hook response_headers outcome=None status=101
     hook attempt_end outcome=None status=101
     hook call_end outcome=handed_off status=101
+  connect = WebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2')
     hook stream_end outcome=cancel status=101
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1000 ''
   hooked failure
@@ -122,9 +126,18 @@
     hook response_headers outcome=None status=101
     hook attempt_end outcome=None status=101
     hook call_end outcome=handed_off status=101
+  connect = WebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2')
     hook stream_end outcome=error status=101
   receive ! StreamDecodeError: StreamDecodeError(operation_id='roomSocket', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='roomSocket', condition='malformed', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] stream_decode_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1002 ''
+  hooked refusal
+    hook call_start outcome=None status=None
+    hook attempt_start outcome=None status=None
+    hook response_headers outcome=None status=404
+    hook attempt_end outcome=None status=404
+    hook call_end outcome=error status=404
+  connect ! RoomSocketHTTPError: RoomSocketHTTPError(status_code=404, operation_id='roomSocket', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='roomSocket', status_code=404, error_decoded=True, error_data=Problem(detail='no room'), body_bytes=b'{"detail":"no room"}', truncated=False] room_socket_http_error
+    server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | refused
   refreshed after invalid_token = WebSocketSession(helper_id='secure.chat', state='open', subprotocol=None)
     provider ['get', 'invalidate current=True', 'get', 'refresh']
     server GET /secure/socket [authorization: Bearer first-material, x-trace: t1] | refused
@@ -189,6 +202,10 @@
   async abnormal closure connect = AsyncWebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2')
   async abnormal closure ! WebSocketClosedError: WebSocketClosedError(operation_id='roomSocket', call_id='<call>', code=1011, clean=False) [operation_id='roomSocket'] web_socket_closed_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1011 'boom'
+    server GET /feed/socket [] | closed 1000 ''
+  async send once the server closed unread ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', code=1000, clean=True) [operation_id='feedSocket'] web_socket_closed_error
+    server GET /feed/socket [] | closed 1000 ''
+  async ping once the server closed unread ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', code=1000, clean=True) [operation_id='feedSocket'] web_socket_closed_error
   async cancelled receive ! RequestCancelledError: RequestCancelledError(operation_id='roomSocket', call_id='<call>', source='cancel_token', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | no close
   async receive cancelled by its task CancelledError
@@ -198,3 +215,21 @@
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1001 ''
   async unanswered ping ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=0.1) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout_error
   async open timeout ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT', phase='connect', effective_timeout=0.1) [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='connect', cause=TimeoutError('timed out during opening handshake')] phase_timeout_error
+  async hooked normal end
+    hook call_start outcome=None status=None
+    hook attempt_start outcome=None status=None
+    hook response_headers outcome=None status=101
+    hook attempt_end outcome=None status=101
+    hook call_end outcome=handed_off status=101
+  connect = AsyncWebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2')
+    hook stream_end outcome=success status=101
+  receive ! WebSocketClosedError: WebSocketClosedError(operation_id='roomSocket', call_id='<call>', code=1000, clean=True) [operation_id='roomSocket'] web_socket_closed_error
+    server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1000 ''
+  async hooked refusal
+    hook call_start outcome=None status=None
+    hook attempt_start outcome=None status=None
+    hook response_headers outcome=None status=404
+    hook attempt_end outcome=None status=404
+    hook call_end outcome=error status=404
+  connect ! RoomSocketHTTPError: RoomSocketHTTPError(status_code=404, operation_id='roomSocket', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='roomSocket', status_code=404, error_decoded=True, error_data=Problem(detail='no room'), body_bytes=b'{"detail":"no room"}', truncated=False] room_socket_http_error
+    server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | refused

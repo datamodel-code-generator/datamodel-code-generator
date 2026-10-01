@@ -118,10 +118,16 @@ def _snapshot(value: object) -> None:
         raise ValueError(msg)  # noqa: TRY004 - Exception constructors reject invalid fields with ValueError.
 
 
-def _raw_prefix(value: object) -> None:
+def _raw_prefix(value: object, field: str = "raw_prefix") -> None:
     if not isinstance(value, bytes) or len(value) > MAX_RAW_PREFIX:
-        msg = "raw_prefix must be at most 65536 bytes"
+        msg = f"{field} must be at most 65536 bytes"
         raise ValueError(msg)
+
+
+def _headers(value: object) -> None:
+    if not isinstance(value, HeadersView):
+        msg = "headers must be a HeadersView"
+        raise ValueError(msg)  # noqa: TRY004 - Exception constructors reject invalid fields with ValueError.
 
 
 def _status(value: object, field: str) -> None:
@@ -1168,12 +1174,8 @@ class HandshakeResponse(ProtocolError):  # noqa: N818 - The protocol contract na
     ) -> None:
         """Keep the status, the headers, and the body prefix."""
         _status(status_code, "status_code")
-        if not isinstance(headers, HeadersView):
-            msg = "headers must be a HeadersView"
-            raise ValueError(msg)  # noqa: TRY004 - Exception constructors reject invalid fields with ValueError.
-        if not isinstance(body_prefix, bytes) or len(body_prefix) > MAX_RAW_PREFIX:
-            msg = "body_prefix must be at most 65536 bytes"
-            raise ValueError(msg)
+        _headers(headers)
+        _raw_prefix(body_prefix, "body_prefix")
         _flag(truncated, "truncated")
         super().__init__(
             helper_id=helper_id,

@@ -3497,5 +3497,40 @@
         "_async_helpers.py"
       ]
     ]
+  },
+  "protocols-socket-checks": {
+    "input": "socket-checks.yaml",
+    "references": [
+      "protocols/socket-checks.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/socket-checks.yaml"
+    },
+    "modules": false
+  },
+  "protocols-socket-errors": {
+    "input": "sockets.yaml",
+    "references": [
+      "protocols/socket-errors.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/socket-errors.yaml"
+    },
+    "modules": false
+  },
+  "protocols-socket-scope": {
+    "input": "socket-checks.yaml",
+    "references": [
+      "protocols/socket-scope.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/socket-scope.yaml"
+    },
+    "modules": false,
+    "model": {
+      "openapi_scopes": [
+        "schemas"
+      ]
+    }
   }
 }

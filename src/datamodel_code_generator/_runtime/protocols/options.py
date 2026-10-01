@@ -17,11 +17,14 @@ from ..client.errors import ProtocolConfigurationError, is_sequence
 from ..client.timing import SessionOptions
 from ..model_codecs.unset import UNSET, Unset
 from .records import record_string
+from .websocket_types import (
+    AsyncWebSocketConnector,
+    ResolvedWebSocketTransportOptions,
+    WebSocketConnector,
+)
 
 if TYPE_CHECKING:
     from ssl import SSLContext
-
-    from .websocket_types import AsyncWebSocketConnector, WebSocketConnector
 
 _CONTROL: Final = re.compile(r"[\x00-\x1f\x7f-\x9f]")
 _PAGINATION: Final = (
@@ -230,27 +233,6 @@ class WSOptions:
             raise ProtocolConfigurationError(field_path=("compression",), condition="invalid_value")
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
-class ResolvedWSOptions:
-    """The effective WebSocket limits a connector receives, every default and inherited value already applied."""
-
-    open_timeout: float | None
-    idle_timeout: float | None
-    max_message_bytes: int
-    max_queue: int
-    send_timeout: float | None
-    ping_interval: float | None
-    pong_timeout: float | None
-    close_timeout: float
-    resume_ack_timeout: float
-    max_ack_buffer_messages: int
-    max_ack_buffer_bytes: int
-    max_unacked: int
-    compression: Literal["deflate"] | None
-    reconnect: bool
-    max_reconnects: int | None
-
-
 def _context(value: object, name: str) -> None:
     if value is None or isinstance(value, Unset):
         return
@@ -302,16 +284,6 @@ class WebSocketTransportOptions:
             and not (isinstance(proxy, str) and proxy.lower().startswith("https:"))
         ):
             raise ProtocolConfigurationError(field_path=("proxy_ssl_context",), condition="invalid_value")
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class ResolvedWebSocketTransportOptions:
-    """The effective WebSocket transport settings a connector receives; the proxy URL never appears in the repr."""
-
-    ssl_context: SSLContext | None
-    proxy: str | None = field(repr=False)
-    proxy_ssl_context: SSLContext | None
-    trust_env: bool
 
 
 def resolved_transport(options: WebSocketTransportOptions | Unset) -> ResolvedWebSocketTransportOptions:
@@ -402,10 +374,8 @@ class ProtocolClientOptions:
         _instance(self.websocket_transport, (WebSocketTransportOptions, Unset), "websocket_transport")
 
 
-def checked_connector(options: ProtocolClientOptions, *, asynchronous: bool) -> None:
+def checked_connector(connector: WebSocketConnector | AsyncWebSocketConnector, *, asynchronous: bool) -> None:
     """Refuse a WebSocket connector whose `open` is a coroutine function for a synchronous client, or the reverse."""
-    if (connector := options.websocket_connector) is None or isinstance(connector, Unset):
-        return
     if inspect.iscoroutinefunction(connector.open) is not asynchronous:
         raise ProtocolConfigurationError(field_path=("protocols", "websocket_connector"), condition="wrong_capability")
 

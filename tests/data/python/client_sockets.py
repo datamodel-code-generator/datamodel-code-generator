@@ -155,6 +155,7 @@ def sockets(package: ModuleType, lines: list[str]) -> None:
         _peers(harness)
         _proxies(harness)
         run(lambda: _async_sockets(harness))
+        run(lambda: _async_hooked(harness))
     finally:
         server.stop()
 
@@ -375,6 +376,10 @@ def _closing_sessions(harness: _Harness, api: Any) -> None:
         record(lines, label, call)
     lines.append(f"  iteration after closing {list(session)}")
     harness.report(play)
+    (play,) = server.play(Play(talk=_closing))
+    session = api.protocols.feed.text.connect()
+    harness.report(play)
+    record(lines, "ping once the server closed unread", session.ping)
 
 
 class _Ends:
@@ -401,14 +406,35 @@ def _hooked(harness: _Harness) -> None:
             ("hooked normal end", Play(talk=_sending(code=1000))),
             ("hooked early close", None),
             ("hooked failure", Play(talk=_sending("{broken"))),
+            ("hooked refusal", Play(refuse=(404, _PROBLEM, b'{"detail":"no room"}'))),
         ):
             (played,) = server.play(play or Play())
             lines.append(f"  {label}")
-            session = chat.connect(room=harness.room())
-            if play is not None:
-                record(lines, "receive", session.receive)
-            session.close()
+            session = record(lines, "connect", lambda: chat.connect(room=harness.room()))
+            if session is not None:
+                if play is not None:
+                    record(lines, "receive", session.receive)
+                session.close()
             harness.report(played)
+
+
+async def _async_hooked(harness: _Harness) -> None:
+    """Report an asyncio session's handshake events and its end, and a refused handshake's."""
+    lines, server = harness.lines, harness.server
+    async with harness.package.AsyncClient(options=harness.client(hooks=(_AsyncEnds(lines),))) as api:
+        chat = api.protocols.rooms.chat
+        for label, play in (
+            ("async hooked normal end", Play(talk=_sending(code=1000))),
+            ("async hooked refusal", Play(refuse=(404, _PROBLEM, b'{"detail":"no room"}'))),
+        ):
+            server.play(play)
+            lines.append(f"  {label}")
+            session = await arecord(lines, "connect", lambda: chat.connect(room=harness.room()))
+            if session is not None:
+                await arecord(lines, "receive", session.receive)
+                await session.aclose()
+            await asyncio.to_thread(play.done.wait, 10)
+            harness.report(play)
 
 
 class _Tokens:
@@ -641,6 +667,15 @@ async def _async_sockets(harness: _Harness) -> None:
                 await arecord(lines, label, session.receive)
                 await session.aclose()
             harness.report(play)
+        for label, step in (
+            ("async send once the server closed unread", lambda session: session.send("late")),
+            ("async ping once the server closed unread", lambda session: session.ping()),
+        ):
+            (play,) = server.play(Play(talk=_closing))
+            session = await api.protocols.feed.text.connect()
+            await asyncio.to_thread(play.done.wait, 10)
+            harness.report(play)
+            await arecord(lines, label, lambda step=step, session=session: step(session))
         token = options.CancelToken()
         (play,) = server.play(Play())
         session = await chat.connect(room=harness.room(), options=options.RequestOptions(cancel_token=token))

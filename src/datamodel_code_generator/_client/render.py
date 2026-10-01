@@ -357,8 +357,6 @@ from .._runtime.protocols.options import (
     PollOptions,
     ProtocolDefaults,
     ProtocolSecurityContext,
-    ResolvedWebSocketTransportOptions,
-    ResolvedWSOptions,
     StreamOptions,
     WebSocketTransportOptions,
     WSOptions,
@@ -389,22 +387,24 @@ from .._runtime.protocols.webhooks import (
     Verifier,
     WebhookOptions,
 )
+from .._runtime.protocols.websocket_types import (
+    AsyncWebSocketConnection,
+    AsyncWebSocketConnector,
+    Message,
+    PingReceipt,
+    ResolvedWebSocketTransportOptions,
+    ResolvedWSOptions,
+    WebSocketConnection,
+    WebSocketConnector,
+    WebSocketOpenRequest,
+    WSFrame,
+)
 
 if TYPE_CHECKING:
     from .._runtime.protocols.pagination import AsyncPager, Page, Pager
     from .._runtime.protocols.replay import AsyncMemoryReplayStore, MemoryReplayStore
     from .._runtime.protocols.streams import AsyncEventStream, EventStream, StreamEvent, UnknownEvent
     from .._runtime.protocols.websocket import AsyncWebSocketSession, WebSocketSession
-    from .._runtime.protocols.websocket_types import (
-        AsyncWebSocketConnection,
-        AsyncWebSocketConnector,
-        Message,
-        PingReceipt,
-        WebSocketConnection,
-        WebSocketConnector,
-        WebSocketOpenRequest,
-        WSFrame,
-    )
 
 __all__ = [
     "AsyncEventStream",
@@ -460,20 +460,10 @@ __all__ = [
     "WebhookOptions",
     "import_state",
 ]
-_SOCKET_TYPES = frozenset({
-    "AsyncWebSocketConnection",
-    "AsyncWebSocketConnector",
-    "Message",
-    "PingReceipt",
-    "WSFrame",
-    "WebSocketConnection",
-    "WebSocketConnector",
-    "WebSocketOpenRequest",
-})
 
 
 def __getattr__(name: str) -> object:
-    """Load a memory store, a pagination, stream, or WebSocket type only when its public class is requested."""
+    """Load a memory store, a pagination or stream type, or a WebSocket session only when its class is requested."""
     if name in {"AsyncPager", "Page", "Pager"}:
         from .._runtime.protocols import pagination
 
@@ -482,10 +472,6 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import streams
 
         return getattr(streams, name)
-    if name in _SOCKET_TYPES:
-        from .._runtime.protocols import websocket_types
-
-        return getattr(websocket_types, name)
     if name in {"AsyncWebSocketSession", "WebSocketSession"}:
         from .._runtime.protocols import websocket
 

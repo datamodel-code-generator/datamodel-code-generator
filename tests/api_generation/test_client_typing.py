@@ -200,6 +200,27 @@ def test_client_typing_ndjson(backend: DataModelType, tmp_path: Path) -> None:
     [
         DataModelType.PydanticV2BaseModel,
         DataModelType.PydanticV2Dataclass,
+        DataModelType.MsgspecStruct,
+    ],
+)
+def test_client_typing_sockets(backend: DataModelType, tmp_path: Path) -> None:
+    """Check WebSocket helpers: typed sessions, messages, and receipts, sync and asyncio, and misuses of each.
+
+    The received union tells its members apart only by their schemas, which dataclasses and TypedDict cannot decode.
+    """
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(
+        client_typing_report(tmp_path, backend, "sockets", ("sockets",)),
+        EXPECTED / f"{backend.value.replace('.', '-')}-sockets.txt",
+    )
+
+
+@pytest.mark.parametrize(
+    "backend",
+    [
+        DataModelType.PydanticV2BaseModel,
+        DataModelType.PydanticV2Dataclass,
         DataModelType.DataclassesDataclass,
         DataModelType.TypingTypedDict,
         DataModelType.MsgspecStruct,

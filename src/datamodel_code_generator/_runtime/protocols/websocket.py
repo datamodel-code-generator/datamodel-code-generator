@@ -59,8 +59,8 @@ from .errors import (
     WebSocketClosedError,
     WebSocketHandshakeError,
 )
-from .options import ResolvedWSOptions, WSOptions, resolved_transport
-from .websocket_types import Message, PingReceipt, WebSocketOpenRequest
+from .options import WSOptions, resolved_transport
+from .websocket_types import Message, PingReceipt, ResolvedWSOptions, WebSocketOpenRequest
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterator
@@ -75,12 +75,12 @@ if TYPE_CHECKING:
     from ..client.raw import AsyncRawResponse, RawResponse
     from ..client.responses import ResponseInfo
     from ..client.transports import AsyncTransportResponse, AttemptIOContext, PreparedRequest, TransportResponse
-    from .options import ResolvedWebSocketTransportOptions
     from .records import ProtocolProgress
     from .references import OperationRef
     from .websocket_types import (
         AsyncWebSocketConnection,
         AsyncWebSocketConnector,
+        ResolvedWebSocketTransportOptions,
         WebSocketConnection,
         WebSocketConnector,
         WSFrame,
@@ -341,7 +341,7 @@ def _encoded(plan: ChannelPlan[SendT, RecvT], value: object, mode: RequestValida
             return encode_json(plan.encoder.encode(value, mode))
         case "utf8" if isinstance(value, str):
             return value.encode("utf-8")
-        case "bytes" if isinstance(value, (bytes, bytearray, memoryview)):
+        case "bytes" if isinstance(value, (bytes, bytearray)):
             return bytes(value)
         case _:
             pass
@@ -711,6 +711,10 @@ class _Sockets(Generic[SendT, RecvT]):
             self._receiving.release()
             raise
 
+    def _closed_here(self) -> bool:
+        """Return whether this session's own close ended it, which a wait in progress learns only afterwards."""
+        return self._state is _State.CLOSED
+
     def _ending(self, state: _State) -> bool:
         """Leave the open state for an end once; return whether this call ended it."""
         with self._lock:
@@ -885,9 +889,10 @@ class _Queue:
             self._next += 1
             try:
                 while ticket != self._serving:
+                    wait = _slice(deadline, check is not None)
                     if check is not None:
                         check()
-                    if (wait := _slice(deadline, check is not None)) is not None and wait <= 0:
+                    if wait is not None and wait <= 0:
                         self._gone.add(ticket)
                         return False
                     self._condition.wait(wait)
@@ -1050,7 +1055,7 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
 
     def __next__(self) -> Message[RecvT]:
         """Return the next message; a normal closure, the server's or this session's own, ends the iteration."""
-        if self._state is _State.CLOSED:
+        if self._closed_here():
             raise StopIteration
         try:
             return self.receive()
@@ -1059,7 +1064,7 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
                 raise StopIteration from None
             raise
         except ProtocolStateError:
-            if self._state is _State.CLOSED:
+            if self._closed_here():
                 raise StopIteration from None
             raise
 
@@ -1210,7 +1215,7 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
 
     async def __anext__(self) -> Message[RecvT]:
         """Return the next message; a normal closure, the server's or this session's own, ends the iteration."""
-        if self._state is _State.CLOSED:
+        if self._closed_here():
             raise StopAsyncIteration
         try:
             return await self.receive()
@@ -1219,7 +1224,7 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
                 raise StopAsyncIteration from None
             raise
         except ProtocolStateError:
-            if self._state is _State.CLOSED:
+            if self._closed_here():
                 raise StopAsyncIteration from None
             raise
 

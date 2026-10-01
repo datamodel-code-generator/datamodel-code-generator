@@ -209,6 +209,7 @@ def socket_connectors(package: ModuleType, lines: list[str]) -> None:
         _queued_sends(harness, connector, api)
         _held_receives(harness, connector, api)
         _cancelled(harness, connector)
+    _default_transport(harness, connector)
     lines.append("  borrowed connector left open")
     run(lambda: _async_connectors(harness))
 
@@ -239,6 +240,17 @@ def _construction(harness: _Harness) -> None:
     record(lines, "TLS context of another type", lambda: harness.protocols.WebSocketTransportOptions(ssl_context=object()))
     record(lines, "compression of another kind", lambda: harness.protocols.WSOptions(compression="gzip"))
     record(lines, "zero message size", lambda: harness.protocols.WSOptions(max_message_bytes=0))
+
+
+def _default_transport(harness: _Harness, connector: _Connector) -> None:
+    """Hand a connector the default transport settings of a client that sets none."""
+    options = harness.options
+    protocols = options.ProtocolClientOptions(websocket_connector=connector)
+    with harness.package.Client(options=options.ClientOptions(base_url="https://api.example.com", protocols=protocols)) as api:
+        connector.verbose = True
+        connector.queue.append(_Connection(harness))
+        api.protocols.feed.text.connect().close()
+        connector.verbose = False
 
 
 async def _construct(package: ModuleType, harness: _Harness) -> Any:
@@ -388,16 +400,19 @@ def _queued_sends(harness: _Harness, connector: _Connector, api: Any) -> None:
 def _held_receives(harness: _Harness, connector: _Connector, api: Any) -> None:
     """End a receive waiting on a connection that its own close, or its client's, closes underneath it."""
     lines, errors = harness.lines, harness.errors
-    for label, hold in (
-        ("receive the session's close interrupted", harness.transport_error("RESPONSE_STARTED")),
-        ("receive the session's close ended", errors.WebSocketClosedError(code=1000, reason="", clean=True)),
+    ended = errors.WebSocketClosedError(code=1000, reason="", clean=True)
+    for label, hold, iterated in (
+        ("receive the session's close interrupted", harness.transport_error("RESPONSE_STARTED"), False),
+        ("receive the session's close ended", ended, False),
+        ("iteration the session's close ended", ended, True),
     ):
         connection = _Connection(harness)
         connection.hold = hold
         connector.queue.append(connection)
         session = api.protocols.feed.text.connect()
         outcome: list[str] = []
-        waiting = threading.Thread(target=lambda session=session, outcome=outcome: outcome.append(_outcome(session.receive)))
+        call = (lambda session=session: list(session)) if iterated else session.receive
+        waiting = threading.Thread(target=lambda call=call, outcome=outcome: outcome.append(_outcome(call)))
         waiting.start()
         connection.entered.wait(5)
         session.close()
@@ -415,6 +430,10 @@ def _held_receives(harness: _Harness, connector: _Connector, api: Any) -> None:
     record(lines, "client close with a receive waiting", closing.close)
     waiting.join(5)
     lines.append(f"  receive the client's close ended: {outcome[0]}")
+
+
+async def _messages(session: Any) -> list[object]:
+    return [message async for message in session]
 
 
 def _outcome(call: Callable[[], object]) -> str:
@@ -530,6 +549,15 @@ async def _async_connectors(harness: _Harness) -> None:
             await asyncio.sleep(0)
         await session.aclose()
         await arecord(lines, "async receive the session's close interrupted", lambda: waiting)
+        connection = _AsyncConnection(harness)
+        connection.hold = harness.errors.WebSocketClosedError(code=1000, reason="", clean=True)
+        connector.queue.append(connection)
+        session = await api.protocols.feed.text.connect()
+        iterating = asyncio.create_task(_messages(session))
+        while not connection.entered.is_set():
+            await asyncio.sleep(0)
+        await session.aclose()
+        await arecord(lines, "async iteration the session's close ended", lambda: iterating)
         connection = _AsyncConnection(harness)
         connection.blocked = threading.Event()
         connector.queue.append(connection)
