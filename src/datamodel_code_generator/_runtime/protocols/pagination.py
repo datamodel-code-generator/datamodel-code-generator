@@ -10,6 +10,7 @@ import re
 import threading
 from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
+from decimal import Decimal, InvalidOperation
 from enum import Enum
 from hashlib import sha256
 from types import MappingProxyType
@@ -49,6 +50,7 @@ if TYPE_CHECKING:
     from ..client.client import AsyncClientCore, ClientCore
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan
+    from ..client.responses import HeadersView
     from ..client.timing import Deadline
     from ..client.urls import Origin
     from ..model_codecs.selectors import MediaSelector
@@ -633,6 +635,21 @@ def _more(plan: PaginationPlan[T, P], read: Selector, wire: WireValue, info: Res
     return value
 
 
+def _integer(value: object) -> int | None:
+    """Return a finite integer value without rounding it or treating a boolean as a count."""
+    match value:
+        case bool():
+            return None
+        case int():
+            return value
+        case float() if value.is_integer():
+            return int(value)
+        case Decimal() if value.is_finite() and value == value.to_integral_value():
+            return int(value)
+        case _:
+            return None
+
+
 def _total(plan: PaginationPlan[T, P], read: Selector, wire: WireValue, info: ResponseInfo) -> int:
     """Return the total item count a page gives: a nonnegative JSON integer, or a header of signed decimal digits."""
     value = _selected(plan, read, wire, info)
@@ -646,11 +663,11 @@ def _total(plan: PaginationPlan[T, P], read: Selector, wire: WireValue, info: Re
             value = int(value)
         except ValueError:
             raise _data_error(plan, info, "value", read) from None
-    if isinstance(value, bool) or not isinstance(value, int):
+    if (count := _integer(value)) is None:
         raise _data_error(plan, info, _unfit(value), read)
-    if value < 0:
+    if count < 0:
         raise _data_error(plan, info, "value", read)
-    return value
+    return count
 
 
 class _Walk(Generic[T, P]):
@@ -815,15 +832,41 @@ class _Walk(Generic[T, P]):
         pointer = plan.writes[-1][1]
         if (value := wire if pointer is None else resolve(wire, pointer)) is MISSING:
             return
-        if isinstance(value, float) and value.is_integer():
-            value = int(value)
-        if isinstance(value, bool) or not isinstance(value, int):
+        if (position := _integer(value)) is None:
             rule = plan.continuation
             assert isinstance(rule, CountPlan)
             raise ProtocolDataError(
                 condition="type", location=rule.write, helper_id=plan.helper_id, operation=plan.operation
             )
-        self.start = value
+        self.start = position
+
+    def sent(self, url: str, headers: HeadersView) -> None:
+        """Read the first count request's position after all query and header patches have been applied."""
+        if self.link is not None or not isinstance(rule := self.plan.continuation, CountPlan):
+            return
+        match rule.write:
+            case ParameterTarget(location="query", name=name):
+                from urllib.parse import unquote_plus, urlsplit  # noqa: PLC0415 - Only a first query is inspected.
+
+                values = tuple(
+                    unquote_plus(parts[2])
+                    for pair in urlsplit(url).query.split("&")
+                    if unquote_plus((parts := pair.partition("="))[0]) == name
+                )
+            case ParameterTarget(location="header", name=name):
+                values = headers.get_all(name)
+            case _:
+                return
+        self.start = None
+        if not values:
+            return
+        wire: WireValue = values
+        if len(values) == 1:
+            try:
+                wire = Decimal(values[0])
+            except InvalidOperation:
+                wire = values[0]
+        self.started(wire)
 
     def advance(self, rule: CountPlan, count: int, wire: WireValue, info: ResponseInfo) -> int | Missing:
         """Return the offset or page number the request after a page writes, or MISSING when the page is the last.
@@ -1307,6 +1350,7 @@ def _fetch(
         options=limits.options,
         session=session,
         max_page_bytes=limits.max_page_bytes,
+        read_request=walk.sent,
     )
 
 
@@ -1326,6 +1370,7 @@ async def _afetch(
         options=limits.options,
         session=session,
         max_page_bytes=limits.max_page_bytes,
+        read_request=walk.sent,
     )
 
 
