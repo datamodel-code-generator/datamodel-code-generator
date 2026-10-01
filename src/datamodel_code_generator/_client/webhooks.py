@@ -306,12 +306,17 @@ class _Webhooks:
         event, key, plan = self.plan(module, spec)
         algorithm = _ALGORITHMS[signature["kind"]][1]
         window = (
-            "Deliveries outside the timestamp window are rejected, and a replay store keeps claims until the window "
-            "closes. Without a replay store, duplicate=False does not mean the delivery is new."
+            "Deliveries outside the timestamp window are rejected, and a replay store keeps a claim until the window "
+            "closes."
             if signature["timestamp"] != "none"
-            else "This webhook has no timestamp, so replay protection has no time window: a replay store keeps "
-            "claims for replay_ttl after now. Without a replay store, duplicate=False does not mean the delivery is "
-            "new."
+            else "This webhook has no timestamp, so replay protection has no time window: a replay store keeps a "
+            "claim for replay_ttl after now."
+        ) + (
+            " Duplicates are detected only until the claim expires. The claim is made after decoding, before your code "
+            "processes the event: if processing then fails, a retried delivery is a duplicate, or rejected under "
+            "duplicates: reject, until the claim expires, so make processing durable or idempotent before "
+            "acknowledging, or use a store whose claims you can release. Without a replay store, duplicate=False does "
+            "not mean the delivery is new."
         )
         functions = [
             self.function(module, event, key, window, asynchronous=asynchronous) for asynchronous in (False, True)

@@ -8,10 +8,10 @@ from __future__ import annotations
 
 import re
 from collections.abc import Coroutine
-from contextlib import suppress
 from dataclasses import dataclass, fields, replace
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Final, Generic, Literal, NoReturn, Protocol
+from enum import Enum
+from typing import TYPE_CHECKING, Final, Generic, Literal, NoReturn
 
 from typing_extensions import TypeIs, TypeVar
 
@@ -42,23 +42,15 @@ if TYPE_CHECKING:
 
     from ..client.operations import InboundModelCodec
     from ..model_codecs.context import CodecContext
+    from ..model_codecs.wire import WireValue
     from .signatures import FactField, SignatureProfile
     from .webhooks import AsyncReplayStore, ReplayStore
 
-__all__ = ("EventDecoder", "KeyLike", "WebhookPlan", "averify_webhook", "verify_webhook")
-
-
-class KeyLike(Protocol):
-    """A builtin profile's key, which carries the id that key-id headers and matched_key_id name."""
-
-    @property
-    def id(self) -> str:
-        """Return the key's id."""
-        ...
+__all__ = ("EventDecoder", "WebhookPlan", "averify_webhook", "verify_webhook")
 
 
 T = TypeVar("T")
-K = TypeVar("K", bound=KeyLike)
+K = TypeVar("K")
 
 _EPOCH: Final = datetime(1970, 1, 1, tzinfo=timezone.utc)
 _LATEST: Final = datetime.max.replace(tzinfo=timezone.utc)
@@ -85,6 +77,13 @@ _DATA_ERRORS: Final = (
 )
 
 
+class _Failed(Enum):
+    FAILED = "failed"
+
+
+_FAILED: Final = _Failed.FAILED
+
+
 class EventDecoder(Generic[T]):
     """Decode a verified JSON body into a helper's event type, validated against its schema when asked.
 
@@ -105,15 +104,24 @@ class EventDecoder(Generic[T]):
         Data errors are categorized as ordinary responses categorize them, and configuration errors propagate. The
         error keeps no cause, context, or other trace of the body.
         """
-        condition: Literal["malformed", "value"] = "malformed"
-        with suppress(*_DATA_ERRORS):
-            wire = decode_json(raw_body)
-            condition = "value"
-            codec = self._codec()
-            if self._validate:
-                return codec.decode(wire, self._context).require_model()
-            return codec.convert(wire, self._context)
-        raise ProtocolDataError(condition=condition, helper_id=helper_id)
+        try:
+            wire: WireValue | _Failed = decode_json(raw_body)
+        except _DATA_ERRORS:
+            wire = _FAILED
+        if isinstance(wire, _Failed):
+            raise ProtocolDataError(condition="malformed", helper_id=helper_id)
+        codec = self._codec()
+        try:
+            event: T | _Failed = (
+                codec.decode(wire, self._context).require_model()
+                if self._validate
+                else codec.convert(wire, self._context)
+            )
+        except _DATA_ERRORS:
+            event = _FAILED
+        if isinstance(event, _Failed):
+            raise ProtocolDataError(condition="value", helper_id=helper_id)
+        return event
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -203,15 +211,18 @@ def _claimer(store: object, helper_id: str, *, asynchronous: bool) -> None:
         raise _configuration(("replay_store",), "wrong_capability", helper_id)
 
 
-def _checked_keys(keys: KeySet[K], profile: SignatureProfile[K], helper_id: str) -> tuple[K, ...]:
-    """Refuse a key of another profile, a repeated id, and an id that a key-id header cannot carry."""
-    seen: set[str] = set()
-    for index, key in enumerate(candidates := keys.keys):
-        if not _instance(key, profile.algorithm.key_type):
+def _checked_keys(keys: KeySet[K], profile: SignatureProfile[K], helper_id: str) -> list[tuple[K, str]]:
+    """Return each key with its id, refusing a key of another profile, a repeated id, and one a header cannot carry."""
+    algorithm, candidates, seen = profile.algorithm, list[tuple[K, str]](), set[str]()
+    for index, key in enumerate(keys.keys):
+        if not _instance(key, algorithm.key_type):
             raise _configuration(("keys", str(index)), "wrong_capability", helper_id)
-        if key.id in seen or (profile.key_id is not None and not _VISIBLE.fullmatch(key.id)):
+        if (identity := algorithm.key_id(key)) in seen or (
+            profile.key_id is not None and not _VISIBLE.fullmatch(identity)
+        ):
             raise _configuration(("keys", str(index), "id"), "invalid_value", helper_id)
-        seen.add(key.id)
+        seen.add(identity)
+        candidates.append((key, identity))
     return candidates
 
 
@@ -311,16 +322,17 @@ def _authenticate(  # noqa: PLR0913, PLR0914
         DELIVERY_ID: (delivery or "").encode("ascii"),
     }
     parts = tuple(part if isinstance(part, bytes) else values[part] for part in profile.parts)
-    eligible = [key for key in candidates if key_id is None or key.id == key_id]
+    eligible = [(key, identity) for key, identity in candidates if key_id is None or identity == key_id]
     if not eligible:
         _reject("missing_key", helper_id)
     verified = tuple(signature for signature in signatures if signature is not None)
-    if (matched := next((key for key in eligible if profile.algorithm.matches(key, parts, verified)), None)) is None:
+    matches = profile.algorithm.matches
+    if (matched := next((identity for key, identity in eligible if matches(key, parts, verified)), None)) is None:
         _reject("invalid_signature", helper_id)
     if store is not None and delivery is None:
         _reject("missing_delivery_id", helper_id)
     claim = None if store is None or delivery is None else (delivery, _instant(expires_us) or _LATEST)
-    return _Facts(delivery, moment, matched.id, claim)
+    return _Facts(delivery, moment, matched, claim)
 
 
 def _duplicate(plan: WebhookPlan[T, K], delivery_id: str, claimed: object) -> bool:
@@ -360,7 +372,12 @@ def verify_webhook(  # noqa: PLR0913
     replay_store: ReplayStore | None = None,
     options: WebhookOptions | None = None,
 ) -> VerifiedWebhook[T]:
-    """Verify a delivery, decode its event, and claim its delivery id in a synchronous replay store when given."""
+    """Verify a delivery, decode its event, and claim its delivery id in a synchronous replay store when given.
+
+    The claim is made after decoding and before the application processes the event, so it is at most once: if
+    processing fails afterwards, a retried delivery is a duplicate, or rejected under `reject`, until the claim
+    expires, and duplicates are detected only until then.
+    """
     facts = _authenticate(
         plan, raw_body, headers, keys, now=now, store=replay_store, options=options, asynchronous=False
     )
@@ -386,7 +403,10 @@ async def averify_webhook(  # noqa: PLR0913
     replay_store: AsyncReplayStore | None = None,
     options: WebhookOptions | None = None,
 ) -> VerifiedWebhook[T]:
-    """Verify and decode as verify_webhook does, then await the claim of an asynchronous replay store when given."""
+    """Verify and decode as verify_webhook does, then await the claim of an asynchronous replay store when given.
+
+    The claim is at most once, as verify_webhook's is.
+    """
     facts = _authenticate(
         plan, raw_body, headers, keys, now=now, store=replay_store, options=options, asynchronous=True
     )

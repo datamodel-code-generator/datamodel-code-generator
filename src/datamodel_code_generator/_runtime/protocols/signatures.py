@@ -10,7 +10,7 @@ import re
 from base64 import b64decode, urlsafe_b64decode
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Final, Generic, Literal, Protocol, TypeAlias, final
+from typing import TYPE_CHECKING, Final, Generic, Literal, TypeAlias, final
 
 from typing_extensions import TypeVar
 
@@ -26,7 +26,6 @@ __all__ = (
     "RAW_BODY",
     "TIMESTAMP",
     "FactField",
-    "HmacAlgorithm",
     "SignatureAlgorithm",
     "SignatureProfile",
     "SignedPart",
@@ -62,48 +61,38 @@ _DECODERS: Final[Mapping[Encoding, Callable[[str], bytes]]] = {
 }
 
 
-class SignatureAlgorithm(Protocol[K]):
-    """A builtin signature algorithm: its key type, signature size, and verification of one key."""
-
-    @property
-    def key_type(self) -> type[K]:
-        """Return the only key class the algorithm accepts."""
-        ...
-
-    @property
-    def size(self) -> int:
-        """Return the size in bytes of every signature."""
-        ...
-
-    def matches(self, key: K, parts: tuple[bytes, ...], signatures: tuple[bytes, ...]) -> bool:
-        """Return whether a key signed the parts, in order, as one of the signatures."""
-        ...
-
-
 @final
-@dataclass(frozen=True, slots=True)
-class HmacAlgorithm:
-    """HMAC with a SHA-2 digest, compared in constant time against each signature."""
+@dataclass(frozen=True, slots=True, kw_only=True)
+class SignatureAlgorithm(Generic[K]):
+    """A builtin signature algorithm: its key class, signature size, the id of a key, and verification with one key.
 
-    digest: Literal["sha256", "sha512"]
+    `matches` returns whether a key signed the parts, in order, as one of the signatures.
+    """
+
+    key_type: type[K]
     size: int
+    key_id: Callable[[K], str]
+    matches: Callable[[K, tuple[bytes, ...], tuple[bytes, ...]], bool]
 
-    @property
-    def key_type(self) -> type[HmacKey]:
-        """Return the HMAC key class."""
-        return HmacKey
 
-    def matches(self, key: HmacKey, parts: tuple[bytes, ...], signatures: tuple[bytes, ...]) -> bool:
-        """Stream the parts through one HMAC of the key and compare its digest with each signature."""
-        mac = hmac.new(key.secret, digestmod=self.digest)
+def _hmac_id(key: HmacKey) -> str:
+    return key.id
+
+
+def _hmac(digest: Literal["sha256", "sha512"]) -> Callable[[HmacKey, tuple[bytes, ...], tuple[bytes, ...]], bool]:
+    def matches(key: HmacKey, parts: tuple[bytes, ...], signatures: tuple[bytes, ...]) -> bool:
+        """Stream the parts through one HMAC of the key and compare its digest with each signature in constant time."""
+        mac = hmac.new(key.secret, digestmod=digest)
         for part in parts:
             mac.update(part)
         expected = mac.digest()
         return any(hmac.compare_digest(expected, signature) for signature in signatures)
 
+    return matches
 
-HMAC_SHA256: Final = HmacAlgorithm("sha256", 32)
-HMAC_SHA512: Final = HmacAlgorithm("sha512", 64)
+
+HMAC_SHA256: Final = SignatureAlgorithm(key_type=HmacKey, size=32, key_id=_hmac_id, matches=_hmac("sha256"))
+HMAC_SHA512: Final = SignatureAlgorithm(key_type=HmacKey, size=64, key_id=_hmac_id, matches=_hmac("sha512"))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

@@ -2358,9 +2358,13 @@ def verify(
 ) -> VerifiedWebhook[_dcg_type_0]:
     """Verify a delivery and decode its event, claiming it in a store.
 
-    Deliveries outside the timestamp window are rejected, and a replay store keeps
-    claims until the window closes. Without a replay store, duplicate=False does not
-    mean the delivery is new.
+    Deliveries outside the timestamp window are rejected, and a replay store keeps a
+    claim until the window closes. Duplicates are detected only until the claim expires.
+    The claim is made after decoding, before your code processes the event: if
+    processing then fails, a retried delivery is a duplicate, or rejected under
+    duplicates: reject, until the claim expires, so make processing durable or
+    idempotent before acknowledging, or use a store whose claims you can release.
+    Without a replay store, duplicate=False does not mean the delivery is new.
     """
     return verify_webhook(
         _PLAN,
@@ -2496,3 +2500,8 @@ A store failure raises `WebhookStoreError`, with the store's own `WebhookStoreEr
 cancellation propagates unchanged; no failure is treated as a success. Regenerating a helper with another contract
 changes its namespace. `MemoryReplayStore` expires claims by the wall clock, not by `now`. Without a replay store,
 `duplicate=False` guarantees nothing: the delivery may have been received before.
+
+Duplicate detection is guaranteed only until a claim expires, and a claim is at most once: it is made after the event
+decodes and before your code processes it. If processing fails afterwards, a retried delivery of the same id is reported
+as a duplicate, or rejected under `duplicates: reject`, until the claim expires. Make processing durable or idempotent
+before acknowledging the delivery, or use a store whose claims you can release.

@@ -67,8 +67,12 @@ def verify(
     """Verify a delivery and decode its event, claiming it in a store.
 
     This webhook has no timestamp, so replay protection has no time window: a replay
-    store keeps claims for replay_ttl after now. Without a replay store, duplicate=False
-    does not mean the delivery is new.
+    store keeps a claim for replay_ttl after now. Duplicates are detected only until the
+    claim expires. The claim is made after decoding, before your code processes the
+    event: if processing then fails, a retried delivery is a duplicate, or rejected
+    under duplicates: reject, until the claim expires, so make processing durable or
+    idempotent before acknowledging, or use a store whose claims you can release.
+    Without a replay store, duplicate=False does not mean the delivery is new.
     """
     return verify_webhook(
         _PLAN,
@@ -93,8 +97,12 @@ async def verify_async(
     """Verify a delivery and decode its event, claiming it in an asyncio store.
 
     This webhook has no timestamp, so replay protection has no time window: a replay
-    store keeps claims for replay_ttl after now. Without a replay store, duplicate=False
-    does not mean the delivery is new.
+    store keeps a claim for replay_ttl after now. Duplicates are detected only until the
+    claim expires. The claim is made after decoding, before your code processes the
+    event: if processing then fails, a retried delivery is a duplicate, or rejected
+    under duplicates: reject, until the claim expires, so make processing durable or
+    idempotent before acknowledging, or use a store whose claims you can release.
+    Without a replay store, duplicate=False does not mean the delivery is new.
     """
     return await averify_webhook(
         _PLAN,
