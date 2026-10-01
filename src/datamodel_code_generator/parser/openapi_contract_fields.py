@@ -155,7 +155,6 @@ class FinalFieldBuilder:
                         model,
                         projection=ModelProjectionContext(
                             policy.backend,
-                            policy.builtin_declarations,
                             policy.functional_typeddict,
                             extra_items,
                             policy.custom_base,
@@ -258,7 +257,6 @@ class FinalFieldBuilder:
             else None,
             None if not nullable or any(value is None for value in nullable) else any(nullable),
             self.parser.force_optional_for_required_fields,
-            policy.builtin_declarations,
             policy.backend,
             constructor_policy(facts, "init") if facts is not None else None,
             constructor_policy(facts, "kw_only") if facts is not None else None,
