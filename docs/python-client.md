@@ -13,10 +13,11 @@ same OpenAPI document and model settings produce the same model files whichever 
 
 ## Webhook contracts and replay stores
 
-Generated packages expose webhook contracts from `pkg.protocols` and their exceptions from `pkg.errors`, where
-`pkg` is the generated package name. These imports need no HTTP or cryptography library. The
-[webhook verification helpers](#webhook-verification-helpers) verify HMAC signatures and decode events; constructing
-a signature or event record yourself does not verify received data.
+Generated packages expose webhook contracts from `pkg.protocols` and their exceptions from `pkg.errors`, where `pkg` is
+the generated package name. These imports need no HTTP or cryptography library. The
+[webhook verification helpers](#webhook-verification-helpers) verify HMAC, Ed25519, and RSA-PSS signatures, or call
+your `Verifier[K]` for any other signature, and decode events; constructing a signature or event record yourself does not
+verify received data.
 
 All records below are immutable and keyword-only. `KeySet` retains the original tuple and key objects without
 inspecting or copying the keys. Its representation excludes key material. `VerifiedWebhook` excludes event data
@@ -43,7 +44,8 @@ def verify(
 
 The key type is invariant and must match `KeySet[K]`. Implementations authenticate the complete received body
 and every returned fact, perform no networking, and retain ownership of their application keys. The same
-synchronous verifier contract applies to asynchronous consumers.
+synchronous verifier contract applies to asynchronous consumers. [Adapter signatures](#adapter-signatures) describe how
+a generated helper calls a verifier and checks its result.
 
 `WebhookOptions` has the fields below. Every constructor default is `UNSET`, imported from `pkg.options`;
 the effective values are the standalone verification defaults. `ResolvedWebhookOptions` has the same fields with
@@ -306,9 +308,9 @@ target reads through its `protocols` setting. The helpers are still being implem
 helper, resolves its references against the selected API, and records it in the target manifest. An enabled pagination
 helper generates the [pagination helper](#pagination-helpers) below, an enabled SSE helper the
 [SSE stream helper](#sse-stream-helpers), an enabled NDJSON helper the [NDJSON stream helper](#ndjson-stream-helpers),
-and an enabled HMAC webhook helper the [webhook verification helper](#webhook-verification-helpers); any other enabled
-helper fails with `E_CLIENT_UNSUPPORTED`. A
-disabled helper generates nothing, so the package is the same as without it. The `websocket`, `cache`,
+and an enabled webhook helper the
+[webhook verification helper](#webhook-verification-helpers); any other enabled helper fails with `E_CLIENT_UNSUPPORTED`.
+A disabled helper generates nothing, so the package is the same as without it. The `websocket`, `cache`,
 `resumable_upload`, `batch`, and `queue` kinds fail with `E_CLIENT_UNSUPPORTED` whether they are enabled or not, and
 their settings are not read yet.
 
@@ -456,7 +458,7 @@ querystring, or its request body. An operation that owns a querystring takes no 
 | `pagination` | `operation`, `items` (a body selector), `item_schema`, `continuation` | `bindings` (`[]`), such as a snapshot token each request carries |
 | `polling` | `create`, `accepted_statuses`, `poll`, `bindings` (create to poll), `state`, `pending`, `succeeded`, `result` | `failed` and `cancelled` (`[]`), `interval` (`{seconds: 1, retry_after_header: null}`), `remote_cancel` (`{operation, bindings?}`), `immediate_result` (`{statuses, selector, schema}`), `expires_at` |
 | `sse`, `ndjson` | `operation`, `media`, `event_schema`, `completion`, and for `ndjson` `final_line` (`require_newline` or `allow_eof`) | `unknown` (`error`, the default, or `raw`), `error_events` (`{}`), `resume` (`{enabled: false}`) |
-| `webhook` | `event_schema`, `signature` (see [webhook verification helpers](#webhook-verification-helpers)) | `duplicates` (`report`, the default, or `reject`) |
+| `webhook` | `event_schema`, `signature` (see [webhook verification helpers](#webhook-verification-helpers)) | `duplicates` (`report`, the default, or `reject`, which needs a signature) |
 
 A pagination `continuation` is one of these:
 
@@ -501,13 +503,15 @@ E_SELECTOR_DEPENDENCY selection protocols.helpers['audit.all'].operation /paths/
 
 ### Python records and the manifest
 
-`ProtocolConfiguration(schema_version=1, helpers={...})` takes `PaginationHelper`, `PollingHelper`, `StreamHelper`,
-and `WebhookHelper` records, which mirror the file: their fields have the file's names, with `from_` for `from`, and
-they take the client's `Selector` and `RequestTarget` records, `OperationRef` or a pointer string, and `SchemaRef`. A
-webhook's `HmacSignature` takes `HeaderName`, `TimestampHeader`, `SignedLiteral`, `FixedBytes`, and `AsciiBytes`
-records, or `"none"`, and `signed_parts` entries `"raw-body"`, `"timestamp"`, and `"delivery-id"`. They are validated
-as the file is, with the same diagnostics, when the client configuration is constructed. The later kinds have no
-records yet.
+`ProtocolConfiguration(schema_version=1, helpers={...})` takes `PaginationHelper`, `PollingHelper`, `StreamHelper`, and
+`WebhookHelper` records, which mirror the file: their fields have the file's names, with `from_` for `from`, and they
+take the client's `Selector` and `RequestTarget` records, `OperationRef` or a pointer string, and `SchemaRef`. A
+webhook's `HmacSignature` (`hmac-sha256` or `hmac-sha512`) or `PublicKeySignature` (`ed25519` or `rsa-pss-sha256`) has
+the same fields and takes `HeaderName`, `TimestampHeader`, `SignedLiteral`, `FixedBytes`, and `AsciiBytes` records, or
+`"none"`, and `signed_parts` entries `"raw-body"`, `"timestamp"`, and `"delivery-id"`; `AdapterSignature(timestamp=...,
+delivery_id=...)` takes `"required"` or `"none"` for each fact, and `NoSignature()` declares an unsigned webhook. An
+event mapping is an `EventMapping` with an `EventDiscriminator(from_="body", pointer=...)`. They are validated as the file
+is, with the same diagnostics, when the client configuration is constructed. The later kinds have no records yet.
 
 ```python
 ClientGenerationConfig(
@@ -1726,6 +1730,27 @@ E_CONFIG_VALUE binding validation.response /paths/~1pets/post/responses/201: The
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.validation.diagnostics -->
 
+### Parameter adapters
+
+A parameter that a registered parameter adapter selects (`codec_adapters`, a `CodecAdapterRegistration` of kind
+`parameter`) is validated against its schema and then encoded by the adapter instead of the builtin OpenAPI style, so
+it can also carry declarations no builtin style can, such as a `form` cookie array with `explode: false`. The client
+checks what the adapter returns before anything is sent:
+
+- A contribution outside its location's syntax or ownership raises `CodecAdapterError`: a header value that is not
+  visible ASCII with only spaces or tabs inside it, a query name other than the parameter's own (or `name[member]` for
+  a `deepObject`) or one another parameter owns, and a cookie of another name.
+- A path segment the adapter's text makes `.` or `..` fails with `RequestEncodingError`, as a builtin path argument's
+  does.
+- An empty array or object the adapter's capabilities exclude, and a `ParameterEncodingError` the adapter raises,
+  raise `RequestEncodingError` with that `ParameterEncodingError` as its cause.
+- The first call that sends the parameter builds the adapter: capabilities that differ from the registration raise
+  `CodecAdapterError`, and an exception the factory raises propagates unchanged.
+
+Pagination helpers that write a page position or a binding into an adapted parameter encode it through the same
+adapter, and judge a read value's path segment by the adapter's text. Generation does not judge a literal bound to
+an adapted path parameter, since it does not run the adapter; the request refuses a dot segment the adapter makes.
+
 ### Cost
 
 `none` and `native` never build the package's schema bundle or import `jsonschema`, which the strict factories still
@@ -2733,11 +2758,13 @@ applications construct providers explicitly.
 
 ## Webhook verification helpers
 
-An enabled `webhook` helper with an `hmac-sha256` or `hmac-sha512` signature generates the module
-`pkg.webhooks.<name>`, where each dotted part of the helper's name is a package or the module. It verifies one received
-delivery and decodes its JSON event; it creates no client, server, or route. The key type is in `pkg.webhooks.keys`,
-whose name a helper cannot take, and a package exists only when at least one webhook helper is enabled. With the
-package `pets` and the `standard.message` helper below:
+An enabled `webhook` helper generates the module `pkg.webhooks.<name>`, where each dotted part of the helper's name is a
+package or the module. It verifies one received delivery, with a builtin `hmac-sha256`, `hmac-sha512`, `ed25519`, or
+`rsa-pss-sha256` signature or through your verifier for an [`adapter` signature](#adapter-signatures), and decodes its
+JSON event; a helper whose signature is [`none`](#unsigned-webhooks) only decodes. It creates no client, server, or
+route. The key types of builtin signatures are in `pkg.webhooks.keys`, which exists only when a helper has a builtin
+signature and whose name a helper cannot take, and a package exists only when at least one webhook helper is enabled.
+With the package `pets` and the `standard.message` helper below:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.usage -->
 <!-- fmt: off -->
@@ -2800,6 +2827,84 @@ received order, and `now` an aware datetime. `HmacKey(*, id: str, secret: bytes)
 the id is a nonempty string without NUL, CR, or LF, the secret must be `bytes`, and its representation names the id
 only. Keys cannot be changed, copied into new objects, or pickled.
 
+### Public-key signatures
+
+An `ed25519` helper takes `KeySet[Ed25519Key]` and an `rsa-pss-sha256` helper `KeySet[RSAPSSKey]`, where
+`Ed25519Key(*, id: str, public_key: Ed25519PublicKey)` and `RSAPSSKey(*, id: str, public_key: RSAPublicKey)` wrap the
+public key classes of [cryptography](https://cryptography.io/). `pkg.webhooks.keys` exports only the key types of the
+selected signature kinds, and only these key types and their helpers import cryptography, so `pkg`, `pkg.protocols`,
+and HMAC helpers import without it. A package with such a helper lists `cryptography>=50.0.0` among its dependencies,
+and generation prints it in the `uv add` hint. Load the key with cryptography yourself, for example:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.public-keys -->
+<!-- fmt: off -->
+
+```python
+def keys(raw_key: bytes, modulus: int) -> tuple[KeySet[Ed25519Key], KeySet[RSAPSSKey]]:
+    """Wrap an Ed25519 public key from its raw bytes and an RSA public key from its numbers."""
+    ed25519_key = Ed25519Key(id="active", public_key=Ed25519PublicKey.from_public_bytes(raw_key))
+    rsa_key = RSAPSSKey(id="rsa-2048", public_key=RSAPublicNumbers(65537, modulus).public_key())
+    return KeySet(keys=(ed25519_key,)), KeySet(keys=(rsa_key,))
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.public-keys -->
+
+A key keeps the public key object it was given and uses it only to verify: it is never copied, serialized, compared, or
+shown, and a private key, `bytes`, PEM or DER text, or a key of the other kind raises `TypeError` naming only the
+expected class. The key's own class must derive from the cryptography class, so an object that only claims that class is
+refused, while a class registered with it is accepted: the application supplies its keys. The SDK never derives a public
+key from a private one. An Ed25519 signature is the raw 64-byte signature, and a decoded signature of another length is
+`malformed_signature`. RSA-PSS uses SHA-256, MGF1 with SHA-256, and a 32-byte salt; each key decides its signature size,
+so keys of different sizes can share a key set during rotation, and a signature of the wrong size for a key is
+`invalid_signature` for that key. Only cryptography's `InvalidSignature` moves on to the next signature or key;
+`UnsupportedAlgorithm` raises `ProtocolConfigurationError` with `condition="wrong_capability"` and the key's
+`("keys", "<index>")`, and any other error, including cancellation, propagates unchanged. The signature settings are the
+same as for HMAC:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.public-keys-yaml -->
+<!-- fmt: off -->
+
+```yaml
+schema_version: 1
+helpers:
+  standard.ed25519:
+    kind: webhook
+    event_schema: {pointer: /components/schemas/Message}
+    signature:
+      kind: ed25519
+      header: webhook-signature
+      encoding: base64
+      prefix: "v1a,"
+      separator: " "
+      key_id: none
+      timestamp: {header: webhook-timestamp, unit: seconds}
+      delivery_id: {header: webhook-id}
+      signed_parts: [delivery-id, {literal: "."}, timestamp, {literal: "."}, raw-body]
+      field_constraints:
+        delivery-id: {ascii_bytes: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"}
+        timestamp: {ascii_bytes: "0123456789"}
+  keyed.rsa:
+    kind: webhook
+    event_schema: {pointer: /components/schemas/Message}
+    signature:
+      kind: rsa-pss-sha256
+      header: X-Signature
+      encoding: base64url
+      prefix: "v1="
+      separator: ","
+      key_id: {header: X-Key-Id}
+      timestamp: {header: X-Timestamp, unit: milliseconds}
+      delivery_id: {header: X-Delivery}
+      signed_parts: [timestamp, {literal: "."}, delivery-id, {literal: "."}, raw-body]
+      field_constraints:
+        timestamp: {ascii_bytes: "0123456789"}
+        delivery-id: {ascii_bytes: "abcdefghijklmnopqrstuvwxyz0123456789-"}
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.public-keys-yaml -->
+
 ### Signature settings
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.yaml -->
@@ -2831,7 +2936,7 @@ helpers:
 
 | Setting | Values |
 |---|---|
-| `event_schema` | A schema reference to the JSON request body schema of a webhook or callback operation of the input, directly or through `$ref`; the event decodes with that operation's request-body model |
+| `event_schema` | A schema reference to the JSON request body schema of a webhook or callback operation of the input, directly or through `$ref`, whose request-body model decodes the event; or an [event mapping](#event-mappings) |
 | `header` | The signature header; every occurrence is read, in order |
 | `encoding` | `hex` (either case), `base64` (padded), or `base64url` (padding optional) |
 | `prefix` | Visible ASCII text each signature starts with, possibly empty |
@@ -2872,10 +2977,134 @@ E_CONFIG_CONFLICT config protocols.helpers['conflict.facts_adjacent'].signature.
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.diagnostics -->
 
-Other signature kinds (`ed25519`, `rsa-pss-sha256`, `adapter`, `none`) fail with `E_CLIENT_UNSUPPORTED` even when the
-helper is disabled, and their settings are not read yet. Event mappings, and an event whose model needs an envelope,
-fail with `E_CLIENT_UNSUPPORTED` when the helper is enabled. A header value is read as ASCII; a format that keeps its
-timestamp and signatures in one header, such as `t=...,v1=...`, needs an adapter, which is not supported yet.
+An event whose model needs an envelope fails with `E_CLIENT_UNSUPPORTED` when the helper is enabled. A header value is
+read as ASCII; a format that keeps its timestamp and signatures in one header, such as `t=...,v1=...`, or signs in any
+other way the settings cannot describe, needs an [adapter signature](#adapter-signatures).
+
+### Event mappings
+
+Instead of one schema reference, `event_schema` can map the type name a body member holds to each event's schema, as SSE
+and NDJSON helpers do, with a body discriminator only. The helper's event type is the union of the mapped models, and
+each mapped schema must be a JSON request body of a webhook or callback operation. After verification, the body is
+parsed once, the member the RFC 6901 `pointer` names selects the event's model, and the event decodes with it. The
+member must be a string equal to a mapped name, compared exactly; otherwise decoding raises `ProtocolDataError` with
+`location=BodySelector(pointer=...)` and `condition` `missing` for an absent member, `null`, `type` for another JSON
+type, or `value` for an unknown name. There is no `unknown` setting for webhooks.
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.adapter-yaml -->
+<!-- fmt: off -->
+
+```yaml
+schema_version: 1
+helpers:
+  stripe.event:
+    kind: webhook
+    event_schema:
+      discriminator: {from: body, pointer: /type}
+      mapping:
+        invoice.paid: {pointer: /components/schemas/Invoice}
+        invoice.updated: {pointer: /components/schemas/Invoice}
+        customer.created: {pointer: /components/schemas/Customer}
+    signature: {kind: adapter, timestamp: required, delivery_id: none}
+  unsigned.event:
+    kind: webhook
+    event_schema:
+      discriminator: {from: body, pointer: /meta/type}
+      mapping:
+        invoice.paid: {pointer: /components/schemas/Invoice}
+        customer.created: {pointer: /components/schemas/Customer}
+    signature: {kind: none}
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.adapter-yaml -->
+
+### Adapter signatures
+
+A signature `{kind: adapter, timestamp, delivery_id}` declares that your code verifies the signature: `timestamp` and
+`delivery_id` are each `required` or `none`, and no other setting is read. The helper's functions are generic in the key
+type and take a required `verifier: Verifier[K]` with `keys: KeySet[K]` of the same key type; `pkg.webhooks.keys` has
+no key type for them. Write the verifier from the API's documentation, for example for a Stripe-style header:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.adapter -->
+<!-- fmt: off -->
+
+```python
+@dataclass(frozen=True)
+class StripeKey:
+    """An application key: the SDK never reads its fields."""
+
+    name: str
+    secret: bytes = field(repr=False)
+
+
+class StripeVerifier:
+    """Verify `Stripe-Signature: t=<seconds>,v1=<hex>` over `<t>.<raw body>` with the first matching key."""
+
+    def verify(
+        self,
+        raw_body: bytes,
+        ordered_headers: tuple[tuple[str, str], ...],
+        keys: KeySet[StripeKey],
+        now: datetime,
+        limits: ResolvedWebhookOptions,
+    ) -> VerifiedSignature:
+        """Return the signed timestamp and the matched key, or raise WebhookVerificationError."""
+        del now
+        values = [value for name, value in ordered_headers if name.lower() == "stripe-signature"]
+        items = [item.partition("=") for item in (values[0].split(",") if len(values) == 1 else ())]
+        stamps = [value for scheme, _, value in items if scheme == "t"]
+        encoded = [value for scheme, _, value in items if scheme == "v1"]
+        if len(stamps) != 1 or not (stamps[0].isascii() and stamps[0].isdigit()) or not encoded:
+            raise WebhookVerificationError(condition="malformed_signature")
+        if (count := len(encoded)) > limits.max_signatures:
+            raise ProtocolSizeError(kind="signatures", unit="items", limit=limits.max_signatures, observed=count)
+        try:
+            signatures = [bytes.fromhex(value) for value in encoded if value.isascii()]
+        except ValueError:
+            signatures = []
+        if len(signatures) != count:
+            raise WebhookVerificationError(condition="malformed_signature")
+        signed = stamps[0].encode() + b"." + raw_body
+        for key in keys.keys:
+            expected = hmac.new(key.secret, signed, "sha256").digest()
+            if any(hmac.compare_digest(expected, signature) for signature in signatures):
+                moment = datetime.fromtimestamp(int(stamps[0]), timezone.utc)
+                return VerifiedSignature(delivery_id=None, timestamp=moment, matched_key_id=key.name)
+        raise WebhookVerificationError(condition="invalid_signature")
+
+
+def receive_stripe(raw_body: bytes, headers: list[tuple[str, str]], secret: bytes) -> Invoice | Customer:
+    """Verify one Stripe-style delivery with the application's verifier and return its mapped event."""
+    keys = KeySet(keys=(StripeKey(name="2026-09", secret=secret),))
+    verified = event.verify(raw_body, headers, keys, verifier=StripeVerifier(), now=datetime.now(timezone.utc))
+    return verified.data
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.adapter -->
+
+`verify_async` calls the same synchronous verifier, once, and awaits only the replay store. After the helper checks its
+arguments, including that `verifier` has a callable `verify` (or `ProtocolConfigurationError` with
+`field_path=("verifier",)`), and the body, header, and key-count limits, it passes the exact body, the headers as a
+tuple of pairs in received order, the key set, `now`, and the resolved limits; it never reads the keys. The verifier
+must authenticate the whole body and every fact it returns, honor `max_signatures`, and raise `WebhookVerificationError`
+when verification fails; every error it raises, including cancellation, propagates unchanged. Before decoding, the helper
+raises `AdapterContractError` with `delivery_state=NOT_SENT`, without decoding or claiming, when the result is not a
+`VerifiedSignature` (an awaitable result is closed unawaited), its `matched_key_id` is not a nonempty string, a
+`required` fact is missing, not a nonempty string delivery id, or not an aware datetime, or a `none` fact is not
+`None`. A returned timestamp is then checked against the timestamp window, and the delivery id is claimed, as for
+builtin signatures.
+
+### Unsigned webhooks
+
+A signature `{kind: none}` declares that the API does not sign its deliveries; a helper without `signature` is
+refused, so omitting it never means unsigned. The module has only
+`decode_unverified(raw_body, *, options=None) -> Event`, which refuses a body that is not `bytes`
+(`ProtocolConfigurationError`) or is over `max_body_bytes` (`ProtocolSizeError`), the only option it reads, and decodes
+the event. Nothing authenticates who sent the delivery or whether it was changed or replayed, and the result is the
+event alone, with no facts or duplicate information: treat it as untrusted input. `duplicates: reject` fails with
+`E_CONFIG_CONFLICT`.
 
 ### Verification order and limits
 
@@ -2883,8 +3112,9 @@ A call first checks its arguments, raising `ProtocolConfigurationError` with the
 (`raw_body`, `headers`, `keys`, `now`, `options`, `replay_store`, then each key: `("keys", "<index>")` for another key
 type, `("keys", "<index>", "id")` for a repeated id or one a key-id header cannot carry). It then checks sizes, raising
 `ProtocolSizeError`, header syntax, the timestamp window, and the signatures, raising `WebhookVerificationError`, before
-it decodes the event, raising `ProtocolDataError`, and finally claims the delivery. Errors keep no key, signature,
-header value, or body.
+it decodes the event, raising `ProtocolDataError`, and finally claims the delivery. An adapter helper checks
+`verifier` after `replay_store`, and the body, header, and key-count limits before calling the verifier, then the
+returned facts and the window. Errors keep no key, signature, header value, or body.
 
 | Limit (`WebhookOptions`) | Default |
 |---|---|
@@ -2901,7 +3131,7 @@ header value, or body.
   compared in exact microseconds.
 - `missing_key`: no key is eligible, such as an empty key set or a key id no key has.
 - `invalid_signature`: keys are tried in key-set order and signatures in header order, and none verifies; HMAC digests
-  are compared in constant time. The first key that verifies gives `matched_key_id`.
+  are compared in constant time, and public keys verify with cryptography. The first key that verifies gives `matched_key_id`.
 - `missing_delivery_id`: a replay store was given to a helper without a delivery id.
 
 ### Replay detection

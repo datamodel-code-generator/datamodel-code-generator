@@ -87,7 +87,7 @@ def field_plan(local: Callable[[str, str], str], field: FieldPlan) -> str:
 
 
 def parameter_plan(local: Callable[[str, str], str], plan: ParameterPlan) -> Group:
-    """Return the ParameterPlan constructor of one parameter or header, naming it through `local`."""
+    """Return the plan constructor of one parameter or header, naming it through `local`."""
     entries: list[tuple[str, Doc]] = [("location=", repr(plan.location)), ("name=", repr(plan.name))]
     entries.extend(
         (f"{name}=", repr(value))
@@ -100,7 +100,7 @@ def parameter_plan(local: Callable[[str, str], str], plan: ParameterPlan) -> Gro
         entries.append(("additional=", field_plan(local, plan.additional)))
     if plan.reserved_names:
         entries.append(("reserved_names=", repr(plan.reserved_names)))
-    return Group(f"{local('_runtime.model_codecs.parameters', 'ParameterPlan')}(", tuple(entries), ")")
+    return Group(f"{local('_runtime.model_codecs.parameters', type(plan).__name__)}(", tuple(entries), ")")
 
 
 def _imported(models: tuple[ModelArtifact, ...]) -> frozenset[str]:

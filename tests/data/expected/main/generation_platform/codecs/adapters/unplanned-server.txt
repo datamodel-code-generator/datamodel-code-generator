@@ -1,0 +1,2 @@
+use /paths/~1tags/get parameter cookie tags: codec_0 None parameter_0 pydantic_type_adapter native
+adapter json-cookie /paths/~1tags/get parameter cookie tags: parameter
