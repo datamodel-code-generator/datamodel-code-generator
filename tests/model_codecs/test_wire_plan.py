@@ -12,7 +12,7 @@ from tests.data.python.model_codec_plans import wire_plan_report
 EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/codecs/plan"
 
 
-@pytest.mark.parametrize("name", ["oas30", "oas31", "oas32"])
+@pytest.mark.parametrize("name", ["oas30", "oas31", "oas32", "parameters", "directions-accepted"])
 def test_wire_plan_bundles_validate(name: str, tmp_path: Path) -> None:
     """Bundle each document's offline resources into the generated bindings, whose bundles validate instances."""
     report, modules = wire_plan_report(name, tmp_path)

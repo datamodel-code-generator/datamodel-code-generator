@@ -56,7 +56,7 @@ def test_structural_codecs(source: str, cases: str, tmp_path: PathType) -> None:
     )
 
 
-@pytest.mark.abnormal_path("generated bindings edited out of sync with their models")
+@pytest.mark.abnormal_path("generated models or bindings edited out of sync after generation")
 @pytest.mark.parametrize(
     ("source", "cases"),
     [
@@ -66,7 +66,7 @@ def test_structural_codecs(source: str, cases: str, tmp_path: PathType) -> None:
     ],
 )
 def test_structural_codec_startup(source: str, cases: str, tmp_path: PathType) -> None:
-    """Refuse bindings, bundles, and native types that disagree, and native failures past the wire schema."""
+    """Refuse edited bindings, bundles, and native types that disagree, and native failures past the wire schema."""
     assert_output(
         builtin_codec_startup_report(CODECS / f"{source}.yaml", CODECS / "structural" / f"{cases}.json", tmp_path),
         EXPECTED / f"{cases}.txt",

@@ -1,4 +1,6 @@
 # dialects32
+refused APIGenerationError
+refused diagnostic E_CONFIG_CONFLICT /paths/~1alternatives/post: The security of POST /alternatives has overlapping header ownership in one AND alternative
 APIGenerationError
 diagnostic MC_PARAMETER_ENCODING /paths/~1search/get/parameters/0/content/application~1x-www-form-urlencoded/schema: A URL-encoded value must be an object
 diagnostic MC_PARAMETER_ENCODING /paths/~1search/get/parameters/1: cookie parameter style 'form' has no builtin form for array values

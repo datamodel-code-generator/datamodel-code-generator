@@ -1,3 +1,4 @@
+refused nothing
 use /paths/~1pets/get parameter query limit: native alias models:FieldPetsGetQueryLimitParameter models=[]
 use /paths/~1pets/get parameter query tags: native alias models:FieldPetsGetQueryTagsParameter models=[]
 use /paths/~1pets/get parameter query filter: native alias models:FieldPetsGetQueryFilterParameter models=[]
@@ -42,6 +43,5 @@ create-client-check: CodecConfigurationError A standard dataclass, TypedDict, or
 created-client-convert: converted {'id': 1, 'name': 'Mimi', 'status': 'new', 'kind': 'cat', 'visits': 0}
 created-client-convert-long: converted {'id': 1, 'name': 'far too long a name', 'status': 'new', 'kind': 'cat', 'visits': 0}
 created-client-convert-type: NativeValidationError native.int_type@/id['id']
-created-client-needs-schema: needs schema False ambiguous False
 create-client-serialize-long: wire={"name":"far too long a name","status":"new"}
 create-client-encode-long: WireValidationError schema.maxLength@/name

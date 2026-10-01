@@ -1,0 +1,75 @@
+openapi: 3.1.0
+info:
+  title: Directions that one schema view per direction serves
+  version: "1"
+paths:
+  /items:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Item"
+      responses:
+        "200":
+          description: The stored item.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+components:
+  schemas:
+    Item:
+      type: object
+      required: [id, name, token]
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        token:
+          type: string
+          writeOnly: true
+        tags:
+          type: array
+          items:
+            type: object
+            required: [label, secret]
+            properties:
+              label:
+                type: string
+              secret:
+                type: string
+                writeOnly: true
+        pair:
+          type: array
+          prefixItems:
+            - type: object
+              required: [key]
+              properties:
+                key:
+                  type: string
+                  readOnly: true
+          items: false
+      patternProperties:
+        "^x-":
+          type: object
+          required: [hidden]
+          properties:
+            hidden:
+              type: string
+              writeOnly: true
+      dependentRequired:
+        name: [id, token]
+      dependentSchemas:
+        token:
+          required: [id]
+      if:
+        required: [name]
+      then:
+        required: [id]
+      else:
+        required: [token]
+      not:
+        required: [missing]

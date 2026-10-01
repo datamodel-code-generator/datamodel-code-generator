@@ -37,13 +37,13 @@ def wire_plan_report(name: str, root: Path) -> tuple[str, dict[tuple[str, ...], 
     case = json.loads((PLANS / "cases.json").read_text(encoding="utf-8"))[name]
     shutil.copytree(PLANS, root / "inputs")
     source = root / "inputs" / f"{name}.yaml"
-    fixture = {"package": (package := f"plan_{name}"), "options": case.get("model", {})}
+    fixture = {"package": (package := f"plan_{name.replace('-', '_')}"), "options": case.get("model", {})}
     lines = [f"# {name}"]
-    if isinstance(refused := case.get("refusal"), dict):
-        refusal = generate_package(source, fixture, root / "refused", BACKEND, refused)
-        lines.extend(f"refused {line}" for line in refusal or ["nothing"])
-    if refusal := generate_package(source, fixture, root / "accepted", BACKEND, case.get("config", {})):
-        return "\n".join([*lines, *refusal]) + "\n", {}
+    if isinstance(refusal_config := case.get("refusal"), dict):
+        refused = generate_package(source, fixture, root / "refused", BACKEND, refusal_config)
+        lines.extend(f"refused {line}" for line in refused or ["nothing"])
+    if diagnostics := generate_package(source, fixture, root / "accepted", BACKEND, case.get("config", {})):
+        return "\n".join([*lines, *diagnostics]) + "\n", {}
     directory = root / "accepted" / package
     modules = {parts: directory.joinpath(*parts).read_text(encoding="utf-8") for parts in PINNED}
     if "instances" in case:
