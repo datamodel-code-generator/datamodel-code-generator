@@ -1,0 +1,13 @@
+{
+  "aliases": null,
+  "apply_default_values_for_required_fields": false,
+  "class_name": null,
+  "disable_timestamp": true,
+  "field_constraints": false,
+  "formatters": [
+    "builtin"
+  ],
+  "output": null,
+  "settings_path": "$PROJECT",
+  "target_python_version": "3.11"
+}

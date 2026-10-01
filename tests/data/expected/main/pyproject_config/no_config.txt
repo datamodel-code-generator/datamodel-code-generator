@@ -1,0 +1,6 @@
+{
+  "disable_timestamp": true,
+  "formatters": [
+    "builtin"
+  ]
+}

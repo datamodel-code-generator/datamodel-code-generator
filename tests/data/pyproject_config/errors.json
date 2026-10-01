@@ -1,0 +1,83 @@
+[
+  {
+    "file": "profiles.toml",
+    "profile": "missing",
+    "type": "Error",
+    "match": "Profile 'missing' not found"
+  },
+  {
+    "profile": "missing",
+    "type": "Error",
+    "match": "no .* section found"
+  },
+  {
+    "file": "bad_profiles.toml",
+    "profile": "bad",
+    "type": "Error",
+    "match": "must be a table"
+  },
+  {
+    "file": "bad_profile.toml",
+    "profile": "bad",
+    "type": "Error",
+    "match": "must be a table"
+  },
+  {
+    "file": "bad_extends.toml",
+    "profile": "bad",
+    "type": "Error",
+    "match": "extends must be a string or list"
+  },
+  {
+    "file": "cycle.toml",
+    "profile": "first",
+    "type": "Error",
+    "match": "Circular extends detected"
+  },
+  {
+    "file": "self.toml",
+    "profile": "bad",
+    "type": "Error",
+    "match": "cannot extend itself"
+  },
+  {
+    "file": "unknown_parent.toml",
+    "profile": "bad",
+    "type": "Error",
+    "match": "Extended profile 'missing' not found"
+  },
+  {
+    "file": "invalid_alias.toml",
+    "type": "Error",
+    "match": "Unable to load alias mapping"
+  },
+  {
+    "file": "bad_value.toml",
+    "type": "ValidationError",
+    "match": "target_python_version"
+  },
+  {
+    "file": "bad_toml.toml",
+    "type": "ValueError",
+    "match": "Expected"
+  },
+  {
+    "overrides": 42,
+    "type": "TypeError",
+    "match": "overrides must be"
+  },
+  {
+    "overrides": {
+      "invalid_option": true
+    },
+    "type": "ValidationError",
+    "match": "extra_forbidden"
+  },
+  {
+    "overrides": {
+      "target_python_version": "not-a-version"
+    },
+    "type": "ValidationError",
+    "match": "target_python_version"
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "disable_timestamp": true,
+  "field_constraints": false,
+  "formatters": [
+    "builtin"
+  ],
+  "naming_strategy": "parent-prefixed",
+  "parent_scoped_naming": true,
+  "settings_path": "$PROJECT",
+  "target_python_version": "3.11"
+}
