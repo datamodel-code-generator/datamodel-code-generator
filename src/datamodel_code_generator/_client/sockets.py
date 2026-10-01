@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._client.pagination import _label, _problem  # pyright: ignore[reportPrivateUsage]
+from datamodel_code_generator._client.plan import schema_use
 from datamodel_code_generator._client.streams import _Streams  # pyright: ignore[reportPrivateUsage]
 from datamodel_code_generator._generation_contract import DeclarationId, TypeUseBinding, TypeUseId
 
@@ -97,7 +98,7 @@ class _Sockets(_Streams):
 
     def message(self, spec: OperationSpec, location: SourceLocation, *, sent: bool = False) -> TypeUseBinding:
         """Return the use that codes a schema as the channel's sent or received messages, bound as its value use is."""
-        schema = self.schemas.get((location.document, location.pointer))
+        schema = schema_use(self.schemas, location, "request" if sent else "response")
         use = TypeUseId(
             owner=spec.contract.id,
             role="request_body" if sent else "response_body",
