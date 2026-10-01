@@ -25,6 +25,18 @@ if TYPE_CHECKING:
 
 _HELPERS: Final = ("jobs.run", "jobs.inline", "jobs.report", "exports.run", "exports.latest")
 _PAUSE: Final = 0.2
+_WALL: Final = 1_000_000_000.0
+_WALL_DATE: Final = "Sun, 09 Sep 2001 01:48:40 GMT"
+
+
+class _Clock:
+    """A clock source that moves only when a scenario sets it."""
+
+    def __init__(self, value: float) -> None:
+        self.value = value
+
+    def __call__(self) -> float:
+        return self.value
 
 
 def _job(
@@ -79,25 +91,37 @@ def _outcome(value: object) -> str:
     return describe(value) + (session if isinstance(value, BaseException) else "")
 
 
-def step(lines: list[str], label: str, call: Callable[[], object]) -> object:
+def _measured(value: object) -> str:
+    """Describe a step's result, giving a wait limit's exact required wait and limit."""
+    if hasattr(value, "required_wait"):
+        error: Any = value
+        return f"PollWaitLimitError kind={error.kind!r} required_wait={error.required_wait} limit={error.limit}"
+    return _outcome(value)
+
+
+def step(
+    lines: list[str], label: str, call: Callable[[], object], outcome: Callable[[object], str] = _outcome
+) -> object:
     """Report a step's result or failure."""
     try:
         result = call()
     except Exception as error:  # noqa: BLE001
-        lines.append(f"  {label} ! {_outcome(error)}")
+        lines.append(f"  {label} ! {outcome(error)}")
         return None
-    lines.append(f"  {label} = {_outcome(result)}")
+    lines.append(f"  {label} = {outcome(result)}")
     return result
 
 
-async def astep(lines: list[str], label: str, call: Callable[[], Any]) -> object:
+async def astep(
+    lines: list[str], label: str, call: Callable[[], Any], outcome: Callable[[object], str] = _outcome
+) -> object:
     """Report an asyncio step's result or failure."""
     try:
         result = await call()
     except Exception as error:  # noqa: BLE001
-        lines.append(f"  {label} ! {_outcome(error)}")
+        lines.append(f"  {label} ! {outcome(error)}")
         return None
-    lines.append(f"  {label} = {_outcome(result)}")
+    lines.append(f"  {label} = {outcome(result)}")
     return result
 
 
@@ -144,6 +168,7 @@ def polling(package: ModuleType, lines: list[str]) -> None:
         _waits(harness, api, exchange, lines)
         _limits(harness, api, exchange, lines)
         _failures(harness, api, exchange, lines)
+    _clocked(harness, lines)
     run(lambda: _async_polling(harness, lines))
 
 
@@ -395,6 +420,57 @@ def _failures(harness: _Polling, api: Any, exchange: Exchange, lines: list[str])
     step(lines, "poll answered with a server delay", handle.status)
     step(lines, "poll before the delay", handle.status)
     lines.append(f"  progress {dict(handle.progress)!r}")
+
+
+def _clocked(harness: _Polling, lines: list[str]) -> None:
+    """Measure poll waits, server delays, and the session on the client's clock, waiting in real time when frozen."""
+    exchange = Exchange(lines)
+    clock = _Clock(1000.0)
+    settings = harness.client_options(clock=harness.options.Clock(monotonic=clock, time=lambda: _WALL))
+    body = harness.body
+    lines.append("waits and limits on the client clock")
+    with exchange.client() as native, harness.package.Client(http_client=native, options=settings) as api:
+        helper = api.protocols.jobs.run
+        exchange.respond(json_response(202, {"id": "j1", "status": "queued"}, **{"Retry-After": "120"}))
+        handle = helper.start(body=body)
+        clock.value += 30
+        step(lines, "server delay less the clock's move", handle.status, _measured)
+        exchange.respond(json_response(202, {"id": "j1", "status": "queued"}, **{"Retry-After": _WALL_DATE}))
+        handle = helper.start(body=body)
+        step(lines, "date delay on the client's wall clock", handle.status, _measured)
+        clock.value = 1000.0
+        delayed = json_response(200, {"id": "j1", "status": "queued"}, **{"Retry-After": "30"})
+        exchange.respond(json_response(202, {"id": "j1", "status": "queued"}, **{"Retry-After": "30"}), delayed)
+        handle = helper.start(body=body, session_options=harness.session(total_timeout=60))
+        clock.value += 31
+        step(lines, "poll once the clock passes the delay", handle.status)
+        step(lines, "delay past the session", handle.status, _measured)
+        exchange.respond(_job("queued", 202), _job("done"))
+        handle = helper.start(body=body, poll_options=harness.polls(interval=_PAUSE))
+        step(lines, "interval on a frozen clock", handle.status)
+    run(lambda: _async_clocked(harness, lines))
+
+
+async def _async_clocked(harness: _Polling, lines: list[str]) -> None:
+    """Measure asyncio poll waits and the session on the client's clock, waiting in real time when frozen."""
+    exchange = Exchange(lines)
+    clock = _Clock(1000.0)
+    settings = harness.client_options(clock=harness.options.Clock(monotonic=clock))
+    body = harness.body
+    async with (
+        exchange.async_client() as native,
+        harness.package.AsyncClient(http_client=native, options=settings) as api,
+    ):
+        helper = api.protocols.jobs.run
+        delayed = json_response(200, {"id": "j1", "status": "queued"}, **{"Retry-After": "30"})
+        exchange.respond(json_response(202, {"id": "j1", "status": "queued"}, **{"Retry-After": "30"}), delayed)
+        handle = await helper.start(body=body, session_options=harness.session(total_timeout=60))
+        clock.value += 31
+        await astep(lines, "async poll once the clock passes the delay", handle.status)
+        await astep(lines, "async delay past the session", handle.status, _measured)
+        exchange.respond(_job("queued", 202), _job("done"))
+        handle = await helper.start(body=body, poll_options=harness.polls(interval=_PAUSE))
+        await astep(lines, "async interval on a frozen clock", handle.status)
 
 
 async def _async_polling(harness: _Polling, lines: list[str]) -> None:
