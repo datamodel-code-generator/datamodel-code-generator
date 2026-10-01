@@ -32,6 +32,7 @@ class _Connection:
         self.entered = threading.Event()
         self.closed = threading.Event()
         self.hold: BaseException | None = None
+        self.gated = False
 
     def _fail(self, name: str) -> None:
         if (failure := self.failures.get(name)) is not None:
@@ -80,7 +81,10 @@ class _AsyncConnection(_Connection):
         self.lines.append(f"    connection send text={text} {data!r} deadline={deadline is not None}")
         if self.blocked is not None:
             self.blocked.set()
-            await asyncio.to_thread(self.released.wait, 10)
+            if self.gated:
+                await asyncio.to_thread(self.released.wait, 10)
+            else:
+                await asyncio.sleep(10)
         self._fail("send")
 
     async def receive(self, *, deadline: object) -> Any:  # ty: ignore[invalid-method-override]
@@ -490,6 +494,7 @@ async def _stopped_turn(harness: _Harness) -> None:
     async with harness.package.AsyncClient(options=harness.client(connector, clock=clock)) as api:
         connection = _AsyncConnection(harness)
         connection.blocked = threading.Event()
+        connection.gated = True
         connector.queue.append(connection)
         session = await api.protocols.feed.text.connect(
             options=options.RequestOptions(total_timeout=None), ws_options=harness.protocols.WSOptions(send_timeout=10)
