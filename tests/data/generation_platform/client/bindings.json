@@ -11,6 +11,13 @@
       "total": {},
       "total-false": {
         "use_total_false_for_typed_dict": true
+      },
+      "total-false-extensions": {
+        "use_total_false_for_typed_dict": true,
+        "import_overrides": {
+          "Required": "typing_extensions",
+          "NotRequired": "typing_extensions"
+        }
       }
     },
     "changes": [
@@ -145,7 +152,9 @@
         "render": "msgspec.Struct plain",
         "id": "scope-noise",
         "append": "\n\n    \"\"\"missing: Optional[str] = None is documentation, not a declaration.\"\"\"\n\n    def _binding_example(self):\n        missing: str = \"local only\"\n        return missing\n\n    class Nested:\n        missing: str = \"nested only\"\n\nclass Unrelated:\n    missing: str = \"unrelated only\"\n"
-      },
+      }
+    ],
+    "rewrites": [
       {
         "render": "pydantic_v2.BaseModel plain",
         "id": "PydanticV2BaseModel-quote",
@@ -304,18 +313,6 @@
     "changes": [
       {
         "render": "msgspec.Struct annotated",
-        "id": "nested-meta",
-        "old": "Meta(max_length=4, min_length=1)",
-        "new": "Meta(max_length=5, min_length=1)"
-      },
-      {
-        "render": "msgspec.Struct annotated",
-        "id": "number-meta",
-        "old": "Meta(ge=1.5, lt=9.75, multiple_of=0.5)",
-        "new": "Meta(ge=1.5, lt=9.5, multiple_of=0.5)"
-      },
-      {
-        "render": "msgspec.Struct annotated",
         "id": "malformed-meta-position",
         "old": "Meta(max_length=4, min_length=1)",
         "new": "Meta(4)"
@@ -325,6 +322,20 @@
         "id": "malformed-meta-key",
         "old": "Meta(max_length=4, min_length=1)",
         "new": "Meta(\"max_length\"=4)"
+      }
+    ],
+    "rewrites": [
+      {
+        "render": "msgspec.Struct annotated",
+        "id": "nested-meta",
+        "old": "Meta(max_length=4, min_length=1)",
+        "new": "Meta(max_length=5, min_length=1)"
+      },
+      {
+        "render": "msgspec.Struct annotated",
+        "id": "number-meta",
+        "old": "Meta(ge=1.5, lt=9.75, multiple_of=0.5)",
+        "new": "Meta(ge=1.5, lt=9.5, multiple_of=0.5)"
       }
     ]
   },
@@ -1158,6 +1169,25 @@
       "msgspec.Struct"
     ]
   },
+  "field-ownership-conflict": {
+    "source": "generation_platform/binding/field-ownership-conflict.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "typing.TypedDict"
+    ]
+  },
+  "field-ownership-custom-base": {
+    "source": "generation_platform/binding/field-ownership.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "typing.TypedDict"
+    ],
+    "model": {
+      "base_class_map": {
+        "A": "app.bases.Base"
+      }
+    }
+  },
   "functional-name-collision": {
     "source": "generation_platform/binding/functional-name-collision.json",
     "backends": [
@@ -1166,7 +1196,7 @@
   },
   "synthetic-origins": {
     "source": "generation_platform/binding/synthetic-origins.json",
-    "changes": [
+    "rewrites": [
       {
         "render": "pydantic_v2.BaseModel default",
         "id": "PydanticV2BaseModel-extra-annotations",
@@ -1241,6 +1271,21 @@
               }
             }
           }
+        }
+      }
+    }
+  },
+  "model-facts-opaque": {
+    "source": "generation_platform/binding/model-facts.json",
+    "backends": [
+      "msgspec.Struct"
+    ],
+    "model": {
+      "extra_template_data": {
+        "#all#": {
+          "base_class_kwargs": [
+            "frozen"
+          ]
         }
       }
     }

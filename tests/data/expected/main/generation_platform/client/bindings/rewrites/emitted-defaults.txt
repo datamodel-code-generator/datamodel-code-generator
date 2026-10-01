@@ -1,0 +1,91 @@
+# emitted-defaults
+rewrite pydantic_v2.BaseModel plain PydanticV2BaseModel-quote
+  @@ -16 +16 @@
+  -    mapping: Optional[Dict[str, bool]] = {'enabled': True}
+  +    mapping: Optional[Dict[str, bool]] = {"enabled": True}
+rewrite pydantic_v2.BaseModel plain PydanticV2BaseModel-literal
+  @@ -14 +14 @@
+  -    literal: Optional[int] = 4
+  +    literal: Optional[int] = 5
+rewrite pydantic_v2.BaseModel plain PydanticV2BaseModel-factory
+  @@ -17 +17 @@
+  -    factory: List[str] = Field(default_factory=list)
+  +    factory: List[str] = Field(default_factory=set)
+rewrite pydantic_v2.BaseModel plain PydanticV2BaseModel-explicit_null
+  @@ -13 +13 @@
+  -    explicit_null: Optional[str] = None
+  +    explicit_null: Optional[str] = "value"
+rewrite pydantic_v2.BaseModel plain PydanticV2BaseModel-model
+  @@ -11 +11 @@
+  -class Defaults(BaseModel):
+  +class Defaults(Other):
+rewrite pydantic_v2.BaseModel plain PydanticV2BaseModel-lost-assignment
+  @@ -13 +13 @@
+  -    explicit_null: Optional[str] = None
+  +    explicit_null: Optional[str]
+rewrite pydantic_v2.dataclass plain PydanticV2Dataclass-quote
+  @@ -19 +19 @@
+  -    mapping: Optional[Dict[str, bool]] = Field(default_factory=lambda: {'enabled': True})
+  +    mapping: Optional[Dict[str, bool]] = Field(default_factory=lambda: {"enabled": True})
+rewrite pydantic_v2.dataclass plain PydanticV2Dataclass-literal
+  @@ -17 +17 @@
+  -    literal: Optional[int] = 4
+  +    literal: Optional[int] = 5
+rewrite pydantic_v2.dataclass plain PydanticV2Dataclass-factory
+  @@ -20 +20 @@
+  -    factory: List[str] = Field(default_factory=list)
+  +    factory: List[str] = Field(default_factory=set)
+rewrite pydantic_v2.dataclass plain PydanticV2Dataclass-explicit_null
+  @@ -16 +16 @@
+  -    explicit_null: Optional[str] = None
+  +    explicit_null: Optional[str] = "value"
+rewrite pydantic_v2.dataclass plain PydanticV2Dataclass-model
+  @@ -12 +12 @@
+  -@dataclass
+  +@dataclass(frozen=True)
+rewrite dataclasses.dataclass plain DataclassesDataclass-quote
+  @@ -18 +18 @@
+  -    mapping: Optional[Dict[str, bool]] = field(default_factory=lambda: {'enabled': True})
+  +    mapping: Optional[Dict[str, bool]] = field(default_factory=lambda: {"enabled": True})
+rewrite dataclasses.dataclass plain DataclassesDataclass-literal
+  @@ -16 +16 @@
+  -    literal: Optional[int] = 4
+  +    literal: Optional[int] = 5
+rewrite dataclasses.dataclass plain DataclassesDataclass-factory
+  @@ -19 +19 @@
+  -    factory: List[str] = field(default_factory=list)
+  +    factory: List[str] = field(default_factory=set)
+rewrite dataclasses.dataclass plain DataclassesDataclass-explicit_null
+  @@ -15 +15 @@
+  -    explicit_null: Optional[str] = None
+  +    explicit_null: Optional[str] = "value"
+rewrite dataclasses.dataclass plain DataclassesDataclass-model
+  @@ -11 +11 @@
+  -@dataclass
+  +@dataclass(frozen=True)
+rewrite typing.TypedDict plain TypingTypedDict-quote
+  unchanged
+rewrite typing.TypedDict plain TypingTypedDict-model
+  @@ -10 +10 @@
+  -class Defaults(TypedDict):
+  +class Defaults(TypedDict, total=False):
+rewrite msgspec.Struct plain MsgspecStruct-quote
+  @@ -17 +17 @@
+  -    mapping: Union[Dict[str, bool], UnsetType] = field(default_factory=lambda: {'enabled': True})
+  +    mapping: Union[Dict[str, bool], UnsetType] = field(default_factory=lambda: {"enabled": True})
+rewrite msgspec.Struct plain MsgspecStruct-literal
+  @@ -15 +15 @@
+  -    literal: Union[int, UnsetType] = 4
+  +    literal: Union[int, UnsetType] = 5
+rewrite msgspec.Struct plain MsgspecStruct-factory
+  @@ -18 +18 @@
+  -    factory: Union[List[str], UnsetType] = field(default_factory=list)
+  +    factory: Union[List[str], UnsetType] = field(default_factory=set)
+rewrite msgspec.Struct plain MsgspecStruct-explicit_null
+  @@ -14 +14 @@
+  -    explicit_null: Union[str, UnsetType] = UNSET
+  +    explicit_null: Union[str, UnsetType] = "value"
+rewrite msgspec.Struct plain MsgspecStruct-model
+  @@ -11 +11 @@
+  -class Defaults(Struct):
+  +class Defaults(Struct, kw_only=True):

@@ -2,7 +2,8 @@
 
 Every component schema becomes the body and response of one operation, so the client binds every model. A change
 edits the generated models through a custom formatter, as a user formatter may, and the report shows what the
-edit changes in the shipped models and bindings.
+edit changes in the shipped models and bindings. A rewrite instead changes the staged models after generation,
+as another process writing to the staging directory would.
 """
 
 from __future__ import annotations
@@ -11,16 +12,19 @@ import ast
 import difflib
 import json
 from collections import defaultdict
+from contextlib import contextmanager
 from itertools import product
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from unittest.mock import patch
 
+import pytest
 import yaml
 
 from tests.data.python.client_generation import render_client
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Callable, Iterator
 
     from tests.data.python.client_generation import Modules
 
@@ -36,6 +40,7 @@ MODEL = {
 }
 BINDINGS = ("client", "_generated", "model_bindings.py")
 MODELS = ("models.py",)
+STAGING = ".datamodel-codegen-"
 
 
 def _document(source: Path, root: Path, skipped: list[str]) -> Path:
@@ -104,35 +109,79 @@ def _difference(before: list[str], after: list[str]) -> list[str]:
     return changed or ["unchanged"]
 
 
-def client_binding_report(case_name: str, root: Path) -> str:
-    """Render one fixture for each backend and variant, then once more for each change of a render."""
-    case = json.loads(CASES.read_text(encoding="utf-8"))[case_name]
+def _renders(case: dict[str, Any], root: Path) -> Iterator[tuple[str, Callable[..., list[str]], list[str]]]:
+    """Render a case's fixture for each backend and variant, yielding its label, a re-render, and what it ships."""
     source = _document(DATA / case["source"], root, case.get("skip", []))
-    changes: dict[str, list[dict[str, str]]] = {}
-    for change in case.get("changes", ()):
-        changes.setdefault(change["render"], []).append(change)
-    lines = [f"# {case_name}"]
+    config = {**CLIENT, **case.get("config", {})}
     for count, (backend, (variant, options)) in enumerate(
         product(case.get("backends", ["pydantic_v2.BaseModel"]), case.get("variants", {"default": {}}).items())
     ):
-        label = f"{backend} {variant}"
-        backend_model = case.get("backend_model", {}).get(backend, {})
-        model = _options({**MODEL, **case.get("model", {}), **backend_model, **options})
-        shipped = _shipped(*render_client(source, root / str(count), backend, model, CLIENT))
+        model = _options({
+            **MODEL,
+            **case.get("model", {}),
+            **case.get("backend_model", {}).get(backend, {}),
+            **options,
+        })
+
+        def render(
+            name: str, extra: dict[str, Any] | None = None, *, backend: str = backend, model: dict = model
+        ) -> list[str]:
+            return _shipped(*render_client(source, root / name, backend, {**model, **(extra or {})}, config))
+
+        yield f"{backend} {variant}", render, render(str(count))
+
+
+def _edits(case: dict[str, Any], key: str) -> dict[str, list[dict[str, str]]]:
+    edits: dict[str, list[dict[str, str]]] = {}
+    for edit in case.get(key, ()):
+        edits.setdefault(edit["render"], []).append(edit)
+    return edits
+
+
+def _report(case_name: str, lines: list[str], unused: dict[str, list[dict[str, str]]], root: Path) -> str:
+    if unused:
+        lines.append(f"edits naming no render: {sorted(unused)}")
+    return "\n".join([f"# {case_name}", *lines]).replace(root.resolve().as_posix(), "<root>") + "\n"
+
+
+def client_binding_report(case_name: str, root: Path) -> str:
+    """Render one fixture for each backend and variant, then again with each formatter change of a render."""
+    case = json.loads(CASES.read_text(encoding="utf-8"))[case_name]
+    changes = _edits(case, "changes")
+    lines: list[str] = []
+    for label, render, shipped in _renders(case, root):
         lines.extend((f"render {label}", *(f"  {line}" for line in shipped)))
         for change in changes.pop(label, ()):
             edit = {key: change[key] for key in ("old", "new", "append") if key in change}
-            edited = _shipped(
-                *render_client(
-                    source,
-                    root / f"{count}-{change['id']}",
-                    backend,
-                    {**model, "custom_formatters": [FORMATTER], "custom_formatters_kwargs": edit},
-                    CLIENT,
-                )
-            )
+            edited = render(change["id"], {"custom_formatters": [FORMATTER], "custom_formatters_kwargs": edit})
             lines.extend((f"change {label} {change['id']}", *(f"  {line}" for line in _difference(shipped, edited))))
-    if changes:
-        msg = f"Changes name no render: {sorted(changes)}"
-        raise ValueError(msg)
-    return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n"
+    return _report(case_name, lines, changes, root)
+
+
+@contextmanager
+def _rewritten_stage(old: str, new: str) -> Iterator[None]:
+    """Replace text in staged models whenever they are read, as a process rewriting the staging directory would."""
+    read_bytes = Path.read_bytes
+
+    def rewrite(path: Path) -> bytes:
+        content = read_bytes(path)
+        if path.suffix == ".py" and any(part.startswith(STAGING) for part in path.parts):
+            return content.replace(old.encode(), new.encode())
+        return content
+
+    with patch.object(Path, "read_bytes", rewrite):
+        yield
+
+
+@pytest.mark.abnormal_path("another process rewrites the staged models between their generation and their checks")
+def client_binding_rewrite_report(case_name: str, root: Path) -> str:
+    """Render each rewritten render of a fixture again, with its staged models rewritten after generation."""
+    case = json.loads(CASES.read_text(encoding="utf-8"))[case_name]
+    rewrites = _edits(case, "rewrites")
+    lines: list[str] = []
+    for label, render, shipped in _renders(case, root):
+        for rewrite in rewrites.pop(label, ()):
+            with _rewritten_stage(rewrite["old"], rewrite["new"]):
+                edited = render(rewrite["id"])
+            lines.extend((f"rewrite {label} {rewrite['id']}", *(f"  {line}" for line in _difference(shipped, edited))))
+    return _report(case_name, lines, rewrites, root)

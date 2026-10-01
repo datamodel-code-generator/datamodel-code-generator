@@ -91,14 +91,6 @@ render msgspec.Struct annotated
     FieldBinding(field_id='models:Metadata.rank', native_name='rank', wire_name='rank', validation_key='rank', validation_keys=('rank',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(), LeafNode())))
   codec_0 -> StructuralModelCodec[models.Metadata]
   codec_1 -> StructuralModelCodec[models.Metadata]
-change msgspec.Struct annotated nested-meta
-  @@ -30 +30 @@
-  -    nested: Annotated[List[List[NestedItem]], Meta(max_length=4, min_length=1)]
-  +    nested: Annotated[List[List[NestedItem]], Meta(max_length=5, min_length=1)]
-change msgspec.Struct annotated number-meta
-  @@ -29 +29 @@
-  -    number: Annotated[float, Meta(ge=1.5, lt=9.75, multiple_of=0.5)]
-  +    number: Annotated[float, Meta(ge=1.5, lt=9.5, multiple_of=0.5)]
 change msgspec.Struct annotated malformed-meta-position
   @@ -30 +30 @@
   -    nested: Annotated[List[List[NestedItem]], Meta(max_length=4, min_length=1)]

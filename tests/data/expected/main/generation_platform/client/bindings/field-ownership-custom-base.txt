@@ -1,0 +1,9 @@
+# field-ownership-custom-base
+render pydantic_v2.BaseModel default
+  diagnostic APIGenerationError
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~10/post/requestBody: The A model needs a builtin compatibility declaration or a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~10/post/responses/200: The A model needs a builtin compatibility declaration or a model adapter
+render typing.TypedDict default
+  diagnostic APIGenerationError
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~10/post/requestBody: The A model needs a builtin compatibility declaration or a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~10/post/responses/200: The A model needs a builtin compatibility declaration or a model adapter

@@ -14,7 +14,11 @@ from datamodel_code_generator._generation_contract import (
     MetadataCall,
 )
 from datamodel_code_generator.imports import Import
-from datamodel_code_generator.model.binding import FrozenImportBindings, index_builtin_field_declarations
+from datamodel_code_generator.model.binding import (
+    FrozenImportBindings,
+    index_builtin_field_declarations,
+    same_artifact_model_facts,
+)
 from datamodel_code_generator.parser.openapi_contract import ContractApiOpenAPIParser
 from datamodel_code_generator.parser.openapi_contract_freeze import freeze_model_inventory
 from tests.data.python.binding_inputs import builtin_binding_config, final_inventory_declarations
@@ -45,11 +49,20 @@ def declaration_failure(source: Path, case: str) -> str:
                     ),
                     *expected[1:],
                 )
+            case "partitioned-model":
+                pass
+            case "absent-field":
+                expected = (replace(expected[0], native_name="absent"), *expected[1:])
+            case "absent-tag-model":
+                expected = (replace(expected[0], model_name="Absent", excluded_by_tag=True), *expected[1:])
             case _:
                 raise ValueError(case)
-        index_builtin_field_declarations(
+        index = index_builtin_field_declarations(
             body, expected=expected, imports=FrozenImportBindings(inventory.imports[0].values)
         )
+        if case == "partitioned-model":
+            names = [model.name for model in inventory.models]
+            return "".join(f"{name}: {same_artifact_model_facts(index, index, model_name=name)}\n" for name in names)
         return "accepted\n"
     except BindingCaptureError as error:
         return str(error) + "\n"
