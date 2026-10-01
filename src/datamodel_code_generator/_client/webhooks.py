@@ -1,7 +1,9 @@
-"""Plan and render the webhook verification helpers of a client target, at `pkg.webhooks.<name>`.
+"""Plan and render the webhook helpers of a client target, at `pkg.webhooks.<name>`.
 
-A helper's event schema is bound through the JSON request body of a webhook or callback operation that uses it, since
-only directional uses have codecs; the event is then received as a server receives that request.
+A helper's event schema, or each schema of its event mapping, is bound through the JSON request body of a webhook or
+callback operation that uses it, since only directional uses have codecs; the event is then received as a server
+receives that request. A builtin signature is verified by the runtime, an adapter signature by the caller's verifier,
+and a helper without a signature only decodes.
 """
 
 from __future__ import annotations
@@ -30,11 +32,13 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.config import ClientGenerationConfig
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
+    from datamodel_code_generator._codec_declarations import SchemaRef
     from datamodel_code_generator._generation_contract import TypeUseBinding, TypeUseId
     from datamodel_code_generator._openapi_codec_plan import CodecPlan
     from datamodel_code_generator._openapi_codec_render import UseAccessors
 
 __all__ = (
+    "WebhookEvent",
     "WebhookSpec",
     "key_class",
     "plan_webhooks",
@@ -61,35 +65,53 @@ class _Algorithm(NamedTuple):
 _HMAC: Final = "_runtime.protocols.signatures"
 _PUBLIC_KEYS: Final = "_runtime.protocols.public_keys"
 _RSA_PSS: Final = "RSA-PSS with SHA-256, MGF1 with SHA-256, and a 32-byte salt"
+_HMAC_KIND: Final = _Algorithm(_HMAC, "HMAC_SHA256", "HMAC-SHA256", "_runtime.protocols.webhook_keys", "HmacKey")
 _ALGORITHMS: Final = {
-    "hmac-sha256": _Algorithm(_HMAC, "HMAC_SHA256", "HMAC-SHA256", "_runtime.protocols.webhook_keys", "HmacKey"),
+    "hmac-sha256": _HMAC_KIND,
     "hmac-sha512": _Algorithm(_HMAC, "HMAC_SHA512", "HMAC-SHA512", "_runtime.protocols.webhook_keys", "HmacKey"),
     "ed25519": _Algorithm(_PUBLIC_KEYS, "ED25519", "Ed25519", _PUBLIC_KEYS, "Ed25519Key"),
     "rsa-pss-sha256": _Algorithm(_PUBLIC_KEYS, "RSA_PSS_SHA256", _RSA_PSS, _PUBLIC_KEYS, "RSAPSSKey"),
 }
 _CHUNK: Final = 48
 _PACKAGE: Final = '"""Webhook verification helpers of this package, by their dotted names."""\n'
+_EVENTS: Final = "_runtime.protocols.webhook_events"
+_WEBHOOKS: Final = "_runtime.protocols.webhooks"
+_CLAIM: Final = (
+    " Duplicates are detected only until the claim expires. The claim is made after decoding, before your code "
+    "processes the event: if processing then fails, a retried delivery is a duplicate, or rejected under "
+    "duplicates: reject, until the claim expires, so make processing durable or idempotent before "
+    "acknowledging, or use a store whose claims you can release. Without a replay store, duplicate=False does "
+    "not mean the delivery is new."
+)
 
 
-def key_class(kind: str) -> str:
-    """Return the name of the key class of a signature kind."""
-    return _ALGORITHMS[kind].key
+def key_class(kind: str) -> str | None:
+    """Return the name of the key class of a builtin signature kind, None for an adapter or no signature."""
+    return None if (algorithm := _ALGORITHMS.get(kind)) is None else algorithm.key
 
 
 def webhook_dependencies(specs: tuple[WebhookSpec, ...]) -> tuple[str, ...]:
     """Return cryptography when a helper verifies a public-key signature, and nothing otherwise."""
     kinds = {spec.helper.tree["signature"]["kind"] for spec in specs}
-    return (_CRYPTOGRAPHY,) if any(_ALGORITHMS[kind].module == _PUBLIC_KEYS for kind in kinds) else ()
+    return (_CRYPTOGRAPHY,) if any(_ALGORITHMS.get(kind, _HMAC_KIND).module == _PUBLIC_KEYS for kind in kinds) else ()
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class WebhookEvent:
+    """One event type of a helper: its mapped name, if any, request-body use, event schema, and decoding mode."""
+
+    name: str | None
+    use: TypeUseBinding
+    schema: Mapping[str, str]
+    validate: bool
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class WebhookSpec:
-    """A webhook helper ready to render: its event's request-body use, event schema, and decoding mode."""
+    """A webhook helper ready to render: its single event, or its mapped events in declaration order."""
 
     helper: Helper
-    use: TypeUseBinding
-    event_schema: Mapping[str, str]
-    validate: bool
+    events: tuple[WebhookEvent, ...]
 
 
 def _problem(code: str, stage: DiagnosticStage, at: str, message: str) -> Diagnostic:
@@ -119,10 +141,10 @@ def _names(helpers: tuple[Helper, ...]) -> Iterator[tuple[Helper, Diagnostic]]:
 def webhook_uses(
     protocols: Protocols | None, request: TargetRequest
 ) -> tuple[tuple[WebhookSpec, ...], dict[str, list[Diagnostic]]]:
-    """Return each enabled webhook helper with its event's request-body use, and each such helper's problems.
+    """Return each enabled webhook helper with its events' request-body uses, and each such helper's problems.
 
-    The use is the first JSON request body of a webhook or callback operation whose schema, through references, is the
-    event schema; its decoding mode is settled once the use is bound.
+    An event's use is the first JSON request body of a webhook or callback operation whose schema, through references,
+    is the event's schema; its decoding mode is settled once the use is bound.
     """
     helpers = (
         ()
@@ -147,20 +169,16 @@ def webhook_uses(
     wire = plan_wire(
         request.batch, request.lease, [use.id for use, _ in candidates], documents=request.documents.pointers
     )
-    events: list[WebhookSpec] = []
-    for helper in helpers:
-        at, reference = f"{helper.at}.event_schema", helper.tree["event_schema"]
-        if isinstance(reference, dict):
-            message = f"The webhook helper {helper.name!r} with an event mapping is not supported yet"
-            problems[helper.name].append(_problem("E_CLIENT_UNSUPPORTED", "target", at, message))
-            continue
+
+    def event(helper: Helper, name: str | None, reference: SchemaRef, at: str) -> WebhookEvent | None:
+        """Return the event a schema reference binds, adding the helper's problem when there is none."""
         location = SourceLocation(documents[protocols.documents[reference]], reference.pointer, "schema")
         try:
             request.lease.borrow(location)
         except BindingCaptureError:
             message = f"The event_schema {reference.pointer!r} of {helper.name!r} does not exist in its document"
             problems[helper.name].append(_problem("E_CONFIG_VALUE", "config", at, message))
-            continue
+            return None
         resolved = wire.schema(location)[0]
         if (use := next((item for item, schema in candidates if wire.schema(schema)[0] == resolved), None)) is None:
             message = (
@@ -168,10 +186,22 @@ def webhook_uses(
                 "of any webhook or callback operation"
             )
             problems[helper.name].append(_problem("E_CONFIG_VALUE", "config", at, message))
-            continue
+            return None
         schema = {"document": protocols.documents[reference], "pointer": reference.pointer}
-        events.append(WebhookSpec(helper=helper, use=use, event_schema=schema, validate=False))
-    return tuple(events), problems
+        return WebhookEvent(name=name, use=use, schema=schema, validate=False)
+
+    specs: list[WebhookSpec] = []
+    for helper in helpers:
+        at, reference = f"{helper.at}.event_schema", helper.tree["event_schema"]
+        references = (
+            [(name, item, f"{at}.mapping[{name!r}]") for name, item in reference["mapping"].items()]
+            if isinstance(reference, dict)
+            else [(None, reference, at)]
+        )
+        events = [event(helper, name, item, where) for name, item, where in references]
+        if all(item is not None for item in events):
+            specs.append(WebhookSpec(helper=helper, events=tuple(item for item in events if item is not None)))
+    return tuple(specs), problems
 
 
 def plan_webhooks(
@@ -180,24 +210,27 @@ def plan_webhooks(
     config: ClientGenerationConfig,
     problems: dict[str, list[Diagnostic]],
 ) -> tuple[WebhookSpec, ...]:
-    """Plan every webhook helper whose event has a native codec and no other problem, adding the others' problems.
+    """Plan every webhook helper whose events have native codecs and no other problem, adding the others' problems.
 
     An event whose union members differ only by their schemas is always validated against its schema.
     """
     bindings = dict(codecs.bindings)
     specs: list[WebhookSpec] = []
-    for event in events:
-        helper, binding = event.helper, bindings[event.use.id]
-        if binding.projection_mode != "native" or binding.converter_strategy == "registered_adapter":
-            message = (
-                f"The webhook helper {helper.name!r} decodes an envelope-projected event, which is not supported yet"
-            )
-            problems[helper.name].append(
-                _problem("E_CLIENT_UNSUPPORTED", "target", f"{helper.at}.event_schema", message)
-            )
-        if not problems[helper.name]:
+    for spec in events:
+        helper, planned = spec.helper, []
+        for event in spec.events:
+            binding = bindings[event.use.id]
+            if binding.projection_mode != "native" or binding.converter_strategy == "registered_adapter":
+                at = f"{helper.at}.event_schema" + ("" if event.name is None else f".mapping[{event.name!r}]")
+                message = (
+                    f"The webhook helper {helper.name!r} decodes an envelope-projected event, which is not supported "
+                    "yet"
+                )
+                problems[helper.name].append(_problem("E_CLIENT_UNSUPPORTED", "target", at, message))
             validate = config.validation.response == "schema" or needs_schema(binding)
-            specs.append(replace(event, validate=validate))
+            planned.append(replace(event, validate=validate))
+        if not problems[helper.name]:
+            specs.append(replace(spec, events=tuple(planned)))
     return tuple(specs)
 
 
@@ -249,7 +282,7 @@ class _Webhooks:
         self.accessors = accessors
 
     def files(self) -> tuple[tuple[PurePosixPath, str], ...]:
-        """Return the package's webhook files, nothing without helpers."""
+        """Return the package's webhook files, nothing without helpers, and a keys module only for builtin kinds."""
         if not self.specs:
             return ()
         packages = {
@@ -257,9 +290,10 @@ class _Webhooks:
             for spec in self.specs
             for index in range(1, spec.helper.name.count(".") + 1)
         }
+        keys = self.keys()
         return (
             (PurePosixPath("webhooks", "__init__.py"), _PACKAGE),
-            (PurePosixPath("webhooks", "keys.py"), self.keys()),
+            *(() if keys is None else ((PurePosixPath("webhooks", "keys.py"), keys),)),
             *(
                 (package / "__init__.py", f'"""The {".".join(package.parts[1:])} webhook verification helpers."""\n')
                 for package in sorted(packages)
@@ -270,12 +304,14 @@ class _Webhooks:
             ),
         )
 
-    def keys(self) -> str:
-        """Return the keys module, which imports the key class of each selected signature kind only."""
+    def keys(self) -> str | None:
+        """Return the keys module, which imports the key class of each selected builtin kind only, or None for none."""
         modules: dict[str, set[str]] = {}
         for spec in self.specs:
-            algorithm = _ALGORITHMS[spec.helper.tree["signature"]["kind"]]
-            modules.setdefault(algorithm.key_module, set()).add(algorithm.key)
+            if (algorithm := _ALGORITHMS.get(spec.helper.tree["signature"]["kind"])) is not None:
+                modules.setdefault(algorithm.key_module, set()).add(algorithm.key)
+        if not modules:
+            return None
         imports = "".join(
             f"from ..{module} import {', '.join(sorted(names))}\n" for module, names in sorted(modules.items())
         )
@@ -312,45 +348,102 @@ class _Webhooks:
         ]
         return _call(module.local(signatures, "SignatureProfile"), entries)
 
-    def plan(self, module: Module, spec: WebhookSpec) -> tuple[str, str, str]:
-        """Return the spellings of a helper's event and key types, and its plan's definition."""
-        helper, use = spec.helper, spec.use
-        verification = "_runtime.protocols.verification"
-        assert use.type is not None
-        event = module.types.static(use.type)
-        algorithm = _ALGORITHMS[helper.tree["signature"]["kind"]]
-        key = module.local(algorithm.key_module, algorithm.key)
-        accessor = self.accessors[use.id]
+    def decoder(self, module: Module, event: WebhookEvent) -> Group:
+        """Return the runtime decoder of one event type."""
+        accessor = self.accessors[event.use.id]
         bindings = module.local("_generated", "model_bindings")
-        decoder = _call(
-            module.local(verification, "EventDecoder"),
+        return _call(
+            module.local(_EVENTS, "EventDecoder"),
             [
                 ("", f"{bindings}.{accessor.codec}"),
                 ("", f"{bindings}.{accessor.context}"),
-                ("validate=", repr(spec.validate)),
+                ("validate=", repr(event.validate)),
             ],
         )
-        plan = module.local(verification, "WebhookPlan")
-        value = _call(
-            plan,
-            [
-                ("helper_id=", repr(helper.name)),
-                ("fingerprint=", repr(self.fingerprints[helper.name])),
-                ("signature=", self.profile(module, helper.tree["signature"])),
-                ("event=", decoder),
-                ("duplicates=", repr(helper.tree["duplicates"])),
-            ],
-        )
-        head = f"_PLAN: {module.name('typing', 'Final')}[{plan}[{event}, {key}]] = "
-        return event, key, head + layout(value, 0, len(head), WIDTH)
 
-    def module(self, spec: WebhookSpec) -> str:
-        """Return a helper's module: its plan and its sync and asyncio verify functions."""
+    def event(self, module: Module, spec: WebhookSpec) -> tuple[str, Group]:
+        """Return the spelling of a helper's event type, the union of its mapped types, and its decoder."""
+        types: dict[str, None] = {}
+        for event in spec.events:
+            assert event.use.type is not None
+            types[module.types.static(event.use.type)] = None
+        first = spec.events[0]
+        if first.name is None:
+            return " | ".join(types), self.decoder(module, first)
+        pointer = spec.helper.tree["event_schema"]["discriminator"]["pointer"]
+        mapping = Group("{", tuple((f"{event.name!r}: ", self.decoder(module, event)) for event in spec.events), "}")
+        return " | ".join(types), _call(
+            module.local(_EVENTS, "MappedEventDecoder"), [("", repr(pointer)), ("", mapping)]
+        )
+
+    def plan(self, module: Module, spec: WebhookSpec, event: str, decoder: Group) -> tuple[str | None, str]:
+        """Return the spelling of a builtin helper's key type, None for another kind, and its plan's definition."""
         helper = spec.helper
         signature = helper.tree["signature"]
-        module = Module({"_PLAN", "verify", "verify_async"}, self.symbols, level=helper.name.count(".") + 2)
-        event, key, plan = self.plan(module, spec)
-        algorithm = _ALGORITHMS[signature["kind"]].display
+        kind, fingerprint = signature["kind"], ("fingerprint=", repr(self.fingerprints[helper.name]))
+        key, arguments, entries = None, event, list[tuple[str, Any]]()
+        if kind == "none":
+            plan = module.local(_EVENTS, "EventPlan")
+        elif kind == "adapter":
+            plan = module.local("_runtime.protocols.adapters", "AdapterPlan")
+            entries = [
+                fingerprint,
+                ("timestamp=", repr(signature["timestamp"] == "required")),
+                ("delivery_id=", repr(signature["delivery_id"] == "required")),
+            ]
+        else:
+            algorithm = _ALGORITHMS[kind]
+            key = module.local(algorithm.key_module, algorithm.key)
+            plan = module.local("_runtime.protocols.verification", "WebhookPlan")
+            arguments, entries = f"{event}, {key}", [fingerprint, ("signature=", self.profile(module, signature))]
+        duplicates = [] if kind == "none" else [("duplicates=", repr(helper.tree["duplicates"]))]
+        value = _call(plan, [("helper_id=", repr(helper.name)), *entries, ("event=", decoder), *duplicates])
+        head = f"_PLAN: {module.name('typing', 'Final')}[{plan}[{arguments}]] = "
+        return key, head + layout(value, 0, len(head), WIDTH)
+
+    def module(self, spec: WebhookSpec) -> str:
+        """Return a helper's module: its plan and its sync and asyncio verify functions, or its decode function."""
+        helper = spec.helper
+        signature = helper.tree["signature"]
+        kind = signature["kind"]
+        names = {"_PLAN", *(("decode_unverified",) if kind == "none" else ("verify", "verify_async"))}
+        module = Module(
+            {*names, *(("K",) if kind == "adapter" else ())}, self.symbols, level=helper.name.count(".") + 2
+        )
+        event, decoder = self.event(module, spec)
+        key, plan = self.plan(module, spec, event, decoder)
+        if kind == "none":
+            summary = "Decode the unsigned deliveries of one webhook helper."
+            text = (
+                f"The helper is {helper.name}, whose deliveries carry no signature: nothing authenticates who sent "
+                "one, that its body is unchanged, or that it is not a replay, so treat every event as untrusted input."
+            )
+            sections = [plan, self.unsigned(module, event)]
+        elif kind == "adapter":
+            summary = (
+                "Verify the deliveries of one webhook helper with the caller's verifier, then decode their events."
+            )
+            text = (
+                f"The helper is {helper.name}, whose deliveries are verified by the Verifier the caller passes, which "
+                "must authenticate the whole raw body and every fact it returns."
+            )
+            variable = f'K = {module.name("typing", "TypeVar")}("K")'
+            sections = [variable, plan, *self.functions(module, event, None, signature)]
+        else:
+            summary = "Verify the signed deliveries of one webhook helper, then decode their events."
+            text = f"The helper is {helper.name}, whose deliveries are signed with {_ALGORITHMS[kind].display}."
+            sections = [plan, *self.functions(module, event, key, signature)]
+        docstring = _docstring(summary, text, "")
+        exported = ", ".join(f'"{name}"' for name in sorted(names - {"_PLAN"}))
+        return types_template.render(
+            docstring=docstring.removeprefix('"""').removesuffix('"""'),
+            imports=module.imports(),
+            sections=[f"__all__ = [{exported}]", *sections],
+        )
+
+    @staticmethod
+    def functions(module: Module, event: str, key: str | None, signature: Mapping[str, Any]) -> list[str]:
+        """Return the sync and asyncio verify functions of a builtin helper, or of an adapter one without a key."""
         window = (
             "Deliveries outside the timestamp window are rejected. The window closes at the timestamp plus "
             "past_tolerance, while a replay store keeps a claim until the timestamp plus past_tolerance and "
@@ -358,62 +451,81 @@ class _Webhooks:
             if signature["timestamp"] != "none"
             else "This webhook has no timestamp, so replay protection has no time window: a replay store keeps a "
             "claim for replay_ttl after now."
-        ) + (
-            " Duplicates are detected only until the claim expires. The claim is made after decoding, before your code "
-            "processes the event: if processing then fails, a retried delivery is a duplicate, or rejected under "
-            "duplicates: reject, until the claim expires, so make processing durable or idempotent before "
-            "acknowledging, or use a store whose claims you can release. Without a replay store, duplicate=False does "
-            "not mean the delivery is new."
-        )
-        functions = [
-            self.function(module, event, key, window, asynchronous=asynchronous) for asynchronous in (False, True)
-        ]
-        docstring = _docstring(
-            "Verify the signed deliveries of one webhook helper, then decode their events.",
-            f"The helper is {helper.name}, whose deliveries are signed with {algorithm}.",
-            "",
-        )
-        return types_template.render(
-            docstring=docstring.removeprefix('"""').removesuffix('"""'),
-            imports=module.imports(),
-            sections=['__all__ = ["verify", "verify_async"]', plan, *functions],
-        )
+        ) + _CLAIM
+        if key is None:
+            window = (
+                "The verifier is called once, synchronously in both functions, and must authenticate the whole raw "
+                "body and every fact it returns; a result that is not a VerifiedSignature, lacks a fact this helper "
+                "requires, returns one it does not declare, or has a naive timestamp raises AdapterContractError "
+                f"before decoding. {window}"
+            )
+        return [_Webhooks.function(module, event, key, window, asynchronous=mode) for mode in (False, True)]
 
     @staticmethod
-    def function(module: Module, event: str, key: str, window: str, *, asynchronous: bool) -> str:
-        """Return the sync or asyncio verify function of a helper."""
-        webhooks, verification = "_runtime.protocols.webhooks", "_runtime.protocols.verification"
-        store = module.local(webhooks, "AsyncReplayStore" if asynchronous else "ReplayStore")
+    def function(module: Module, event: str, key: str | None, window: str, *, asynchronous: bool) -> str:
+        """Return the sync or asyncio verify function of a builtin helper, or of an adapter one without a key."""
+        store = module.local(_WEBHOOKS, "AsyncReplayStore" if asynchronous else "ReplayStore")
+        keys = module.local(_WEBHOOKS, "KeySet")
+        verifier = () if key is not None else (f"verifier: {module.local(_WEBHOOKS, 'Verifier')}[K]",)
         parameters = (
             "raw_body: bytes",
             f"headers: {module.name('collections.abc', 'Sequence')}[tuple[str, str]]",
-            f"keys: {module.local(webhooks, 'KeySet')}[{key}]",
+            f"keys: {keys}[{'K' if key is None else key}]",
             "*",
+            *verifier,
             f"now: {module.name('datetime', 'datetime')}",
             f"replay_store: {store} | None = None",
-            f"options: {module.local(webhooks, 'WebhookOptions')} | None = None",
+            f"options: {module.local(_WEBHOOKS, 'WebhookOptions')} | None = None",
         )
         name = "verify_async" if asynchronous else "verify"
         signature = layout(
             Group(
                 f"{'async ' if asynchronous else ''}def {name}(",
                 items(parameters),
-                f") -> {module.local(webhooks, 'VerifiedWebhook')}[{event}]:",
+                f") -> {module.local(_WEBHOOKS, 'VerifiedWebhook')}[{event}]:",
             ),
             0,
             0,
             WIDTH,
         )
-        call = module.local(verification, "averify_webhook" if asynchronous else "verify_webhook")
-        summary = (
-            "Verify a delivery and decode its event, claiming it in an asyncio store."
-            if asynchronous
-            else "Verify a delivery and decode its event, claiming it in a store."
+        runtime, call = (
+            ("_runtime.protocols.verification", "averify_webhook" if asynchronous else "verify_webhook")
+            if key is not None
+            else ("_runtime.protocols.adapters", "averify_adapted" if asynchronous else "verify_adapted")
         )
-        head = f"return {'await ' if asynchronous else ''}{call}("
-        arguments = ("_PLAN", "raw_body", "headers", "keys", "now=now", "replay_store=replay_store", "options=options")
+        verb = "Verify a delivery" if key is not None else "Verify a delivery with verifier"
+        summary = (
+            f"{verb} and decode its event, claiming it in an asyncio store."
+            if asynchronous
+            else f"{verb} and decode its event, claiming it in a store."
+        )
+        head = f"return {'await ' if asynchronous else ''}{module.local(runtime, call)}("
+        arguments = (
+            "_PLAN",
+            "raw_body",
+            "headers",
+            "keys",
+            *(() if key is not None else ("verifier=verifier",)),
+            "now=now",
+            "replay_store=replay_store",
+            "options=options",
+        )
         returned = layout(Group(head, items(arguments), ")"), 4, 0, WIDTH)
         return f"{signature}\n{_docstring(summary, window, '    ')}\n    {returned}"
+
+    @staticmethod
+    def unsigned(module: Module, event: str) -> str:
+        """Return the decode function of a helper without a signature."""
+        parameters = ("raw_body: bytes", "*", f"options: {module.local(_WEBHOOKS, 'WebhookOptions')} | None = None")
+        signature = layout(Group("def decode_unverified(", items(parameters), f") -> {event}:"), 0, 0, WIDTH)
+        text = (
+            "Nothing verifies who sent the delivery, that its body is unchanged, or that it is not a replay, and no "
+            "duplicate information is returned: treat the event as untrusted input. Of options, only max_body_bytes "
+            "applies."
+        )
+        call = f"return {module.local(_EVENTS, 'decode_unsigned')}(_PLAN, raw_body, options=options)"
+        summary = "Decode a delivery's event without authenticating it."
+        return f"{signature}\n{_docstring(summary, text, '    ')}\n    {call}"
 
 
 def webhook_files(

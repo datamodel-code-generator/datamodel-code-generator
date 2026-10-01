@@ -117,3 +117,15 @@ helpers:
       timestamp: none
       delivery_id: none
       signed_parts: [raw-body]
+  mapped.audit:
+    kind: webhook
+    event_schema:
+      discriminator: {from: body, pointer: /kind}
+      mapping: {message: {pointer: /components/schemas/Message}, audit: {pointer: /components/schemas/Audit}}
+    signature: {kind: none}
+  mapped.missing:
+    kind: webhook
+    event_schema:
+      discriminator: {from: body, pointer: /kind}
+      mapping: {message: {pointer: /components/schemas/Message}, missing: {pointer: /components/schemas/Missing}}
+    signature: {kind: adapter, timestamp: none, delivery_id: none}

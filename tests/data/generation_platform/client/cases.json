@@ -2286,6 +2286,122 @@
       }
     }
   },
+  "webhooks-adapters": {
+    "input": "webhook-adapters.yaml",
+    "references": [
+      "protocols/webhook-adapters.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/webhook-adapters.yaml"
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "keys.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "stripe",
+        "event.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "adapted",
+        "message.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "adapted",
+        "plain.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "mapped",
+        "event.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "unsigned",
+        "event.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "unsigned",
+        "message.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "adapted",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "mapped",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "stripe",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "unsigned",
+        "__init__.py"
+      ]
+    ]
+  },
+  "webhooks-adapters-python": {
+    "input": "webhook-adapters.yaml",
+    "config": {
+      "protocols": {
+        "python": "adapters"
+      }
+    }
+  },
+  "webhooks-unsigned": {
+    "input": "webhook-adapters.yaml",
+    "references": [
+      "protocols/webhook-unsigned.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/webhook-unsigned.yaml"
+    },
+    "modules": [
+      [
+        "client",
+        "webhooks",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "unsigned",
+        "message.py"
+      ]
+    ]
+  },
   "unions": {
     "input": "unions.yaml",
     "config": {

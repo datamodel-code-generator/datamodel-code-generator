@@ -143,6 +143,16 @@ def test_client_typing_public_keys(tmp_path: Path) -> None:
     )
 
 
+def test_client_typing_adapters(tmp_path: Path) -> None:
+    """Check adapter, mapped, and unsigned helpers: one invariant key type, union events, and misuses of each."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(
+        client_typing_report(tmp_path, DataModelType.PydanticV2BaseModel, "webhooks-adapters", ("adapter_helpers",)),
+        EXPECTED / "pydantic_v2-BaseModel-adapters.txt",
+    )
+
+
 @pytest.mark.parametrize(
     "backend",
     [

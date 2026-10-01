@@ -17,11 +17,11 @@ from ..._generated import model_bindings
 from ..._runtime.protocols.public_keys import RSA_PSS_SHA256, RSAPSSKey
 from ..._runtime.protocols.signatures import RAW_BODY, SignatureProfile
 from ..._runtime.protocols.verification import (
-    EventDecoder,
     WebhookPlan,
     averify_webhook,
     verify_webhook,
 )
+from ..._runtime.protocols.webhook_events import EventDecoder
 from ..._runtime.protocols.webhooks import (
     AsyncReplayStore,
     KeySet,

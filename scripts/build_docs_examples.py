@@ -431,6 +431,28 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
+            example_id="python-client.webhooks.adapter-yaml",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "yaml",
+                yaml_helpers(CLIENT_DATA / "protocols" / "webhook-adapters.yaml", "stripe.event", "unsigned.event"),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.webhooks.adapter",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "python",
+                blocks(
+                    CLIENT_DATA / "typing" / "adapter_helpers.py",
+                    "class StripeKey:",
+                    "class StripeVerifier:",
+                    "def receive_stripe(",
+                    separator="\n\n\n",
+                ),
+            ),
+        ),
+        DocsExample(
             example_id="python-client.webhooks.diagnostics",
             path=DOCS / "python-client.md",
             render=lambda: fenced(
@@ -438,7 +460,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
                 "\n".join(
                     line.strip()
                     for line in read_text(EXPECTED_CLIENT / "protocols" / "protocols-webhook-errors.txt").splitlines()
-                    if line.lstrip().startswith("E_CONFIG_CONFLICT")
+                    if line.lstrip().startswith("E_CONFIG_CONFLICT") and ".signature" in line
                 ),
             ),
         ),

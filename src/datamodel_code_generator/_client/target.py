@@ -103,7 +103,7 @@ class ClientTarget:
                 tuple(replace(item, target_id=request.target_id) for item in error.diagnostics)
             ) from None
         events, hooked = webhook_uses(protocols, request)
-        received = frozenset(event.use.id for event in events)
+        received = frozenset(event.use.id for spec in events for event in spec.events)
         uses = frozenset(plan_uses(plan)) | received
         batch = request.batch
         if parts := tuple(part_uses(plan)):
@@ -300,20 +300,25 @@ class _TargetData:
         })
 
     def webhook(self, spec: WebhookSpec, settings: JSONValue) -> str:
-        """Return the digest of a webhook helper's contract closure: its signature, settings, schema, and event use."""
+        """Return the digest of a webhook helper's contract closure: its signature, settings, schemas, and event uses.
+
+        A mapped helper digests the type and decoding mode of each event name.
+        """
+        events = spec.events
+        mapped = events[0].name is not None
         signature = {
             "name": spec.helper.name,
-            "event": self.type(spec.use),
+            "event": {event.name: self.type(event.use) for event in events} if mapped else self.type(events[0].use),
             "key": key_class(spec.helper.tree["signature"]["kind"]),
-            "validate": spec.validate,
+            "validate": {event.name: event.validate for event in events} if mapped else events[0].validate,
             "settings": settings,
         }
         return _digest({
             "kind": "webhook",
             "signatures": [signature],
             "operations": [],
-            "schemas": [spec.event_schema],
-            "type_uses": [self.contract(spec.use)],
+            "schemas": [event.schema for event in events],
+            "type_uses": [self.contract(event.use) for event in events],
             "adapters": [],
         })
 

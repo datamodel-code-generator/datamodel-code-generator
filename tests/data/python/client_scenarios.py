@@ -76,6 +76,12 @@ from tests.data.python.client_stream_lifetimes import stream_lifetimes
 from tests.data.python.client_transports import lifecycle, transports
 from tests.data.python.client_unions import schema_unions, unions
 from tests.data.python.client_validation import arguments, validation
+from tests.data.python.client_webhook_adapters import (
+    webhook_adapter_imports,
+    webhook_adapters,
+    webhook_mapped_backends,
+    webhook_unsigned,
+)
 from tests.data.python.client_webhook_contracts import webhook_contracts
 from tests.data.python.client_webhook_errors import webhook_errors
 from tests.data.python.client_webhook_public_keys import webhook_public_keys
@@ -619,7 +625,11 @@ def codings(package: ModuleType, lines: list[str]) -> None:
         record(lines, "coding pre-read", lambda: api.pets.get_pet(pet_id=pet))
         exchange.respond(
             chunked_response(
-                200, gzip.compress(pets, mtime=0), 100, "application/json", **{"content-encoding": "gzip", "X-Rate": "1"}
+                200,
+                gzip.compress(pets, mtime=0),
+                100,
+                "application/json",
+                **{"content-encoding": "gzip", "X-Rate": "1"},
             )
         )
         record(lines, "coding chunked", lambda: len(api.pets.list_pets(x_trace=trace).root))
@@ -632,7 +642,9 @@ def codings(package: ModuleType, lines: list[str]) -> None:
         record(lines, "coding error", lambda: api.pets.list_pets(x_trace=trace))
         record(lines, "coding error truncated", lambda: api.pets.list_pets(x_trace=trace))
         record(lines, "coding redirect", lambda: api.pets.list_pets(x_trace=trace))
-        record(lines, "coding bodyless", lambda: api.pets.delete_pets_by_pet_id(pet_id=_pet(package, "DeletePetsByPetId")))
+        record(
+            lines, "coding bodyless", lambda: api.pets.delete_pets_by_pet_id(pet_id=_pet(package, "DeletePetsByPetId"))
+        )
     run(lambda: _async_codings(package, exchange, lines))
 
 
@@ -750,6 +762,10 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "webhook-backends": ("webhooks", BACKENDS, webhook_backends),
     "webhook-replay": ("webhooks", ("pydantic_v2.BaseModel",), webhook_replay),
     "webhook-public-keys": ("webhooks-public-keys", ("pydantic_v2.BaseModel",), webhook_public_keys),
+    "webhook-adapters": ("webhooks-adapters", ("pydantic_v2.BaseModel",), webhook_adapters),
+    "webhook-unsigned": ("webhooks-adapters", ("pydantic_v2.BaseModel",), webhook_unsigned),
+    "webhook-mapped-backends": ("webhooks-adapters", BACKENDS, webhook_mapped_backends),
+    "webhook-adapter-imports": ("webhooks-unsigned", ("pydantic_v2.BaseModel",), webhook_adapter_imports),
     "unions": ("unions", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), unions),
     "unions-tagged": ("unions-tagged", ("msgspec.Struct",), unions),
     "unions-schema": ("unions-schema", BACKENDS, schema_unions),
