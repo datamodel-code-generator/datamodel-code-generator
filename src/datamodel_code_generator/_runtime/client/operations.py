@@ -112,6 +112,10 @@ class OutboundModelCodec(Protocol):
         """Construct a model from fields given by wire name and return its wire value with only those fields."""
         ...
 
+    def from_wire(self, wire: WireValue, context: CodecContext) -> object:
+        """Validate a wire value to send and build the value that sends it."""
+        ...
+
 
 class Projected(Protocol[T_co]):
     """A decoded value that yields its native value, or raises for a known projection gap."""
@@ -161,6 +165,10 @@ class Encoder:
         """Return the wire value of the model the fields construct, validated natively or against its schema."""
         return self.codec().assemble(fields, self.context, validate=mode == "native", strict=mode == "schema")
 
+    def restored(self, wire: WireValue) -> object:
+        """Return the value that sends a wire value, validated and built as a caller's wire value is."""
+        return self.codec().from_wire(wire, self.context)
+
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ServerVariable:
@@ -193,6 +201,10 @@ class ParameterSpec:
     def encode(self, value: object, mode: RequestValidation) -> WireValue:
         """Return the wire value of a present argument."""
         return checked_wire(value) if self.encoder is None else self.encoder.encode(value, mode)
+
+    def restored(self, wire: WireValue) -> object:
+        """Return the argument that sends a saved wire value, validated as its codec validates a caller's."""
+        return checked_wire(wire) if self.encoder is None else self.encoder.restored(wire)
 
     def path_text(self, wire: WireValue) -> str:
         """Return the text a path parameter's wire value substitutes for its placeholder, through its adapter if any."""
@@ -312,6 +324,10 @@ class BodyMedia:
         if isinstance(value, FieldBody):
             return self.encoder.assemble(value.fields(), mode)
         return self.encoder.encode(value, mode)
+
+    def restored(self, wire: WireValue) -> object:
+        """Return the body that sends a saved wire value, validated as its codec validates a caller's."""
+        return checked_wire(wire) if self.encoder is None else self.encoder.restored(wire)
 
     def multipart(self, value: object, boundary: str, mode: RequestValidation) -> object:
         """Return a form-data body: an object's members as parts, or the parts a call gives, checked by any plans."""

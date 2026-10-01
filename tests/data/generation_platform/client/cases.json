@@ -2564,6 +2564,33 @@
     },
     "modules": false
   },
+  "pagination-resume": {
+    "input": "pagination-resume.yaml",
+    "references": [
+      "protocols/pagination-resume.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-resume.yaml",
+      "validation": {
+        "request_overrides": [
+          "schema"
+        ],
+        "argument_overrides": [
+          "pydantic"
+        ]
+      }
+    }
+  },
+  "protocols-pagination-resume-checks": {
+    "input": "pagination-resume.yaml",
+    "references": [
+      "protocols/pagination-resume-checks.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-resume-checks.yaml"
+    },
+    "modules": false
+  },
   "streams": {
     "input": "streams.yaml",
     "references": [

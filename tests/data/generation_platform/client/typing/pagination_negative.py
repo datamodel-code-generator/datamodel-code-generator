@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from pets import AsyncClient, Client
 from pets.options import SessionOptions
-from pets.protocols import Page, Pager
+from pets.protocols import Page, Pager, ResumeState
 from pets.types.users import ListUsersResponse
 from pets_models import User
 
 
-async def wrong_pagers(client: Client, async_client: AsyncClient, page: Page[User, object]) -> None:
+async def wrong_pagers(client: Client, async_client: AsyncClient, page: Page[User, object], state: ResumeState) -> None:
     """Reject each misuse of a helper, its pager, or its pages."""
     list(async_client.protocols.users.all.iterate())  # error
     await async_client.protocols.users.all.iterate()  # error
@@ -21,4 +21,11 @@ async def wrong_pagers(client: Client, async_client: AsyncClient, page: Page[Use
     client.protocols.users.all.next_page(page)  # error
     page.items = ()  # error
     client.protocols.users.everyone = client.protocols.users.all  # error
-    del items, pages
+    await async_client.protocols.users.all.resume(state)  # error
+    await async_client.protocols.users.all.iterate().checkpoint()  # error
+    client.protocols.users.all.resume(b"state")  # error
+    client.protocols.users.all.resume(state, cursor="a")  # error
+    client.protocols.users.all.resume(state, pagination_options=SessionOptions())  # error
+    resumed: Pager[object, ListUsersResponse] = client.protocols.users.all.resume(state)  # error
+    client.protocols.users.all.resume(page)  # error
+    del items, pages, resumed

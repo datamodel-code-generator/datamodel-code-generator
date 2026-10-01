@@ -7,13 +7,22 @@ from collections.abc import Mapping
 from datetime import datetime, timezone
 from typing import Final, Literal, TypeAlias, final, get_args
 
-from ..client.errors import ProtocolError, error_choice, error_count
+from ..client.errors import ProtocolConfigurationError, ProtocolError, error_choice, error_count
 from ..client.responses import ResponseInfo  # noqa: TC001 - Public annotations support get_type_hints().
 from ..model_codecs.errors import CodecError
 from ..model_codecs.media import decode_json, encode_json
 from ..model_codecs.wire import WireValue  # noqa: TC001 - Public annotations support get_type_hints().
 from .records import Sealed, canonical_json, record_instance, wire_string
 from .references import OperationRef  # noqa: TC001 - Public annotations support get_type_hints().
+
+__all__ = (
+    "ResumeState",
+    "ResumeStateError",
+    "ResumeStateTooLargeError",
+    "helper_state",
+    "import_state",
+    "state_fields",
+)
 
 _ResumeCondition: TypeAlias = Literal["version", "fingerprint", "security", "expired", "malformed", "checksum", "size"]
 
@@ -152,13 +161,21 @@ def _expiry(value: object) -> None:
 class ResumeState(Sealed):
     """Opaque version 1 state that a helper resumes from; only export() reveals its contents."""
 
-    __slots__ = ("_expires_at", "_helper_fingerprint", "_payload", "_security_fingerprint", "_state_json")
+    __slots__ = (
+        "_expires_at",
+        "_exportable",
+        "_helper_fingerprint",
+        "_payload",
+        "_security_fingerprint",
+        "_state_json",
+    )
 
     _helper_fingerprint: str
     _security_fingerprint: str
     _state_json: bytes
     _payload: bytes
     _expires_at: datetime | None
+    _exportable: bool
 
     def __init__(
         self,
@@ -186,8 +203,11 @@ class ResumeState(Sealed):
     def export(self) -> bytes:
         """Return the JSON envelope; its SHA-256 detects corruption only and is not a signature.
 
-        Raises ResumeStateTooLargeError when the envelope exceeds the 16 MiB that import_state accepts.
+        Raises ResumeStateTooLargeError when the envelope exceeds the 16 MiB that import_state accepts, and
+        ProtocolConfigurationError for the state of a call that may authenticate without a credential partition.
         """
+        if not self._exportable:
+            raise ProtocolConfigurationError(field_path=("protocols", "security"), condition="security_partition")
         head, tail = _members(
             self._expires_at, self._helper_fingerprint, self._payload, self._security_fingerprint, self._state_json
         )
@@ -209,6 +229,7 @@ def _assign(  # noqa: PLR0913
     state_json: bytes,
     payload: bytes,
     expires_at: datetime | None,
+    exportable: bool = True,
 ) -> None:
     for name, value in (
         ("_helper_fingerprint", helper_fingerprint),
@@ -216,8 +237,37 @@ def _assign(  # noqa: PLR0913
         ("_state_json", state_json),
         ("_payload", payload),
         ("_expires_at", expires_at),
+        ("_exportable", exportable),
     ):
         object.__setattr__(state, name, value)  # noqa: PLC2801 - Initialize the opaque immutable value.
+
+
+def helper_state(
+    *, helper_fingerprint: str, security_fingerprint: str, state: WireValue, payload: bytes, exportable: bool
+) -> ResumeState:
+    """Return the state a helper saved, which exports only when `exportable`."""
+    saved = object.__new__(ResumeState)
+    _assign(
+        saved,
+        helper_fingerprint=helper_fingerprint,
+        security_fingerprint=security_fingerprint,
+        state_json=canonical_json(state),
+        payload=payload,
+        expires_at=None,
+        exportable=exportable,
+    )
+    return saved
+
+
+def state_fields(state: ResumeState) -> tuple[str, str, bytes, bytes, datetime | None]:
+    """Return a state's helper and security fingerprints, the canonical JSON of its state, its payload, and expiry."""
+    return (
+        state._helper_fingerprint,  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+        state._security_fingerprint,  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+        state._state_json,  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+        state._payload,  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+        state._expires_at,  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    )
 
 
 def _members(

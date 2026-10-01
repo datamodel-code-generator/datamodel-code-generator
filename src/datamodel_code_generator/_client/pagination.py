@@ -27,6 +27,7 @@ from datamodel_code_generator._generation_contract import (
 )
 from datamodel_code_generator._runtime.client.paths import dot_segment, path_segments
 from datamodel_code_generator._runtime.client.retry import body_replay_safe
+from datamodel_code_generator._runtime.client.security import secret_names
 from datamodel_code_generator._runtime.model_codecs.bindings import ArrayNode, MapNode, ModelNode, UnionNode
 from datamodel_code_generator._runtime.model_codecs.errors import ParameterEncodingError
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
@@ -218,9 +219,15 @@ def _unwrapped(node: TypeNode, models: Mapping[str, ModelBinding], steps: list[I
 class _Pages:
     """Check and plan every enabled pagination helper of a client target."""
 
-    def __init__(self, protocols: Protocols, codecs: CodecPlan, wire: WirePlan, request: TargetRequest) -> None:
-        """Index the use bindings, the model fields by symbol and wire name, and the documents by manifest pointer."""
+    def __init__(
+        self, protocols: Protocols, plan: ClientPlan, codecs: CodecPlan, wire: WirePlan, request: TargetRequest
+    ) -> None:
+        """Index the use bindings, the model fields by symbol and wire name, and the documents by manifest pointer.
+
+        The positions of the package's security schemes, with the credential headers, are where no helper writes.
+        """
         self.protocols = protocols
+        self.secret_headers, self.secret_queries = secret_names(plan.security_schemes)
         self.wire = wire
         self.request = request
         self.bindings: Mapping[object, UseBinding] = dict(codecs.bindings)
@@ -359,6 +366,7 @@ class _Pages:
                 message = f"The binding {index} of {name!r} reads the helper's input, which is not supported yet"
                 where = f"{at}.bindings[{index}].value.source"
                 problems.append(_problem("E_CLIENT_UNSUPPORTED", "target", where, message, spec))
+        problems.extend(_credentials(helper, spec, self.secret_headers, self.secret_queries))
         if spec.body is not None and any(media.kind != "json" for media in spec.body.media):
             message = f"The pagination helper {name!r} sends a request body other than JSON, which is not supported yet"
             problems.append(_problem("E_CLIENT_UNSUPPORTED", "target", at, message, spec))
@@ -701,6 +709,42 @@ class _Pages:
             yield from self.fits(helper, spec, target, types, f"{at}.target", what, null=True)
 
 
+def _credentials(
+    helper: Helper, spec: OperationSpec, headers: frozenset[str], queries: frozenset[str]
+) -> Iterator[Diagnostic]:
+    """Refuse a cursor, position, or binding written where a request carries credentials.
+
+    Those are cookies, the credential headers, and the header and query positions of the package's security
+    schemes, a querystring property among them; a value a server gives or a checkpoint saves is never written there.
+    """
+    tree = helper.tree
+    continuation = tree["continuation"]
+    kind = continuation["kind"]
+    targets = [] if kind in _FOLLOWED else [(f"{helper.at}.continuation.write", _WRITES[kind], continuation["write"])]
+    targets.extend(
+        (f"{helper.at}.bindings[{index}].target", f"binding {index}", entry["target"])
+        for index, entry in enumerate(tree["bindings"])
+    )
+    for at, what, target in targets:
+        name = target.get("name", "")
+        field = next(iter(_tokens(target.get("pointer", ""))), None)
+        place = None
+        match target["in"]:
+            case "cookie":
+                place = f"the cookie {name!r}"
+            case "header" if name.lower() in headers:
+                place = f"the header {name!r}"
+            case "query" if name in queries:
+                place = f"the query parameter {name!r}"
+            case "querystring" if field in queries:
+                place = f"the query field {field!r}"
+            case _:
+                pass
+        if place is not None:
+            message = f"The {what} of {helper.name!r} writes {place}, which carries credentials no helper writes"
+            yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
+
+
 def _unsent(target: Mapping[str, Any], continuation: Mapping[str, Any]) -> str | None:
     """Return what a binding of a helper that follows URLs writes when the followed requests never send it.
 
@@ -735,7 +779,7 @@ def plan_pagination(
     """
     if protocols is None:
         return (), {}
-    pages = _Pages(protocols, codecs, wire, request)
+    pages = _Pages(protocols, plan, codecs, wire, request)
     operations = {spec.contract.id: spec for spec in plan.operations}
     specs: list[PaginationSpec] = []
     problems: dict[str, list[Diagnostic]] = {}

@@ -46,6 +46,7 @@ from tests.data.python.client_pagination import pagination, pagination_backends,
 from tests.data.python.client_pagination_counts import pagination_counts
 from tests.data.python.client_pagination_count_values import pagination_count_defaults, pagination_count_values
 from tests.data.python.client_pagination_links import pagination_links
+from tests.data.python.client_pagination_resume import pagination_resume
 from tests.data.python.client_pagination_sessions import pagination_auth, pagination_sessions
 from tests.data.python.client_pagination_targets import (
     pagination_paths,
@@ -806,6 +807,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "pagination-count-defaults": ("pagination-counts", BACKENDS, pagination_count_defaults),
     "pagination-counts": ("pagination-counts", ("pydantic_v2.BaseModel",), pagination_counts),
     "pagination-links": ("pagination-links", ("pydantic_v2.BaseModel",), pagination_links),
+    "pagination-resume": ("pagination-resume", ("pydantic_v2.BaseModel",), pagination_resume),
     "streams": ("streams", ("pydantic_v2.BaseModel",), streams),
     "stream-events": ("streams", ("pydantic_v2.BaseModel",), event_stream_lifetimes),
     "stream-backends": ("streams", BACKENDS, stream_backends),

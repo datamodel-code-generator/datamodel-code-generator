@@ -137,7 +137,7 @@ class ClientTarget:
             raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
         plan, named = plan_fields(plan, codecs, batch, wire)
         helpers, checked = plan_pagination(protocols, plan, codecs, wire, request)
-        streams = plan_streams(streamed, protocols, codecs, wire, request, stream_problems)
+        streams = plan_streams(streamed, protocols, plan, codecs, wire, request, stream_problems)
         webhooks = plan_webhooks(events, codecs, config, hooked)
         ordinary = replace(codecs, bindings=tuple(item for item in codecs.bindings if item[0] not in received))
         if refused := (
