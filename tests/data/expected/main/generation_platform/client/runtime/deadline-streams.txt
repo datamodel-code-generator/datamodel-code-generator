@@ -21,10 +21,10 @@
   stream total DeadlineExceededError
   > GET https://example.com/buffered
     [host: example.com, accept-encoding: gzip, deflate] b''
-  buffered acquisition 200 DeadlineExceededError
+  buffered acquisition 200 ! DeadlineExceededError: DeadlineExceededError(call_id='<call>', delivery_state='RESPONSE_STARTED', phase='send') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='send', cause=TransportError()] deadline_exceeded_error
   > GET https://example.com/buffered
     [host: example.com, accept-encoding: gzip, deflate] b''
-  buffered acquisition 503 DeadlineExceededError
+  buffered acquisition 503 ! DeadlineExceededError: DeadlineExceededError(call_id='<call>', delivery_state='RESPONSE_STARTED', phase='send') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='send', cause=TransportError()] deadline_exceeded_error
   > GET https://example.com/saved
     [host: example.com, accept-encoding: gzip, deflate] b''
   > GET https://example.com/cancel
@@ -89,7 +89,7 @@
   async stream total DeadlineExceededError
   > GET https://example.com/buffered
     [host: example.com, accept-encoding: gzip, deflate] b''
-  async buffered acquisition DeadlineExceededError
+  async buffered acquisition ! DeadlineExceededError: DeadlineExceededError(call_id='<call>', delivery_state='RESPONSE_STARTED', phase='send') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='send'] deadline_exceeded_error
   > GET https://example.com/cancel
     [host: example.com, accept-encoding: gzip, deflate] b''
   async stream waiting token RequestCancelledError

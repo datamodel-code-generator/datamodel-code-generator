@@ -90,6 +90,11 @@ class _Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
     server: FixtureServer
 
+    def setup(self) -> None:
+        """Finish the TLS handshake in this connection's thread, so a client abandoning it never stalls the server."""
+        self.request.do_handshake()
+        super().setup()
+
     def _answer(self) -> None:
         try:
             content = _body(self)
@@ -145,9 +150,9 @@ class FixtureServer(ThreadingHTTPServer):
     daemon_threads = True
 
     def __init__(self, serve: Callable[[httpx2.Request], httpx2.Response]) -> None:
-        """Bind a local port, wrap it in TLS, and start serving."""
+        """Bind a local port, wrap it in TLS, and start serving; each connection shakes hands in its own thread."""
         super().__init__(("127.0.0.1", 0), _Handler)
-        self.socket = _contexts()[0].wrap_socket(self.socket, server_side=True)
+        self.socket = _contexts()[0].wrap_socket(self.socket, server_side=True, do_handshake_on_connect=False)
         self.serve = serve
         self.failures: list[Exception] = []
         self._thread = threading.Thread(target=self.serve_forever, kwargs={"poll_interval": 0.005}, daemon=True)

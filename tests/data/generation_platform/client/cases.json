@@ -2348,6 +2348,40 @@
     },
     "modules": false
   },
+  "pagination-links": {
+    "input": "pagination-links.yaml",
+    "references": [
+      "protocols/pagination-links.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-links.yaml",
+      "operations": [
+        {
+          "ref": "/paths/~1searches/post",
+          "runtime": {
+            "retry_safety": "idempotent"
+          }
+        }
+      ]
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
+  "protocols-pagination-link-checks": {
+    "input": "pagination-links.yaml",
+    "references": [
+      "protocols/pagination-link-checks.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-link-checks.yaml"
+    },
+    "modules": false
+  },
   "streams": {
     "input": "streams.yaml",
     "references": [

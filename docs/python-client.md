@@ -261,7 +261,7 @@ client = Client(options=options)
 | Setting | Type | Meaning |
 |---|---|---|
 | `ClientOptions.protocols` | `ProtocolClientOptions \| None`, default `UNSET` | `None` or `UNSET` uses every protocol default. Another type raises `ConfigurationError(condition='invalid_type')` |
-| `ProtocolClientOptions.security` | `ProtocolSecurityContext \| None`, default `UNSET` | `None` means anonymous use |
+| `ProtocolClientOptions.security` | `ProtocolSecurityContext \| None`, default `UNSET` | `None` means anonymous use. Its `allowed_origins` are the origins beyond the server's that a next-URL or Link pagination helper may follow a URL to |
 | `ProtocolClientOptions.defaults` | `Mapping[str, ProtocolDefaults]`, default `UNSET` | Keys are helper names: Python identifiers separated by dots, without keywords or empty parts. The mapping is copied into a read-only mapping, and its values keep their identity |
 | `ProtocolDefaults.session` | `SessionOptions`, default `UNSET` | Session limits of that helper |
 | `ProtocolDefaults.options` | `PaginationOptions \| PollOptions \| StreamOptions`, default `UNSET` | Kind-specific options of that helper |
@@ -301,15 +301,15 @@ explicitly before using it as a model.
 
 ## Protocol helper configuration
 
-Pagination, polling, and SSE or NDJSON stream helpers of an API are declared in a helper configuration, which the
-client target reads through its `protocols` setting. The helpers are still being implemented: generation validates
-every helper, resolves its references against the selected API, and records it in the target manifest. An enabled
-cursor, offset, or page pagination helper generates the [pagination helper](#pagination-helpers) below, an enabled SSE
-helper the [SSE stream helper](#sse-stream-helpers), and an enabled HMAC webhook helper the
-[webhook verification helper](#webhook-verification-helpers); any other enabled helper fails with
-`E_CLIENT_UNSUPPORTED`. A disabled helper generates nothing, so the package is the same as without it. The
-`websocket`, `cache`, `resumable_upload`, `batch`, and `queue` kinds fail with `E_CLIENT_UNSUPPORTED` whether they are
-enabled or not, and their settings are not read yet.
+Pagination, polling, and SSE or NDJSON stream helpers of an API are declared in a helper configuration, which the client
+target reads through its `protocols` setting. The helpers are still being implemented: generation validates every
+helper, resolves its references against the selected API, and records it in the target manifest. An enabled pagination
+helper generates the [pagination helper](#pagination-helpers) below, an enabled SSE helper the
+[SSE stream helper](#sse-stream-helpers), and an enabled HMAC webhook helper the [webhook
+verification helper](#webhook-verification-helpers); any other enabled helper fails with `E_CLIENT_UNSUPPORTED`. A
+disabled helper generates nothing, so the package is the same as without it. The `websocket`, `cache`,
+`resumable_upload`, `batch`, and `queue` kinds fail with `E_CLIENT_UNSUPPORTED` whether they are enabled or not, and
+their settings are not read yet.
 
 | Setting | Values | Default | Where |
 |---|---|---|---|
@@ -536,8 +536,8 @@ the same metadata. The `protocols` setting itself is not recorded among the publ
 
 ## Pagination helpers
 
-An enabled pagination helper with a `cursor`, `offset`, or `page` continuation is generated at `client.protocols.<name>`
-on `Client` and `AsyncClient` alike; the property exists only when the package has a helper. `page` fetches the first
+An enabled pagination helper, whatever its continuation, is generated at `client.protocols.<name>` on `Client` and
+`AsyncClient` alike; the property exists only when the package has a helper. `page` fetches the first
 page, `next_page` the page after one the helper returned, and `iterate` returns a pager, which sends nothing until it is
 iterated. A helper takes the operation's parameters and its body as keywords, never field arguments, then
 `pagination_options`, `options`, and `session_options`:
@@ -639,6 +639,58 @@ traversal, but one that continues while `page_items_count` counts items would as
 raises `ProtocolDataError` with the condition `inconsistent`. Positions only grow, so these helpers never raise
 `PaginationCycleError`, and `max_cursor_bytes` does not apply to them.
 
+### Next URLs and Link headers
+
+A `next_url` or `link` continuation follows the URL a page gives. The first request is sent as the caller gives it, and
+each later page goes to the URL the last page gave, as it came: the caller's query and the query patches of the client,
+a view, or the call are never laid over it, while the call's headers and the operation's header and cookie parameters
+are sent again. A later page is a GET without a body, unless a next URL sets `repeat_request_body: true`, which sends
+the operation's method with the caller's body again; generation refuses it, with `E_CONFIG_VALUE`, unless the body may
+be sent again as a 307 or 308 redirect sends it: the operation's method is GET, HEAD, OPTIONS, PUT, or DELETE, or its
+`retry_safety` is `idempotent`. A `next_url` reads the URL with its `read` selector and ends like a cursor: at a missing
+or null value only where an `end` condition says so, or at one of its end values, and a missing or null value no end
+covers, or a value that is not a string, raises `ProtocolDataError`. A `link` continuation reads the RFC 8288 links of
+the `header` field, every value of it, and follows the one whose `rel` lists the relation, `next` unless `rel` names
+another; a page without that link is the last. An empty page with a next URL does not end the traversal.
+
+```yaml
+helpers:
+  users.linked:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation: {kind: link, header: Link}
+```
+
+The Link header is read strictly. Links are separated by commas, each a `<URI-Reference>` followed by `;` and its
+parameters, a token or a quoted string with backslash escapes, so a comma or semicolon inside quotes separates nothing;
+empty list elements and the whitespace around separators are skipped. Parameter names and relation types match
+without regard to ASCII case, a `rel` lists several relation types separated by spaces, and only a link's first `rel`
+counts. A link with an `anchor` parameter describes another resource and is skipped. Any other syntax raises
+`ProtocolDataError` with the condition `malformed`, two links of the relation raise it with `inconsistent`, and Link
+values whose UTF-8 bytes together exceed `max_cursor_bytes` raise `ProtocolSizeError` with the kind `headers`.
+
+A URL, from either continuation, resolves against the URL of the request that returned the page, after any redirect, as
+RFC 3986 resolves a reference. A reference with characters outside RFC 3986, or with brackets anywhere but around an
+IPv6 host, raises `ProtocolDataError` with `malformed`, and one with a fragment, user information, even empty, a scheme
+other than `http` or `https`, or an invalid port raises it with `value`. The resolved URL, without the query fields the
+client's authentication places itself, must be at most 8 KiB of UTF-8, or `max_cursor_bytes` when that is smaller, or it
+raises `ProtocolSizeError` with the kind `cursor`, so relative references cannot grow it page by page. The URL must name
+the origin of the server the operation is sent to, its scheme, host, and port, or an origin
+`ProtocolSecurityContext.allowed_origins` lists; any other origin raises `ProtocolDataError` with `value` before
+anything is sent to it, and so does a `next_page` whose options select a server whose origin the URL no longer shares or
+is allowed beside. A request to an allowed origin other than the server's, like a redirect to another origin, carries no
+`Authorization`, `Proxy-Authorization`, `Cookie`, or `Cookie2` header, and none of the headers or query fields the
+package's security schemes name, whether the authentication, a header patch, a parameter, a binding, or the server's URL
+put them there; its other headers, the call's and the operation's, are sent as usual. The client's authentication sends
+credentials and signatures there only when its `AuthConfig.allowed_origins` lists that origin too; otherwise the page
+fails with `AuthConfigurationError(condition="origin_denied")` before sending. A query credential the URL repeats is
+removed before the client places its own. `Page.continuation` has the kind `next_url` or `link`, and a URL an earlier
+page of the session gave, or the URL of the first page itself, ends the traversal with `PaginationCycleError` after the
+repeating page; URLs compare once resolved and without the authentication's query fields, with the host's case, the
+default port, and dot segments normalized, but not their percent-encoding.
+
 ### Bindings and request targets
 
 Each request after the first is the first request with the helper's `bindings` written in order, then the cursor or
@@ -646,13 +698,14 @@ position. A binding writes a `literal`, or what its selector reads from the `ini
 whole traversal, or from the `previous` page's; a header selector with `occurrence: all` reads every value of the header
 as an array. The bindings are read from every page that has a next page, even one a caller never continues, and a value
 its selector finds missing raises `ProtocolDataError`; a header none of whose values is present counts as missing under
-`occurrence: all` too. A `null` is written as it is to a JSON body or a querystring of JSON content, the only targets
-that can carry it. A parameter target replaces the argument. A querystring or body target writes into the caller's
-querystring or JSON body, encoded and checked as in any call, or into an empty object when the call gives none; a
-missing, null, or other non-object value on its pointer is replaced by an empty object. The querystring is then encoded
-once, so no query pair is added. The values a server gave are never checked against their targets' schemas. A call's
-`options` must not patch a header, the `Cookie` header when the helper writes a cookie, or a query parameter the helper
-writes: `iterate`, `page`, and `next_page` raise `ProtocolConfigurationError` with a `field_path` of `("options",
+`occurrence: all` too. A next-URL or Link helper writes no cursor; its bindings write headers and cookies, and the JSON
+body only when a next URL repeats it. A `null` is written as it is to a JSON body or a querystring of JSON content, the
+only targets that can carry it. A parameter target replaces the argument. A querystring or body target writes into the
+caller's querystring or JSON body, encoded and checked as in any call, or into an empty object when the call gives none;
+a missing, null, or other non-object value on its pointer is replaced by an empty object. The querystring is then
+encoded once, so no query pair is added. The values a server gave are never checked against their targets' schemas. A
+call's `options` must not patch a header, the `Cookie` header when the helper writes a cookie, or a query parameter the
+helper writes: `iterate`, `page`, and `next_page` raise `ProtocolConfigurationError` with a `field_path` of `("options",
 "headers" or "query", <name>)` before sending. A binding with `source: input` is not supported yet.
 
 ### Limits and sessions
@@ -667,7 +720,7 @@ call's options, then the helper's `ProtocolDefaults` in `ProtocolClientOptions.d
 | `PaginationOptions.max_pages` | 1000 pages | Removes the limit |
 | `PaginationOptions.max_items` | 100000 items; 0 ends a pager at once without sending | Removes the limit |
 | `PaginationOptions.max_page_bytes` | 8 MiB of decoded body per page | Not allowed |
-| `PaginationOptions.max_cursor_bytes` | 64 KiB, UTF-8 for a string and canonical JSON otherwise | Not allowed |
+| `PaginationOptions.max_cursor_bytes` | 64 KiB, UTF-8 for a string and canonical JSON otherwise; also a next URL's bytes, within 8 KiB, and a page's Link values | Not allowed |
 | `SessionOptions.total_timeout` | 300 seconds from the first fetch | Removes the limit |
 | `SessionOptions.deadline` | None | No deadline |
 | `SessionOptions.max_network_sends` | 3000 sends | Removes the limit |
@@ -700,10 +753,14 @@ each end value must be of a type the cursor reads. A literal `.` or `..` is no p
 needs a required body or one media type a call without `media_type` sends. A binding that writes the continuation's
 target or another binding's, or a body or querystring member inside or around one, fails with `E_CONFIG_CONFLICT`. An
 offset's or page number's target must accept integers, a page number advances by a literal step, `has_more` must read
-booleans, and `total` must read integers from the body or a header, never the status. Helper names whose classes
-collide, such as `users.all_items` and `users_all.items`, fail with `E_NAME_COLLISION`. Bindings that read the helper's
-input, request bodies other than JSON, envelope-projected responses, and items or selector pointers that read through a
-union or a map are not supported yet:
+booleans, and `total` must read integers from the body or a header, never the status. A next URL must read strings, or
+null with a `null` end, its end values must be strings, and `repeat_request_body` needs an operation with a body that
+may be sent again; a Link continuation's header must be one the response declares, and `rel` one relation type, a
+registered name such as `next` or an absolute URI. A next-URL or Link helper's binding that writes a path, query, or
+querystring parameter, which the URL replaces, or the body without `repeat_request_body`, fails with `E_CONFIG_VALUE`.
+Helper names whose classes collide, such as `users.all_items` and `users_all.items`, fail with `E_NAME_COLLISION`.
+Bindings that read the helper's input, request bodies other than JSON, envelope-projected responses, and items or
+selector pointers that read through a union or a map are not supported yet:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.pagination.diagnostics -->
 <!-- fmt: off -->
@@ -1950,12 +2007,13 @@ Redirects are disabled by default. `RedirectOptions` merges per field, with `ena
 only the original origin. An allowed destination and permission to downgrade HTTPS are separate conditions.
 
 301/302 follow only GET/HEAD. 303 changes to GET for GET/HEAD or explicit `allow_303_to_get=True`; it removes the body
-and content/framing headers, including Content-Encoding. 307/308 retain the method/body and require replayability
-and operation safety. Every hop consumes a send slot and the same call deadline. Credentials and cookies from the
-original request are stripped across origins. Repeated method/URL loops, invalid or multiple Location values,
-forbidden destinations, exhausted redirect limits, or unsafe replay raise `RedirectPolicyError`. It directly
-inherits `SDKError` and exposes readonly `delivery_state`, `body_available=False`, and available response metadata.
-Native failure while constructing a redirect also raises this error if no response handle can be returned.
+and content/framing headers, including Content-Encoding. 307/308 retain the method/body and require replayability and
+operation safety. Every hop consumes a send slot and the same call deadline. Credentials and cookies from the original
+request are stripped across origins, and so are the headers and query fields the package's security schemes name,
+however the request came to carry them. Repeated method/URL loops, invalid or multiple Location values, forbidden
+destinations, exhausted redirect limits, or unsafe replay raise `RedirectPolicyError`. It directly inherits `SDKError`
+and exposes readonly `delivery_state`, `body_available=False`, and available response metadata. Native failure while
+constructing a redirect also raises this error if no response handle can be returned.
 
 A HEAD operation also follows a 303 as GET, regardless of `allow_303_to_get`. Its typed return contract remains
 bodyless: ordinary and `with_response` calls return `None` data for an empty final body and raise
