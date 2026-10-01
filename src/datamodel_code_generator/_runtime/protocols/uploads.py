@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, Any, Final, Generic, Literal, cast, final
 
 from typing_extensions import Self, TypeVar
 
+from ..client.bodies import AsyncBodyFactory, BodyFactory
 from ..client.errors import (
     BudgetExceededError,
     DeliveryState,
@@ -62,7 +63,7 @@ from .sources import UploadIdentity, UploadProgress
 from .values import MISSING, RepeatedValueError, selected, server_expiry
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator
+    from collections.abc import AsyncIterator, Callable, Generator, Iterator
     from types import TracebackType
 
     from ..client.client import AsyncClientCore, ClientCore
@@ -95,6 +96,7 @@ _READ: Final = 65536
 _DIGEST: Final = 32
 _UNKNOWN: Final = frozenset({DeliveryState.MAYBE_SENT, DeliveryState.RESPONSE_STARTED})
 _STATE: Final = frozenset({"size", "sha256", "chunk", "confirmed", "phase", "delivery", "bound", "result"})
+_MANIFEST_BYTES: Final = MAX_STATE_BYTES - 1024 * 1024
 _RESULT_FIELDS: Final = 2
 _MIN_SUCCESS: Final = 200
 _MAX_SUCCESS: Final = 299
@@ -304,22 +306,108 @@ def _identity(plan: UploadPlan[T, C], source: object) -> UploadIdentity:
     return identity
 
 
-def _layout(plan: UploadPlan[T, C], limits: _Limits, size: int) -> int:
-    """Return the chunk size a new upload uses, refusing more chunks than allowed or a digest list too large to keep."""
-    chunk = min(limits.chunk_bytes, plan.max_chunk_bytes)
+def _layout(plan: UploadPlan[T, C], limits: _Limits, size: int, chunk: int) -> int:
+    """Return the chunk size of an upload, refusing one the options do not allow or a digest list too large to keep.
+
+    A resumed checkpoint keeps its chunk size, which must not exceed the call's `chunk_bytes`, since one chunk is what
+    an append holds in memory. The digests must leave room in a checkpoint for its other members.
+    """
+    if chunk > limits.chunk_bytes:
+        raise _invalid(plan, ("upload_options", "chunk_bytes"))
     count = -(-size // chunk)
     if (limit := limits.max_parts) is not None and count > limit:
         raise _invalid(plan, ("upload_options", "max_parts"))
-    if (encoded := 4 * -(-_DIGEST * count // 3)) > MAX_STATE_BYTES:
+    if (encoded := 4 * -(-_DIGEST * count // 3)) > _MANIFEST_BYTES:
         raise ProtocolSizeError(
             kind="part_manifest",
-            limit=MAX_STATE_BYTES,
+            limit=_MANIFEST_BYTES,
             observed=encoded,
             unit="bytes",
             helper_id=plan.helper_id,
             operation=plan.operation,
         )
     return chunk
+
+
+class _Chunk:
+    """One chunk read into a buffer of its own, hashed as it is read; one byte more shows content past its end."""
+
+    __slots__ = ("digest", "read", "view")
+
+    def __init__(self, size: int) -> None:
+        self.view = memoryview(bytearray(size + 1))
+        self.digest = sha256()
+        self.read = 0
+
+    def add(self, data: bytes) -> None:
+        """Copy bytes read after those before into the buffer and hash them."""
+        end = self.read + len(data)
+        self.view[self.read : end] = data
+        self.digest.update(data)
+        self.read = end
+
+
+class _Slices:
+    """One attempt of an append's body: the unconfirmed part of a chunk's buffer, sent in read-buffer slices."""
+
+    __slots__ = ("_view",)
+
+    def __init__(self, view: memoryview) -> None:
+        self._view = view
+
+    @property
+    def content_length(self) -> int:
+        """Return the number of body bytes."""
+        return len(self._view)
+
+    @property
+    def content_type(self) -> None:
+        """Name no media type; the operation's request media names it."""
+
+    def iter_bytes(self) -> Iterator[bytes]:
+        """Yield the body in slices of at most one read buffer."""
+        view = self._view
+        for start in range(0, len(view), _READ):
+            yield bytes(view[start : start + _READ])
+
+    async def aiter_bytes(self) -> AsyncIterator[bytes]:
+        """Yield the body in slices of at most one read buffer."""
+        for data in self.iter_bytes():
+            yield data
+
+    def close(self) -> None:
+        """Hold nothing to release."""
+
+    async def aclose(self) -> None:
+        """Hold nothing to release."""
+
+
+class _Factory:
+    """Build a new attempt of the same unconfirmed bytes for each send of an append."""
+
+    __slots__ = ("_view",)
+
+    def __init__(self, view: memoryview) -> None:
+        self._view = view
+
+    def __call__(self, context: object, /) -> _Slices:
+        """Return a new attempt of the bytes."""
+        del context
+        return _Slices(self._view)
+
+
+class _AsyncFactory:
+    """Build a new asyncio attempt of the same unconfirmed bytes for each send of an append."""
+
+    __slots__ = ("_view",)
+
+    def __init__(self, view: memoryview) -> None:
+        self._view = view
+
+    async def __call__(self, context: object, /) -> _Slices:
+        """Return a new attempt of the bytes."""
+        del context
+        return _Slices(self._view)
 
 
 class _Scan:
@@ -667,17 +755,17 @@ class _Upload(Generic[T]):
             return False
         raise self._offset_error(end, remote, info)
 
-    def _chunked(self, buffer: bytes, index: int, size: int) -> None:
-        """Refuse a chunk whose bytes are not those the scan read, stopping every later send."""
+    def _chunked(self, chunk: _Chunk, index: int, size: int) -> memoryview:
+        """Return a chunk's bytes once they are those the scan read; any others stop every later send."""
         expected = self._digests[index * _DIGEST : (index + 1) * _DIGEST]
-        if len(buffer) == size and sha256(buffer).digest() == expected:
-            return
+        if chunk.read == size and chunk.digest.digest() == expected:
+            return chunk.view[:size]
         with self._guard:
             self._changed = True
         plan = self._plan
         raise UploadSourceChangedError(
             expected=UploadIdentity(size=size, sha256=expected),
-            actual=UploadIdentity(size=len(buffer), sha256=sha256(buffer).digest()),
+            actual=UploadIdentity(size=chunk.read, sha256=chunk.digest.digest()),
             offset=index * self._chunk,
             helper_id=plan.helper_id,
             operation=plan.operation,
@@ -690,9 +778,9 @@ class _Upload(Generic[T]):
         start = index * self._chunk
         return index, start, min(start + self._chunk, self._identity.size)
 
-    def _append_request(self, payload: bytes) -> Callable[[], tuple[tuple[object, ...], object, None]]:
+    def _append_request(self, payload: object, size: int) -> Callable[[], tuple[tuple[object, ...], object, None]]:
         plan, offset = self._plan, self._confirmed
-        values = (offset,) if plan.length is None else (offset, len(payload))
+        values = (offset,) if plan.length is None else (offset, size)
         arguments = plan.appended.request((*self._bound[1], *values))[0]
         return lambda: (arguments, payload, None)
 
@@ -828,9 +916,9 @@ def _opened(plan: UploadPlan[Any, Any], source: Any, start: int, length: int, me
     return opened
 
 
-def _bytes(plan: UploadPlan[Any, Any], data: object) -> bytes:
-    """Return what a reader read, refusing anything but bytes."""
-    if not isinstance(data, bytes):
+def _bytes(plan: UploadPlan[Any, Any], data: object, limit: int) -> bytes:
+    """Return what a reader read, refusing anything but bytes and more bytes than it was asked for."""
+    if not isinstance(data, bytes) or len(data) > limit:
         raise _invalid(plan, ("source",), "wrong_capability")
     return data
 
@@ -898,7 +986,8 @@ class UploadHandle(_Upload[T]):
                 opened: RangeReader = reader
                 while got <= size:
                     waiter.check()
-                    if not (data := _bytes(plan, opened.read(_wanted(size, got)))):
+                    wanted = _wanted(size, got)
+                    if not (data := _bytes(plan, opened.read(wanted), wanted)):
                         break
                     got += len(data)
                     add(data)
@@ -911,13 +1000,11 @@ class UploadHandle(_Upload[T]):
         self._read_all(0, self._identity.size, scan.add)
         return _scanned(self._plan, self._identity, scan, digests)
 
-    def _buffer(self, index: int, start: int, size: int) -> bytes:
+    def _buffer(self, index: int, start: int, size: int) -> memoryview:
         """Read one chunk into its own buffer and check it against the digest the scan recorded."""
-        parts: list[bytes] = []
-        self._read_all(start, size, parts.append)
-        buffer = b"".join(parts)
-        self._chunked(buffer, index, size)
-        return buffer
+        chunk = _Chunk(size)
+        self._read_all(start, size, chunk.add)
+        return self._chunked(chunk, index, size)
 
     def _create(self, arguments: tuple[object, ...], body: object, media_type: str | MediaSelector | None) -> None:
         """Send the create request as the session's first child call and keep what it gives."""
@@ -957,14 +1044,15 @@ class UploadHandle(_Upload[T]):
         index, start, end = self._span()
         buffer = self._buffer(index, start, end - start)
         while self._confirmed < end:
-            payload = buffer[self._confirmed - start :]
+            unconfirmed = buffer[self._confirmed - start :]
+            payload = BodyFactory(_Factory(unconfirmed), content_length=len(unconfirmed))
             self._sending(end)
             try:
                 with self._mapped():
                     self._core.execute_page(
                         self._plan,
                         self._plan.appended.call,
-                        self._append_request(payload),
+                        self._append_request(payload, len(unconfirmed)),
                         _ignored,
                         body=payload,
                         media_type=None,
@@ -1115,8 +1203,9 @@ class AsyncUploadHandle(_Upload[T]):
             async with _opened(plan, self._source, start, size, "__aenter__") as reader:
                 opened: AsyncRangeReader = reader
                 while got <= size:
-                    read = partial(opened.read, _wanted(size, got))
-                    if not (data := _bytes(plan, await waiter.bounded(read, idle=False))):
+                    wanted = _wanted(size, got)
+                    read = partial(opened.read, wanted)
+                    if not (data := _bytes(plan, await waiter.bounded(read, idle=False), wanted)):
                         break
                     got += len(data)
                     add(data)
@@ -1129,13 +1218,11 @@ class AsyncUploadHandle(_Upload[T]):
         await self._read_all(0, self._identity.size, scan.add)
         return _scanned(self._plan, self._identity, scan, digests)
 
-    async def _buffer(self, index: int, start: int, size: int) -> bytes:
+    async def _buffer(self, index: int, start: int, size: int) -> memoryview:
         """Read one chunk into its own buffer and check it against the digest the scan recorded."""
-        parts: list[bytes] = []
-        await self._read_all(start, size, parts.append)
-        buffer = b"".join(parts)
-        self._chunked(buffer, index, size)
-        return buffer
+        chunk = _Chunk(size)
+        await self._read_all(start, size, chunk.add)
+        return self._chunked(chunk, index, size)
 
     async def _create(
         self, arguments: tuple[object, ...], body: object, media_type: str | MediaSelector | None
@@ -1177,14 +1264,15 @@ class AsyncUploadHandle(_Upload[T]):
         index, start, end = self._span()
         buffer = await self._buffer(index, start, end - start)
         while self._confirmed < end:
-            payload = buffer[self._confirmed - start :]
+            unconfirmed = buffer[self._confirmed - start :]
+            payload = AsyncBodyFactory(_AsyncFactory(unconfirmed), content_length=len(unconfirmed))
             self._sending(end)
             try:
                 with self._mapped():
                     await self._core.execute_page(
                         self._plan,
                         self._plan.appended.call,
-                        self._append_request(payload),
+                        self._append_request(payload, len(unconfirmed)),
                         _ignored,
                         body=payload,
                         media_type=None,
@@ -1325,7 +1413,7 @@ def start_upload(  # noqa: PLR0913
     """Scan the source, create the helper's upload in a session of its own, and return the handle that appends to it."""
     limits = _limits(core, plan, upload_options, options, session_options)
     identity = _identity(plan, source)
-    chunk = _layout(plan, limits, identity.size)
+    chunk = _layout(plan, limits, identity.size, min(limits.chunk_bytes, plan.max_chunk_bytes))
     handle = UploadHandle(core, plan, limits, _session(limits), cast("UploadSource", source), identity, chunk, b"")
     handle._digests = handle._scan()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     handle._create(_sized(core, plan, arguments, identity.size), body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
@@ -1347,7 +1435,7 @@ async def astart_upload(  # noqa: PLR0913
     """Scan the source, create the helper's upload with asyncio in a session of its own, and return its handle."""
     limits = _limits(core, plan, upload_options, options, session_options)
     identity = _identity(plan, source)
-    chunk = _layout(plan, limits, identity.size)
+    chunk = _layout(plan, limits, identity.size, min(limits.chunk_bytes, plan.max_chunk_bytes))
     handle = AsyncUploadHandle(
         core, plan, limits, _session(limits), cast("AsyncUploadSource", source), identity, chunk, b""
     )
@@ -1523,6 +1611,7 @@ def _resume_start(
 ) -> tuple[_Saved, UploadIdentity]:
     """Check the checkpoint, then the source, before any read or send; the source must be the checkpoint's content."""
     saved = _restored(core, plan, state, limits)
+    _layout(plan, limits, saved.identity.size, saved.chunk)
     identity = _identity(plan, source)
     if identity != saved.identity:
         raise _changed(plan, saved.identity, identity)

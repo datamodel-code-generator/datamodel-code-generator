@@ -411,6 +411,8 @@ refused checkpoints and sources
   resume with another helper ! ResumeStateError: ResumeStateError(condition='fingerprint') [condition='fingerprint'] resume_state_error
   resume with not a state ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('state',), condition='invalid_value'] protocol_configuration_error
   resume with bytes ! NonResumableSourceError: NonResumableSourceError(condition='wrong_capability', source_kind='iterable') [field_path=('source',), condition='wrong_capability'] non_resumable_source_error
+  resume with a smaller chunk size ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('upload_options', 'chunk_bytes'), condition='invalid_value'] protocol_configuration_error
+  resume with fewer chunks allowed ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('upload_options', 'max_parts'), condition='invalid_value'] protocol_configuration_error
   resume with an unknown member ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   resume with a confirmed offset past the content ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   resume with a chunk over the server maximum ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
@@ -458,7 +460,7 @@ server expiries
   start with an empty expiry ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Upload-Expires', occurrence='single')] protocol_data_error
 refused options
   start with too many chunks ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('upload_options', 'max_parts'), condition='invalid_value'] protocol_configuration_error
-  start with a digest list over the checkpoint limit ! ProtocolSizeError: ProtocolSizeError(kind='part_manifest', limit=16777216, observed=17066668) [kind='part_manifest', unit='bytes', limit=16777216] protocol_size_error
+  start with a digest list over the checkpoint limit ! ProtocolSizeError: ProtocolSizeError(kind='part_manifest', limit=15728640, observed=17066668) [kind='part_manifest', unit='bytes', limit=15728640] protocol_size_error
   start with options of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('upload_options',), condition='invalid_value'] protocol_configuration_error
   start with a fixed idempotency key ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'idempotency_key'), condition='invalid_value'] protocol_configuration_error
   start with a patch of the written offset ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'headers', 'upload-offset'), condition='invalid_value'] protocol_configuration_error

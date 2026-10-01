@@ -113,10 +113,10 @@ delivery IDs, namespaces, operation references, entry IDs, and causes; callers m
 
 ## Protocol contracts
 
-Generated packages also expose the shared contracts of pagination, polling, stream, and upload helpers. Records, options,
-and resume state come from `pkg.protocols`; `ProtocolClientOptions` comes from `pkg.options`; exceptions come from
-`pkg.errors`. These imports need no HTTP library and start no threads. A client that uses no protocol settings loads
-none of these definitions: `pkg.options` and `pkg.errors` load them the first time one of their names is used. The
+Generated packages also expose the shared contracts of pagination, polling, stream, and upload helpers. Records,
+options, and resume state come from `pkg.protocols`; `ProtocolClientOptions` comes from `pkg.options`; exceptions come
+from `pkg.errors`. These imports need no HTTP library and start no threads. A client that uses no protocol settings
+loads none of these definitions: `pkg.options` and `pkg.errors` load them the first time one of their names is used. The
 helpers that use these contracts are still being implemented; constructing a record or option sends nothing.
 
 ### Selectors, targets, and origins
@@ -530,15 +530,16 @@ E_SELECTOR_DEPENDENCY selection protocols.helpers['audit.all'].operation /paths/
 ### Python records and the manifest
 
 `ProtocolConfiguration(schema_version=1, helpers={...})` takes `PaginationHelper`, `PollingHelper`, `StreamHelper`,
-`WebhookHelper`, and `ResumableUploadHelper` records, which mirror the file: their fields have the file's names, with `from_` for `from`, and they
-take the client's `Selector` and `RequestTarget` records, `OperationRef` or a pointer string, and `SchemaRef`. A
-webhook's `HmacSignature` (`hmac-sha256` or `hmac-sha512`) or `PublicKeySignature` (`ed25519` or `rsa-pss-sha256`) has
-the same fields and takes `HeaderName`, `TimestampHeader`, `SignedLiteral`, `FixedBytes`, and `AsciiBytes` records, or
-`"none"`, and `signed_parts` entries `"raw-body"`, `"timestamp"`, and `"delivery-id"`; `AdapterSignature(timestamp=...,
-delivery_id=...)` takes `"required"` or `"none"` for each fact, and `NoSignature()` declares an unsigned webhook. An
-event mapping is an `EventMapping` with an `EventDiscriminator(from_="body", pointer=...)`. An upload takes
-`UploadCreate`, `UploadProbe`, `UploadAppend`, `LengthCompletion()` or `OperationCompletion`, and `UploadAbort` records. They are validated as the file
-is, with the same diagnostics, when the client configuration is constructed. The later kinds have no records yet.
+`WebhookHelper`, and `ResumableUploadHelper` records, which mirror the file: their fields have the file's names, with
+`from_` for `from`, and they take the client's `Selector` and `RequestTarget` records, `OperationRef` or a pointer
+string, and `SchemaRef`. A webhook's `HmacSignature` (`hmac-sha256` or `hmac-sha512`) or `PublicKeySignature` (`ed25519`
+or `rsa-pss-sha256`) has the same fields and takes `HeaderName`, `TimestampHeader`, `SignedLiteral`, `FixedBytes`, and
+`AsciiBytes` records, or `"none"`, and `signed_parts` entries `"raw-body"`, `"timestamp"`, and `"delivery-id"`;
+`AdapterSignature(timestamp=..., delivery_id=...)` takes `"required"` or `"none"` for each fact, and `NoSignature()`
+declares an unsigned webhook. An event mapping is an `EventMapping` with an `EventDiscriminator(from_="body",
+pointer=...)`. An upload takes `UploadCreate`, `UploadProbe`, `UploadAppend`, `LengthCompletion()` or
+`OperationCompletion`, and `UploadAbort` records. They are validated as the file is, with the same diagnostics, when the
+client configuration is constructed. The later kinds have no records yet.
 
 ```python
 ClientGenerationConfig(
@@ -1206,12 +1207,14 @@ opens is closed. A one-shot input has no identity to resume from: bytes, an iter
 or a reader raise `NonResumableSourceError` with its `source_kind` before anything is read; send it as an ordinary
 upload. Nothing is ever spooled to disk.
 
-Before anything is sent, `start` and `resume` read the whole source once through one reader and record the SHA-256
-of each chunk; content that does not match the identity, by its length or its digest, raises
-`UploadSourceChangedError`. Each append reads its chunk again into one buffer of at most the chunk size and sends it
-only when its length and digest match what the scan recorded; otherwise it raises `UploadSourceChangedError` with the
-chunk's offset, and the handle sends nothing more: every later step raises `ProtocolStateError` with
-`state='source_changed'`, though `checkpoint()` still works. Memory stays within one chunk and fixed read buffers.
+Before anything is sent, `start` and `resume` read the whole source once through one reader and record the SHA-256 of
+each chunk; content that does not match the identity, by its length or its digest, raises `UploadSourceChangedError`.
+Each append reads its chunk again into a buffer of its own, one byte longer than the chunk, hashing it as it reads, and
+sends it only when its length and digest match what the scan recorded; otherwise it raises `UploadSourceChangedError`
+with the chunk's offset, and the handle sends nothing more: every later step raises `ProtocolStateError` with
+`state='source_changed'`, though `checkpoint()` still works. The body is sent from that buffer in 64 KiB slices, so an
+upload holds one chunk at a time besides fixed read buffers. A reader returning more bytes than it was asked for, or
+anything but bytes, raises `ProtocolConfigurationError` with `condition='wrong_capability'`.
 
 ### Chunks, offsets, and recovery
 
@@ -1261,7 +1264,10 @@ decoded again.
 the checkpoint: not a `ResumeState` raises `ProtocolConfigurationError`; another helper's raises
 `ResumeStateError(condition='fingerprint')`, another security's `ResumeStateError(condition='security')`, one past
 the server's expiry `UploadExpiredError`, and one whose state does not fit the helper
-`ResumeStateError(condition='malformed')`. Then the source: an identity other than the checkpoint's raises
+`ResumeStateError(condition='malformed')`. A checkpoint keeps its chunk size, which must not exceed the call's
+`UploadOptions.chunk_bytes`, since an append holds one chunk in memory, and its chunk count must not exceed
+`max_parts`; either raises `ProtocolConfigurationError` with the option's `field_path`. Then the source: an identity
+other than the checkpoint's raises
 `UploadSourceChangedError`, and the source is read once and compared with the saved digests. Then it probes the
 server's offset once, which must not be below the saved one, and returns the handle; nothing is read or sent for a
 complete checkpoint, and a completion of unknown outcome raises `UploadDeliveryUnknownError` again.

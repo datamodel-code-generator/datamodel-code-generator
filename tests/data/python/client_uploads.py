@@ -719,6 +719,8 @@ def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
         ("another helper", lambda: finish.resume(harness.source(), state)),
         ("not a state", lambda: helper.resume(harness.source(), "state")),
         ("bytes", lambda: helper.resume(_CONTENT, state)),
+        ("a smaller chunk size", lambda: helper.resume(harness.source(), state, upload_options=harness.uploads(chunk_bytes=2))),
+        ("fewer chunks allowed", lambda: helper.resume(harness.source(), state, upload_options=harness.uploads(max_parts=2))),
     ):
         record(lines, f"resume with {label}", call)
     envelope = json.loads(exported)
