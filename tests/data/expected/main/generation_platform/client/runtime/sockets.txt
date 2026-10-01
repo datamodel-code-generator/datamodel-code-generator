@@ -99,6 +99,7 @@
   close code of another type ! ProtocolConfigurationError: ProtocolConfigurationError(operation_id='roomSocket', call_id='<call>', condition='invalid_value') [operation_id='roomSocket', field_path=('code',), condition='invalid_value'] protocol_configuration_error
   close reason over 123 bytes ! ProtocolConfigurationError: ProtocolConfigurationError(operation_id='roomSocket', call_id='<call>', condition='invalid_value') [operation_id='roomSocket', field_path=('reason',), condition='invalid_value'] protocol_configuration_error
   close reason with a lone surrogate ! ProtocolConfigurationError: ProtocolConfigurationError(operation_id='roomSocket', call_id='<call>', condition='invalid_value') [operation_id='roomSocket', field_path=('reason',), condition='invalid_value'] protocol_configuration_error
+  close reason of another type ! ProtocolConfigurationError: ProtocolConfigurationError(operation_id='roomSocket', call_id='<call>', condition='invalid_value') [operation_id='roomSocket', field_path=('reason',), condition='invalid_value'] protocol_configuration_error
   ping payload over 125 bytes ! ProtocolConfigurationError: ProtocolConfigurationError(operation_id='roomSocket', call_id='<call>', condition='invalid_value') [operation_id='roomSocket', field_path=('payload',), condition='invalid_value'] protocol_configuration_error
   ping payload of another type ! ProtocolConfigurationError: ProtocolConfigurationError(operation_id='roomSocket', call_id='<call>', condition='invalid_value') [operation_id='roomSocket', field_path=('payload',), condition='invalid_value'] protocol_configuration_error
   receive after closing ! ProtocolStateError: ProtocolStateError(operation_id='roomSocket', call_id='<call>', state='closed', action='receive') [operation_id='roomSocket'] protocol_state_error
@@ -250,6 +251,7 @@
   async first ping ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket'] web_socket_closed_error
   async default ping ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket'] web_socket_closed_error
   async another default ping ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket'] web_socket_closed_error
+  async ping cancelled by its task CancelledError AsyncWebSocketSession(helper_id='feed.text', state='failed', subprotocol=None)
   async open timeout ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT', phase='connect', effective_timeout=1.0) [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='connect', cause=TimeoutError] phase_timeout_error
   async hooked normal end
     hook call_start outcome=None status=None

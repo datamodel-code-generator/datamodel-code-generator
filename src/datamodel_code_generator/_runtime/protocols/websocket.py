@@ -1139,11 +1139,6 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
             raise (self._unsent() if self._capped(error, cap) else self._own(error)) from None
         try:
             self._usable("send")
-            self._checked()
-        except BaseException:
-            self._queue.release()
-            raise
-        try:
             await lane.bounded(
                 lambda: self._connection.send(data, text=text, deadline=cap),
                 phase="stream",

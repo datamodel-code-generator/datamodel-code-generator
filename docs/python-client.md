@@ -1419,8 +1419,8 @@ the session's end emits `stream_end`.
 The session owns the connection until it closes or fails, and closing the client closes it after the client's cleanup
 wait. One `receive` waits at a time: another raises `ConcurrentReceiveError`, while one send may run beside it, and
 sends go one at a time in arrival order. Cancelling the task of an asyncio `receive`, as `asyncio.wait_for` does, leaves
-the session usable, since whole messages are read; a cancelled `send` fails the session, since a message may be half
-written. A received message of another frame kind, or one that does not decode, raises
+the session usable, since whole messages are read; a cancelled `send` or `ping` fails the session, since a message may
+be half written. A received message of another frame kind, or one that does not decode, raises
 `StreamDecodeError` with at most 64 KiB of it as `raw_prefix` and closes the connection with 1002. A server's closure
 raises `WebSocketClosedError` with its `code`, `reason`, and `clean`, which is true for a normal closure that alone
 ends iteration; after it, `receive`, `send`, and `ping` raise it again. After any other failure, every step raises

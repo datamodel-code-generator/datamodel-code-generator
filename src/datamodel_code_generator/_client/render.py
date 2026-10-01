@@ -3495,11 +3495,11 @@ imported from:
 
 The connection and the handshake's limiter permit belong to the session until it closes or fails, and closing the
 client closes it. One `receive` waits at a time, and a second one raises `ConcurrentReceiveError`; sends go one at a
-time in arrival order beside it. Cancelling an asyncio `receive` leaves the session usable; a cancelled send fails it. A
-message is JSON coded by the helper's schema, UTF-8 text, or bytes, in the frame kind the helper declares; one that does
-not decode raises `StreamDecodeError` and closes the connection with 1002, and one over the size limit raises
-`ProtocolSizeError` after the connection closed with 1009. A receive that waits longer than the idle timeout raises
-`PhaseTimeoutError` and closes with 1001. A closure by the server raises `WebSocketClosedError` with its code and
+time in arrival order beside it. Cancelling an asyncio `receive` leaves the session usable; a cancelled send or ping
+fails it. A message is JSON coded by the helper's schema, UTF-8 text, or bytes, in the frame kind the helper declares;
+one that does not decode raises `StreamDecodeError` and closes the connection with 1002, and one over the size limit
+raises `ProtocolSizeError` after the connection closed with 1009. A receive that waits longer than the idle timeout
+raises `PhaseTimeoutError` and closes with 1001. A closure by the server raises `WebSocketClosedError` with its code and
 reason, and ends iteration when it was normal. A send that sent nothing before its timeout raises `PhaseTimeoutError`
 and keeps the session open; a send that may have reached the server raises `DeliveryUnknownError`, closes the session,
 and is never sent again. Sessions never reconnect, so `WSOptions(reconnect=True)` raises `ProtocolConfigurationError`,

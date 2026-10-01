@@ -419,6 +419,7 @@ def _closing_sessions(harness: _Harness, api: Any) -> None:
         ("close code of another type", lambda: session.close("1000")),
         ("close reason over 123 bytes", lambda: session.close(4000, "x" * 124)),
         ("close reason with a lone surrogate", lambda: session.close(4000, "\ud800")),
+        ("close reason of another type", lambda: session.close(4000, 5)),
         ("ping payload over 125 bytes", lambda: session.ping(b"x" * 126)),
         ("ping payload of another type", lambda: session.ping("probe")),
     ):
@@ -906,6 +907,17 @@ async def _async_sockets(harness: _Harness) -> None:
                 await arecord(lines, label, lambda task=task: task)
     finally:
         waiting.stop()
+    silent_pongs = RawPeer(_UPGRADE)
+    try:
+        async with harness.package.AsyncClient(options=harness.client(silent_pongs.url)) as api:
+            session = await api.protocols.feed.text.connect(ws_options=harness.ws(ping_interval=None, close_timeout=0.1))
+            pinging = asyncio.create_task(session.ping())
+            await asyncio.to_thread(silent_pongs.wait_records, 1)
+            pinging.cancel()
+            cancelled = (await asyncio.gather(pinging, return_exceptions=True))[0]
+            lines.append(f"  async ping cancelled by its task {type(cancelled).__name__} {session!r}")
+    finally:
+        silent_pongs.stop()
     silent = RawPeer(None)
     try:
         async with harness.package.AsyncClient(options=harness.client(silent.url)) as api:
