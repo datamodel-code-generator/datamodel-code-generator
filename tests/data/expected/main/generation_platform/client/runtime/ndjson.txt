@@ -21,33 +21,33 @@
     1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
   < closed
     ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='malformed', sequence=2, truncated=False) [operation_id='streamRecords', condition='malformed', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] stream_decode_error
-    raw prefix b'' cause WireValidationError
+    raw prefix b'' cause WireValidationError context WireValidationError
   > GET https://api.example.com/records accept=application/x-ndjson
   whitespace line
   < closed
     ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamRecords', condition='malformed', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] stream_decode_error
-    raw prefix b' \t' cause WireValidationError
+    raw prefix b' \t' cause WireValidationError context WireValidationError
   > GET https://api.example.com/records accept=application/x-ndjson
   invalid UTF-8
   < closed
     ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamRecords', condition='malformed', truncated=False] stream_decode_error
-    raw prefix b'{"text": "\xff"}' cause NoneType
+    raw prefix b'{"text": "\xff"}' cause NoneType context NoneType
   > GET https://api.example.com/records accept=application/x-ndjson
   byte order mark
   < closed
     ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamRecords', condition='malformed', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] stream_decode_error
-    raw prefix b'\xef\xbb\xbf{"text": "a"}' cause WireValidationError
+    raw prefix b'\xef\xbb\xbf{"text": "a"}' cause WireValidationError context WireValidationError
   > GET https://api.example.com/records accept=application/x-ndjson
   CR without LF
   < closed
     ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamRecords', condition='malformed', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] stream_decode_error
-    raw prefix b'{"text": "a"}\r{"text": "b"}' cause WireValidationError
+    raw prefix b'{"text": "a"}\r{"text": "b"}' cause WireValidationError context WireValidationError
   > GET https://api.example.com/records accept=application/x-ndjson
   record refused by its schema
     1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
   < closed
     ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='value', sequence=2, truncated=False) [operation_id='streamRecords', condition='value', truncated=False, cause=WireValidationError('The value does not have an allowed type at /text')] stream_decode_error
-    raw prefix b'{"text": 5}' cause WireValidationError
+    raw prefix b'{"text": 5}' cause WireValidationError context WireValidationError
   > GET https://api.example.com/records accept=application/x-ndjson
   final line without a line end
     1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
@@ -78,12 +78,12 @@
   invalid final line
   < closed
     ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamRecords', condition='malformed', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] stream_decode_error
-    raw prefix b'{"text"' cause WireValidationError
+    raw prefix b'{"text"' cause WireValidationError context WireValidationError
   > GET https://api.example.com/records accept=application/x-ndjson
   final line not UTF-8
   < closed
     ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamRecords', condition='malformed', truncated=False] stream_decode_error
-    raw prefix b'\xff' cause NoneType
+    raw prefix b'\xff' cause NoneType context NoneType
   > POST https://api.example.com/search accept=application/jsonl; charset=utf-8
   sentinel
     1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
@@ -146,6 +146,16 @@
     1  id=None retry=None data=Record{'text': 'abcd'} raw='{"text": "abcd"}'
   < closed
     end
+  > GET https://api.example.com/records accept=application/x-ndjson
+  CRLF line at the limit
+    1  id=None retry=None data=Record{'text': 'abcd'} raw='{"text": "abcd"}'
+    2  id=None retry=None data=Record{'text': 'efgh'} raw='{"text": "efgh"}'
+  < closed
+    end
+  > GET https://api.example.com/records accept=application/x-ndjson
+  CR inside a line counted
+  < closed
+    ! ProtocolSizeError: ProtocolSizeError(operation_id='streamRecords', call_id='<call>', kind='line', limit=16, observed=30) [operation_id='streamRecords', kind='line', unit='bytes', limit=16] protocol_size_error
   > GET https://api.example.com/records accept=application/x-ndjson
   record over a record limit under the line limit
   < closed

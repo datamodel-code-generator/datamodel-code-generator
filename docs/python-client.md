@@ -997,14 +997,15 @@ message shows, and a line that is not UTF-8 has no `cause`.
 
 A record yields a `StreamEvent` whose `event_type` is the empty string and whose `event_id` and `retry_ms` are None; an
 `error_events` record raises `StreamRemoteError` with the `event_type` None. A `sentinel` completion ends at the line
-equal to its value, which is compared before JSON decoding and never yielded, so the value need not be JSON.
+equal to its value, which is compared before JSON decoding and never yielded, so the value need not be JSON; a value
+containing LF could never match, so it fails generation with `E_CONFIG_VALUE`.
 
 `final_line` says how the body may end. With `require_newline`, every record ends with a line end, and bytes after the
 last one raise `IncompleteFrameError` with their count as `buffered_bytes`. With `allow_eof`, those bytes are decoded as
 the last record, a sentinel included; a body that ends with a line end ends the same way under both.
 
-A line counts toward both `StreamOptions.max_line_bytes` and `max_event_bytes`, without its LF but with the CR of a
-CRLF; one over the smaller limit raises `ProtocolSizeError` with that limit's kind, `line` or `event`, before it is kept.
+A record counts toward both `StreamOptions.max_line_bytes` and `max_event_bytes`, without its LF or the CR of a CRLF;
+one over the smaller limit raises `ProtocolSizeError` with that limit's kind, `line` or `event`, before it is kept.
 Bytes are searched for a line end at most twice, so a line split over many reads costs time linear in its length.
 
 ### NDJSON generation checks

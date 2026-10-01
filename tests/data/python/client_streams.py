@@ -784,7 +784,10 @@ def _decode_failure(lines: list[str], label: str, stream: Any) -> None:
             lines.append(f"    {_event(event)}")
     except Exception as error:  # noqa: BLE001
         lines.append(f"    ! {describe(error)}")
-        lines.append(f"    raw prefix {error.raw_prefix!r} cause {type(error.cause).__name__}")
+        lines.append(
+            f"    raw prefix {error.raw_prefix!r} cause {type(error.cause).__name__} "
+            f"context {type(error.__context__).__name__}"
+        )
 
 
 def ndjson(package: ModuleType, lines: list[str]) -> None:
@@ -897,12 +900,16 @@ def _ndjson_limits(harness: _Harness, api: Any, adapter: _Feed) -> None:
         _lines(harness, (b'{"text": ', b'"abcdefgh"}\n')),
         _lines(harness, (b'{"text": "a"}\n{"text": "abcdefghij"',)),
         _lines(harness, (b'{"text": "abcd"}\n',)),
+        _lines(harness, (b'{"text": "abcd"}\r\n{"text": "efgh"}\r', b"\n")),
+        _lines(harness, (b'{"text": "abcd"}\r', b'{"text": "e"}\n')),
     ))
     for label in (
         "line over the limit in one chunk",
         "line a later chunk extends over the limit",
         "unended line after a line end over the limit",
         "line at the limit",
+        "CRLF line at the limit",
+        "CR inside a line counted",
     ):
         _drained(lines, label, helper.open(stream_options=narrow))
     adapter.replies.append(_lines(harness, (b'{"text": "abcde"}\n',)))

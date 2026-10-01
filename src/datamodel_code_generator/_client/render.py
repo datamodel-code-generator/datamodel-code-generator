@@ -3038,9 +3038,10 @@ it with `PaginationCycleError` after the repeating page.
         lines = (
             """
 An NDJSON body is read one line at a time: LF or CRLF ends a line, which is one record of strict UTF-8 JSON, so a
-blank line or one that is not UTF-8 or JSON raises `StreamDecodeError`. A line counts toward both the line and the
-event data size. Bytes after the last line end raise `IncompleteFrameError` unless the helper's `final_line` is
-`allow_eof`, which decodes them as the last record. A record has the empty string as its event type and no event ID.
+blank line or one that is not UTF-8 or JSON raises `StreamDecodeError`. A record, without its LF or the CR of a CRLF,
+counts toward both the line and the event data size. Bytes after the last line end raise `IncompleteFrameError` unless
+the helper's `final_line` is `allow_eof`, which decodes them as the last record. A record has the empty string as its
+event type and no event ID, and a declared error record raises `StreamRemoteError` with the event type None.
 """
             if any(spec.helper.kind == "ndjson" for spec in self.streams)
             else ""

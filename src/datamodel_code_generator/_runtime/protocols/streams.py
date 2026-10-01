@@ -165,13 +165,20 @@ class EventPlan(Generic[T]):
 class _Frame:
     """A dispatched event: its joined data, its type, the last event ID, and the reconnection time.
 
-    An NDJSON record is a frame of its line, without a type, an event ID, or a reconnection time.
+    An NDJSON record is a frame of its line, without a type, an event ID, or a reconnection time, that keeps the line's
+    bytes as `raw`, which its data was decoded from.
     """
 
     data: str
     event_type: str
     event_id: str | None
     retry_ms: int | None
+    raw: bytes | None = None
+
+    @property
+    def body(self) -> bytes:
+        """Return the bytes of the data: the line's own, or the data encoded as UTF-8."""
+        return self.data.encode() if self.raw is None else self.raw
 
 
 class _Parser:
@@ -320,10 +327,11 @@ _NO_TYPE: Final = ""
 class _Lines:
     """Split an NDJSON body into records, one line each, ended by LF, or CRLF whose CR is not part of the record.
 
-    A record is strict UTF-8, whose failure raises UnicodeDecodeError. A line counts toward the line and the record
-    limits, the smaller of which, counted in bytes before the line is kept, raises ProtocolSizeError of its kind. Each
-    byte kept is searched for LF at most twice, so a line arriving in many chunks costs time linear in its length. The
-    bytes after the last LF are a final record at the end of the body only when `allow_eof` is set.
+    A record is strict UTF-8, whose failure raises UnicodeDecodeError. A record counts toward the line and the record
+    limits, the smaller of which, counted in bytes before the line is kept, raises ProtocolSizeError of its kind; the
+    CR of a CRLF is not counted, nor is a CR that ends the bytes kept, which may be one. Each byte kept is searched for
+    LF at most twice, so a line arriving in many chunks costs time linear in its length. The bytes after the last LF
+    are a final record at the end of the body only when `allow_eof` is set.
     """
 
     __slots__ = ("_buffer", "_kind", "_maximum", "_scanned", "allow_eof")
@@ -341,22 +349,28 @@ class _Lines:
 
         The bytes kept are all of a line that has not ended, as `next` consumed the others.
         """
-        ended = chunk.find(b"\n")
-        _limit(self._kind, self._maximum, len(self._buffer) + (len(chunk) if ended < 0 else ended))
-        self._buffer += chunk
+        buffer = self._buffer
+        end = len(chunk) if (ended := chunk.find(b"\n")) < 0 else ended
+        last = chunk[end - 1] if end else buffer[-1] if buffer else None
+        _limit(self._kind, self._maximum, len(buffer) + end - (last == _CR))
+        buffer += chunk
 
     def next(self) -> _Frame | None:
         """Return the next record from the bytes kept, or None when its line has not ended yet."""
         buffer = self._buffer
         if (end := buffer.find(b"\n", self._scanned)) < 0:
-            _limit(self._kind, self._maximum, len(buffer))
             self._scanned = len(buffer)
+            self._measure(buffer, len(buffer))
             return None
-        _limit(self._kind, self._maximum, end)
+        self._measure(buffer, end)
         record = buffer[:end]
         del buffer[: end + 1]
         self._scanned = 0
         return _record(record)
+
+    def _measure(self, buffer: bytearray, end: int) -> None:
+        """Refuse the record of the bytes kept up to an end over its limit, without the CR the end may follow."""
+        _limit(self._kind, self._maximum, end - (end > 0 and buffer[end - 1] == _CR))
 
     def last(self) -> _Frame | None:
         """Return the record of the bytes after the last line end at the end of the body, when it allows one."""
@@ -375,7 +389,8 @@ def _record(line: bytearray) -> _Frame:
     """Return the record of a line, without the CR of a CRLF, decoded as strict UTF-8."""
     if line.endswith(b"\r"):
         del line[-1]
-    return _Frame(line.decode(), _NO_TYPE, None, None)
+    raw = bytes(line)
+    return _Frame(raw.decode(), _NO_TYPE, None, None, raw)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -526,9 +541,9 @@ class _Events(Generic[T]):
         "_frames",
         "_info",
         "_lock",
-        "_max_event_bytes",
         "_native",
         "_plan",
+        "_prefix",
         "_routes",
         "_sequence",
         "_session",
@@ -543,7 +558,7 @@ class _Events(Generic[T]):
         self._session = session
         self._info = info
         self._native = native
-        self._max_event_bytes = limits.max_event_bytes
+        self._prefix = min(limits.max_event_bytes, MAX_RAW_PREFIX)
         self._frames = (
             _Parser(limits.max_line_bytes, limits.max_event_bytes)
             if plan.kind == "sse"
@@ -624,9 +639,10 @@ class _Events(Generic[T]):
         """Keep a chunk read, then return the next dispatched event the bytes kept hold, or None when it needs more.
 
         At the end of the body, `last` returns the event the bytes kept end with instead. A record that is not UTF-8
-        raises StreamDecodeError without a cause, which would hold the whole record.
+        raises StreamDecodeError with neither a cause nor a context, either of which would hold the whole record.
         """
         frames = self._frames
+        prefix = b""
         try:
             if last:
                 return frames.last()
@@ -636,8 +652,9 @@ class _Events(Generic[T]):
         except ProtocolSizeError as error:
             raise self._stamped(error) from None
         except UnicodeDecodeError as error:
-            self._sequence += 1
-            raise self._stamped(self._decode_error(error.object, "malformed")) from None
+            prefix = error.object[: self._prefix + 1]
+        self._sequence += 1
+        raise self._stamped(self._decode_error(prefix, "malformed"))
 
     def _last(self) -> StreamEvent[T] | _End:
         """Return the event the body ends with, or else how the stream ended."""
@@ -675,7 +692,7 @@ class _Events(Generic[T]):
                 condition: Literal["missing", "null", "type"] = (
                     "missing" if found is MISSING else "null" if found is None else "type"
                 )
-                raise self._stamped(self._decode_error(frame.data.encode(), condition, location=selector))
+                raise self._stamped(self._decode_error(frame.body, condition, location=selector))
             key = found
         if (error := self._errors.get(key)) is not None:
             data = self._decoded(error, frame, wire)
@@ -684,7 +701,7 @@ class _Events(Generic[T]):
             )
         if (decoder := plan.event) is None and (decoder := self._routes.get(key)) is None:
             if (unknown := plan.unknown) is None:
-                raise self._stamped(self._decode_error(frame.data.encode(), "value", location=selector))
+                raise self._stamped(self._decode_error(frame.body, "value", location=selector))
             value = unknown(key, frame.data)
         else:
             value = self._decoded(decoder, frame, wire)
@@ -700,7 +717,7 @@ class _Events(Generic[T]):
 
     def _wire(self, frame: _Frame) -> WireValue:
         """Return an event's data parsed as JSON, raising StreamDecodeError for data that does not parse."""
-        data = frame.data.encode()
+        data = frame.body
         try:
             return decode_json(data)
         except _DATA_ERRORS as error:
@@ -713,7 +730,7 @@ class _Events(Generic[T]):
         try:
             return decoder.convert(wire) if self._native else decoder(wire)
         except _DATA_ERRORS as error:
-            raise self._stamped(self._decode_error(frame.data.encode(), "value", cause=error)) from None
+            raise self._stamped(self._decode_error(frame.body, "value", cause=error)) from None
 
     def _decode_error(
         self,
@@ -724,7 +741,7 @@ class _Events(Generic[T]):
         cause: BaseException | None = None,
     ) -> StreamDecodeError:
         """Return the decode failure of an event, keeping at most the event limit or 64 KiB of its raw data."""
-        limit = min(self._max_event_bytes, MAX_RAW_PREFIX)
+        limit = self._prefix
         return StreamDecodeError(
             sequence=self._sequence,
             raw_prefix=data[:limit],
