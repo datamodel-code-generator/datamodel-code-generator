@@ -11,7 +11,6 @@ import re
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from hashlib import sha256
-from time import monotonic, time
 from typing import TYPE_CHECKING, Any, Final, Generic, Literal, cast, final
 from uuid import uuid4
 
@@ -241,6 +240,7 @@ class _Fetch(Generic[T]):
 
     __slots__ = (
         "base_key",
+        "clock",
         "credential_headers",
         "directives",
         "entry",
@@ -266,8 +266,8 @@ class _Fetch(Generic[T]):
         response's Vary: each one a header patch or a header parameter fills, and Cookie for a cookie parameter. A
         request patching other headers than a stored one never shares its entries, whichever was stored first.
         """
-        self.plan = plan
-        self.started = monotonic()
+        self.plan, self.clock = plan, core.clock
+        self.started = self.clock.monotonic()
         self.requested_at = 0.0
         self.entry: CacheEntry | None = None
         self.usable: CacheEntry | None = None
@@ -332,7 +332,7 @@ class _Fetch(Generic[T]):
         directives = self.directives
         if entry is None or directives.no_cache:
             return None
-        age = _age(entry, time())
+        age = _age(entry, self.clock.time())
         if age >= min(entry.freshness_seconds, self.max_ttl) or (
             directives.max_age is not None and age > directives.max_age
         ):
@@ -342,7 +342,7 @@ class _Fetch(Generic[T]):
         return CacheResult(
             data=data,
             source="fresh_cache",
-            response=replace(info, elapsed=monotonic() - self.started),
+            response=replace(info, elapsed=self.clock.monotonic() - self.started),
             network_status=None,
         )
 
@@ -370,7 +370,7 @@ class _Fetch(Generic[T]):
     def conditional(self, entry: CacheEntry | None) -> PreparedRequest[EncodedAttempt]:
         """Return the request to send, adding the validator of a usable stale entry the caller did not give."""
         request = self.request
-        self.requested_at = time()
+        self.requested_at = self.clock.time()
         validator = None if entry is None else _validator(self.plan, entry.headers)
         if validator is None or validator[0] in request.headers:
             return request
@@ -412,7 +412,7 @@ class _Fetch(Generic[T]):
         entry varies on the response's Vary and on the headers its base key names, and its date and age are those of
         the response received, so a 304 without Age makes the entry's age 0.
         """
-        plan, headers, now = self.plan, received.headers, time()
+        plan, headers, now = self.plan, received.headers, self.clock.time()
         directives = _directives(headers.get_all("cache-control"))
         vary = _vary(headers)
         if (

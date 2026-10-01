@@ -17,7 +17,6 @@ from datetime import datetime, timedelta, timezone
 from enum import Enum
 from hashlib import sha256
 from math import ceil
-from time import monotonic, time
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, Generic, Literal, TypeAlias, cast, final, overload
 
@@ -135,10 +134,11 @@ def _kind(value: WireValue) -> str:
     return _KINDS.get(type(value)) or ("object" if isinstance(value, Mapping) else "number")
 
 
-def _expiry(value: str) -> datetime | None:
+def _expiry(value: str, now: float) -> datetime | None:
     """Return the UTC time an RFC 3339 date-time with an offset or an HTTP date gives, or None for another value.
 
-    A leap second is the second after the one before it, as in an HTTP date.
+    A leap second is the second after the one before it, as in an HTTP date, and `now` is the receipt wall time that
+    places an HTTP date's two-digit year.
     """
     try:
         if (matched := _RFC3339.fullmatch(value.upper())) is not None:
@@ -148,7 +148,7 @@ def _expiry(value: str) -> datetime | None:
             return (parsed + timedelta(seconds=leap)).astimezone(timezone.utc)
         from ..client.retry import http_date  # noqa: PLC0415 - Only a helper with an expiry parses HTTP dates.
 
-        return http_date(value, time())
+        return http_date(value, now)
     except (ValueError, OverflowError):
         return None
 
@@ -393,9 +393,9 @@ def _literals(bindings: tuple[PageBinding, ...], values: tuple[WireValue, ...]) 
     )
 
 
-def _wait_ms(not_before: float) -> int:
-    """Return the milliseconds left before a time, rounded up, and at most 2**53 - 1, which any longer wait saves."""
-    return min(ceil(min(max(0.0, not_before - monotonic()), _MOST_WAIT_MS) * 1000), _MOST_WAIT_MS)
+def _wait_ms(not_before: float, now: float) -> int:
+    """Return the milliseconds from now until a time, rounded up, and at most 2**53 - 1, which any longer wait saves."""
+    return min(ceil(min(max(0.0, not_before - now), _MOST_WAIT_MS) * 1000), _MOST_WAIT_MS)
 
 
 def _sent(
@@ -544,7 +544,7 @@ class _Operation(Generic[T, P]):
         state: WireValue = {
             "phase": phase.value,
             "polls": self._polls,
-            "wait_ms": _wait_ms(self._not_before),
+            "wait_ms": _wait_ms(self._not_before, self._limits.clock.monotonic()),
             "bound": self._bound,
             "seed": self._seed if phase is _Phase.PENDING else (),
             "cancel": self._cancel,
@@ -756,7 +756,7 @@ class _Operation(Generic[T, P]):
             raise self._error(info, _absence(value), read, plan.operation)
         if not isinstance(value, str):
             raise self._error(info, "type", read, plan.operation)
-        if (expires_at := _expiry(value)) is None:
+        if (expires_at := _expiry(value, self._limits.clock.time())) is None:
             raise self._error(info, "value", read, plan.operation)
         return expires_at
 
@@ -1053,7 +1053,7 @@ class _Operation(Generic[T, P]):
             case _:
                 require_state(poll is not None and kept is None and not bound and not seed and not cancel)
         self._phase, self._polls, self._expires_at = phase, polls, expires_at
-        self._not_before = monotonic() + wait / 1000
+        self._not_before = self._limits.clock.monotonic() + wait / 1000
 
     def _restored_result(
         self, bound: tuple[WireValue, ...], polled: tuple[object, WireValue, ResponseInfo | None]
@@ -1470,8 +1470,8 @@ def _restored(
 ) -> OperationT:
     """Return the handle a checkpoint continues in a session of its own, without sending.
 
-    The checkpoint must be this helper's, made under the security the call runs with, and unexpired; a state or saved
-    body that does not fit the helper is malformed.
+    The checkpoint must be this helper's, made under the security the call runs with, and unexpired by the client's
+    wall clock; a state or saved body that does not fit the helper is malformed.
     """
     if not isinstance(state, ResumeState):
         raise _invalid(plan, ("state",))
@@ -1480,7 +1480,7 @@ def _restored(
         raise _resume_error(plan, "fingerprint")
     if security != _security(core, plan, limits.options)[0]:
         raise _resume_error(plan, "security")
-    if expires_at is not None and expires_at <= datetime.now(timezone.utc):
+    if expires_at is not None and expires_at.timestamp() <= limits.clock.time():
         raise _resume_error(plan, "expired")
     handle = make(_session(limits))
     try:

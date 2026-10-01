@@ -1635,6 +1635,8 @@ Its representation names only the status.
 secret of their own for the fingerprints. A lookup fingerprints the request once for each set of `Vary` names among the
 key's entries. When an entry needs room, expired entries are evicted first, the earliest expired first, then the least
 recently used ones; an entry larger than `max_bytes`, counted in body bytes and header characters, is not stored.
+A store may be shared by clients on different clocks, so it judges which entries have expired for eviction by the
+system wall clock. Whether a fetch may use an entry is decided by the fetching client's clock.
 
 ### Invalidation
 
@@ -2490,8 +2492,8 @@ cannot change it. Each of the three sources is a function that takes no argument
 
 | Source | Default | Read for |
 |---|---|---|
-| `monotonic` | `time.monotonic` | Deadlines, elapsed times, retry targets, idempotency key retention, token expiry, hook event durations, and protocol helper sessions, poll intervals, and stream deadlines |
-| `time` | `time.time` | Placing a wall-clock instant on the monotonic scale once: an HTTP-date `Retry-After` or polling delay header at receipt, an idempotency key's `first_used_at` at call entry, and an access token's `expires_at`; and a resumed pager's check of its state's `expires_at` |
+| `monotonic` | `time.monotonic` | Deadlines, elapsed times, retry targets, idempotency key retention, token expiry, hook event durations, and protocol helper sessions, poll intervals, a polling checkpoint's `wait_ms`, and stream deadlines |
+| `time` | `time.time` | Placing a wall-clock instant on the monotonic scale once: an HTTP-date `Retry-After` or polling delay header at receipt, an idempotency key's `first_used_at` at call entry, and an access token's `expires_at`; a resumed pager's or polling handle's check of its state's `expires_at`; and a cache fetch's request, response, and age times |
 | `random` | A secure uniform draw | The fraction in `[0, 1)` of a full-jitter backoff, drawn only when a retry needs one |
 
 A source that cannot be called raises `ConfigurationError` with the `field_path` `("clock", name)`. OAuth providers
