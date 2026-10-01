@@ -65,15 +65,25 @@ class _Algorithm(NamedTuple):
 _HMAC: Final = "_runtime.protocols.signatures"
 _PUBLIC_KEYS: Final = "_runtime.protocols.public_keys"
 _RSA_PSS: Final = "RSA-PSS with SHA-256, MGF1 with SHA-256, and a 32-byte salt"
-_HMAC_KIND: Final = _Algorithm(_HMAC, "HMAC_SHA256", "HMAC-SHA256", "_runtime.protocols.webhook_keys", "HmacKey")
 _ALGORITHMS: Final = {
-    "hmac-sha256": _HMAC_KIND,
+    "hmac-sha256": _Algorithm(_HMAC, "HMAC_SHA256", "HMAC-SHA256", "_runtime.protocols.webhook_keys", "HmacKey"),
     "hmac-sha512": _Algorithm(_HMAC, "HMAC_SHA512", "HMAC-SHA512", "_runtime.protocols.webhook_keys", "HmacKey"),
     "ed25519": _Algorithm(_PUBLIC_KEYS, "ED25519", "Ed25519", _PUBLIC_KEYS, "Ed25519Key"),
     "rsa-pss-sha256": _Algorithm(_PUBLIC_KEYS, "RSA_PSS_SHA256", _RSA_PSS, _PUBLIC_KEYS, "RSAPSSKey"),
 }
 _CHUNK: Final = 48
-_PACKAGE: Final = '"""Webhook verification helpers of this package, by their dotted names."""\n'
+_ROOTS: Final = {
+    frozenset({True}): "Webhook verification helpers of this package, by their dotted names.",
+    frozenset({False}): "Webhook helpers of this package, by their dotted names; they decode unsigned deliveries only.",
+    frozenset({True, False}): (
+        "Webhook helpers of this package, by their dotted names; they verify signed deliveries or decode unsigned ones."
+    ),
+}
+_KINDS: Final = {
+    frozenset({True}): "verification helpers",
+    frozenset({False}): "helpers, which decode unsigned deliveries without verifying them",
+    frozenset({True, False}): "helpers, which verify signed deliveries or decode unsigned ones",
+}
 _EVENTS: Final = "_runtime.protocols.webhook_events"
 _WEBHOOKS: Final = "_runtime.protocols.webhooks"
 _CLAIM: Final = (
@@ -92,8 +102,8 @@ def key_class(kind: str) -> str | None:
 
 def webhook_dependencies(specs: tuple[WebhookSpec, ...]) -> tuple[str, ...]:
     """Return cryptography when a helper verifies a public-key signature, and nothing otherwise."""
-    kinds = {spec.helper.tree["signature"]["kind"] for spec in specs}
-    return (_CRYPTOGRAPHY,) if any(_ALGORITHMS.get(kind, _HMAC_KIND).module == _PUBLIC_KEYS for kind in kinds) else ()
+    builtins = (_ALGORITHMS.get(spec.helper.tree["signature"]["kind"]) for spec in specs)
+    return (_CRYPTOGRAPHY,) if any(item is not None and item.module == _PUBLIC_KEYS for item in builtins) else ()
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -285,18 +295,27 @@ class _Webhooks:
         """Return the package's webhook files, nothing without helpers, and a keys module only for builtin kinds."""
         if not self.specs:
             return ()
-        packages = {
-            PurePosixPath("webhooks", *spec.helper.name.split(".")[:index])
-            for spec in self.specs
-            for index in range(1, spec.helper.name.count(".") + 1)
-        }
+        packages: dict[PurePosixPath, set[bool]] = {}
+        for spec in self.specs:
+            parts = spec.helper.name.split(".")
+            for index in range(len(parts)):
+                packages.setdefault(PurePosixPath("webhooks", *parts[:index]), set()).add(
+                    spec.helper.tree["signature"]["kind"] != "none"
+                )
+        root = packages.pop(PurePosixPath("webhooks"))
         keys = self.keys()
         return (
-            (PurePosixPath("webhooks", "__init__.py"), _PACKAGE),
+            (
+                PurePosixPath("webhooks", "__init__.py"),
+                f'"""{_ROOTS[frozenset(root)]}"""\n',
+            ),
             *(() if keys is None else ((PurePosixPath("webhooks", "keys.py"), keys),)),
             *(
-                (package / "__init__.py", f'"""The {".".join(package.parts[1:])} webhook verification helpers."""\n')
-                for package in sorted(packages)
+                (
+                    package / "__init__.py",
+                    f'"""The {".".join(package.parts[1:])} webhook {_KINDS[frozenset(kinds)]}."""\n',
+                )
+                for package, kinds in sorted(packages.items())
             ),
             *(
                 (PurePosixPath("webhooks", *spec.helper.name.split(".")).with_suffix(".py"), self.module(spec))

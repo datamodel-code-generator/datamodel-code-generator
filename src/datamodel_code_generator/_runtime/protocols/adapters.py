@@ -7,9 +7,9 @@ both modes, is called once, and its errors propagate as they are. Errors keep no
 
 from __future__ import annotations
 
-from collections.abc import Coroutine
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
+from types import CoroutineType
 from typing import TYPE_CHECKING
 
 from typing_extensions import TypeVar
@@ -54,27 +54,49 @@ class AdapterPlan(SignedPlan[T]):
 
 
 def _text(value: object) -> bool:
-    return isinstance(value, str) and bool(value)
+    return type(value) is str and bool(value)
 
 
-def _aware(value: object) -> bool:
-    return isinstance(value, datetime) and value.utcoffset() is not None
+def _utc(value: object) -> datetime | None:
+    """Return an exact datetime in UTC, reading its offset once, or None for another type, a naive or failing offset.
 
-
-def _fenced(plan: AdapterPlan[T], signature: object) -> VerifiedSignature:
-    """Return a verifier's result when it keeps the contract, or raise AdapterContractError with nothing sent.
-
-    The result must be a VerifiedSignature whose matched_key_id is a nonempty string, whose declared facts are a
-    nonempty string and an aware datetime, and whose undeclared facts are None. An awaitable result is closed unawaited.
+    The offset is applied by hand, so a time zone whose offset changes between reads cannot give another instant.
     """
-    if (
-        isinstance(signature, VerifiedSignature)
-        and _text(signature.matched_key_id)
-        and (_text(signature.delivery_id) if plan.delivery_id else signature.delivery_id is None)
-        and (_aware(signature.timestamp) if plan.timestamp else signature.timestamp is None)
-    ):
-        return signature
-    if isinstance(signature, Coroutine):
+    if type(value) is not datetime:
+        return None
+    try:
+        offset = value.utcoffset()
+        moment = None if offset is None else (value.replace(tzinfo=None) - offset).replace(tzinfo=timezone.utc)
+    except Exception:  # noqa: BLE001
+        moment = None
+    return moment
+
+
+def _kept(plan: AdapterPlan[T], signature: object) -> tuple[str | None, datetime | None, str] | None:
+    """Return a result's delivery id, UTC timestamp, and matched key id, each read once, or None for a broken contract.
+
+    The result must be exactly a VerifiedSignature whose matched_key_id is a nonempty str, whose declared facts are a
+    nonempty str and an aware datetime, and whose undeclared facts are None.
+    """
+    if type(signature) is not VerifiedSignature:
+        return None
+    delivery_id, timestamp, matched_key_id = signature.delivery_id, signature.timestamp, signature.matched_key_id
+    if not _text(matched_key_id) or not (_text(delivery_id) if plan.delivery_id else delivery_id is None):
+        return None
+    if not plan.timestamp:
+        return None if timestamp is not None else (delivery_id, None, matched_key_id)
+    moment = _utc(timestamp)
+    return None if moment is None else (delivery_id, moment, matched_key_id)
+
+
+def _fenced(plan: AdapterPlan[T], signature: object) -> tuple[str | None, datetime | None, str]:
+    """Return a verifier's facts when it keeps the contract, or raise AdapterContractError with nothing sent.
+
+    A coroutine result is closed unawaited. The error is raised outside any handler, so it keeps no context.
+    """
+    if (kept := _kept(plan, signature)) is not None:
+        return kept
+    if type(signature) is CoroutineType:
         signature.close()
     raise AdapterContractError(delivery_state=DeliveryState.NOT_SENT)
 
@@ -99,20 +121,13 @@ def _authenticate(  # noqa: PLR0913
     if not callable(verify := getattr(verifier, "verify", None)):
         raise configuration_error(("verifier",), "wrong_capability", helper_id)
     sizes(limits, raw_body, headers, len(keys.keys), helper_id)
-    signature = _fenced(plan, verify(raw_body, tuple(headers), keys, now, limits))
+    delivery_id, timestamp, matched_key_id = _fenced(plan, verify(raw_body, tuple(headers), keys, now, limits))
     signed = None
-    if (timestamp := signature.timestamp) is not None:
+    if timestamp is not None:
         signed = epoch_microseconds(timestamp)
         if not within(now_us, signed, limits):
             reject("timestamp_window", helper_id)
-    return facts(
-        signature.delivery_id,
-        timestamp,
-        signature.matched_key_id,
-        store,
-        expiry(signed, now_us, limits),
-        helper_id,
-    )
+    return facts(delivery_id, timestamp, matched_key_id, store, expiry(signed, now_us, limits), helper_id)
 
 
 def verify_adapted(  # noqa: PLR0913

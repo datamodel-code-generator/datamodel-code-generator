@@ -18,7 +18,7 @@ import sys
 import warnings
 from base64 import b64decode
 from dataclasses import dataclass, field, replace
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone, tzinfo
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
@@ -382,6 +382,8 @@ def webhook_adapters(package: ModuleType, lines: list[str]) -> None:
     _rejections(hooks)
     _windows(hooks)
     _fence(hooks)
+    _spoofs(hooks)
+    _zones(hooks)
     _verifier_errors(hooks)
     _calls(hooks)
     _limits(hooks)
@@ -500,6 +502,134 @@ def _fenced(hooks: Adapters, label: str, vector: Vector, verifier: Any, *, store
     hooks.lines.append(f"  {label} = {results[0]}")
     if results[1] != results[0]:
         hooks.lines.append(f"  {label} async = {results[1]}")
+
+
+class _Truthy(str):
+    """A string that claims to be nonempty."""
+
+    __slots__ = ()
+
+    def __bool__(self) -> bool:
+        """Claim to be nonempty, whatever the text."""
+        return True
+
+
+class _Raising(str):
+    """A string whose truth test raises."""
+
+    __slots__ = ()
+
+    def __bool__(self) -> bool:
+        """Raise instead of answering."""
+        msg = "MARKER-BOOL"
+        raise RuntimeError(msg)
+
+
+def _spoofs(hooks: Adapters) -> None:
+    """Refuse results that only claim the contract's types: subclasses, spoofed classes, and lying strings."""
+    vector = replace(STANDARD_ADAPTED, body=b"not JSON")
+    record_type = hooks.protocols.VerifiedSignature
+
+    class Changing(record_type):
+        """A result subclass whose matched key id changes between reads."""
+
+        __slots__ = ("reads",)
+
+        def __init__(self) -> None:
+            """Start with valid facts."""
+            object.__setattr__(self, "reads", 0)
+            super().__init__(delivery_id="msg_1", timestamp=_STAMP, matched_key_id="scripted")
+
+        def __getattribute__(self, name: str) -> Any:
+            """Answer a valid id on the first read of matched_key_id and an integer afterwards."""
+            if name != "matched_key_id":
+                return object.__getattribute__(self, name)
+            reads = object.__getattribute__(self, "reads")
+            object.__setattr__(self, "reads", reads + 1)
+            return "scripted" if reads == 0 else 12345
+
+    class Spoofed:
+        """An object whose __class__ claims to be a verified signature."""
+
+        delivery_id, timestamp, matched_key_id = "msg_1", _STAMP, "scripted"
+
+        @property
+        def __class__(self) -> type:  # type: ignore[override]
+            """Claim the record's class."""
+            return record_type
+
+    signature = hooks.signature
+    for label, answer in (
+        ("result subclass changing between reads", Changing()),
+        ("result spoofing its class", Spoofed()),
+        ("str subclass delivery id", signature(_Truthy("msg_1"), _STAMP)),
+        ("empty str subclass claiming to be nonempty", signature(_Truthy(""), _STAMP)),
+        ("matched key id whose truth test raises", signature("msg_1", _STAMP, _Raising("x"))),
+    ):
+        _fenced(hooks, label, vector, Scripted(answer))
+
+
+class _Zone(tzinfo):
+    """A time zone that records each offset read and answers from its script, raising a scripted error."""
+
+    def __init__(self, *offsets: object) -> None:
+        """Keep the offsets to give, in order, repeating the last one."""
+        self.offsets = list(offsets)
+        self.reads = 0
+
+    def utcoffset(self, dt: datetime | None) -> Any:
+        """Give the next offset, or raise it."""
+        del dt
+        offset = self.offsets[min(self.reads, len(self.offsets) - 1)]
+        self.reads += 1
+        if isinstance(offset, BaseException):
+            raise offset
+        return offset
+
+    def dst(self, dt: datetime | None) -> timedelta | None:
+        """Declare no daylight saving information."""
+        del dt
+        return None
+
+
+class _Shifted(datetime):
+    """A datetime subclass that overrides its offset."""
+
+    def utcoffset(self) -> timedelta:
+        """Claim UTC whatever the time zone."""
+        return timedelta(0)
+
+
+def _zones(hooks: Adapters) -> None:
+    """Read a verified timestamp's offset once, return it in UTC, and refuse offsets that are naive in effect."""
+    helper, keys = hooks.helper("adapted.message"), hooks.key_set(("scripted", b"secret"))
+    local = (2021, 2, 26, 0, 2, 10)
+    for label, zone, stamp in (
+        ("+09:00 timestamp", timezone(timedelta(hours=9)), None),
+        ("offset changing from +09:00 to UTC", lambda: _Zone(timedelta(hours=9), timedelta(0)), None),
+        ("offset changing from +09:00 to naive", lambda: _Zone(timedelta(hours=9), None), None),
+        ("naive offset", lambda: _Zone(None), None),
+        ("offset raising", lambda: _Zone(RuntimeError("MARKER-ZONE")), None),
+        ("offset beyond a day", lambda: _Zone(timedelta(hours=25)), None),
+        ("datetime subclass overriding its offset", None, lambda: _Shifted(*local)),
+    ):
+        for asynchronous in (False, True):
+            current = zone() if callable(zone) else zone
+            moment = stamp() if stamp is not None else datetime(*local, tzinfo=current)
+            store = (AsyncRecordingStore if asynchronous else RecordingStore)(True)
+            arguments = {"verifier": Scripted(hooks.signature("msg_1", moment)), "now": _STAMP, "replay_store": store}
+            call = (
+                (lambda arguments=arguments: asyncio.run(helper.verify_async(b'{"test": 1}', [], keys, **arguments)))
+                if asynchronous
+                else (lambda arguments=arguments: helper.verify(b'{"test": 1}', [], keys, **arguments))
+            )
+            try:
+                result = shown(call())
+            except Exception as error:  # noqa: BLE001
+                result = f"{describe(error)} context={error.__context__!r}"
+            reads = f" offset reads={current.reads}" if isinstance(current, _Zone) else ""
+            mode = " async" if asynchronous else ""
+            hooks.lines.append(f"  {label}{mode} = {result} claims {store.claims}{reads}")
 
 
 def _verifier_errors(hooks: Adapters) -> None:

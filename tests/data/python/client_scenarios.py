@@ -625,11 +625,7 @@ def codings(package: ModuleType, lines: list[str]) -> None:
         record(lines, "coding pre-read", lambda: api.pets.get_pet(pet_id=pet))
         exchange.respond(
             chunked_response(
-                200,
-                gzip.compress(pets, mtime=0),
-                100,
-                "application/json",
-                **{"content-encoding": "gzip", "X-Rate": "1"},
+                200, gzip.compress(pets, mtime=0), 100, "application/json", **{"content-encoding": "gzip", "X-Rate": "1"}
             )
         )
         record(lines, "coding chunked", lambda: len(api.pets.list_pets(x_trace=trace).root))
@@ -642,9 +638,7 @@ def codings(package: ModuleType, lines: list[str]) -> None:
         record(lines, "coding error", lambda: api.pets.list_pets(x_trace=trace))
         record(lines, "coding error truncated", lambda: api.pets.list_pets(x_trace=trace))
         record(lines, "coding redirect", lambda: api.pets.list_pets(x_trace=trace))
-        record(
-            lines, "coding bodyless", lambda: api.pets.delete_pets_by_pet_id(pet_id=_pet(package, "DeletePetsByPetId"))
-        )
+        record(lines, "coding bodyless", lambda: api.pets.delete_pets_by_pet_id(pet_id=_pet(package, "DeletePetsByPetId")))
     run(lambda: _async_codings(package, exchange, lines))
 
 

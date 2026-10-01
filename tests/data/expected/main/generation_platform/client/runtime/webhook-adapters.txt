@@ -33,7 +33,7 @@
   future bound exceeded = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window'] webhook_verification_error
   zero past tolerance exceeded = WebhookVerificationError: WebhookVerificationError(condition='timestamp_window') [condition='timestamp_window'] webhook_verification_error
   offset clock = Invoice Invoice(type='invoice.paid', id='in_1', amount=1200) delivery_id=None timestamp=2021-02-25T15:02:10+00:00 matched_key_id='stripe-2026' duplicate=False
-  verifier timestamp with an offset = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-26T00:02:10+09:00 matched_key_id='scripted' duplicate=False
+  verifier timestamp with an offset = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted' duplicate=False
   control: a kept contract decodes the body = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error claims 0 warnings []
   mapping result = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error claims 0 warnings []
   None result = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error claims 0 warnings []
@@ -51,6 +51,25 @@
   undeclared timestamp = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error claims 0 warnings []
   undeclared delivery id = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error claims 0 warnings []
   control: no facts declared or returned = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error claims 0 warnings []
+  result subclass changing between reads = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error claims 0 warnings []
+  result spoofing its class = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error claims 0 warnings []
+  str subclass delivery id = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error claims 0 warnings []
+  empty str subclass claiming to be nonempty = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error claims 0 warnings []
+  matched key id whose truth test raises = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error claims 0 warnings []
+  +09:00 timestamp = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted' duplicate=False claims [('96838dafac49628fc9384140707f7c8937355dcb9563c2febc51d65e00bd1722', 'msg_1', '2021-02-25T15:07:40+00:00')]
+  +09:00 timestamp async = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted' duplicate=False claims [('96838dafac49628fc9384140707f7c8937355dcb9563c2febc51d65e00bd1722', 'msg_1', '2021-02-25T15:07:40+00:00')]
+  offset changing from +09:00 to UTC = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted' duplicate=False claims [('96838dafac49628fc9384140707f7c8937355dcb9563c2febc51d65e00bd1722', 'msg_1', '2021-02-25T15:07:40+00:00')] offset reads=1
+  offset changing from +09:00 to UTC async = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted' duplicate=False claims [('96838dafac49628fc9384140707f7c8937355dcb9563c2febc51d65e00bd1722', 'msg_1', '2021-02-25T15:07:40+00:00')] offset reads=1
+  offset changing from +09:00 to naive = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted' duplicate=False claims [('96838dafac49628fc9384140707f7c8937355dcb9563c2febc51d65e00bd1722', 'msg_1', '2021-02-25T15:07:40+00:00')] offset reads=1
+  offset changing from +09:00 to naive async = Message Message(test=1) delivery_id='msg_1' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='scripted' duplicate=False claims [('96838dafac49628fc9384140707f7c8937355dcb9563c2febc51d65e00bd1722', 'msg_1', '2021-02-25T15:07:40+00:00')] offset reads=1
+  naive offset = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None claims [] offset reads=1
+  naive offset async = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None claims [] offset reads=1
+  offset raising = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None claims [] offset reads=1
+  offset raising async = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None claims [] offset reads=1
+  offset beyond a day = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None claims [] offset reads=1
+  offset beyond a day async = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None claims [] offset reads=1
+  datetime subclass overriding its offset = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None claims []
+  datetime subclass overriding its offset async = AdapterContractError: AdapterContractError(delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] adapter_contract_error context=None claims []
   verification error propagated=True calls=1 cause=None
   verification error async propagated=True calls=1 cause=None
   programmer error propagated=True calls=1 cause=None

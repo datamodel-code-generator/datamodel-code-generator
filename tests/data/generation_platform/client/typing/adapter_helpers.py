@@ -49,14 +49,20 @@ class StripeVerifier:
         values = [value for name, value in ordered_headers if name.lower() == "stripe-signature"]
         items = [item.partition("=") for item in (values[0].split(",") if len(values) == 1 else ())]
         stamps = [value for scheme, _, value in items if scheme == "t"]
-        signatures = [value for scheme, _, value in items if scheme == "v1"]
-        if len(stamps) != 1 or not stamps[0].isdigit() or not signatures:
+        encoded = [value for scheme, _, value in items if scheme == "v1"]
+        if len(stamps) != 1 or not (stamps[0].isascii() and stamps[0].isdigit()) or not encoded:
             raise WebhookVerificationError(condition="malformed_signature")
-        if (count := len(signatures)) > limits.max_signatures:
+        if (count := len(encoded)) > limits.max_signatures:
             raise ProtocolSizeError(kind="signatures", unit="items", limit=limits.max_signatures, observed=count)
+        try:
+            signatures = [bytes.fromhex(value) for value in encoded if value.isascii()]
+        except ValueError:
+            signatures = []
+        if len(signatures) != count:
+            raise WebhookVerificationError(condition="malformed_signature")
         signed = stamps[0].encode() + b"." + raw_body
         for key in keys.keys:
-            expected = hmac.new(key.secret, signed, "sha256").hexdigest()
+            expected = hmac.new(key.secret, signed, "sha256").digest()
             if any(hmac.compare_digest(expected, signature) for signature in signatures):
                 moment = datetime.fromtimestamp(int(stamps[0]), timezone.utc)
                 return VerifiedSignature(delivery_id=None, timestamp=moment, matched_key_id=key.name)
