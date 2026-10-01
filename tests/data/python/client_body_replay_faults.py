@@ -358,9 +358,7 @@ async def _cancel_partial(
                     "PUT",
                     "https://body.example.com/",
                     body=body,
-                    options=options.RequestOptions(
-                        cancel_token=token, cleanup_timeout=2.0 if mode == "deadline" else config.cleanup_timeout
-                    ),
+                    options=options.RequestOptions(cancel_token=token, cleanup_timeout=10.0),
                 )
             except BaseException as error:  # noqa: BLE001
                 failures.append(error)

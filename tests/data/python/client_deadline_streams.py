@@ -175,12 +175,13 @@ def deadline_streams(package: ModuleType, lines: list[str]) -> None:
                 lines.append(f"  stream {label} {outcome(response.read).partition(' secondary ')[0]}")
         for status in (200, 503):
             exchange.respond(_delayed(2, status))
-            result = outcome(
+            record(
+                lines,
+                f"buffered acquisition {status}",
                 lambda: api.request_raw(
                     "GET", "https://example.com/buffered", options=options.RequestOptions(total_timeout=1, retry=options.RetryOptions(max_retries=0))
-                )
+                ),
             )
-            lines.append(f"  buffered acquisition {status} {result.partition(' secondary ')[0]}")
         token = options.CancelToken()
         exchange.respond(raw_response(200, b'{"ready":true}', "application/json"))
         saved = api.request_raw("GET", "https://example.com/saved", options=options.RequestOptions(cancel_token=token))
@@ -293,12 +294,13 @@ async def _async_streams(package: ModuleType, lines: list[str]) -> None:
             ) as response:
                 lines.append(f"  async stream {label} {(await aoutcome(response.read)).partition(' secondary ')[0]}")
         exchange.respond(_delayed(2))
-        result = await aoutcome(
+        await arecord(
+            lines,
+            "async buffered acquisition",
             lambda: api.request_raw(
                 "GET", "https://example.com/buffered", options=options.RequestOptions(total_timeout=1, retry=options.RetryOptions(max_retries=0))
             ),
         )
-        lines.append(f"  async buffered acquisition {result.partition(' secondary ')[0]}")
         token = options.CancelToken()
         exchange.respond(_delayed(2))
         async with api.with_streaming_response.request_raw(
