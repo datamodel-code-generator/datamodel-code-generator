@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from pets import AsyncClient, Client
-from pets.options import ClientOptions, ProtocolClientOptions, RequestOptions
+from pets.errors import CacheInvalidationError
+from pets.options import ClientOptions, ProtocolClientOptions, RequestOptions, Unset
 from pets.protocols import (
     AsyncCacheStore,
     AsyncMemoryCacheStore,
@@ -57,6 +58,12 @@ def fetch(client: Client, entry: CacheEntry) -> None:
     assert_type(entry.body, bytes)
     assert_type(entry.vary_fingerprints, tuple[bytes, ...])
     del wider
+
+
+def recovered(error: CacheInvalidationError[RenameUserResponse]) -> RenameUserResponse:
+    """Recover a mutation's result from an invalidation failure with its type."""
+    assert_type(error.completed_result, RenameUserResponse | Unset)
+    return error.require_result()
 
 
 async def afetch(client: AsyncClient) -> None:

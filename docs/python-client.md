@@ -113,10 +113,10 @@ delivery IDs, namespaces, operation references, entry IDs, and causes; callers m
 
 ## Protocol contracts
 
-Generated packages also expose the shared contracts of pagination, polling, stream, and cache helpers. Records,
-options, cache stores, and resume state come from `pkg.protocols`; `ProtocolClientOptions` comes from `pkg.options`; exceptions come from
-`pkg.errors`. These imports need no HTTP library and start no threads. A client that uses no protocol settings loads
-none of these definitions: `pkg.options` and `pkg.errors` load them the first time one of their names is used. The
+Generated packages also expose the shared contracts of pagination, polling, stream, and cache helpers. Records, options,
+cache stores, and resume state come from `pkg.protocols`; `ProtocolClientOptions` comes from `pkg.options`; exceptions
+come from `pkg.errors`. These imports need no HTTP library and start no threads. A client that uses no protocol settings
+loads none of these definitions: `pkg.options` and `pkg.errors` load them the first time one of their names is used. The
 helpers that use these contracts are still being implemented; constructing a record or option sends nothing.
 
 ### Selectors, targets, and origins
@@ -302,11 +302,11 @@ Invalid field values raise `ValueError`.
 | `CacheValidatorConflictError` | `ProtocolConfigurationError` | `header_name: Literal['If-None-Match', 'If-Modified-Since']`; `field_path` is the header's name and `condition` is always `binding_mismatch` |
 | `CacheInvalidationError[T]` | `CacheStoreError` | `tags: tuple[str, ...]`, `completed_result: T \| Unset = UNSET`, a read-only property; `has_completed_result` and `require_result()`, which raises `ResultUnavailableError` without a result; `action` is always `invalidate` |
 
-A field whose value is fixed is not a constructor argument, so passing it raises `TypeError`. `progress` is
-copied into a read-only mapping. Messages and representations exclude locations, progress, resume state, snapshots,
-raw bytes, event types, event data, and tags; read those attributes explicitly. The payload type parameters are
-covariant and default to `object`, so an unparameterized `OperationFailedError` has `object` snapshot data. Narrow the payload
-explicitly before using it as a model.
+A field whose value is fixed is not a constructor argument, so passing it raises `TypeError`. `progress` is copied into
+a read-only mapping. Messages and representations exclude locations, progress, resume state, snapshots, raw bytes, event
+types, event data, and tags; read those attributes explicitly. The payload type parameters are covariant and default to
+`object`, so an unparameterized `OperationFailedError` has `object` snapshot data. Narrow the payload explicitly before
+using it as a model.
 
 ## Protocol helper configuration
 
@@ -511,15 +511,15 @@ E_SELECTOR_DEPENDENCY selection protocols.helpers['audit.all'].operation /paths/
 ### Python records and the manifest
 
 `ProtocolConfiguration(schema_version=1, helpers={...})` takes `PaginationHelper`, `PollingHelper`, `StreamHelper`,
-`WebhookHelper`, and `CacheHelper` records, which mirror the file: their fields have the file's names, with `from_` for `from`, and they
-take the client's `Selector` and `RequestTarget` records, `OperationRef` or a pointer string, and `SchemaRef`. A
-webhook's `HmacSignature` (`hmac-sha256` or `hmac-sha512`) or `PublicKeySignature` (`ed25519` or `rsa-pss-sha256`) has
-the same fields and takes `HeaderName`, `TimestampHeader`, `SignedLiteral`, `FixedBytes`, and `AsciiBytes` records, or
-`"none"`, and `signed_parts` entries `"raw-body"`, `"timestamp"`, and `"delivery-id"`; `AdapterSignature(timestamp=...,
-delivery_id=...)` takes `"required"` or `"none"` for each fact, and `NoSignature()` declares an unsigned webhook. An
-event mapping is an `EventMapping` with an `EventDiscriminator(from_="body", pointer=...)`, and a cache mutation a
-`CacheMutation(operation=..., invalidate_tags=(...))`. They are validated as the file
-is, with the same diagnostics, when the client configuration is constructed. The later kinds have no records yet.
+`WebhookHelper`, and `CacheHelper` records, which mirror the file: their fields have the file's names, with `from_` for
+`from`, and they take the client's `Selector` and `RequestTarget` records, `OperationRef` or a pointer string, and
+`SchemaRef`. A webhook's `HmacSignature` (`hmac-sha256` or `hmac-sha512`) or `PublicKeySignature` (`ed25519` or
+`rsa-pss-sha256`) has the same fields and takes `HeaderName`, `TimestampHeader`, `SignedLiteral`, `FixedBytes`, and
+`AsciiBytes` records, or `"none"`, and `signed_parts` entries `"raw-body"`, `"timestamp"`, and `"delivery-id"`;
+`AdapterSignature(timestamp=..., delivery_id=...)` takes `"required"` or `"none"` for each fact, and `NoSignature()`
+declares an unsigned webhook. An event mapping is an `EventMapping` with an `EventDiscriminator(from_="body",
+pointer=...)`, and a cache mutation a `CacheMutation(operation=..., invalidate_tags=(...))`. They are validated as the
+file is, with the same diagnostics, when the client configuration is constructed. The later kinds have no records yet.
 
 ```python
 ClientGenerationConfig(
@@ -867,7 +867,7 @@ helpers:
 | `validator` | `etag` revalidates with `If-None-Match` from `ETag`, `last_modified` with `If-Modified-Since` from `Last-Modified`, and `both` with `If-None-Match` when an `ETag` is stored and `If-Modified-Since` otherwise |
 | `authenticated` | Whether the fetch carries credentials. It must match every call: a call that the auth, a credential or cookie header, or a security scheme's field authenticates needs `true` and a credential partition, and any other call `false` |
 | `statuses` | The cacheable statuses, distinct, from 100 to 599 |
-| `vary_allowlist` | The request headers a response's `Vary` may name; a response that varies on any other header, or on `*`, is not stored |
+| `vary_allowlist` | The request headers a response's `Vary` may name; a response that varies on any other header, or on `*`, is not stored. A header credentials travel in (`Authorization`, `Proxy-Authorization`, `Cookie`, `Cookie2`, or a declared security scheme's header) fails generation with `E_CONFIG_VALUE`. Responses behind a CDN often vary on `Accept-Encoding`: allow it to store them |
 | `tags` | Text the stored entries carry; each `{name}` is replaced by the wire value of the required path or query parameter of that name, as text |
 | `mutations` | Method names mapped to `{operation, invalidate_tags}`: a POST, PUT, PATCH, or DELETE operation and the tags its success removes |
 
@@ -932,7 +932,8 @@ confirmed; `response: ResponseInfo`; and `network_status`, the status the networ
 `None` for a fresh answer. A fresh answer's `response` has a new `call_id`, every count 0, and the elapsed time of the
 lookup and decoding; a revalidation's has the 304 call's identity, counts, and elapsed time, with the stored status and
 the merged headers, request id, and content type. A stored body is decoded again on every use, so callers never share a
-model object.
+model object. A fresh answer sends nothing, so it emits no call events to hooks and takes no limiter permit; a network
+fetch emits the events of an ordinary call.
 
 An entry is fresh while its age is below its freshness lifetime and below `CacheOptions.max_ttl`. The lifetime is the
 response's `Cache-Control: max-age`, else `Expires` minus `Date`, else 0; the age follows RFC 9111 from `Age`, `Date`,
@@ -943,9 +944,9 @@ and a `Range`, `If-Range`, `If-Match`, or `If-Unmodified-Since` header, raises `
 anything is looked up.
 
 A stale entry is revalidated with its validator as `validator` declares; a fetch that gives `If-None-Match` or
-`If-Modified-Since` itself sends it once, and raises `CacheValidatorConflictError` before sending when a usable entry has
-another validator. A 304 updates the entry's headers, except `Content-Type`, `Content-Encoding`, `Content-Length`, and
-hop-by-hop fields, and its freshness. A 304 without a usable entry, after a redirect, or with an `ETag` or
+`If-Modified-Since` itself sends it once, and raises `CacheValidatorConflictError` before sending when a usable entry
+has another validator. A 304 updates the entry's headers, except `Content-Type`, `Content-Encoding`, `Content-Length`,
+and hop-by-hop fields, and its freshness. A 304 without a usable entry, after a redirect, or with an `ETag` or
 `Last-Modified` other than the entry's raises `CacheProtocolError`; no request is sent again.
 
 ### Storing and keys
@@ -962,7 +963,20 @@ carries: each credential's scheme, kind, and required scopes, the audience of an
 declared capabilities, never a secret. Calls with different partitions, schemes, scopes, or audiences never share an
 entry; give each tenant or permission set its own `ProtocolSecurityContext.credential_partition`. Token refreshes keep
 the key. Among the entries of one key, the store selects the one whose `Vary` fingerprints match the request's headers
-before auth; the store computes the fingerprints as keyed hashes, so header values never become keys.
+before auth; the store computes the fingerprints as keyed hashes, so header values never become keys. Besides the
+response's `Vary`, an entry varies on every header a client, view, or call header patch names and every declared header
+parameter, except `Cache-Control`, `If-None-Match`, and `If-Modified-Since`, so a caller's own `X-Api-Key` patch keeps
+callers apart.
+
+!!! warning "Credentials the cache cannot see"
+    The auth adds its credentials after the cache looks a request up, so a response whose `Vary` names a header the
+    call's auth manages, such as `Authorization`, a cookie, a declared scheme's header, or a signer's managed header, is
+    never stored. Within one partition, all calls are taken to share one permission set: a provider whose token or
+    identity changes from call to call needs a client per partition. A view's or a call's own `auth` therefore fails
+    an authenticated fetch with `ProtocolConfigurationError(field_path=('options', 'auth'),
+    condition='security_partition')`; `auth=None` stays allowed for anonymous fetches. Credentials the SDK never sees,
+    such as a client certificate, a borrowed HTTP client's own headers, or a transport adapter that authenticates, make
+    a call look anonymous: give each such identity its own `credential_partition`, or its own store.
 
 ### Stores
 
@@ -1013,6 +1027,8 @@ E_CLIENT_UNSUPPORTED target protocols.helpers['reports.get'].statuses[1] /paths/
 E_CONFIG_VALUE config protocols.helpers['users.statuses'].statuses[0] /paths/~1users~1{userId}/get: The cacheable status 404 of 'users.statuses' is no declared 2xx success of GET /users/{userId}
 E_CONFIG_VALUE config protocols.helpers['users.statuses'].statuses[1] /paths/~1users~1{userId}/get: The cacheable status 201 of 'users.statuses' is no declared 2xx success of GET /users/{userId}
 E_CONFIG_VALUE config protocols.helpers['secure.anonymous'].authenticated /paths/~1secure~1users~1{userId}/get: The cache helper 'secure.anonymous' is declared anonymous, but GET /secure/users/{userId} requires credentials
+E_CONFIG_VALUE config protocols.helpers['secure.varying'].vary_allowlist[1] /paths/~1secure~1users~1{userId}/get: The cache helper 'secure.varying' allows a Vary on 'authorization', which credentials travel in; the auth adds it after the cache looks a request up
+E_CONFIG_VALUE config protocols.helpers['secure.varying'].vary_allowlist[2] /paths/~1secure~1users~1{userId}/get: The cache helper 'secure.varying' allows a Vary on 'Cookie', which credentials travel in; the auth adds it after the cache looks a request up
 E_CONFIG_VALUE config protocols.helpers['users.tagged'].tags[0] /paths/~1users/get: The tag '{fields}' of 'users.tagged' names no path or query parameter 'fields' of GET /users
 E_CONFIG_VALUE config protocols.helpers['users.tagged'].tags[1] /paths/~1users/get: The tag 'page:{page}' of 'users.tagged' names the optional parameter 'page' of GET /users
 E_CONFIG_VALUE config protocols.helpers['users.tagged'].tags[2] /paths/~1users/get: The tag '{role}' of 'users.tagged' names the optional parameter 'role' of GET /users
