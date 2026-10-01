@@ -273,6 +273,7 @@ rules.deprecated = "warn"
 [tool.pytest]
 ini_options.norecursedirs = [ ".hypothesis", ".tox", "tests/data/*" ]
 ini_options.markers = [
+  "abnormal_path(reason): marks tests and report helpers that mock an abnormal path an e2e test cannot reproduce",
   "allow_direct_assert: marks guarded tests where direct assert statements are intentionally allowed",
   "benchmark: marks tests as benchmark tests",
   "isolate_builtin_formatter_config: marks tests that must not inherit repository formatter config",

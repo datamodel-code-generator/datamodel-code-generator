@@ -12,6 +12,8 @@ from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+import pytest
+
 from datamodel_code_generator import (
     GenerateConfig,
     OpenAPIScope,
@@ -31,8 +33,6 @@ from datamodel_code_generator.parser.openapi_contract import BindingCaptureMixin
 
 if TYPE_CHECKING:
     from types import FrameType
-
-    import pytest
 
     from datamodel_code_generator._openapi_generation import ModelGenerationProduct
 
@@ -235,6 +235,7 @@ def compare_api_session(source: Path, config: GenerateConfig) -> dict[str, objec
     }
 
 
+@pytest.mark.abnormal_path("internal session crash injection, pending the guard reachability sweep")
 def _inject_session_failure(monkeypatch: pytest.MonkeyPatch, failure: str, source: Path) -> None:
     """Inject only exceptional boundaries while preserving the real session and frozen batches."""
     construct = BindingCaptureMixin.__init__

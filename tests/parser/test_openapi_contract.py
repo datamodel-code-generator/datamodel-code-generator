@@ -234,6 +234,7 @@ def test_source_lease_pointer_boundaries() -> None:
 
 
 @pytest.mark.parametrize("failure", ["capture", "unexpected"])
+@pytest.mark.abnormal_path("internal capture crash injection, pending the guard reachability sweep")
 def test_capture_failure_latches_before_propagation(failure: str, monkeypatch: pytest.MonkeyPatch) -> None:
     """Keep first observer failure distinct from ordinary parser exceptions."""
     parser = ContractApiOpenAPIParser(
@@ -406,6 +407,7 @@ def test_capture_actual_deduplication_pair() -> None:
 
 
 @pytest.mark.parametrize("failure", ["missing_root", "structural_cycle", "after_enter"])
+@pytest.mark.abnormal_path("internal capture crash injection, pending the guard reachability sweep")
 def test_capture_collapse_failures(failure: str, monkeypatch: pytest.MonkeyPatch) -> None:
     """Reject malformed recipes and retain incomplete context entry on real parse failures."""
     from datamodel_code_generator.parser import base
@@ -556,6 +558,7 @@ def test_inherited_default_producers_follow_final_copies() -> None:
         parser.source_lease.close()
 
 
+@pytest.mark.abnormal_path("internal capture crash injection, pending the guard reachability sweep")
 def test_inherited_default_rejects_unmatched_resolution(monkeypatch: pytest.MonkeyPatch) -> None:
     """Latch a corrupt observer sequence during real inherited-field generation."""
     from datamodel_code_generator.parser.openapi import OpenAPIParser

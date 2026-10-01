@@ -76,6 +76,7 @@ def test_target_render_target_grammar(tmp_path: Path, monkeypatch: pytest.Monkey
     assert_output(target_render_report("target-grammar", tmp_path, monkeypatch), EXPECTED / "target-grammar.txt")
 
 
+@pytest.mark.abnormal_path("the running interpreter is never older than the supported minimum")
 def test_target_render_python_runtime(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Refuse to render a target on a Python older than every target supports."""
     monkeypatch.setattr("datamodel_code_generator._api_generation._PYTHON_MINIMUM", (99, 0))
@@ -105,6 +106,7 @@ def test_target_render_http(
             del _SchemaHandler.routes[route]
 
 
+@pytest.mark.abnormal_path("staging the remote reference lock fails only on an I/O error")
 def test_target_render_lock_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Propagate a failure to stage the remote lock update after releasing the accepted sources."""
 
@@ -116,6 +118,7 @@ def test_target_render_lock_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     assert_output(target_render_report("lock-failure", tmp_path, monkeypatch), EXPECTED / "lock-failure.txt")
 
 
+@pytest.mark.abnormal_path("os.path.relpath fails only across Windows drives")
 def test_target_render_relative_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Reject layouts whose persistent paths cannot be relative to the target root, such as other drives."""
 
@@ -143,6 +146,7 @@ def _failing(
 @pytest.mark.parametrize(
     "failure", [OSError("No space left on device"), KeyboardInterrupt()], ids=["error", "interrupt"]
 )
+@pytest.mark.abnormal_path("publishing fails only when the disk fills or the process is interrupted")
 def test_target_generate_rollback(failure: BaseException, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Undo every journaled change in reverse order and keep the original failure, including interrupts."""
     monkeypatch.setattr(
@@ -156,6 +160,7 @@ def test_target_generate_rollback(failure: BaseException, tmp_path: Path, monkey
 
 @pytest.mark.skipif(os.name == "nt", reason="Windows restores backups through the lexical fallback")
 @pytest.mark.parametrize(("case", "existing"), [("rollback-created", False), ("rollback-backup", True)])
+@pytest.mark.abnormal_path("rollback fails only when restoring the journal also hits an I/O error")
 def test_target_generate_rollback_failure(
     case: str, existing: bool, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -202,6 +207,9 @@ def test_target_generate_lock_discard(tmp_path: Path, monkeypatch: pytest.Monkey
 
 @pytest.mark.skipif(os.name == "nt", reason="Windows checks destinations through the lexical fallback")
 @pytest.mark.parametrize("failure", ["anchor", "staging"])
+@pytest.mark.abnormal_path(
+    "a directory replaced mid-publication and an fsync EIO need a racing process and a failing disk"
+)
 def test_target_generate_publication_checks(failure: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Stop when staging fails, and undo the journal when a destination directory is replaced while publishing."""
 
