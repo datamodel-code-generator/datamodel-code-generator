@@ -1437,17 +1437,19 @@ A parameter that a registered parameter adapter selects (`codec_adapters`, a `Co
 it can also carry declarations no builtin style can, such as a `form` cookie array with `explode: false`. The client
 checks what the adapter returns before anything is sent:
 
-- A contribution outside its location's syntax or ownership raises `CodecAdapterError`: a path segment that is a dot
-  segment (`.`, `..`, or either spelled with `%2e`), a header value that is not visible ASCII with only spaces or tabs
-  inside it, a query name other than the parameter's own (or `name[member]` for a `deepObject`) or one another
-  parameter owns, and a cookie of another name.
+- A contribution outside its location's syntax or ownership raises `CodecAdapterError`: a header value that is not
+  visible ASCII with only spaces or tabs inside it, a query name other than the parameter's own (or `name[member]` for
+  a `deepObject`) or one another parameter owns, and a cookie of another name.
+- A path segment the adapter's text makes `.` or `..` fails with `RequestEncodingError`, as a builtin path argument's
+  does.
 - An empty array or object the adapter's capabilities exclude, and a `ParameterEncodingError` the adapter raises,
   raise `RequestEncodingError` with that `ParameterEncodingError` as its cause.
 - The first call that sends the parameter builds the adapter: capabilities that differ from the registration raise
   `CodecAdapterError`, and an exception the factory raises propagates unchanged.
 
 Pagination helpers that write a page position or a binding into an adapted parameter encode it through the same
-adapter.
+adapter, and judge a read value's path segment by the adapter's text. Generation does not judge a literal bound to
+an adapted path parameter, since it does not run the adapter; the request refuses a dot segment the adapter makes.
 
 ### Cost
 

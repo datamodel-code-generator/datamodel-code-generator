@@ -9,10 +9,19 @@ from typing import Final
 from models import Item as _dcg_type_0
 
 from .. import _operations
-from .._runtime.protocols.pagination import CountPlan, PageBinding, PaginationPlan
-from .._runtime.protocols.records import BodySelector, QuerystringTarget
+from .._runtime.protocols.pagination import (
+    CountPlan,
+    CursorPlan,
+    PageBinding,
+    PaginationPlan,
+)
+from .._runtime.protocols.records import (
+    BodySelector,
+    ParameterTarget,
+    QuerystringTarget,
+)
 from .._runtime.protocols.references import OperationRef
-from ..types.default import FindResponse
+from ..types.default import FindResponse, ListShelfResponse
 
 
 def _items_0(data: FindResponse) -> Sequence[_dcg_type_0] | None:
@@ -38,6 +47,35 @@ PLAN_0: Final[PaginationPlan[_dcg_type_0, FindResponse]] = PaginationPlan(
         PageBinding(
             target=QuerystringTarget(name='criteria', pointer='/term'),
             literal=None,
+        ),
+    ),
+)
+
+
+def _items_1(data: ListShelfResponse) -> Sequence[_dcg_type_0] | None:
+    """Return the items of one page of shelves.walk."""
+    return data.data
+
+
+PLAN_1: Final[PaginationPlan[_dcg_type_0, ListShelfResponse]] = PaginationPlan(
+    helper_id='shelves.walk',
+    operation=OperationRef(pointer='/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get'),
+    call=_operations.OPERATION_6,
+    items=_items_1,
+    items_selector=BodySelector(pointer='/data'),
+    continuation=CursorPlan(
+        read=BodySelector(pointer='/next'),
+        write=ParameterTarget(location='path', name='rack'),
+        end_missing=True,
+        end_null=True,
+    ),
+    fingerprint='2c9949cecd410826225b5e3654679e4f3c8057a9575f5609f87c671e9072b887',
+    bindings=(
+        PageBinding(target=ParameterTarget(location='path', name='shelf'), literal='.'),
+        PageBinding(
+            target=ParameterTarget(location='path', name='slot'),
+            source='previous',
+            selector=BodySelector(pointer='/slot'),
         ),
     ),
 )

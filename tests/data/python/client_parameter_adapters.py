@@ -39,12 +39,32 @@ def _arguments(package: ModuleType) -> dict[str, Any]:
         "members": codecs.SpreadRequestCodecs.parameter(location="query", name="opts").from_wire({"b": "1"}),
         "segments": {text: segment(location="path", name="segment").from_wire(text) for text in _SEGMENTS},
         "headers": {text: segment(location="header", name="X-Raw").from_wire(text) for text in _HEADERS},
+        "shelf": {
+            name: codecs.ListShelfRequestCodecs.parameter(location="path", name=name).from_wire(text)
+            for name, text in (("shelf", "s"), ("rack", "r"), ("slot", "t"))
+        },
     }
 
 
 def _page(*ids: str, more: bool) -> Callable[[httpx2.Request], httpx2.Response]:
     """Return a responder of one page of found items."""
     return json_response(200, {"data": [{"id": value} for value in ids], "has_more": more})
+
+
+def _shelf(item: str, cursor: str | None, slot: str = "x") -> Callable[[httpx2.Request], httpx2.Response]:
+    """Return a responder of one shelf page with its next rack and slot."""
+    return json_response(200, {"data": [{"id": item}], "next": cursor, "slot": slot})
+
+
+def _shelves(api: Any, values: dict[str, Any], exchange: Exchange, lines: list[str]) -> None:
+    """Write a page's rack and slot, and a literal `.` shelf, through the path parameters' adapters.
+
+    A slot `..` and a shelf `.` are JSON, so no dot segment; a rack `..` is one, and a rack with `/` breaks its adapter.
+    """
+    for cursor in ("b", "..", "a/b"):
+        exchange.respond(_shelf("1", cursor, slot=".."), _shelf("2", None))
+        drained(lines, f"shelf pages after rack {cursor!r}", api.protocols.shelves.walk.iterate(**values["shelf"]))
+        exchange.responders.clear()
 
 
 def parameter_adapters(package: ModuleType, lines: list[str]) -> None:
@@ -76,6 +96,7 @@ def parameter_adapters(package: ModuleType, lines: list[str]) -> None:
         drained(lines, "pages of an adapted querystring", api.protocols.finds.all.iterate(criteria=values["criteria"]))
         exchange.respond(_page("1", more=False))
         drained(lines, "pages without a querystring", api.protocols.finds.all.iterate())
+        _shelves(api, values, exchange, lines)
     http.close()
     run(lambda: _async_parameter_adapters(package, values, lines))
 
@@ -116,4 +137,6 @@ async def _async_parameter_adapters(package: ModuleType, values: dict[str, Any],
             "async pages of an adapted querystring",
             api.protocols.finds.all.iterate(criteria=values["criteria"]),
         )
+        exchange.respond(_shelf("1", "b", slot=".."), _shelf("2", None))
+        await adrained(lines, "async shelf pages", api.protocols.shelves.walk.iterate(**values["shelf"]))
     await http.aclose()

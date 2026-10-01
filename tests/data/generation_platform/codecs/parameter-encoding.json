@@ -1514,5 +1514,24 @@
       "location": "path",
       "name": "p"
     }
+  ],
+  "path_texts": [
+    {
+      "plan": {
+        "location": "path",
+        "name": "p",
+        "style": "simple"
+      },
+      "value": "a.b"
+    },
+    {
+      "plan": {
+        "location": "path",
+        "name": "p",
+        "style": "simple",
+        "adapted": true
+      },
+      "value": "a.b"
+    }
   ]
 }

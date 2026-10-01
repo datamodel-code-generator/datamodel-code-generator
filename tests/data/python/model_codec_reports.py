@@ -35,6 +35,7 @@ from datamodel_code_generator._runtime.model_codecs.parameters import (
     decode_parameters,
     encode_parameter,
     encode_parameters,
+    path_text,
     raw_parameter,
 )
 from datamodel_code_generator._runtime.model_codecs.patterns import MatchBudget, compile_pattern, plan_pattern, search
@@ -365,6 +366,10 @@ def parameter_encoding_report(path: Path) -> str:
         for case in (*fixture["encode"], *fixture["failures"])
     ]
     lines.extend(f"invalid {dict(plan)}: {attempt(lambda plan=plan: str(parameter_plan(plan)))}" for plan in fixture["invalid_plans"])
+    lines.extend(
+        f"path text {_label(parameter_plan(case['plan']))}: {attempt(lambda case=case: path_text(parameter_plan(case['plan']), case['value']))}"
+        for case in fixture["path_texts"]
+    )
     python_values = [
         ({"location": "query", "name": "i", "style": "form", "explode": True, "kind": "integer"}, 2.0),
         ({"location": "query", "name": "n", "style": "form", "explode": True, "kind": "number"}, 1.5),

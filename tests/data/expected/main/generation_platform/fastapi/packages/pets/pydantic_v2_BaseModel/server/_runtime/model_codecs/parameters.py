@@ -368,6 +368,8 @@ def encode_parameter(plan: ParameterPlan, value: WireValue) -> EncodedParameterC
 
 def path_text(plan: ParameterPlan, value: WireValue) -> str:
     """Return the text a path parameter's value substitutes for its placeholder in the path template."""
+    if isinstance(plan, AdaptedParameterPlan):
+        raise _adapted(plan)
     return "".join(text for _, text in _pairs(plan, freeze_wire(value)))
 
 

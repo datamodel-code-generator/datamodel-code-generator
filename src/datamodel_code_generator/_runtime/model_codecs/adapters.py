@@ -76,7 +76,6 @@ _PROHIBITED: Final = {
 }
 _TRIPLET: Final = re.compile(rb"%(?![0-9A-Fa-f]{2})")
 _PATH_BYTES: Final = re.compile(rb"[A-Za-z0-9\-._~!$&'()*+,;=:@%]*")
-_DOT_SEGMENT: Final = re.compile(rb"(?:\.|%2[Ee]){1,2}")
 _QUERY_NAME: Final = re.compile(rb"[A-Za-z0-9\-._~!$'()*+,;:@%/?]+")
 _QUERY_VALUE: Final = re.compile(rb"[A-Za-z0-9\-._~!$'()*+,;=:@%/?]*")
 _QUERY: Final = re.compile(rb"[A-Za-z0-9\-._~!$&'()*+,;=:@%/?]+")
@@ -582,11 +581,7 @@ class AdapterParameterCodec:
             name, value = fragment.name, fragment.value
             match location:
                 case "path":
-                    valid = (
-                        bool(_PATH_BYTES.fullmatch(value))
-                        and not _TRIPLET.search(value)
-                        and not _DOT_SEGMENT.fullmatch(value)
-                    )
+                    valid = bool(_PATH_BYTES.fullmatch(value)) and not _TRIPLET.search(value)
                 case "query":
                     valid = (
                         isinstance(name, bytes)

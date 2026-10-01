@@ -117,8 +117,46 @@ paths:
       responses:
         "204":
           description: No content.
+  /shelves/{shelf}/{rack}/{slot}:
+    get:
+      operationId: listShelf
+      parameters:
+        - name: shelf
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: rack
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: slot
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: One page of shelved items.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShelfPage"
 components:
   schemas:
+    ShelfPage:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Item"
+        next:
+          type: [string, "null"]
+        slot:
+          type: string
     Members:
       type: object
       properties:

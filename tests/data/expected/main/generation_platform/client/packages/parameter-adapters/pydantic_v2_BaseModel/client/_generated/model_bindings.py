@@ -80,6 +80,18 @@ def _resources() -> tuple[SchemaResource, ...]:
                                 'has_more': {'type': 'boolean'},
                             },
                         },
+                        'ShelfPage': {
+                            'type': 'object',
+                            'required': ['data'],
+                            'properties': {
+                                'data': {
+                                    'type': 'array',
+                                    'items': {'$ref': 'https://dcg.invalid/inputs/root#/components/schemas/Item'},
+                                },
+                                'next': {'type': ['string', 'null']},
+                                'slot': {'type': 'string'},
+                            },
+                        },
                         'Tags': {'type': 'array', 'items': {'type': 'string'}},
                     },
                 },
@@ -129,6 +141,26 @@ def _resources() -> tuple[SchemaResource, ...]:
                     '/segments/{segment}': {
                         'get': {'parameters': [{'schema': {'type': 'string'}}, {'schema': {'type': 'string'}}]},
                     },
+                    '/shelves/{shelf}/{rack}/{slot}': {
+                        'get': {
+                            'parameters': [
+                                {'schema': {'type': 'string'}},
+                                {'schema': {'type': 'string'}},
+                                {'schema': {'type': 'string'}},
+                            ],
+                            'responses': {
+                                '200': {
+                                    'content': {
+                                        'application/json': {
+                                            'schema': {
+                                                '$ref': 'https://dcg.invalid/inputs/root#/components/schemas/ShelfPage',
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
                     '/spread': {
                         'get': {
                             'parameters': [
@@ -157,6 +189,7 @@ def _resources() -> tuple[SchemaResource, ...]:
                 '/components/schemas/Members',
                 '/components/schemas/Options',
                 '/components/schemas/Page',
+                '/components/schemas/ShelfPage',
                 '/components/schemas/Tags',
                 '/paths/~1finds/get/parameters/0/content/application~1json/schema',
                 '/paths/~1finds/get/responses/200/content/application~1json/schema',
@@ -166,6 +199,10 @@ def _resources() -> tuple[SchemaResource, ...]:
                 '/paths/~1search/get/parameters/2/schema',
                 '/paths/~1segments~1{segment}/get/parameters/0/schema',
                 '/paths/~1segments~1{segment}/get/parameters/1/schema',
+                '/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get/parameters/0/schema',
+                '/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get/parameters/1/schema',
+                '/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get/parameters/2/schema',
+                '/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get/responses/200/content/application~1json/schema',
                 '/paths/~1spread/get/parameters/0/schema',
                 '/paths/~1spread/get/parameters/1/schema',
                 '/paths/~1tags/get/parameters/0/schema',
@@ -270,6 +307,33 @@ def request_registry() -> BundleSchemaRegistry:
                 source=CodecSourceRef(document='/inputs/root', pointer='/paths/~1spread/get/parameters/0/schema'),
                 dialect='https://json-schema.org/draft/2020-12/schema',
                 raw=freeze_wire({'$ref': '#/components/schemas/Members'}),
+            ),
+            SchemaSource(
+                schema_id='https://dcg.invalid/inputs/root#/paths/~1shelves~1%7Bshelf%7D~1%7Brack%7D~1%7Bslot%7D/get/parameters/0/schema',
+                source=CodecSourceRef(
+                    document='/inputs/root',
+                    pointer='/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get/parameters/0/schema',
+                ),
+                dialect='https://json-schema.org/draft/2020-12/schema',
+                raw=freeze_wire({'type': 'string'}),
+            ),
+            SchemaSource(
+                schema_id='https://dcg.invalid/inputs/root#/paths/~1shelves~1%7Bshelf%7D~1%7Brack%7D~1%7Bslot%7D/get/parameters/1/schema',
+                source=CodecSourceRef(
+                    document='/inputs/root',
+                    pointer='/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get/parameters/1/schema',
+                ),
+                dialect='https://json-schema.org/draft/2020-12/schema',
+                raw=freeze_wire({'type': 'string'}),
+            ),
+            SchemaSource(
+                schema_id='https://dcg.invalid/inputs/root#/paths/~1shelves~1%7Bshelf%7D~1%7Brack%7D~1%7Bslot%7D/get/parameters/2/schema',
+                source=CodecSourceRef(
+                    document='/inputs/root',
+                    pointer='/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get/parameters/2/schema',
+                ),
+                dialect='https://json-schema.org/draft/2020-12/schema',
+                raw=freeze_wire({'type': 'string'}),
             ),
         ),
     )
@@ -568,6 +632,83 @@ def _model_13() -> ModelBinding:
 
 
 @cache
+def _model_14() -> ModelBinding:
+    return ModelBinding(
+        symbol='models:FieldShelvesShelfRackSlotGetPathShelfParameter',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1shelves~1%7Bshelf%7D~1%7Brack%7D~1%7Bslot%7D/get/parameters/0/schema',
+        root=LeafNode(),
+    )
+
+
+@cache
+def _model_15() -> ModelBinding:
+    return ModelBinding(
+        symbol='models:FieldShelvesShelfRackSlotGetPathRackParameter',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1shelves~1%7Bshelf%7D~1%7Brack%7D~1%7Bslot%7D/get/parameters/1/schema',
+        root=LeafNode(),
+    )
+
+
+@cache
+def _model_16() -> ModelBinding:
+    return ModelBinding(
+        symbol='models:FieldShelvesShelfRackSlotGetPathSlotParameter',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1shelves~1%7Bshelf%7D~1%7Brack%7D~1%7Bslot%7D/get/parameters/2/schema',
+        root=LeafNode(),
+    )
+
+
+@cache
+def _model_17() -> ModelBinding:
+    return ModelBinding(
+        symbol='models:ShelfPage',
+        native_kind='model',
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/ShelfPage',
+        fields=(
+            FieldBinding(
+                field_id='models:ShelfPage.data',
+                native_name='data',
+                wire_name='data',
+                validation_key='data',
+                validation_keys=('data',),
+                required=True,
+                read_only=False,
+                write_only=False,
+                omit_none=False,
+                type=ArrayNode(item=ModelNode(symbol='models:Item')),
+            ),
+            FieldBinding(
+                field_id='models:ShelfPage.next',
+                native_name='next',
+                wire_name='next',
+                validation_key='next',
+                validation_keys=('next',),
+                required=False,
+                read_only=False,
+                write_only=False,
+                omit_none=False,
+                type=UnionNode(members=(LeafNode(),), nullable=True),
+            ),
+            FieldBinding(
+                field_id='models:ShelfPage.slot',
+                native_name='slot',
+                wire_name='slot',
+                validation_key='slot',
+                validation_keys=('slot',),
+                required=False,
+                read_only=False,
+                write_only=False,
+                omit_none=True,
+                type=LeafNode(),
+            ),
+        ),
+    )
+
+
+@cache
 def _factory_0() -> ParameterCodecAdapterV1:
     return tests_data_python_parameter_adapters.json_cookie()
 
@@ -615,6 +756,21 @@ def _factory_8() -> ParameterCodecAdapterV1:
 @cache
 def _factory_9() -> ParameterCodecAdapterV1:
     return tests_data_python_parameter_adapters.brackets()
+
+
+@cache
+def _factory_10() -> ParameterCodecAdapterV1:
+    return tests_data_python_parameter_adapters.json_path_text()
+
+
+@cache
+def _factory_11() -> ParameterCodecAdapterV1:
+    return tests_data_python_parameter_adapters.raw_path()
+
+
+@cache
+def _factory_12() -> ParameterCodecAdapterV1:
+    return tests_data_python_parameter_adapters.json_path_text()
 
 
 CONTEXT_0: Final = CodecContext(
@@ -1799,3 +1955,344 @@ def codec_13() -> PydanticModelCodec[models.Members]:
 @cache
 def outbound_13() -> NativeOutboundCodec[models.Members]:
     return NativeOutboundCodec(codec_13(), CONTEXT_13)
+
+
+CONTEXT_14: Final = CodecContext(
+    surface='client',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1shelves~1%7Bshelf%7D~1%7Brack%7D~1%7Bslot%7D/get/parameters/0/schema',
+    operation_id='/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get',
+)
+
+
+@cache
+def codec_14() -> PydanticModelCodec[models.FieldShelvesShelfRackSlotGetPathShelfParameter]:
+    """Codec of /paths/~1shelves~1{shelf}~1{rack}~1{slot}/get parameter (request path shelf)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1shelves~1%7Bshelf%7D~1%7Brack%7D~1%7Bslot%7D/get/parameters/0/schema|ModelNode(symbol='models:FieldShelvesShelfRackSlotGetPathShelfParameter')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1shelves~1%7Bshelf%7D~1%7Brack%7D~1%7Bslot%7D/get/parameters/0/schema',
+            operation_id='/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='root',
+            native_export='models:FieldShelvesShelfRackSlotGetPathShelfParameter',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='models:FieldShelvesShelfRackSlotGetPathShelfParameter'),
+            models=(_model_14(),),
+        ),
+        models.FieldShelvesShelfRackSlotGetPathShelfParameter,
+        {
+            'models:FieldShelvesShelfRackSlotGetPathShelfParameter': models.FieldShelvesShelfRackSlotGetPathShelfParameter,
+        },
+        request_bundle,
+    )
+
+
+@cache
+def outbound_14() -> NativeOutboundCodec[models.FieldShelvesShelfRackSlotGetPathShelfParameter]:
+    return NativeOutboundCodec(codec_14(), CONTEXT_14)
+
+
+@cache
+def parameter_14() -> AdapterParameterCodec:
+    return AdapterParameterCodec(
+        manifest=AdapterManifest(
+            name='json-shelf',
+            import_ref='tests.data.python.parameter_adapters:json_path_text',
+            capabilities=ParameterCodecCapabilities(
+                locations=('path',),
+                styles=('simple',),
+                explode_values=(False,),
+                value_kinds=('string',),
+            ),
+        ),
+        plan=ParameterPlanView(
+            binding=CodecBindingView(
+                binding_id="https://dcg.invalid/inputs/root#/paths/~1shelves~1%7Bshelf%7D~1%7Brack%7D~1%7Bslot%7D/get/parameters/0/schema|ModelNode(symbol='models:FieldShelvesShelfRackSlotGetPathShelfParameter')",
+                use=CodecUseView(
+                    owner_kind='operation',
+                    owner=CodecSourceRef(
+                        document='/inputs/root',
+                        pointer='/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get',
+                    ),
+                    role='parameter',
+                    use_site=CodecSourceRef(
+                        document='/inputs/root',
+                        pointer='/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get/parameters/0',
+                    ),
+                    schema=CodecSourceRef(
+                        document='/inputs/root',
+                        pointer='/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get/parameters/0/schema',
+                    ),
+                    declaration=CodecSourceRef(
+                        document='/inputs/root',
+                        pointer='/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get/parameters/0',
+                    ),
+                    direction='request',
+                    projection='value',
+                    location='path',
+                    name='shelf',
+                    status=None,
+                    media=None,
+                ),
+                schema=request_registry().get('https://dcg.invalid/inputs/root#/paths/~1shelves~1%7Bshelf%7D~1%7Brack%7D~1%7Bslot%7D/get/parameters/0/schema'),
+                backend='pydantic_v2.BaseModel',
+                native_kind='root',
+                native_export=ModelExportView(module='models', symbol='FieldShelvesShelfRackSlotGetPathShelfParameter'),
+                fields=(),
+                projection_mode='native',
+                converter_strategy='pydantic_type_adapter',
+            ),
+            location='path',
+            name='shelf',
+            oas_version='3.2.0',
+            style='simple',
+            explode=False,
+            required=True,
+            allow_reserved=False,
+            allow_empty_value=False,
+            content_media_type=None,
+            reserved_names=('rack', 'slot'),
+        ),
+        adapter=_factory_10(),
+    )
+
+
+CONTEXT_15: Final = CodecContext(
+    surface='client',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1shelves~1%7Bshelf%7D~1%7Brack%7D~1%7Bslot%7D/get/parameters/1/schema',
+    operation_id='/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get',
+)
+
+
+@cache
+def codec_15() -> PydanticModelCodec[models.FieldShelvesShelfRackSlotGetPathRackParameter]:
+    """Codec of /paths/~1shelves~1{shelf}~1{rack}~1{slot}/get parameter (request path rack)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1shelves~1%7Bshelf%7D~1%7Brack%7D~1%7Bslot%7D/get/parameters/1/schema|ModelNode(symbol='models:FieldShelvesShelfRackSlotGetPathRackParameter')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1shelves~1%7Bshelf%7D~1%7Brack%7D~1%7Bslot%7D/get/parameters/1/schema',
+            operation_id='/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='root',
+            native_export='models:FieldShelvesShelfRackSlotGetPathRackParameter',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='models:FieldShelvesShelfRackSlotGetPathRackParameter'),
+            models=(_model_15(),),
+        ),
+        models.FieldShelvesShelfRackSlotGetPathRackParameter,
+        {'models:FieldShelvesShelfRackSlotGetPathRackParameter': models.FieldShelvesShelfRackSlotGetPathRackParameter},
+        request_bundle,
+    )
+
+
+@cache
+def outbound_15() -> NativeOutboundCodec[models.FieldShelvesShelfRackSlotGetPathRackParameter]:
+    return NativeOutboundCodec(codec_15(), CONTEXT_15)
+
+
+@cache
+def parameter_15() -> AdapterParameterCodec:
+    return AdapterParameterCodec(
+        manifest=AdapterManifest(
+            name='raw-rack',
+            import_ref='tests.data.python.parameter_adapters:raw_path',
+            capabilities=ParameterCodecCapabilities(
+                locations=('path',),
+                styles=('simple',),
+                explode_values=(False,),
+                value_kinds=('string',),
+            ),
+        ),
+        plan=ParameterPlanView(
+            binding=CodecBindingView(
+                binding_id="https://dcg.invalid/inputs/root#/paths/~1shelves~1%7Bshelf%7D~1%7Brack%7D~1%7Bslot%7D/get/parameters/1/schema|ModelNode(symbol='models:FieldShelvesShelfRackSlotGetPathRackParameter')",
+                use=CodecUseView(
+                    owner_kind='operation',
+                    owner=CodecSourceRef(
+                        document='/inputs/root',
+                        pointer='/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get',
+                    ),
+                    role='parameter',
+                    use_site=CodecSourceRef(
+                        document='/inputs/root',
+                        pointer='/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get/parameters/1',
+                    ),
+                    schema=CodecSourceRef(
+                        document='/inputs/root',
+                        pointer='/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get/parameters/1/schema',
+                    ),
+                    declaration=CodecSourceRef(
+                        document='/inputs/root',
+                        pointer='/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get/parameters/1',
+                    ),
+                    direction='request',
+                    projection='value',
+                    location='path',
+                    name='rack',
+                    status=None,
+                    media=None,
+                ),
+                schema=request_registry().get('https://dcg.invalid/inputs/root#/paths/~1shelves~1%7Bshelf%7D~1%7Brack%7D~1%7Bslot%7D/get/parameters/1/schema'),
+                backend='pydantic_v2.BaseModel',
+                native_kind='root',
+                native_export=ModelExportView(module='models', symbol='FieldShelvesShelfRackSlotGetPathRackParameter'),
+                fields=(),
+                projection_mode='native',
+                converter_strategy='pydantic_type_adapter',
+            ),
+            location='path',
+            name='rack',
+            oas_version='3.2.0',
+            style='simple',
+            explode=False,
+            required=True,
+            allow_reserved=False,
+            allow_empty_value=False,
+            content_media_type=None,
+            reserved_names=('shelf', 'slot'),
+        ),
+        adapter=_factory_11(),
+    )
+
+
+CONTEXT_16: Final = CodecContext(
+    surface='client',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1shelves~1%7Bshelf%7D~1%7Brack%7D~1%7Bslot%7D/get/parameters/2/schema',
+    operation_id='/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get',
+)
+
+
+@cache
+def codec_16() -> PydanticModelCodec[models.FieldShelvesShelfRackSlotGetPathSlotParameter]:
+    """Codec of /paths/~1shelves~1{shelf}~1{rack}~1{slot}/get parameter (request path slot)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1shelves~1%7Bshelf%7D~1%7Brack%7D~1%7Bslot%7D/get/parameters/2/schema|ModelNode(symbol='models:FieldShelvesShelfRackSlotGetPathSlotParameter')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1shelves~1%7Bshelf%7D~1%7Brack%7D~1%7Bslot%7D/get/parameters/2/schema',
+            operation_id='/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='root',
+            native_export='models:FieldShelvesShelfRackSlotGetPathSlotParameter',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='models:FieldShelvesShelfRackSlotGetPathSlotParameter'),
+            models=(_model_16(),),
+        ),
+        models.FieldShelvesShelfRackSlotGetPathSlotParameter,
+        {'models:FieldShelvesShelfRackSlotGetPathSlotParameter': models.FieldShelvesShelfRackSlotGetPathSlotParameter},
+        request_bundle,
+    )
+
+
+@cache
+def outbound_16() -> NativeOutboundCodec[models.FieldShelvesShelfRackSlotGetPathSlotParameter]:
+    return NativeOutboundCodec(codec_16(), CONTEXT_16)
+
+
+@cache
+def parameter_16() -> AdapterParameterCodec:
+    return AdapterParameterCodec(
+        manifest=AdapterManifest(
+            name='json-slot',
+            import_ref='tests.data.python.parameter_adapters:json_path_text',
+            capabilities=ParameterCodecCapabilities(
+                locations=('path',),
+                styles=('simple',),
+                explode_values=(False,),
+                value_kinds=('string',),
+            ),
+        ),
+        plan=ParameterPlanView(
+            binding=CodecBindingView(
+                binding_id="https://dcg.invalid/inputs/root#/paths/~1shelves~1%7Bshelf%7D~1%7Brack%7D~1%7Bslot%7D/get/parameters/2/schema|ModelNode(symbol='models:FieldShelvesShelfRackSlotGetPathSlotParameter')",
+                use=CodecUseView(
+                    owner_kind='operation',
+                    owner=CodecSourceRef(
+                        document='/inputs/root',
+                        pointer='/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get',
+                    ),
+                    role='parameter',
+                    use_site=CodecSourceRef(
+                        document='/inputs/root',
+                        pointer='/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get/parameters/2',
+                    ),
+                    schema=CodecSourceRef(
+                        document='/inputs/root',
+                        pointer='/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get/parameters/2/schema',
+                    ),
+                    declaration=CodecSourceRef(
+                        document='/inputs/root',
+                        pointer='/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get/parameters/2',
+                    ),
+                    direction='request',
+                    projection='value',
+                    location='path',
+                    name='slot',
+                    status=None,
+                    media=None,
+                ),
+                schema=request_registry().get('https://dcg.invalid/inputs/root#/paths/~1shelves~1%7Bshelf%7D~1%7Brack%7D~1%7Bslot%7D/get/parameters/2/schema'),
+                backend='pydantic_v2.BaseModel',
+                native_kind='root',
+                native_export=ModelExportView(module='models', symbol='FieldShelvesShelfRackSlotGetPathSlotParameter'),
+                fields=(),
+                projection_mode='native',
+                converter_strategy='pydantic_type_adapter',
+            ),
+            location='path',
+            name='slot',
+            oas_version='3.2.0',
+            style='simple',
+            explode=False,
+            required=True,
+            allow_reserved=False,
+            allow_empty_value=False,
+            content_media_type=None,
+            reserved_names=('rack', 'shelf'),
+        ),
+        adapter=_factory_12(),
+    )
+
+
+CONTEXT_17: Final = CodecContext(
+    surface='client',
+    direction='response',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1shelves~1%7Bshelf%7D~1%7Brack%7D~1%7Bslot%7D/get/responses/200/content/application~1json/schema',
+    operation_id='/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get',
+    media_type='application/json',
+)
+
+
+@cache
+def codec_17() -> PydanticModelCodec[models.ShelfPage]:
+    """Codec of /paths/~1shelves~1{shelf}~1{rack}~1{slot}/get response_body (response 200 application/json)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/components/schemas/ShelfPage|ModelNode(symbol='models:ShelfPage')",
+            direction='response',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1shelves~1%7Bshelf%7D~1%7Brack%7D~1%7Bslot%7D/get/responses/200/content/application~1json/schema',
+            operation_id='/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get',
+            media_type='application/json',
+            backend='pydantic_v2.BaseModel',
+            native_kind='model',
+            native_export='models:ShelfPage',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='models:ShelfPage'),
+            models=(_model_9(), _model_17()),
+        ),
+        models.ShelfPage,
+        {'models:Item': models.Item, 'models:ShelfPage': models.ShelfPage},
+        response_bundle,
+    )

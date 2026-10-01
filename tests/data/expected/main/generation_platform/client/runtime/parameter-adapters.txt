@@ -12,12 +12,12 @@
   > GET https://api.example.com/search?opts=%7B%22a%22%3A%22x%22%7D&a=y&near%5Bb%5D=x%20y
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   adapted objects beside a member's name = None
-  path segment '.' ! CodecAdapterError: A parameter adapter returned a path fragment outside its syntax or ownership []
-  path segment '..' ! CodecAdapterError: A parameter adapter returned a path fragment outside its syntax or ownership []
-  path segment '%2e' ! CodecAdapterError: A parameter adapter returned a path fragment outside its syntax or ownership []
-  path segment '.%2E' ! CodecAdapterError: A parameter adapter returned a path fragment outside its syntax or ownership []
-  path segment '%2E.' ! CodecAdapterError: A parameter adapter returned a path fragment outside its syntax or ownership []
-  path segment '%2e%2E' ! CodecAdapterError: A parameter adapter returned a path fragment outside its syntax or ownership []
+  path segment '.' ! RequestEncodingError: RequestEncodingError(operation_id='getSegment', call_id='<call>', location='path.segment') [operation_id='getSegment', location=('path', 'segment'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  path segment '..' ! RequestEncodingError: RequestEncodingError(operation_id='getSegment', call_id='<call>', location='path.segment') [operation_id='getSegment', location=('path', 'segment'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  path segment '%2e' ! RequestEncodingError: RequestEncodingError(operation_id='getSegment', call_id='<call>', location='path.segment') [operation_id='getSegment', location=('path', 'segment'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  path segment '.%2E' ! RequestEncodingError: RequestEncodingError(operation_id='getSegment', call_id='<call>', location='path.segment') [operation_id='getSegment', location=('path', 'segment'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  path segment '%2E.' ! RequestEncodingError: RequestEncodingError(operation_id='getSegment', call_id='<call>', location='path.segment') [operation_id='getSegment', location=('path', 'segment'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  path segment '%2e%2E' ! RequestEncodingError: RequestEncodingError(operation_id='getSegment', call_id='<call>', location='path.segment') [operation_id='getSegment', location=('path', 'segment'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
   > GET https://api.example.com/segments/...
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   path segment '...' = None
@@ -42,6 +42,17 @@
   > GET https://api.example.com/finds
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   pages without a querystring ['1']
+  > GET https://api.example.com/shelves/%22s%22/r/%22t%22
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/shelves/%22.%22/b/%22..%22
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  shelf pages after rack 'b' ['1', '2']
+  > GET https://api.example.com/shelves/%22s%22/r/%22t%22
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  shelf pages after rack '..' [] ! ProtocolDataError: ProtocolDataError(operation_id='listShelf', call_id='<call>', condition='value') [operation_id='listShelf', condition='value', location=BodySelector(pointer='/next')] protocol_data_error
+  > GET https://api.example.com/shelves/%22s%22/r/%22t%22
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  shelf pages after rack 'a/b' ['1'] ! CodecAdapterError: A parameter adapter returned a path fragment outside its syntax or ownership []
   > GET https://api.example.com/tags?where=%7B%22range%22%3A%7B%22min%22%3A1%7D%2C%22name%22%3A%22x%20y%22%7D
     [host: api.example.com, accept-encoding: gzip, deflate, x-labels: %5B%22l1%22%2C%22l2%22%5D, cookie: tags=%5B%22a%2Cb%22%2C%22c%22%5D] b''
   async adapted cookie, query, and header = None
@@ -49,9 +60,14 @@
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   async adapted path = None
   async empty header array ! RequestEncodingError: RequestEncodingError(operation_id='listTags', call_id='<call>', location='header.X-Labels') [operation_id='listTags', location=('header', 'X-Labels'), cause=ParameterEncodingError('The X-Labels parameter adapter cannot encode an empty array or object')] request_encoding_error
-  async dot segment ! CodecAdapterError: A parameter adapter returned a path fragment outside its syntax or ownership []
+  async dot segment ! RequestEncodingError: RequestEncodingError(operation_id='getSegment', call_id='<call>', location='path.segment') [operation_id='getSegment', location=('path', 'segment'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
   > GET https://api.example.com/finds?%7B%22term%22%3A%22a%22%2C%22start%22%3A4%7D
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/finds?%7B%22term%22%3Anull%2C%22start%22%3A6%7D
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async pages of an adapted querystring ['1', '2', '3']
+  > GET https://api.example.com/shelves/%22s%22/r/%22t%22
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/shelves/%22.%22/b/%22..%22
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async shelf pages ['1', '2']

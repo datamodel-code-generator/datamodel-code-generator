@@ -28,6 +28,10 @@ from .types.default import (
     GetSegmentErrorData,
     GetSegmentHTTPError,
     GetSegmentResponse,
+    ListShelfErrorData,
+    ListShelfHTTPError,
+    ListShelfRequestCodecs,
+    ListShelfResponse,
     ListTagsErrorData,
     ListTagsHTTPError,
     ListTagsResponse,
@@ -232,4 +236,56 @@ OPERATION_5: Final[OperationPlan[SpreadResponse, SpreadErrorData]] = OperationPl
             encoder=Encoder(model_bindings.codec_13, model_bindings.CONTEXT_13),
         ),
     ),
+)
+
+OPERATION_6: Final[OperationPlan[ListShelfResponse, ListShelfErrorData]] = OperationPlan(
+    operation_id='listShelf',
+    method='GET',
+    path='/shelves/{shelf}/{rack}/{slot}',
+    servers=_SERVERS_0,
+    responses=ResponseDecoder(
+        (
+            model_branch(
+                '200',
+                'application/json',
+                'json',
+                model_bindings.codec_17, model_bindings.CONTEXT_17,
+            ),
+        ),
+        (),
+        ListShelfHTTPError,
+    ),
+    parameters=(
+        ParameterSpec(
+            plan=AdaptedParameterPlan(
+                location='path',
+                name='shelf',
+                style='simple',
+                required=True,
+            ),
+            encoder=Encoder(model_bindings.codec_14, model_bindings.CONTEXT_14),
+            adapter=(model_bindings.parameter_14, model_bindings.CONTEXT_14),
+        ),
+        ParameterSpec(
+            plan=AdaptedParameterPlan(
+                location='path',
+                name='rack',
+                style='simple',
+                required=True,
+            ),
+            encoder=Encoder(model_bindings.codec_15, model_bindings.CONTEXT_15),
+            adapter=(model_bindings.parameter_15, model_bindings.CONTEXT_15),
+        ),
+        ParameterSpec(
+            plan=AdaptedParameterPlan(
+                location='path',
+                name='slot',
+                style='simple',
+                required=True,
+            ),
+            encoder=Encoder(model_bindings.codec_16, model_bindings.CONTEXT_16),
+            adapter=(model_bindings.parameter_16, model_bindings.CONTEXT_16),
+        ),
+    ),
+    codecs=ListShelfRequestCodecs,
 )

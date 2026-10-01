@@ -6,3 +6,4 @@
   default.find same ['request', 'response', 'security', 'signature'] different []
   default.search same ['response', 'security', 'signature'] different ['request']
   default.spread same ['request', 'response', 'security', 'signature'] different []
+  default.list_shelf same ['request', 'response', 'security', 'signature'] different []

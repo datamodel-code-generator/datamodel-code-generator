@@ -2686,6 +2686,90 @@
               "name": "near"
             }
           ]
+        },
+        {
+          "kind": "parameter",
+          "name": "json-shelf",
+          "import_ref": "tests.data.python.parameter_adapters:json_path_text",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "path"
+            ],
+            "styles": [
+              "simple"
+            ],
+            "explode_values": [
+              false
+            ],
+            "value_kinds": [
+              "string"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get",
+              "role": "parameter",
+              "location": "path",
+              "name": "shelf"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "raw-rack",
+          "import_ref": "tests.data.python.parameter_adapters:raw_path",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "path"
+            ],
+            "styles": [
+              "simple"
+            ],
+            "explode_values": [
+              false
+            ],
+            "value_kinds": [
+              "string"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get",
+              "role": "parameter",
+              "location": "path",
+              "name": "rack"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "json-slot",
+          "import_ref": "tests.data.python.parameter_adapters:json_path_text",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "path"
+            ],
+            "styles": [
+              "simple"
+            ],
+            "explode_values": [
+              false
+            ],
+            "value_kinds": [
+              "string"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get",
+              "role": "parameter",
+              "location": "path",
+              "name": "slot"
+            }
+          ]
         }
       ]
     },
@@ -2996,6 +3080,90 @@
               "role": "parameter",
               "location": "query",
               "name": "near"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "json-shelf",
+          "import_ref": "tests.data.python.parameter_adapters:json_path_text",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "path"
+            ],
+            "styles": [
+              "simple"
+            ],
+            "explode_values": [
+              false
+            ],
+            "value_kinds": [
+              "string"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get",
+              "role": "parameter",
+              "location": "path",
+              "name": "shelf"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "raw-rack",
+          "import_ref": "tests.data.python.parameter_adapters:raw_path",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "path"
+            ],
+            "styles": [
+              "simple"
+            ],
+            "explode_values": [
+              false
+            ],
+            "value_kinds": [
+              "string"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get",
+              "role": "parameter",
+              "location": "path",
+              "name": "rack"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "json-slot",
+          "import_ref": "tests.data.python.parameter_adapters:json_path_text",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "path"
+            ],
+            "styles": [
+              "simple"
+            ],
+            "explode_values": [
+              false
+            ],
+            "value_kinds": [
+              "string"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get",
+              "role": "parameter",
+              "location": "path",
+              "name": "slot"
             }
           ]
         }

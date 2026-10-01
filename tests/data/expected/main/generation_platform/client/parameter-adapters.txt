@@ -30,9 +30,10 @@ render pydantic_v2.BaseModel
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['finds.all'] bindings 14
+  namespace client helpers ['finds.all', 'shelves.walk'] bindings 18
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   helper finds.all pagination enabled True /inputs/target_config/protocol_metadata/helpers/finds.all 18ede05808fd3262356ec97423f07eece8472da3a8d45fe3d7348aa32180f02a
+  helper shelves.walk pagination enabled True /inputs/target_config/protocol_metadata/helpers/shelves.walk 2c9949cecd410826225b5e3654679e4f3c8057a9575f5609f87c671e9072b887
   {
     "helpers": {
       "finds.all": {
@@ -78,6 +79,66 @@ render pydantic_v2.BaseModel
           "document": "/inputs/root",
           "pointer": "/paths/~1finds/get"
         }
+      },
+      "shelves.walk": {
+        "bindings": [
+          {
+            "target": {
+              "in": "path",
+              "name": "shelf"
+            },
+            "value": {
+              "literal": "."
+            }
+          },
+          {
+            "target": {
+              "in": "path",
+              "name": "slot"
+            },
+            "value": {
+              "selector": {
+                "from": "body",
+                "pointer": "/slot"
+              },
+              "source": "previous"
+            }
+          }
+        ],
+        "continuation": {
+          "empty_string": "value",
+          "end": [
+            {
+              "kind": "missing"
+            },
+            {
+              "kind": "null"
+            }
+          ],
+          "kind": "cursor",
+          "read": {
+            "from": "body",
+            "pointer": "/next"
+          },
+          "write": {
+            "in": "path",
+            "name": "rack"
+          }
+        },
+        "enabled": true,
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "items": {
+          "from": "body",
+          "pointer": "/data"
+        },
+        "kind": "pagination",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1shelves~1{shelf}~1{rack}~1{slot}/get"
+        }
       }
     },
     "schema_version": 1
@@ -100,4 +161,7 @@ render pydantic_v2.BaseModel
   /selection/selected_operations/5 default.spread(query:opts=opts, query:filter=filter)
     exports client.types.default.SpreadResponse client.types.default.SpreadErrorData client.types.default.SpreadHTTPError
     exports client.types.default.SpreadRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/6 default.list_shelf(path:shelf=shelf, path:rack=rack, path:slot=slot)
+    exports client.types.default.ListShelfResponse client.types.default.ListShelfErrorData client.types.default.ListShelfHTTPError
+    exports client.types.default.ListShelfRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

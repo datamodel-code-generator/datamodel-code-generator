@@ -185,6 +185,11 @@ def json_path() -> JsonParameter:
 json_path_v2 = json_path
 
 
+def json_path_text() -> JsonParameter:
+    """Carry a path string as JSON, so a `.` or `..` it holds becomes no dot segment."""
+    return JsonParameter(locations=("path",), styles=("simple",), explode_values=(False,), value_kinds=("string",))
+
+
 def json_querystring() -> JsonParameter:
     """Carry a JSON querystring, percent-encoded once as the whole query."""
     return JsonParameter(
