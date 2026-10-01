@@ -45,6 +45,7 @@ from tests.data.python.client_oauth_shared import oauth_shared
 from tests.data.python.client_oauth_store import oauth_refresh_store
 from tests.data.python.client_pagination import pagination, pagination_backends, pagination_limits
 from tests.data.python.client_pagination_counts import pagination_counts
+from tests.data.python.client_pagination_count_values import pagination_count_defaults, pagination_count_values
 from tests.data.python.client_pagination_links import pagination_links
 from tests.data.python.client_pagination_sessions import pagination_auth, pagination_sessions
 from tests.data.python.client_pagination_targets import (
@@ -800,6 +801,8 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "pagination-targets": ("pagination-targets", ("pydantic_v2.BaseModel",), pagination_targets),
     "pagination-paths": ("pagination-paths", ("pydantic_v2.BaseModel",), pagination_paths),
     "pagination-querystring": ("pagination-querystring", ("pydantic_v2.BaseModel",), pagination_querystring),
+    "pagination-count-values": ("pagination-counts", ALL_BUT_MSGSPEC, pagination_count_values),
+    "pagination-count-defaults": ("pagination-counts", BACKENDS, pagination_count_defaults),
     "pagination-counts": ("pagination-counts", ("pydantic_v2.BaseModel",), pagination_counts),
     "pagination-links": ("pagination-links", ("pydantic_v2.BaseModel",), pagination_links),
     "streams": ("streams", ("pydantic_v2.BaseModel",), streams),
