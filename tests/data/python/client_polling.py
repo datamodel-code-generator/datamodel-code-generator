@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from types import ModuleType
 
-_HELPERS: Final = ("jobs.run", "jobs.inline", "jobs.report", "exports.run", "exports.latest")
+_HELPERS: Final = ("jobs.run", "jobs.inline", "jobs.report", "jobs.tracked", "exports.run", "exports.latest")
 _PAUSE: Final = 0.2
 _WALL: Final = 1_000_000_000.0
 _WALL_DATE: Final = "Sun, 09 Sep 2001 01:48:40 GMT"
@@ -39,7 +39,7 @@ class _Clock:
         return self.value
 
 
-def _job(
+def job(
     status: str, code: int = 200, job: str = "j1", **members: object
 ) -> Callable[[httpx2.Request], httpx2.Response]:
     """Return a responder of a job in a state."""
@@ -56,7 +56,7 @@ def _export(state: object) -> Callable[[httpx2.Request], httpx2.Response]:
     return json_response(200, {"state": state})
 
 
-def _report(rows: int) -> Callable[[httpx2.Request], httpx2.Response]:
+def report(rows: int) -> Callable[[httpx2.Request], httpx2.Response]:
     """Return a responder of a report."""
     return json_response(200, {"rows": rows})
 
@@ -88,6 +88,13 @@ def _outcome(value: object) -> str:
     if hasattr(value, "snapshot"):
         failure: Any = value
         return f"{type(failure).__name__}: {_snapshot(failure.snapshot)} {failure.reason_code}{session}"
+    if hasattr(value, "response"):
+        receipt: Any = value
+        data = receipt.data
+        return (
+            f"CancelReceipt(status={receipt.response.status_code}, "
+            f"data={type(data).__name__}:{getattr(data, 'status', None)})"
+        )
     return describe(value) + (session if isinstance(value, BaseException) else "")
 
 
@@ -125,7 +132,7 @@ async def astep(
     return result
 
 
-class _Polling(Harness):
+class Polling(Harness):
     """A generated polling package's public modules, its request body, and the handles its helpers start."""
 
     def __init__(self, package: ModuleType) -> None:
@@ -156,7 +163,7 @@ class _Polling(Harness):
 
 def polling(package: ModuleType, lines: list[str]) -> None:
     """Create, poll, wait for, and limit long-running operations through the synchronous and asyncio clients."""
-    harness = _Polling(package)
+    harness = Polling(package)
     exchange = Exchange(lines)
     with exchange.client() as native, package.Client(http_client=native, options=harness.client_options()) as api:
         _lifecycle(harness, api, exchange, lines)
@@ -172,18 +179,18 @@ def polling(package: ModuleType, lines: list[str]) -> None:
     run(lambda: _async_polling(harness, lines))
 
 
-def _lifecycle(harness: _Polling, api: Any, exchange: Exchange, lines: list[str]) -> None:
+def _lifecycle(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Create once, poll through pending states, fetch the result once, and keep it."""
     helper = api.protocols.jobs.run
     lines.append("wait through pending states")
-    exchange.respond(_job("queued", 202), _job("queued"), _job("running"), _job("done"), _report(3))
+    exchange.respond(job("queued", 202), job("queued"), job("running"), job("done"), report(3))
     handle = step(lines, "start", lambda: helper.start(body=harness.body))
     step(lines, "wait", handle.wait)
     step(lines, "wait again", handle.wait)
     step(lines, "status after success", handle.status)
     lines.append(f"  progress {dict(handle.progress)!r}")
     lines.append("poll one at a time")
-    exchange.respond(_job("queued", 202), _job("running"), _job("done"), _report(4))
+    exchange.respond(job("queued", 202), job("running"), job("done"), report(4))
     with helper.start(body=harness.body) as handle:
         step(lines, "status", handle.status)
         step(lines, "status", handle.status)
@@ -191,51 +198,51 @@ def _lifecycle(harness: _Polling, api: Any, exchange: Exchange, lines: list[str]
     step(lines, "status after the block", handle.status)
     step(lines, "close again", handle.close)
     lines.append("sleep through a short interval")
-    exchange.respond(_job("queued", 202), _job("done"), _report(5))
+    exchange.respond(job("queued", 202), job("done"), report(5))
     paused = helper.start(body=harness.body, poll_options=harness.polls(interval=_PAUSE))
     step(lines, "wait", paused.wait)
 
 
-def _terminal(harness: _Polling, api: Any, exchange: Exchange, lines: list[str]) -> None:
+def _terminal(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Raise a failed or cancelled operation with its last poll, on every later wait too, without sending again."""
     helper = api.protocols.jobs.run
     lines.append("failed and cancelled operations")
-    exchange.respond(_job("queued", 202), _job("failed"))
+    exchange.respond(job("queued", 202), job("failed"))
     handle = helper.start(body=harness.body)
     step(lines, "wait", handle.wait)
     step(lines, "wait again", handle.wait)
     step(lines, "status", handle.status)
-    exchange.respond(_job("queued", 202), _job("cancelled"))
+    exchange.respond(job("queued", 202), job("cancelled"))
     handle = helper.start(body=harness.body)
     step(lines, "status", handle.status)
     step(lines, "wait", handle.wait)
 
 
-def _states(harness: _Polling, api: Any, exchange: Exchange, lines: list[str]) -> None:
+def _states(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Refuse a state no set declares, by value or JSON type, and a missing one; the handle polls again after them."""
     helper = api.protocols.jobs.run
     lines.append("unknown and missing states")
     exchange.respond(
-        _job("queued", 202),
-        _job("exploded"),
+        job("queued", 202),
+        job("exploded"),
         json_response(200, {"id": "j1", "status": 5}),
         json_response(200, {"id": "j1"}),
-        _job("queued"),
+        job("queued"),
     )
     handle = helper.start(body=harness.body)
     for label in ("unknown state", "state of another type", "missing state", "status after them"):
         step(lines, label, handle.status)
 
 
-def _creates(harness: _Polling, api: Any, exchange: Exchange, lines: list[str]) -> None:
+def _creates(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Refuse a create response the helper did not declare, bad binding values, and options it cannot honor."""
     helper = api.protocols.jobs.run
     body = harness.body
     lines.append("create responses")
     for label, responder in (
-        ("unaccepted success status", _job("done", 200)),
+        ("unaccepted success status", job("done", 200)),
         ("missing operation id", json_response(202, {"status": "queued"})),
-        ("dot segment operation id", _job("queued", 202, job="..")),
+        ("dot segment operation id", job("queued", 202, job="..")),
         ("create error", json_response(500, {"message": "down"})),
     ):
         exchange.respond(responder)
@@ -256,14 +263,14 @@ def _creates(harness: _Polling, api: Any, exchange: Exchange, lines: list[str]) 
     )
 
 
-def _inline(harness: _Polling, api: Any, exchange: Exchange, lines: list[str]) -> None:
+def _inline(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Read a result from the final poll or from an immediate create response, refusing a missing one."""
     helper = api.protocols.jobs.inline
     body = harness.body
     lines.append("inline results")
-    exchange.respond(_job("queued", 202, job="j2"), _stated("pending"), _stated("done", result={"rows": 7}))
+    exchange.respond(job("queued", 202, job="j2"), _stated("pending"), _stated("done", result={"rows": 7}))
     step(lines, "wait", helper.start(body=body).wait)
-    exchange.respond(_job("queued", 202, job="j2"), _stated("done"), _stated("done", result={"rows": 8}))
+    exchange.respond(job("queued", 202, job="j2"), _stated("done"), _stated("done", result={"rows": 8}))
     handle = helper.start(body=body)
     step(lines, "wait without a result", handle.wait)
     step(lines, "wait again", handle.wait)
@@ -272,23 +279,23 @@ def _inline(harness: _Polling, api: Any, exchange: Exchange, lines: list[str]) -
         headers=[("content-type", "application/json"), ("X-State", "done"), ("X-State", "pending")],
         content=b'{"id":"j2"}',
     )
-    exchange.respond(_job("queued", 202, job="j2"), lambda _: repeated)
+    exchange.respond(job("queued", 202, job="j2"), lambda _: repeated)
     step(lines, "repeated state header", helper.start(body=body).status)
     lines.append("immediate results")
-    exchange.respond(_job("done", 200, job="j3", result={"rows": 1}))
+    exchange.respond(job("done", 200, job="j3", result={"rows": 1}))
     handle = step(lines, "start", lambda: helper.start(body=body))
     step(lines, "wait", handle.wait)
     step(lines, "status", handle.status)
     lines.append(f"  progress {dict(handle.progress)!r}")
-    exchange.respond(_job("done", 200, job="j3", result=None))
+    exchange.respond(job("done", 200, job="j3", result=None))
     step(lines, "immediate null result", lambda: helper.start(body=body))
 
 
-def _others(harness: _Polling, api: Any, exchange: Exchange, lines: list[str]) -> None:
+def _others(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Fetch a result with a JSON body, poll with a querystring, and finish operations without a result."""
     lines.append("fetch with a body and poll with the previous status")
     body = harness.body
-    exchange.respond(_job("queued", 202, job="j4"), _job("queued", job="j4"), _job("done", job="j4"), _report(6))
+    exchange.respond(job("queued", 202, job="j4"), job("queued", job="j4"), job("done", job="j4"), report(6))
     step(lines, "wait", api.protocols.jobs.report.start(body=body).wait)
     lines.append("querystring polls")
     exports = api.protocols.exports
@@ -297,11 +304,11 @@ def _others(harness: _Polling, api: Any, exchange: Exchange, lines: list[str]) -
     step(lines, "wait without a result", exports.run.start().wait)
     exchange.respond(created, _export(2))
     step(lines, "failed export", exports.run.start().wait)
-    exchange.respond(created, _export(1), _report(9))
+    exchange.respond(created, _export(1), report(9))
     step(lines, "fetch without bindings", exports.latest.start().wait)
 
 
-def _waits(harness: _Polling, api: Any, exchange: Exchange, lines: list[str]) -> None:
+def _waits(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Wait out declared server delays and intervals, refusing a wait over the limit or the remaining deadline."""
     helper = api.protocols.jobs.run
     body = harness.body
@@ -311,14 +318,14 @@ def _waits(harness: _Polling, api: Any, exchange: Exchange, lines: list[str]) ->
     step(lines, "status after a long create delay", handle.status)
     lines.append(f"  progress {dict(handle.progress)!r}")
     exchange.respond(
-        _job("queued", 202),
+        job("queued", 202),
         json_response(503, {"message": "busy"}, **{"Retry-After": "0"}),
         json_response(200, {"id": "j1", "status": "queued"}, **{"Retry-After": "120"}),
     )
     handle = helper.start(body=body)
     step(lines, "status after a retried poll", handle.status)
     step(lines, "status after its delay", handle.status)
-    exchange.respond(json_response(202, {"id": "j1", "status": "queued"}, **{"Retry-After": "soon"}), _job("done"))
+    exchange.respond(json_response(202, {"id": "j1", "status": "queued"}, **{"Retry-After": "soon"}), job("done"))
     step(lines, "invalid delay", helper.start(body=body).status)
     exchange.respond(
         json_response(202, {"id": "j2", "status": "queued"}, **{"Retry-After": "120"}),
@@ -348,7 +355,7 @@ def _waits(harness: _Polling, api: Any, exchange: Exchange, lines: list[str]) ->
         body=body, poll_options=harness.polls(max_wait=None), session_options=harness.session(total_timeout=60)
     )
     step(lines, "server delay past the session", handle.status)
-    exchange.respond(_job("queued", 202), _job("done"))
+    exchange.respond(job("queued", 202), job("done"))
     handle = helper.start(
         body=body,
         poll_options=harness.polls(interval=_PAUSE),
@@ -358,35 +365,33 @@ def _waits(harness: _Polling, api: Any, exchange: Exchange, lines: list[str]) ->
     step(lines, "session without a deadline, with other patches", handle.status)
 
 
-def _limits(harness: _Polling, api: Any, exchange: Exchange, lines: list[str]) -> None:
+def _limits(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Stop at the poll limit and the session's send slots, before the next poll or the result fetch."""
     helper = api.protocols.jobs.run
     body = harness.body
     lines.append("session limits")
-    exchange.respond(_job("queued", 202), _job("queued"))
+    exchange.respond(job("queued", 202), job("queued"))
     handle = helper.start(body=body, poll_options=harness.polls(max_polls=1))
     step(lines, "first poll", handle.status)
     step(lines, "poll past the limit", handle.status)
     step(lines, "wait past the limit", handle.wait)
-    exchange.respond(_job("queued", 202), _job("queued"))
+    exchange.respond(job("queued", 202), job("queued"))
     handle = helper.start(body=body, session_options=harness.session(max_network_sends=2))
     step(lines, "poll", handle.status)
     step(lines, "poll without a send slot", handle.status)
-    exchange.respond(_job("queued", 202), _job("done"))
+    exchange.respond(job("queued", 202), job("done"))
     handle = helper.start(body=body, session_options=harness.session(max_network_sends=2))
     step(lines, "success", handle.status)
     step(lines, "fetch without a send slot", handle.wait)
 
 
-def _failures(harness: _Polling, api: Any, exchange: Exchange, lines: list[str]) -> None:
+def _failures(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Keep a handle pending through transport errors and cancellation, and retry only a failed result fetch."""
     helper = api.protocols.jobs.run
     body = harness.body
     once = harness.request(retry=harness.options.RetryOptions(max_retries=0))
     lines.append("failures that settle nothing")
-    exchange.respond(
-        _job("queued", 202), failing(httpx2.ConnectError), _job("done"), json_response(500, {}), _report(2)
-    )
+    exchange.respond(job("queued", 202), failing(httpx2.ConnectError), job("done"), json_response(500, {}), report(2))
     handle = helper.start(body=body, options=once)
     step(lines, "poll that fails to connect", handle.status)
     step(lines, "poll again", handle.status)
@@ -394,7 +399,7 @@ def _failures(harness: _Polling, api: Any, exchange: Exchange, lines: list[str])
     step(lines, "fetch again", handle.wait)
     lines.append(f"  progress {dict(handle.progress)!r}")
     token = harness.options.CancelToken()
-    exchange.respond(_job("queued", 202))
+    exchange.respond(job("queued", 202))
     handle = helper.start(
         body=body, options=harness.request(cancel_token=token), poll_options=harness.polls(interval=30)
     )
@@ -402,27 +407,25 @@ def _failures(harness: _Polling, api: Any, exchange: Exchange, lines: list[str])
     step(lines, "cancelled wait", handle.status)
     lines.append(f"  progress {dict(handle.progress)!r}")
     token = harness.options.CancelToken()
-    exchange.respond(_job("queued", 202))
+    exchange.respond(job("queued", 202))
     handle = helper.start(body=body, options=harness.request(cancel_token=token))
     token.cancel()
     step(lines, "poll refused before sending", handle.status)
     lines.append(f"  progress {dict(handle.progress)!r}")
     lines.append("server delay of a failed result fetch")
-    exchange.respond(
-        _job("queued", 202), _job("done"), json_response(503, {"message": "busy"}, **{"Retry-After": "30"})
-    )
+    exchange.respond(job("queued", 202), job("done"), json_response(503, {"message": "busy"}, **{"Retry-After": "30"}))
     handle = helper.start(body=body, options=once, poll_options=harness.polls(max_wait=10))
     step(lines, "fetch answered with a server delay", handle.wait)
     step(lines, "fetch before the delay", handle.wait)
     lines.append("server delay of a failed poll")
-    exchange.respond(_job("queued", 202), json_response(503, {"message": "busy"}, **{"Retry-After": "30"}))
+    exchange.respond(job("queued", 202), json_response(503, {"message": "busy"}, **{"Retry-After": "30"}))
     handle = helper.start(body=body, options=once, poll_options=harness.polls(max_wait=10))
     step(lines, "poll answered with a server delay", handle.status)
     step(lines, "poll before the delay", handle.status)
     lines.append(f"  progress {dict(handle.progress)!r}")
 
 
-def _clocked(harness: _Polling, lines: list[str]) -> None:
+def _clocked(harness: Polling, lines: list[str]) -> None:
     """Measure poll waits, server delays, and the session on the client's clock, waiting in real time when frozen."""
     exchange = Exchange(lines)
     clock = _Clock(1000.0)
@@ -445,13 +448,13 @@ def _clocked(harness: _Polling, lines: list[str]) -> None:
         clock.value += 31
         step(lines, "poll once the clock passes the delay", handle.status)
         step(lines, "delay past the session", handle.status, _measured)
-        exchange.respond(_job("queued", 202), _job("done"))
+        exchange.respond(job("queued", 202), job("done"))
         handle = helper.start(body=body, poll_options=harness.polls(interval=_PAUSE))
         step(lines, "interval on a frozen clock", handle.status)
     run(lambda: _async_clocked(harness, lines))
 
 
-async def _async_clocked(harness: _Polling, lines: list[str]) -> None:
+async def _async_clocked(harness: Polling, lines: list[str]) -> None:
     """Measure asyncio poll waits and the session on the client's clock, waiting in real time when frozen."""
     exchange = Exchange(lines)
     clock = _Clock(1000.0)
@@ -468,12 +471,12 @@ async def _async_clocked(harness: _Polling, lines: list[str]) -> None:
         clock.value += 31
         await astep(lines, "async poll once the clock passes the delay", handle.status)
         await astep(lines, "async delay past the session", handle.status, _measured)
-        exchange.respond(_job("queued", 202), _job("done"))
+        exchange.respond(job("queued", 202), job("done"))
         handle = await helper.start(body=body, poll_options=harness.polls(interval=_PAUSE))
         await astep(lines, "async interval on a frozen clock", handle.status)
 
 
-async def _async_polling(harness: _Polling, lines: list[str]) -> None:
+async def _async_polling(harness: Polling, lines: list[str]) -> None:
     """Create, poll, and wait with asyncio, refusing a concurrent step and keeping a cancelled wait pending."""
     package = harness.package
     exchange = Exchange(lines)
@@ -484,15 +487,15 @@ async def _async_polling(harness: _Polling, lines: list[str]) -> None:
         helper = api.protocols.jobs.run
         body = harness.body
         lines.append("async lifecycle")
-        exchange.respond(_job("queued", 202), _job("running"), _job("done"), _report(3))
+        exchange.respond(job("queued", 202), job("running"), job("done"), report(3))
         handle = await helper.start(body=body)
         await astep(lines, "status", handle.status)
         await astep(lines, "wait", handle.wait)
         await astep(lines, "status after success", handle.status)
-        exchange.respond(_job("queued", 202), _job("done"), _report(5))
+        exchange.respond(job("queued", 202), job("done"), report(5))
         paused = await helper.start(body=body, poll_options=harness.polls(interval=_PAUSE))
         await astep(lines, "wait through a short interval", paused.wait)
-        exchange.respond(_job("done", 200, job="j3", result={"rows": 1}))
+        exchange.respond(job("done", 200, job="j3", result={"rows": 1}))
         async with await api.protocols.jobs.inline.start(body=body) as immediate:
             await astep(lines, "immediate wait", immediate.wait)
         await astep(lines, "wait after the block", immediate.wait)
@@ -501,7 +504,7 @@ async def _async_polling(harness: _Polling, lines: list[str]) -> None:
             lines, "start without a session send slot", lambda: helper.start(body=body, session_options=unbudgeted)
         )
         lines.append("async concurrent steps")
-        exchange.respond(_job("queued", 202))
+        exchange.respond(job("queued", 202))
         handle = await helper.start(body=body, poll_options=harness.polls(interval=30))
         waiting = asyncio.create_task(handle.wait())
         await asyncio.sleep(0)
@@ -516,7 +519,7 @@ async def _async_polling(harness: _Polling, lines: list[str]) -> None:
         await astep(lines, "close", handle.aclose)
         await astep(lines, "status after close", handle.status)
         lines.append("async block error while another step runs")
-        exchange.respond(_job("queued", 202))
+        exchange.respond(job("queued", 202))
         handle = await helper.start(body=body, poll_options=harness.polls(interval=30))
         waiting = asyncio.create_task(handle.wait())
         await asyncio.sleep(0)
@@ -536,26 +539,26 @@ async def _async_polling(harness: _Polling, lines: list[str]) -> None:
         lines.append("async server delay of a failed result fetch")
         once = harness.request(retry=harness.options.RetryOptions(max_retries=0))
         exchange.respond(
-            _job("queued", 202), _job("done"), json_response(503, {"message": "busy"}, **{"Retry-After": "30"})
+            job("queued", 202), job("done"), json_response(503, {"message": "busy"}, **{"Retry-After": "30"})
         )
         handle = await helper.start(body=body, options=once, poll_options=harness.polls(max_wait=10))
         await astep(lines, "fetch answered with a server delay", handle.wait)
         await astep(lines, "fetch before the delay", handle.wait)
         lines.append("async server delay of a failed poll")
-        exchange.respond(_job("queued", 202), json_response(503, {"message": "busy"}, **{"Retry-After": "30"}))
+        exchange.respond(job("queued", 202), json_response(503, {"message": "busy"}, **{"Retry-After": "30"}))
         handle = await helper.start(body=body, options=once, poll_options=harness.polls(max_wait=10))
         await astep(lines, "poll answered with a server delay", handle.status)
         await astep(lines, "poll before the delay", handle.status)
     await _async_closing(harness, lines)
 
 
-async def _async_closing(harness: _Polling, lines: list[str]) -> None:
+async def _async_closing(harness: Polling, lines: list[str]) -> None:
     """Stop a wait when the client closes, naming the helper's session, and refuse later polls of its handles."""
     exchange = Exchange(lines)
     lines.append("async client closing during a wait")
     async with exchange.async_client() as native:
         api = harness.package.AsyncClient(http_client=native, options=harness.client_options())
-        exchange.respond(_job("queued", 202))
+        exchange.respond(job("queued", 202))
         handle = await api.protocols.jobs.run.start(body=harness.body, poll_options=harness.polls(interval=30))
         waiting = asyncio.create_task(handle.status())
         await asyncio.sleep(0)

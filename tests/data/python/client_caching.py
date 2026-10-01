@@ -1,0 +1,1014 @@
+"""Fetch through generated cache helpers: freshness, revalidation, Vary, credentials, stores, and invalidation."""
+
+from __future__ import annotations
+
+import importlib
+from dataclasses import replace
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING, Any, Final
+
+from tests.data.python.client_pagination import item_id
+from tests.data.python.client_runtime import Exchange, arecord, describe, json_response, raw_response, record, run
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from types import ModuleType
+
+    import httpx2
+
+_PAST: Final = "Sun, 06 Nov 1994 08:49:37 GMT"
+_FUTURE: Final = "Fri, 01 Jan 2100 00:00:00 GMT"
+_LATER: Final = "Fri, 01 Jan 2100 01:00:00 GMT"
+_MODIFIED: Final = "Wed, 21 Oct 2015 07:28:00 GMT"
+_EPOCH: Final = datetime(2020, 1, 1, tzinfo=timezone.utc)
+
+
+def user(
+    identifier: int, name: str = "cat", status: int = 200, **headers: str
+) -> Callable[[httpx2.Request], httpx2.Response]:
+    """Return a responder of one user with the given headers."""
+    return json_response(status, {"id": identifier, "name": name}, **headers)
+
+
+def not_modified(**headers: str) -> Callable[[httpx2.Request], httpx2.Response]:
+    """Return a responder of a 304 with the given headers and no body."""
+    return raw_response(304, **headers)
+
+
+def _data(value: object) -> str:
+    if isinstance(value, dict) and "data" in value:
+        return f"[{','.join(item_id(item) for item in value['data'])}]"
+    if hasattr(value, "data"):
+        return f"[{','.join(item_id(item) for item in value.data)}]"
+    return f"{item_id(value)}:{value['name'] if isinstance(value, dict) else value.name}"
+
+
+def shown(result: Any) -> str:
+    """Summarize a cache result: its source, data, statuses, the counters of its response, and its headers."""
+    info = result.response
+    return (
+        f"{result.source} {_data(result.data)} status={info.status_code} network={result.network_status} "
+        f"sends={info.network_send_count} attempts={info.resource_attempt_count} type={info.content_type} "
+        f"request_id={info.request_id} headers={list(info.headers)}"
+    )
+
+
+def fetched(lines: list[str], label: str, call: Callable[[], Any]) -> Any:
+    """Report one cache result, or the failure of the fetch."""
+    try:
+        result = call()
+    except Exception as error:  # noqa: BLE001
+        lines.append(f"  {label} ! {describe(error)}")
+        return None
+    lines.append(f"  {label} = {shown(result)}")
+    return result
+
+
+async def afetched(lines: list[str], label: str, call: Callable[[], Any]) -> Any:
+    """Report one cache result of an asyncio fetch, or its failure."""
+    try:
+        result = await call()
+    except Exception as error:  # noqa: BLE001
+        lines.append(f"  {label} ! {describe(error)}")
+        return None
+    lines.append(f"  {label} = {shown(result)}")
+    return result
+
+
+def _entry(entry: Any) -> str:
+    """Summarize a cache entry without its body, header values, or fingerprints."""
+    return (
+        f"status={entry.status_code} vary={entry.vary} fingerprints={len(entry.vary_fingerprints)} "
+        f"bytes={len(entry.body)} headers={[name for name, _ in entry.headers]} "
+        f"fresh={entry.freshness_seconds > 0} tags={entry.tags}"
+    )
+
+
+class Recording:
+    """A cache store that records each call safely before passing it to a memory store, or fails as told."""
+
+    def __init__(self, inner: Any, lines: list[str]) -> None:
+        """Wrap a memory store; `faults` maps a method name to what it raises or returns instead."""
+        self.inner = inner
+        self.lines = lines
+        self.faults: dict[str, object] = {}
+        self.racing: Any = None
+        self.last: Any = None
+
+    def _fault(self, name: str) -> object:
+        if (fault := self.faults.pop(name, None)) is not None and isinstance(fault, Exception):
+            raise fault
+        return fault
+
+    def lookup(self, base_key: bytes, request_headers: Any) -> Any:
+        """Record a lookup by its key's length and the request's header names."""
+        self.lines.append(f"    lookup key={len(base_key)} headers={[name for name, _ in request_headers]}")
+        if (fault := self._fault("lookup")) is not None:
+            return fault
+        found = self.inner.lookup(base_key, request_headers)
+        if (racing := self.racing) is not None:
+            self.racing = None
+            self.inner.compare_exchange(base_key, None, racing)
+        return found
+
+    def fingerprint_vary(self, names: tuple[str, ...], request_headers: Any) -> Any:
+        """Record the Vary names fingerprinted."""
+        self.lines.append(f"    fingerprint_vary {names}")
+        if (fault := self._fault("fingerprint_vary")) is not None:
+            return fault
+        return self.inner.fingerprint_vary(names, request_headers)
+
+    def exchange(self, base_key: bytes, expected_version: str | None, entry: Any) -> Any:
+        """Record a compare-and-exchange by whether it expects a version, and the entry's safe fields."""
+        self.lines.append(f"    compare_exchange expected={expected_version is not None} {_entry(entry)}")
+        self.last = entry
+        if (fault := self._fault("compare_exchange")) is not None:
+            return fault
+        return self.inner.compare_exchange(base_key, expected_version, entry)
+
+    compare_exchange = exchange
+
+    def delete(self, base_key: bytes, version: str) -> Any:
+        """Record a deletion."""
+        self.lines.append("    delete")
+        if (fault := self._fault("delete")) is not None:
+            return fault
+        return self.inner.delete(base_key, version)
+
+    def invalidate(self, tags: tuple[str, ...]) -> Any:
+        """Record the tags invalidated."""
+        self.lines.append(f"    invalidate {tags}")
+        if (fault := self._fault("invalidate")) is not None:
+            return fault
+        return self.inner.invalidate(tags)
+
+
+class AsyncRecording(Recording):
+    """The asynchronous store of the same recordings and faults."""
+
+    async def lookup(self, base_key: bytes, request_headers: Any) -> Any:  # ty: ignore[invalid-method-override]
+        """Record and pass on a lookup."""
+        return Recording.lookup(self, base_key, request_headers)
+
+    async def fingerprint_vary(self, names: tuple[str, ...], request_headers: Any) -> Any:  # ty: ignore[invalid-method-override]
+        """Record and pass on a fingerprint."""
+        return Recording.fingerprint_vary(self, names, request_headers)
+
+    async def exchange(self, base_key: bytes, expected_version: str | None, entry: Any) -> Any:  # ty: ignore[invalid-method-override]
+        """Record and pass on a compare-and-exchange."""
+        return Recording.exchange(self, base_key, expected_version, entry)
+
+    compare_exchange = exchange
+
+    async def delete(self, base_key: bytes, version: str) -> Any:  # ty: ignore[invalid-method-override]
+        """Record and pass on a deletion."""
+        return Recording.delete(self, base_key, version)
+
+    async def invalidate(self, tags: tuple[str, ...]) -> Any:  # ty: ignore[invalid-method-override]
+        """Record and pass on an invalidation."""
+        return Recording.invalidate(self, tags)
+
+
+class Caching:
+    """A generated caching package's public modules and the typed argument values its helpers take."""
+
+    def __init__(self, package: ModuleType) -> None:
+        """Import the modules the scenarios use."""
+        self.package = package
+        self.options, self.protocols, self.errors, self.auth = (
+            importlib.import_module(f"{package.__name__}.{name}") for name in ("options", "protocols", "errors", "auth")
+        )
+
+    def user_id(self, value: int) -> object:
+        """Return the userId argument of a wire value, as its request codec builds it."""
+        types = importlib.import_module(f"{self.package.__name__}.types.users")
+        return types.GetUserRequestCodecs.parameter(location="path", name="userId").from_wire(value)
+
+    def language(self, value: str) -> object:
+        """Return the Accept-Language argument of a wire value."""
+        types = importlib.import_module(f"{self.package.__name__}.types.users")
+        return types.GetUserRequestCodecs.parameter(location="header", name="Accept-Language").from_wire(value)
+
+    def cart(self, value: str) -> object:
+        """Return the cart cookie argument of a wire value."""
+        types = importlib.import_module(f"{self.package.__name__}.types.carts")
+        return types.GetCurrentCartRequestCodecs.parameter(location="cookie", name="cart").from_wire(value)
+
+    def page(self, value: int) -> object:
+        """Return the page argument of a listing."""
+        types = importlib.import_module(f"{self.package.__name__}.types.users")
+        return types.ListUsersRequestCodecs.parameter(location="query", name="page").from_wire(value)
+
+    def rename(self, name: str) -> object:
+        """Return the body of a rename."""
+        types = importlib.import_module(f"{self.package.__name__}.types.users")
+        return types.RenameUserRequestCodecs.body().from_wire({"name": name})
+
+    def stores(self, **stores: object) -> object:
+        """Return client options lending the stores by helper name, with dots spelled as double underscores."""
+        named = {name.replace("__", "."): store for name, store in stores.items()}
+        return self.options.ClientOptions(protocols=self.options.ProtocolClientOptions(cache_stores=named))
+
+    def headers(self, **values: str) -> object:
+        """Return request options patching headers, with underscores spelled as hyphens."""
+        return self.options.RequestOptions(headers=tuple((name.replace("_", "-"), value) for name, value in values.items()))
+
+
+def caching(package: ModuleType, lines: list[str]) -> None:
+    """Fetch fresh, stale, and changed entries, with validators, Vary, directives, redirects, and invalidation."""
+    cache = Caching(package)
+    exchange = Exchange(lines)
+    store = cache.protocols.MemoryCacheStore()
+    options = cache.stores(users__profile=store, users__dated=cache.protocols.MemoryCacheStore(), users__listing=store)
+    with exchange.client() as native, package.Client(http_client=native, options=options) as api:
+        _fresh(cache, api, exchange, lines)
+        _revalidated(cache, api, exchange, lines)
+        _vary(cache, api, exchange, lines)
+        _unstored(cache, api, exchange, lines)
+        _directives(cache, api, exchange, lines)
+        _validators(cache, api, exchange, lines)
+        _invalidated(cache, api, exchange, lines)
+    run(lambda: _async_caching(cache, lines))
+
+
+def _fresh(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Answer a fresh entry without sending, until its age, a cap, a Date, or an Expires makes it stale."""
+    helper, three = api.protocols.users.profile, cache.user_id(3)
+    exchange.respond(user(3, etag='"v1"', **{"cache-control": "max-age=60", "x-request-id": "r1"}))
+    fetched(lines, "miss", lambda: helper.fetch(user_id=three))
+    fetched(lines, "fresh hit", lambda: helper.fetch(user_id=three))
+    small = cache.options.RequestOptions(max_response_bytes=5)
+    fetched(lines, "fresh hit over the response limit", lambda: helper.fetch(user_id=three, options=small))
+    for index, (label, headers, limits, stale) in enumerate((
+        ("aged past max-age", {"cache-control": "max-age=60", "age": "100"}, None, True),
+        ("aged past the cap", {"cache-control": "max-age=100000", "age": "400"}, None, True),
+        ("aged within a raised cap", {"cache-control": "max-age=100000", "age": "400"}, 1000, False),
+        ("old date", {"cache-control": "max-age=60", "date": _PAST}, None, True),
+        ("expires after its date", {"expires": _LATER, "date": _FUTURE}, None, False),
+        ("expires without a date", {"expires": _LATER}, None, False),
+        ("invalid expires", {"expires": "0", "date": _FUTURE}, None, True),
+        ("invalid age", {"cache-control": "max-age=60", "age": "soon"}, None, True),
+        ("huge max-age", {"cache-control": f"max-age={'9' * 12}"}, None, False),
+    )):
+        argument = cache.user_id(30 + index)
+        settings = None if limits is None else cache.protocols.CacheOptions(max_ttl=limits)
+        exchange.respond(user(30 + index, etag='"e"', **headers), *((not_modified(etag='"e"'),) if stale else ()))
+        fetched(lines, f"{label} stored", lambda: helper.fetch(user_id=argument, cache_options=settings))
+        fetched(lines, f"{label} again", lambda: helper.fetch(user_id=argument, cache_options=settings))
+    listing = api.protocols.users.listing
+    exchange.respond(json_response(200, {"data": [{"id": 1, "name": "a"}]}, **{"cache-control": "max-age=60"}))
+    fetched(lines, "list miss", listing.fetch)
+    fetched(lines, "list hit", listing.fetch)
+    dated = api.protocols.users.dated
+    exchange.respond(user(4, status=203, **{"cache-control": "max-age=60"}))
+    fetched(lines, "listed 203", lambda: dated.fetch(user_id=cache.user_id(4)))
+    fetched(lines, "listed 203 again", lambda: dated.fetch(user_id=cache.user_id(4)))
+
+
+def _revalidated(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Revalidate stale entries with ETag or Last-Modified, merging a 304's headers, or replace changed ones."""
+    helper, five = api.protocols.users.profile, cache.user_id(5)
+    exchange.respond(
+        user(5, etag='W/"a"', **{"cache-control": "no-cache", "x-old": "1", "connection": "keep-alive"}),
+        not_modified(etag='"a"', **{"cache-control": "max-age=60", "x-old": "2", "content-type": "text/html"}),
+    )
+    fetched(lines, "no-cache stored", lambda: helper.fetch(user_id=five))
+    fetched(lines, "revalidated", lambda: helper.fetch(user_id=five))
+    fetched(lines, "revalidated then fresh", lambda: helper.fetch(user_id=five))
+    six = cache.user_id(6)
+    exchange.respond(
+        user(6, etag='"b"', **{"cache-control": "max-age=0"}),
+        user(6, "dog", etag='"c"', **{"cache-control": "max-age=0"}),
+        not_modified(),
+    )
+    fetched(lines, "stale stored", lambda: helper.fetch(user_id=six))
+    fetched(lines, "changed", lambda: helper.fetch(user_id=six))
+    fetched(lines, "revalidated without validators", lambda: helper.fetch(user_id=six))
+    dated, seven = api.protocols.users.dated, cache.user_id(7)
+    exchange.respond(
+        user(7, etag='"d"', **{"last-modified": _MODIFIED, "cache-control": "max-age=0"}),
+        not_modified(**{"last-modified": _MODIFIED}),
+        not_modified(**{"last-modified": _PAST}),
+    )
+    fetched(lines, "dated stored", lambda: dated.fetch(user_id=seven))
+    fetched(lines, "dated revalidated", lambda: dated.fetch(user_id=seven))
+    fetched(lines, "dated changed date", lambda: dated.fetch(user_id=seven))
+    listing = api.protocols.users.listing
+    exchange.respond(
+        json_response(200, {"data": []}, **{"last-modified": _MODIFIED, "cache-control": "max-age=0"}),
+        json_response(200, {"data": []}),
+    )
+    second = cache.page(2)
+    fetched(lines, "etag helper without an etag", lambda: listing.fetch(page=second))
+    fetched(lines, "etag helper sends unconditionally", lambda: listing.fetch(page=second))
+    eight = cache.user_id(8)
+    exchange.respond(
+        user(8, etag='"e"', **{"cache-control": "max-age=0"}),
+        not_modified(etag='"z"'),
+        user(8, etag='"e"', **{"cache-control": "max-age=0"}),
+        not_modified(etag='"e"', vary="accept-language"),
+        user(8, status=404),
+    )
+    fetched(lines, "mismatch stored", lambda: helper.fetch(user_id=eight))
+    fetched(lines, "304 of another validator", lambda: helper.fetch(user_id=eight))
+    fetched(lines, "after a refused 304 the entry is gone", lambda: helper.fetch(user_id=eight))
+    fetched(lines, "304 with another vary", lambda: helper.fetch(user_id=eight))
+    fetched(lines, "after the vary change", lambda: helper.fetch(user_id=eight))
+    aged = cache.user_id(25)
+    exchange.respond(
+        user(25, etag='"g"', **{"cache-control": "max-age=60", "age": "100"}),
+        not_modified(etag='"g"'),
+    )
+    fetched(lines, "aged stored", lambda: helper.fetch(user_id=aged))
+    fetched(lines, "aged revalidated by a 304 without Age", lambda: helper.fetch(user_id=aged))
+    fetched(lines, "fresh after the 304", lambda: helper.fetch(user_id=aged))
+
+
+def _vary(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Select entries by the allowlisted headers their Vary names, refusing other names and `*`."""
+    helper, nine = api.protocols.users.profile, cache.user_id(9)
+    english, french = cache.language("en"), cache.language("fr")
+    vary = {"cache-control": "max-age=60", "vary": "Accept-Language, accept-language"}
+    exchange.respond(user(9, "english", **vary), user(9, "french", **vary))
+    fetched(lines, "english stored", lambda: helper.fetch(user_id=nine, accept_language=english))
+    fetched(lines, "french stored", lambda: helper.fetch(user_id=nine, accept_language=french))
+    fetched(lines, "english hit", lambda: helper.fetch(user_id=nine, accept_language=english))
+    fetched(lines, "french hit", lambda: helper.fetch(user_id=nine, accept_language=french))
+    fetched(lines, "no language", lambda: _miss(exchange, lambda: helper.fetch(user_id=nine)))
+    keyed = cache.user_id(43)
+    fresh = {"cache-control": "max-age=60"}
+    exchange.respond(user(43, "alice", **fresh), user(43, "bob", **fresh))
+    for label, key in (("alice key", "a"), ("bob key", "b"), ("alice key again", "a"), ("bob key again", "b")):
+        fetched(lines, label, lambda key=key: helper.fetch(user_id=keyed, options=cache.headers(X_Api_Key=key)))
+    for index, (label, header, stored) in enumerate((
+        ("unlisted vary", "Accept-Encoding", False),
+        ("star vary", "*", False),
+        ("empty vary", " , ", True),
+    )):
+        argument = cache.user_id(40 + index)
+        exchange.respond(user(1, vary=header, **{"cache-control": "max-age=60"}), *(() if stored else (user(1),)))
+        fetched(lines, label, lambda: helper.fetch(user_id=argument))
+        fetched(lines, f"{label} again", lambda: helper.fetch(user_id=argument))
+
+
+def _miss(exchange: Exchange, call: Callable[[], Any]) -> Any:
+    exchange.respond(user(9, "none"))
+    return call()
+
+
+def _unstored(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Return responses that must not be stored, removing the entries they supersede, and keep entries on errors."""
+    helper = api.protocols.users.profile
+    for label, response, limits in (
+        ("no-store", user(1, **{"cache-control": "no-store, max-age=60"}), None),
+        ("set-cookie", user(1, **{"cache-control": "max-age=60", "set-cookie": "a=1"}), None),
+        ("extension", user(1, **{"cache-control": "max-age=60, stale-while-revalidate=5"}), None),
+        ("malformed", user(1, **{"cache-control": "max-age=soon"}), None),
+        ("repeated", user(1, **{"cache-control": "max-age=1, max-age=2"}), None),
+        ("valued public", user(1, **{"cache-control": "public=1, max-age=60"}), None),
+        ("unquoted private", user(1, **{"cache-control": "private=x, max-age=60"}), None),
+        ("quoted private", user(1, **{"cache-control": 'private="a, b", max-age=60'}), None),
+        ("bad quoting", user(1, **{"cache-control": 'private="a'}), None),
+        ("too large", user(1, **{"cache-control": "max-age=60"}), 5),
+        ("unlisted status", user(1, status=203, **{"cache-control": "max-age=60"}), None),
+        ("no freshness or validator", user(1), None),
+    ):
+        argument = cache.user_id(10)
+        settings = None if limits is None else cache.protocols.CacheOptions(max_entry_bytes=limits)
+        exchange.respond(user(10, etag='"s"', **{"cache-control": "max-age=0"}), response)
+        fetched(lines, f"{label} after stale", lambda: helper.fetch(user_id=argument))
+        fetched(lines, label, lambda: helper.fetch(user_id=argument, cache_options=settings))
+        record(lines, f"{label} left", lambda: helper.invalidate(("user:10",)))
+    eleven = cache.user_id(11)
+    exchange.respond(
+        user(11, **{"cache-control": "max-age=0"}, etag='"k"'),
+        json_response(404, {"message": "gone"}),
+        json_response(200, {"id": "x"}),
+        not_modified(etag='"k"'),
+    )
+    fetched(lines, "kept stored", lambda: helper.fetch(user_id=eleven))
+    fetched(lines, "error keeps the entry", lambda: helper.fetch(user_id=eleven))
+    fetched(lines, "decode failure keeps the entry", lambda: helper.fetch(user_id=eleven))
+    fetched(lines, "entry still revalidates", lambda: helper.fetch(user_id=eleven))
+    twelve = cache.user_id(12)
+    exchange.respond(
+        raw_response(302, location="https://api.example.com/users/13"),
+        user(13, **{"cache-control": "max-age=60"}),
+        raw_response(302, location="https://api.example.com/users/13"),
+        user(13, **{"cache-control": "max-age=60"}),
+    )
+    follow = cache.options.RequestOptions(redirects=cache.options.RedirectOptions(enabled=True))
+    fetched(lines, "redirected", lambda: helper.fetch(user_id=twelve, options=follow))
+    fetched(lines, "redirected again", lambda: helper.fetch(user_id=twelve, options=follow))
+    fourteen = cache.user_id(14)
+    exchange.respond(
+        user(14, etag='"r"', **{"cache-control": "max-age=0"}),
+        raw_response(302, location="https://api.example.com/users/15"),
+        not_modified(etag='"r"'),
+    )
+    fetched(lines, "stored before a redirect", lambda: helper.fetch(user_id=fourteen))
+    fetched(lines, "304 after a redirect", lambda: helper.fetch(user_id=fourteen, options=follow))
+
+
+def _directives(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Honor a fetch's own no-cache, no-store, and max-age, and refuse what a stored response cannot answer."""
+    helper, sixteen = api.protocols.users.profile, cache.user_id(16)
+    exchange.respond(user(16, etag='"f"', **{"cache-control": "max-age=60", "age": "30"}))
+    fetched(lines, "directives stored", lambda: helper.fetch(user_id=sixteen))
+    for label, headers, response in (
+        ("request max-age=10", {"Cache_Control": "max-age=10"}, not_modified(etag='"f"')),
+        ("request no-cache", {"Cache_Control": "no-cache"}, not_modified(etag='"f"')),
+        ("request max-age=3600", {"Cache_Control": "max-age=3600"}, None),
+        ("request no-store", {"Cache_Control": "no-store"}, user(16, "other", **{"cache-control": "max-age=60"})),
+        ("request no-store 304", {"Cache_Control": "no-store", "If_None_Match": '"f"'}, not_modified(etag='"f"')),
+        ("request only-if-cached", {"Cache_Control": "only-if-cached"}, None),
+        ("request no-cache value", {"Cache_Control": "no-cache=x"}, None),
+        ("request bad max-age", {"Cache_Control": "max-age=-1"}, None),
+        ("request malformed", {"Cache_Control": "max-age=1 2"}, None),
+        ("request range", {"Range": "bytes=0-1"}, None),
+        ("request if-match", {"If_Match": '"f"'}, None),
+    ):
+        if response is not None:
+            exchange.respond(response)
+        fetched(lines, label, lambda: helper.fetch(user_id=sixteen, options=cache.headers(**headers)))
+    fetched(lines, "still fresh", lambda: helper.fetch(user_id=sixteen))
+
+
+def _validators(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Send a caller's validator once when it matches the entry's, and refuse one that does not or a cold 304."""
+    helper, seventeen = api.protocols.users.profile, cache.user_id(17)
+    exchange.respond(
+        user(17, etag='"g"', **{"cache-control": "max-age=0", "last-modified": _MODIFIED}),
+        not_modified(etag='"g"'),
+        not_modified(),
+    )
+    fetched(lines, "validators stored", lambda: helper.fetch(user_id=seventeen))
+    matching = cache.headers(If_None_Match='"g"')
+    fetched(lines, "matching caller validator", lambda: helper.fetch(user_id=seventeen, options=matching))
+    dated = cache.headers(If_Modified_Since=_MODIFIED)
+    fetched(lines, "matching caller date", lambda: helper.fetch(user_id=seventeen, options=dated))
+    for label, headers in (
+        ("other caller validator", {"If_None_Match": '"h"'}),
+        ("other caller date", {"If_Modified_Since": _PAST}),
+    ):
+        fetched(lines, label, lambda: helper.fetch(user_id=seventeen, options=cache.headers(**headers)))
+    twice = cache.options.RequestOptions(headers=(("If-None-Match", '"g"'), ("If-None-Match", '"h"')))
+    fetched(lines, "caller validator twice", lambda: helper.fetch(user_id=seventeen, options=twice))
+    cold = cache.user_id(18)
+    exchange.respond(not_modified(etag='"g"'))
+    fetched(lines, "cold 304", lambda: helper.fetch(user_id=cold, options=matching))
+
+
+def _invalidated(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Remove tagged entries after a mutation succeeds or on request, and keep them when the mutation fails."""
+    helper, nineteen = api.protocols.users.profile, cache.user_id(19)
+    fresh = {"cache-control": "max-age=60"}
+    exchange.respond(user(19, **fresh), json_response(409, {"message": "taken"}), user(19, "dog"), user(19, **fresh))
+    fetched(lines, "tagged stored", lambda: helper.fetch(user_id=nineteen))
+    record(lines, "failed rename", lambda: helper.mutations.rename(user_id=nineteen, body=cache.rename("dog")))
+    fetched(lines, "kept after a failure", lambda: helper.fetch(user_id=nineteen))
+    record(lines, "rename", lambda: helper.mutations.rename(user_id=nineteen, body=cache.rename("dog")))
+    fetched(lines, "removed by the rename", lambda: helper.fetch(user_id=nineteen))
+    listing = api.protocols.users.listing
+    exchange.respond(json_response(200, {"data": []}, **fresh), raw_response(204), json_response(200, {"data": []}))
+    third = cache.page(3)
+    fetched(lines, "list stored", lambda: listing.fetch(page=third))
+    record(lines, "remove", lambda: helper.mutations.remove(user_id=nineteen))
+    fetched(lines, "list removed", lambda: listing.fetch(page=third))
+    exchange.respond(user(19, **fresh))
+    fetched(lines, "tagged again", lambda: helper.fetch(user_id=nineteen))
+    record(lines, "manual invalidation", lambda: helper.invalidate(("users", "user:19")))
+    record(lines, "manual invalidation of a list", lambda: helper.invalidate(["users"]))
+    record(lines, "manual invalidation of numbers", lambda: helper.invalidate((1,)))
+
+
+async def _async_caching(cache: Caching, lines: list[str]) -> None:
+    """Fetch, revalidate, mutate, and invalidate with asyncio and an asynchronous memory store."""
+    package = cache.package
+    exchange = Exchange(lines)
+    store = cache.protocols.AsyncMemoryCacheStore()
+    options = cache.stores(users__profile=store, users__listing=store)
+    async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=options) as api:
+        helper, twenty = api.protocols.users.profile, cache.user_id(20)
+        exchange.respond(
+            user(20, etag='"a"', **{"cache-control": "max-age=0"}),
+            not_modified(etag='"a"', **{"cache-control": "max-age=60"}),
+            user(20, "dog"),
+            user(20, **{"cache-control": "no-store"}),
+            json_response(404, {"message": "no"}),
+        )
+        await afetched(lines, "async miss", lambda: helper.fetch(user_id=twenty))
+        await afetched(lines, "async revalidated", lambda: helper.fetch(user_id=twenty))
+        await afetched(lines, "async fresh", lambda: helper.fetch(user_id=twenty))
+        await arecord(lines, "async rename", lambda: helper.mutations.rename(user_id=twenty, body=cache.rename("dog")))
+        await afetched(lines, "async removed", lambda: helper.fetch(user_id=twenty))
+        await afetched(lines, "async error", lambda: helper.fetch(user_id=twenty))
+        no_store = cache.headers(Cache_Control="no-store")
+        exchange.respond(user(20))
+        await afetched(lines, "async request no-store", lambda: helper.fetch(user_id=twenty, options=no_store))
+        await arecord(lines, "async manual invalidation", lambda: helper.invalidate(("users",)))
+        await arecord(lines, "async manual invalidation of a list", lambda: helper.invalidate(["users"]))
+
+
+class Events:
+    """A hook that reports each event's name and status, and raises at the end of a call when told to."""
+
+    def __init__(self, lines: list[str], *, failing: bool = False) -> None:
+        """Keep the report and whether the hook fails at the end of each call."""
+        self.lines = lines
+        self.failing = failing
+
+    def on_event(self, event: Any) -> None:
+        """Report the event, then raise at a call's end when told to."""
+        self.lines.append(f"    event {event.name} status={event.status}")
+        if self.failing and event.name == "call_end":
+            msg = "hook failed"
+            raise RuntimeError(msg)
+
+
+class AsyncEvents(Events):
+    """The asynchronous hook of the same reports."""
+
+    async def on_event(self, event: Any) -> None:  # ty: ignore[invalid-method-override]
+        """Report the event."""
+        Events.on_event(self, event)
+
+
+class _Signer:
+    def __init__(self, auth: ModuleType) -> None:
+        self.capabilities = auth.SignerCapabilities(("https://api.example.com",), ("X-Signature",), (), False)
+        self.fields = auth.SignatureFields((("X-Signature", "signed"),), ())
+
+    def sign(self, request: object) -> object:
+        del request
+        return self.fields
+
+
+def cache_stores(package: ModuleType, lines: list[str]) -> None:
+    """Drive the store contract, memory stores, store failures, credentials, records, and client settings."""
+    cache = Caching(package)
+    _records(cache, lines)
+    _memory(cache, lines)
+    run(lambda: _async_memory(cache, lines))
+    exchange = Exchange(lines)
+    with exchange.client() as native:
+        _settings(cache, native, exchange, lines)
+        _recorded(cache, native, exchange, lines)
+        _credentials(cache, native, exchange, lines)
+    run(lambda: _async_stores(cache, lines))
+
+
+def _stamp(**fields: object) -> dict[str, object]:
+    now = datetime.now(timezone.utc)
+    return {
+        "version": "v",
+        "vary": (),
+        "vary_fingerprints": (),
+        "status_code": 200,
+        "body": b"{}",
+        "request_time": now,
+        "response_time": now,
+        "stored_at": now,
+        "freshness_seconds": 3600,
+        "initial_age_seconds": 0,
+        "tags": (),
+        "schema_fingerprint": "f",
+        **fields,
+    }
+
+
+def _records(cache: Caching, lines: list[str]) -> None:
+    """Construct cache records, options, and exceptions, refusing invalid fields."""
+    protocols, errors, options = cache.protocols, cache.errors, cache.options
+    responses = importlib.import_module(f"{cache.package.__name__}.responses")
+    headers = responses.HeadersView((("etag", '"a"'),))
+
+    def entry(**fields: object) -> object:
+        return protocols.CacheEntry(headers=headers, **_stamp(**fields))
+
+    record(lines, "entry", entry)
+    for label, fields in (
+        ("entry version", {"version": 1}),
+        ("entry vary list", {"vary": ["a"]}),
+        ("entry vary item", {"vary": (1,), "vary_fingerprints": (b"",)}),
+        ("entry boolean status", {"status_code": True}),
+        ("entry status", {"status_code": 99}),
+        ("entry fingerprints", {"vary": ("a",)}),
+        ("entry naive time", {"stored_at": datetime(2020, 1, 1)}),  # noqa: DTZ001
+        ("entry negative freshness", {"freshness_seconds": -1}),
+        ("entry infinite age", {"initial_age_seconds": float("inf")}),
+        ("entry text freshness", {"freshness_seconds": "1"}),
+        ("entry text body", {"body": "{}"}),
+    ):
+        record(lines, label, lambda fields=fields: entry(**fields))
+    record(lines, "entry headers", lambda: protocols.CacheEntry(headers={}, **_stamp()))
+    info = responses.ResponseInfo(status_code=200, headers=headers, call_id="c", elapsed=0.0, content_type=None)
+    record(lines, "result", lambda: protocols.CacheResult(data=1, source="network", response=info, network_status=200))
+    record(lines, "result source", lambda: protocols.CacheResult(data=1, source="disk", response=info, network_status=None))
+    record(lines, "result response", lambda: protocols.CacheResult(data=1, source="network", response=1, network_status=None))
+    record(lines, "result status", lambda: protocols.CacheResult(data=1, source="network", response=info, network_status="1"))
+    record(lines, "options", lambda: protocols.CacheOptions(max_entry_bytes=1, max_ttl=0.5))
+    record(lines, "options zero bytes", lambda: protocols.CacheOptions(max_entry_bytes=0))
+    record(lines, "options boolean ttl", lambda: protocols.CacheOptions(max_ttl=True))
+    record(lines, "defaults", lambda: protocols.ProtocolDefaults(options=protocols.CacheOptions(max_ttl=1)))
+    record(lines, "stores list", lambda: options.ProtocolClientOptions(cache_stores=[]))
+    record(lines, "stores name", lambda: options.ProtocolClientOptions(cache_stores={"no name": 1}))
+    record(lines, "conflict", lambda: errors.CacheValidatorConflictError(header_name="If-None-Match"))
+    record(lines, "conflict header", lambda: errors.CacheValidatorConflictError(header_name="ETag"))
+    record(lines, "protocol error", lambda: errors.CacheProtocolError())
+    record(lines, "store error", lambda: errors.CacheStoreError(action="lookup"))
+    record(lines, "invalidation tags", lambda: errors.CacheInvalidationError(tags=["a"]))
+    manual = errors.CacheInvalidationError(tags=("a",))
+    lines.append(f"  manual invalidation error {manual.action} {manual.has_completed_result} {manual.completed_result!r}")
+    record(lines, "manual invalidation result", manual.require_result)
+    completed = errors.CacheInvalidationError(tags=("a",), completed_result=None)
+    lines.append(f"  completed invalidation error {completed.has_completed_result}")
+    record(lines, "completed invalidation result", completed.require_result)
+    lines.append(f"  bases {[base.__name__ for base in errors.CacheInvalidationError.__mro__[1:4]]}")
+
+
+def _memory(cache: Caching, lines: list[str]) -> None:
+    """Keep memory entries by slot, evicting expired then least recently used ones, and refuse invalid arguments."""
+    protocols = cache.protocols
+    responses = importlib.import_module(f"{cache.package.__name__}.responses")
+    view = responses.HeadersView
+    record(lines, "memory zero entries", lambda: protocols.MemoryCacheStore(max_entries=0))
+    record(lines, "memory boolean bytes", lambda: protocols.MemoryCacheStore(max_bytes=True))
+    store = protocols.MemoryCacheStore(max_entries=2, max_bytes=64)
+    english, french, bare = view((("Accept-Language", "en"),)), view((("accept-language", " fr "),)), view()
+    empty = view((("Accept-Language", ""),))
+    names = ("accept-language",)
+    prints = {label: store.fingerprint_vary(names, value) for label, value in (("en", english), ("fr", french), ("none", bare), ("empty", empty))}
+    lines.append(f"  memory fingerprints {[len(value[0]) for value in prints.values()]} distinct={len(set(prints.values()))}")
+
+    def entry(version: str, *, vary: tuple[str, ...] = (), prints: tuple[bytes, ...] = (), **fields: object) -> object:
+        return protocols.CacheEntry(headers=view(), **_stamp(version=version, vary=vary, vary_fingerprints=prints, **fields))
+
+    def put(label: str, key: bytes, expected: str | None, value: object) -> None:
+        lines.append(f"  memory {label} {store.compare_exchange(key, expected, value)}")
+
+    def found(label: str, key: bytes, headers: object = bare) -> None:
+        hit = store.lookup(key, headers)
+        lines.append(f"  memory {label} {None if hit is None else hit.version}")
+
+    put("english", b"k", None, entry("en", vary=names, prints=prints["en"], tags=("t",)))
+    put("french", b"k", None, entry("fr", vary=names, prints=prints["fr"]))
+    found("english lookup", b"k", english)
+    found("french lookup", b"k", french)
+    found("no language lookup", b"k")
+    put("stale expectation", b"k", "old", entry("en2", vary=names, prints=prints["en"]))
+    put("too large", b"x", None, entry("big", body=b"x" * 100))
+    put("third evicts the least recently used", b"y", None, entry("y"))
+    found("french after eviction", b"k", french)
+    found("english after eviction", b"k", english)
+    put("expired", b"z", None, entry("z", freshness_seconds=0))
+    put("fourth evicts the expired", b"w", None, entry("w"))
+    found("expired after eviction", b"z")
+    found("least recently used kept", b"k", french)
+    put("replaced", b"w", "w", entry("w2", body=b"x" * 40))
+    found("replaced lookup", b"w")
+    put("over the bytes", b"v", None, entry("v", body=b"x" * 30))
+    found("evicted by bytes", b"w")
+    found("kept by bytes", b"v")
+    lines.append(f"  memory delete other {store.delete(b'v', 'w')}")
+    lines.append(f"  memory delete {store.delete(b'v', 'v')}")
+    store = protocols.MemoryCacheStore(max_entries=3, max_bytes=64)
+    put("expired small", b"e", None, entry("e", freshness_seconds=0))
+    put("fresh large", b"f", None, entry("f", body=b"x" * 40))
+    put("evicting both", b"g", None, entry("g", body=b"x" * 40))
+    found("expired small after both", b"e")
+    found("fresh large after both", b"f")
+    put("tagged", b"t", None, entry("t", tags=("a", "b")))
+    lines.append(f"  memory invalidate {store.invalidate(('b', 'c'))} {store.invalidate(('b',))}")
+    store = protocols.MemoryCacheStore(max_entries=1)
+    put("expired then deleted", b"d", None, entry("d", freshness_seconds=0))
+    lines.append(f"  memory delete expired {store.delete(b'd', 'd')}")
+    put("fresh after a deleted expired", b"a", None, entry("a"))
+    put("full after a deleted expired", b"b", None, entry("b"))
+    found("least recently used after a deleted expired", b"a")
+    found("newest after a deleted expired", b"b")
+    for label, call in (
+        ("lookup key", lambda: store.lookup("k", bare)),
+        ("fingerprint names", lambda: store.fingerprint_vary(["a"], bare)),
+        ("exchange key", lambda: store.compare_exchange("k", None, entry("e"))),
+        ("exchange version", lambda: store.compare_exchange(b"k", 1, entry("e"))),
+        ("exchange entry", lambda: store.compare_exchange(b"k", None, {})),
+        ("delete key", lambda: store.delete("k", "v")),
+        ("delete version", lambda: store.delete(b"k", 1)),
+        ("invalidate tags", lambda: store.invalidate(["a"])),
+    ):
+        record(lines, f"memory {label}", call)
+
+
+async def _async_memory(cache: Caching, lines: list[str]) -> None:
+    """Keep the same entries through the asynchronous memory store's methods."""
+    protocols = cache.protocols
+    view = importlib.import_module(f"{cache.package.__name__}.responses").HeadersView
+    store = protocols.AsyncMemoryCacheStore()
+    prints = await store.fingerprint_vary(("a",), view())
+    stored = protocols.CacheEntry(headers=view(), **_stamp(vary=("a",), vary_fingerprints=prints, tags=("t",)))
+    lines.append(f"  async memory exchange {await store.compare_exchange(b'k', None, stored)}")
+    lines.append(f"  async memory lookup {(await store.lookup(b'k', view())) is stored}")
+    lines.append(f"  async memory delete {await store.delete(b'k', 'other')}")
+    lines.append(f"  async memory invalidate {await store.invalidate(('t',))}")
+
+
+def _settings(cache: Caching, native: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Refuse stores and defaults the package or the client's mode cannot use, and fetches without a store."""
+    package, protocols, options = cache.package, cache.protocols, cache.options
+    for label, client, settings in (
+        ("unknown helper store", package.Client, {"users.unknown": protocols.MemoryCacheStore()}),
+        ("pagination-free name", package.Client, {"users": protocols.MemoryCacheStore()}),
+        ("object store", package.Client, {"users.profile": object()}),
+        ("asynchronous store", package.Client, {"users.profile": protocols.AsyncMemoryCacheStore()}),
+        ("synchronous store", package.AsyncClient, {"users.profile": protocols.MemoryCacheStore()}),
+    ):
+        protocol = options.ProtocolClientOptions(cache_stores=settings)
+        record(lines, label, lambda client=client, protocol=protocol: client(options=options.ClientOptions(protocols=protocol)))
+    for label, defaults in (
+        ("session defaults", protocols.ProtocolDefaults(session=options.SessionOptions(max_network_sends=1))),
+        ("pagination defaults", protocols.ProtocolDefaults(options=protocols.PaginationOptions(max_pages=1))),
+    ):
+        protocol = options.ProtocolClientOptions(defaults={"users.profile": defaults})
+        record(lines, label, lambda protocol=protocol: package.Client(options=options.ClientOptions(protocols=protocol)))
+    three = cache.user_id(3)
+    with package.Client(http_client=native) as bare:
+        helper = bare.protocols.users.profile
+        fetched(lines, "no store", lambda: helper.fetch(user_id=three))
+        record(lines, "no store invalidation", lambda: helper.invalidate(("users",)))
+        record(lines, "no store rename", lambda: helper.mutations.rename(user_id=three, body=cache.rename("a")))
+    recording = Recording(protocols.MemoryCacheStore(), lines)
+    capped = options.ProtocolClientOptions(
+        cache_stores={"users.profile": recording},
+        defaults={"users.profile": protocols.ProtocolDefaults(options=protocols.CacheOptions(max_entry_bytes=5))},
+        security=None,
+    )
+    client = package.Client(http_client=native, options=options.ClientOptions(protocols=capped))
+    helper = client.protocols.users.profile
+    exchange.respond(user(3, **{"cache-control": "max-age=60"}), user(3, **{"cache-control": "max-age=60"}))
+    fetched(lines, "default entry limit", lambda: helper.fetch(user_id=three))
+    raised = protocols.CacheOptions(max_entry_bytes=1000)
+    fetched(lines, "call entry limit", lambda: helper.fetch(user_id=three, cache_options=raised))
+    fetched(lines, "call entry limit hit", lambda: helper.fetch(user_id=three, cache_options=raised))
+    fetched(lines, "pagination options", lambda: helper.fetch(user_id=three, cache_options=protocols.PaginationOptions()))
+    fetched(lines, "text options", lambda: helper.fetch(user_id=three, options="x"))
+    client.close()
+    fetched(lines, "closed client", lambda: helper.fetch(user_id=three))
+
+
+def _recorded(cache: Caching, native: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Call a custom store in contract order, map its failures, and abandon storage a concurrent update won."""
+    package, protocols, errors = cache.package, cache.protocols, cache.errors
+    store = Recording(protocols.MemoryCacheStore(), lines)
+    hooks = Events(lines)
+    validated = cache.options.RequestOptions(validation=cache.options.ValidationOptions(arguments="pydantic"))
+    settings = cache.options.ClientOptions(
+        hooks=(hooks,),
+        protocols=cache.options.ProtocolClientOptions(cache_stores={"users.profile": store, "users.listing": store}),
+    )
+    with package.Client(http_client=native, options=settings) as api:
+        helper, twenty = api.protocols.users.profile, cache.user_id(21)
+        exchange.respond(user(21, etag='"a"', **{"cache-control": "max-age=0"}), not_modified(etag='"a"'), user(21))
+        fetched(lines, "recorded miss", lambda: helper.fetch(user_id=twenty, options=validated))
+        fetched(lines, "recorded revalidation", lambda: helper.fetch(user_id=twenty))
+        fetched(lines, "recorded unstored", lambda: helper.fetch(user_id=twenty))
+        listing = api.protocols.users.listing
+        exchange.respond(
+            json_response(200, {"data": []}, etag='"l"', **{"cache-control": "max-age=0"}),
+            json_response(200, {"data": []}, vary="Accept-Language", **{"cache-control": "max-age=60"}),
+        )
+        fetched(lines, "list without vary", listing.fetch)
+        fetched(lines, "list in another vary slot", listing.fetch)
+        exchange.respond(user(21, etag='"h"', **{"cache-control": "max-age=0"}), not_modified(etag='"x"'))
+        fetched(lines, "healing stored", lambda: helper.fetch(user_id=twenty))
+        for label, fault in (("a failed deletion", OSError("gone")), ("a deletion result", 1)):
+            exchange.respond(*(() if label == "a failed deletion" else (not_modified(etag='"x"'),)))
+            store.faults["delete"] = fault
+            try:
+                helper.fetch(user_id=twenty)
+            except errors.CacheProtocolError as error:
+                lines.append(f"  refused 304 with {label} ! {describe(error)} {[describe(item) for item in error.secondary_errors]}")
+        cancelled = cache.options.CancelToken()
+        cancelled.cancel()
+        stopped = cache.options.RequestOptions(cancel_token=cancelled)
+        fetched(lines, "cancelled before lookup", lambda: helper.fetch(user_id=twenty, options=stopped))
+        for label, method, fault, responses in (
+            ("lookup failure", "lookup", OSError("disk"), ()),
+            ("lookup result", "lookup", "entry", ()),
+            ("lookup store error", "lookup", errors.CacheStoreError(action="lookup"), ()),
+            ("fingerprint result", "fingerprint_vary", ("text",), (user(21, **{"cache-control": "max-age=60"}),)),
+            ("exchange failure", "compare_exchange", RuntimeError("down"), (user(21, **{"cache-control": "max-age=60"}),)),
+            ("exchange result", "compare_exchange", "yes", (user(21, **{"cache-control": "max-age=60"}),)),
+            ("exchange refused", "compare_exchange", False, (user(21, **{"cache-control": "max-age=0"}, etag='"b"'),)),
+        ):
+            store.faults[method] = fault
+            exchange.respond(*responses)
+            fetched(lines, label, lambda: helper.fetch(user_id=twenty))
+        exchange.respond(user(21, etag='"b"', **{"cache-control": "max-age=0"}), user(21), user(21, etag='"b"', **{"cache-control": "max-age=0"}), user(21))
+        fetched(lines, "deletable stored", lambda: helper.fetch(user_id=twenty))
+        store.faults["delete"] = 1
+        fetched(lines, "delete result", lambda: helper.fetch(user_id=twenty))
+        fetched(lines, "deletable stored again", lambda: helper.fetch(user_id=twenty))
+        store.faults["delete"] = OSError("gone")
+        fetched(lines, "delete failure", lambda: helper.fetch(user_id=twenty))
+        racer = cache.user_id(22)
+        exchange.respond(user(22, **{"cache-control": "max-age=60"}), user(22, "dog", **{"cache-control": "max-age=60"}))
+        fetched(lines, "race stored", lambda: helper.fetch(user_id=racer))
+        record(lines, "race cleared", lambda: helper.invalidate(("user:22",)))
+        store.racing = replace(store.last, version="racer", body=b'{"id":22,"name":"racer"}')
+        fetched(lines, "race lost", lambda: helper.fetch(user_id=racer))
+        fetched(lines, "race winner", lambda: helper.fetch(user_id=racer))
+        for label, fault in (("invalidation failure", OSError("down")), ("invalidation count", -1)):
+            store.faults["invalidate"] = fault
+            record(lines, label, lambda: helper.invalidate(("users",)))
+        for label, fault in (("rename invalidation failure", OSError("down")), ("rename invalidation count", "x")):
+            exchange.respond(user(22, "dog"))
+            store.faults["invalidate"] = fault
+            try:
+                helper.mutations.rename(user_id=racer, body=cache.rename("dog"), options=validated)
+            except errors.CacheInvalidationError as error:
+                lines.append(f"  {label} ! {describe(error)} result={_data(error.require_result())} tags={error.tags}")
+    hooks.failing = True
+    with package.Client(http_client=native, options=settings) as api:
+        exchange.respond(user(23, **{"cache-control": "max-age=60"}), user(23, **{"cache-control": "max-age=60"}))
+        fetched(lines, "hook failure stores nothing", lambda: api.protocols.users.profile.fetch(user_id=cache.user_id(23)))
+        hooks.failing = False
+        fetched(lines, "after a hook failure", lambda: api.protocols.users.profile.fetch(user_id=cache.user_id(23)))
+        fetched(lines, "hit without events", lambda: api.protocols.users.profile.fetch(user_id=cache.user_id(23)))
+
+
+def _credentials(cache: Caching, native: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Key entries by credential partition and auth, refusing authenticated use without a partition or a match."""
+    package, protocols, options, auth = cache.package, cache.protocols, cache.options, cache.auth
+    store = protocols.MemoryCacheStore()
+    token = auth.AuthConfig({"bearer": auth.StaticTokenProvider(auth.AccessToken("token"))})
+
+    def client(partition: str | None, config: object = token, **stores: object) -> Any:
+        security = None if partition is None else protocols.ProtocolSecurityContext(credential_partition=partition)
+        protocol = options.ProtocolClientOptions(security=security, cache_stores=stores or {"secure.profile": store, "users.profile": store})
+        return package.Client(http_client=native, options=options.ClientOptions(auth=config, protocols=protocol))
+
+    secured = importlib.import_module(f"{package.__name__}.types.secure").GetSecureUserRequestCodecs
+    argument = secured.parameter(location="path", name="userId").from_wire(1)
+    with client(None) as anonymous:
+        fetched(lines, "no partition", lambda: anonymous.protocols.secure.profile.fetch(user_id=argument))
+    with client("tenant-a", None) as unauthenticated:
+        fetched(lines, "no credentials", lambda: unauthenticated.protocols.secure.profile.fetch(user_id=argument))
+    exchange.respond(
+        user(1, etag='"t"', **{"cache-control": "max-age=60"}),
+        user(1, "other"),
+        user(1, "anonymous", **{"cache-control": "max-age=60"}),
+        user(1, "b"),
+    )
+    with client("tenant-a") as first, client("tenant-a") as same, client("tenant-b") as other:
+        fetched(lines, "tenant a stored", lambda: first.protocols.secure.profile.fetch(user_id=argument))
+        fetched(lines, "tenant a shared", lambda: same.protocols.secure.profile.fetch(user_id=argument))
+        fetched(lines, "tenant b isolated", lambda: other.protocols.secure.profile.fetch(user_id=argument))
+        public = cache.user_id(1)
+        fetched(lines, "anonymous helper", lambda: first.protocols.users.profile.fetch(user_id=public))
+        bearer = cache.headers(Authorization="Bearer x")
+        fetched(lines, "anonymous helper with a credential", lambda: first.protocols.users.profile.fetch(user_id=public, options=bearer))
+        fetched(lines, "anonymous helper same tenant", lambda: same.protocols.users.profile.fetch(user_id=public))
+        fetched(lines, "anonymous helper other tenant", lambda: other.protocols.users.profile.fetch(user_id=public))
+    alice, bob = (auth.AuthConfig({"bearer": auth.StaticTokenProvider(auth.AccessToken(name))}) for name in ("alice", "bob"))
+    two = secured.parameter(location="path", name="userId").from_wire(2)
+    varying = {"cache-control": "max-age=60", "vary": "Authorization"}
+    exchange.respond(user(2, "alice", **varying), user(2, "bob", **varying), user(2, "alice again", **varying))
+    with client("tenant-a", alice) as first, client("tenant-a", bob) as second:
+        fetched(lines, "alice varying on authorization", lambda: first.protocols.secure.profile.fetch(user_id=two))
+        fetched(lines, "bob in the same partition", lambda: second.protocols.secure.profile.fetch(user_id=two))
+        fetched(lines, "alice again", lambda: first.protocols.secure.profile.fetch(user_id=two))
+        other_auth = options.RequestOptions(auth=bob)
+        view = first.with_options(other_auth)
+        fetched(lines, "view with other auth", lambda: view.protocols.secure.profile.fetch(user_id=two))
+        fetched(
+            lines,
+            "call with other auth",
+            lambda: first.protocols.secure.profile.fetch(user_id=two, options=other_auth),
+        )
+        public = cache.user_id(1)
+        anonymous_view = first.with_options(options.RequestOptions(auth=None))
+        fetched(lines, "anonymous view", lambda: anonymous_view.protocols.users.profile.fetch(user_id=public))
+    fresh = {"cache-control": "max-age=60"}
+    four, five = (secured.parameter(location="path", name="userId").from_wire(value) for value in (4, 5))
+    exchange.respond(user(4, "u", **fresh), user(4, "service", **fresh), user(5, "service", **fresh), user(5, "u", **fresh))
+    with client("tenant-a") as service:
+        helper = service.protocols.secure.profile
+        delegated = service.with_options(cache.headers(X_On_Behalf_Of="user-u")).protocols.secure.profile
+        fetched(lines, "on behalf of u", lambda: delegated.fetch(user_id=four))
+        fetched(lines, "service after u", lambda: helper.fetch(user_id=four))
+        fetched(lines, "on behalf of u again", lambda: delegated.fetch(user_id=four))
+        fetched(lines, "service again", lambda: helper.fetch(user_id=four))
+        fetched(lines, "service first", lambda: helper.fetch(user_id=five))
+        fetched(lines, "on behalf of u after the service", lambda: delegated.fetch(user_id=five))
+        forged = service.with_options(cache.headers(Authorization="Bearer mallory")).protocols.secure.profile
+        fetched(lines, "view patching the bound authorization", lambda: forged.fetch(user_id=four))
+    exchange.respond(user(44, "alice", **fresh), user(44, "bob", **fresh))
+    with client("tenant-a", None, **{"carts.current": store}) as shopper:
+        carts = shopper.protocols.carts.current
+        for label, cart in (("alice cart", "alice"), ("bob cart", "bob"), ("alice cart again", "alice")):
+            fetched(lines, label, lambda cart=cart: carts.fetch(cart=cache.cart(cart)))
+    signed_vary = {"cache-control": "max-age=60", "vary": "X-Signature"}
+    exchange.respond(user(3, "first", **signed_vary), user(3, "second", **signed_vary))
+    three = secured.parameter(location="path", name="userId").from_wire(3)
+    signing = auth.AuthConfig({"bearer": auth.StaticTokenProvider(auth.AccessToken("alice"))}, signers=(_Signer(auth),))
+    with client("tenant-a", signing) as signer:
+        fetched(lines, "vary on a signed header", lambda: signer.protocols.secure.profile.fetch(user_id=three))
+        fetched(lines, "vary on a signed header again", lambda: signer.protocols.secure.profile.fetch(user_id=three))
+    failing = Recording(protocols.MemoryCacheStore(), lines)
+    secret = auth.StaticCredentialProvider(auth.ApiKeyCredential("secret"))
+    with auth.ClientCredentialsProvider("https://auth.example.com/token", client_id="c", client_secret=secret, audience="api") as oauth:
+        signed = auth.AuthConfig({"bearer": oauth}, signers=(_Signer(auth),))
+        with client("tenant-a", signed, **{"secure.profile": failing}) as granted:
+            failing.faults["lookup"] = OSError("down")
+            fetched(lines, "granted and signed", lambda: granted.protocols.secure.profile.fetch(user_id=argument))
+
+
+async def _async_stores(cache: Caching, lines: list[str]) -> None:
+    """Map an asynchronous store's failures and results as the synchronous ones are mapped."""
+    package, protocols, options, auth = cache.package, cache.protocols, cache.options, cache.auth
+    exchange = Exchange(lines)
+    store = AsyncRecording(protocols.MemoryCacheStore(), lines)
+    settings = options.ClientOptions(
+        hooks=(AsyncEvents(lines),), protocols=options.ProtocolClientOptions(cache_stores={"users.profile": store})
+    )
+    async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=settings) as api:
+        helper, twenty = api.protocols.users.profile, cache.user_id(24)
+        exchange.respond(user(24, etag='"a"', **{"cache-control": "max-age=0"}), user(24), json_response(404, {"message": "no"}))
+        await afetched(lines, "async recorded stored", lambda: helper.fetch(user_id=twenty))
+        await afetched(lines, "async recorded unstored", lambda: helper.fetch(user_id=twenty))
+        await afetched(lines, "async recorded error", lambda: helper.fetch(user_id=twenty))
+        for label, method, fault, responses in (
+            ("async lookup failure", "lookup", OSError("disk"), ()),
+            ("async lookup store error", "lookup", cache.errors.CacheStoreError(action="lookup"), ()),
+            ("async fingerprint result", "fingerprint_vary", (), (user(24, vary="accept-language", **{"cache-control": "max-age=60"}),)),
+            ("async exchange result", "compare_exchange", "yes", (user(24, **{"cache-control": "max-age=60"}),)),
+        ):
+            store.faults[method] = fault
+            exchange.respond(*responses)
+            await afetched(lines, label, lambda: helper.fetch(user_id=twenty))
+        exchange.respond(user(24, etag='"h"', **{"cache-control": "max-age=0"}), not_modified(etag='"x"'))
+        await afetched(lines, "async healing stored", lambda: helper.fetch(user_id=twenty))
+        for label, fault in (("a failed deletion", OSError("gone")), ("a deletion result", 1)):
+            exchange.respond(*(() if label == "a failed deletion" else (not_modified(etag='"x"'),)))
+            store.faults["delete"] = fault
+            try:
+                await helper.fetch(user_id=twenty)
+            except cache.errors.CacheProtocolError as error:
+                lines.append(f"  async refused 304 with {label} ! {describe(error)} {[describe(item) for item in error.secondary_errors]}")
+        exchange.respond(user(24, etag='"b"', **{"cache-control": "max-age=0"}), user(24))
+        await afetched(lines, "async deletable", lambda: helper.fetch(user_id=twenty))
+        store.faults["delete"] = 1
+        await afetched(lines, "async delete result", lambda: helper.fetch(user_id=twenty))
+        for label, fault in (("async invalidation failure", OSError("down")), ("async invalidation count", True)):
+            store.faults["invalidate"] = fault
+            await arecord(lines, label, lambda: helper.invalidate(("users",)))
+        exchange.respond(user(24, "dog"))
+        store.faults["invalidate"] = OSError("down")
+        await arecord(lines, "async rename invalidation failure", lambda: helper.mutations.rename(user_id=twenty, body=cache.rename("dog")))
+    fresh = {"cache-control": "max-age=60"}
+    secured = importlib.import_module(f"{package.__name__}.types.secure").GetSecureUserRequestCodecs
+    argument = secured.parameter(location="path", name="userId").from_wire(1)
+    token = auth.AuthConfig({"bearer": auth.AsyncStaticTokenProvider(auth.AccessToken("token"))})
+    partitioned = options.ProtocolClientOptions(
+        security=protocols.ProtocolSecurityContext(credential_partition="tenant"),
+        cache_stores={"secure.profile": protocols.AsyncMemoryCacheStore()},
+    )
+    exchange.respond(user(1, "service", **fresh), user(1, "u", **fresh))
+    async with exchange.async_client() as native, package.AsyncClient(
+        http_client=native, options=options.ClientOptions(auth=token, protocols=partitioned)
+    ) as service:
+        delegated = service.with_options(cache.headers(X_On_Behalf_Of="user-u")).protocols.secure.profile
+        await afetched(lines, "async service", lambda: service.protocols.secure.profile.fetch(user_id=argument))
+        await afetched(lines, "async on behalf of u", lambda: delegated.fetch(user_id=argument))
+        await afetched(lines, "async on behalf of u again", lambda: delegated.fetch(user_id=argument))
+    failing = AsyncRecording(protocols.MemoryCacheStore(), lines)
+    failing.faults["lookup"] = OSError("down")
+    secret = auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("secret"))
+    oauth = auth.AsyncClientCredentialsProvider("https://auth.example.com/token", client_id="c", client_secret=secret)
+    protocol = options.ProtocolClientOptions(
+        security=protocols.ProtocolSecurityContext(credential_partition="tenant"), cache_stores={"secure.profile": failing}
+    )
+    config = options.ClientOptions(auth=auth.AuthConfig({"bearer": oauth}), protocols=protocol)
+    async with exchange.async_client() as native, package.AsyncClient(http_client=native, options=config) as granted:
+        await afetched(lines, "async granted", lambda: granted.protocols.secure.profile.fetch(user_id=argument))
+    await oauth.aclose()
+
+
+def cache_backends(package: ModuleType, lines: list[str]) -> None:
+    """Decode stored representations again with each backend: a miss, a revalidation, a fresh hit, and a list."""
+    cache = Caching(package)
+    exchange = Exchange(lines)
+    store = cache.protocols.MemoryCacheStore()
+    with exchange.client() as native, package.Client(http_client=native, options=cache.stores(users__profile=store, users__listing=store)) as api:
+        helper, one = api.protocols.users.profile, cache.user_id(1)
+        exchange.respond(
+            user(1, etag='"a"', **{"cache-control": "max-age=0"}),
+            not_modified(etag='"a"', **{"cache-control": "max-age=60"}),
+            json_response(200, {"data": [{"id": 1, "name": "a"}, {"id": 2, "name": "b"}]}, **{"cache-control": "max-age=60"}),
+        )
+        fetched(lines, "backend miss", lambda: helper.fetch(user_id=one))
+        fetched(lines, "backend revalidated", lambda: helper.fetch(user_id=one))
+        fetched(lines, "backend fresh", lambda: helper.fetch(user_id=one))
+        fetched(lines, "backend list miss", api.protocols.users.listing.fetch)
+        fetched(lines, "backend list fresh", api.protocols.users.listing.fetch)

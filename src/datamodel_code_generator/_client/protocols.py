@@ -6,6 +6,8 @@ normalized metadata. Selectors and request targets are the runtime records gener
 
 from __future__ import annotations
 
+import keyword
+import re
 from collections import deque
 from collections.abc import Mapping
 from dataclasses import dataclass, field, fields
@@ -35,6 +37,8 @@ __all__ = (
     "AdapterSignature",
     "AsciiBytes",
     "Binding",
+    "CacheHelper",
+    "CacheMutation",
     "Continuation",
     "Converter",
     "CountContinuation",
@@ -99,7 +103,7 @@ KINDS: Final = (
     "batch",
     "queue",
 )
-_LATER: Final = frozenset({"websocket", "cache", "resumable_upload", "batch", "queue"})
+_LATER: Final = frozenset({"websocket", "resumable_upload", "batch", "queue"})
 _HMAC_SIGNATURES: Final = ("hmac-sha256", "hmac-sha512")
 _PUBLIC_KEY_SIGNATURES: Final = ("ed25519", "rsa-pss-sha256")
 _SIGNATURES: Final = (*_HMAC_SIGNATURES, *_PUBLIC_KEY_SIGNATURES)
@@ -111,13 +115,15 @@ _ENCODINGS: Final = {
 }
 _FACTS: Final = ("timestamp", "delivery-id")
 _SOURCES: Final = ("input", "initial", "previous")
-_BRACKETED: Final = frozenset({"helpers", "mapping", "error_events"})
+_BRACKETED: Final = frozenset({"helpers", "mapping", "error_events", "mutations"})
 _KEYS: Final = {"from_": "from"}
 _ROOT: Final = "protocols"
 _MERGE: Final = "tag:yaml.org,2002:merge"
 _EMPTY_STRING: Final = {"kind": "value", "value": ""}
 _STATE_SETS: Final = ("pending", "succeeded", "failed", "cancelled")
 _MAX_DEPTH: Final = 64
+_VALIDATOR_KINDS: Final = ("etag", "last_modified", "both")
+_TAG: Final = re.compile(r"(?:[^{}]|\{[^{}]+\})+")
 
 
 class _Mark(Enum):
@@ -472,7 +478,38 @@ class WebhookHelper:
     enabled: bool = True
 
 
-HelperDefinition: TypeAlias = PaginationHelper | PollingHelper | StreamHelper | WebhookHelper
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CacheMutation:
+    """An operation whose explicit wrapper invalidates the cache entries its tags name after it succeeds."""
+
+    operation: OperationSelector
+    invalidate_tags: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CacheHelper:
+    """Fetch one operation's responses through a private cache that revalidates stale entries with their validator.
+
+    A tag is literal text whose braces each name a required path or query parameter of the operation it renders for.
+    """
+
+    kind: ClassVar[Literal["cache"]] = "cache"
+
+    operation: OperationSelector
+    validator: Literal["etag", "last_modified", "both"]
+    authenticated: bool
+    statuses: tuple[int, ...] = (200,)
+    vary_allowlist: tuple[str, ...] = ()
+    tags: tuple[str, ...] = ()
+    mutations: Mapping[str, CacheMutation] = field(default_factory=lambda: MappingProxyType({}))
+    enabled: bool = True
+
+    def __post_init__(self) -> None:
+        """Keep a read-only copy of the mutations."""
+        object.__setattr__(self, "mutations", _frozen(self.mutations))
+
+
+HelperDefinition: TypeAlias = PaginationHelper | PollingHelper | StreamHelper | WebhookHelper | CacheHelper
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -517,6 +554,8 @@ _RECORDS: Final = frozenset({
     AdapterSignature,
     NoSignature,
     WebhookHelper,
+    CacheMutation,
+    CacheHelper,
     ProtocolConfiguration,
 })
 _ROLES: Final[Mapping[tuple[type, str], str]] = {
@@ -530,6 +569,7 @@ _ROLES: Final[Mapping[tuple[type, str], str]] = {
     (StreamHelper, "error_events"): "mapping",
     (HmacSignature, "field_constraints"): "mapping",
     (PublicKeySignature, "field_constraints"): "mapping",
+    (CacheHelper, "mutations"): "mapping",
     (ProtocolConfiguration, "helpers"): "mapping",
 }
 
@@ -1094,6 +1134,8 @@ class _Validator:  # noqa: PLR0904
                 tree = self.polling(value, at)
             case "webhook":
                 tree = self.webhook(value, at)
+            case "cache":
+                tree = self.cache(value, at)
             case _:
                 tree = self.stream(value, at, sse=kind == "sse")
         if tree is INVALID:
@@ -1340,6 +1382,60 @@ class _Validator:  # noqa: PLR0904
         reasons = self.items(value, at, self.choice("transport_interruption", "incomplete_eof"), nonempty=True)
         return self.distinct(at, reasons, "a reconnect reason")
 
+    def cache(self, value: object, at: str) -> Tree | _Invalid:
+        return self.record(
+            value,
+            at,
+            {
+                "kind": (_keep, REQUIRED),
+                "enabled": (self.boolean, True),
+                "operation": (self.operation, REQUIRED),
+                "validator": (self.choice(*_VALIDATOR_KINDS), REQUIRED),
+                "authenticated": (self.boolean, REQUIRED),
+                "statuses": (self.statuses, [200]),
+                "vary_allowlist": (self.vary_names, []),
+                "tags": (self.tags, []),
+                "mutations": (self.mutations, {}),
+            },
+            "a helper definition",
+        )
+
+    def vary_names(self, value: object, at: str) -> object:
+        """Convert Vary header names, refusing `*` and a name repeated in another case."""
+        names = self.items(value, at, self.vary_name)
+        seen: set[str] = set()
+        for index, name in enumerate(names if isinstance(names, list) else ()):
+            if (folded := name.lower()) in seen:
+                return self.value(f"{at}[{index}]", f"{at}[{index}] repeats a header name")
+            seen.add(folded)
+        return names
+
+    def vary_name(self, value: object, at: str) -> object:
+        return self.value(at, f"{at} must name a header, not '*'") if value == "*" else self.header(value, at)
+
+    def tags(self, value: object, at: str, *, nonempty: bool = False) -> object:
+        return self.distinct(at, self.items(value, at, self.tag, nonempty=nonempty), "a tag")
+
+    def tag(self, value: object, at: str) -> object:
+        valid = isinstance(value, str) and _encodable(value) and _TAG.fullmatch(value) is not None
+        return value if valid else self.value(at, f"{at} must be nonempty text whose braces each name a parameter")
+
+    def mutations(self, value: object, at: str) -> object:
+        """Convert the mutations by their method names: public Python identifiers that are not keywords."""
+        if not isinstance(value, Mapping):
+            return self.value(at, f"{at} must be a mapping")
+        spec: Spec = {
+            "operation": (self.operation, REQUIRED),
+            "invalidate_tags": (partial(self.tags, nonempty=True), REQUIRED),
+        }
+        mutations: dict[str, object] = {}
+        for name, item in value.items():
+            if isinstance(name, str) and name.isidentifier() and not keyword.iskeyword(name) and name[0] != "_":
+                mutations[name] = self.record(item, f"{at}[{name!r}]", spec, "a mutation")
+            else:
+                mutations[""] = self.value(at, f"{at} has the key {name!r}, which is not a public method name")
+        return INVALID if any(item is INVALID for item in mutations.values()) else mutations
+
     def webhook(self, value: object, at: str) -> Tree | _Invalid:
         """Convert a webhook helper, refusing to reject duplicates of deliveries that are unsigned."""
         webhook = self.record(
@@ -1512,6 +1608,10 @@ def _links(kind: str, tree: Tree, at: str) -> Iterator[Link]:
             )
         case "webhook":
             return
+        case "cache":
+            yield Link(at=f"{at}.operation", ref=tree["operation"])
+            for name, mutation in tree["mutations"].items():
+                yield Link(at=f"{at}.mutations[{name!r}].operation", ref=mutation["operation"])
         case "polling":
             yield Link(at=f"{at}.create", ref=tree["create"])
             yield Link(at=f"{at}.poll", ref=tree["poll"], targets=_targets(tree["bindings"], f"{at}.bindings"))

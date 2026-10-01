@@ -1,10 +1,10 @@
 # protocols-polling-checks
 render pydantic_v2.BaseModel
   APIGenerationError
-  E_CLIENT_UNSUPPORTED target protocols.helpers['checks.later'].remote_cancel /paths/~1jobs/post: The polling helper 'checks.later' declares remote cancellation, which is not supported yet
-  E_CLIENT_UNSUPPORTED target protocols.helpers['checks.later'].expires_at /paths/~1jobs/post: The polling helper 'checks.later' declares a server expiry, which is not supported yet
   E_CONFIG_VALUE config protocols.helpers['checks.later'].accepted_statuses[1] /paths/~1jobs/post: The accepted status 201 of 'checks.later' selects no success response of POST /jobs
   E_CONFIG_VALUE config protocols.helpers['checks.later'].accepted_statuses[2] /paths/~1jobs/post: The accepted status 404 of 'checks.later' selects no success response of POST /jobs
+  E_CONFIG_VALUE config protocols.helpers['checks.later'].expires_at /paths/~1jobs/post: The expiry of 'checks.later' reads integer values, where only a string gives a date and time
+  E_CONFIG_VALUE config protocols.helpers['checks.later'].remote_cancel.operation /paths/~1archives/post: POST /archives must declare a success response for the remote cancel of 'checks.later'
   E_CONFIG_VALUE config protocols.helpers['checks.poll'].poll /paths/~1exports/post: POST /exports must declare exactly one JSON success response for the polling helper 'checks.poll'
   E_CONFIG_VALUE config protocols.helpers['checks.states'].pending[0] /paths/~1exports~1status/get: The state 'zero' of 'checks.states' is string, which its state never reads
   E_CONFIG_VALUE config protocols.helpers['checks.states'].failed[0] /paths/~1exports~1status/get: The state True of 'checks.states' is boolean, which its state never reads
@@ -41,3 +41,6 @@ render pydantic_v2.BaseModel
   E_CONFIG_VALUE config protocols.helpers['checks.no_success'].immediate_result.statuses[0] /paths/~1archives/post: The immediate status 200 of 'checks.no_success' selects no success response of POST /archives
   E_CLIENT_UNSUPPORTED target protocols.helpers['checks.no_success'].immediate_result /paths/~1archives/post: The immediate result of 'checks.no_success' reads POST /archives, whose success responses are not all one JSON model, which is not supported yet
   E_CONFIG_VALUE config protocols.helpers['checks.media'].result.bindings /paths/~1archives~1search/post: The polling helper 'checks.media' writes a request body of POST /archives/search, which has no default media type; set the operation's request_media_type
+  E_CONFIG_VALUE config protocols.helpers['checks.cancel'].expires_at /paths/~1jobs/post: The expiry of 'checks.cancel' reads the header 'Expires', which POST /jobs does not declare
+  E_CONFIG_VALUE config protocols.helpers['checks.cancel'].remote_cancel.bindings[0].target /paths/~1jobs~1{jobId}/delete: The cancel binding 0 of 'checks.cancel' gives integer values, which the header parameter 'X-Reason' of DELETE /jobs/{jobId} does not accept
+  E_CONFIG_VALUE config protocols.helpers['checks.cancel'].remote_cancel.bindings /paths/~1jobs~1{jobId}/delete: DELETE /jobs/{jobId} requires the path parameter 'jobId', which no binding of 'checks.cancel' writes

@@ -17,6 +17,7 @@ from tests.data.python.client_auth_flows import auth_flows
 from tests.data.python.client_auth_options import auth_options
 from tests.data.python.client_auth_values import auth_values
 from tests.data.python.client_bodies import bodies
+from tests.data.python.client_caching import cache_backends, cache_stores, caching
 from tests.data.python.client_body_digest import body_digest
 from tests.data.python.client_body_replay import body_replay, multipart_replay
 from tests.data.python.client_body_replay_faults import body_replay_faults
@@ -56,6 +57,7 @@ from tests.data.python.client_pagination_targets import (
 )
 from tests.data.python.client_parameter_adapters import parameter_adapters
 from tests.data.python.client_polling import polling
+from tests.data.python.client_polling_resume import polling_resume
 from tests.data.python.client_protocol_contracts import protocol_contracts
 from tests.data.python.client_protocol_errors import protocol_errors
 from tests.data.python.client_query import query
@@ -812,6 +814,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "pagination-links": ("pagination-links", ("pydantic_v2.BaseModel",), pagination_links),
     "pagination-resume": ("pagination-resume", ("pydantic_v2.BaseModel",), pagination_resume),
     "polling": ("polling", ("pydantic_v2.BaseModel",), polling),
+    "polling-resume": ("polling", ("pydantic_v2.BaseModel",), polling_resume),
     "streams": ("streams", ("pydantic_v2.BaseModel",), streams),
     "stream-events": ("streams", ("pydantic_v2.BaseModel",), event_stream_lifetimes),
     "stream-backends": ("streams", BACKENDS, stream_backends),
@@ -819,6 +822,9 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "ndjson-backends": ("ndjson", BACKENDS, ndjson_backends),
     "ndjson-split": ("ndjson-split", STRUCTURAL, ndjson_split),
     "protocol-errors": ("pets", ("pydantic_v2.BaseModel",), protocol_errors),
+    "cache": ("caching", ("pydantic_v2.BaseModel",), caching),
+    "cache-stores": ("caching", ("pydantic_v2.BaseModel",), cache_stores),
+    "cache-backends": ("caching-backends", BACKENDS, cache_backends),
     "evolution": ("evolution", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"), evolution),
     "evolution-schema": (
         "evolution-schema",

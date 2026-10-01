@@ -49,7 +49,12 @@ from .records import (
     frozen_wire,
     record_instance,
 )
+from .resume import MalformedStateError as _MalformedError
 from .resume import ResumeState, helper_state, state_fields
+from .resume import require_state as _require
+from .resume import state_array as _array
+from .resume import state_count as _count
+from .resume import state_text as _text
 from .values import MISSING, Missing, Patch, RepeatedValueError, resolve, selected
 
 if TYPE_CHECKING:
@@ -1133,32 +1138,6 @@ def _page_link(plan: PaginationPlan[T, P], page: object) -> _Link:
     return link
 
 
-class _MalformedError(Exception):
-    """A checkpoint whose state or saved page does not fit the helper resuming it."""
-
-
-def _require(condition: bool) -> None:  # noqa: FBT001
-    if not condition:
-        raise _MalformedError
-
-
-def _array(value: WireValue) -> tuple[WireValue, ...]:
-    _require(isinstance(value, tuple))
-    return cast("tuple[WireValue, ...]", value)
-
-
-def _count(value: WireValue, limit: int | None = None) -> int:
-    _require(
-        isinstance(value, int) and not isinstance(value, bool) and value >= 0 and (limit is None or value <= limit)
-    )
-    return cast("int", value)
-
-
-def _text(value: WireValue) -> str | None:
-    _require(value is None or isinstance(value, str))
-    return cast("str | None", value)
-
-
 def _digest(value: WireValue) -> bytes:
     _require(isinstance(value, str) and _DIGEST.fullmatch(value) is not None)
     return bytes.fromhex(cast("str", value))
@@ -1277,7 +1256,7 @@ def _walked(
     _require(len(rest) == _LEFT_FIELDS)
     remaining, status, content_type = _count(rest[0]), _count(rest[1]), _text(rest[2])
     try:
-        data, wire = core.saved_page(plan.call, payload, status, content_type, limits.options)
+        data, wire = core.saved_page(plan.call, payload, status, content_type, limits.options)[:2]
     except SDKError:
         raise _MalformedError from None
     native = plan.items(data)
