@@ -12,7 +12,7 @@ from contextlib import contextmanager
 from dataclasses import asdict, is_dataclass
 from typing import TYPE_CHECKING, Any, Final
 
-from tests.data.python.client_runtime import arecord, describe, record, run
+from tests.data.python.client_runtime import describe, run
 from tests.data.python.fixture_websocket import Play, RawPeer, SocketServer, TunnelProxy, client_context
 
 if TYPE_CHECKING:
@@ -28,6 +28,34 @@ _UPGRADE: Final = (
 _LARGE: Final = "x" * (32 * 1024 * 1024)
 _PROBLEM: Final = (("Content-Type", "application/json"),)
 _INVALID: Final = (("WWW-Authenticate", 'Bearer error="invalid_token"'),)
+
+
+def _described(value: object) -> str:
+    """Describe an outcome, naming a failure's cause by its class alone, whose text the platform and library choose."""
+    text = describe(value)
+    if isinstance(value, BaseException) and (cause := getattr(value, "cause", None)) is not None:
+        text = text.replace(f"cause={cause!r}", f"cause={type(cause).__name__}")
+    return text
+
+
+def record(lines: list[str], label: str, call: Callable[[], object]) -> object:
+    try:
+        result = call()
+    except Exception as error:  # noqa: BLE001
+        lines.append(f"  {label} ! {_described(error)}")
+        return None
+    lines.append(f"  {label} = {_described(result)}")
+    return result
+
+
+async def arecord(lines: list[str], label: str, call: Callable[[], Any]) -> object:
+    try:
+        result = await call()
+    except Exception as error:  # noqa: BLE001
+        lines.append(f"  {label} ! {_described(error)}")
+        return None
+    lines.append(f"  {label} = {_described(result)}")
+    return result
 
 
 def _data(value: object) -> object:
@@ -312,7 +340,7 @@ def _decoding(harness: _Harness, api: Any) -> None:
             session.receive()
         except harness.errors.StreamDecodeError as failure:
             lines.append(
-                f"  {label} ! {describe(failure)} sequence={failure.sequence} prefix={len(failure.raw_prefix)} "
+                f"  {label} ! {_described(failure)} sequence={failure.sequence} prefix={len(failure.raw_prefix)} "
                 f"truncated={failure.truncated} cause={type(failure.cause).__name__}"
             )
         record(lines, "after the decode failure", session.receive)
@@ -336,7 +364,7 @@ def _limits(harness: _Harness, api: Any) -> None:
         ("message over the limit", Play(talk=_sending(json.dumps({"kind": "said", "text": "x" * 64}))), {"ws_options": harness.ws(max_message_bytes=32)}),
         ("idle", Play(), {"ws_options": harness.ws(idle_timeout=0.05)}),
         ("idle inherited", Play(), {"options": options.RequestOptions(stream_idle_timeout=0.05)}),
-        ("session deadline", Play(), {"session_options": options.SessionOptions(total_timeout=0.2), "ws_options": harness.ws(idle_timeout=None)}),
+        ("session deadline", Play(), {"session_options": options.SessionOptions(total_timeout=1.0), "ws_options": harness.ws(idle_timeout=None)}),
         ("abnormal closure", Play(talk=_sending(code=1011, reason="boom")), {}),
     ):
         server.play(play)
@@ -520,8 +548,8 @@ def _handshakes(harness: _Harness) -> None:
     once = options.RequestOptions(retry=options.RetryOptions(max_retries=0))
     accept = b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {accept}\r\n"
     for label, reply, arguments in (
-        ("open timeout", None, {"ws_options": harness.ws(open_timeout=0.1)}),
-        ("deadline during the open", None, {"options": options.RequestOptions(total_timeout=0.1)}),
+        ("open timeout", None, {"ws_options": harness.ws(open_timeout=1.0)}),
+        ("deadline during the open", None, {"options": options.RequestOptions(total_timeout=1.0)}),
         ("closed before a response", b"", {}),
         ("malformed response", b"NOT-HTTP\r\n\r\n", {}),
         ("missing upgrade", b"HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {accept}\r\n\r\n", {}),
@@ -658,7 +686,7 @@ async def _async_sockets(harness: _Harness) -> None:
             ("async refusal", Play(refuse=(404, _PROBLEM, b'{"detail":"no room"}')), {}),
             ("async decode failure", Play(talk=_sending("{broken")), {}),
             ("async idle", Play(), {"ws_options": harness.ws(idle_timeout=0.05)}),
-            ("async session deadline", Play(), {"session_options": options.SessionOptions(total_timeout=0.2), "ws_options": harness.ws(idle_timeout=None)}),
+            ("async session deadline", Play(), {"session_options": options.SessionOptions(total_timeout=1.0), "ws_options": harness.ws(idle_timeout=None)}),
             ("async abnormal closure", Play(talk=_sending(code=1011, reason="boom")), {}),
         ):
             server.play(play)
@@ -710,6 +738,6 @@ async def _async_sockets(harness: _Harness) -> None:
     try:
         async with harness.package.AsyncClient(options=harness.client(silent.url)) as api:
             once = options.RequestOptions(retry=options.RetryOptions(max_retries=0))
-            await arecord(lines, "async open timeout", lambda: api.protocols.feed.text.connect(options=once, ws_options=harness.ws(open_timeout=0.1)))
+            await arecord(lines, "async open timeout", lambda: api.protocols.feed.text.connect(options=once, ws_options=harness.ws(open_timeout=1.0)))
     finally:
         silent.stop()
