@@ -24,3 +24,4 @@ render pydantic_v2.BaseModel
   E_CONFIG_VALUE config protocols.helpers['checks.result_id'].correlation.result /paths/~1checks~1plain/post: The result ID pointer '/id' of 'checks.result_id' names no property of a result item of the input ID's type, integer
   E_CONFIG_VALUE config protocols.helpers['checks.absent_ids'].correlation.input /paths/~1checks~1plain/post: The input ID pointer '/missing' of 'checks.absent_ids' names no string or integer property of the item schema
   E_CONFIG_VALUE config protocols.helpers['checks.integer_ids'].correlation.result /paths/~1checks~1plain/post: The result ID pointer '/missing' of 'checks.integer_ids' names no property of a result item of the input ID's type, integer
+  E_CONFIG_VALUE config protocols.helpers['checks.member_id'].correlation.result /paths/~1checks~1plain/post: The result ID pointer '/ok/id' of 'checks.member_id' reads the success member, which a result of the other outcome does not carry

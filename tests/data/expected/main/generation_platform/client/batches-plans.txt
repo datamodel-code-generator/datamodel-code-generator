@@ -39,15 +39,15 @@ render pydantic_v2.dataclass
   namespace client helpers ['users.create', 'tags.put', 'tags.colors'] bindings 5
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   helper users.create batch enabled True /inputs/target_config/protocol_metadata/helpers/users.create 2e64b9fa0e5af2205e4b43f3e3945a23d76315d74780d555adaafa5a58bb33b9
-  helper tags.put batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.put 73c36d13134890b0b9941d885759481a4ec67bcb80efb326fcb80d2ff69bff60
-  helper tags.colors batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.colors b9337ca379f4e6ca387a27b573d498c1750bce0414f8d762b906f00ad1ced3e9
+  helper tags.put batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.put a9cc74d31c30acc25537e4db0d65d9973c815a2045073972a355917575307f91
+  helper tags.colors batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.colors 6101608e8bb8ead1c1068524414866539c89b39fbea54a5ebe1988a0eab90b19
   {
     "helpers": {
       "tags.colors": {
         "correlation": {
           "input": "/color",
           "kind": "id",
-          "result": "/tag/color"
+          "result": "/color"
         },
         "enabled": true,
         "error": {
@@ -217,15 +217,15 @@ render dataclasses.dataclass
   namespace client helpers ['users.create', 'tags.put', 'tags.colors'] bindings 5
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   helper users.create batch enabled True /inputs/target_config/protocol_metadata/helpers/users.create 859de176b7cad98dc13183ba44858353fb0e5a3d82eaef6218eb889bf26a8aaa
-  helper tags.put batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.put 0e470e118fe8c7e9d6d7f4c0db7c16a4dfde209197a3949a20f438cf012501d4
-  helper tags.colors batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.colors fbb2a6f881c495badf4dc5a051decad27ff59a1f7e5d3f8e268dfb5753855cb3
+  helper tags.put batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.put fb5e97871ee488757bc4125ed8edfd19f32030f5285962eb48311f585fbf5799
+  helper tags.colors batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.colors 01a72aeb17dcb1be8a1c3ef4aa5d2369652f9e8ce0f291e1131e11250a4d378a
   {
     "helpers": {
       "tags.colors": {
         "correlation": {
           "input": "/color",
           "kind": "id",
-          "result": "/tag/color"
+          "result": "/color"
         },
         "enabled": true,
         "error": {
@@ -395,15 +395,15 @@ render typing.TypedDict
   namespace client helpers ['users.create', 'tags.put', 'tags.colors'] bindings 5
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   helper users.create batch enabled True /inputs/target_config/protocol_metadata/helpers/users.create af1e5b5d14611370efa7707999b332371bbb013e9ae3cbc5e13585ff32daeadf
-  helper tags.put batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.put 9dabae76b843a2fc55db141881470d708f3b795908684fe2e258ee8fea13e1e8
-  helper tags.colors batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.colors f1bbf171b1403b66a410e887e1c6c803d7da9bbd016a565be8015f3aa182cdfe
+  helper tags.put batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.put 77eeeb831bbca74dbdb6592dc0227fd33dd04170fc9f2bd0f9c1de91aa66f107
+  helper tags.colors batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.colors 551c2431ecc676b2ecb30cc37b35aef9708a2ca6698bcb854f580f40a746b71d
   {
     "helpers": {
       "tags.colors": {
         "correlation": {
           "input": "/color",
           "kind": "id",
-          "result": "/tag/color"
+          "result": "/color"
         },
         "enabled": true,
         "error": {
@@ -573,15 +573,15 @@ render msgspec.Struct
   namespace client helpers ['users.create', 'tags.put', 'tags.colors'] bindings 5
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   helper users.create batch enabled True /inputs/target_config/protocol_metadata/helpers/users.create 910dfb15aaec36667471e83acbf4bdac9a941190f7f09c8c0cf728be2fbb80e1
-  helper tags.put batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.put 7613bc5439991f9f430499fa0f5441b4c513b011f6a541333ef2c4a8eadc5f68
-  helper tags.colors batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.colors e5190a136e585d6f6447b955d37e75913d67dd8a0ecb9f2b90c343a9ef6d91fd
+  helper tags.put batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.put cfc2a75dcb6b3e31e994c747846c7b35bb9bff20e184fa5f1e5ed876f0bb345b
+  helper tags.colors batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.colors 67e121c247713774c4105e739e975d27854c5696298916a706e467eeea82b7aa
   {
     "helpers": {
       "tags.colors": {
         "correlation": {
           "input": "/color",
           "kind": "id",
-          "result": "/tag/color"
+          "result": "/color"
         },
         "enabled": true,
         "error": {

@@ -39,15 +39,15 @@ render pydantic_v2.BaseModel
   namespace client helpers ['users.create', 'tags.put', 'tags.colors'] bindings 5
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   helper users.create batch enabled True /inputs/target_config/protocol_metadata/helpers/users.create 7517d4b0805c342154f296f1f6b8e86afdcf10c3ff4ca1e2303fca8586e31fd4
-  helper tags.put batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.put c4a5af9624bc8f61d67a722c5c31dcb9224c1389242176454db29c8f929d209e
-  helper tags.colors batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.colors a11e352caac72863f605da2b0db835a05d78d7893df5696d0ebacb7262d26e92
+  helper tags.put batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.put 0cf87757d778a7e442bdb26f3b5624af154a2d65ae42ee6c6412de873ce42ede
+  helper tags.colors batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.colors db6acf7343ec57ec3c415f96f00271384182018415ea04ef2dba9e3196d91865
   {
     "helpers": {
       "tags.colors": {
         "correlation": {
           "input": "/color",
           "kind": "id",
-          "result": "/tag/color"
+          "result": "/color"
         },
         "enabled": true,
         "error": {

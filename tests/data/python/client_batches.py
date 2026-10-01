@@ -293,7 +293,7 @@ def _mismatches(harness: _Batches, api: Any, server: _Server, lines: list[str]) 
     drained(lines, "missing tag results", api.protocols.tags.put.iterate(harness.tags("red")))
     server.respond(json_response(200, {"items": [{"tag": {"label": "t000"}}]}))
     drained(lines, "fewer tag results", api.protocols.tags.put.iterate(harness.tags("red", "blue")))
-    server.respond(json_response(200, {"items": [{"tag": {"label": "t000", "color": "red"}}]}))
+    server.respond(json_response(200, {"items": [{"color": "red", "tag": {"label": "t000", "color": "red"}}]}))
     drained(lines, "item without ID", api.protocols.tags.colors.iterate(harness.tags("red", None)))
     server.report("mismatched results")
 

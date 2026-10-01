@@ -1265,7 +1265,8 @@ exactly one success response with one JSON media type, read natively. The items 
 `item_schema` in the body, or be the body; a nested member, a union, a map, and a root model property are not
 supported yet. The results pointer must name an array of objects, and the success and error pointers properties of a
 result item whose schemas are the declared ones. Declared IDs must be string or integer properties of the item schema
-and of a result item of the same type:
+and of a result item of the same type, outside the success and error members, which a result of the other outcome
+does not carry:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.batches.diagnostics -->
 <!-- fmt: off -->
@@ -1294,6 +1295,7 @@ E_CONFIG_VALUE config protocols.helpers['checks.input_id'].correlation.input /pa
 E_CONFIG_VALUE config protocols.helpers['checks.result_id'].correlation.result /paths/~1checks~1plain/post: The result ID pointer '/id' of 'checks.result_id' names no property of a result item of the input ID's type, integer
 E_CONFIG_VALUE config protocols.helpers['checks.absent_ids'].correlation.input /paths/~1checks~1plain/post: The input ID pointer '/missing' of 'checks.absent_ids' names no string or integer property of the item schema
 E_CONFIG_VALUE config protocols.helpers['checks.integer_ids'].correlation.result /paths/~1checks~1plain/post: The result ID pointer '/missing' of 'checks.integer_ids' names no property of a result item of the input ID's type, integer
+E_CONFIG_VALUE config protocols.helpers['checks.member_id'].correlation.result /paths/~1checks~1plain/post: The result ID pointer '/ok/id' of 'checks.member_id' reads the success member, which a result of the other outcome does not carry
 ```
 
 <!-- fmt: on -->

@@ -102,7 +102,7 @@ PLAN_1: Final[BatchPlan[_dcg_type_5, TagsPutResult]] = BatchPlan(
     unknown=TagsPutDeliveryUnknown,
     max_items=3,
     max_request_bytes=1048576,
-    fingerprint='0e470e118fe8c7e9d6d7f4c0db7c16a4dfde209197a3949a20f438cf012501d4',
+    fingerprint='fb5e97871ee488757bc4125ed8edfd19f32030f5285962eb48311f585fbf5799',
 )
 
 
@@ -136,7 +136,7 @@ PLAN_2: Final[BatchPlan[_dcg_type_5, TagsColorsResult]] = BatchPlan(
     unknown=TagsColorsDeliveryUnknown,
     max_items=100,
     max_request_bytes=1048576,
-    fingerprint='fbb2a6f881c495badf4dc5a051decad27ff59a1f7e5d3f8e268dfb5753855cb3',
+    fingerprint='01a72aeb17dcb1be8a1c3ef4aa5d2369652f9e8ce0f291e1131e11250a4d378a',
     input_id='/color',
-    result_id='/tag/color',
+    result_id='/color',
 )

@@ -306,7 +306,17 @@ class _Batches:
             )
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.input", message, spec))
             return None
-        reached = self.pages.walk(binding, correlation["result"], node)
+        pointer = correlation["result"]
+        if owner := next(
+            (key for key in ("success", "error") if f"{pointer}/".startswith(f"{helper.tree[key]['pointer']}/")), None
+        ):
+            message = (
+                f"The result ID pointer {pointer!r} of {name!r} reads the {owner} member, which a result of the other "
+                "outcome does not carry"
+            )
+            problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.result", message, spec))
+            return None
+        reached = self.pages.walk(binding, pointer, node)
         member = None if isinstance(reached, str) else reached.member
         types = None if member is None or member.schema is None else self.pages.types(self.pages.nonnull(member.schema))
         if types is None or _IDS.get(types) != kind:

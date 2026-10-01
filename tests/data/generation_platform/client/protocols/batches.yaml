@@ -32,4 +32,4 @@ helpers:
     results: {from: body, pointer: /items}
     success: {pointer: /tag, schema: {pointer: /components/schemas/Tag}}
     error: {pointer: /error, schema: {pointer: /components/schemas/ItemError}}
-    correlation: {kind: id, input: /color, result: /tag/color}
+    correlation: {kind: id, input: /color, result: /color}

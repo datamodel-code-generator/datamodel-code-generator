@@ -95,6 +95,7 @@ components:
     TagResult:
       type: object
       properties:
+        color: {type: string}
         tag: {$ref: '#/components/schemas/Tag'}
         error: {$ref: '#/components/schemas/ItemError'}
     PutTagsResponse:

@@ -45,7 +45,7 @@ from .records import BodySelector, BodyTarget, canonical_json
 from .values import MISSING, Patch, resolve
 
 if TYPE_CHECKING:
-    import asyncio
+    from asyncio import Task
     from collections.abc import AsyncIterator, Callable, Iterator
     from concurrent.futures import Future, ThreadPoolExecutor
     from types import TracebackType
@@ -803,13 +803,13 @@ class AsyncBatchIterator(_Batches[R]):
 
     async def _fill(self) -> None:
         """Start requests while a slot is free and items are ready."""
-        import asyncio  # noqa: PLC0415 - Only an asyncio iterator starts tasks.
+        from asyncio import ensure_future  # noqa: PLC0415 - Only an asyncio iterator starts tasks.
 
         while len(self._slots) < self._limits.parallelism and (batch := await self._group()) is not None:
-            batch.work = asyncio.ensure_future(self._send(batch))
+            batch.work = ensure_future(self._send(batch))
             self._slots.append(batch)
 
-    def _abort(self) -> list[asyncio.Future[_Done[R]]]:
+    def _abort(self) -> list[Task[_Done[R]]]:
         """Stop sending and cancel every request in flight, returning their tasks to await."""
         self._done = True
         self._exhausted = True
@@ -823,10 +823,10 @@ class AsyncBatchIterator(_Batches[R]):
 
     async def _finish(self) -> None:
         """Stop sending, then cancel and await the requests in flight, dropping their results."""
-        import asyncio  # noqa: PLC0415 - Only an asyncio iterator awaits tasks.
+        from asyncio import gather  # noqa: PLC0415 - Only an asyncio iterator awaits tasks.
 
         if tasks := self._abort():
-            await asyncio.gather(*tasks, return_exceptions=True)
+            await gather(*tasks, return_exceptions=True)
 
     async def _step(self) -> R:
         while (record := self._next_ready()) is None:
@@ -886,7 +886,7 @@ def _present(result: WireValue, pointer: str) -> bool:
     return (value := resolve(result, pointer)) is not MISSING and value is not None
 
 
-def _retrieved(task: asyncio.Future[Any]) -> None:
+def _retrieved(task: Task[Any]) -> None:
     """Retrieve a dropped request's outcome, so that its failure is never reported as unretrieved."""
     from asyncio import CancelledError  # noqa: PLC0415 - Only an asyncio iterator drops tasks.
 
