@@ -33,7 +33,9 @@ from tests.main import conftest as main_conftest
 if TYPE_CHECKING:
     from pytest_mock import MockerFixture
 
-SLOWEST_NODEID = "tests/test_format.py::test_apply_builtin_formatter_matches_black_isort_for_normalized_expected_files"
+SLOWEST_NODEID = (
+    "tests/test_format.py::test_apply_builtin_formatter_matches_black_isort_for_normalized_expected_files[0]"
+)
 
 
 @pytest.mark.parametrize(
