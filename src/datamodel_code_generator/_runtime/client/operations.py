@@ -27,7 +27,7 @@ from ..model_codecs.media import (
     percent_decode,
     split_form,
 )
-from ..model_codecs.parameters import ParameterPlan, encode_parameter, query_pairs
+from ..model_codecs.parameters import query_pairs
 from ..model_codecs.selectors import MediaSelector, RequestMedia
 from ..model_codecs.unset import Unset
 from ..model_codecs.wire import checked_wire
@@ -61,7 +61,7 @@ if TYPE_CHECKING:
     from ..model_codecs.adapters import AdapterParameterCodec
     from ..model_codecs.context import CodecContext
     from ..model_codecs.media import FieldPlan
-    from ..model_codecs.parameters import EncodedParameterContribution, ParameterTarget
+    from ..model_codecs.parameters import ParameterPlan, ParameterTarget
     from ..model_codecs.values import DecodedValue
     from ..model_codecs.wire import WireValue
     from .checks import ArgumentCheck
@@ -187,14 +187,9 @@ class ParameterSpec:
     encoder: Encoder | None = None
     adapter: tuple[Callable[[], AdapterParameterCodec], CodecContext] | None = None
 
-    def encode(self, value: object, mode: RequestValidation) -> EncodedParameterContribution:
-        """Encode a present argument through its registered adapter or builtin parameter style."""
-        wire = checked_wire(value) if self.encoder is None else self.encoder.encode(value, mode)
-        if (adapter := self.adapter) is not None:
-            get, context = adapter
-            return get().encode(wire, context)
-        assert isinstance(self.plan, ParameterPlan)
-        return encode_parameter(self.plan, wire)
+    def encode(self, value: object, mode: RequestValidation) -> WireValue:
+        """Return the wire value of a present argument."""
+        return checked_wire(value) if self.encoder is None else self.encoder.encode(value, mode)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

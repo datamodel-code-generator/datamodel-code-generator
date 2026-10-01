@@ -25,7 +25,7 @@ from urllib.parse import quote, unquote_plus, urlsplit
 import httpx2
 from typing_extensions import Self, TypeIs
 
-from ..model_codecs.parameters import FragmentContribution, ParameterPlan, QueryStringContribution
+from ..model_codecs.parameters import FragmentContribution, ParameterPlan, QueryStringContribution, encode_parameter
 from ..model_codecs.selectors import MediaSelector, ResponseMedia
 from ..model_codecs.unset import UNSET, Unset
 from .bodies import (
@@ -455,7 +455,13 @@ def _parameters(
                 raise _encoding_error(operation, (plan.location, plan.name))
             continue
         try:
-            contribution = spec.encode(value, mode)
+            wire = spec.encode(value, mode)
+            if (adapter := spec.adapter) is not None:
+                get, context = adapter
+                contribution = get().encode(wire, context)
+            else:
+                assert isinstance(plan, ParameterPlan)
+                contribution = encode_parameter(plan, wire)
         except (*DATA_ERRORS, ValueError, TypeError) as error:
             raise _encoding_error(operation, (plan.location, plan.name), error) from None
         request.add(contribution, plan.name)

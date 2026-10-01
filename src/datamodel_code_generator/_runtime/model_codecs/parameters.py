@@ -644,8 +644,7 @@ def raw_parameter(plan: ParameterPlan | ParameterTarget, raw: RawParameters) -> 
             return RawParameter(location="querystring", raw_query=raw.query)
         case "header":
             return RawParameter(location="header", fragments=tuple(starmap(ParameterFragment, raw.headers)))
-        case _:
-            return RawParameter(location="cookie", fragments=split_cookies(raw.headers))
+    return RawParameter(location="cookie", fragments=split_cookies(raw.headers))
 
 
 def decode_parameters(
