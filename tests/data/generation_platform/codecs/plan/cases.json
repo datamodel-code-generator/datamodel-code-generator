@@ -14,8 +14,11 @@
       "selection": {"exclude_operations": ["/paths/~1deep/get"], "reason": "Its expanded query parameter names collide."}
     }
   },
+  "parameters": {},
+  "directions-accepted": {"instances": "directions-accepted-instances.json"},
   "dialects": {},
   "dialects32": {
+    "refusal": {},
     "config": {
       "selection": {
         "exclude_operations": ["/paths/~1alternatives/post"],

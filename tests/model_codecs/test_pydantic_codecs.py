@@ -59,10 +59,10 @@ def test_pydantic_codecs(source: str, cases: str, tmp_path: PathType) -> None:
     )
 
 
-@pytest.mark.abnormal_path("generated bindings edited out of sync with their models")
+@pytest.mark.abnormal_path("generated models or bindings edited out of sync after generation")
 @pytest.mark.parametrize("cases", ["pets-startup", "pets-startup-dataclass", "pets-startup-noalias"])
 def test_pydantic_codec_startup(cases: str, tmp_path: PathType) -> None:
-    """Refuse bindings, bundles, and native types that disagree before any value is processed."""
+    """Refuse edited bindings, bundles, and native types that disagree before any value is processed."""
     assert_output(
         builtin_codec_startup_report(CODECS / "pets.yaml", CODECS / f"{cases}.json", tmp_path),
         EXPECTED / f"{cases}.txt",
