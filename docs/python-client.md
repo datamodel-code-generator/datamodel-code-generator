@@ -964,8 +964,10 @@ final poll raises `ProtocolDataError` and leaves the handle pending, so a later 
 raises the same error while the result stays missing; a missing or null immediate result fails `start`.
 
 An error that settles nothing, such as a transport error, an HTTP error, a deadline, a cancellation, a limit, or a
-`ProtocolDataError` of a poll, leaves the handle as it was, so a later `status` or `wait` polls again without creating
-the operation again, and a failed result fetch is retried alone. `close()` or `aclose()`, or leaving a `with` or
+`ProtocolDataError` of a poll, leaves the handle as it was, so a later `status` or `wait` polls again without a new
+create request, and a failed result fetch is retried alone. A spent limit stays spent for the handle's session, though:
+once `max_polls` is reached, every later poll, and once `max_network_sends` is reached, every later poll or result
+fetch, raises `SessionLimitError` again before sending. `close()` or `aclose()`, or leaving a `with` or
 `async with` block, stops only local polling; the remote operation goes on, and every later step raises
 `ProtocolStateError` with `state='closed'`. Calling `status`, `wait`, `close`, or `aclose` while another step runs
 raises `ProtocolStateError` with `state='polling'`; a block that ends with an error while another step runs leaves the
