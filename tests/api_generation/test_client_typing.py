@@ -163,6 +163,26 @@ def test_client_typing_streams(backend: DataModelType, tmp_path: Path) -> None:
         DataModelType.MsgspecStruct,
     ],
 )
+def test_client_typing_ndjson(backend: DataModelType, tmp_path: Path) -> None:
+    """Check NDJSON helpers: typed records and data, unknown records, sync and asyncio streams, and misuses of each."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(
+        client_typing_report(tmp_path, backend, "ndjson", ("ndjson",)),
+        EXPECTED / f"{backend.value.replace('.', '-')}-ndjson.txt",
+    )
+
+
+@pytest.mark.parametrize(
+    "backend",
+    [
+        DataModelType.PydanticV2BaseModel,
+        DataModelType.PydanticV2Dataclass,
+        DataModelType.DataclassesDataclass,
+        DataModelType.TypingTypedDict,
+        DataModelType.MsgspecStruct,
+    ],
+)
 def test_client_typing_unions(backend: DataModelType, tmp_path: Path) -> None:
     """Check a package whose responses are unions of models, with each union's codec typed for its members."""
     if not os.environ.get(ENABLED):

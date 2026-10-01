@@ -317,7 +317,7 @@ class _TargetData:
         })
 
     def stream(self, spec: StreamSpec, settings: JSONValue) -> str:
-        """Return the digest of an SSE helper's contract closure: its signature, settings, operation, and schemas.
+        """Return the digest of a stream helper's contract closure: its signature, settings, operation, and schemas.
 
         Each event and error use contributes its type and contract, so a changed schema changes the digest.
         """

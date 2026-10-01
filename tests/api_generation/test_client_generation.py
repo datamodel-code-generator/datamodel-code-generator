@@ -73,6 +73,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
         "webhooks-schema",
         "streams",
         "streams-mixed",
+        "ndjson",
         "compatibility",
     ],
 )
@@ -124,6 +125,7 @@ def test_client_render(case: str, tmp_path: Path) -> None:
         "protocols-webhook-checks",
         "protocols-stream-checks",
         "protocols-stream-scope",
+        "protocols-ndjson-checks",
     ],
 )
 def test_client_protocols(case: str, tmp_path: Path) -> None:
@@ -160,7 +162,17 @@ def test_client_retry_metadata_digests(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize(
     "case",
-    ["retries", "default-server", "empty", "auth", "pagination", "pagination-counts", "pagination-links", "streams"],
+    [
+        "retries",
+        "default-server",
+        "empty",
+        "auth",
+        "pagination",
+        "pagination-counts",
+        "pagination-links",
+        "streams",
+        "ndjson",
+    ],
 )
 def test_client_documentation(case: str, tmp_path: Path) -> None:
     """Keep metadata, explicit retry overrides, documentation ownership, and source distribution inputs visible."""

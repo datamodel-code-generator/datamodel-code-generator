@@ -758,3 +758,245 @@ def stream_backends(package: ModuleType, lines: list[str]) -> None:
             next(protocols.events.typed.open())
         except harness.errors.StreamRemoteError as failure:
             lines.append(f"  error event {failure.event_type} {_data(failure.data)!r}")
+
+
+_NDJSON: Final = "application/x-ndjson"
+_RECORDS: Final = b'{"text": "a"}\n{"text": "crlf"}\r\n{"text": "caf\xc3\xa9"}\n  {"text": "spaced"}  \n'
+_RECORD_ROUTES: Final = (
+    b'{"type": "created", "id": "1"}\n'
+    b'{"type": "renamed", "id": "2"}\n'
+    b'{"type": "deleted", "id": "3"}\r\n'
+    b"[DONE]\n"
+    b'{"type": "created", "id": "never"}\n'
+)
+
+
+def _lines(harness: _Harness, chunks: tuple[object, ...], **settings: Any) -> Callable[[Any, Any], Any]:
+    """Return a reply that streams NDJSON chunks."""
+    return harness.reply(chunks, **{"media": _NDJSON, **settings})
+
+
+def _decode_failure(lines: list[str], label: str, stream: Any) -> None:
+    """Report the records a stream yields before its decode failure, with the failure's raw prefix and cause."""
+    lines.append(f"  {label}")
+    try:
+        for event in stream:
+            lines.append(f"    {_event(event)}")
+    except Exception as error:  # noqa: BLE001
+        lines.append(f"    ! {describe(error)}")
+        lines.append(f"    raw prefix {error.raw_prefix!r} cause {type(error.cause).__name__}")
+
+
+def ndjson(package: ModuleType, lines: list[str]) -> None:
+    """Split, decode, route, end, and limit NDJSON streams of exact chunks through the synchronous and asyncio clients."""
+    harness = _Harness(package, lines)
+    adapter = _Feed(importlib.import_module(f"{package.__name__}.transports"), lines)
+    with package.Client(transport_adapter=adapter) as api:
+        _ndjson_framing(harness, api, adapter)
+        _ndjson_endings(harness, api, adapter)
+        _ndjson_routing(harness, api, adapter)
+        _ndjson_limits(harness, api, adapter)
+        _ndjson_states(harness, api, adapter)
+    run(lambda: _async_ndjson(harness))
+
+
+def _ndjson_framing(harness: _Harness, api: Any, adapter: _Feed) -> None:
+    """Split records at LF or CRLF, one byte at a time and in one piece, and refuse lines that are not UTF-8 JSON."""
+    lines, helper = harness.lines, api.protocols.records.all
+    adapter.replies.extend((_lines(harness, _pieces(_RECORDS, 1)), _lines(harness, (_RECORDS,))))
+    with helper.open() as stream:
+        _drained(lines, "one byte at a time", stream)
+        lines.append(f"    response {stream.response.status_code} progress {dict(stream.progress)}")
+    _drained(lines, "in one chunk", helper.open())
+    adapter.replies.extend(
+        _lines(harness, (body,))
+        for body in (
+            b'{"text": "a"}\n\n{"text": "b"}\n',
+            b" \t\n",
+            b'{"text": "\xff"}\n',
+            b'\xef\xbb\xbf{"text": "a"}\n',
+            b'{"text": "a"}\r{"text": "b"}\n',
+            b'{"text": "a"}\n{"text": 5}\n',
+        )
+    )
+    for label in (
+        "blank line",
+        "whitespace line",
+        "invalid UTF-8",
+        "byte order mark",
+        "CR without LF",
+        "record refused by its schema",
+    ):
+        _decode_failure(lines, label, helper.open(options=harness.schema() if "schema" in label else None))
+
+
+def _ndjson_endings(harness: _Harness, api: Any, adapter: _Feed) -> None:
+    """End streams at EOF or a sentinel line, decoding a final line without a line end only where allowed."""
+    lines, records, search = harness.lines, api.protocols.records, api.protocols.search.all
+    adapter.replies.extend((
+        _lines(harness, (b'{"text": "a"}\n{"text": "b"}',)),
+        _lines(harness, (b'{"text": "a"}\n',)),
+        _lines(harness, ()),
+        _lines(harness, _pieces(b'{"text": "a"}\n{"text": "b"}', 5)),
+        _lines(harness, (b'{"text": "a"}\r',)),
+        _lines(harness, (b'{"text"',)),
+        _lines(harness, (b"\xff",)),
+    ))
+    _drained(lines, "final line without a line end", records.all.open())
+    _drained(lines, "end after a line end", records.all.open())
+    _drained(lines, "empty body", records.all.open())
+    stream = records.lenient.open()
+    _drained(lines, "final line allowed at the end", stream)
+    record(lines, "after the end", lambda: next(stream))
+    _drained(lines, "final line with a CR", records.lenient.open())
+    _decode_failure(lines, "invalid final line", records.lenient.open())
+    _decode_failure(lines, "final line not UTF-8", records.lenient.open())
+    media = "application/jsonl; charset=utf-8"
+    adapter.replies.extend(
+        _lines(harness, chunks, media=media)
+        for chunks in (
+            (b'{"text": "a"}\n[DONE]\n{"text": "after"}\n',),
+            (b'{"text": "a"}\n', b"[DONE]"),
+            (b"[DONE]\r\n",),
+            (b'{"text": "a"}\n',),
+        )
+    )
+    for label in ("sentinel", "sentinel as the final line", "sentinel with CRLF", "EOF before the sentinel"):
+        _drained(lines, label, search.open(body=harness.models.SearchQuery(text="a")))
+    adapter.replies.append(_lines(harness, (b"[DONE]",)))
+    _drained(lines, "sentinel without a required line end", records.tagged.open())
+
+
+def _ndjson_routing(harness: _Harness, api: Any, adapter: _Feed) -> None:
+    """Route records by a body member, keep unknown ones, and raise error records."""
+    lines, helper = harness.lines, api.protocols.records.tagged
+    adapter.replies.extend((
+        _lines(harness, _pieces(_RECORD_ROUTES, 9)),
+        _lines(harness, (b'{"type": "created", "id": "1"}\n{"type": "failed", "message": "nope"}\n',)),
+        _lines(harness, (b'{"id": "1"}\n',)),
+        _lines(harness, (b'{"type": "deleted", "id": 5}\n',)),
+    ))
+    _drained(lines, "body discriminator", helper.open())
+    stream = helper.open()
+    lines.append(f"  before the error {_event(next(stream))}")
+    try:
+        next(stream)
+    except harness.errors.StreamRemoteError as failure:
+        lines.append(f"  error record {failure.event_type!r} {_data(failure.data)!r} {failure.sequence}")
+    record(lines, "after the error", lambda: next(stream))
+    _drained(lines, "missing discriminator", helper.open())
+    _drained(lines, "mapped record failing its schema", helper.open(options=harness.schema()))
+
+
+def _ndjson_limits(harness: _Harness, api: Any, adapter: _Feed) -> None:
+    """Refuse a line over the smaller of the line and record limits, before it is kept or once it is found."""
+    lines, helper = harness.lines, api.protocols.records.all
+    narrow = harness.protocols.StreamOptions(max_line_bytes=16)
+    adapter.replies.extend((
+        _lines(harness, (b'{"text": "a"}\n{"text": "abcdef"}\n',)),
+        _lines(harness, (b'{"text": ', b'"abcdefgh"}\n')),
+        _lines(harness, (b'{"text": "a"}\n{"text": "abcdefghij"',)),
+        _lines(harness, (b'{"text": "abcd"}\n',)),
+    ))
+    for label in (
+        "line over the limit in one chunk",
+        "line a later chunk extends over the limit",
+        "unended line after a line end over the limit",
+        "line at the limit",
+    ):
+        _drained(lines, label, helper.open(stream_options=narrow))
+    adapter.replies.append(_lines(harness, (b'{"text": "abcde"}\n',)))
+    _drained(
+        lines,
+        "record over a record limit under the line limit",
+        helper.open(stream_options=harness.protocols.StreamOptions(max_line_bytes=64, max_event_bytes=16)),
+    )
+
+
+def _ndjson_states(harness: _Harness, api: Any, adapter: _Feed) -> None:
+    """Close streams early, report their ends to hooks, interrupt one, and check the response before returning."""
+    lines, helper = harness.lines, api.protocols.records.all
+    record_line = b'{"text": "a"}\n'
+    adapter.replies.extend((
+        _lines(harness, (record_line, record_line)),
+        _lines(harness, (record_line * 2,)),
+        _lines(harness, (record_line, b'{"te', harness.interrupted())),
+        _lines(harness, (b'{"detail": "missing"}',), status=404, media="application/json"),
+        _lines(harness, (record_line,), media=_STREAM),
+        _lines(harness, (record_line,), media=f"{_NDJSON}; charset=utf-8"),
+    ))
+    with helper.open() as stream:
+        lines.append(f"  first {_event(next(stream))}")
+    record(lines, "after close", lambda: next(stream))
+    lines.append(f"  data {[_data(value) for value in helper.open().data()]!r}")
+    _drained(lines, "broken connection", helper.open())
+    for label in ("declared error status", "event stream media type"):
+        record(lines, label, helper.open)
+    _drained(lines, "media type with parameters", helper.open())
+    hooked = api.with_options(harness.options.RequestOptions(hooks=(_Ends(lines),)))
+    adapter.replies.extend((
+        _lines(harness, (record_line,)),
+        _lines(harness, (b"{}\n",)),
+        _lines(harness, (record_line, record_line)),
+    ))
+    _drained(lines, "hooked end at EOF", hooked.protocols.records.all.open())
+    _drained(lines, "hooked undecodable record", hooked.protocols.records.all.open())
+    stream = hooked.protocols.records.all.open()
+    lines.append(f"  hooked early close after {_event(next(stream))}")
+    stream.close()
+
+
+async def _async_ndjson(harness: _Harness) -> None:
+    """Split, end, route, and close NDJSON streams with the asyncio client."""
+    lines, package = harness.lines, harness.package
+    adapter = _AsyncFeed(importlib.import_module(f"{package.__name__}.transports"), lines)
+    record_line = b'{"text": "a"}\n'
+    adapter.replies.extend(
+        _lines(harness, chunks, response=AsyncResponse)
+        for chunks in (
+            _pieces(_RECORDS, 1),
+            _pieces(b'{"text": "a"}\n{"text": "b"}', 4),
+            (b'{"text": "\xff"}\n',),
+            _pieces(_RECORD_ROUTES, 11),
+            (b'{"type": "created", "id": "1"}\n{"type": "failed", "message": "nope"}\n',),
+            (record_line, b'{"te', harness.interrupted()),
+            (record_line * 2,),
+            (record_line * 2,),
+        )
+    )
+    async with package.AsyncClient(transport_adapter=adapter) as api:
+        records = api.protocols.records
+        async with await records.all.open() as stream:
+            await _adrained(lines, "async one byte at a time", stream)
+        await _adrained(lines, "async final line allowed at the end", await records.lenient.open())
+        await _adrained(lines, "async invalid UTF-8", await records.all.open())
+        await _adrained(lines, "async body discriminator", await records.tagged.open())
+        await _adrained(lines, "async error record", await records.tagged.open())
+        await _adrained(lines, "async broken connection", await records.all.open())
+        stream = await records.all.open()
+        lines.append(f"  async data {[_data(value) async for value in stream.data()]!r}")
+        stream = await records.all.open()
+        lines.append(f"  async first {_event(await anext(stream))}")
+        await stream.aclose()
+        await arecord(lines, "async after close", lambda: anext(stream))
+
+
+def ndjson_backends(package: ModuleType, lines: list[str]) -> None:
+    """Decode the records and error records of every NDJSON helper with each model backend."""
+    harness = _Harness(package, lines)
+    adapter = _Feed(importlib.import_module(f"{package.__name__}.transports"), lines)
+    adapter.replies.extend((
+        _lines(harness, (b'{"text": "a"}\n',)),
+        _lines(harness, (_RECORD_ROUTES,)),
+        _lines(harness, (b'{"type": "failed", "message": "nope"}\n',)),
+        _lines(harness, (b'{"text": "b"}\n[DONE]\n',), media="application/jsonl"),
+    ))
+    with package.Client(transport_adapter=adapter) as api:
+        protocols = api.protocols
+        _drained(lines, "records", protocols.records.all.open())
+        _drained(lines, "tagged", protocols.records.tagged.open())
+        try:
+            next(protocols.records.tagged.open())
+        except harness.errors.StreamRemoteError as failure:
+            lines.append(f"  error record {failure.event_type!r} {_data(failure.data)!r}")
+        _drained(lines, "search", protocols.search.all.open(body=harness.models.SearchQuery(text="a")))

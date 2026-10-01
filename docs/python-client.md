@@ -305,8 +305,9 @@ Pagination, polling, and SSE or NDJSON stream helpers of an API are declared in 
 target reads through its `protocols` setting. The helpers are still being implemented: generation validates every
 helper, resolves its references against the selected API, and records it in the target manifest. An enabled pagination
 helper generates the [pagination helper](#pagination-helpers) below, an enabled SSE helper the
-[SSE stream helper](#sse-stream-helpers), and an enabled HMAC webhook helper the [webhook
-verification helper](#webhook-verification-helpers); any other enabled helper fails with `E_CLIENT_UNSUPPORTED`. A
+[SSE stream helper](#sse-stream-helpers), an enabled NDJSON helper the [NDJSON stream helper](#ndjson-stream-helpers),
+and an enabled HMAC webhook helper the [webhook verification helper](#webhook-verification-helpers); any other enabled
+helper fails with `E_CLIENT_UNSUPPORTED`. A
 disabled helper generates nothing, so the package is the same as without it. The `websocket`, `cache`,
 `resumable_upload`, `batch`, and `queue` kinds fail with `E_CLIENT_UNSUPPORTED` whether they are enabled or not, and
 their settings are not read yet.
@@ -934,6 +935,99 @@ E_CONFIG_VALUE config protocols.helpers['checks.discriminator_type'].event_schem
 
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.streams.diagnostics -->
+
+## NDJSON stream helpers
+
+An enabled `ndjson` helper reads a body of newline-delimited JSON records, one JSON value a line, as the
+[SSE stream helper](#sse-stream-helpers) reads events: it is generated at `client.protocols.<name>` with the same `open`
+method and returns the same `EventStream[T]`, or `AsyncEventStream[T]`, so everything above about opening, iterating,
+`data()`, closing, error events, limits, and sessions applies to it too, except what concerns SSE framing:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.ndjson.helper -->
+<!-- fmt: off -->
+
+```python
+    def open(
+        self,
+        *,
+        topic: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        stream_options: StreamOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> EventStream[_dcg_type_1]:
+        """Open the NDJSON stream of GET /records, returning once its response is a declared success."""
+        return open_events(
+            self._core,
+            _plans.STREAM_0,
+            (topic,),
+            stream_options=stream_options,
+            options=options,
+            session_options=session_options,
+        )
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.ndjson.helper -->
+
+```python
+with Client() as client, client.protocols.records.all.open() as stream:
+    for record in stream.data():
+        print(record.text)
+```
+
+```yaml
+helpers:
+  records.all:
+    kind: ndjson
+    operation: /paths/~1records/get
+    media: application/x-ndjson
+    event_schema: {pointer: /components/schemas/Record}
+    completion: {kind: eof}
+    final_line: require_newline
+```
+
+### Records
+
+LF ends a line, and so does CRLF, whose CR is not part of the record; a CR alone does not end one. Each line is one
+record, strict UTF-8 JSON decoded by the helper's schema, or by the schema a `{from: body, pointer}` discriminator maps
+it to, the only discriminator NDJSON has. Every line is a record, so a blank or whitespace-only line, one that is not
+UTF-8, a leading byte order mark, and anything else that is not JSON raise `StreamDecodeError` with the condition
+`malformed`; none is skipped. The error keeps at most the event limit or 64 KiB of the line as `raw_prefix`, which no
+message shows, and a line that is not UTF-8 has no `cause`.
+
+A record yields a `StreamEvent` whose `event_type` is the empty string and whose `event_id` and `retry_ms` are None; an
+`error_events` record raises `StreamRemoteError` with the `event_type` None. A `sentinel` completion ends at the line
+equal to its value, which is compared before JSON decoding and never yielded, so the value need not be JSON.
+
+`final_line` says how the body may end. With `require_newline`, every record ends with a line end, and bytes after the
+last one raise `IncompleteFrameError` with their count as `buffered_bytes`. With `allow_eof`, those bytes are decoded as
+the last record, a sentinel included; a body that ends with a line end ends the same way under both.
+
+A line counts toward both `StreamOptions.max_line_bytes` and `max_event_bytes`, without its LF but with the CR of a
+CRLF; one over the smaller limit raises `ProtocolSizeError` with that limit's kind, `line` or `event`, before it is kept.
+Bytes are searched for a line end at most twice, so a line split over many reads costs time linear in its length.
+
+### NDJSON generation checks
+
+The helper's `media` must be `application/x-ndjson`, `application/ndjson`, `application/jsonl`, `application/x-jsonl`,
+`application/jsonlines`, or `application/x-jsonlines`, compared without case and with any parameters allowed, and a
+success response of its operation must declare that media type, which the helper then requests as declared. The schema
+checks are those of SSE helpers, and resuming a stream is not supported yet:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.ndjson.diagnostics -->
+<!-- fmt: off -->
+
+```text
+E_CONFIG_VALUE config protocols.helpers['checks.media'].media /paths/~1records/get: The media type 'application/json' of 'checks.media' is not one of application/jsonl, application/jsonlines, application/ndjson, application/x-jsonl, application/x-jsonlines, or application/x-ndjson
+E_CONFIG_VALUE config protocols.helpers['checks.response'].operation /paths/~1status/get: GET /status declares no application/x-ndjson success response for the NDJSON helper 'checks.response'
+E_CONFIG_VALUE config protocols.helpers['checks.other_media'].operation /paths/~1search/post: POST /search declares no application/x-ndjson success response for the NDJSON helper 'checks.other_media'
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.resume'].resume /paths/~1records/get: The NDJSON helper 'checks.resume' resumes its stream, which is not supported yet
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.envelope'].event_schema /paths/~1records/get: The NDJSON helper 'checks.envelope' decodes an envelope-projected event, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['checks.discriminator_absent'].event_schema.discriminator.pointer /paths/~1records/get: The discriminator pointer '/kind' of 'checks.discriminator_absent' names no property of '/components/schemas/Created'
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.ndjson.diagnostics -->
 
 ## Signature style
 

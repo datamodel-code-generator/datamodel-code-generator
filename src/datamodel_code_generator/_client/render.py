@@ -2191,7 +2191,9 @@ _STREAM_OPTIONS: Final = (
     ("options", "..options", "RequestOptions"),
     ("session_options", "..options", "SessionOptions"),
 )
-_HELPER_KINDS: Final = {"pagination": "pagination helper", "sse": "SSE helper"}
+_HELPER_KINDS: Final = {"pagination": "pagination helper", "sse": "SSE helper", "ndjson": "NDJSON helper"}
+_STREAM_KINDS: Final = {"sse": "event stream", "ndjson": "NDJSON stream"}
+_STREAM_LABELS: Final = {"sse": "SSE", "ndjson": "NDJSON"}
 _HELPER_CALLS: Final[dict[bool, tuple[str, str, str]]] = {
     False: ("first_page", "iterate_pages", "following_page"),
     True: ("afirst_page", "aiterate_pages", "afollowing_page"),
@@ -2229,7 +2231,7 @@ class _Helpers:
         for index, spec in enumerate(self.helpers):
             sections.extend((self.accessor(module, index, spec), self.plan(module, index, spec)))
         sections.extend(self.stream_plan(module, index, spec) for index, spec in enumerate(streams))
-        kind = "protocol" if self.helpers and streams else "SSE" if streams else "pagination"
+        kind = "protocol" if self.helpers and streams else "stream" if streams else "pagination"
         return types_template.render(
             docstring=f"The plans of this package's {kind} helpers; regenerate them instead of editing.",
             imports=module.imports(),
@@ -2425,7 +2427,7 @@ class _Helpers:
         sections.extend(
             self.node(
                 name,
-                f"the {spec.helper.name} SSE helper of {spec.operation.contract.method.upper()} "
+                f"the {spec.helper.name} {_HELPER_KINDS[spec.helper.kind]} of {spec.operation.contract.method.upper()} "
                 f"{spec.operation.contract.path}",
                 core,
                 [self.stream_method(module, index, spec, asynchronous=asynchronous)],
@@ -2539,7 +2541,10 @@ class _Helpers:
         return f"{module.local(_CODECS, 'native_value')}({self.resources.codec(module, use)})"
 
     def stream_plan(self, module: Module, index: int, spec: StreamSpec) -> str:
-        """Return an SSE helper's plan: its identity, operation, media type, event and error decoders, and end."""
+        """Return a stream helper's plan: its identity, operation, media type, event and error decoders, and end.
+
+        An NDJSON plan also names its kind, and its final line when the body may end without a line end.
+        """
         runtime = "_runtime.protocols.streams"
         helper = spec.helper
         tree = helper.tree
@@ -2576,11 +2581,15 @@ class _Helpers:
             ))
         if (completion := tree["completion"])["kind"] != "eof":
             entries.extend((("completion=", repr(completion["kind"])), ("terminal=", repr(completion["value"]))))
+        if helper.kind != "sse":
+            entries.append(("kind=", repr(helper.kind)))
+            if (final := tree["final_line"]) != "require_newline":
+                entries.append(("final_line=", repr(final)))
         head = f"STREAM_{index}: {module.name('typing', 'Final')}[{plan}[{self.event_type(module, spec)}]] = "
         return head + layout(_call(plan, entries), 0, len(head), WIDTH)
 
     def stream_method(self, module: Module, index: int, spec: StreamSpec, *, asynchronous: bool) -> str:
-        """Return an SSE helper's open method, which takes its operation's parameters and body."""
+        """Return a stream helper's open method, which takes its operation's parameters and body."""
         operation = replace(spec.operation, fields=())
         resources = self.resources
         runtime = "_runtime.protocols.streams"
@@ -2602,6 +2611,7 @@ class _Helpers:
         route = f"{operation.contract.method.upper()} {operation.contract.path}"
         signature = tuple(argument.parameter(module) for argument in (*arguments, *body, *options))
         wait = "await " if asynchronous else ""
+        stream = _STREAM_KINDS[spec.helper.kind]
         return "\n".join((
             _signature(
                 "open",
@@ -2610,7 +2620,7 @@ class _Helpers:
                 asynchronous=asynchronous,
                 stub=False,
             ),
-            f'        """Open the event stream of {route}, returning once its response is a declared success."""',
+            f'        """Open the {stream} of {route}, returning once its response is a declared success."""',
             f"        return {wait}{layout(_call(opener, passed), 8, 7 + len(wait), WIDTH)}",
         ))
 
@@ -2744,10 +2754,10 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
         ]
         sentence = "See the runtime reference for their limits."
         streams = (
-            """
-An SSE helper's `open` sends its operation in a session of its own and returns an event stream once the response
-is a declared success; the stream reads only the bytes each event needs, and `close()` or `aclose()` releases the
-response."""
+            f"""
+An {self.stream_label} helper's `open` sends its operation in a session of its own and returns an event stream once the
+response is a declared success; the stream reads only the bytes each event needs, and `close()` or `aclose()` releases
+the response."""
             if self.streams
             else ""
         )
@@ -3016,17 +3026,33 @@ the last, and an empty page with a URL continues. A URL seen earlier in the sess
 it with `PaginationCycleError` after the repeating page.
 """
 
+    @cached_property
+    def stream_label(self) -> str:
+        """Return the kinds of the package's stream helpers, as their documentation names them."""
+        return " or ".join(dict.fromkeys(_STREAM_LABELS[spec.helper.kind] for spec in self.streams))
+
     def stream_runtime(self) -> str:
-        """Describe SSE streams and their limits, or nothing for a package without SSE helpers."""
+        """Describe SSE and NDJSON streams and their limits, or nothing for a package without stream helpers."""
         if not self.streams:
             return ""
+        lines = (
+            """
+An NDJSON body is read one line at a time: LF or CRLF ends a line, which is one record of strict UTF-8 JSON, so a
+blank line or one that is not UTF-8 or JSON raises `StreamDecodeError`. A line counts toward both the line and the
+event data size. Bytes after the last line end raise `IncompleteFrameError` unless the helper's `final_line` is
+`allow_eof`, which decodes them as the last record. A record has the empty string as its event type and no event ID.
+"""
+            if any(spec.helper.kind == "ndjson" for spec in self.streams)
+            else ""
+        )
         return f"""
-## SSE streams
+## {self.stream_label} streams
 
-An SSE helper's `open` is one session holding one logical call. The call's total timeout bounds only acquiring the
-response, which must be a declared success of the helper's media type; afterward the stream's idle timeout, the
-call's `stream_total_timeout`, and the session's deadline apply. Each limit comes from the call's options, then
-`ProtocolClientOptions.defaults` for the helper, then the default below. The stream types are imported from:
+An {self.stream_label} helper's `open` is one session holding one logical call. The call's total timeout bounds only
+acquiring the response, which must be a declared success of the helper's media type; afterward the stream's idle
+timeout, the call's `stream_total_timeout`, and the session's deadline apply. Each limit comes from the call's
+options, then `ProtocolClientOptions.defaults` for the helper, then the default below. The stream types are imported
+from:
 
 - `{self.config.package}.protocols`: `StreamOptions`, `EventStream`, `AsyncEventStream`, `StreamEvent`, and
   `UnknownEvent`
@@ -3048,7 +3074,7 @@ connection `StreamInterruptedError` with its transport failure as the cause. Str
 `StreamOptions(reconnect=True)` raises `ProtocolConfigurationError`. Close a stream with `with`, `async with`, or
 `close()`; leaving a loop early does not release its response, and closing the client with a stream open raises
 `CleanupError` once its cleanup timeout passes.
-"""
+{lines}"""
 
     @staticmethod
     def count_runtime(kinds: set[str]) -> str:
