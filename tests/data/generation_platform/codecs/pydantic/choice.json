@@ -1,0 +1,5 @@
+{
+  "backend": "pydantic_v2.BaseModel",
+  "package": "codec_choice",
+  "cases": []
+}

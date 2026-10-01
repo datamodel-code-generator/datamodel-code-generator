@@ -1,3 +1,6 @@
+refused APIGenerationError
+refused diagnostic E_CONFIG_VALUE /paths/~1animals/post/responses/200: The 'native' response validation cannot take the response body 200 application/json of POST /animals, which tells its union members apart only by their schemas; select 'schema'
+refused diagnostic E_CONFIG_VALUE /paths/~1kin/get/responses/200: The 'native' response validation cannot take the response body 200 application/json of GET /kin, which tells its union members apart only by their schemas; select 'schema'
 use /paths/~1animals/post request_body: envelope root models:FieldAnimalsPostRequest models=[('models:Cat', 'model', 'forbid', False), ('models:Dog', 'model', 'ignore', True), ('models:FieldAnimalsPostRequest', 'root', 'ignore', True)]
 use /paths/~1animals/post response_body 200: native root models:FieldAnimalsPostResponse models=[('models:Cat', 'model', 'forbid', False), ('models:Dog', 'model', 'ignore', True), ('models:FieldAnimalsPostResponse', 'root', 'ignore', True)]
 use /paths/~1kin/get response_body 200: native root models:FieldKinGetResponse models=[('models:Animal', 'model', 'ignore', True), ('models:Cat', 'model', 'forbid', False), ('models:FieldKinGetResponse', 'root', 'ignore', True)]
@@ -7,6 +10,4 @@ use /paths/~1mixed/post request_body: native root models:Mixed models=[('models:
 use /paths/~1values/post request_body: native model models:Values models=[('models:Values', 'model', 'ignore', True)]
 use /paths/~1values/post response_body 200: native model models:Values models=[('models:Values', 'model', 'ignore', True)]
 animals-client-decode: model FieldAnimalsPostResponse(root=Cat(id=1, name=None, nick_name='Tom', meow=True)) set=['root'] wire={"id":1,"meow":true,"nick-name":"Tom"} presence=['', '/id', '/meow', '/nick-name'] extras={}
-animals-client-needs-schema: needs schema True ambiguous True
 animals-client-convert: CodecConfigurationError The use chooses a union member by its schema, so only its schema can convert it
-values-client-needs-schema: needs schema False ambiguous False
