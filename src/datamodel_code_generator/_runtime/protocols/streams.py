@@ -769,14 +769,17 @@ def _absence(value: WireValue | Missing) -> Literal["missing", "null"]:
 
 
 def _expiry(plan: EventPlan[T], read: HeaderSelector, info: ResponseInfo) -> datetime:
-    """Return the server's expiry an open response's header gives, an RFC 3339 date-time with offset or an HTTP date."""
+    """Return the server's expiry an open response's header gives, an RFC 3339 date-time with offset or an HTTP date.
+
+    A value that is no string, which only a selector of every occurrence would read, is refused like an unreadable one.
+    """
     try:
         value = selected(read, None, info)
     except RepeatedValueError:
         raise _data_error(plan, plan.operation, info, "malformed", read) from None
     if value is MISSING:
         raise _data_error(plan, plan.operation, info, "missing", read)
-    if (expires_at := server_expiry(cast("str", value))) is None:
+    if (expires_at := server_expiry(value) if isinstance(value, str) else None) is None:
         raise _data_error(plan, plan.operation, info, "value", read)
     return expires_at
 

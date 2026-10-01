@@ -31,3 +31,4 @@ render pydantic_v2.BaseModel
   E_CONFIG_VALUE config protocols.helpers['resume.delivery'].resume.delivery: protocols.helpers['resume.delivery'].resume.delivery must be 'at_least_once'
   E_CONFIG_VALUE config protocols.helpers['resume.reasons'].resume.reconnect_on[1]: protocols.helpers['resume.reasons'].resume.reconnect_on[1] repeats a reconnect reason
   E_CONFIG_VALUE config protocols.helpers['resume.empty'].resume.reconnect_on: protocols.helpers['resume.empty'].resume.reconnect_on must be a nonempty list
+  E_CONFIG_VALUE config protocols.helpers['resume.expiries'].resume.expires_at.occurrence: protocols.helpers['resume.expiries'].resume.expires_at.occurrence can be 'all' only in a binding value
