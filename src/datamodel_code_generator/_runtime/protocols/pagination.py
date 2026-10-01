@@ -31,19 +31,17 @@ from ..client.options import RequestOptions
 from ..client.paths import dot_segment, path_segments
 from ..client.responses import ResponseInfo
 from ..client.timing import SessionOptions
-from ..model_codecs.errors import CodecAdapterError, CodecError, ParameterEncodingError
+from ..model_codecs.errors import CodecError
 from ..model_codecs.media import decode_json
 from ..model_codecs.unset import UNSET, Unset
 from .errors import PaginationCycleError, ProtocolDataError, ProtocolStateError, ResumeStateError, SessionLimitError
-from .options import PaginationOptions
+from .options import PaginationOptions, layered
 from .records import (
     BodySelector,
-    BodyTarget,
     Continuation,
     HeaderSelector,
     ParameterTarget,
     ProtocolProgress,
-    QuerystringTarget,
     RequestTarget,
     Sealed,
     Selector,
@@ -53,12 +51,11 @@ from .records import (
     record_instance,
 )
 from .resume import ResumeState, helper_state, state_fields
-from .values import MISSING, Missing, Patch, resolve
+from .values import MISSING, Missing, Patch, RepeatedValueError, resolve, selected
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Generator, Iterator, Sequence
     from types import TracebackType
-    from typing import TypeAlias
 
     from ..client.client import AsyncClientCore, ClientCore
     from ..client.logical import OperationSession
@@ -69,8 +66,7 @@ if TYPE_CHECKING:
     from ..model_codecs.selectors import MediaSelector
     from ..model_codecs.wire import WireValue
     from .references import OperationRef
-
-    _PathPart: TypeAlias = tuple[str, int | None, Selector | None, int]
+    from .writes import ReadPaths
 
 __all__ = (
     "AsyncPager",
@@ -95,7 +91,6 @@ __all__ = (
 T = TypeVar("T")
 P = TypeVar("P")
 R = TypeVar("R")
-V = TypeVar("V")
 T_co = TypeVar("T_co", covariant=True, default=object)
 P_co = TypeVar("P_co", covariant=True, default=object)
 
@@ -217,20 +212,6 @@ class PageBinding:
         object.__setattr__(self, "literal", frozen_wire(self.literal))
 
 
-def _position(call: OperationPlan[P, object], location: str, name: str) -> int:
-    """Return the argument position of a declared parameter, matching a header's name without regard to case."""
-
-    def key(value: str) -> str:
-        return value.lower() if location == "header" else value
-
-    wanted = key(name)
-    return next(
-        index
-        for index, spec in enumerate(call.parameters)
-        if spec.plan.location == location and key(spec.plan.name) == wanted
-    )
-
-
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class PaginationPlan(Generic[T, P]):
@@ -258,7 +239,7 @@ class PaginationPlan(Generic[T, P]):
     writes: tuple[tuple[int | None, str | None], ...] = field(init=False)
     headers: frozenset[str] = field(init=False)
     queries: frozenset[str] = field(init=False)
-    dotted: tuple[tuple[str, tuple[_PathPart, ...]], ...] = field(init=False)
+    dotted: ReadPaths = field(init=False)
     continued: OperationPlan[P, object] = field(init=False)
 
     def __post_init__(self) -> None:
@@ -267,55 +248,19 @@ class PaginationPlan(Generic[T, P]):
         A write is a parameter's argument position with no pointer, a querystring's with a pointer into its value, or
         no position with a pointer into the JSON body. Every media of a body written to is JSON.
         """
-        from .writes import PatchedMedia, PatchedParameter  # noqa: PLC0415 - Only a plan loads the operation runtime.
+        from .writes import read_paths, targeted  # noqa: PLC0415 - Only a plan loads the operation runtime.
 
-        call = self.call
-        parameters = list(call.parameters)
-        writes: list[tuple[int | None, str | None]] = []
-        headers: set[str] = set()
-        queries: set[str] = set()
-        patched = False
         rule = self.continuation
         follows = isinstance(rule, (NextUrlPlan, LinkPlan))
         sources = tuple((binding.target, binding.selector) for binding in self.bindings)
         if isinstance(rule, (CursorPlan, CountPlan)):
             sources = (*sources, (rule.write, rule.read if isinstance(rule, CursorPlan) else None))
-        for target, _ in sources:
-            if isinstance(target, BodyTarget):
-                writes.append((None, target.pointer))
-                patched = True
-                continue
-            if isinstance(target, QuerystringTarget):
-                position, pointer = _position(call, "querystring", target.name), target.pointer
-            else:
-                position, pointer = _position(call, target.location, target.name), None
-                if (location := target.location) == "header":
-                    headers.add(target.name.lower())
-                elif location == "query":
-                    queries.add(target.name)
-            spec = parameters[position]
-            parameters[position] = (
-                replace(spec, encoder=None)
-                if pointer is None
-                else PatchedParameter(plan=spec.plan, encoder=spec.encoder, adapter=spec.adapter)
-            )
-            writes.append((position, pointer))
-        body = call.body
-        if patched:
-            assert body is not None
-            body = replace(
-                body,
-                media=tuple(
-                    PatchedMedia(media_type=media.media_type, kind=media.kind, encoder=media.encoder)
-                    for media in body.media
-                ),
-            )
+        continued, writes, headers, queries = targeted(self.call, (target for target, _ in sources))
         object.__setattr__(self, "follows", follows)
-        object.__setattr__(self, "writes", tuple(writes))
-        object.__setattr__(self, "headers", frozenset(headers))
-        object.__setattr__(self, "queries", frozenset(queries))
-        object.__setattr__(self, "dotted", _read_paths(call, sources))
-        continued = replace(call, parameters=tuple(parameters), body=body, checks=())
+        object.__setattr__(self, "writes", writes)
+        object.__setattr__(self, "headers", headers)
+        object.__setattr__(self, "queries", queries)
+        object.__setattr__(self, "dotted", read_paths(self.call, sources))
         if follows and not (isinstance(rule, NextUrlPlan) and rule.repeat_request_body):
             continued = replace(continued, method="GET", body=None, retry_safety="method_default", idempotency=None)
         object.__setattr__(self, "continued", continued)
@@ -448,14 +393,6 @@ class _Limits:
 _DEFAULTS: Final = _Limits()
 
 
-def _first(layers: tuple[object, ...], name: str, default: V) -> V:
-    """Return a limit from the first options layer that sets it, or its default."""
-    for layer in layers:
-        if layer is not None and not isinstance(layer, Unset) and not isinstance(value := getattr(layer, name), Unset):
-            return cast("V", value)
-    return default
-
-
 def _invalid(plan: PaginationPlan[T, P], path: tuple[str, ...]) -> ProtocolConfigurationError:
     return ProtocolConfigurationError(
         field_path=path, condition="invalid_value", helper_id=plan.helper_id, operation=plan.operation
@@ -496,13 +433,13 @@ def _limits(
     kinds = (pagination_options, UNSET if defaults is None else defaults.options)
     sessions = (session_options, UNSET if defaults is None else defaults.session)
     return _Limits(
-        max_pages=_first(kinds, "max_pages", _DEFAULTS.max_pages),
-        max_items=_first(kinds, "max_items", _DEFAULTS.max_items),
-        max_page_bytes=_first(kinds, "max_page_bytes", _DEFAULTS.max_page_bytes),
-        max_cursor_bytes=_first(kinds, "max_cursor_bytes", _DEFAULTS.max_cursor_bytes),
-        total_timeout=_first(sessions, "total_timeout", _DEFAULTS.total_timeout),
-        deadline=_first(sessions, "deadline", _DEFAULTS.deadline),
-        max_network_sends=_first(sessions, "max_network_sends", _DEFAULTS.max_network_sends),
+        max_pages=layered(kinds, "max_pages", _DEFAULTS.max_pages),
+        max_items=layered(kinds, "max_items", _DEFAULTS.max_items),
+        max_page_bytes=layered(kinds, "max_page_bytes", _DEFAULTS.max_page_bytes),
+        max_cursor_bytes=layered(kinds, "max_cursor_bytes", _DEFAULTS.max_cursor_bytes),
+        total_timeout=layered(sessions, "total_timeout", _DEFAULTS.total_timeout),
+        deadline=layered(sessions, "deadline", _DEFAULTS.deadline),
+        max_network_sends=layered(sessions, "max_network_sends", _DEFAULTS.max_network_sends),
         options=request,
     )
 
@@ -531,64 +468,10 @@ def _selected(plan: PaginationPlan[T, P], read: Selector, wire: WireValue, info:
 
     A header selected once that the response repeats is refused.
     """
-    if isinstance(read, BodySelector):
-        return resolve(wire, read.pointer)
-    if isinstance(read, HeaderSelector):
-        values = info.headers.get_all(read.name)
-        if read.occurrence == "all":
-            return tuple(values) if values else MISSING
-        if len(values) > 1:
-            raise _data_error(plan, info, "malformed", read)
-        return values[0] if values else MISSING
-    return info.status_code
-
-
-def _read_paths(
-    call: OperationPlan[P, object], sources: Sequence[tuple[RequestTarget, Selector | None]]
-) -> tuple[tuple[str, tuple[_PathPart, ...]], ...]:
-    """Return the path segments read values are written to, each parameter by name, write, selector, and position.
-
-    A parameter the caller's argument fills has no write.
-    """
-    paths: dict[str, tuple[int | None, Selector | None]] = {
-        target.name: (index, selector)
-        for index, (target, selector) in enumerate(sources)
-        if isinstance(target, ParameterTarget) and target.location == "path"
-    }
-    reads = {name for name, (_, selector) in paths.items() if selector is not None}
-    return tuple(
-        (segment, tuple((name, *paths.get(name, (None, None)), _position(call, "path", name)) for name in names))
-        for segment, names in (path_segments(call.path) if reads else ())
-        if not reads.isdisjoint(names)
-    )
-
-
-def _dotted(
-    plan: PaginationPlan[T, P],
-    segment: str,
-    parts: tuple[_PathPart, ...],
-    written: tuple[WireValue, ...],
-    callers: Callable[[], Mapping[str, str]],
-) -> Selector | None:
-    """Return the selector of a read value written to a path segment that encodes to a dot segment, or None.
-
-    The caller's own path arguments in the segment keep the texts the first page sent, and each text is the request's,
-    through the parameter's registered adapter when it has one. The first read value whose encoded text is non-empty
-    is blamed, or else the first read value. A value its parameter or adapter cannot encode is left to the request,
-    which refuses it.
-    """
-    parameters = plan.call.parameters
     try:
-        texts = {
-            name: callers()[name] if index is None else parameters[position].path_text(written[index])
-            for name, index, _, position in parts
-        }
-    except (ParameterEncodingError, CodecAdapterError):
-        return None
-    if not dot_segment(segment, texts):
-        return None
-    reads = [(name, read) for name, _, read, _ in parts if read is not None]
-    return next((read for name, read in reads if texts[name]), reads[0][1])
+        return selected(read, wire, info)
+    except RepeatedValueError:
+        raise _data_error(plan, info, "malformed", read) from None
 
 
 def _size_error(
@@ -811,9 +694,12 @@ class _Walk(Generic[T, P]):
 
     def dotted(self, written: tuple[WireValue, ...], info: ResponseInfo | None) -> None:
         """Refuse a read value among those the next request writes that makes a path segment a dot segment."""
+        from .writes import dotted_read  # noqa: PLC0415 - A plan loaded the operation runtime.
+
         plan = self.plan
+        parameters = plan.call.parameters
         for segment, parts in plan.dotted:
-            if (read := _dotted(plan, segment, parts, written, self.callers)) is not None:
+            if (read := dotted_read(parameters, segment, parts, written, self.callers)) is not None:
                 raise _data_error(plan, info, "value", read)
 
     def session_id(self) -> str | None:

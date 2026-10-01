@@ -477,9 +477,13 @@ class Branch(Generic[T_co]):
         return (self._convert if native else self._decode)(body, info)
 
     def page(self, body: bytes, info: ResponseInfo, *, native: bool) -> tuple[T_co, WireValue]:
-        """Decode a complete page body of this model branch into its value and the wire value it was read from."""
-        assert self._paged is not None
-        return self._paged(body, info, native)
+        """Decode a complete body into its value and the wire value a model branch read it from.
+
+        Another branch, such as one without a body, has no wire value a helper reads, so its wire value is None.
+        """
+        if (paged := self._paged) is None:
+            return self.decode(body, info, native=native), None
+        return paged(body, info, native)
 
 
 class _InvalidBodyError(Exception):

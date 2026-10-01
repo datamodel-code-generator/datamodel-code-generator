@@ -24,6 +24,7 @@ from datamodel_code_generator._client.plan import (
     plan_uses,
     style_uses,
 )
+from datamodel_code_generator._client.polling import plan_polling
 from datamodel_code_generator._client.protocol_plan import (
     helper_metadata,
     helper_problems,
@@ -59,6 +60,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_types import TargetKind
     from datamodel_code_generator._client.pagination import PaginationSpec
     from datamodel_code_generator._client.plan import ClientPlan, MediaSpec, OperationSpec, ParameterSpec, PartSpec
+    from datamodel_code_generator._client.polling import PollingSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.streams import StreamSpec
     from datamodel_code_generator._client.webhooks import WebhookSpec
@@ -136,14 +138,17 @@ class ClientTarget:
         if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
             raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
         plan, named = plan_fields(plan, codecs, batch, wire)
-        helpers, checked = plan_pagination(protocols, plan, codecs, wire, request)
+        pages, checked = plan_pagination(protocols, plan, codecs, wire, request)
+        polls, polled = plan_polling(protocols, plan, codecs, wire, request)
+        order = {} if protocols is None else {helper.name: index for index, helper in enumerate(protocols.helpers)}
+        helpers = tuple(sorted((*pages, *polls), key=lambda spec: order[spec.helper.name]))
         streams = plan_streams(streamed, protocols, plan, codecs, wire, request, stream_problems)
         webhooks = plan_webhooks(events, codecs, config, hooked)
         ordinary = replace(codecs, bindings=tuple(item for item in codecs.bindings if item[0] not in received))
         if refused := (
             *named,
             *admission_problems(config.validation, ordinary, argument_uses(plan)),
-            *helper_problems(protocols, plan, {**checked, **hooked, **stream_problems}),
+            *helper_problems(protocols, plan, {**checked, **polled, **hooked, **stream_problems}),
         ):
             raise APIGenerationError(
                 tuple(
@@ -153,7 +158,8 @@ class ClientTarget:
             )
         data = _TargetData(plan, config, request, codecs, wire)
         metadata = helper_metadata(protocols, request)
-        fingerprints = {spec.helper.name: data.fingerprint(spec, metadata[spec.helper.name]) for spec in helpers}
+        fingerprints = {spec.helper.name: data.fingerprint(spec, metadata[spec.helper.name]) for spec in pages}
+        fingerprints.update((spec.helper.name, data.polling(spec, metadata[spec.helper.name])) for spec in polls)
         fingerprints.update((spec.helper.name, data.webhook(spec, metadata[spec.helper.name])) for spec in webhooks)
         fingerprints.update((spec.helper.name, data.stream(spec, metadata[spec.helper.name])) for spec in streams)
         renderer = ClientRenderer(
@@ -318,6 +324,38 @@ class _TargetData:
             "operations": [self.request.documents.operation(operation.contract.id)],
             "schemas": [spec.item_schema],
             "type_uses": [self.contract(spec.page)],
+            "adapters": [],
+        })
+
+    def polling(self, spec: PollingSpec, settings: JSONValue) -> str:
+        """Return the digest of a polling helper's contract closure: its signature and settings, operations, and uses.
+
+        The signature spells the create call's arguments and the result type, and the uses are the create responses',
+        the poll's, and the result fetch's.
+        """
+        operation, helper, fetch = spec.operation, spec.helper, spec.fetch
+        body = operation.body
+        uses = (*spec.create_uses, spec.poll_use, *(() if spec.fetch_use is None else (spec.fetch_use,)))
+        signature = {
+            "name": helper.name,
+            "parameters": [(item.python_name, item.required, self.type(item.use)) for item in operation.parameters],
+            "body": None
+            if body is None
+            else (body.required, [(media.media_type, self.type(media.use)) for media in body.media]),
+            "result": None if spec.value is None else self.spelling.static(spec.value),
+            "uses": [self.type(use) for use in uses],
+            "settings": settings,
+        }
+        documents = self.request.documents
+        return _digest({
+            "kind": helper.kind,
+            "signatures": [signature],
+            "operations": [
+                documents.operation(item.contract.id)
+                for item in (operation, spec.poll, *(() if fetch is None else (fetch,)))
+            ],
+            "schemas": list(spec.schemas),
+            "type_uses": [self.contract(use) for use in uses],
             "adapters": [],
         })
 

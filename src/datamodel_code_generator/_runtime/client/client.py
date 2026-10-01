@@ -1360,6 +1360,21 @@ class _SessionCall(_Call):
         return planned
 
 
+class _SessionWait(LogicalCallContext):
+    """A wait of a protocol helper session between its child calls, ending no later than the session does."""
+
+    __slots__ = ("session",)
+
+    def __init__(
+        self, settings: Settings, scope: Scope[HandleT], session: OperationSession, operation_id: str | None
+    ) -> None:
+        """Bind the wait to its session and the operation it comes before."""
+        super().__init__(settings, scope, operation_id)
+        self.session = session
+        if (limit := session.deadline) is not None and ((deadline := self.deadline) is None or limit.at < deadline.at):
+            self.deadline = limit
+
+
 class _Shared(Generic[AdapterT]):
     """What a client shares with its views: the transport, the fixed headers, and whether the transport was closed.
 
@@ -1411,6 +1426,18 @@ class _Core(Generic[AdapterT, HandleT]):
     def fixes_key(self, options: RequestOptions | None) -> bool:
         """Return whether a call's effective options, its own, a view's, or the client's, fix an idempotency key."""
         return isinstance(self._call_settings(options, None).idempotency_key, IdempotencyKey)
+
+    def waiting(
+        self, options: RequestOptions | None, session: OperationSession, operation_id: str | None
+    ) -> LogicalCallContext:
+        """Return a context a helper waits in before a child call of its session, sending nothing.
+
+        Its sleeps wake when the client closes or the options' cancel token is cancelled, and end by the earlier of the
+        options' deadline and the session's; the options' total timeout bounds each child call, not the waits between.
+        Its errors name the session and the operation the wait comes before.
+        """
+        settings = replace(self._call_settings(options, operation_id), total_timeout=None)
+        return _SessionWait(settings, self._scope, session, operation_id)
 
     def protocol_defaults(self, name: str) -> ProtocolDefaults | None:
         """Return the defaults the client's protocol settings give one helper, or None."""
@@ -1930,9 +1957,9 @@ class _Core(Generic[AdapterT, HandleT]):
         request: Callable[[], tuple[tuple[object, ...], object, str | None]],
         media_type: str | MediaSelector | None,
         options: RequestOptions | None,
-        read_request: Callable[[str, HeadersView], None],
+        read_request: Callable[[str, HeadersView], None] | None,
     ) -> tuple[PreparedRequest[EncodedAttempt], object]:
-        """Return a page's request, sent to the URL a server gave when the walk follows one.
+        """Return a page's request, sent to the URL a server gave when the walk follows one, shown to any reader first.
 
         A followed URL is sent without the query fields of the package's security schemes and the auth's own, which
         the auth adds again, and to another origin than the server's without the credential and cookie headers, which
@@ -1952,7 +1979,8 @@ class _Core(Generic[AdapterT, HandleT]):
             narrowed=False,
             url=url,
         )
-        read_request(prepared.url, prepared.headers)
+        if read_request is not None:
+            read_request(prepared.url, prepared.headers)
         if url is None:
             return prepared, deferred
         server = call.server_origin = request_origin(self._base(operation, call.settings))
@@ -2498,17 +2526,20 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         media_type: str | MediaSelector | None,
         options: RequestOptions | None,
         session: OperationSession,
-        max_page_bytes: int,
-        read_request: Callable[[str, HeadersView], None],
+        max_page_bytes: int | None,
+        read_request: Callable[[str, HeadersView], None] | None = None,
     ) -> R:
         """Execute one page of a helper session as a child logical call, building what the page's response gives.
 
-        The page reads at most `max_page_bytes` of its body, and its arguments, body, and any URL a server gave are
-        taken when the call prepares; `body` is the caller's. What the page gives is built from its decoded body
-        and its bytes, with the URL of the hop that returned it and the query fields a followed URL is without.
+        The page reads at most `max_page_bytes` of its body, or the ordinary response limit without one, and its
+        arguments, body, and any URL a server gave are taken when the call prepares; `body` is the caller's. What the
+        page gives is built from its decoded body and its bytes, with the URL of the hop that returned it and the query
+        fields a followed URL is without.
         """
         settings = self._call_settings(options, operation.operation_id)
-        if page_limited := (limit := settings.max_response_bytes) is None or max_page_bytes <= limit:
+        if page_limited := max_page_bytes is not None and (
+            (limit := settings.max_response_bytes) is None or max_page_bytes <= limit
+        ):
             settings = replace(settings, max_response_bytes=max_page_bytes)
         call = _SessionCall(settings, self._scope, operation, session)
         events = call.events = self._started(call, operation.path, options)
@@ -3344,17 +3375,20 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         media_type: str | MediaSelector | None,
         options: RequestOptions | None,
         session: OperationSession,
-        max_page_bytes: int,
-        read_request: Callable[[str, HeadersView], None],
+        max_page_bytes: int | None,
+        read_request: Callable[[str, HeadersView], None] | None = None,
     ) -> R:
         """Execute one page of a helper session as a child logical call, building what the page's response gives.
 
-        The page reads at most `max_page_bytes` of its body, and its arguments, body, and any URL a server gave are
-        taken when the call prepares; `body` is the caller's. What the page gives is built from its decoded body
-        and its bytes, with the URL of the hop that returned it and the query fields a followed URL is without.
+        The page reads at most `max_page_bytes` of its body, or the ordinary response limit without one, and its
+        arguments, body, and any URL a server gave are taken when the call prepares; `body` is the caller's. What the
+        page gives is built from its decoded body and its bytes, with the URL of the hop that returned it and the query
+        fields a followed URL is without.
         """
         settings = self._call_settings(options, operation.operation_id)
-        if page_limited := (limit := settings.max_response_bytes) is None or max_page_bytes <= limit:
+        if page_limited := max_page_bytes is not None and (
+            (limit := settings.max_response_bytes) is None or max_page_bytes <= limit
+        ):
             settings = replace(settings, max_response_bytes=max_page_bytes)
         call = _SessionCall(settings, self._scope, operation, session)
         self._running(call.operation_id, call.call_id)

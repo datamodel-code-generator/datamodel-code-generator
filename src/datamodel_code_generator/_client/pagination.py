@@ -726,23 +726,32 @@ def _credentials(
         for index, entry in enumerate(tree["bindings"])
     )
     for at, what, target in targets:
-        name = target.get("name", "")
-        field = next(iter(_tokens(target.get("pointer", ""))), None)
-        place = None
-        match target["in"]:
-            case "cookie":
-                place = f"the cookie {name!r}"
-            case "header" if name.lower() in headers:
-                place = f"the header {name!r}"
-            case "query" if name in queries:
-                place = f"the query parameter {name!r}"
-            case "querystring" if field in queries:
-                place = f"the query field {field!r}"
-            case _:
-                pass
-        if place is not None:
+        if (place := credential_place(target, headers, queries)) is not None:
             message = f"The {what} of {helper.name!r} writes {place}, which carries credentials no helper writes"
             yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
+
+
+def credential_place(target: Mapping[str, Any], headers: frozenset[str], queries: frozenset[str]) -> str | None:
+    """Return the credential position a request target writes, or None: a cookie or a credential header or query field.
+
+    `headers` are the credential header names, folded to lower case, and `queries` the query names of the package's
+    security schemes, which a querystring property may name too.
+    """
+    name = target.get("name", "")
+    field = next(iter(_tokens(target.get("pointer", ""))), None)
+    place = None
+    match target["in"]:
+        case "cookie":
+            place = f"the cookie {name!r}"
+        case "header" if name.lower() in headers:
+            place = f"the header {name!r}"
+        case "query" if name in queries:
+            place = f"the query parameter {name!r}"
+        case "querystring" if field in queries:
+            place = f"the query field {field!r}"
+        case _:
+            pass
+    return place
 
 
 def _unsent(target: Mapping[str, Any], continuation: Mapping[str, Any]) -> str | None:

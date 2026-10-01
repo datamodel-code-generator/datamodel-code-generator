@@ -306,9 +306,9 @@ explicitly before using it as a model.
 Pagination, polling, and SSE or NDJSON stream helpers of an API are declared in a helper configuration, which the client
 target reads through its `protocols` setting. The helpers are still being implemented: generation validates every
 helper, resolves its references against the selected API, and records it in the target manifest. An enabled pagination
-helper generates the [pagination helper](#pagination-helpers) below, an enabled SSE helper the
-[SSE stream helper](#sse-stream-helpers), an enabled NDJSON helper the [NDJSON stream helper](#ndjson-stream-helpers),
-and an enabled webhook helper the
+helper generates the [pagination helper](#pagination-helpers) below, an enabled polling helper the
+[polling helper](#polling-helpers), an enabled SSE helper the [SSE stream helper](#sse-stream-helpers), an enabled
+NDJSON helper the [NDJSON stream helper](#ndjson-stream-helpers), and an enabled webhook helper the
 [webhook verification helper](#webhook-verification-helpers); any other enabled helper fails with `E_CLIENT_UNSUPPORTED`.
 A disabled helper generates nothing, so the package is the same as without it. The `websocket`, `cache`,
 `resumable_upload`, `batch`, and `queue` kinds fail with `E_CLIENT_UNSUPPORTED` whether they are enabled or not, and
@@ -891,6 +891,196 @@ E_CLIENT_UNSUPPORTED target protocols.helpers['cursor.map'].continuation.read /p
 
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.pagination.diagnostics -->
+
+## Polling helpers
+
+An enabled polling helper is generated at `client.protocols.<name>` on `Client` and `AsyncClient` alike. Its `start`
+takes the `create` operation's parameters and its body as keywords, never field arguments, then `poll_options`,
+`options`, and `session_options`, sends the create request, and returns a handle; the asyncio `start` is awaited:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.polling.helper -->
+<!-- fmt: off -->
+
+```python
+    def start(
+        self,
+        *,
+        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        poll_options: PollOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> LroHandle[GetReportResponse, GetJobResponse]:
+        """Create the operation of POST /jobs and return the handle that polls it."""
+        return start_operation(
+            self._core,
+            _plans.PLAN_0,
+            (),
+            body=body,
+            media_type=media_type,
+            poll_options=poll_options,
+            options=options,
+            session_options=session_options,
+        )
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.polling.helper -->
+
+```python
+with Client() as client, client.protocols.jobs.run.start(body=job) as handle:
+    snapshot = handle.status()
+    report = handle.wait()
+```
+
+`LroHandle[T, P]` and `AsyncLroHandle[T, P]`, imported from `pkg.protocols`, hold one operation: `T` is the result
+type and `P` the poll operation's response type. `status()` polls once and returns a `PollSnapshot[P]`; `wait()` polls
+until the operation settles and returns its result. Both are coroutines on `AsyncLroHandle`. Each poll is its own call
+of the `poll` operation, which writes each binding's value: what its selector reads from the create response for
+`source: initial`, kept for the whole operation, or from the latest response, the create response and then each poll,
+for `source: previous`, or a `literal`. A value is written as the server gave it, without its target's schema checks,
+and a missing value, a header repeated for a single value, and read values that make a path segment `.` or `..` once
+encoded, `%2E` in either case counting as `.`, raise `ProtocolDataError`. `progress` reports the polls sent, counting
+none refused before sending, and the session's sends.
+
+### States and results
+
+`start` sends the create request once, resent only as shared retries allow. A status in `accepted_statuses` returns a
+pending handle. A status in `immediate_result.statuses` returns a handle that already holds the result, read from the
+create response at the immediate result's selector; its `wait` returns the result without sending, and its `status`
+raises `ProtocolStateError` with `state='succeeded'`, since it has no poll. Any other success status raises
+`ProtocolDataError` with a `StatusSelector` location, and an error status raises the operation's HTTP error.
+
+A poll's `state` selector must read a value equal to one of the `pending`, `succeeded`, `failed`, or `cancelled`
+values, JSON type included; a missing state raises `ProtocolDataError`, and any other value raises
+`PollingStateError` with the condition `type` when no declared state has its JSON type and `value` otherwise. Success
+is never inferred. A failed or cancelled operation makes `wait` raise `OperationFailedError` or
+`OperationCancelledError`, whose `snapshot` is the last poll, and every later `wait` raises it again without sending;
+`status` returns that poll. After a success, `wait` returns the result: the value an `inline` result's selector reads
+from the final poll, the response of the result `operation`, fetched once with its bindings, whose `previous` source is
+the final poll, or None for `kind: none`. Later `status` and `wait` calls send nothing. A missing or null result in the
+final poll raises `ProtocolDataError` and leaves the handle pending, so a later `status` or `wait` polls again and
+raises the same error while the result stays missing; a missing or null immediate result fails `start`.
+
+An error that settles nothing, such as a transport error, an HTTP error, a deadline, a cancellation, a limit, or a
+`ProtocolDataError` of a poll, leaves the handle as it was, so a later `status` or `wait` polls again without a new
+create request, and a failed result fetch is retried alone. A spent limit stays spent for the handle's session, though:
+once `max_polls` is reached, every later poll, and once `max_network_sends` is reached, every later poll or result
+fetch, raises `SessionLimitError` again before sending. `close()` or `aclose()`, or leaving a `with` or
+`async with` block, stops only local polling; the remote operation goes on, and every later step raises
+`ProtocolStateError` with `state='closed'`. Calling `status`, `wait`, `close`, or `aclose` while another step runs
+raises `ProtocolStateError` with `state='polling'`; a block that ends with an error while another step runs leaves the
+handle open and lets its own error propagate.
+
+### Waits and server delays
+
+The first poll waits until `interval` seconds after the create response's receipt, and each later one until the
+interval after the last poll's; with `interval.retry_after_header`, a valid delay in that header, in seconds or as an
+HTTP date, makes the wait longer, never shorter. The delay counts from the final response of a call, after any retries
+inside it, so a retry's own delay is never added to the poll interval. A poll or a result fetch that fails with a
+response, such as a `503` after its retries, sets the next wait from that response the same way before its error is
+raised, and the next poll or fetch waits for it; the first result fetch is sent at once. `status` waits the same way.
+An interval longer than `PollOptions.max_wait`, or not shorter than the session's `total_timeout` or the time left
+before its `deadline`, could never be waited out, so `start` raises `ProtocolConfigurationError` with the
+`field_path` `("poll_options", "interval")` before sending the create request. A wait a server delay makes longer
+than `max_wait`, or not shorter than what remains of the session's deadline or the options' deadline, raises
+`PollWaitLimitError` with the kind `wait` or `deadline`, the `required_wait`, and the `limit` before anything is sent;
+the handle stays as it was. A wait ends early for the options' `CancelToken` and the client's close, raising
+`RequestCancelledError` or `ClientClosedError` with the `operation_id` of the operation it waits to call, the poll's
+or the result fetch's, and the session's `parent_session_id`. Once the client is closed, every later `status` or
+`wait` that needs a poll or a result fetch raises `ClientClosedError`. `resume_state` is None, since checkpoints of
+polling helpers are not supported yet.
+
+### Limits and sessions
+
+`start` and its handle are one session. The create call, every poll, and the result fetch are calls of their own, with
+their own retries, total timeout, and idempotency key, and the session bounds all of them: a call's deadline is the
+earlier of its own and the session's, and each of its sends takes a slot of the session too. Each limit comes from the
+call's options, then the helper's `ProtocolDefaults` in `ProtocolClientOptions.defaults`, then the default below:
+
+| Limit | Default | None |
+|---|---|---|
+| `PollOptions.max_polls` | 1000 polls | Removes the limit |
+| `PollOptions.interval` | The declared `interval.seconds`, 1 second by default | Not allowed |
+| `PollOptions.max_wait` | 60 seconds | Removes the limit |
+| `SessionOptions.total_timeout` | 600 seconds from `start` | Removes the limit |
+| `SessionOptions.deadline` | None | No deadline |
+| `SessionOptions.max_network_sends` | 2000 sends | Removes the limit |
+
+A poll or a result fetch past a limit raises `SessionLimitError` with the kind `polls` or `network_sends` and the
+progress so far, before sending; a create request the session has no slot for raises it too. The options of `start`
+apply to every call of the handle. They must not fix an idempotency key, from the client, a view, or the call, and
+must not patch a header or a query parameter a binding writes; `start` raises `ProtocolConfigurationError` before
+sending, as it does for options of another type.
+
+### Generation checks
+
+Each accepted and immediate status must select a success response of the `create` operation, and the `poll`
+operation, like a result `operation`, must declare exactly one success response with one JSON media type and a schema,
+read natively. The state, each binding's selector, and an inline result must read what the responses declare: a body
+pointer a property of the response's model, through every accepted create response for `source: initial` and also the
+poll's for `source: previous`, or a declared header. Each declared state must have a JSON type the state reads. The
+JSON types a binding reads or its literal has must be ones its target accepts, literals that make a path segment `.` or
+`..` once encoded are no path parameter values, and every required parameter and required body of the poll and result
+operations must be written by a binding, and a body a binding writes needs a default media type, since a poll or a
+result fetch names none. Two bindings writing the same target, or a body or querystring member inside or around
+another's, fail with `E_CONFIG_CONFLICT`. As for pagination, no binding of the poll or the result fetch writes
+a credential position: a
+cookie, the `Authorization`, `Proxy-Authorization`, `Cookie`, and `Cookie2` headers, or a header, query parameter, or
+querystring property a security scheme of the package names. An inline or immediate result reads a body pointer whose
+schema is the declared `schema`; an immediate result needs a result kind other than `none`, success responses of
+`create` that are all one JSON model, and the type of the result. Bindings that read the helper's input, request
+bodies other than JSON written by a binding, `remote_cancel`, `expires_at`, and pointers that read through a union or a
+map are not supported yet:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.polling.diagnostics -->
+<!-- fmt: off -->
+
+```text
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.later'].remote_cancel /paths/~1jobs/post: The polling helper 'checks.later' declares remote cancellation, which is not supported yet
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.later'].expires_at /paths/~1jobs/post: The polling helper 'checks.later' declares a server expiry, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['checks.later'].accepted_statuses[1] /paths/~1jobs/post: The accepted status 201 of 'checks.later' selects no success response of POST /jobs
+E_CONFIG_VALUE config protocols.helpers['checks.later'].accepted_statuses[2] /paths/~1jobs/post: The accepted status 404 of 'checks.later' selects no success response of POST /jobs
+E_CONFIG_VALUE config protocols.helpers['checks.poll'].poll /paths/~1exports/post: POST /exports must declare exactly one JSON success response for the polling helper 'checks.poll'
+E_CONFIG_VALUE config protocols.helpers['checks.states'].pending[0] /paths/~1exports~1status/get: The state 'zero' of 'checks.states' is string, which its state never reads
+E_CONFIG_VALUE config protocols.helpers['checks.states'].failed[0] /paths/~1exports~1status/get: The state True of 'checks.states' is boolean, which its state never reads
+E_CONFIG_VALUE config protocols.helpers['checks.unread'].state /paths/~1exports~1status/get: The state of 'checks.unread' reads the header 'X-State', which GET /exports/status does not declare
+E_CONFIG_VALUE config protocols.helpers['checks.bindings'].bindings[0].target /paths/~1jobs~1{jobId}/get: The binding 0 of 'checks.bindings' writes the cookie 'session', which carries credentials no helper writes
+E_CONFIG_CONFLICT config protocols.helpers['checks.bindings'].bindings[2].target /paths/~1jobs~1{jobId}/get: The binding 2 of 'checks.bindings' writes the same target as its binding 1
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.bindings'].bindings[3].value.source /paths/~1jobs~1{jobId}/get: The binding 3 of 'checks.bindings' reads the helper's input, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['checks.bindings'].bindings[4].value.selector /paths/~1jobs/post: The binding 4 pointer '/nothing' of 'checks.bindings' names no property of the POST /jobs response
+E_CONFIG_VALUE config protocols.helpers['checks.bindings'].bindings[5].target /paths/~1jobs~1{jobId}/get: The binding 5 of 'checks.bindings' gives integer values, which the header parameter 'X-Trace' of GET /jobs/{jobId} does not accept
+E_CONFIG_VALUE config protocols.helpers['checks.dots'].bindings[0].value.literal /paths/~1jobs~1{jobId}/get: The binding 0 of 'checks.dots' gives '..', which makes the segment of the path parameter 'jobId' of GET /jobs/{jobId} a dot segment
+E_CONFIG_VALUE config protocols.helpers['checks.bodyless'].bindings[0].value.selector /paths/~1exports/post: The binding 0 of 'checks.bodyless' reads the body of the 202 response of POST /exports, which is no JSON model
+E_CONFIG_VALUE config protocols.helpers['checks.required'].bindings /paths/~1exports~1find/get: GET /exports/find requires the querystring parameter 'filter', which no binding of 'checks.required' writes
+E_CONFIG_VALUE config protocols.helpers['checks.required'].result.bindings /paths/~1reports/post: POST /reports requires a request body, which no binding of 'checks.required' writes
+E_CONFIG_VALUE config protocols.helpers['checks.unwritten'].bindings /paths/~1jobs~1{jobId}/get: GET /jobs/{jobId} requires the path parameter 'jobId', which no binding of 'checks.unwritten' writes
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.unwritten'].result.bindings /paths/~1notes/post: The polling helper 'checks.unwritten' writes a request body of POST /notes other than JSON, which is not supported yet
+E_CONFIG_CONFLICT config protocols.helpers['checks.overlaps'].result.bindings[1].target /paths/~1reports/post: The result binding 1 of 'checks.overlaps' writes a target overlapping that of its result binding 0
+E_CONFIG_VALUE config protocols.helpers['checks.fetch'].result.operation /paths/~1exports/post: POST /exports must declare exactly one JSON success response for the result of 'checks.fetch'
+E_CONFIG_VALUE config protocols.helpers['checks.header'].result.selector /paths/~1jobs~1{jobId}/get: The result of 'checks.header' reads a header, where only a body pointer reads a result
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.union'].result.selector /paths/~1jobs~1{jobId}/get: The result pointer '/labels/rows' of 'checks.union' reads through a union or map, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['checks.absent'].result.selector /paths/~1jobs~1{jobId}/get: The result pointer '/nothing' of 'checks.absent' names no property of the GET /jobs/{jobId} response
+E_CONFIG_VALUE config protocols.helpers['checks.missing_schema'].result.schema /paths/~1jobs~1{jobId}/get: The result schema '/components/schemas/Missing' of 'checks.missing_schema' does not exist in its document
+E_CONFIG_VALUE config protocols.helpers['checks.other_schema'].result.schema /paths/~1jobs~1{jobId}/get: The result schema '/components/schemas/Report' of 'checks.other_schema' is not the schema its pointer reads
+E_CONFIG_VALUE config protocols.helpers['checks.none_immediate'].immediate_result /paths/~1jobs/post: The immediate result of 'checks.none_immediate' gives a result, which a helper without a result never has
+E_CONFIG_VALUE config protocols.helpers['checks.immediate'].immediate_result.statuses[0] /paths/~1jobs/post: The immediate status 201 of 'checks.immediate' selects no success response of POST /jobs
+E_CONFIG_VALUE config protocols.helpers['checks.immediate'].immediate_result.selector /paths/~1jobs/post: The immediate result of 'checks.immediate' reads models.ExportState, which is not its result type models.Report
+E_CONFIG_VALUE config protocols.helpers['checks.immediate_models'].immediate_result.statuses[0] /paths/~1exports/post: The immediate status 200 of 'checks.immediate_models' selects no success response of POST /exports
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.immediate_models'].immediate_result /paths/~1exports/post: The immediate result of 'checks.immediate_models' reads POST /exports, whose success responses are not all one JSON model, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['checks.immediate_header'].immediate_result.selector /paths/~1jobs/post: The immediate result of 'checks.immediate_header' reads a header, where only a body pointer reads a result
+E_CONFIG_VALUE config protocols.helpers['checks.progress'].immediate_result.selector /paths/~1jobs/post: The immediate result of 'checks.progress' reads models.Report, which is not its result type int
+E_CONFIG_VALUE config protocols.helpers['checks.credentials'].bindings[1].target /paths/~1jobs~1{jobId}/get: The binding 1 of 'checks.credentials' writes the header 'x-api-key', which carries credentials no helper writes
+E_CONFIG_VALUE config protocols.helpers['checks.credentials'].bindings[2].target /paths/~1jobs~1{jobId}/get: The binding 2 of 'checks.credentials' writes the query parameter 'api_key', which carries credentials no helper writes
+E_CONFIG_VALUE config protocols.helpers['checks.credentials'].result.bindings[0].target /paths/~1exports~1status/get: The result binding 0 of 'checks.credentials' writes the query field 'api_key', which carries credentials no helper writes
+E_CONFIG_VALUE config protocols.helpers['checks.no_success'].accepted_statuses[0] /paths/~1archives/post: The accepted status 202 of 'checks.no_success' selects no success response of POST /archives
+E_CONFIG_VALUE config protocols.helpers['checks.no_success'].immediate_result.statuses[0] /paths/~1archives/post: The immediate status 200 of 'checks.no_success' selects no success response of POST /archives
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.no_success'].immediate_result /paths/~1archives/post: The immediate result of 'checks.no_success' reads POST /archives, whose success responses are not all one JSON model, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['checks.media'].result.bindings /paths/~1archives~1search/post: The polling helper 'checks.media' writes a request body of POST /archives/search, which has no default media type; set the operation's request_media_type
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.polling.diagnostics -->
 
 ## SSE stream helpers
 
