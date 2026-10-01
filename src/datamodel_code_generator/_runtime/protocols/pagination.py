@@ -646,8 +646,7 @@ def _integer(value: object) -> int | None:
             return int(value)
         case Decimal() if value.is_finite() and value == value.to_integral_value():
             return int(value)
-        case _:
-            return None
+    return None
 
 
 def _total(plan: PaginationPlan[T, P], read: Selector, wire: WireValue, info: ResponseInfo) -> int:
@@ -830,7 +829,8 @@ class _Walk(Generic[T, P]):
         """
         plan = self.plan
         pointer = plan.writes[-1][1]
-        if (value := wire if pointer is None else resolve(wire, pointer)) is MISSING:
+        value = wire if pointer is None else resolve(wire, pointer)
+        if value is MISSING:
             return
         if (position := _integer(value)) is None:
             rule = plan.continuation
