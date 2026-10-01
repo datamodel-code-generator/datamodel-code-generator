@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import importlib
+import itertools
 import json
 import logging
 import os
@@ -190,6 +191,7 @@ def sockets(package: ModuleType, lines: list[str]) -> None:
             _decoding(harness, api)
             _limits(harness, api)
             _closing_sessions(harness, api)
+        _clocked(harness)
         with harness.package.Client(options=harness.client(auth=harness.auth.AuthConfig({"bearer": _Tokens(harness.auth)}))) as api:
             _sends(harness, api)
         _hooked(harness)
@@ -407,6 +409,25 @@ def _limits(harness: _Harness, api: Any) -> None:
     except harness.errors.WebSocketClosedError as closed:
         lines.append(f"  abnormal end of iteration code={closed.code} reason={closed.reason!r} clean={closed.clean}")
     harness.report(play)
+
+
+def _clocked(harness: _Harness) -> None:
+    """Time a session's waits on the client's clock: a stepped clock expires an idle wait at once, and a frozen one
+    ends it once as much real time passed.
+    """
+    lines, server, options = harness.lines, harness.server, harness.options
+    ticks = itertools.count(step=30.0)
+    for label, clock, idle in (
+        ("idle on a stepped clock", options.Clock(monotonic=lambda: float(next(ticks))), 60.0),
+        ("idle on a frozen clock", options.Clock(monotonic=lambda: 100.0), 0.05),
+    ):
+        (play,) = server.play(Play())
+        with harness.package.Client(options=harness.client(clock=clock)) as api:
+            session = api.protocols.rooms.chat.connect(
+                room=harness.room(), options=options.RequestOptions(total_timeout=None), ws_options=harness.ws(idle_timeout=idle)
+            )
+            record(lines, label, session.receive)
+        harness.report(play)
 
 
 def _closing_sessions(harness: _Harness, api: Any) -> None:

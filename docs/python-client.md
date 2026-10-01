@@ -1588,7 +1588,8 @@ never show messages, URLs, headers, or close reasons.
 ### WebSocket limits
 
 Each limit comes from the call's `ws_options`, then the helper's `ProtocolDefaults` in `ProtocolClientOptions.defaults`,
-then the default below:
+then the default below. The session's deadline and its idle, send, and pong timeouts run on the client's `Clock`; a wait
+ends once that clock reaches its end, or once as much real time passed as the clock had left when the wait began:
 
 | Limit | Default | None |
 |---|---|---|

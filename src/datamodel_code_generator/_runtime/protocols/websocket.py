@@ -35,7 +35,7 @@ from ..client.errors import (
 from ..client.options import RequestOptions
 from ..client.raw import afinished, finished
 from ..client.responses import HeadersView
-from ..client.timing import TOKEN_INTERVAL, Deadline, SessionOptions
+from ..client.timing import SYSTEM_CLOCK, TOKEN_INTERVAL, Clock, Deadline, SessionOptions, real_end, wait_left
 from ..client.transports import TransportCapabilities, attempt_trace
 from ..model_codecs.errors import (
     CodecBindingError,
@@ -172,6 +172,7 @@ class _Limits:
     deadline: Deadline | None = None
     max_network_sends: int | None = 16
     options: RequestOptions | None = None
+    clock: Clock = SYSTEM_CLOCK
 
 
 _SOCKET: Final = ResolvedWSOptions(
@@ -268,6 +269,7 @@ def _limits(
         deadline=_first(sessions, "deadline", None),
         max_network_sends=_first(sessions, "max_network_sends", _SENDS),
         options=request,
+        clock=core.clock,
     )
 
 
@@ -286,7 +288,10 @@ def _session(plan: ChannelPlan[SendT, RecvT], limits: _Limits) -> OperationSessi
     from ..client.logical import OperationSession  # noqa: PLC0415 - Only a connect loads the call runtime.
 
     session = OperationSession(
-        total_timeout=limits.total_timeout, deadline=limits.deadline, max_network_sends=limits.max_network_sends
+        total_timeout=limits.total_timeout,
+        deadline=limits.deadline,
+        max_network_sends=limits.max_network_sends,
+        clock=limits.clock,
     )
     if (limit := session.send_limit) is not None and limit <= 0:
         raise SessionLimitError(
@@ -841,11 +846,11 @@ class _Sockets(Generic[SendT, RecvT]):
         return self._stamped(DeliveryUnknownError(delivery_state=DeliveryState.MAYBE_SENT, cause=cause))
 
     def _deadline(self, cap: float | None) -> Deadline | None:
-        """Return the earlier of the session's deadline and a cap counted from now."""
+        """Return the earlier of the session's deadline and a cap counted from now, both on the client's clock."""
         deadline = self._call.deadline
         if cap is None:
             return deadline
-        capped = Deadline.after(cap)
+        capped = Deadline.after(cap, clock=self._call.settings.clock)
         return capped if deadline is None or capped.at < deadline.at else deadline
 
     def _capped(self, error: BaseException, cap: Deadline | None) -> bool:
@@ -877,12 +882,21 @@ def _utf8(value: object) -> bytes | None:
         return None
 
 
-def _slice(deadline: Deadline | None, polled: bool) -> float | None:  # noqa: FBT001
-    """Return how long to wait next: until the deadline, and at most the token interval when polling."""
-    remaining = None if deadline is None else deadline.remaining()
-    if polled and (remaining is None or remaining > TOKEN_INTERVAL):
+def _slice(left: float | None, polled: bool) -> float | None:  # noqa: FBT001
+    """Return how long to wait next: the time left, and at most the token interval when polling."""
+    if polled and (left is None or left > TOKEN_INTERVAL):
         return TOKEN_INTERVAL
-    return remaining
+    return left
+
+
+def _left(deadline: Deadline | None, end: float | None) -> float | None:
+    """Return the time a wait has left: until its deadline's clock expires it, or real time reaches the wait's end."""
+    return None if deadline is None or end is None else wait_left(deadline.remaining(), end)
+
+
+def _end(deadline: Deadline | None) -> float | None:
+    """Return the real time by which a wait for a deadline ends, as the deadline's clock measures it now."""
+    return None if deadline is None else real_end(deadline.remaining())
 
 
 class _Queue:
@@ -901,15 +915,16 @@ class _Queue:
 
     def acquire(self, deadline: Deadline | None, check: Callable[[], None] | None) -> bool:
         """Wait for the turn until the deadline, running the check at each token interval; False once it passed."""
+        end = _end(deadline)
         with self._condition:
             ticket = self._next
             self._next += 1
             try:
                 while ticket != self._serving:
-                    wait = _slice(deadline, check is not None)
+                    wait = _slice(_left(deadline, end), check is not None)
                     if check is not None:
                         check()
-                    if wait is not None and wait <= 0:
+                    if wait is not None and not wait > 0:
                         self._gone.add(ticket)
                         return False
                     self._condition.wait(wait)
@@ -1007,17 +1022,21 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
             raise self._failed(error) from None
 
     def _frame(self, deadline: Deadline | None) -> WSFrame:
-        """Wait for a frame until the deadline, checking the call first and, with a cancel token, at its interval."""
+        """Wait for a frame until the deadline, checking the call first and, with a cancel token, at its interval.
+
+        The connection waits in real time for as long as the deadline's clock has left when each wait begins.
+        """
         polled = self._call.settings.cancel_token is not None
+        end = _end(deadline)
         while True:
             self._checked()
-            wait = deadline
-            if polled and (deadline is None or deadline.remaining() > TOKEN_INTERVAL):
-                wait = Deadline.after(TOKEN_INTERVAL)
+            left = _left(deadline, end)
+            sliced = polled and (left is None or left > TOKEN_INTERVAL)
+            span = TOKEN_INTERVAL if sliced else left
             try:
-                return self._connection.receive(deadline=wait)
+                return self._connection.receive(deadline=None if span is None else Deadline.after(max(0.0, span)))
             except TimeoutError:
-                if wait is deadline and (deadline is None or deadline.remaining() <= 0):
+                if not sliced:
                     raise
 
     def ping(self, payload: bytes = b"") -> PingReceipt:

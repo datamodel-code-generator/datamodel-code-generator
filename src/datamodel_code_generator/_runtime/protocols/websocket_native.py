@@ -48,7 +48,7 @@ from ..client.errors import (
     TransportError,
 )
 from ..client.responses import HeadersView
-from ..client.timing import TOKEN_INTERVAL
+from ..client.timing import TOKEN_INTERVAL, real_end, wait_left
 from ..client.transports import attempt_trace
 from .errors import (
     MAX_RAW_PREFIX,
@@ -268,12 +268,16 @@ def _closed(error: ConnectionClosed, parsed: BaseException | None, limit: int) -
     )
 
 
-def _wait(deadline: Deadline | None, *, polled: bool) -> float | None:
-    """Return how long a wait may block: until the deadline, and at most the token interval when polled."""
-    remaining = None if deadline is None else deadline.remaining()
-    if polled and (remaining is None or remaining > TOKEN_INTERVAL):
+def _left(deadline: Deadline | None, end: float | None) -> float | None:
+    """Return the time a wait has left: until its deadline's clock expires it, or real time reaches the wait's end."""
+    return None if deadline is None or end is None else wait_left(deadline.remaining(), end)
+
+
+def _wait(left: float | None, *, polled: bool) -> float | None:
+    """Return how long one wait may block: the time left, and at most the token interval when polled."""
+    if polled and (left is None or left > TOKEN_INTERVAL):
         return TOKEN_INTERVAL
-    return remaining
+    return None if left is None else max(0.0, left)
 
 
 def _pinging() -> ProtocolStateError:
@@ -467,12 +471,13 @@ class NativeConnection:
             raise self._closed(error) from None
         except ConcurrencyError:
             raise _pinging() from None
+        end = None if deadline is None else real_end(deadline.remaining())
         while True:
             if check is not None:
                 check()
-            if pong.wait(_wait(deadline, polled=check is not None)):
+            if pong.wait(_wait(_left(deadline, end), polled=check is not None)):
                 break
-            if deadline is not None and deadline.remaining() <= 0:
+            if (left := _left(deadline, end)) is not None and not left > 0:
                 raise TimeoutError
         if (protocol := connection.protocol).state is State.CLOSED:
             raise self._closed(protocol.close_exc)
