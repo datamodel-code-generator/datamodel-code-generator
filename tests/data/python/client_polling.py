@@ -34,12 +34,12 @@ def job(
     return json_response(code, {"id": job, "status": status, **members})
 
 
-def stated(state: str, **members: object) -> Callable[[httpx2.Request], httpx2.Response]:
+def _stated(state: str, **members: object) -> Callable[[httpx2.Request], httpx2.Response]:
     """Return a responder of a job whose state is the X-State header."""
     return json_response(200, {"id": "j2", "status": "any", **members}, **{"X-State": state})
 
 
-def export(state: object) -> Callable[[httpx2.Request], httpx2.Response]:
+def _export(state: object) -> Callable[[httpx2.Request], httpx2.Response]:
     """Return a responder of an export's state."""
     return json_response(200, {"state": state})
 
@@ -243,9 +243,9 @@ def _inline(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) ->
     helper = api.protocols.jobs.inline
     body = harness.body
     lines.append("inline results")
-    exchange.respond(job("queued", 202, job="j2"), stated("pending"), stated("done", result={"rows": 7}))
+    exchange.respond(job("queued", 202, job="j2"), _stated("pending"), _stated("done", result={"rows": 7}))
     step(lines, "wait", helper.start(body=body).wait)
-    exchange.respond(job("queued", 202, job="j2"), stated("done"), stated("done", result={"rows": 8}))
+    exchange.respond(job("queued", 202, job="j2"), _stated("done"), _stated("done", result={"rows": 8}))
     handle = helper.start(body=body)
     step(lines, "wait without a result", handle.wait)
     step(lines, "wait again", handle.wait)
@@ -275,11 +275,11 @@ def _others(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) ->
     lines.append("querystring polls")
     exports = api.protocols.exports
     created = raw_response(202, **{"Operation-Id": "e1"})
-    exchange.respond(created, export(0), export(1))
+    exchange.respond(created, _export(0), _export(1))
     step(lines, "wait without a result", exports.run.start().wait)
-    exchange.respond(created, export(2))
+    exchange.respond(created, _export(2))
     step(lines, "failed export", exports.run.start().wait)
-    exchange.respond(created, export(1), report(9))
+    exchange.respond(created, _export(1), report(9))
     step(lines, "fetch without bindings", exports.latest.start().wait)
 
 
@@ -304,7 +304,7 @@ def _waits(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -> 
     step(lines, "invalid delay", helper.start(body=body).status)
     exchange.respond(
         json_response(202, {"id": "j2", "status": "queued"}, **{"Retry-After": "120"}),
-        stated("done", result={"rows": 2}),
+        _stated("done", result={"rows": 2}),
     )
     step(lines, "undeclared delay header", api.protocols.jobs.inline.start(body=body).status)
     lines.append("intervals and deadlines")

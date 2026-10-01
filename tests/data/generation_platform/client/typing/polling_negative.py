@@ -20,7 +20,7 @@ async def wrong_handles(client: Client, async_client: AsyncClient, job: JobReque
     polls: LroHandle[object, object] = client.protocols.jobs.run.start(body=job)  # error
     client.protocols.jobs.run.start(body=job).status().terminal = True  # error
     client.protocols.jobs.run.start(body=job, response_media_type="application/json")  # error
-    client.protocols.jobs.run.start(body=job).cancel_remote = None  # error
+    client.protocols.jobs.run.start(body=job).cancel_remote()  # error
     await async_client.protocols.jobs.run.resume(state)  # error
     client.protocols.jobs.run.resume(b"state")  # error
     client.protocols.jobs.run.resume(state, body=job)  # error

@@ -13,7 +13,7 @@ import threading
 from collections.abc import Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from hashlib import sha256
 from math import ceil
@@ -23,7 +23,13 @@ from typing import TYPE_CHECKING, Any, Final, Generic, Literal, TypeAlias, cast,
 
 from typing_extensions import Self, TypeVar
 
-from ..client.errors import BudgetExceededError, ProtocolConfigurationError, RequestEncodingError, SDKError
+from ..client.errors import (
+    BudgetExceededError,
+    ProtocolConfigurationError,
+    ProtocolSizeError,
+    RequestEncodingError,
+    SDKError,
+)
 from ..client.options import RequestOptions
 from ..client.responses import ResponseInfo
 from ..client.timing import SessionOptions
@@ -110,9 +116,11 @@ _PHASES: Final[Mapping[str, _Phase]] = MappingProxyType({phase.value: phase for 
 _STATE: Final = frozenset({"phase", "polls", "wait_ms", "bound", "seed", "cancel", "poll", "result"})
 _POLL_FIELDS: Final = 4
 _RESULT_FIELDS: Final = 3
+_MOST_WAIT_MS: Final = 2**53 - 1
 _RFC3339: Final = re.compile(
-    r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]+)?(?:Z|[+-][0-9]{2}:[0-9]{2})"
+    r"([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:)([0-9]{2})((?:\.[0-9]+)?(?:Z|[+-][0-9]{2}:[0-9]{2}))"
 )
+_LEAP_SECOND: Final = "60"
 _KINDS: Final[Mapping[type, str]] = MappingProxyType({
     type(None): "null",
     bool: "boolean",
@@ -127,10 +135,16 @@ def _kind(value: WireValue) -> str:
 
 
 def _expiry(value: str) -> datetime | None:
-    """Return the UTC time an RFC 3339 date-time with an offset or an HTTP date gives, or None for another value."""
+    """Return the UTC time an RFC 3339 date-time with an offset or an HTTP date gives, or None for another value.
+
+    A leap second is the second after the one before it, as in an HTTP date.
+    """
     try:
-        if _RFC3339.fullmatch(text := value.upper()) is not None:
-            return datetime.fromisoformat(text).astimezone(timezone.utc)
+        if (matched := _RFC3339.fullmatch(value.upper())) is not None:
+            head, second, tail = matched.groups()
+            leap = second == _LEAP_SECOND
+            parsed = datetime.fromisoformat(f"{head}{'59' if leap else second}{tail}")
+            return (parsed + timedelta(seconds=leap)).astimezone(timezone.utc)
         from ..client.retry import http_date  # noqa: PLC0415 - Only a helper with an expiry parses HTTP dates.
 
         return http_date(value, time())
@@ -373,6 +387,18 @@ def _literals(bindings: tuple[PageBinding, ...], values: tuple[WireValue, ...]) 
     )
 
 
+def _wait_ms(not_before: float) -> int:
+    """Return the milliseconds left before a time, rounded up, and at most 2**53 - 1, which any longer wait saves."""
+    return min(ceil(min(max(0.0, not_before - monotonic()), _MOST_WAIT_MS) * 1000), _MOST_WAIT_MS)
+
+
+def _sent(
+    targeted: _Targeted[Any], values: tuple[WireValue, ...]
+) -> Callable[[], tuple[tuple[object, ...], object, None]]:
+    """Return the request a targeted operation sends writing the values, whatever the handle holds later."""
+    return lambda: (*targeted.request(values), None)
+
+
 @dataclass(frozen=True, slots=True)
 class _Step(Generic[T, P]):
     """What one child call settled: the phase, when the next poll may be sent, the poll, and what comes next.
@@ -401,6 +427,9 @@ class _Operation(Generic[T, P]):
     Only a settled child call changes the phase, so a failure that settles none, such as a transport error, a
     deadline, a cancellation, or a limit, leaves the handle as it was, and a later step polls again. A settled handle
     keeps the bodies its checkpoint saves: the terminal poll's and that of a result read from another response.
+
+    `_lock` is held by the one step that polls or fetches, across its waits and sends; `_guard` only while what a
+    step settles is written or read together, so a checkpoint or a remote cancel never waits for a step.
     """
 
     __slots__ = (
@@ -409,6 +438,7 @@ class _Operation(Generic[T, P]):
         "_client",
         "_closed",
         "_expires_at",
+        "_guard",
         "_limits",
         "_lock",
         "_not_before",
@@ -436,6 +466,7 @@ class _Operation(Generic[T, P]):
         self._limits = limits
         self._session = session
         self._lock = threading.Lock()
+        self._guard = threading.Lock()
         self._phase = _Phase.PENDING
         self._closed = False
         self._snapshot: PollSnapshot[P] | None = None
@@ -469,19 +500,29 @@ class _Operation(Generic[T, P]):
 
         It saves the phase, the polls so far, the wait left before the next poll or result fetch, the values the
         next requests write, and the bodies a settled handle decodes again, but neither the session nor the call's
-        options. A closed handle is checkpointed as it stood, and one running a step refuses with ProtocolStateError.
+        options. A closed handle is checkpointed as it stood, and a handle another thread or task is polling as its
+        last settled step left it.
         """
-        action = "checkpoint"
-        if not self._lock.acquire(blocking=False):
-            raise self._state_error(action, "polling")
-        try:
-            return self._saved()
-        finally:
-            self._lock.release()
+        return self._saved()
 
     def _saved(self) -> ResumeState:
         """Return a checkpoint of the handle as it stands, bound to the helper and the security its calls run under."""
-        plan, phase = self._plan, self._phase
+        plan = self._plan
+        with self._guard:
+            state, payload, expires_at = self._state()
+        security, exportable = _security(self._client, plan, self._limits.options)
+        return helper_state(
+            helper_fingerprint=plan.fingerprint,
+            security_fingerprint=security,
+            state=state,
+            payload=payload,
+            exportable=exportable,
+            expires_at=expires_at,
+        )
+
+    def _state(self) -> tuple[WireValue, bytes, datetime | None]:
+        """Return the protocol state and payload of a checkpoint, with its expiry; the guard is held."""
+        phase = self._phase
         payload = b""
         poll: WireValue = None
         result: WireValue = None
@@ -496,22 +537,14 @@ class _Operation(Generic[T, P]):
         state: WireValue = {
             "phase": phase.value,
             "polls": self._polls,
-            "wait_ms": max(0, ceil((self._not_before - monotonic()) * 1000)),
+            "wait_ms": _wait_ms(self._not_before),
             "bound": self._bound,
             "seed": self._seed if phase is _Phase.PENDING else (),
             "cancel": self._cancel,
             "poll": poll,
             "result": result,
         }
-        security, exportable = _security(self._client, plan, self._limits.options)
-        return helper_state(
-            helper_fingerprint=plan.fingerprint,
-            security_fingerprint=security,
-            state=state,
-            payload=payload,
-            exportable=exportable,
-            expires_at=self._expires_at,
-        )
+        return state, payload, self._expires_at
 
     def _state_error(self, action: str, state: str) -> ProtocolStateError:
         plan = self._plan
@@ -603,10 +636,20 @@ class _Operation(Generic[T, P]):
         if (limit := session.send_limit) is not None and session.network_send_budget_used >= limit:
             raise self._limit(limit, "network_sends")
 
-    def _pending(self, action: str) -> None:
-        """Refuse a remote cancel of an operation that already settled."""
-        if (phase := self._phase) is not _Phase.PENDING:
-            raise self._state_error(action, phase.value)
+    def _cancelling(self, cancel: CancelPlan[K]) -> Callable[[], tuple[tuple[object, ...], object, None]]:
+        """Return the remote cancel request of a pending operation, without waiting for a step that polls it.
+
+        A closed handle and a settled operation refuse it, and so does a session without a send slot.
+        """
+        action = "cancel_remote"
+        with self._guard:
+            if self._closed:
+                raise self._state_error(action, "closed")
+            if (phase := self._phase) is not _Phase.PENDING:
+                raise self._state_error(action, phase.value)
+            values = self._cancel
+        self._sendable()
+        return _sent(cancel.targeted, values)
 
     def _due(self, core: ClientCore | AsyncClientCore, call: OperationPlan[Any, object]) -> LogicalCallContext | None:
         """Return the context to wait in before the next poll or result fetch, or None when it may be sent now.
@@ -820,18 +863,20 @@ class _Operation(Generic[T, P]):
             self._not_before = self._after(info)
 
     def _settle(self, step: _Step[T, P]) -> None:
-        self._phase, self._not_before = step.phase, step.not_before
-        self._snapshot = step.snapshot or self._snapshot
-        self._bound, self._result, self._cancel = step.bound, step.result, step.cancel
-        self._poll_body, self._result_body = step.body, step.kept
-        if step.seed is not None:
-            self._seed = step.seed
-        if step.expires_at is not None:
-            self._expires_at = step.expires_at
+        with self._guard:
+            self._phase, self._not_before = step.phase, step.not_before
+            self._snapshot = step.snapshot or self._snapshot
+            self._bound, self._result, self._cancel = step.bound, step.result, step.cancel
+            self._poll_body, self._result_body = step.body, step.kept
+            if step.seed is not None:
+                self._seed = step.seed
+            if step.expires_at is not None:
+                self._expires_at = step.expires_at
 
     def _fetched(self, result: T, kept: _Saved) -> T:
         """Keep a fetched result and its body; the fetch's values are no longer needed."""
-        self._result, self._result_body, self._bound = result, kept, ()
+        with self._guard:
+            self._result, self._result_body, self._bound = result, kept, ()
         return result
 
     def _status(self, action: str) -> PollSnapshot[P] | None:
@@ -871,15 +916,24 @@ class _Operation(Generic[T, P]):
     def _poll_request(self) -> tuple[tuple[object, ...], object, None]:
         return (*self._plan.polled.request(self._bound), None)
 
-    def _cancel_request(self) -> tuple[tuple[object, ...], object, None]:
-        cancel = self._plan.cancel
-        assert cancel is not None
-        return (*cancel.targeted.request(self._cancel), None)
-
     def _decoded(self, operation: OperationPlan[V, object], saved: _Saved) -> tuple[V, WireValue, ResponseInfo]:
-        """Return a saved body decoded as its response was, refusing one that does not decode as malformed."""
+        """Return a saved body decoded as its response was, refusing one that does not decode as malformed.
+
+        A body over the resumed call's response size limit raises ProtocolSizeError, as receiving it would.
+        """
+        options, size = self._limits.options, len(saved[0])
+        if (limit := self._client.response_limit(operation, options)) is not None and size > limit:
+            plan = self._plan
+            raise ProtocolSizeError(
+                kind="body",
+                limit=limit,
+                observed=size,
+                unit="bytes",
+                helper_id=plan.helper_id,
+                operation=plan.operation,
+            )
         try:
-            return self._client.saved_page(operation, *saved, self._limits.options)
+            return self._client.saved_page(operation, *saved, options)
         except SDKError:
             raise MalformedStateError from None
 
@@ -890,6 +944,25 @@ class _Operation(Generic[T, P]):
         try:
             self._client.checked_page(call, request, None, self._limits.options)
         except (RequestEncodingError, ProtocolDataError, CodecError):
+            raise MalformedStateError from None
+
+    def _seeded(self) -> None:
+        """Refuse a saved value a result fetch's `initial` binding writes to a parameter that cannot send it.
+
+        Each is encoded as the fetch encodes its parameter, before the final poll gives the fetch's other values; a
+        value written into the fetch's querystring or body is checked when the fetch request is built.
+        """
+        plan = self._plan
+        if (fetched := plan.fetched) is None:
+            return
+        given = {
+            cast("int", position): value
+            for binding, (position, pointer), value in zip(plan.fetch_bindings, fetched.writes, self._seed, strict=True)
+            if binding.source == "initial" and pointer is None
+        }
+        try:
+            self._client.checked_arguments(fetched.call, given, self._limits.options)
+        except RequestEncodingError:
             raise MalformedStateError from None
 
     def _dots(self, bindings: tuple[PageBinding, ...], values: tuple[WireValue, ...]) -> None:
@@ -910,7 +983,7 @@ class _Operation(Generic[T, P]):
         phase = _PHASES.get(name) if isinstance(name := fields["phase"], str) else None
         require_state(phase is not None)
         assert phase is not None
-        polls, wait = state_count(fields["polls"]), state_count(fields["wait_ms"])
+        polls, wait = state_count(fields["polls"]), state_count(fields["wait_ms"], _MOST_WAIT_MS)
         bound, seed, cancel = state_array(fields["bound"]), state_array(fields["seed"]), state_array(fields["cancel"])
         poll, kept = fields["poll"], fields["result"]
         offset, data, wire, info = 0, None, None, None
@@ -942,8 +1015,9 @@ class _Operation(Generic[T, P]):
                 self._dots(cancels, self._cancel)
                 self._dots(plan.fetch_bindings, self._seed)
                 self._checked(plan.polled.call, self._poll_request)
-                if plan.cancel is not None:
-                    self._checked(plan.cancel.targeted.call, self._cancel_request)
+                self._seeded()
+                if (remote := plan.cancel) is not None:
+                    self._checked(remote.targeted.call, _sent(remote.targeted, self._cancel))
             case _Phase.SUCCEEDED:
                 require_state(not seed and not cancel)
                 self._result = self._restored_result(bound, (data, wire, info))
@@ -963,7 +1037,9 @@ class _Operation(Generic[T, P]):
         plan, kept = self._plan, self._result_body
         data, wire, info = polled
         if info is None:
-            require_state(kept is not None and plan.immediate is not None and kept[1] in plan.immediate_statuses)
+            require_state(
+                kept is not None and plan.immediate is not None and kept[1] in plan.immediate_statuses and not bound
+            )
             assert kept is not None
             assert plan.immediate is not None
             created, created_wire, created_info = self._decoded(plan.create, kept)
@@ -1028,7 +1104,8 @@ class LroHandle(_Operation[T, P]):
     """A long-running operation a helper created: `status` polls it once, and `wait` polls until it settles.
 
     `close` only stops local polling; the remote operation goes on. Polling from two threads at once raises
-    ProtocolStateError. A helper that declares a remote cancellation returns a subclass of its own with `cancel_remote`.
+    ProtocolStateError, while `checkpoint` and a remote cancel run alongside a poll. A helper that declares a remote
+    cancellation returns a subclass of its own with `cancel_remote`.
     """
 
     __slots__ = ("_core",)
@@ -1115,25 +1192,23 @@ class LroHandle(_Operation[T, P]):
         return self._fetched(result, kept)
 
     def _cancel_remote(self, cancel: CancelPlan[K]) -> CancelReceipt[K]:
-        """Send the remote cancel request of a pending operation once, keeping the phase and the last poll."""
-        self._enter("cancel_remote")
-        try:
-            self._pending("cancel_remote")
-            self._sendable()
-            with self._mapped():
-                return self._core.execute_page(
-                    self._plan,
-                    cancel.targeted.call,
-                    self._cancel_request,
-                    _receipt,
-                    body=UNSET,
-                    media_type=None,
-                    options=self._limits.options,
-                    session=self._session,
-                    max_page_bytes=None,
-                )
-        finally:
-            self._lock.release()
+        """Send the remote cancel request of a pending operation once, keeping the phase and the last poll.
+
+        It runs alongside a step another thread is running, such as a `wait` sleeping until its next poll.
+        """
+        request = self._cancelling(cancel)
+        with self._mapped():
+            return self._core.execute_page(
+                self._plan,
+                cancel.targeted.call,
+                request,
+                _receipt,
+                body=UNSET,
+                media_type=None,
+                options=self._limits.options,
+                session=self._session,
+                max_page_bytes=None,
+            )
 
     def status(self) -> PollSnapshot[P]:
         """Poll once, after the wait the last response requires, and return the poll; a settled handle sends nothing."""
@@ -1181,7 +1256,8 @@ class AsyncLroHandle(_Operation[T, P]):
     """A long-running operation an asyncio helper created: `status` polls it once, and `wait` until it settles.
 
     `aclose` only stops local polling; the remote operation goes on. Polling from two tasks at once raises
-    ProtocolStateError. A helper that declares a remote cancellation returns a subclass of its own with `cancel_remote`.
+    ProtocolStateError, while `checkpoint` and a remote cancel run alongside a poll. A helper that declares a remote
+    cancellation returns a subclass of its own with `cancel_remote`.
     """
 
     __slots__ = ("_core",)
@@ -1270,25 +1346,23 @@ class AsyncLroHandle(_Operation[T, P]):
         return self._fetched(result, kept)
 
     async def _cancel_remote(self, cancel: CancelPlan[K]) -> CancelReceipt[K]:
-        """Send the remote cancel request of a pending operation once, keeping the phase and the last poll."""
-        self._enter("cancel_remote")
-        try:
-            self._pending("cancel_remote")
-            self._sendable()
-            with self._mapped():
-                return await self._core.execute_page(
-                    self._plan,
-                    cancel.targeted.call,
-                    self._cancel_request,
-                    _receipt,
-                    body=UNSET,
-                    media_type=None,
-                    options=self._limits.options,
-                    session=self._session,
-                    max_page_bytes=None,
-                )
-        finally:
-            self._lock.release()
+        """Send the remote cancel request of a pending operation once, keeping the phase and the last poll.
+
+        It runs alongside a step another task is running, such as a `wait` sleeping until its next poll.
+        """
+        request = self._cancelling(cancel)
+        with self._mapped():
+            return await self._core.execute_page(
+                self._plan,
+                cancel.targeted.call,
+                request,
+                _receipt,
+                body=UNSET,
+                media_type=None,
+                options=self._limits.options,
+                session=self._session,
+                max_page_bytes=None,
+            )
 
     async def status(self) -> PollSnapshot[P]:
         """Poll once, after the wait the last response requires, and return the poll; a settled handle sends nothing."""
@@ -1376,7 +1450,7 @@ def _restored(
 
 
 @overload
-def start_operation(
+def start_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     core: ClientCore,
     plan: PollingPlan[T, P, C],
     arguments: tuple[object, ...],
@@ -1386,9 +1460,12 @@ def start_operation(
     poll_options: object = ...,
     options: object = ...,
     session_options: object = ...,
-) -> LroHandle[T, P]: ...
+) -> LroHandle[T, P]:
+    """Create a helper's operation and return a handle of the base class."""
+
+
 @overload
-def start_operation(
+def start_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     core: ClientCore,
     plan: PollingPlan[T, P, C],
     arguments: tuple[object, ...],
@@ -1399,7 +1476,10 @@ def start_operation(
     poll_options: object = ...,
     options: object = ...,
     session_options: object = ...,
-) -> H: ...
+) -> H:
+    """Create a helper's operation and return a handle of the helper's own class."""
+
+
 def start_operation(  # noqa: PLR0913
     core: ClientCore,
     plan: PollingPlan[T, P, C],
@@ -1423,7 +1503,7 @@ def start_operation(  # noqa: PLR0913
 
 
 @overload
-async def astart_operation(
+async def astart_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     core: AsyncClientCore,
     plan: PollingPlan[T, P, C],
     arguments: tuple[object, ...],
@@ -1433,9 +1513,12 @@ async def astart_operation(
     poll_options: object = ...,
     options: object = ...,
     session_options: object = ...,
-) -> AsyncLroHandle[T, P]: ...
+) -> AsyncLroHandle[T, P]:
+    """Create a helper's operation with asyncio and return a handle of the base class."""
+
+
 @overload
-async def astart_operation(
+async def astart_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     core: AsyncClientCore,
     plan: PollingPlan[T, P, C],
     arguments: tuple[object, ...],
@@ -1446,7 +1529,10 @@ async def astart_operation(
     poll_options: object = ...,
     options: object = ...,
     session_options: object = ...,
-) -> AH: ...
+) -> AH:
+    """Create a helper's operation with asyncio and return a handle of the helper's own class."""
+
+
 async def astart_operation(  # noqa: PLR0913
     core: AsyncClientCore,
     plan: PollingPlan[T, P, C],
@@ -1470,7 +1556,7 @@ async def astart_operation(  # noqa: PLR0913
 
 
 @overload
-def resume_operation(
+def resume_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     core: ClientCore,
     plan: PollingPlan[T, P, C],
     state: object,
@@ -1478,9 +1564,12 @@ def resume_operation(
     poll_options: object = ...,
     options: object = ...,
     session_options: object = ...,
-) -> LroHandle[T, P]: ...
+) -> LroHandle[T, P]:
+    """Return a handle of the base class continuing a helper's checkpoint."""
+
+
 @overload
-def resume_operation(
+def resume_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     core: ClientCore,
     plan: PollingPlan[T, P, C],
     state: object,
@@ -1489,7 +1578,10 @@ def resume_operation(
     poll_options: object = ...,
     options: object = ...,
     session_options: object = ...,
-) -> H: ...
+) -> H:
+    """Return a handle of the helper's own class continuing a helper's checkpoint."""
+
+
 def resume_operation(  # noqa: PLR0913
     core: ClientCore,
     plan: PollingPlan[T, P, C],
@@ -1509,7 +1601,7 @@ def resume_operation(  # noqa: PLR0913
 
 
 @overload
-def aresume_operation(
+def aresume_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     core: AsyncClientCore,
     plan: PollingPlan[T, P, C],
     state: object,
@@ -1517,9 +1609,12 @@ def aresume_operation(
     poll_options: object = ...,
     options: object = ...,
     session_options: object = ...,
-) -> AsyncLroHandle[T, P]: ...
+) -> AsyncLroHandle[T, P]:
+    """Return an asyncio handle of the base class continuing a helper's checkpoint."""
+
+
 @overload
-def aresume_operation(
+def aresume_operation(  # noqa: D418 - CodeQL flags an ellipsis body.
     core: AsyncClientCore,
     plan: PollingPlan[T, P, C],
     state: object,
@@ -1528,7 +1623,10 @@ def aresume_operation(
     poll_options: object = ...,
     options: object = ...,
     session_options: object = ...,
-) -> AH: ...
+) -> AH:
+    """Return an asyncio handle of the helper's own class continuing a helper's checkpoint."""
+
+
 def aresume_operation(  # noqa: PLR0913
     core: AsyncClientCore,
     plan: PollingPlan[T, P, C],

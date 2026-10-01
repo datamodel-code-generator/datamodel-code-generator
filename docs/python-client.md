@@ -954,7 +954,9 @@ An error that settles nothing, such as a transport error, an HTTP error, a deadl
 the operation again, and a failed result fetch is retried alone. `close()`, or leaving a `with` block, stops only local
 polling; the remote operation goes on, and every later step raises `ProtocolStateError` with `state='closed'`. Calling
 `status`, `wait`, or `close` while another step runs raises `ProtocolStateError` with `state='polling'`; a block that
-ends with an error while another step runs leaves the handle open and lets its own error propagate.
+ends with an error while another step runs leaves the handle open and lets its own error propagate. `checkpoint()` and
+`cancel_remote()` are not steps: they run while another thread or task is in `status` or `wait`, such as one sleeping
+until its next poll.
 
 ### Waits and server delays
 
@@ -1001,8 +1003,9 @@ sending, as it does for options of another type.
 ### Checkpoints and resume of operations
 
 `handle.checkpoint()` returns a `ResumeState` without sending, on `LroHandle` and `AsyncLroHandle` alike, also after
-`close`; a handle running `status`, `wait`, or `cancel_remote` raises `ProtocolStateError` with `state='polling'`. The
-helper's `resume(state, *, poll_options=None, options=None, session_options=None)` is not awaited, even on
+`close`. While another thread or task runs `status` or `wait`, it saves the handle as the last poll or fetch that
+settled left it, never waiting for a step and never refusing; a poll in flight is not saved, so a resumed handle polls
+again. The helper's `resume(state, *, poll_options=None, options=None, session_options=None)` is not awaited, even on
 `AsyncClient`, and returns the handle type `start` returns, in a session of its own, without sending: it never creates
 the operation again, and `status` or `wait` sends its first poll.
 
@@ -1025,7 +1028,7 @@ with Client() as client:
 | Saved | Never saved |
 |---|---|
 | The phase: pending, succeeded, failed, or cancelled | The create request, its body, and its idempotency key, since resume never sends it |
-| The polls so far, and the wait left before the next poll or result fetch, in milliseconds rounded up | The session, its deadline, and its send counters |
+| The polls so far, and the wait left before the next poll or result fetch, in milliseconds rounded up and at most 2^53 - 1, which a longer server delay saves | The session, its deadline, and its send counters |
 | The values the next poll, the result fetch, and a remote cancel write, read from the responses so far | The call's `options`, and anything its auth adds |
 | A settled operation's final poll and its state value, and the create response of an immediate result or the fetched result, as body, status, and media type | Model objects, which are decoded again, and any other response metadata |
 | The server's expiry an `expires_at` helper read, as the state's expiry | |
@@ -1046,11 +1049,13 @@ binding sends the plan's value, never a saved one.
 | Another helper's, or one generated differently | `ResumeStateError(condition="fingerprint")` |
 | Made under another credential partition, allowed origins, or auth, or with other server origins or declared security of the poll, result fetch, or remote cancel operation, as for [pagers](#checkpoints-and-resume) | `ResumeStateError(condition="security")` |
 | An expiry that has passed | `ResumeStateError(condition="expired")` |
-| A state or saved body that does not fit the helper: an unknown phase or member, a saved state value of another phase or none the helper declares, a body that does not decode or does not carry the result, an immediate result of a status the helper does not declare, or a saved value that cannot be encoded into the next poll, result fetch, or remote cancel, such as one with CR, LF, or NUL in a header | `ResumeStateError(condition="malformed")` |
+| A state or saved body that does not fit the helper: an unknown phase or member, a wait over 2^53 - 1 milliseconds, a saved state value of another phase or none the helper declares, a body that does not decode or does not carry the result, an immediate result of a status the helper does not declare, or a saved value that cannot be encoded into the next poll, result fetch, or remote cancel, such as one with CR, LF, or NUL in a header | `ResumeStateError(condition="malformed")` |
+| A saved body over the resumed call's `max_response_bytes` of its operation | `ProtocolSizeError(kind="body")`, as receiving it would |
 | A dot segment (`.` or `..`) a saved value would write to a path parameter | `ProtocolDataError`, as for a server's value |
 
-A saved value for the result fetch's `initial` binding is encoded when the fetch request is built, which refuses a
-value it cannot send before sending. `ResumeState.export()` requires `ProtocolSecurityContext.credential_partition`
+A pending checkpoint saves the result fetch's `initial` values before the final poll gives its others: `resume` encodes
+each one written to a parameter as the fetch encodes it, while one written into the fetch's querystring or body is
+checked only when the fetch request is built, which refuses a value it cannot send before sending. `ResumeState.export()` requires `ProtocolSecurityContext.credential_partition`
 when one of these operations declares security or the call configures auth, as for pagers; the saved bodies are not
 encrypted, so store exported states as the call's own data.
 
@@ -1084,13 +1089,19 @@ create response and then each pending poll, for `source: previous`. A missing va
 it as a poll binding's does. The receipt is immutable, with read-only `data` and `response`. The request does not
 settle the operation: the handle keeps its phase, its last poll, and the time of its next poll, and only the next
 `status` or `wait` tells whether the operation was cancelled. It counts no poll; a session without a send slot raises
-`SessionLimitError` with a checkpoint, and any other error leaves the handle as it was. A settled operation raises
-`ProtocolStateError` with its phase as the `state`, a closed handle with `state='closed'`, and a handle running another
-step with `state='polling'`, all without sending. `close()` never sends the cancel request.
+`SessionLimitError` with a checkpoint, and any other error leaves the handle as it was. It runs while another thread or
+task is in `status` or `wait`, so a waiting operation can be cancelled from elsewhere: it reads the values to send when
+it starts, and the `wait` goes on until a poll tells it the operation settled. A settled operation raises
+`ProtocolStateError` with its phase as the `state`, and a closed handle with `state='closed'`, both without sending.
+`close()` never sends the cancel request.
+
+The concrete handle classes are not exported from `pkg.protocols`: use the type `start` and `resume` return, or
+annotate a handle as `LroHandle[T, P]` or `AsyncLroHandle[T, P]`, which they subclass, without `cancel_remote`.
 
 `expires_at` is a selector of the server's expiry of the operation, read once from the accepted create response: a
-string giving an RFC 3339 date-time with an offset or an HTTP date. A missing, null, non-string, or unparsable value
-fails `start` with `ProtocolDataError` after the create response, as a missing binding value does. The expiry, in UTC,
+string giving an RFC 3339 date-time with an offset or an HTTP date, where a leap second is the second after the one
+before it. A missing, null, non-string, or unparsable value fails `start` with `ProtocolDataError` after the create
+response, as a missing binding value does; the remote operation was created all the same, and nothing cancels it. The expiry, in UTC,
 becomes the expiry of every checkpoint of the handle, so `import_state` and `resume` refuse them afterwards with
 `ResumeStateError(condition="expired")`; it does not stop a live handle from polling. Without `expires_at`, checkpoints
 never expire, and no expiry is assumed. An immediate result has none.
