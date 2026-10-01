@@ -12,7 +12,6 @@ from __future__ import annotations
 import base64
 import hashlib
 import socket
-import ssl
 import threading
 from socketserver import BaseRequestHandler, ThreadingTCPServer
 from typing import TYPE_CHECKING, Any, Final
@@ -23,6 +22,7 @@ from websockets.sync.server import serve
 from tests.data.python.fixture_server import _contexts
 
 if TYPE_CHECKING:
+    import ssl
     from collections.abc import Callable
 
     from websockets.http11 import Request, Response
