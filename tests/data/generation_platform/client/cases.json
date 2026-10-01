@@ -282,6 +282,18 @@
   "querystring": {
     "input": "querystring.yaml"
   },
+  "paths": {
+    "input": "paths.yaml"
+  },
+  "pagination-paths": {
+    "input": "pagination-paths.yaml",
+    "references": [
+      "protocols/pagination-paths.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-paths.yaml"
+    }
+  },
   "keywords": {
     "input": "keywords.yaml",
     "config": {

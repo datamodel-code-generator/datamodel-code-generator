@@ -17,7 +17,7 @@ from adapted.model_codecs import (
     WireValue,
     freeze_wire,
 )
-from adapted.models import Code, Keeper, Pet, Secretive, Tags
+from adapted_models import Code, Keeper, Pet, Secretive, Tags
 
 
 def exercise(wire: WireValue, pet: Pet, secretive: Secretive, raw: RawParameter) -> None:

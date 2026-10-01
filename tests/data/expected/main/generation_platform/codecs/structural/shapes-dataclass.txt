@@ -1,3 +1,6 @@
+refused APIGenerationError
+refused diagnostic E_CONFIG_VALUE /paths/~1animals/post/responses/200: The 'native' response validation cannot take the response body 200 application/json of POST /animals, which tells its union members apart only by their schemas; select 'schema'
+refused diagnostic E_CONFIG_VALUE /paths/~1kin/get/responses/200: The 'native' response validation cannot take the response body 200 application/json of GET /kin, which tells its union members apart only by their schemas; select 'schema'
 use /paths/~1animals/post request_body: envelope alias models:FieldAnimalsPostRequest models=[('models:Cat', 'dataclass', 'ignore', False), ('models:Dog', 'dataclass', 'ignore', True)]
 use /paths/~1animals/post response_body 200: native alias models:FieldAnimalsPostResponse models=[('models:Cat', 'dataclass', 'ignore', False), ('models:Dog', 'dataclass', 'ignore', True)]
 use /paths/~1kin/get response_body 200: native alias models:FieldKinGetResponse models=[('models:Animal', 'dataclass', 'ignore', True), ('models:Cat', 'dataclass', 'ignore', False)]
@@ -51,9 +54,7 @@ mixed-server-decode: model Small(size='small', contact=None) wire={"size":"small
 mixed-server-decode-large: model Large(size='large') wire={"size":"large"} presence=['', '/size'] extras={}
 kin-server-encode-cat: wire={"id":1,"meow":true}
 kin-server-encode-dog: wire={"id":2}
-animals-client-needs-schema: needs schema True ambiguous True
 animals-client-convert: CodecConfigurationError The use chooses a union member by its schema, so only its schema can convert it
-tree-client-needs-schema: needs schema False ambiguous False
 values-client-serialize-nested: CodecResourceLimitError The value is nested beyond the interpreter recursion limit
 values-client-convert-nested: CodecResourceLimitError The value is nested beyond the interpreter recursion limit
 values-client-assemble-nested: CodecResourceLimitError The value is nested beyond the interpreter recursion limit

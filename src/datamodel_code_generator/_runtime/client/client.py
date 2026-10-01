@@ -26,6 +26,7 @@ from urllib.parse import quote, unquote_plus, urlsplit
 import httpx2
 from typing_extensions import Self, TypeIs
 
+from ..model_codecs.errors import ParameterEncodingError
 from ..model_codecs.parameters import FragmentContribution, QueryStringContribution, encode_parameter
 from ..model_codecs.selectors import MediaSelector, ResponseMedia
 from ..model_codecs.unset import UNSET, Unset
@@ -97,6 +98,7 @@ from .options import (
     network_send_limit,
     resolve_transport_options,
 )
+from .paths import PLACEHOLDER, dot_segment, dotted_route, path_segments
 from .raw import AsyncRawResponse, RawResponse
 from .redirects import RedirectState, redirect_target
 from .responses import HeadersView, Response, ResponseInfo
@@ -196,8 +198,8 @@ MAX_RESPONSE_BYTES: Final = 16 * 1024 * 1024
 MAX_ERROR_BODY_BYTES: Final = 64 * 1024
 CLEANUP_TIMEOUT: Final = 5.0
 _ACCEPT_ENCODING: Final = ("Accept-Encoding", "gzip, deflate")
-_PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")
 _TOKEN: Final = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
+_DOT_CAUSE: Final = "A path value cannot make its segment '.' or '..', which URL normalization removes"
 _OWNERSHIPS: Final = frozenset({"borrowed", "owned"})
 _BINARY: Final = "A body must be bytes or a file, stream, factory, or multipart body of the client's mode"
 _MIN_STATUS: Final = 200
@@ -436,7 +438,7 @@ def _server_url(operation: OperationPlan[object, object], selection: ServerSelec
             raise ConfigurationError(
                 field_path=("server", "variables", name), condition="not_allowed", operation_id=operation_id
             )
-    return checked_base_url(_PLACEHOLDER.sub(lambda match: values[match[1]], server.url), ("server",)).rstrip("/")
+    return checked_base_url(PLACEHOLDER.sub(lambda match: values[match[1]], server.url), ("server",)).rstrip("/")
 
 
 def _encoding_error(
@@ -504,6 +506,21 @@ def _coded(operation: OperationPlan[object, object], spec: ParameterSpec, code: 
 def _unsaved(plan: _PagePlan, path: tuple[str, ...]) -> ProtocolConfigurationError:
     return ProtocolConfigurationError(
         field_path=path, condition="wrong_capability", helper_id=plan.helper_id, operation=plan.operation
+    )
+
+
+def _dot_parameter(template: str, path: dict[str, str]) -> str | None:
+    """Return the path parameter that makes its segment a dot segment, which URL normalization would remove.
+
+    The segment's first parameter with a value is named; a dot segment the template itself spells names none.
+    """
+    return next(
+        (
+            next((name for name in names if path[name]), names[0])
+            for segment, names in path_segments(template)
+            if dot_segment(segment, path)
+        ),
+        None,
     )
 
 
@@ -1645,7 +1662,14 @@ class _Core(Generic[AdapterT, HandleT]):
         if url is None:
             base = self._base(operation, settings)
             path = request.path
-            route = _PLACEHOLDER.sub(lambda match: path[match[1]], operation.path) if path else operation.path
+            route = PLACEHOLDER.sub(lambda match: path[match[1]], operation.path) if path else operation.path
+            if (
+                path
+                and ("/." in route or "/%2" in route)
+                and dotted_route(route)
+                and (name := _dot_parameter(operation.path, path)) is not None
+            ):
+                raise _encoding_error(operation, ("path", name), ParameterEncodingError(_DOT_CAUSE))
             query = self._call_query(operation, request.query, options)
             url = f"{base}{route}{'?' if query else ''}{query}"
         headers = [*self._shared.fixed]

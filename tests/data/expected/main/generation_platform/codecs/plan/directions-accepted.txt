@@ -1,0 +1,5 @@
+# directions-accepted
+https://dcg.invalid/inputs/root#/components/schemas/Item {"name":"a","token":"t"} -> request valid | response schema.required@/id,schema.writeOnly@/token,schema.dependentRequired@/id,schema.required@/id,schema.required@/id
+https://dcg.invalid/inputs/root#/components/schemas/Item {"id":1,"name":"a"} -> request schema.required@/token,schema.readOnly@/id,schema.dependentRequired@/token | response valid
+https://dcg.invalid/inputs/root#/components/schemas/Item {"id":1,"name":"a","token":"t","tags":[{"label":"l"}],"pair":[{}],"x-a":{}} -> request schema.readOnly@/id,schema.required@/tags/0/secret,schema.required@/x-a/hidden | response schema.writeOnly@/token,schema.required@/pair/0/key
+https://dcg.invalid/inputs/root#/components/schemas/Item {"name":"a","token":"t","tags":[{"label":"l","secret":"s"}],"pair":[{"key":"k"}],"x-a":{"hidden":"h"}} -> request schema.readOnly@/pair/0/key | response schema.required@/id,schema.writeOnly@/token,schema.writeOnly@/tags/0/secret,schema.writeOnly@/x-a/hidden,schema.dependentRequired@/id,schema.required@/id,schema.required@/id

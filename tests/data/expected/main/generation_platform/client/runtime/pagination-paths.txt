@@ -1,0 +1,108 @@
+# pagination-paths pydantic_v2.BaseModel
+  > GET https://api.example.com/reserved/r1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  reserved {'name': 'r1'} cursor '%2e' [] ! ProtocolDataError: ProtocolDataError(operation_id='listReserved', call_id='<call>', condition='value') [operation_id='listReserved', condition='value', location=BodySelector(pointer='/next_cursor')] protocol_data_error
+  > GET https://api.example.com/reserved/r1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  reserved {'name': 'r1'} cursor '%2E.' [] ! ProtocolDataError: ProtocolDataError(operation_id='listReserved', call_id='<call>', condition='value') [operation_id='listReserved', condition='value', location=BodySelector(pointer='/next_cursor')] protocol_data_error
+  > GET https://api.example.com/reserved/r1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/reserved/%2e%2f
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  reserved {'name': 'r1'} cursor '%2e%2f' ['1', '2']
+  > GET https://api.example.com/reserved/r1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/reserved/a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  reserved {'name': 'r1'} cursor 'a' ['1', '2']
+  > GET https://api.example.com/labels/.l1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  labels {'name': 'l1'} cursor '' [] ! ProtocolDataError: ProtocolDataError(operation_id='listLabels', call_id='<call>', condition='value') [operation_id='listLabels', condition='value', location=BodySelector(pointer='/next_cursor')] protocol_data_error
+  > GET https://api.example.com/labels/.l1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  labels {'name': 'l1'} cursor '.' [] ! ProtocolDataError: ProtocolDataError(operation_id='listLabels', call_id='<call>', condition='value') [operation_id='listLabels', condition='value', location=BodySelector(pointer='/next_cursor')] protocol_data_error
+  > GET https://api.example.com/labels/.l1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/labels/...
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  labels {'name': 'l1'} cursor '..' ['1', '2']
+  > GET https://api.example.com/labels/.l1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/labels/.a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  labels {'name': 'l1'} cursor 'a' ['1', '2']
+  > GET https://api.example.com/files/f1.json
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/files/..json
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  files {'name': 'f1'} cursor '.' ['1', '2']
+  > GET https://api.example.com/files/f1.json
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/files/...json
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  files {'name': 'f1'} cursor '..' ['1', '2']
+  > GET https://api.example.com/pairs/p1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  pairs {'owner': '', 'name': 'p1'} cursor '.' [] ! ProtocolDataError: ProtocolDataError(operation_id='listPairs', call_id='<call>', condition='value') [operation_id='listPairs', condition='value', location=BodySelector(pointer='/next_cursor')] protocol_data_error
+  > GET https://api.example.com/pairs/p1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  pairs {'owner': '', 'name': 'p1'} cursor '..' [] ! ProtocolDataError: ProtocolDataError(operation_id='listPairs', call_id='<call>', condition='value') [operation_id='listPairs', condition='value', location=BodySelector(pointer='/next_cursor')] protocol_data_error
+  > GET https://api.example.com/pairs/op1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/pairs/o.
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  pairs {'owner': 'o', 'name': 'p1'} cursor '.' ['1', '2']
+  > GET https://api.example.com/pairs/.p1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  pairs {'owner': '.', 'name': 'p1'} cursor '' [] ! ProtocolDataError: ProtocolDataError(operation_id='listPairs', call_id='<call>', condition='value') [operation_id='listPairs', condition='value', location=BodySelector(pointer='/next_cursor')] protocol_data_error
+  > GET https://api.example.com/pairs/.p1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/pairs/.a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  pairs {'owner': '.', 'name': 'p1'} cursor 'a' ['1', '2']
+  > GET https://api.example.com/joined/pj1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  joined {'prefix': 'p', 'name': 'j1'} cursor '' [] ! ProtocolDataError: ProtocolDataError(operation_id='listJoined', call_id='<call>', condition='value') [operation_id='listJoined', condition='value', location=BodySelector(pointer='/next_cursor')] protocol_data_error
+  > GET https://api.example.com/joined/pj1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/joined/..a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  joined {'prefix': 'p', 'name': 'j1'} cursor 'a' ['1', '2']
+  > GET https://api.example.com/pairs/op1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/pairs/oa
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/pairs/ob
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  pairs with the owner on three pages ['1', '2', '3']
+  > GET https://api.example.com/tags/.t
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  tag header 'a.b' ['1'] ! RequestEncodingError: RequestEncodingError(operation_id='listTags', call_id='<call>', location='path.tags') [operation_id='listTags', location=('path', 'tags'), cause=ParameterEncodingError("An exploded label value cannot contain its '.' delimiter")] request_encoding_error
+  > GET https://api.example.com/tags/.t
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/tags/.a?cursor=c
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  tag header 'a' ['1', '2']
+  labels first page '' ! RequestEncodingError: RequestEncodingError(operation_id='listLabels', call_id='<call>', location='path.name') [operation_id='listLabels', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  reserved first page '%2e' ! RequestEncodingError: RequestEncodingError(operation_id='listReserved', call_id='<call>', location='path.name') [operation_id='listReserved', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  > GET https://api.example.com/files/..json
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  files first page '.' = [1] continuation=None status=200 sends=1
+  > GET https://api.example.com/scopes/.s1/items
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/scopes/.../items?cursor=c
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  literal label scope ['1', '2']
+  > GET https://api.example.com/reserved/x
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async reserved cursor '%2e' [] ! ProtocolDataError: ProtocolDataError(operation_id='listReserved', call_id='<call>', condition='value') [operation_id='listReserved', condition='value', location=BodySelector(pointer='/next_cursor')] protocol_data_error
+  > GET https://api.example.com/labels/.x
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/labels/...
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async labels cursor '..' ['1', '2']
+  async labels first page '' ! RequestEncodingError: RequestEncodingError(operation_id='listLabels', call_id='<call>', location='path.name') [operation_id='listLabels', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  async reserved first page '%2e' ! RequestEncodingError: RequestEncodingError(operation_id='listReserved', call_id='<call>', location='path.name') [operation_id='listReserved', location=('path', 'name'), cause=ParameterEncodingError("A path value cannot make its segment '.' or '..', which URL normalization removes")] request_encoding_error
+  > GET https://api.example.com/files/..json
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async files first page '.' = [1] continuation=None status=200 sends=1

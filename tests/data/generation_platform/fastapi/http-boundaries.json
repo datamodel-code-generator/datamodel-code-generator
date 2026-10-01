@@ -1,12 +1,4 @@
 {
-  "paths": [
-    "normal",
-    ".",
-    "..",
-    "a.b",
-    "a/b",
-    "%2E"
-  ],
   "inputs": [
     {
       "media": "text/plain",
