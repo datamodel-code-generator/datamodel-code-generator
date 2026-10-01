@@ -1,0 +1,100 @@
+"""Exchange independent HTTP inputs with generated servers and clients at URL and charset boundaries."""
+
+from __future__ import annotations
+
+import importlib
+import json
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+from fastapi.testclient import TestClient
+
+from tests.data.python.client_pagination import Harness, users
+from tests.data.python.client_runtime import Exchange, run
+from tests.data.python.fastapi_server import _generate
+from tests.data.python.generated_packages import forget_generated, import_generated
+
+if TYPE_CHECKING:
+    from types import ModuleType
+
+    import pytest
+
+SOURCE = Path(__file__).parents[1] / "generation_platform/fastapi"
+
+
+def path_segments(package: ModuleType, lines: list[str]) -> None:
+    """Preserve the path argument in ordinary calls and first pages in both execution modes."""
+    harness = Harness(package)
+    values = json.loads((SOURCE / "http-boundaries.json").read_text(encoding="utf-8"))["paths"]
+    exchange = Exchange(lines)
+    with exchange.client() as http, package.Client(http_client=http) as api:
+        for call in (api.folders.list_folder, api.protocols.folders.all.page):
+            for value in values:
+                exchange.respond(users("1"))
+                argument = harness.argument("folders", "ListFolder", "path", "folder", value)
+                call(folder=argument)
+                lines.append(f"path {value!r} completed")
+
+    async def asynchronous() -> None:
+        exchange = Exchange(lines)
+        async with exchange.async_client() as http, package.AsyncClient(http_client=http) as api:
+            for call in (api.folders.list_folder, api.protocols.folders.all.page):
+                for value in values:
+                    exchange.respond(users("1"))
+                    argument = harness.argument("folders", "ListFolder", "path", "folder", value)
+                    await call(folder=argument)
+                    lines.append(f"async path {value!r} completed")
+
+    run(asynchronous)
+
+
+def text_charsets(root: Path, monkeypatch: pytest.MonkeyPatch) -> str:
+    """Report handler values, actual headers, and raw bytes independently of the generated client."""
+    cases = json.loads((SOURCE / "http-boundaries.json").read_text(encoding="utf-8"))
+    lines: list[str] = []
+    monkeypatch.syspath_prepend(str(root))
+    for backend in ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"):
+        package = f"charsets_{backend.rpartition('.')[2].lower()}"
+        _generate({"input": "http-charsets.json", "config": {"layout": "single"}}, backend, root, package)
+        try:
+            server = import_generated(package)
+            responses = importlib.import_module(f"{package}.responses")
+
+            class Service:
+                def receive(self, *, body: object, media_type: str) -> None:
+                    value = getattr(body, "value", body)
+                    lines.append(f"  receive {media_type} {getattr(value, 'root', value)!r}")
+
+                def send(self, *, choice: str) -> object:
+                    case = cases["outputs"][getattr(choice, "root", choice)]
+                    return responses.HTTPResult(status_code=200, body=case["body"], media_type=case["media"])
+
+                def label(self, *, label: object) -> None:
+                    lines.append(f"  label {getattr(label, 'root', label)!r}")
+
+                def primary(self) -> object:
+                    return server.responses.PrimaryResponseCodecs.body(status_code=200).from_wire("café")
+
+            lines.append(f"# {backend}")
+            with TestClient(server.create_app(service=Service())) as api:
+                for case in cases["inputs"]:
+                    lines.append(f"> {case['media']} {case['hex']}")
+                    response = api.post("/input", headers={"Content-Type": case["media"]}, content=bytes.fromhex(case["hex"]))
+                    lines.append(f"< {response.status_code}")
+                for choice in cases["outputs"]:
+                    lines.append(f"> {choice}")
+                    try:
+                        response = api.get("/output", params={"choice": choice})
+                    except Exception as error:
+                        lines.append(f"< {type(error).__name__}: {error}")
+                    else:
+                        lines.append(f"< {response.status_code} {response.headers['content-type']} {response.content!r}")
+                for label in cases["labels"]:
+                    lines.append(f"> label {label}")
+                    response = api.get(f"/labels/{label}")
+                    lines.append(f"< {response.status_code}")
+                response = api.get("/primary")
+                lines.append(f"< primary {response.status_code} {response.headers['content-type']} {response.content!r}")
+        finally:
+            forget_generated(package)
+    return "\n".join(lines) + "\n"

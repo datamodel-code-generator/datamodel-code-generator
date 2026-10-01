@@ -1,0 +1,85 @@
+{
+  "paths": [
+    "normal",
+    ".",
+    "..",
+    "a.b",
+    "a/b",
+    "%2E"
+  ],
+  "inputs": [
+    {
+      "media": "text/plain",
+      "hex": "636166c3a9"
+    },
+    {
+      "media": "text/plain; charset=iso-8859-1",
+      "hex": "636166e9"
+    },
+    {
+      "media": "text/plain; charset=iso-8859-1",
+      "hex": "636166c3a9"
+    },
+    {
+      "media": "text/plain; charset=\"ISO-8859-1\"",
+      "hex": "636166e9"
+    },
+    {
+      "media": "text/plain; charset=ascii",
+      "hex": "636166e9"
+    },
+    {
+      "media": "text/plain; charset=unknown",
+      "hex": "616263"
+    },
+    {
+      "media": "text/plain; charset=utf-8",
+      "hex": "636166e9"
+    },
+    {
+      "media": "text/markdown; charset=iso-8859-1",
+      "hex": "636166e9"
+    },
+    {
+      "media": "text/plain; format=flowed",
+      "hex": "636166c3a9"
+    }
+  ],
+  "outputs": {
+    "utf8": {
+      "media": "text/plain",
+      "body": "café"
+    },
+    "latin1": {
+      "media": "text/plain; charset=iso-8859-1",
+      "body": "café"
+    },
+    "quoted": {
+      "media": "text/plain; CHARSET=\"ISO-8859-1\"",
+      "body": "café"
+    },
+    "wildcard": {
+      "media": "text/markdown; charset=iso-8859-1",
+      "body": "café"
+    },
+    "ascii": {
+      "media": "text/plain; charset=ascii",
+      "body": "café"
+    },
+    "unknown": {
+      "media": "text/plain; charset=unknown",
+      "body": "abc"
+    },
+    "other-parameter": {
+      "media": "text/plain; format=flowed",
+      "body": "café"
+    }
+  },
+  "labels": [
+    ".normal",
+    "%2E",
+    "%2E%2E",
+    "%2e%2e",
+    "%2E%2E%2E"
+  ]
+}

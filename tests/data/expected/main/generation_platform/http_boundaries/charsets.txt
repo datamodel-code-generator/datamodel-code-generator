@@ -1,0 +1,114 @@
+# pydantic_v2.BaseModel
+> text/plain 636166c3a9
+  receive text/plain 'café'
+< 204
+> text/plain; charset=iso-8859-1 636166e9
+  receive text/plain; charset=iso-8859-1 'café'
+< 204
+> text/plain; charset=iso-8859-1 636166c3a9
+  receive text/plain; charset=iso-8859-1 'cafÃ©'
+< 204
+> text/plain; charset="ISO-8859-1" 636166e9
+  receive text/plain 'café'
+< 204
+> text/plain; charset=ascii 636166e9
+< 422
+> text/plain; charset=unknown 616263
+< 422
+> text/plain; charset=utf-8 636166e9
+< 422
+> text/markdown; charset=iso-8859-1 636166e9
+  receive text/markdown 'café'
+< 204
+> text/plain; format=flowed 636166c3a9
+  receive text/plain 'café'
+< 204
+> utf8
+< 200 text/plain; charset=utf-8 b'caf\xc3\xa9'
+> latin1
+< 200 text/plain; charset=iso-8859-1 b'caf\xe9'
+> quoted
+< 200 text/plain; charset="ISO-8859-1" b'caf\xe9'
+> wildcard
+< 200 text/markdown; charset=iso-8859-1 b'caf\xe9'
+> ascii
+< ResponseValidationError: 1 validation error:
+  {'type': 'value_error', 'loc': ('response',), 'msg': 'The text payload cannot be encoded as text/plain; charset=ascii'}
+> unknown
+< ResponseValidationError: 1 validation error:
+  {'type': 'value_error', 'loc': ('response',), 'msg': 'The text payload cannot be encoded as text/plain; charset=unknown'}
+> other-parameter
+< 200 text/plain; format=flowed; charset=utf-8 b'caf\xc3\xa9'
+> label .normal
+  label 'normal'
+< 204
+> label %2E
+  label ''
+< 204
+> label %2E%2E
+  label '.'
+< 204
+> label %2e%2e
+  label '.'
+< 204
+> label %2E%2E%2E
+  label '..'
+< 204
+< primary 200 text/plain; charset=iso-8859-1 b'caf\xe9'
+# pydantic_v2.dataclass
+> text/plain 636166c3a9
+  receive text/plain 'café'
+< 204
+> text/plain; charset=iso-8859-1 636166e9
+  receive text/plain; charset=iso-8859-1 'café'
+< 204
+> text/plain; charset=iso-8859-1 636166c3a9
+  receive text/plain; charset=iso-8859-1 'cafÃ©'
+< 204
+> text/plain; charset="ISO-8859-1" 636166e9
+  receive text/plain 'café'
+< 204
+> text/plain; charset=ascii 636166e9
+< 422
+> text/plain; charset=unknown 616263
+< 422
+> text/plain; charset=utf-8 636166e9
+< 422
+> text/markdown; charset=iso-8859-1 636166e9
+  receive text/markdown 'café'
+< 204
+> text/plain; format=flowed 636166c3a9
+  receive text/plain 'café'
+< 204
+> utf8
+< 200 text/plain; charset=utf-8 b'caf\xc3\xa9'
+> latin1
+< 200 text/plain; charset=iso-8859-1 b'caf\xe9'
+> quoted
+< 200 text/plain; charset="ISO-8859-1" b'caf\xe9'
+> wildcard
+< 200 text/markdown; charset=iso-8859-1 b'caf\xe9'
+> ascii
+< ResponseValidationError: 1 validation error:
+  {'type': 'value_error', 'loc': ('response',), 'msg': 'The text payload cannot be encoded as text/plain; charset=ascii'}
+> unknown
+< ResponseValidationError: 1 validation error:
+  {'type': 'value_error', 'loc': ('response',), 'msg': 'The text payload cannot be encoded as text/plain; charset=unknown'}
+> other-parameter
+< 200 text/plain; format=flowed; charset=utf-8 b'caf\xc3\xa9'
+> label .normal
+  label 'normal'
+< 204
+> label %2E
+  label ''
+< 204
+> label %2E%2E
+  label '.'
+< 204
+> label %2e%2e
+  label '.'
+< 204
+> label %2E%2E%2E
+  label '..'
+< 204
+< primary 200 text/plain; charset=iso-8859-1 b'caf\xe9'
