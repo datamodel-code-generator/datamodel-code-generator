@@ -923,6 +923,11 @@ class _Validator:  # noqa: PLR0904
         valid = isinstance(value, str) and value and _encodable(value)
         return value if valid else self.value(at, f"{at} must be a nonempty UTF-8 string")
 
+    def line(self, value: object, at: str) -> object:
+        if isinstance(value, str) and "\n" in value:
+            return self.value(at, f"{at} must not contain a line feed")
+        return self.nonempty(value, at)
+
     def header(self, value: object, at: str) -> object:
         return value if token(value) else self.value(at, f"{at} must be a header name")
 
@@ -1334,7 +1339,9 @@ class _Validator:  # noqa: PLR0904
         return INVALID if any(item is INVALID for item in schemas.values()) else schemas
 
     def completion(self, value: object, at: str, *, sse: bool) -> object:
-        variants: dict[str, Spec] = {"eof": {}, "sentinel": {"value": (self.nonempty, REQUIRED)}}
+        """Convert a completion; an NDJSON sentinel is a whole line, so it cannot contain a line feed."""
+        sentinel = self.nonempty if sse else self.line
+        variants: dict[str, Spec] = {"eof": {}, "sentinel": {"value": (sentinel, REQUIRED)}}
         if sse:
             variants["event_type"] = {"value": (self.nonempty, REQUIRED)}
         return self.tagged(value, at, "kind", variants, "a completion")
