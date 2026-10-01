@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 from datamodel_code_generator import DataModelType, GenerateConfig, OpenAPIScope
 from datamodel_code_generator.fastapi import generate_fastapi
 from datamodel_code_generator.format import Formatter
+from tests.data.python.client_pagination import adrained, drained
 from tests.data.python.client_runtime import (
     _CALL_ID,
     Exchange,
@@ -54,6 +55,7 @@ def _plain(value: object) -> object:
 
 def _generate(case: str, target: str, backend: str, root: Path) -> tuple[object, dict[str, Any]]:
     spec = json.loads((SOURCE / "cases.json").read_text())[case]
+    source_root = SOURCE.parent / spec.get("source", SOURCE.name)
     model = GenerateConfig(
         output=root / "regression_models.py",
         input_file_type="openapi",
@@ -69,11 +71,12 @@ def _generate(case: str, target: str, backend: str, root: Path) -> tuple[object,
         "package": "regression",
         "model_package": "regression_models",
         "codec_adapters": spec.get("codec_adapters", []),
+        **spec.get("config", {}),
     }
-    source = shutil.copy2(SOURCE / spec["input"], root / spec["input"])
+    source = shutil.copy2(source_root / spec["input"], root / spec["input"])
     if target == "client":
         config["validation"] = {"request": "schema", "response": "schema"}
-        generate_client({**spec, "config": config}, backend, root, "regression", source=SOURCE)
+        generate_client({**spec, "config": config}, backend, root, "regression", source=source_root)
     else:
         config["layout"] = "single"
         generate_fastapi(source, model_config=model, config=fastapi_config(config, root))
@@ -82,6 +85,9 @@ def _generate(case: str, target: str, backend: str, root: Path) -> tuple[object,
 
 
 def _client(package: Any, case: str, spec: dict[str, Any], lines: list[str]) -> None:
+    if case == "pagination":
+        _pagination(package, spec, lines)
+        return
     facades = importlib.import_module("regression.types.default")
 
     def parameters(arguments: dict[str, object]) -> dict[str, object]:
@@ -128,6 +134,36 @@ def _client(package: Any, case: str, spec: dict[str, Any], lines: list[str]) -> 
                     exchange.respond(json_response(200, {}))
                     result = await api.default.parameters(**parameters(arguments))
                     lines.append(f"async parameters {arguments}: {_plain(result)}")
+
+    run(asynchronous)
+
+
+def _pagination(package: Any, spec: dict[str, Any], lines: list[str]) -> None:
+    codec = importlib.import_module("regression.types.finds").FindRequestCodecs.parameter(
+        location="querystring", name="criteria"
+    )
+
+    def arguments(wire: dict[str, object] | None) -> dict[str, object]:
+        return {} if wire is None else {"criteria": codec.from_wire(wire)}
+
+    def pages(exchange: Exchange) -> None:
+        exchange.respond(
+            json_response(200, {"data": [{"id": "1"}], "has_more": True}),
+            json_response(200, {"data": [{"id": "2"}], "has_more": False}),
+        )
+
+    exchange = Exchange(lines)
+    with exchange.client() as http, package.Client(http_client=http) as api:
+        for wire in spec["calls"]:
+            pages(exchange)
+            drained(lines, f"pagination {wire}", api.protocols.finds.all.iterate(**arguments(wire)))
+
+    async def asynchronous() -> None:
+        exchange = Exchange(lines)
+        async with exchange.async_client() as http, package.AsyncClient(http_client=http) as api:
+            for wire in spec["calls"]:
+                pages(exchange)
+                await adrained(lines, f"async pagination {wire}", api.protocols.finds.all.iterate(**arguments(wire)))
 
     run(asynchronous)
 

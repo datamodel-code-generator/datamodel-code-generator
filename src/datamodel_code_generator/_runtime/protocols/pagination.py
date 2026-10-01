@@ -274,7 +274,7 @@ class PaginationPlan(Generic[T, P]):
             parameters[position] = (
                 replace(spec, encoder=None)
                 if pointer is None
-                else PatchedParameter(plan=spec.plan, encoder=spec.encoder)
+                else PatchedParameter(plan=spec.plan, encoder=spec.encoder, adapter=spec.adapter)
             )
             writes.append((position, pointer))
         body = call.body
@@ -803,7 +803,7 @@ class _Walk(Generic[T, P]):
             return replace(call, body=replace(body, media=media))
         parameters = list(call.parameters)
         spec = parameters[position]
-        parameters[position] = ReadParameter(plan=spec.plan, encoder=spec.encoder, read=read)
+        parameters[position] = ReadParameter(plan=spec.plan, encoder=spec.encoder, adapter=spec.adapter, read=read)
         return replace(call, parameters=tuple(parameters))
 
     def started(self, wire: WireValue) -> None:

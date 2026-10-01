@@ -34,7 +34,8 @@
             "path",
             "query",
             "header",
-            "cookie"
+            "cookie",
+            "querystring"
           ],
           "styles": [
             "simple",
@@ -48,7 +49,8 @@
             "object"
           ],
           "media_types": [
-            "application/json"
+            "application/json",
+            "application/x-www-form-urlencoded"
           ],
           "supports_empty_containers": true
         },
@@ -172,6 +174,68 @@
           "Cookie": "required=bad"
         }
       }
+    ]
+  },
+  "pagination": {
+    "source": "client",
+    "input": "pagination-counts.yaml",
+    "references": [
+      "protocols/pagination-counts.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-counts.yaml"
+    },
+    "codec_adapters": [
+      {
+        "kind": "parameter",
+        "name": "json",
+        "import_ref": "app_codecs:json_parameter",
+        "capabilities": {
+          "record": "ParameterCodecCapabilities",
+          "locations": [
+            "path",
+            "query",
+            "header",
+            "cookie",
+            "querystring"
+          ],
+          "styles": [
+            "simple",
+            "form"
+          ],
+          "explode_values": [
+            false
+          ],
+          "value_kinds": [
+            "array",
+            "object"
+          ],
+          "media_types": [
+            "application/json",
+            "application/x-www-form-urlencoded"
+          ],
+          "supports_empty_containers": true
+        },
+        "uses": [
+          {
+            "operation": "/paths/~1finds/get",
+            "role": "parameter",
+            "location": "querystring",
+            "name": "criteria",
+            "media_type": "application/x-www-form-urlencoded"
+          }
+        ]
+      }
+    ],
+    "calls": [
+      {
+        "term": "a",
+        "start": 10
+      },
+      {
+        "term": "a"
+      },
+      null
     ]
   }
 }

@@ -12,6 +12,7 @@ from regression.model_codecs import (
     ParameterCodecCapabilities,
     ParameterEncodingError,
     ParameterFragment,
+    QueryStringContribution,
     freeze_wire,
     thaw_wire,
 )
@@ -24,24 +25,28 @@ class JsonParameter:
 
     def capabilities(self, *, plan):
         return ParameterCodecCapabilities(
-            locations=("path", "query", "header", "cookie"),
+            locations=("path", "query", "header", "cookie", "querystring"),
             styles=("simple", "form"),
             explode_values=(False,),
             value_kinds=("array", "object"),
-            media_types=("application/json",),
+            media_types=("application/json", "application/x-www-form-urlencoded"),
             supports_empty_containers=True,
         )
 
     def encode_parameter(self, *, value, plan, context):
         text = json.dumps(thaw_wire(value), separators=(",", ":"))
-        fragment = ParameterFragment(
-            None if plan.location == "path" else plan.name.encode(), quote(text, safe="").encode()
-        )
+        encoded = quote(text, safe="").encode()
+        if plan.location == "querystring":
+            return QueryStringContribution(raw_query=b"json=" + encoded)
+        fragment = ParameterFragment(None if plan.location == "path" else plan.name.encode(), encoded)
         return FragmentContribution(location=plan.location, ordered_fragments=(fragment,))
 
     def decode_parameter(self, *, raw, plan, context):
-        name = None if plan.location == "path" else plan.name.encode().lower()
-        values = [part.value for part in raw.fragments if (part.name.lower() if part.name else None) == name]
+        if plan.location == "querystring":
+            values = [] if not raw.raw_query else [raw.raw_query.removeprefix(b"json=")]
+        else:
+            name = None if plan.location == "path" else plan.name.encode().lower()
+            values = [part.value for part in raw.fragments if (part.name.lower() if part.name else None) == name]
         if not values:
             return UNSET
         if len(values) > 1:

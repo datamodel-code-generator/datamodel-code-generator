@@ -1,0 +1,31 @@
+# pagination client dataclasses.dataclass
+  > GET https://api.example.com/finds?json=%7B%22term%22%3A%22a%22%2C%22start%22%3A10%7D
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/finds?json=%7B%22term%22%3A%22a%22%2C%22start%22%3A15%7D
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  pagination {'term': 'a', 'start': 10} ['1', '2']
+  > GET https://api.example.com/finds?json=%7B%22term%22%3A%22a%22%7D
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/finds?json=%7B%22term%22%3A%22a%22%2C%22start%22%3A5%7D
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  pagination {'term': 'a'} ['1', '2']
+  > GET https://api.example.com/finds
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/finds?json=%7B%22start%22%3A5%7D
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  pagination None ['1', '2']
+  > GET https://api.example.com/finds?json=%7B%22term%22%3A%22a%22%2C%22start%22%3A10%7D
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/finds?json=%7B%22term%22%3A%22a%22%2C%22start%22%3A15%7D
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async pagination {'term': 'a', 'start': 10} ['1', '2']
+  > GET https://api.example.com/finds?json=%7B%22term%22%3A%22a%22%7D
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/finds?json=%7B%22term%22%3A%22a%22%2C%22start%22%3A5%7D
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async pagination {'term': 'a'} ['1', '2']
+  > GET https://api.example.com/finds
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/finds?json=%7B%22start%22%3A5%7D
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async pagination None ['1', '2']

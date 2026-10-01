@@ -14,10 +14,15 @@ from tests.data.python.codec_regressions import BACKENDS, codec_regression_repor
 EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/regressions"
 
 
-@pytest.mark.parametrize("case", ["split", "adapters"])
 @pytest.mark.parametrize(
-    ("target", "backend"),
-    [("client", backend) for backend in BACKENDS] + [("fastapi", backend) for backend in BACKENDS[:2]],
+    ("case", "target", "backend"),
+    [
+        (case, target, backend)
+        for case in ("split", "adapters")
+        for target, backends in (("client", BACKENDS), ("fastapi", BACKENDS[:2]))
+        for backend in backends
+    ]
+    + [("pagination", "client", backend) for backend in BACKENDS],
 )
 def test_codec_regressions(
     case: str, target: str, backend: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
