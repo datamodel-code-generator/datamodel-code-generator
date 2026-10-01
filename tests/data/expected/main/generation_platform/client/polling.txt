@@ -32,6 +32,7 @@ render pydantic_v2.BaseModel
   write client/types/exports/_operations.py
   write client/_generated/__init__.py
   write client/_generated/model_bindings.py
+  write client/_generated/security.py
   write client/_operations.py
   write client/protocols/_plans.py
   write client/protocols/_helpers.py
@@ -40,7 +41,7 @@ render pydantic_v2.BaseModel
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['jobs.run', 'jobs.inline', 'jobs.report', 'exports.run', 'exports.latest'] bindings 24
+  namespace client helpers ['jobs.run', 'jobs.inline', 'jobs.report', 'exports.run', 'exports.latest'] bindings 26
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   helper jobs.run polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.run f2bfa301a2208196c5ab22e84b7a8755eb0dfae26736f819beb3aa84d37a6a45
   helper jobs.inline polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.inline 1fdb9d6433450d25e252c178ce9fb3cb1a407b431b97d3b34660146e334eadb8
@@ -394,7 +395,7 @@ render pydantic_v2.BaseModel
   /selection/selected_operations/0 jobs.create_job()
     exports client.types.jobs.CreateJobResponse client.types.jobs.CreateJobErrorData client.types.jobs.CreateJobHTTPError
     exports client.types.jobs.CreateJobRequestCodecs client.types.jobs.decode_create_job_header digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/1 jobs.get_job(path:jobId=job_id, header:X-Trace=x_trace, query:verbose=verbose, query:since=since, cookie:session=session)
+  /selection/selected_operations/1 jobs.get_job(path:jobId=job_id, header:X-Trace=x_trace, query:verbose=verbose, query:since=since, cookie:session=session, header:X-Api-Key=x_api_key, query:api_key=api_key)
     exports client.types.jobs.GetJobResponse client.types.jobs.GetJobErrorData client.types.jobs.GetJobHTTPError
     exports client.types.jobs.GetJobRequestCodecs client.types.jobs.decode_get_job_header digests ['request', 'response', 'security', 'signature'] True
   /selection/selected_operations/2 jobs.get_report(path:jobId=job_id)
@@ -419,3 +420,4 @@ render pydantic_v2.BaseModel
     exports client.types.reports.AddNoteResponse client.types.reports.AddNoteErrorData client.types.reports.AddNoteHTTPError
     exports client.types.reports.AddNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+  S_OPERATION_EXCLUDED selection /paths/~1archives/post: POST /archives is excluded by exclude_tags 'archives': Archives have no success response

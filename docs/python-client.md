@@ -956,11 +956,15 @@ polling; the remote operation goes on, and every later step raises `ProtocolStat
 The first poll waits until `interval` seconds after the create response's receipt, and each later one until the
 interval after the last poll's; with `interval.retry_after_header`, a valid delay in that header, in seconds or as an
 HTTP date, makes the wait longer, never shorter. The delay counts from the final response of a call, after any retries
-inside it, so a retry's own delay is never added to the poll interval. `status` waits the same way. A wait longer than
+inside it, so a retry's own delay is never added to the poll interval; a poll that fails with a response, such as a
+`503` after its retries, sets the next wait from that response the same way before its error is raised. `status`
+waits the same way. A wait longer than
 `PollOptions.max_wait`, or not shorter than what remains of the session's deadline or the options' deadline, raises
 `PollWaitLimitError` with the kind `wait` or `deadline`, the `required_wait`, and the `limit` before anything is sent;
 the handle stays pending. A wait ends early for the options' `CancelToken` and the client's close, raising
-`RequestCancelledError` or `ClientClosedError`. `resume_state` is None, since checkpoints of polling helpers are not
+`RequestCancelledError` or `ClientClosedError` with the poll operation's `operation_id` and the session's
+`parent_session_id`. Once the client is closed, every later `status` or `wait` that needs a poll or a result fetch
+raises `ClientClosedError`. `resume_state` is None, since checkpoints of polling helpers are not
 supported yet.
 
 ### Limits and sessions
@@ -995,7 +999,9 @@ poll's for `source: previous`, or a declared header. Each declared state must ha
 JSON types a binding reads or its literal has must be ones its target accepts, a literal `.` or `..` is no path
 parameter value, and every required parameter and required body of the poll and result operations must be written by
 a binding. Two bindings writing the same target, or a body or querystring member inside or around another's, fail with
-`E_CONFIG_CONFLICT`, and a cookie is never written. An inline or immediate result reads a body pointer whose schema is
+`E_CONFIG_CONFLICT`. As for pagination, no binding of the poll or the result fetch writes a credential position: a
+cookie, the `Authorization`, `Proxy-Authorization`, `Cookie`, and `Cookie2` headers, or a header, query parameter, or
+querystring property a security scheme of the package names. An inline or immediate result reads a body pointer whose schema is
 the declared `schema`; an immediate result needs a result kind other than `none`, success responses of `create` that
 are all one JSON model, and the type of the result. Bindings that read the helper's input, request bodies other than
 JSON written by a binding, `remote_cancel`, `expires_at`, and pointers that read through a union or a map are not
@@ -1013,7 +1019,7 @@ E_CONFIG_VALUE config protocols.helpers['checks.poll'].poll /paths/~1exports/pos
 E_CONFIG_VALUE config protocols.helpers['checks.states'].pending[0] /paths/~1exports~1status/get: The state 'zero' of 'checks.states' is string, which its state never reads
 E_CONFIG_VALUE config protocols.helpers['checks.states'].failed[0] /paths/~1exports~1status/get: The state True of 'checks.states' is boolean, which its state never reads
 E_CONFIG_VALUE config protocols.helpers['checks.unread'].state /paths/~1exports~1status/get: The state of 'checks.unread' reads the header 'X-State', which GET /exports/status does not declare
-E_CONFIG_VALUE config protocols.helpers['checks.bindings'].bindings[0].target /paths/~1jobs~1{jobId}/get: The binding 0 of 'checks.bindings' writes the cookie 'session' of GET /jobs/{jobId}, which no helper writes
+E_CONFIG_VALUE config protocols.helpers['checks.bindings'].bindings[0].target /paths/~1jobs~1{jobId}/get: The binding 0 of 'checks.bindings' writes the cookie 'session', which carries credentials no helper writes
 E_CONFIG_CONFLICT config protocols.helpers['checks.bindings'].bindings[2].target /paths/~1jobs~1{jobId}/get: The binding 2 of 'checks.bindings' writes the same target as its binding 1
 E_CLIENT_UNSUPPORTED target protocols.helpers['checks.bindings'].bindings[3].value.source /paths/~1jobs~1{jobId}/get: The binding 3 of 'checks.bindings' reads the helper's input, which is not supported yet
 E_CONFIG_VALUE config protocols.helpers['checks.bindings'].bindings[4].value.selector /paths/~1jobs/post: The binding 4 pointer '/nothing' of 'checks.bindings' names no property of the POST /jobs response
@@ -1038,6 +1044,12 @@ E_CONFIG_VALUE config protocols.helpers['checks.immediate_models'].immediate_res
 E_CLIENT_UNSUPPORTED target protocols.helpers['checks.immediate_models'].immediate_result /paths/~1exports/post: The immediate result of 'checks.immediate_models' reads POST /exports, whose success responses are not all one JSON model, which is not supported yet
 E_CONFIG_VALUE config protocols.helpers['checks.immediate_header'].immediate_result.selector /paths/~1jobs/post: The immediate result of 'checks.immediate_header' reads a header, where only a body pointer reads a result
 E_CONFIG_VALUE config protocols.helpers['checks.progress'].immediate_result.selector /paths/~1jobs/post: The immediate result of 'checks.progress' reads models.Report, which is not its result type int
+E_CONFIG_VALUE config protocols.helpers['checks.credentials'].bindings[1].target /paths/~1jobs~1{jobId}/get: The binding 1 of 'checks.credentials' writes the header 'x-api-key', which carries credentials no helper writes
+E_CONFIG_VALUE config protocols.helpers['checks.credentials'].bindings[2].target /paths/~1jobs~1{jobId}/get: The binding 2 of 'checks.credentials' writes the query parameter 'api_key', which carries credentials no helper writes
+E_CONFIG_VALUE config protocols.helpers['checks.credentials'].result.bindings[0].target /paths/~1exports~1status/get: The result binding 0 of 'checks.credentials' writes the query field 'api_key', which carries credentials no helper writes
+E_CONFIG_VALUE config protocols.helpers['checks.no_success'].accepted_statuses[0] /paths/~1archives/post: The accepted status 202 of 'checks.no_success' selects no success response of POST /archives
+E_CONFIG_VALUE config protocols.helpers['checks.no_success'].immediate_result.statuses[0] /paths/~1archives/post: The immediate status 200 of 'checks.no_success' selects no success response of POST /archives
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.no_success'].immediate_result /paths/~1archives/post: The immediate result of 'checks.no_success' reads POST /archives, whose success responses are not all one JSON model, which is not supported yet
 ```
 
 <!-- fmt: on -->

@@ -9,7 +9,7 @@ render pydantic_v2.BaseModel
   E_CONFIG_VALUE config protocols.helpers['checks.states'].pending[0] /paths/~1exports~1status/get: The state 'zero' of 'checks.states' is string, which its state never reads
   E_CONFIG_VALUE config protocols.helpers['checks.states'].failed[0] /paths/~1exports~1status/get: The state True of 'checks.states' is boolean, which its state never reads
   E_CONFIG_VALUE config protocols.helpers['checks.unread'].state /paths/~1exports~1status/get: The state of 'checks.unread' reads the header 'X-State', which GET /exports/status does not declare
-  E_CONFIG_VALUE config protocols.helpers['checks.bindings'].bindings[0].target /paths/~1jobs~1{jobId}/get: The binding 0 of 'checks.bindings' writes the cookie 'session' of GET /jobs/{jobId}, which no helper writes
+  E_CONFIG_VALUE config protocols.helpers['checks.bindings'].bindings[0].target /paths/~1jobs~1{jobId}/get: The binding 0 of 'checks.bindings' writes the cookie 'session', which carries credentials no helper writes
   E_CONFIG_CONFLICT config protocols.helpers['checks.bindings'].bindings[2].target /paths/~1jobs~1{jobId}/get: The binding 2 of 'checks.bindings' writes the same target as its binding 1
   E_CLIENT_UNSUPPORTED target protocols.helpers['checks.bindings'].bindings[3].value.source /paths/~1jobs~1{jobId}/get: The binding 3 of 'checks.bindings' reads the helper's input, which is not supported yet
   E_CONFIG_VALUE config protocols.helpers['checks.bindings'].bindings[4].value.selector /paths/~1jobs/post: The binding 4 pointer '/nothing' of 'checks.bindings' names no property of the POST /jobs response
@@ -34,3 +34,9 @@ render pydantic_v2.BaseModel
   E_CLIENT_UNSUPPORTED target protocols.helpers['checks.immediate_models'].immediate_result /paths/~1exports/post: The immediate result of 'checks.immediate_models' reads POST /exports, whose success responses are not all one JSON model, which is not supported yet
   E_CONFIG_VALUE config protocols.helpers['checks.immediate_header'].immediate_result.selector /paths/~1jobs/post: The immediate result of 'checks.immediate_header' reads a header, where only a body pointer reads a result
   E_CONFIG_VALUE config protocols.helpers['checks.progress'].immediate_result.selector /paths/~1jobs/post: The immediate result of 'checks.progress' reads models.Report, which is not its result type int
+  E_CONFIG_VALUE config protocols.helpers['checks.credentials'].bindings[1].target /paths/~1jobs~1{jobId}/get: The binding 1 of 'checks.credentials' writes the header 'x-api-key', which carries credentials no helper writes
+  E_CONFIG_VALUE config protocols.helpers['checks.credentials'].bindings[2].target /paths/~1jobs~1{jobId}/get: The binding 2 of 'checks.credentials' writes the query parameter 'api_key', which carries credentials no helper writes
+  E_CONFIG_VALUE config protocols.helpers['checks.credentials'].result.bindings[0].target /paths/~1exports~1status/get: The result binding 0 of 'checks.credentials' writes the query field 'api_key', which carries credentials no helper writes
+  E_CONFIG_VALUE config protocols.helpers['checks.no_success'].accepted_statuses[0] /paths/~1archives/post: The accepted status 202 of 'checks.no_success' selects no success response of POST /archives
+  E_CONFIG_VALUE config protocols.helpers['checks.no_success'].immediate_result.statuses[0] /paths/~1archives/post: The immediate status 200 of 'checks.no_success' selects no success response of POST /archives
+  E_CLIENT_UNSUPPORTED target protocols.helpers['checks.no_success'].immediate_result /paths/~1archives/post: The immediate result of 'checks.no_success' reads POST /archives, whose success responses are not all one JSON model, which is not supported yet

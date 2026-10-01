@@ -2415,7 +2415,13 @@
       "protocols/polling.yaml"
     ],
     "config": {
-      "protocols": "protocols/polling.yaml"
+      "protocols": "protocols/polling.yaml",
+      "selection": {
+        "exclude_tags": [
+          "archives"
+        ],
+        "reason": "Archives have no success response"
+      }
     },
     "backends": [
       "pydantic_v2.BaseModel"
@@ -2444,7 +2450,13 @@
       "protocols/polling.yaml"
     ],
     "config": {
-      "protocols": "protocols/polling.yaml"
+      "protocols": "protocols/polling.yaml",
+      "selection": {
+        "exclude_tags": [
+          "archives"
+        ],
+        "reason": "Archives have no success response"
+      }
     },
     "backends": [
       "pydantic_v2.dataclass",

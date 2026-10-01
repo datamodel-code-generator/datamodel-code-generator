@@ -19,6 +19,7 @@ from typing_extensions import Self, TypeVar
 
 from ..client.errors import BudgetExceededError, ProtocolConfigurationError
 from ..client.options import RequestOptions
+from ..client.responses import ResponseInfo
 from ..client.timing import SessionOptions
 from ..model_codecs.unset import UNSET, Unset
 from .errors import (
@@ -49,7 +50,6 @@ if TYPE_CHECKING:
     from ..client.client import AsyncClientCore, ClientCore
     from ..client.logical import LogicalCallContext, OperationSession
     from ..client.operations import OperationPlan
-    from ..client.responses import ResponseInfo
     from ..client.timing import Deadline
     from ..model_codecs.selectors import MediaSelector
     from ..model_codecs.wire import WireValue
@@ -477,7 +477,7 @@ class _Operation(Generic[T, P]):
         limits = self._limits
         if (allowed := limits.max_wait) is not None and required > allowed:
             raise self._waited(required, allowed, "wait")
-        waiter = core.waiting(limits.options, self._session)
+        waiter = core.waiting(limits.options, self._session, self._plan.poll.operation_id)
         if (remaining := waiter.remaining()) is not None and required >= remaining:
             waiter.finish()
             raise self._waited(required, remaining, "deadline")
@@ -565,12 +565,8 @@ class _Operation(Generic[T, P]):
     ) -> T:
         """Return the result a response carries, refusing a missing or null one before its accessor reads it."""
         assert selector is not None
-        if (
-            (selected := resolve(wire, selector.pointer)) is MISSING
-            or selected is None
-            or (value := read(data)) is None
-        ):
-            raise self._error(info, _absence(selected), selector, operation)
+        if (found := resolve(wire, selector.pointer)) is MISSING or found is None or (value := read(data)) is None:
+            raise self._error(info, _absence(found), selector, operation)
         return value
 
     def _created(
@@ -634,6 +630,11 @@ class _Operation(Generic[T, P]):
         if plan.fetched is not None:
             return self._values(plan.fetch_bindings, wire, info, operation, self._seed), MISSING
         return (), cast("T", None)
+
+    def _failed(self, error: Exception) -> None:
+        """Wait after a poll's final error response as after any response, so its server delay is never cut short."""
+        if isinstance(info := getattr(error, "info", None), ResponseInfo):
+            self._not_before = self._after(info)
 
     def _settle(self, step: _Step[T, P]) -> None:
         self._phase, self._not_before = step.phase, step.not_before
@@ -730,18 +731,22 @@ class LroHandle(_Operation[T, P]):
             finally:
                 waiter.finish()
         self._polls += 1
-        with self._mapped():
-            step = core.execute_page(
-                plan,
-                plan.polled.call,
-                self._poll_request,
-                self._polled,
-                body=UNSET,
-                media_type=None,
-                options=self._limits.options,
-                session=self._session,
-                max_page_bytes=None,
-            )
+        try:
+            with self._mapped():
+                step = core.execute_page(
+                    plan,
+                    plan.polled.call,
+                    self._poll_request,
+                    self._polled,
+                    body=UNSET,
+                    media_type=None,
+                    options=self._limits.options,
+                    session=self._session,
+                    max_page_bytes=None,
+                )
+        except Exception as error:
+            self._failed(error)
+            raise
         self._settle(step)
 
     def status(self) -> PollSnapshot[P]:
@@ -846,18 +851,22 @@ class AsyncLroHandle(_Operation[T, P]):
             finally:
                 waiter.finish()
         self._polls += 1
-        with self._mapped():
-            step = await core.execute_page(
-                plan,
-                plan.polled.call,
-                self._poll_request,
-                self._polled,
-                body=UNSET,
-                media_type=None,
-                options=self._limits.options,
-                session=self._session,
-                max_page_bytes=None,
-            )
+        try:
+            with self._mapped():
+                step = await core.execute_page(
+                    plan,
+                    plan.polled.call,
+                    self._poll_request,
+                    self._polled,
+                    body=UNSET,
+                    media_type=None,
+                    options=self._limits.options,
+                    session=self._session,
+                    max_page_bytes=None,
+                )
+        except Exception as error:
+            self._failed(error)
+            raise
         self._settle(step)
 
     async def status(self) -> PollSnapshot[P]:

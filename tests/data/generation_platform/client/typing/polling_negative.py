@@ -11,7 +11,8 @@ from pets_models import JobRequest
 
 async def wrong_handles(client: Client, async_client: AsyncClient, job: JobRequest) -> None:
     """Reject each misuse of a helper or its handle."""
-    unawaited: AsyncLroHandle[GetReportResponse, GetJobResponse] = async_client.protocols.jobs.run.start(body=job)  # error
+    run = async_client.protocols.jobs.run
+    unawaited: AsyncLroHandle[GetReportResponse, GetJobResponse] = run.start(body=job)  # error
     client.protocols.jobs.run.start()  # error
     client.protocols.jobs.run.start(body=job, poll_options=SessionOptions())  # error
     await client.protocols.jobs.run.start(body=job)  # error

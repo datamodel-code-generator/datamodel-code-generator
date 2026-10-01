@@ -1341,6 +1341,21 @@ class _SessionCall(_Call):
         return planned
 
 
+class _SessionWait(LogicalCallContext):
+    """A wait of a protocol helper session between its child calls, ending no later than the session does."""
+
+    __slots__ = ("session",)
+
+    def __init__(
+        self, settings: Settings, scope: Scope[HandleT], session: OperationSession, operation_id: str | None
+    ) -> None:
+        """Bind the wait to its session and the operation it comes before."""
+        super().__init__(settings, scope, operation_id)
+        self.session = session
+        if (limit := session.deadline) is not None and ((deadline := self.deadline) is None or limit.at < deadline.at):
+            self.deadline = limit
+
+
 class _Shared(Generic[AdapterT]):
     """What a client shares with its views: the transport, the fixed headers, and whether the transport was closed.
 
@@ -1393,16 +1408,17 @@ class _Core(Generic[AdapterT, HandleT]):
         """Return whether a call's effective options, its own, a view's, or the client's, fix an idempotency key."""
         return isinstance(self._call_settings(options, None).idempotency_key, IdempotencyKey)
 
-    def waiting(self, options: RequestOptions | None, session: OperationSession) -> LogicalCallContext:
-        """Return a context a helper waits in between the child calls of its session, sending nothing.
+    def waiting(
+        self, options: RequestOptions | None, session: OperationSession, operation_id: str | None
+    ) -> LogicalCallContext:
+        """Return a context a helper waits in before a child call of its session, sending nothing.
 
         Its sleeps wake when the client closes or the options' cancel token is cancelled, and end by the earlier of the
         options' deadline and the session's; the options' total timeout bounds each child call, not the waits between.
+        Its errors name the session and the operation the wait comes before.
         """
-        call = LogicalCallContext(replace(self._call_settings(options, None), total_timeout=None), self._scope)
-        if (limit := session.deadline) is not None and ((deadline := call.deadline) is None or limit.at < deadline.at):
-            call.deadline = limit
-        return call
+        settings = replace(self._call_settings(options, operation_id), total_timeout=None)
+        return _SessionWait(settings, self._scope, session, operation_id)
 
     def protocol_defaults(self, name: str) -> ProtocolDefaults | None:
         """Return the defaults the client's protocol settings give one helper, or None."""

@@ -49,6 +49,12 @@ paths:
         - name: session
           in: cookie
           schema: {type: string}
+        - name: X-Api-Key
+          in: header
+          schema: {type: string}
+        - name: api_key
+          in: query
+          schema: {type: string}
       responses:
         '200':
           description: The job.
@@ -123,6 +129,7 @@ paths:
                 type: object
                 properties:
                   id: {type: string}
+                  api_key: {type: string}
       responses:
         '200':
           description: The state of an export.
@@ -164,7 +171,17 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Report'}
+  /archives:
+    post:
+      operationId: archive
+      tags: [archives]
+      responses:
+        '409':
+          description: Already archived.
 components:
+  securitySchemes:
+    keyHeader: {type: apiKey, in: header, name: X-Api-Key}
+    keyQuery: {type: apiKey, in: query, name: api_key}
   schemas:
     JobRequest:
       type: object

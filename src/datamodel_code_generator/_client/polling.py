@@ -41,7 +41,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.bindings import UseBinding
 
-_STATES: Final = ("pending", "succeeded", "failed", "cancelled")
+STATES: Final = ("pending", "succeeded", "failed", "cancelled")
 _MIN_SUCCESS: Final = 200
 _MAX_SUCCESS: Final = 299
 
@@ -222,7 +222,7 @@ class _Polls:
         if isinstance(types, Diagnostic):
             yield types
             return
-        for name in _STATES:
+        for name in STATES:
             for index, value in enumerate(tree[name]):
                 if not _fits(kind := _json_type(value), types):
                     message = f"The state {value!r} of {helper.name!r} is {kind}, which its state never reads"
@@ -394,7 +394,8 @@ class _Polls:
         successes = [response for response in create.responses if response.success]
         uses = [_page_use([response]) for response in successes]
         spelled = {self.spelling.static(use.type) for use in uses if use is not None and use.type is not None}
-        if (model := self.model(successes[0])) is None or None in uses or len(spelled) != 1:
+        model = self.model(successes[0]) if successes else None
+        if model is None or None in uses or len(spelled) != 1:
             message = (
                 f"The immediate result of {name!r} reads {label}, whose success responses are not all one JSON model, "
                 "which is not supported yet"

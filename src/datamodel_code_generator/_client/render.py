@@ -14,7 +14,7 @@ from datamodel_code_generator._client._compiled_templates import resource as res
 from datamodel_code_generator._client._compiled_templates import types as types_template
 from datamodel_code_generator._client.naming import helper_classes, pascal
 from datamodel_code_generator._client.plan import media_range, member_parts, reachable, success_media
-from datamodel_code_generator._client.polling import PollingSpec
+from datamodel_code_generator._client.polling import STATES, PollingSpec
 from datamodel_code_generator._client.validation import allowed
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._generation_contract import UnionType
@@ -2207,7 +2207,6 @@ _HELPER_CALLS: Final[dict[bool, tuple[str, str, str, str]]] = {
 }
 _POLL_OPTIONS: Final = (("poll_options", ".", "PollOptions"), *_HELPER_OPTIONS[1:])
 _POLLING: Final = "_runtime.protocols.polling"
-_STATES: Final = ("pending", "succeeded", "failed", "cancelled")
 
 
 class _Helpers:
@@ -2435,7 +2434,7 @@ class _Helpers:
             ("state=", self.selector(module, tree["state"])),
             *(
                 (f"{state}=", _tuple(repr(_wire(value)) for value in values))
-                for state in _STATES
+                for state in STATES
                 if (values := tree[state])
             ),
             ("fingerprint=", repr(self.fingerprints[name])),
@@ -3010,10 +3009,11 @@ default below. The session types are imported from:
 
 `start` sends the create request once, resent only as shared retries allow. An accepted status returns a pending
 handle, a declared immediate status a handle that already holds the result, and any other success status raises
-`ProtocolDataError`. Each poll waits until the interval after the last response has passed, or the longer delay the
-helper's declared delay header gives, and never polls early: a wait longer than the allowed wait, or not shorter than
-what remains of the session, raises `PollWaitLimitError` without sending. A poll's state must equal a declared state
-value, JSON type included; any other value raises `PollingStateError`, and success is never inferred.
+`ProtocolDataError`. Each poll waits until the interval after the last response, an error response included, has
+passed, or the longer delay the helper's declared delay header gives, and never polls early: a wait longer than the
+allowed wait, or not shorter than what remains of the session, raises `PollWaitLimitError` without sending. A poll's
+state must equal a declared state value, JSON type included; any other value raises `PollingStateError`, and success
+is never inferred.
 
 `wait` returns the result: read from the final poll, fetched once by the result operation, or None. A failed or
 cancelled operation raises `OperationFailedError` or `OperationCancelledError` with its last poll, on every later

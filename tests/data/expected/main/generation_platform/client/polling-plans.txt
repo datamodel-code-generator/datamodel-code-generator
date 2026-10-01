@@ -32,6 +32,7 @@ render pydantic_v2.dataclass
   write client/types/exports/_operations.py
   write client/_generated/__init__.py
   write client/_generated/model_bindings.py
+  write client/_generated/security.py
   write client/_operations.py
   write client/protocols/_plans.py
   write client/protocols/_helpers.py
@@ -40,7 +41,7 @@ render pydantic_v2.dataclass
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['jobs.run', 'jobs.inline', 'jobs.report', 'exports.run', 'exports.latest'] bindings 24
+  namespace client helpers ['jobs.run', 'jobs.inline', 'jobs.report', 'exports.run', 'exports.latest'] bindings 26
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   helper jobs.run polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.run b56abda908e1206e221db8d81b3875a38609429b3e8b152b0b1b64fabb99bb8c
   helper jobs.inline polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.inline e0e83c2521d730a7cbd1d57165213a2e7dc04890fd665abae0f238aa26256458
@@ -394,7 +395,7 @@ render pydantic_v2.dataclass
   /selection/selected_operations/0 jobs.create_job()
     exports client.types.jobs.CreateJobResponse client.types.jobs.CreateJobErrorData client.types.jobs.CreateJobHTTPError
     exports client.types.jobs.CreateJobRequestCodecs client.types.jobs.decode_create_job_header digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/1 jobs.get_job(path:jobId=job_id, header:X-Trace=x_trace, query:verbose=verbose, query:since=since, cookie:session=session)
+  /selection/selected_operations/1 jobs.get_job(path:jobId=job_id, header:X-Trace=x_trace, query:verbose=verbose, query:since=since, cookie:session=session, header:X-Api-Key=x_api_key, query:api_key=api_key)
     exports client.types.jobs.GetJobResponse client.types.jobs.GetJobErrorData client.types.jobs.GetJobHTTPError
     exports client.types.jobs.GetJobRequestCodecs client.types.jobs.decode_get_job_header digests ['request', 'response', 'security', 'signature'] True
   /selection/selected_operations/2 jobs.get_report(path:jobId=job_id)
@@ -419,6 +420,7 @@ render pydantic_v2.dataclass
     exports client.types.reports.AddNoteResponse client.types.reports.AddNoteErrorData client.types.reports.AddNoteHTTPError
     exports client.types.reports.AddNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+  S_OPERATION_EXCLUDED selection /paths/~1archives/post: POST /archives is excluded by exclude_tags 'archives': Archives have no success response
 render dataclasses.dataclass
   write models.py
   write client/__init__.py
@@ -452,6 +454,7 @@ render dataclasses.dataclass
   write client/types/exports/_operations.py
   write client/_generated/__init__.py
   write client/_generated/model_bindings.py
+  write client/_generated/security.py
   write client/_operations.py
   write client/protocols/_plans.py
   write client/protocols/_helpers.py
@@ -460,7 +463,7 @@ render dataclasses.dataclass
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['jobs.run', 'jobs.inline', 'jobs.report', 'exports.run', 'exports.latest'] bindings 24
+  namespace client helpers ['jobs.run', 'jobs.inline', 'jobs.report', 'exports.run', 'exports.latest'] bindings 26
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   helper jobs.run polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.run c0332c67c29282d8fdf1316cc6a49b4d06dfe483e7efe7d1e31dea6da582fd3a
   helper jobs.inline polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.inline 6ee4ac439a0db1d5c0770f5a63956033cade560928cdda2f96559cc23738fba8
@@ -814,7 +817,7 @@ render dataclasses.dataclass
   /selection/selected_operations/0 jobs.create_job()
     exports client.types.jobs.CreateJobResponse client.types.jobs.CreateJobErrorData client.types.jobs.CreateJobHTTPError
     exports client.types.jobs.CreateJobRequestCodecs client.types.jobs.decode_create_job_header digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/1 jobs.get_job(path:jobId=job_id, header:X-Trace=x_trace, query:verbose=verbose, query:since=since, cookie:session=session)
+  /selection/selected_operations/1 jobs.get_job(path:jobId=job_id, header:X-Trace=x_trace, query:verbose=verbose, query:since=since, cookie:session=session, header:X-Api-Key=x_api_key, query:api_key=api_key)
     exports client.types.jobs.GetJobResponse client.types.jobs.GetJobErrorData client.types.jobs.GetJobHTTPError
     exports client.types.jobs.GetJobRequestCodecs client.types.jobs.decode_get_job_header digests ['request', 'response', 'security', 'signature'] True
   /selection/selected_operations/2 jobs.get_report(path:jobId=job_id)
@@ -839,6 +842,7 @@ render dataclasses.dataclass
     exports client.types.reports.AddNoteResponse client.types.reports.AddNoteErrorData client.types.reports.AddNoteHTTPError
     exports client.types.reports.AddNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
+  S_OPERATION_EXCLUDED selection /paths/~1archives/post: POST /archives is excluded by exclude_tags 'archives': Archives have no success response
 render typing.TypedDict
   write models.py
   write client/__init__.py
@@ -872,6 +876,7 @@ render typing.TypedDict
   write client/types/exports/_operations.py
   write client/_generated/__init__.py
   write client/_generated/model_bindings.py
+  write client/_generated/security.py
   write client/_operations.py
   write client/protocols/_plans.py
   write client/protocols/_helpers.py
@@ -880,7 +885,7 @@ render typing.TypedDict
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['jobs.run', 'jobs.inline', 'jobs.report', 'exports.run', 'exports.latest'] bindings 24
+  namespace client helpers ['jobs.run', 'jobs.inline', 'jobs.report', 'exports.run', 'exports.latest'] bindings 26
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   helper jobs.run polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.run f5dece2c665fa9043ff620ad97b550ca6885a98d15b2d65498d342b34bc27517
   helper jobs.inline polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.inline 50e2683a3bd31dccb5d7658fa126b62a3c4a0792597825a299e940650ab02b5d
@@ -1234,7 +1239,7 @@ render typing.TypedDict
   /selection/selected_operations/0 jobs.create_job()
     exports client.types.jobs.CreateJobResponse client.types.jobs.CreateJobErrorData client.types.jobs.CreateJobHTTPError
     exports client.types.jobs.CreateJobRequestCodecs client.types.jobs.decode_create_job_header digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/1 jobs.get_job(path:jobId=job_id, header:X-Trace=x_trace, query:verbose=verbose, query:since=since, cookie:session=session)
+  /selection/selected_operations/1 jobs.get_job(path:jobId=job_id, header:X-Trace=x_trace, query:verbose=verbose, query:since=since, cookie:session=session, header:X-Api-Key=x_api_key, query:api_key=api_key)
     exports client.types.jobs.GetJobResponse client.types.jobs.GetJobErrorData client.types.jobs.GetJobHTTPError
     exports client.types.jobs.GetJobRequestCodecs client.types.jobs.decode_get_job_header digests ['request', 'response', 'security', 'signature'] True
   /selection/selected_operations/2 jobs.get_report(path:jobId=job_id)
@@ -1259,6 +1264,7 @@ render typing.TypedDict
     exports client.types.reports.AddNoteResponse client.types.reports.AddNoteErrorData client.types.reports.AddNoteHTTPError
     exports client.types.reports.AddNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
+  S_OPERATION_EXCLUDED selection /paths/~1archives/post: POST /archives is excluded by exclude_tags 'archives': Archives have no success response
 render msgspec.Struct
   write models.py
   write client/__init__.py
@@ -1292,6 +1298,7 @@ render msgspec.Struct
   write client/types/exports/_operations.py
   write client/_generated/__init__.py
   write client/_generated/model_bindings.py
+  write client/_generated/security.py
   write client/_operations.py
   write client/protocols/_plans.py
   write client/protocols/_helpers.py
@@ -1300,7 +1307,7 @@ render msgspec.Struct
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['jobs.run', 'jobs.inline', 'jobs.report', 'exports.run', 'exports.latest'] bindings 24
+  namespace client helpers ['jobs.run', 'jobs.inline', 'jobs.report', 'exports.run', 'exports.latest'] bindings 26
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   helper jobs.run polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.run fad33bc290d8f79b5d038e97f3eb70078a609b42ad49d024dd9806c547c7e1a6
   helper jobs.inline polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.inline 9fa8dcf2c544bf94db3fcc6e9c9757af9767417547ae6ac77574dca5107f0dda
@@ -1654,7 +1661,7 @@ render msgspec.Struct
   /selection/selected_operations/0 jobs.create_job()
     exports client.types.jobs.CreateJobResponse client.types.jobs.CreateJobErrorData client.types.jobs.CreateJobHTTPError
     exports client.types.jobs.CreateJobRequestCodecs client.types.jobs.decode_create_job_header digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/1 jobs.get_job(path:jobId=job_id, header:X-Trace=x_trace, query:verbose=verbose, query:since=since, cookie:session=session)
+  /selection/selected_operations/1 jobs.get_job(path:jobId=job_id, header:X-Trace=x_trace, query:verbose=verbose, query:since=since, cookie:session=session, header:X-Api-Key=x_api_key, query:api_key=api_key)
     exports client.types.jobs.GetJobResponse client.types.jobs.GetJobErrorData client.types.jobs.GetJobHTTPError
     exports client.types.jobs.GetJobRequestCodecs client.types.jobs.decode_get_job_header digests ['request', 'response', 'security', 'signature'] True
   /selection/selected_operations/2 jobs.get_report(path:jobId=job_id)
@@ -1679,3 +1686,4 @@ render msgspec.Struct
     exports client.types.reports.AddNoteResponse client.types.reports.AddNoteErrorData client.types.reports.AddNoteHTTPError
     exports client.types.reports.AddNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'msgspec>=0.18']
+  S_OPERATION_EXCLUDED selection /paths/~1archives/post: POST /archives is excluded by exclude_tags 'archives': Archives have no success response
