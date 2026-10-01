@@ -29,6 +29,7 @@
   boolean refreshes = AuthConfigurationError condition=invalid_value field_path=('max_concurrent_refreshes',)
   loopback flag type = AuthConfigurationError condition=invalid_type field_path=('allow_insecure_loopback',)
   transport type = AuthConfigurationError condition=invalid_type field_path=('transport',)
+  clock type = AuthConfigurationError condition=invalid_type field_path=('clock',)
   unverified tls = AuthConfigurationError condition=insecure_transport field_path=('options', 'transport', 'verify')
   unverified tls context = AuthConfigurationError condition=insecure_transport field_path=('options', 'transport', 'ssl_context')
   tls context without hostname check = AuthConfigurationError condition=insecure_transport field_path=('options', 'transport', 'ssl_context')

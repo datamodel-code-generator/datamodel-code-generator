@@ -18,7 +18,7 @@ from contextlib import (
 )
 from dataclasses import dataclass, replace
 from functools import lru_cache, partial
-from time import monotonic, time
+from time import monotonic
 from typing import TYPE_CHECKING, ClassVar, Final, Generic, Literal, TypeVar
 from urllib.parse import quote, unquote_plus, urlsplit
 
@@ -93,6 +93,7 @@ from .options import (
     layered_redirects,
     layered_retry,
     network_send_limit,
+    new_key,
     resolve_transport_options,
 )
 from .raw import AsyncRawResponse, RawResponse
@@ -166,6 +167,7 @@ if TYPE_CHECKING:
     from .options import RequestValidation, ResolvedTransportOptions
     from .retry import RetryDelay
     from .security import SecuritySchemeEntry
+    from .timing import Clock
     from .transports import AsyncTransportAdapter, AsyncTransportResponse, TransportAdapter, TransportResponse
     from .urls import Origin
 
@@ -275,6 +277,7 @@ def _layered(
             if isinstance(layer.stream_total_timeout, Unset)
             else layer.stream_total_timeout
         ),
+        clock=settings.clock,
     )
 
 
@@ -318,6 +321,8 @@ def _client_settings(options: object, defaults: ClientDefaults) -> Settings:
         case None:
             return settings
         case ClientOptions():
+            if not isinstance(clock := options.clock, Unset):
+                settings = replace(settings, clock=clock)
             return _layered(settings, options, modes)
         case _:
             pass
@@ -541,7 +546,7 @@ def _info(status: int, headers: HeadersView, request_id_header: str | None, call
         auth_exchange_budget_used=call.auth_exchange_budget_used,
         auth_refresh_ids=call.auth_refresh_ids,
         auth_refresh_pending=call.auth_refresh_pending,
-        elapsed=monotonic() - call.started,
+        elapsed=call.monotonic() - call.started,
         content_type=None if content_type is None else normalized(content_type),
         request_id=None if request_id_header is None else headers.get(request_id_header),
     )
@@ -687,13 +692,6 @@ def _retry_error(error: BaseException) -> TypeIs[HTTPStatusError[object] | Trans
     return isinstance(error, (HTTPStatusError, TransportError))
 
 
-def _draw() -> float:
-    """Load the random generator only for a retry whose jitter is actually needed."""
-    from secrets import randbits  # noqa: PLC0415
-
-    return randbits(53) / (1 << 53)
-
-
 _EMPTY_ORIGINS: Final[frozenset[Origin]] = frozenset()
 _EMPTY_NAMES: Final[frozenset[str]] = frozenset()
 _CREDENTIAL_HEADERS: Final = frozenset({"authorization", "proxy-authorization", "cookie", "cookie2"})
@@ -790,7 +788,7 @@ async def _aauth_event(call: _Call, name: Literal["auth_start", "auth_wait"]) ->
 def _auth_work(call: _Call) -> Generator[None, None, None]:
     call.check("auth")
     events = call.events
-    started = monotonic() if events is not None else 0.0
+    started = call.monotonic() if events is not None else 0.0
     try:
         _auth_event(call, "auth_start")
         yield
@@ -808,7 +806,7 @@ def _auth_work(call: _Call) -> Generator[None, None, None]:
 async def _aauth_work(call: _Call) -> AsyncGenerator[None, None]:
     call.check("auth")
     events = call.events
-    started = monotonic() if events is not None else 0.0
+    started = call.monotonic() if events is not None else 0.0
     try:
         await _aauth_event(call, "auth_start")
         yield
@@ -842,7 +840,7 @@ def _expired_credentials(call: _Call) -> bool:
 
     assert call.auth is not None
     credentials = call.auth.credentials
-    return credentials is not None and credentials_expired(credentials, now=monotonic())
+    return credentials is not None and credentials_expired(credentials, now=call.monotonic())
 
 
 def _reauthorizing(call: _Call) -> bool:
@@ -908,13 +906,15 @@ class _Call(LogicalCallContext):
         )
         self.idempotency = None if operation is None else operation.idempotency
         key = settings.idempotency_key
-        self.key = IdempotencyKey.new() if self.idempotency is not None and isinstance(key, Unset) else key
+        self.key = new_key(settings.clock) if self.idempotency is not None and isinstance(key, Unset) else key
         self.key_expires_at: float | None = None
         self.last_failure: BaseException | None = None
         self.last_info: ResponseInfo | None = None
         if self.idempotency is not None and isinstance(self.key, IdempotencyKey) and self.key.first_used_at is not None:
             self.key_expires_at = (
-                self.started + self.idempotency.retention_seconds - (time() - self.key.first_used_at.timestamp())
+                self.started
+                + self.idempotency.retention_seconds
+                - (settings.clock.time() - self.key.first_used_at.timestamp())
             )
         self.retry_headers = EMPTY_RETRY_HEADERS
         self.allowed_origins = _EMPTY_ORIGINS
@@ -926,7 +926,7 @@ class _Call(LogicalCallContext):
         self.hop_index = 0
         self.previous_cap: float | None = None
         self.stop_reason: RetryStopReason | None = None
-        self.trace = AttemptTrace()
+        self.trace = AttemptTrace(self.settings.clock)
         self.method = ""
         self.received_at = self.started
         self.received_wall_time = 0.0
@@ -1006,7 +1006,8 @@ class _Call(LogicalCallContext):
         if (head := response_head(self.trace)) is not None:
             self.received_at, self.received_wall_time = head.received_at, head.received_wall_time
         elif info.status_code >= _ERROR_STATUS and self.settings.retry.respect_retry_after:
-            self.received_at, self.received_wall_time = monotonic(), time()
+            clock = self.settings.clock
+            self.received_at, self.received_wall_time = clock.monotonic(), clock.time()
 
     def retry(
         self,
@@ -1048,7 +1049,7 @@ class _Call(LogicalCallContext):
             reason = "auth_invalid_token" if auth.rejected is not None else None
             exchange = auth.exchange_needed()
         self.trace.connect_failure = None
-        now = monotonic()
+        now = self.monotonic()
         self.stop_reason = retry_stop(
             RetryState(
                 failure_kind="auth" if auth_candidate else "transport" if error is not None else "status",
@@ -1087,7 +1088,9 @@ class _Call(LogicalCallContext):
             retry,
             reason=reason,
             server=server,
-            timing=RetryTiming(self.previous_cap, now, None if self.deadline is None else self.deadline.at, _draw),
+            timing=RetryTiming(
+                self.previous_cap, now, None if self.deadline is None else self.deadline.at, self.settings.clock.random
+            ),
         )
         if isinstance(planned, str):
             self.stop_reason = planned
@@ -1112,13 +1115,13 @@ class _Call(LogicalCallContext):
         if self.retry_blocked:
             self.stop_reason = "callback_failure"
             raise self.stopped(error)
-        if self.key_expires_at is not None and monotonic() >= self.key_expires_at:
+        if self.key_expires_at is not None and self.monotonic() >= self.key_expires_at:
             self.stop_reason = "unsafe_operation"
             raise self.stopped(error)
 
     def retained(self) -> None:
         """Do not admit a resend after its stable idempotency key has expired during preparation."""
-        if self.key_expires_at is None or monotonic() < self.key_expires_at:
+        if self.key_expires_at is None or self.monotonic() < self.key_expires_at:
             return
         if self.hop_index:
             raise self.snapshot_error(
@@ -1135,7 +1138,7 @@ class _Call(LogicalCallContext):
         self.hop_index = 0
         self.body_enabled = True
         self.current_origin = self.initial_origin
-        self.trace = AttemptTrace()
+        self.trace = AttemptTrace(self.settings.clock)
         self.phase_caps = ()
         self.stop_reason = None
         if self.events is not None:
@@ -1177,7 +1180,7 @@ class _Call(LogicalCallContext):
                 body_replayable=replayable,
             ),
             redirects,
-            now=monotonic(),
+            now=self.monotonic(),
         )
         if self.send_limit is not None and self.network_send_budget_used >= self.send_limit:
             raise RedirectPolicyError(delivery_state=DeliveryState.RESPONSE_STARTED, info=info)
@@ -1331,6 +1334,11 @@ class _Core(Generic[AdapterT, HandleT]):
         self._scope = scope
         self._owned = owned
         self._urls: dict[int, tuple[tuple[ServerPlan, ...], str]] = {}
+
+    @property
+    def clock(self) -> Clock:
+        """Return the clock that times this client's calls and helper sessions."""
+        return self._settings.clock
 
     def fixes_key(self, options: RequestOptions | None) -> bool:
         """Return whether a call's effective options, its own, a view's, or the client's, fix an idempotency key."""
@@ -2525,7 +2533,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                     request = redirected
                     visited |= {(request.method, request.url)}
                     call.hop_index += 1
-                    call.trace = AttemptTrace()
+                    call.trace = AttemptTrace(call.settings.clock)
                     call.phase_caps = ()
                     continue
                 planned = self._status_plan(info, source, call)
@@ -2612,7 +2620,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                 events.event(
                     "retry_scheduled",
                     sent=True,
-                    duration=max(0.0, planned.not_before - monotonic()),
+                    duration=max(0.0, planned.not_before - call.monotonic()),
                     retry_reason=planned.reason,
                 )
             )
@@ -2688,10 +2696,10 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                     and pending[0] == index
                     and rejected_version(value, pending[1])
                 ):
-                    values.append(refresh_credential(binding, context, delivery))
+                    values.append(refresh_credential(binding, context, delivery, call.settings.clock))
                     call.check("auth")
                 else:
-                    values.append(accept_credential(value, binding, context, delivery))
+                    values.append(accept_credential(value, binding, context, delivery, call.settings.clock))
             auth.credentials = HopCredentials(tuple(values))
             auth.pending = None
 
@@ -3370,7 +3378,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                     request = redirected
                     visited |= {(request.method, request.url)}
                     call.hop_index += 1
-                    call.trace = AttemptTrace()
+                    call.trace = AttemptTrace(call.settings.clock)
                     call.phase_caps = ()
                     continue
                 planned = await self._status_plan(info, source, call)
@@ -3457,7 +3465,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 events.event(
                     "retry_scheduled",
                     sent=True,
-                    duration=max(0.0, planned.not_before - monotonic()),
+                    duration=max(0.0, planned.not_before - call.monotonic()),
                     retry_reason=planned.reason,
                 )
             )
@@ -3533,10 +3541,10 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                     and pending[0] == index
                     and rejected_version(value, pending[1])
                 ):
-                    values.append(await arefresh_credential(binding, context, delivery))
+                    values.append(await arefresh_credential(binding, context, delivery, call.settings.clock))
                     call.check("auth")
                 else:
-                    values.append(accept_credential(value, binding, context, delivery))
+                    values.append(accept_credential(value, binding, context, delivery, call.settings.clock))
             auth.credentials = AsyncHopCredentials(tuple(values))
             auth.pending = None
 

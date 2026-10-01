@@ -49,6 +49,7 @@ from pets.options import (
     UNSET,
     CancelToken,
     ClientOptions,
+    Clock,
     Deadline,
     IdempotencyKey,
     RedirectOptions,
@@ -348,6 +349,9 @@ def timing_options(client: Client, context: AttemptIOContext) -> None:
     token = CancelToken()
     assert_type(deadline.at, float)
     assert_type(deadline.remaining(), float)
+    assert_type(deadline.clock, Clock)
+    clock = Clock(monotonic=lambda: 0.0, random=lambda: 0.5)
+    assert_type(Deadline.after(1, clock=clock), Deadline)
     assert_type(token.cancelled, bool)
     assert_type(context.deadline, Deadline | None)
     assert_type(context.cancel_token, CancelToken | None)
@@ -362,7 +366,9 @@ def timing_options(client: Client, context: AttemptIOContext) -> None:
         stream_idle_timeout=60,
         stream_total_timeout=None,
         cleanup_timeout=5,
+        clock=clock,
     )
+    assert_type(configured.clock, Clock | Unset)
     assert_type(configured.timeout, TimeoutOptions | Unset | None)
     assert_type(configured.total_timeout, float | Unset | None)
     assert_type(configured.deadline, Deadline | Unset | None)
@@ -383,6 +389,24 @@ def read_with_budget(client: Client, url: str) -> bytes:
     with client.with_options(options) as view:
         response = view.request_raw("GET", url, options=RequestOptions(timeout=TimeoutOptions(connect=2)))
         return response.read()
+
+
+class SteppedClock:
+    def __init__(self) -> None:
+        self.now = 0.0
+
+    def __call__(self) -> float:
+        return self.now
+
+    def on_event(self, event: CallEvent) -> None:
+        if event.name == "retry_scheduled" and event.duration is not None:
+            self.now += event.duration
+
+
+def instant_retries(url: str) -> Client:
+    stepped = SteppedClock()
+    clock = Clock(monotonic=stepped, random=lambda: 0.5)
+    return Client(options=ClientOptions(base_url=url, retry=RetryOptions(), hooks=(stepped,), clock=clock))
 
 
 def cancel_before_send(client: Client, url: str) -> int:

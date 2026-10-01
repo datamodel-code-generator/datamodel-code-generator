@@ -20,7 +20,7 @@ from typing_extensions import Self, TypeVar
 from ..client.errors import BudgetExceededError, ProtocolConfigurationError, ProtocolSizeError
 from ..client.options import RequestOptions
 from ..client.responses import ResponseInfo
-from ..client.timing import SessionOptions
+from ..client.timing import SYSTEM_CLOCK, SessionOptions
 from ..model_codecs.unset import UNSET, Unset
 from .errors import PaginationCycleError, ProtocolDataError, ProtocolStateError, SessionLimitError
 from .options import PaginationOptions
@@ -49,7 +49,7 @@ if TYPE_CHECKING:
     from ..client.client import AsyncClientCore, ClientCore
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan
-    from ..client.timing import Deadline
+    from ..client.timing import Clock, Deadline
     from ..client.urls import Origin
     from ..model_codecs.selectors import MediaSelector
     from ..model_codecs.wire import WireValue
@@ -425,6 +425,7 @@ class _Limits:
     deadline: Deadline | None = None
     max_network_sends: int | None = 3000
     options: RequestOptions | None = None
+    clock: Clock = SYSTEM_CLOCK
 
 
 _DEFAULTS: Final = _Limits()
@@ -486,6 +487,7 @@ def _limits(
         deadline=_first(sessions, "deadline", _DEFAULTS.deadline),
         max_network_sends=_first(sessions, "max_network_sends", _DEFAULTS.max_network_sends),
         options=request,
+        clock=core.clock,
     )
 
 
@@ -773,6 +775,7 @@ class _Walk(Generic[T, P]):
                 total_timeout=limits.total_timeout,
                 deadline=limits.deadline,
                 max_network_sends=limits.max_network_sends,
+                clock=limits.clock,
             )
         if (limit := session.send_limit) is not None and session.network_send_budget_used >= limit:
             raise self.limit(limit, "network_sends")

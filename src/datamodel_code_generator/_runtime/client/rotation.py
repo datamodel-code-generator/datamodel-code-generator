@@ -10,8 +10,6 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from time import monotonic
 from typing import TYPE_CHECKING, Any, Literal, cast
 
 from ..model_codecs.unset import Unset
@@ -32,6 +30,7 @@ from .oauth import (
     Exchanged,
     InvalidTokenResponseError,
     consumable_failure,
+    receipt,
     token_material,
     unusable_success,
     within,
@@ -53,6 +52,7 @@ from .refresh import (
 
 if TYPE_CHECKING:
     from collections.abc import Generator
+    from datetime import datetime
 
     from .admission import CallAdmission
     from .auth import (
@@ -75,6 +75,7 @@ if TYPE_CHECKING:
     from .oauth import AsyncTokenEndpoint, Endpoint, TokenEndpoint
     from .options import OAuthProviderOptions
     from .refresh import Outcome
+    from .timing import Clock
 
 
 @dataclass(frozen=True, slots=True)
@@ -285,7 +286,7 @@ class RotationFamily(SharedRefresh):
             if not self._initialized and not self._loads:
                 initial = self._initial
                 assert initial is not None
-                self._adopt(initial, _material(initial))
+                self._adopt(initial, _material(initial, self.options.clock))
         if (tokens := self.tokens) is None:
             return None
         self._refuse(tokens.access_token, context)
@@ -407,7 +408,7 @@ class RotationFamily(SharedRefresh):
                 self._confirmed = slot.token_set.revision
         if adopted is not None:
             return adopted
-        if (material := _material(slot.token_set)) is None:
+        if (material := _material(slot.token_set, self.options.clock)) is None:
             return Reloaded(slot.token_set)
         return Adopted(material.material, material.refresh_at, slot.token_set, expires_at=material.expires_at)
 
@@ -511,7 +512,7 @@ class RotationFamily(SharedRefresh):
             return Failed(self._conflict(job, used, loaded, "FAILED_NOT_SENT"), "FAILED_NOT_SENT")
         if self._spends(loaded):
             return used
-        if loaded.refresh_token is not None and _material(loaded) is None:
+        if loaded.refresh_token is not None and _material(loaded, self.options.clock) is None:
             return loaded
         return self._adoptable(job, loaded, newer=True)
 
@@ -531,7 +532,7 @@ class RotationFamily(SharedRefresh):
             loaded is not None
             and loaded.revision > used.revision
             and not self._spends(loaded)
-            and (material := _material(loaded)) is not None
+            and (material := _material(loaded, self.options.clock)) is not None
         ):
             return Adopted(material.material, material.refresh_at, loaded, expires_at=material.expires_at)
         return self._ungranted(job, cause)
@@ -550,7 +551,7 @@ class RotationFamily(SharedRefresh):
 
         A family a refresh stopped keeps its state instead of adopting a token set that can never serve.
         """
-        if (material := _material(chosen)) is not None:
+        if (material := _material(chosen, self.options.clock)) is not None:
             return Adopted(material.material, material.refresh_at, chosen, expires_at=material.expires_at)
         if chosen.refresh_token is not None:
             return Reloaded(chosen)
@@ -739,7 +740,7 @@ class RotationFamily(SharedRefresh):
                 raise AuthConfigurationError(field_path=("token_set", "revision"), condition="stale_revision")
             if (refresh := checked.refresh_token) is not None and self._reused(refresh):
                 raise AuthConfigurationError(field_path=("token_set", "refresh_token"), condition="spent_token")
-            if (material := _material(checked)) is None and refresh is None:
+            if (material := _material(checked, self.options.clock)) is None and refresh is None:
                 raise AuthConfigurationError(field_path=("token_set",), condition="unusable_token")
             if persist and self._stores:
                 return self._admitted(RotationJob("replace", Slot(checked, self._confirmed, "replace")), waiter)
@@ -867,13 +868,13 @@ def _stored(reply: object) -> TokenSet | Exception | None:
         return error
 
 
-def _material(token_set: TokenSet) -> Published | None:
-    """Return new material for a supplied token set's access token, or None once it expired."""
+def _material(token_set: TokenSet, clock: Clock) -> Published | None:
+    """Return new material for a supplied token set's access token, or None once it expired on the family's clock."""
     access = token_set.access_token
-    received, receipt = datetime.now(timezone.utc), monotonic()
+    received, at = receipt(clock)
     if (expires_at := access.expires_at) is not None and expires_at <= received:
         return None
-    refresh_at, expires = _renewal(access, received, receipt, renewable=token_set.refresh_token is not None)
+    refresh_at, expires = _renewal(access, received, at, renewable=token_set.refresh_token is not None)
     return Published(BearerCredential(access, TokenVersion()), refresh_at, expires_at=expires)
 
 

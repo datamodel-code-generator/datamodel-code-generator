@@ -5,7 +5,6 @@ from __future__ import annotations
 import sys
 from dataclasses import dataclass
 from functools import partial
-from time import monotonic
 from typing import TYPE_CHECKING, Literal, Protocol, TypeAlias, TypeVar
 from uuid import uuid4
 
@@ -25,7 +24,7 @@ from .errors import (
 from .lifecycle import cleanup_secondary
 from .options import network_send_limit
 from .tasks import LEFT_WORK, TaskInterruptionError, task_failure, task_result
-from .timing import TOKEN_INTERVAL, absolute_deadline
+from .timing import SYSTEM_CLOCK, TOKEN_INTERVAL, absolute_deadline, on_clock
 from .transports import AttemptIOContext, ResolvedTimeoutOptions, set_io_timing
 
 if TYPE_CHECKING:
@@ -37,7 +36,7 @@ if TYPE_CHECKING:
     from .errors import AuthBudgetKind, DeadlinePhase, IOPhase
     from .lifecycle import CleanupOwner
     from .options import Settings
-    from .timing import Deadline
+    from .timing import Clock, Deadline
     from .transports import AttemptTrace
 
 T = TypeVar("T")
@@ -198,13 +197,19 @@ class OperationSession:
     __slots__ = ("deadline", "network_send_budget_used", "network_send_count", "send_limit", "session_id", "started")
 
     def __init__(
-        self, *, total_timeout: float | None, deadline: Deadline | None, max_network_sends: int | None
+        self,
+        *,
+        total_timeout: float | None,
+        deadline: Deadline | None,
+        max_network_sends: int | None,
+        clock: Clock = SYSTEM_CLOCK,
     ) -> None:
-        """Start the session now, with its effective deadline and send limit."""
-        self.started = monotonic()
+        """Start the session now on its client's clock, with its effective deadline and send limit."""
+        self.started = clock.monotonic()
         self.session_id = str(uuid4())
+        deadline = None if deadline is None else on_clock(deadline, clock)
         if total_timeout is not None and (deadline is None or self.started + total_timeout < deadline.at):
-            deadline = absolute_deadline(self.started + total_timeout)
+            deadline = absolute_deadline(self.started + total_timeout, clock)
         self.deadline = deadline
         self.send_limit = max_network_sends
         self.network_send_budget_used = 0
@@ -239,6 +244,7 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
         "deadline",
         "delivery_state",
         "finished",
+        "monotonic",
         "network_send_budget_used",
         "network_send_count",
         "operation_id",
@@ -254,17 +260,22 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
     )
 
     def __init__(self, settings: Settings, scope: _Scope, operation_id: str | None = None) -> None:
-        """Bind effective settings and compute the minimum total and explicit monotonic deadline."""
+        """Bind effective settings and its clock, and compute the minimum total and explicit monotonic deadline.
+
+        An explicit deadline made on another clock moves onto the call's clock by its remaining time.
+        """
+        clock = settings.clock
+        self.monotonic = monotonic = clock.monotonic
         self.started = monotonic()
         self.call_id = str(uuid4())
         self.operation_id = operation_id
         self.settings = settings
         self._scope = scope
-        deadline = settings.deadline
+        deadline = None if (explicit := settings.deadline) is None else on_clock(explicit, clock)
         if settings.total_timeout is not None:
             total_at = self.started + settings.total_timeout
             if deadline is None or total_at < deadline.at:
-                deadline = absolute_deadline(total_at)
+                deadline = absolute_deadline(total_at, clock)
         self.deadline: Deadline | None = deadline
         self.resource_attempt_count = 0
         self.redirect_count = 0
@@ -379,7 +390,7 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
         return self.snapshot_error(
             DeadlineExceededError(
                 deadline_at=at,
-                elapsed=monotonic() - self.started,
+                elapsed=self.monotonic() - self.started,
                 delivery_state=delivery,
                 phase=phase,
                 cause=cause,
@@ -413,7 +424,7 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
                 raise self.snapshot_error(cause)
             error.cause = cause
             raise self.snapshot_error(error)
-        if (deadline := self.deadline) is not None and monotonic() >= deadline.at:
+        if (deadline := self.deadline) is not None and self.monotonic() >= deadline.at:
             if isinstance(cause, DeadlineExceededError):
                 raise self.snapshot_error(cause)
             raise self._deadline_error(deadline.at, phase, delivery, cause)
@@ -473,7 +484,7 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
         """Wait until a retry target, waking for client close and checking an explicit token when present."""
         while True:
             self.check("sleep")
-            remaining = not_before - monotonic()
+            remaining = not_before - self.monotonic()
             if remaining <= 0:
                 return
             if (deadline := self.deadline) is not None:
@@ -486,7 +497,7 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
         """Wait in the caller's task under the call's guard, keeping its original deadline and cancellation."""
         import asyncio  # noqa: PLC0415
 
-        await self.bounded(lambda: asyncio.sleep(max(0.0, not_before - monotonic())), phase="sleep")
+        await self.bounded(lambda: asyncio.sleep(max(0.0, not_before - self.monotonic())), phase="sleep")
 
     def timeout(self) -> ResolvedTimeoutOptions:
         """Resolve each native phase and record whether its own cap, stream idle, or the deadline constrained it."""
@@ -549,7 +560,7 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
         self.streaming = True
         self.delivery_state = DeliveryState.RESPONSE_STARTED
         total = self.settings.stream_total_timeout
-        self.deadline = None if total is None else absolute_deadline(monotonic() + total)
+        self.deadline = None if total is None else absolute_deadline(self.monotonic() + total, self.settings.clock)
         timeout = self.timeout()
         set_io_timing(self._io_context, timeout, self.deadline)
 
@@ -627,7 +638,7 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
             )
         if isinstance(failure, DeadlineExceededError):
             return self.snapshot_error(failure)
-        at = monotonic() if self.deadline is None else self.deadline.at
+        at = self.monotonic() if self.deadline is None else self.deadline.at
         return self._deadline_error(at, self._phase, delivery, failure)
 
     def _kept(self, error: BaseException | None) -> BaseException | None:

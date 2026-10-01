@@ -206,16 +206,6 @@ FROZEN_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "private-import:tests/parser/test_openapi_scope.py::datamodel_code_generator._source",
         "private-import:tests/parser/test_openapi_scope.py::datamodel_code_generator.parser.openapi_scope",
     ),
-    "clock-injection": (
-        "normal-path-mock:tests/data/python/client_deadline_races.py::_clock",
-        "normal-path-mock:tests/data/python/client_oauth_client_credentials.py::_async_renewal",
-        "normal-path-mock:tests/data/python/client_oauth_client_credentials.py::_expiry",
-        "normal-path-mock:tests/data/python/client_oauth_refresh.py::_expiry",
-        "normal-path-mock:tests/data/python/client_retry_boundaries.py::_clock",
-        "normal-path-mock:tests/data/python/client_retry_boundaries.py::_closing_wait",
-        "normal-path-mock:tests/data/python/client_retry_policy.py::_retention_boundaries",
-        "normal-path-mock:tests/data/python/client_retry_policy.py::_timing",
-    ),
     "spies": (
         "normal-path-mock:tests/data/python/binding_engine_observer.py::compare_engine_runs",
         "normal-path-mock:tests/data/python/binding_inherited_inputs.py::inherited_fields",
@@ -1225,7 +1215,6 @@ ALLOWLIST_GROUP_REASONS = {
         "Fold binding, session, and contract tests into target scenarios; first sweep each guard they inject faults "
         "into, deleting unreachable guards and keeping reachable ones as abnormal-path faults."
     ),
-    "clock-injection": "Give the generated client a documented clock and random injection point.",
     "spies": "Replace profile observers and internal spies with observable effects.",
     "abnormal-e2e": (
         "Reproduce these abnormal paths e2e, with read-only directories and a second process that holds or races "

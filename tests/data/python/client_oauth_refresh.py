@@ -8,7 +8,6 @@ import json
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import ExitStack
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any, Final
 from unittest.mock import patch
@@ -112,47 +111,46 @@ def _reply(responses: ModuleType, payload: object, status: int = 200) -> Respons
 def _expiry(package: ModuleType, auth: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]) -> None:
     """Renew a token a tenth of its lifetime early, but serve one without a refresh token until it expires."""
     now = time.monotonic()
-    with ExitStack() as stack:
-        for name in ("oauth", "refresh", "rotation", "timing"):
-            module = importlib.import_module(f"{package.__name__}._runtime.client.{name}")
-            stack.enter_context(patch.object(module, "monotonic", lambda: now))
-        for refresh in ("refresh-1", None):
-            adapter = _Sent(transports, _reply(responses, _ROTATED))
-            with auth.RefreshTokenProvider(
-                _TOKEN,
-                client_id="c",
-                token_set=_tokens(auth, refresh=refresh, minutes=100 / 60),
-                client_auth_method="none",
-                token_transport=adapter,
-            ) as family:
-                start = now
-                first = family.get(_context(auth))
-                now = start + 95
-                lines.append(
-                    f"  lifetime 100s with refresh token {refresh} after 95s = {_outcome(lambda family=family: family.get(_context(auth)))}"
-                    f" same={family.get(_context(auth)) is first if refresh is None else None}"
-                )
-                now = start + 101
-                lines.append(f"    after 101s = {_outcome(lambda family=family: family.get(_context(auth)))} sent={adapter.refresh_tokens}")
-        errors = importlib.import_module(f"{package.__name__}.errors")
-        unsent = errors.TransportError(delivery_state=errors.DeliveryState.NOT_SENT, phase="connect")
-        adapter = _Sent(transports, unsent, unsent, unsent, evidence=True)
+    timed = auth.OAuthProviderOptions(clock=importlib.import_module(f"{package.__name__}.options").Clock(monotonic=lambda: now))
+    for refresh in ("refresh-1", None):
+        adapter = _Sent(transports, _reply(responses, _ROTATED))
         with auth.RefreshTokenProvider(
             _TOKEN,
             client_id="c",
-            token_set=_tokens(auth, minutes=100 / 60),
+            token_set=_tokens(auth, refresh=refresh, minutes=100 / 60),
             client_auth_method="none",
+            options=timed,
             token_transport=adapter,
         ) as family:
             start = now
             first = family.get(_context(auth))
             now = start + 95
             lines.append(
-                f"  refresh proven unsent before the token expires = {_outcome(lambda: family.get(_context(auth)))}"
-                f" same={family.get(_context(auth)) is first}"
+                f"  lifetime 100s with refresh token {refresh} after 95s = {_outcome(lambda family=family: family.get(_context(auth)))}"
+                f" same={family.get(_context(auth)) is first if refresh is None else None}"
             )
             now = start + 101
-            lines.append(f"    once the token expired = {_outcome(lambda: family.get(_context(auth)))}")
+            lines.append(f"    after 101s = {_outcome(lambda family=family: family.get(_context(auth)))} sent={adapter.refresh_tokens}")
+    errors = importlib.import_module(f"{package.__name__}.errors")
+    unsent = errors.TransportError(delivery_state=errors.DeliveryState.NOT_SENT, phase="connect")
+    adapter = _Sent(transports, unsent, unsent, unsent, evidence=True)
+    with auth.RefreshTokenProvider(
+        _TOKEN,
+        client_id="c",
+        token_set=_tokens(auth, minutes=100 / 60),
+        client_auth_method="none",
+        options=timed,
+        token_transport=adapter,
+    ) as family:
+        start = now
+        first = family.get(_context(auth))
+        now = start + 95
+        lines.append(
+            f"  refresh proven unsent before the token expires = {_outcome(lambda: family.get(_context(auth)))}"
+            f" same={family.get(_context(auth)) is first}"
+        )
+        now = start + 101
+        lines.append(f"    once the token expired = {_outcome(lambda: family.get(_context(auth)))}")
 
 
 class _Once(Secret):

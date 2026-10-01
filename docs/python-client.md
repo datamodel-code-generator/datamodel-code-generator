@@ -1429,8 +1429,9 @@ validation.
 ## Timeouts, cancellation, and send limits
 
 The generated package's `options` module provides `ClientOptions`, `RequestOptions`, `TimeoutOptions`, `Deadline`,
-and `CancelToken`. These settings apply to typed operations and `request_raw`, including their response and streaming
-views. The following examples use a generated package named `pets` and take the service URL from their caller.
+`CancelToken`, and `Clock`. These settings apply to typed operations and `request_raw`, including their response and
+streaming views. The following examples use a generated package named `pets` and take the service URL from their
+caller.
 
 | Option | Effective default | Meaning |
 |---|---|---|
@@ -1443,6 +1444,7 @@ views. The following examples use a generated package named `pets` and take the 
 | `stream_total_timeout` | `None` | Total stream lifetime after handoff |
 | `cleanup_timeout` | `5` | Separate positive, finite budget for releasing resources |
 | `limiter` | `None` | An application-provided `Limiter` or `AsyncLimiter` |
+| `clock` | `Clock()`, the system clock | Client only: the time and jitter sources of every call, described in [Clocks and retry jitter](#clocks-and-retry-jitter) |
 
 Omitted fields remain `UNSET` until resolution. Each field inherits in this order: request, `with_options` view,
 client, generated default. `TimeoutOptions` merges each phase separately. For example, a client's
@@ -1465,8 +1467,9 @@ the SDK would first acquire a token.
 ### A budget shared by every phase
 
 `Deadline.after(10)` fixes the expiry when it is created. Reusing that object across calls shares the same expiry;
-each call's `total_timeout` starts again at call entry. `Deadline.at` is the readonly monotonic timestamp, and
-`remaining()` returns the seconds left, never a negative number. Do not compare `at` with wall-clock timestamps.
+each call's `total_timeout` starts again at call entry. `Deadline.at` is the readonly monotonic timestamp on the
+deadline's clock, `Deadline.clock`, and `remaining()` returns the seconds left on that clock, never a negative number.
+Do not compare `at` with wall-clock timestamps.
 
 ```python
 from pets import Client
@@ -1577,6 +1580,58 @@ within `cleanup_timeout`, for a download's file work to finish.
 
 `stream_to(file_object)` writes to a borrowed file on the calling thread or event loop and never closes, seeks, or
 truncates it; bytes already written stay there. A failed write closes the response before the failure propagates.
+
+### Clocks and retry jitter
+
+`ClientOptions(clock=Clock(...))` replaces the time and jitter sources of every call a client makes. Views and requests
+cannot change it. Each of the three sources is a function that takes no arguments:
+
+| Source | Default | Read for |
+|---|---|---|
+| `monotonic` | `time.monotonic` | Deadlines, elapsed times, retry targets, idempotency key retention, token expiry, and hook event durations |
+| `time` | `time.time` | Placing a wall-clock instant on the monotonic scale once: an HTTP-date `Retry-After` at receipt, an idempotency key's `first_used_at` at call entry, and an access token's `expires_at` |
+| `random` | A secure uniform draw | The fraction in `[0, 1)` of a full-jitter backoff, drawn only when a retry needs one |
+
+A source that cannot be called raises `ConfigurationError` with the `field_path` `("clock", name)`. OAuth providers
+and flows keep their own time through `OAuthProviderOptions(clock=...)`, since one provider can serve several clients.
+A key from `IdempotencyKey.new()` takes its first use from the system clock; pass `first_used_at` yourself for a client
+with another clock.
+
+A deadline remembers its clock. `Deadline.after(seconds, clock=clock)` creates it on that clock, the system clock by
+default, and `remaining()` reads that clock, so an adapter, limiter, or provider that receives it measures it
+correctly. A call given a deadline from another clock moves it onto its own clock by the time remaining at call entry.
+A deadline from the client's own clock stays the same object, so `DeadlineExceededError.deadline_at` equals its `at`.
+
+The client still waits in real time. A retry sleep or a deadline timer lasts as long as the client measured on its
+clock, and closing and cleanup limits always use the system clock. A test clock that should skip a wait advances
+itself, for example from a hook when a retry is scheduled:
+
+```python
+from pets import Client
+from pets.hooks import CallEvent
+from pets.options import ClientOptions, Clock, RetryOptions
+
+
+class SteppedClock:
+    def __init__(self) -> None:
+        self.now = 0.0
+
+    def __call__(self) -> float:
+        return self.now
+
+    def on_event(self, event: CallEvent) -> None:
+        if event.name == "retry_scheduled" and event.duration is not None:
+            self.now += event.duration
+
+
+def instant_retries(url: str) -> Client:
+    stepped = SteppedClock()
+    clock = Clock(monotonic=stepped, random=lambda: 0.5)
+    return Client(options=ClientOptions(base_url=url, retry=RetryOptions(), hooks=(stepped,), clock=clock))
+```
+
+Each retry of this client is scheduled at half its backoff cap and starts at once, while its hooks and errors report
+the delays the retry policy chose.
 
 ## Application concurrency limits
 

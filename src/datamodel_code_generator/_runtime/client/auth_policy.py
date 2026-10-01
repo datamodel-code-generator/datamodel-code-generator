@@ -7,7 +7,6 @@ import inspect
 import re
 from dataclasses import dataclass
 from functools import partial
-from time import monotonic, time
 from typing import TYPE_CHECKING, Final, Literal, TypeVar
 from urllib.parse import quote, urlsplit, urlunsplit
 
@@ -72,6 +71,7 @@ if TYPE_CHECKING:
     from .bodies import AsyncBodyAttempt, BodyAttempt
     from .options import HeaderPatch, QueryPatch
     from .security import SecurityBinding, SecuritySchemeEntry
+    from .timing import Clock
     from .urls import Origin
 
 __all__ = ("invalid_token",)
@@ -492,7 +492,7 @@ def validate_ownership(
         raise AuthConfigurationError(field_path=("auth",), condition="name_collision")
 
 
-def _expiry(token: AccessToken, delivery: DeliveryState) -> float | None:
+def _expiry(token: AccessToken, delivery: DeliveryState, clock: Clock) -> float | None:
     if (expires := token.expires_at) is None:
         return None
     try:
@@ -501,13 +501,13 @@ def _expiry(token: AccessToken, delivery: DeliveryState) -> float | None:
         raise TokenExpiredError(condition="invalid_expiry", delivery_state=delivery, cause=cause) from None
     if timestamp is None:
         raise TokenExpiredError(condition="invalid_expiry", delivery_state=delivery)
-    if (remaining := timestamp - time()) <= 0:
+    if (remaining := timestamp - clock.time()) <= 0:
         raise TokenExpiredError(condition="expired", expires_at=expires, delivery_state=delivery)
-    return monotonic() + remaining
+    return clock.monotonic() + remaining
 
 
 def _material(
-    value: object, scheme: SecurityScheme, context: CredentialContext, delivery: DeliveryState
+    value: object, scheme: SecurityScheme, context: CredentialContext, delivery: DeliveryState, clock: Clock
 ) -> AcquiredCredential:
     if isinstance(value, ApiKeyCredential) and scheme.kind == "api_key":
         return AcquiredCredential(value, None)
@@ -521,7 +521,7 @@ def _material(
             raise InsufficientScopeError(
                 required_scopes=context.required_scopes, granted_scopes=token.scopes, delivery_state=delivery
             )
-        return AcquiredCredential(value, _expiry(token, delivery))
+        return AcquiredCredential(value, _expiry(token, delivery, clock))
     if inspect.iscoroutine(value):
         value.close()
     raise AuthConfigurationError(field_path=("auth", "credentials", scheme.name), condition="invalid_material")
@@ -608,10 +608,14 @@ def rejected_version(value: object, version: TokenVersion) -> bool:
 
 
 def accept_credential(
-    value: object, binding: BoundCredential | AsyncBoundCredential, context: CredentialContext, delivery: DeliveryState
+    value: object,
+    binding: BoundCredential | AsyncBoundCredential,
+    context: CredentialContext,
+    delivery: DeliveryState,
+    clock: Clock,
 ) -> AcquiredCredential:
-    """Validate the material that will be sent: its kind, token type, known scopes, and expiry."""
-    return _material(value, binding.scheme, context, delivery)
+    """Validate the material that will be sent: its kind, token type, known scopes, and expiry on the call's clock."""
+    return _material(value, binding.scheme, context, delivery, clock)
 
 
 def invalidate_credential(binding: BoundCredential, version: TokenVersion) -> None:
@@ -629,23 +633,23 @@ async def ainvalidate_credential(binding: AsyncBoundCredential, version: TokenVe
 
 
 def refresh_credential(
-    binding: BoundCredential, context: CredentialContext, delivery: DeliveryState
+    binding: BoundCredential, context: CredentialContext, delivery: DeliveryState, clock: Clock
 ) -> AcquiredCredential:
     """Execute one explicitly admitted synchronous refresh callback."""
     assert binding.refreshable is not None
     with _REFRESH[delivery]:
         value = binding.refreshable.refresh(context)
-    return _material(value, binding.scheme, context, delivery)
+    return _material(value, binding.scheme, context, delivery, clock)
 
 
 async def arefresh_credential(
-    binding: AsyncBoundCredential, context: CredentialContext, delivery: DeliveryState
+    binding: AsyncBoundCredential, context: CredentialContext, delivery: DeliveryState, clock: Clock
 ) -> AcquiredCredential:
     """Execute one explicitly admitted asynchronous refresh callback."""
     assert binding.refreshable is not None
     with _REFRESH[delivery]:
         value = await binding.refreshable.refresh(context)
-    return _material(value, binding.scheme, context, delivery)
+    return _material(value, binding.scheme, context, delivery, clock)
 
 
 def credentials_expired(acquired: HopCredentials | AsyncHopCredentials, *, now: float) -> bool:

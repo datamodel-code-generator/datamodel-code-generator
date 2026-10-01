@@ -14,7 +14,6 @@ from collections import OrderedDict
 from contextlib import suppress
 from dataclasses import dataclass, field
 from functools import partial
-from time import monotonic
 from typing import TYPE_CHECKING, Any, Final, Literal, Protocol
 from uuid import uuid4
 
@@ -206,10 +205,11 @@ class AsyncWaiter:
 class Receipts:
     """Snapshots of jobs by refresh id: queued and running ones, then the latest ended ones for a while."""
 
-    __slots__ = ("_done", "_pending")
+    __slots__ = ("_done", "_monotonic", "_pending")
 
-    def __init__(self) -> None:
-        """Start without receipts."""
+    def __init__(self, monotonic: Callable[[], float]) -> None:
+        """Start without receipts, aging ended ones on the provider's clock."""
+        self._monotonic = monotonic
         self._pending: dict[str, Job] = {}
         self._done: OrderedDict[str, tuple[float, RefreshInfo]] = OrderedDict()
 
@@ -224,7 +224,7 @@ class Receipts:
     def completed(self, job: Job, info: RefreshInfo) -> None:
         """Replace a job's pending receipt by its terminal one."""
         del self._pending[job.refresh_id]
-        self._done[job.refresh_id] = (monotonic(), info)
+        self._done[job.refresh_id] = (self._monotonic(), info)
         self._evict()
 
     def get(self, refresh_id: object) -> RefreshInfo | None:
@@ -237,7 +237,7 @@ class Receipts:
         return None if (entry := self._done.get(refresh_id)) is None else entry[1]
 
     def _evict(self) -> None:
-        now = monotonic()
+        now = self._monotonic()
         while self._done and (len(self._done) > _RECEIPTS or now - next(iter(self._done.values()))[0] > _RECEIPT_AGE):
             self._done.popitem(last=False)
 
@@ -253,6 +253,7 @@ class SharedRefresh:
         "changed",
         "lifecycle",
         "lock",
+        "monotonic",
         "options",
         "provider_id",
         "receipts",
@@ -264,11 +265,12 @@ class SharedRefresh:
         self.lock = threading.Lock()
         self.changed = threading.Condition(self.lock)
         self.options = options
+        self.monotonic = monotonic = options.clock.monotonic
         self.provider_id = str(uuid4())
         self.lifecycle: Literal["OPEN", "CLOSING", "CLOSED"] = "OPEN"
         self.state: RefreshState | Literal["UNINITIALIZED"] = "UNINITIALIZED"
         self.cache: Published | None = None
-        self.receipts = Receipts()
+        self.receipts = Receipts(monotonic)
         self._active: Job | None = None
         self._outstanding: set[Job] = set()
         self._running: set[Job] = set()
@@ -299,7 +301,7 @@ class SharedRefresh:
             not force
             and (cache := self.cache) is not None
             and cache.expires_at is not None
-            and monotonic() < cache.expires_at
+            and self.monotonic() < cache.expires_at
         ):
             return self._renewing(waiter, cache)
         admission = waiter.admission
@@ -377,7 +379,7 @@ class SharedRefresh:
         if (
             not force
             and (cache := self.cache) is not None
-            and (cache.refresh_at is None or monotonic() < cache.refresh_at)
+            and (cache.refresh_at is None or self.monotonic() < cache.refresh_at)
         ):
             return cache
         return None
@@ -399,7 +401,7 @@ class SharedRefresh:
     def admit(self, job: Job) -> None:
         """Start a job's provider-owned session, charged to the call of its oldest waiter; the caller holds the lock."""
         options = self.options
-        job.session = Session.start(options.refresh_timeout, options.phase_timeout)
+        job.session = Session.start(options.refresh_timeout, options.phase_timeout, options.clock)
         job.progress.guard = partial(self._sending, job)
         self._running.add(job)
         if job.exchanges and (charged := job.waiters[0].admission) is not None:
@@ -457,7 +459,7 @@ class SharedRefresh:
 
     def expire(self, job: Job) -> None:
         """Fail an admitted job whose work outlived its session and grace period, without stopping that work."""
-        if (until := job.until) is not None and monotonic() >= until:
+        if (until := job.until) is not None and self.monotonic() >= until:
             self.overdue(job)
 
     def overdue(self, job: Job) -> None:
@@ -556,7 +558,7 @@ class SharedRefresh:
             return (
                 (cache := self.cache) is None
                 or cache.material.version is version
-                or (cache.refresh_at is not None and monotonic() >= cache.refresh_at)
+                or (cache.refresh_at is not None and self.monotonic() >= cache.refresh_at)
             )
 
     def busy(self) -> bool:
@@ -587,23 +589,29 @@ def _outcome(outcome: Published | Failed) -> BearerCredential:
     return outcome.material
 
 
-def _within(context: CredentialContext, started: float, admission: CallAdmission | None) -> None:
+def _within(context: CredentialContext, started: float, admission: CallAdmission | None, shared: SharedRefresh) -> None:
     """Raise the caller's own error once it was cancelled, ran out of time, or its client closed."""
     if admission is None:
-        _waited(context, started)
+        _waited(context, started, shared)
     else:
         admission.observe()
 
 
-def _waited(context: CredentialContext, started: float) -> float | None:
-    """Return how long a caller may wait before checking again, raising once it was cancelled or ran out of time."""
+def _waited(context: CredentialContext, started: float, shared: SharedRefresh) -> float | None:
+    """Return how long a caller may wait before checking again, raising once it was cancelled or ran out of time.
+
+    The caller's deadline is read on its own clock, and the time it waited on the provider's.
+    """
     if (token := context.cancel_token) is not None and token.cancelled:
         raise RequestCancelledError(source="cancel_token", delivery_state=DeliveryState.NOT_SENT)
     if (deadline := context.deadline) is None:
         return None if token is None else TOKEN_INTERVAL
-    if (remaining := deadline.at - (now := monotonic())) <= 0:
+    if (remaining := deadline.remaining()) <= 0:
         raise DeadlineExceededError(
-            deadline_at=deadline.at, elapsed=now - started, delivery_state=DeliveryState.NOT_SENT, phase="auth"
+            deadline_at=deadline.at,
+            elapsed=shared.monotonic() - started,
+            delivery_state=DeliveryState.NOT_SENT,
+            phase="auth",
         )
     return remaining if token is None else min(remaining, TOKEN_INTERVAL)
 
@@ -630,8 +638,8 @@ class SyncSharedRefresh:
         A job that changed the family instead of acquiring material sends its waiters to claim again within their
         limits; a call reports waiting for another caller's job once.
         """
-        started = monotonic()
         shared = self.shared
+        started = shared.monotonic()
         announced = False
         while True:
             waiter = SyncWaiter(admission)
@@ -656,7 +664,7 @@ class SyncSharedRefresh:
                     raise
             if not isinstance(outcome := self._awaited(context, started, waiter, job), Again):
                 return _outcome(outcome)
-            _within(context, started, admission)
+            _within(context, started, admission, shared)
 
     def _awaited(self, context: CredentialContext, started: float, waiter: SyncWaiter, job: Job) -> Outcome:
         """Wait for a job's outcome within the caller's limits, expiring the job once its session and grace end."""
@@ -666,16 +674,16 @@ class SyncSharedRefresh:
             try:
                 while (outcome := waiter.outcome) is None:
                     if admission is None:
-                        remaining = _waited(context, started)
+                        remaining = _waited(context, started, shared)
                     else:
                         admission.observe()
                         remaining = (
                             TOKEN_INTERVAL
                             if (deadline := context.deadline) is None
-                            else min(TOKEN_INTERVAL, deadline.at - monotonic())
+                            else min(TOKEN_INTERVAL, deadline.remaining())
                         )
                     if (until := job.until) is not None:
-                        left = until - monotonic()
+                        left = until - shared.monotonic()
                         remaining = left if remaining is None else min(remaining, left)
                     shared.changed.wait(None if remaining is None else min(remaining, threading.TIMEOUT_MAX))
                     shared.expire(job)
@@ -693,7 +701,7 @@ class SyncSharedRefresh:
                 while (outcome := waiter.outcome) is None:
                     until = job.until
                     assert until is not None
-                    shared.changed.wait(min(until - monotonic(), threading.TIMEOUT_MAX))
+                    shared.changed.wait(min(until - shared.monotonic(), threading.TIMEOUT_MAX))
                     shared.expire(job)
             finally:
                 shared.leave(waiter, job)
@@ -796,7 +804,7 @@ class SyncSharedRefresh:
         """Release once the running jobs return or their sessions end, unless another closer already released."""
         shared = self.shared
         with shared.lock:
-            while not released.done() and (left := shared.drained(monotonic())) is not None:
+            while not released.done() and (left := shared.drained(shared.monotonic())) is not None:
                 shared.changed.wait(min(left, threading.TIMEOUT_MAX))
         self._release()
 
@@ -868,8 +876,8 @@ class AsyncSharedRefresh:
         """
         from asyncio import get_running_loop, wait  # noqa: PLC0415
 
-        started = monotonic()
         shared = self.shared
+        started = shared.monotonic()
         announced = False
         while True:
             waiter = AsyncWaiter(get_running_loop().create_future(), admission)
@@ -890,13 +898,13 @@ class AsyncSharedRefresh:
                     announced = True
                     await admission.awaiting()
                 while not future.done():
-                    await wait({future}, timeout=None if admission is not None else _waited(context, started))
+                    await wait({future}, timeout=None if admission is not None else _waited(context, started, shared))
             finally:
                 with shared.lock:
                     shared.leave(waiter, job)
             if not isinstance(outcome := future.result(), Again):
                 return _outcome(outcome)
-            _within(context, started, admission)
+            _within(context, started, admission, shared)
 
     async def perform(self, job: Job, waiter: AsyncWaiter, *, start: bool = True) -> Outcome:
         """Run an explicit operation's admitted job, or join it, and await its outcome, bounded by its session."""
@@ -918,7 +926,7 @@ class AsyncSharedRefresh:
         loop = get_running_loop()
         until = job.until
         assert until is not None
-        timer = loop.call_at(loop.time() + until - monotonic(), self._overdue, job)
+        timer = loop.call_at(loop.time() + until - self.shared.monotonic(), self._overdue, job)
         task = _detached(self._run(job, timer))
         self._tasks.add(task)
         task.add_done_callback(partial(self._done, job, timer))
@@ -977,7 +985,7 @@ class AsyncSharedRefresh:
 
     def _drained(self) -> float | None:
         with self.shared.lock:
-            return self.shared.drained(monotonic())
+            return self.shared.drained(self.shared.monotonic())
 
 
 def _invalidate(shared: SharedRefresh, version: object) -> None:

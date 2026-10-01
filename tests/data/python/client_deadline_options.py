@@ -59,6 +59,7 @@ def _values(options: ModuleType, hooks: ModuleType, lines: list[str]) -> None:
         ("max_network_sends", True),
         ("max_network_sends", -1),
         ("max_network_sends", 0.5),
+        ("clock", object()),
     ):
         record(lines, f"option {field} type", lambda field=field, value=value: options.ClientOptions(**{field: value}))
     record(lines, "timeout unset", options.TimeoutOptions)
@@ -216,6 +217,7 @@ def _hints(
         options.ClientOptions,
         options.RequestOptions,
         options.Deadline,
+        options.Clock,
         options.CancelToken,
         hooks.LimiterContext,
         transports.AttemptIOContext,
@@ -232,6 +234,7 @@ def _hints(
         options.Deadline.after,
         options.Deadline.remaining,
         options.Deadline.at.fget,
+        options.Deadline.clock.fget,
         options.CancelToken.cancel,
         options.CancelToken.cancelled.fget,
         hooks.Limiter.acquire,
@@ -312,6 +315,53 @@ def _adapter_failure(
         record(lines, "adapter failure keeps context", lambda: api.request_raw("GET", "https://example.com/failure"))
 
 
+def _clocks(
+    package: ModuleType, options: ModuleType, errors: ModuleType, transports: ModuleType, lines: list[str]
+) -> None:
+    """Keep deadlines on the clock they were made on, and move a deadline from another clock onto a call's clock."""
+    for name in ("monotonic", "time", "random"):
+        record(lines, f"clock {name} type", lambda name=name: options.Clock(**{name: 1.0}))
+    record(lines, "deadline clock type", lambda: options.Deadline.after(1, clock=object()))
+    fake = options.Clock(monotonic=lambda: 100.0)
+    deadline = options.Deadline.after(5, clock=fake)
+    lines.append(
+        f"  fake clock deadline at={deadline.at} remaining={deadline.remaining()} clock={deadline.clock is fake}"
+        f" system={options.Deadline.after(1).clock == options.Clock()}"
+    )
+    seen: list[object] = []
+
+    class ContextAdapter:
+        capabilities = transports.TransportCapabilities(
+            internal_retry_limit=0, delivery_evidence=True, http_versions=("HTTP/1.1",)
+        )
+
+        def send(self, request: object, context: object) -> object:
+            del request
+            seen.append(getattr(context, "deadline"))
+            raise errors.TransportError(delivery_state=errors.DeliveryState.NOT_SENT, phase="connect")
+
+        def close(self) -> None:
+            pass
+
+    system = options.Deadline.after(3600)
+    with package.Client(
+        transport_adapter=ContextAdapter(), options=options.ClientOptions(total_timeout=None, clock=fake)
+    ) as api:
+        for label, given in (("same clock", deadline), ("system clock", system)):
+            record(
+                lines,
+                f"deadline on the {label}",
+                lambda given=given: api.request_raw(
+                    "GET", "https://example.com/clock", options=options.RequestOptions(deadline=given)
+                ),
+            )
+    same, moved = seen
+    lines.append(
+        f"  kept={same is deadline} moved onto the call's clock={moved.clock is fake}"
+        f" by its remaining time={system.remaining() <= moved.at - 100 <= 3600}"
+    )
+
+
 def deadline_options(package: ModuleType, lines: list[str]) -> None:
     """Report public option validation, error shape, annotations, and timeout inheritance over real TLS."""
     options, errors, hooks, transports, responses = (
@@ -323,3 +373,4 @@ def deadline_options(package: ModuleType, lines: list[str]) -> None:
     _hints(options, errors, hooks, transports, lines)
     _live_calls(package, options, lines)
     _adapter_failure(package, options, errors, transports, lines)
+    _clocks(package, options, errors, transports, lines)

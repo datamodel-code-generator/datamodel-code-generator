@@ -112,6 +112,7 @@ from typing import TYPE_CHECKING
 from ._runtime.client.options import (
     CancelToken,
     ClientOptions,
+    Clock,
     Deadline,
     HeaderPatch,
     IdempotencyKey,
@@ -134,6 +135,7 @@ __all__ = [
     "UNSET",
     "CancelToken",
     "ClientOptions",
+    "Clock",
     "Deadline",
     "HeaderPatch",
     "IdempotencyKey",
@@ -2656,6 +2658,9 @@ refunded. `Deadline.after(seconds)` shares an absolute monotonic expiry across c
 the relative total timeout wins. `CancelToken` is thread-safe and remains cancelled once signalled. Sync callbacks,
 DNS, I/O, and cleanup are cooperative and may return after a deadline. Async SDK waits enforce their budgets.
 Native cancellation remains the original exception. No work starts after an observed cancellation or expiry.
+`ClientOptions(clock=Clock(monotonic=..., time=..., random=...))` replaces the time and jitter sources of every call;
+`OAuthProviderOptions(clock=...)` does so for a provider, and `Deadline.after(seconds, clock=...)` creates a deadline
+on that clock. Waits still pass in real time, so a test clock skips one by advancing itself.
 
 ## Retry decisions and delays
 

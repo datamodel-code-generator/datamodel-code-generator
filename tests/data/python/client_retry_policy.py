@@ -4,11 +4,9 @@ from __future__ import annotations
 
 import importlib
 import math
-from contextlib import ExitStack
 from datetime import datetime, timedelta, timezone
 from functools import partial
 from typing import TYPE_CHECKING, NoReturn
-from unittest.mock import patch
 from uuid import UUID
 
 import httpx2
@@ -519,20 +517,15 @@ def _timing(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
             hook = _TimingHook(clock)
             exchange.responders.clear()
             exchange.respond(*(_response(status, fields) for status in statuses))
-            with ExitStack() as stack:
-                for name in ("client", "logical", "timing", "transports", "events"):
-                    module = importlib.import_module(f"{package.__name__}._runtime.client.{name}")
-                    stack.enter_context(patch.object(module, "monotonic", clock))
-                module = importlib.import_module(f"{package.__name__}._runtime.client.client")
-                stack.enter_context(patch.object(module, "_draw", draw))
-                api = stack.enter_context(
-                    package.Client(
-                        http_client=native,
-                        options=options.ClientOptions(
-                            retry=options.RetryOptions(**retry_fields), total_timeout=total, hooks=(hook,)
-                        ),
-                    )
-                )
+            with package.Client(
+                http_client=native,
+                options=options.ClientOptions(
+                    retry=options.RetryOptions(**retry_fields),
+                    total_timeout=total,
+                    hooks=(hook,),
+                    clock=options.Clock(monotonic=clock, random=draw),
+                ),
+            ) as api:
                 record(lines, label, lambda api=api: outcome(api.retry.with_response.get_vendor))
             lines.append(
                 f"    delays={tuple(hook.delays)!r} expected={expected!r} match={tuple(hook.delays) == expected} "
@@ -562,16 +555,12 @@ def _timing(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
             hook = _TimingHook(clock, headers_elapsed=elapsed, end_elapsed=end_elapsed)
             exchange.responders.clear()
             exchange.respond(_response(503, fields), _response(200))
-            with ExitStack() as stack:
-                for name in ("client", "logical", "timing", "transports", "events"):
-                    module = importlib.import_module(f"{package.__name__}._runtime.client.{name}")
-                    stack.enter_context(patch.object(module, "monotonic", clock))
-                api = stack.enter_context(
-                    package.Client(
-                        http_client=native,
-                        options=options.ClientOptions(retry=options.RetryOptions(**retry_fields), hooks=(hook,)),
-                    )
-                )
+            with package.Client(
+                http_client=native,
+                options=options.ClientOptions(
+                    retry=options.RetryOptions(**retry_fields), hooks=(hook,), clock=options.Clock(monotonic=clock)
+                ),
+            ) as api:
                 record(lines, label, lambda api=api: outcome(api.retry.with_response.get_vendor))
             lines.append(
                 f"    delays={tuple(hook.delays)!r} expected={expected!r} match={tuple(hook.delays) == expected}"
@@ -590,20 +579,15 @@ def _retention_boundaries(package: ModuleType, options: ModuleType, lines: list[
             )
             exchange.responders.clear()
             exchange.respond(_response(503), _response(200))
-            with ExitStack() as stack:
-                for name in ("client", "logical", "timing", "transports", "events"):
-                    module = importlib.import_module(f"{package.__name__}._runtime.client.{name}")
-                    stack.enter_context(patch.object(module, "monotonic", clock))
-                api = stack.enter_context(
-                    package.Client(
-                        http_client=native,
-                        options=options.ClientOptions(
-                            retry=options.RetryOptions(initial_delay=2, jitter="none"),
-                            hooks=(hook,),
-                            idempotency_key=key,
-                        ),
-                    )
-                )
+            with package.Client(
+                http_client=native,
+                options=options.ClientOptions(
+                    retry=options.RetryOptions(initial_delay=2, jitter="none"),
+                    hooks=(hook,),
+                    idempotency_key=key,
+                    clock=options.Clock(monotonic=clock),
+                ),
+            ) as api:
                 record(
                     lines, label, lambda api=api: outcome(lambda: api.retry.with_response.post_keyed(body=b"payload"))
                 )
