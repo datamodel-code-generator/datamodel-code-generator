@@ -654,6 +654,7 @@ def _sources(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
         path.write_bytes(b"0123456789abc")
         step(lines, "start", lambda: helper.start(source, tus_resumable=harness.tus))
         lines.append(f"  source {source!r} reads ranges: {_ranges(source)}")
+        step(lines, "hash a directory", lambda: protocols.FileUploadSource.from_path(directory))
 
 
 def _ranges(source: Any) -> str:
@@ -1021,6 +1022,7 @@ async def _async_uploads(harness: _Uploads, server: _Server, lines: list[str]) -
             await arecord(
                 lines, "start after the source closed", lambda: helper.start(source, tus_resumable=harness.tus)
             )
+            await astep(lines, "hash a directory", lambda: protocols.AsyncFileUploadSource.from_path(directory))
             try:
                 await protocols.AsyncFileUploadSource.from_path(Path(directory, "missing"))
             except OSError as error:

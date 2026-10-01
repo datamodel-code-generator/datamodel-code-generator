@@ -362,6 +362,7 @@ content that changed after the scan
 a file that changed after it was hashed
   start ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', offset=0) [condition='inconsistent'] upload_source_changed_error [offset=0] expected=10
   source FileUploadSource(size=10) reads ranges: past the end refused, a negative offset refused
+  hash a directory ! NonResumableSourceError: NonResumableSourceError(condition='wrong_capability', source_kind='stream') [field_path=('source',), condition='wrong_capability'] non_resumable_source_error
 checkpoint, export, import, and resume
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
@@ -658,5 +659,6 @@ async file source
   file range b'234', after close b''
   start after the file changed ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', offset=0) [condition='inconsistent'] upload_source_changed_error
   start after the source closed ! ProtocolStateError: ProtocolStateError(state='closed', action='open_range') [] protocol_state_error
+  hash a directory ! NonResumableSourceError: NonResumableSourceError(condition='wrong_capability', source_kind='stream') [field_path=('source',), condition='wrong_capability'] non_resumable_source_error
   hash a missing file ! FileNotFoundError
   async ranges: b'23' b'4' b'' after close b'', past the end refused

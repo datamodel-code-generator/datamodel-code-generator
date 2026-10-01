@@ -1198,14 +1198,16 @@ sources open independent readers and allow 4 ranges at once:
 | `BytesUploadSource.from_bytes(data)` | A copy of bytes, a bytearray, or a memoryview |
 | `FileUploadSource.from_path(path)` | A file, hashed once in 64 KiB reads; each range opens its own descriptor |
 | `AsyncBytesUploadSource.from_bytes(data)` | A copy of bytes, read by native asyncio readers |
-| `await AsyncFileUploadSource.from_path(path)` | A file, hashed once; one worker thread of its own opens, reads, and closes it, and `aclose()` or leaving `async with` stops it |
+| `await AsyncFileUploadSource.from_path(path)` | A file, hashed once in one 64 KiB read per worker job, so a cancellation stops between reads; one worker thread of its own opens, reads, and closes it, and `aclose()` or leaving `async with` stops it once its readers close and waits for the work interrupted callers left |
 
-A path source records the file's device, inode, size, and modification time when it hashes it, and each range it
-opens later raises `UploadSourceChangedError` when any of them changed. It is not a snapshot: keep the file unchanged
-while it is uploaded. Sources a call is given are borrowed and never closed by the client; every reader the client
-opens is closed. A one-shot input has no identity to resume from: bytes, an iterable, an iterator, an asyncio stream,
-or a reader raise `NonResumableSourceError` with its `source_kind` before anything is read; send it as an ordinary
-upload. Nothing is ever spooled to disk.
+A path must name a regular file: a FIFO, a device, or a directory raises `NonResumableSourceError` with
+`source_kind='stream'` before it is opened. A path source hashes at most the size the file had when it was opened and
+records the file's device, inode, size, and modification time, and each range it opens later raises
+`UploadSourceChangedError` when any of them changed. It is not a snapshot: keep the file unchanged while it is uploaded.
+Sources a call is given are borrowed and never closed by the client; every reader the client opens is closed. A one-shot
+input has no identity to resume from: bytes, an iterable, an iterator, an asyncio stream, or a reader raise
+`NonResumableSourceError` with its `source_kind` before anything is read; send it as an ordinary upload. Nothing is ever
+spooled to disk.
 
 Before anything is sent, `start` and `resume` read the whole source once through one reader and record the SHA-256 of
 each chunk; content that does not match the identity, by its length or its digest, raises `UploadSourceChangedError`.

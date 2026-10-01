@@ -11,19 +11,20 @@ import os
 from contextlib import ExitStack, asynccontextmanager, contextmanager
 from hashlib import sha256
 from pathlib import Path
+from stat import S_ISREG
 from typing import TYPE_CHECKING, BinaryIO, Final, TypeAlias
 
 from typing_extensions import Self
 
 from ..client.bodies import _close_file  # pyright: ignore[reportPrivateUsage]
-from .errors import ProtocolStateError, UploadSourceChangedError
+from ..client.disk import DiskWorker, raise_late
+from .errors import NonResumableSourceError, ProtocolStateError, UploadSourceChangedError
 from .sources import UploadIdentity
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Generator
     from types import TracebackType
 
-    from ..client.disk import DiskWorker
     from .sources import AsyncRangeReader, RangeReader
 
 __all__ = ("AsyncBytesUploadSource", "AsyncFileUploadSource", "BytesUploadSource", "FileUploadSource")
@@ -173,15 +174,20 @@ def _stat(file: BinaryIO) -> _Stat:
     return stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns
 
 
-def _hashed(path: Path) -> tuple[UploadIdentity, _Stat]:
-    """Hash a file once in bounded reads, recording its status before the first read."""
-    with path.open("rb") as file:
-        stat = _stat(file)
-        digest, size = sha256(), 0
-        while chunk := file.read(_READ):
-            digest.update(chunk)
-            size += len(chunk)
-    return UploadIdentity(size=size, sha256=digest.digest()), stat
+def _regular(path: Path) -> BinaryIO:
+    """Open a regular file, refusing anything else before opening it, since a FIFO's open would wait for a writer."""
+    if not S_ISREG(path.stat().st_mode):
+        raise NonResumableSourceError(source_kind="stream")
+    return path.open("rb")
+
+
+def _digested(file: BinaryIO, size: int) -> UploadIdentity:
+    """Hash at most the size a file had when it was opened, in bounded reads."""
+    digest, left = sha256(), size
+    while chunk := file.read(min(_READ, left)):
+        digest.update(chunk)
+        left -= len(chunk)
+    return UploadIdentity(size=size - left, sha256=digest.digest())
 
 
 def _opened(path: Path, stat: _Stat, identity: UploadIdentity, offset: int) -> BinaryIO:
@@ -233,7 +239,10 @@ class FileUploadSource:
     def from_path(cls, path: str | os.PathLike[str]) -> Self:
         """Hash the file at a path once and return its source."""
         found = Path(path)
-        return cls(found, *_hashed(found))
+        with _regular(found) as file:
+            stat = _stat(file)
+            identity = _digested(file, stat[2])
+        return cls(found, identity, stat)
 
     @property
     def identity(self) -> UploadIdentity:
@@ -310,15 +319,22 @@ class AsyncFileUploadSource:
     @classmethod
     async def from_path(cls, path: str | os.PathLike[str]) -> Self:
         """Hash the file at a path once on the source's worker and return the source, which owns that worker."""
-        from ..client.disk import DiskWorker  # noqa: PLC0415 - Only an asyncio path source starts a worker.
-
         found = Path(path)
         worker = DiskWorker("AsyncFileUploadSource")
         try:
-            identity, stat = await worker.run(_hashed, found)
+            file = await worker.run(_regular, found, discard=_close_file)
+            try:
+                stat = await worker.run(_stat, file)
+                digest, left = sha256(), stat[2]
+                while chunk := await worker.run(file.read, min(_READ, left)):
+                    digest.update(chunk)
+                    left -= len(chunk)
+            finally:
+                await worker.run(file.close, cleanup=True)
         except BaseException:
             worker.close()
             raise
+        identity = UploadIdentity(size=stat[2] - left, sha256=digest.digest())
         return cls(found, identity, stat, worker)
 
     @property
@@ -351,8 +367,9 @@ class AsyncFileUploadSource:
             await reader.aclose()
 
     async def aclose(self) -> None:
-        """Stop the worker once its open readers are closed; closing again does nothing."""
+        """Stop the worker once its open readers are closed, and wait for the work interrupted callers left."""
         self._worker.close()
+        raise_late(await self._worker.settled(every=True))
 
     async def __aenter__(self) -> Self:
         """Return this source, which leaving the block closes."""
