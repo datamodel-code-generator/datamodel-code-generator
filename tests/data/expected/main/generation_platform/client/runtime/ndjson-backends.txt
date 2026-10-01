@@ -1,0 +1,105 @@
+# ndjson pydantic_v2.BaseModel
+  > GET https://api.example.com/records accept=application/x-ndjson
+  records
+    1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end
+  > GET https://api.example.com/records accept=application/x-ndjson
+  tagged
+    1  id=None retry=None data=Created{'type': 'created', 'id': '1'} raw='{"type": "created", "id": "1"}'
+    2  id=None retry=None data=UnknownEvent{'discriminator': 'renamed', 'raw_data': '{"type": "renamed", "id": "2"}'} raw='{"type": "renamed", "id": "2"}'
+    3  id=None retry=None data=Deleted{'type': 'deleted', 'id': '3'} raw='{"type": "deleted", "id": "3"}'
+  < closed
+    end
+  > GET https://api.example.com/records accept=application/x-ndjson
+  < closed
+  error record None {'type': 'failed', 'message': 'nope'}
+  > POST https://api.example.com/search accept=application/jsonl; charset=utf-8
+  search
+    1  id=None retry=None data=Record{'text': 'b'} raw='{"text": "b"}'
+  < closed
+    end
+# ndjson pydantic_v2.dataclass
+  > GET https://api.example.com/records accept=application/x-ndjson
+  records
+    1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end
+  > GET https://api.example.com/records accept=application/x-ndjson
+  tagged
+    1  id=None retry=None data=Created{'type': 'created', 'id': '1'} raw='{"type": "created", "id": "1"}'
+    2  id=None retry=None data=UnknownEvent{'discriminator': 'renamed', 'raw_data': '{"type": "renamed", "id": "2"}'} raw='{"type": "renamed", "id": "2"}'
+    3  id=None retry=None data=Deleted{'type': 'deleted', 'id': '3'} raw='{"type": "deleted", "id": "3"}'
+  < closed
+    end
+  > GET https://api.example.com/records accept=application/x-ndjson
+  < closed
+  error record None {'type': 'failed', 'message': 'nope'}
+  > POST https://api.example.com/search accept=application/jsonl; charset=utf-8
+  search
+    1  id=None retry=None data=Record{'text': 'b'} raw='{"text": "b"}'
+  < closed
+    end
+# ndjson dataclasses.dataclass
+  > GET https://api.example.com/records accept=application/x-ndjson
+  records
+    1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end
+  > GET https://api.example.com/records accept=application/x-ndjson
+  tagged
+    1  id=None retry=None data=Created{'type': 'created', 'id': '1'} raw='{"type": "created", "id": "1"}'
+    2  id=None retry=None data=UnknownEvent{'discriminator': 'renamed', 'raw_data': '{"type": "renamed", "id": "2"}'} raw='{"type": "renamed", "id": "2"}'
+    3  id=None retry=None data=Deleted{'type': 'deleted', 'id': '3'} raw='{"type": "deleted", "id": "3"}'
+  < closed
+    end
+  > GET https://api.example.com/records accept=application/x-ndjson
+  < closed
+  error record None {'type': 'failed', 'message': 'nope'}
+  > POST https://api.example.com/search accept=application/jsonl; charset=utf-8
+  search
+    1  id=None retry=None data=Record{'text': 'b'} raw='{"text": "b"}'
+  < closed
+    end
+# ndjson typing.TypedDict
+  > GET https://api.example.com/records accept=application/x-ndjson
+  records
+    1  id=None retry=None data=dict{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end
+  > GET https://api.example.com/records accept=application/x-ndjson
+  tagged
+    1  id=None retry=None data=dict{'type': 'created', 'id': '1'} raw='{"type": "created", "id": "1"}'
+    2  id=None retry=None data=UnknownEvent{'discriminator': 'renamed', 'raw_data': '{"type": "renamed", "id": "2"}'} raw='{"type": "renamed", "id": "2"}'
+    3  id=None retry=None data=dict{'type': 'deleted', 'id': '3'} raw='{"type": "deleted", "id": "3"}'
+  < closed
+    end
+  > GET https://api.example.com/records accept=application/x-ndjson
+  < closed
+  error record None {'type': 'failed', 'message': 'nope'}
+  > POST https://api.example.com/search accept=application/jsonl; charset=utf-8
+  search
+    1  id=None retry=None data=dict{'text': 'b'} raw='{"text": "b"}'
+  < closed
+    end
+# ndjson msgspec.Struct
+  > GET https://api.example.com/records accept=application/x-ndjson
+  records
+    1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    end
+  > GET https://api.example.com/records accept=application/x-ndjson
+  tagged
+    1  id=None retry=None data=Created{'type': 'created', 'id': '1'} raw='{"type": "created", "id": "1"}'
+    2  id=None retry=None data=UnknownEvent{'discriminator': 'renamed', 'raw_data': '{"type": "renamed", "id": "2"}'} raw='{"type": "renamed", "id": "2"}'
+    3  id=None retry=None data=Deleted{'type': 'deleted', 'id': '3'} raw='{"type": "deleted", "id": "3"}'
+  < closed
+    end
+  > GET https://api.example.com/records accept=application/x-ndjson
+  < closed
+  error record None {'type': 'failed', 'message': 'nope'}
+  > POST https://api.example.com/search accept=application/jsonl; charset=utf-8
+  search
+    1  id=None retry=None data=Record{'text': 'b'} raw='{"text": "b"}'
+  < closed
+    end
