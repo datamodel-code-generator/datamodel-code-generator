@@ -14,7 +14,10 @@ import pytest
 from scripts import select_ci_test_shard
 from tests.conftest import assert_output
 
-SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "select_ci_test_shard.py"
+ROOT = Path(__file__).resolve().parents[1]
+SCRIPT = ROOT / "scripts" / "select_ci_test_shard.py"
+SHARDED_TESTS = "tests/api_generation/test_client_typing.py"
+SELECTIONS = {"all": (), "keyword": ("-k", "pagination or streams")}
 DATA = Path(__file__).parent / "data/ci_shards"
 EXPECTED = Path(__file__).parent / "data/expected/ci_shards"
 PAYLOAD_VALIDATION_FILE = "tests/main/test_payload_validation.py"
@@ -56,6 +59,39 @@ def test_recipe_discovers_split_nodeids(tmp_path: Path) -> None:
         )
         + "\n",
         Path(__file__).parent / "data/expected/ci_shards/discovery.txt",
+    )
+
+
+def _collect(*args: str) -> list[str]:
+    environment = {name: value for name, value in os.environ.items() if name != "PYTEST_ADDOPTS"}
+    result = subprocess.run(
+        [sys.executable, "-m", "pytest", "--collect-only", "-q", "-p", "no:cacheprovider", SHARDED_TESTS, *args],
+        cwd=ROOT,
+        env=environment,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return [line for line in result.stdout.splitlines() if "::" in line]
+
+
+@pytest.mark.parametrize("name", SELECTIONS)
+def test_test_shard_option_partitions_collection(name: str) -> None:
+    """The pytest --test-shard shards of one collection select each test once, also after keyword deselection."""
+    collected = _collect(*SELECTIONS[name])
+    shards = [_collect(*SELECTIONS[name], f"--test-shard={index}/3") for index in range(1, 4)]
+    selected = [nodeid for shard in shards for nodeid in shard]
+    assert_output(
+        json.dumps(
+            {
+                "complete": sorted(selected) == sorted(collected),
+                "disjoint": len(selected) == len(set(selected)),
+                "every_shard_selects": all(shards),
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        EXPECTED / f"test-shard-{name}.txt",
     )
 
 

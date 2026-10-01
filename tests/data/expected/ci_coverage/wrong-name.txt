@@ -1,6 +1,6 @@
 {
   "code": 1,
   "prepared": [],
-  "stderr": "Coverage provenance mismatch: .coverage.client-e2e-ubuntu-24.04\n",
+  "stderr": "Coverage provenance mismatch: .coverage.client-e2e-shard1-ubuntu-24.04\n",
   "stdout": ""
 }

@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Mapping
 
 EXCLUDED_PARTS = frozenset({"__pycache__", "cli_doc", "data"})
 PAYLOAD_VALIDATION_FILE = "tests/main/test_payload_validation.py"
@@ -71,7 +71,8 @@ def _collect_test_items(root: Path = TESTS_ROOT) -> list[str]:
     return file_items
 
 
-def _median_weight(weights: dict[str, int]) -> int:
+def median_weight(weights: Mapping[str, int]) -> int:
+    """Return the median measured weight, used for tests that have none yet, or 1 when nothing is measured."""
     if not (ordered := sorted(weights.values())):
         return 1
     middle = len(ordered) // 2
@@ -112,7 +113,7 @@ def _is_excluded(item: str, excluded: tuple[str, ...]) -> bool:
 
 
 def _build_recipe_items(weights: Profile, excluded: tuple[str, ...] = ()) -> list[dict[str, int | str]]:
-    fallback = (_median_weight(weights[0]), _median_weight(weights[1]))
+    fallback = (median_weight(weights[0]), median_weight(weights[1]))
     return [
         {"nodeid": item, "weight": _item_weight(item, weights, fallback)}
         for item in _collect_test_items()
@@ -216,16 +217,18 @@ def _record_weights(path: Path, profile: str, junit_paths: Iterable[Path], *, ru
     _write_json(path, document)
 
 
-def _select_shard(items: list[dict[str, int | str]], shard_index: int, shard_total: int) -> list[str]:
-    """Assign items to shards heaviest-first and keep that order so xdist starts long tests early."""
+def select_shard(weights: Mapping[str, int], shard_index: int, shard_total: int) -> list[str]:
+    """Assign node ids to shards heaviest-first and keep that order so xdist starts long tests early.
+
+    Every node id lands in exactly one shard, so the shards of one collection never drop or repeat a test.
+    """
+    if not 1 <= shard_index <= shard_total:
+        msg = "shard_index must be between 1 and shard_total"
+        raise SystemExit(msg)
     shards: list[list[str]] = [[] for _ in range(shard_total)]
     shard_weights = [0] * shard_total
-    weighted_items = sorted(
-        ((int(item["weight"]), str(item["nodeid"])) for item in items),
-        key=lambda item: (-item[0], item[1]),
-    )
 
-    for weight, item in weighted_items:
+    for item, weight in sorted(weights.items(), key=lambda item: (-item[1], item[0])):
         target = min(
             range(shard_total),
             key=lambda index: (shard_weights[index], len(shards[index]), index),
@@ -270,19 +273,12 @@ def main(argv: list[str] | None = None) -> None:
     if args.shard_index is None or args.shard_total is None:
         parser.error("shard_index and shard_total are required unless only --write-recipe is used")
 
-    shard_index = args.shard_index
-    shard_total = args.shard_total
+    weights = {str(item["nodeid"]): int(item["weight"]) for item in items}
+    if selected := select_shard(weights, args.shard_index, args.shard_total):
+        print(*selected, sep="\n")
+        return
 
-    match 1 <= shard_index <= shard_total:
-        case False:
-            msg = "shard_index must be between 1 and shard_total"
-            raise SystemExit(msg)
-        case _:
-            if selected := _select_shard(items, shard_index, shard_total):
-                print(*selected, sep="\n")
-                return
-
-    msg = f"No tests selected for shard {shard_index}/{shard_total}"
+    msg = f"No tests selected for shard {args.shard_index}/{args.shard_total}"
     raise SystemExit(msg)
 
 

@@ -170,6 +170,11 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         default=False,
         help="Collect CLI documentation metadata from tests marked with @pytest.mark.cli_doc",
     )
+    parser.addoption(
+        "--test-shard",
+        metavar="INDEX/TOTAL",
+        help="Run one of TOTAL shards of the selected tests, split by their measured CI durations",
+    )
     parser.addini(
         "assert_helper_direct_assert_exempt_files",
         "Test files under tests/ that are exempt from the shared assertion helper direct-assert guard.",
@@ -375,14 +380,34 @@ def order_slow_tests_first(items: list[pytest.Item], durations: dict[str, int], 
     return ordered
 
 
+def select_test_shard(
+    config: pytest.Config, items: list[pytest.Item], durations: dict[str, int], shard: str
+) -> list[pytest.Item]:
+    """Keep one ``INDEX/TOTAL`` shard of the items, split heaviest-first like the CI file shards.
+
+    Tests without a measured duration weigh the median of the measured ones, and the rest are deselected.
+    """
+    from scripts.select_ci_test_shard import median_weight, select_shard
+
+    index, total = map(int, shard.split("/"))
+    measured = {item.nodeid: durations[item.nodeid] for item in items if item.nodeid in durations}
+    fallback = median_weight(measured)
+    selected = set(select_shard({item.nodeid: measured.get(item.nodeid, fallback) for item in items}, index, total))
+    config.hook.pytest_deselected(items=[item for item in items if item.nodeid not in selected])
+    return [item for item in items if item.nodeid in selected]
+
+
 class SlowTestOrdering:
-    """Reorder the final collection so every xdist worker chunk starts with measured slow tests."""
+    """Select the requested test shard, then reorder it so every xdist worker chunk starts with measured slow tests."""
 
     @pytest.hookimpl(trylast=True)
     def pytest_collection_modifyitems(self, config: pytest.Config, items: list[pytest.Item]) -> None:
-        """Run after marker and keyword deselection so chunk boundaries match what xdist distributes."""
+        """Run after marker and keyword deselection so shards and chunk boundaries match what xdist distributes."""
+        durations = slow_test_durations()
+        if (shard := config.getoption("--test-shard")) is not None:
+            items[:] = select_test_shard(config, items, durations, shard)
         workers = getattr(config, "workerinput", {}).get("workercount", 1)
-        items[:] = order_slow_tests_first(items, slow_test_durations(), workers)
+        items[:] = order_slow_tests_first(items, durations, workers)
 
 
 def pytest_collection_modifyitems(
