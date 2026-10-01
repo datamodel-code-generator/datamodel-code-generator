@@ -144,6 +144,8 @@ def _json_error(error: ValueError | RecursionError) -> WireValidationError | Cod
             return issue(code="json.encoding", message="JSON text must be UTF-8")
         case RecursionError():
             return _nesting_limit()
+        case _:
+            pass
     return issue(code="json.syntax", message="The body is not valid JSON")
 
 
