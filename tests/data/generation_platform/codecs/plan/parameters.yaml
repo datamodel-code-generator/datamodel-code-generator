@@ -1,0 +1,39 @@
+openapi: 3.1.0
+info: {title: Parameters that the builtin codecs encode, version: "1"}
+paths:
+  /pages:
+    get:
+      parameters:
+        - {name: x-token, in: header, schema: {type: string}}
+        - {name: page, in: query, schema: {type: integer}}
+        - {name: pager, in: query, schema: {type: object, properties: {size: {type: integer}}, additionalProperties: false}}
+      responses:
+        "204": {description: none}
+  /options:
+    get:
+      parameters:
+        - {name: opts, in: query, schema: {type: object}}
+      responses:
+        "204": {description: none}
+  /more:
+    get:
+      parameters:
+        - {name: more, in: query, schema: {type: object}}
+      responses:
+        "204": {description: none}
+  /headers:
+    get:
+      parameters:
+        - {name: combined, in: header, schema: {type: string, allOf: [{type: [string, "null"]}, {minLength: 1}], anyOf: []}}
+        - {name: flag, in: header, schema: {enum: [true, false]}}
+        - {name: ratio, in: header, schema: {enum: [0.5, 1.5]}}
+        - {name: mode, in: header, schema: {enum: [null, a]}}
+        - {name: shaped, in: header, schema: {const: {a: 1}}}
+        - {name: counts, in: header, explode: true, schema: {type: object, additionalProperties: {type: integer}}}
+        - {name: anyMap, in: header, explode: true, schema: {type: object, additionalProperties: {}}}
+        - name: plain
+          in: header
+          content:
+            text/plain: {}
+      responses:
+        "204": {description: none}
