@@ -20,6 +20,7 @@ from .._runtime.model_codecs.bindings import (
     LeafNode,
     ModelBinding,
     ModelNode,
+    UnionNode,
     UseBinding,
 )
 from .._runtime.model_codecs.capabilities import (
@@ -50,6 +51,10 @@ def _resources() -> tuple[SchemaResource, ...]:
             contents=freeze_wire({
                 'components': {
                     'schemas': {
+                        'Criteria': {
+                            'type': 'object',
+                            'properties': {'term': {'type': ['string', 'null']}, 'start': {'type': 'integer'}},
+                        },
                         'Filter': {
                             'type': 'object',
                             'properties': {
@@ -60,17 +65,67 @@ def _resources() -> tuple[SchemaResource, ...]:
                                 'name': {'type': 'string'},
                             },
                         },
+                        'Item': {'type': 'object', 'required': ['id'], 'properties': {'id': {'type': 'string'}}},
                         'Key': {'type': 'object', 'required': ['a'], 'properties': {'a': {'type': 'integer'}}},
+                        'Options': {'type': 'object', 'properties': {'a': {'type': 'string'}}},
+                        'Page': {
+                            'type': 'object',
+                            'required': ['data', 'has_more'],
+                            'properties': {
+                                'data': {
+                                    'type': 'array',
+                                    'items': {'$ref': 'https://dcg.invalid/inputs/root#/components/schemas/Item'},
+                                },
+                                'has_more': {'type': 'boolean'},
+                            },
+                        },
                         'Tags': {'type': 'array', 'items': {'type': 'string'}},
                     },
                 },
                 'paths': {
+                    '/finds': {
+                        'get': {
+                            'parameters': [
+                                {
+                                    'content': {
+                                        'application/json': {
+                                            'schema': {
+                                                '$ref': 'https://dcg.invalid/inputs/root#/components/schemas/Criteria',
+                                            },
+                                        },
+                                    },
+                                },
+                            ],
+                            'responses': {
+                                '200': {
+                                    'content': {
+                                        'application/json': {
+                                            'schema': {
+                                                '$ref': 'https://dcg.invalid/inputs/root#/components/schemas/Page',
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
                     '/items/{key}': {
                         'get': {
                             'parameters': [
                                 {'schema': {'$ref': 'https://dcg.invalid/inputs/root#/components/schemas/Key'}},
                             ],
                         },
+                    },
+                    '/search': {
+                        'get': {
+                            'parameters': [
+                                {'schema': {'$ref': 'https://dcg.invalid/inputs/root#/components/schemas/Options'}},
+                                {'schema': {'type': 'string'}},
+                            ],
+                        },
+                    },
+                    '/segments/{segment}': {
+                        'get': {'parameters': [{'schema': {'type': 'string'}}, {'schema': {'type': 'string'}}]},
                     },
                     '/tags': {
                         'get': {
@@ -85,10 +140,20 @@ def _resources() -> tuple[SchemaResource, ...]:
                 },
             }),
             roots=(
+                '/components/schemas/Criteria',
                 '/components/schemas/Filter',
+                '/components/schemas/Item',
                 '/components/schemas/Key',
+                '/components/schemas/Options',
+                '/components/schemas/Page',
                 '/components/schemas/Tags',
+                '/paths/~1finds/get/parameters/0/content/application~1json/schema',
+                '/paths/~1finds/get/responses/200/content/application~1json/schema',
                 '/paths/~1items~1{key}/get/parameters/0/schema',
+                '/paths/~1search/get/parameters/0/schema',
+                '/paths/~1search/get/parameters/1/schema',
+                '/paths/~1segments~1{segment}/get/parameters/0/schema',
+                '/paths/~1segments~1{segment}/get/parameters/1/schema',
                 '/paths/~1tags/get/parameters/0/schema',
                 '/paths/~1tags/get/parameters/1/schema',
                 '/paths/~1tags/get/parameters/2/schema',
@@ -104,8 +169,18 @@ def _request_view() -> DirectionalView:
 
 
 @cache
+def _response_view() -> DirectionalView:
+    return DirectionalView(direction='response')
+
+
+@cache
 def request_bundle() -> SchemaBundle:
     return SchemaBundle(_resources(), _request_view())
+
+
+@cache
+def response_bundle() -> SchemaBundle:
+    return SchemaBundle(_resources(), _response_view())
 
 
 @cache
@@ -136,6 +211,39 @@ def request_registry() -> BundleSchemaRegistry:
                 source=CodecSourceRef(document='/inputs/root', pointer='/paths/~1items~1{key}/get/parameters/0/schema'),
                 dialect='https://json-schema.org/draft/2020-12/schema',
                 raw=freeze_wire({'$ref': '#/components/schemas/Key'}),
+            ),
+            SchemaSource(
+                schema_id='https://dcg.invalid/inputs/root#/paths/~1segments~1%7Bsegment%7D/get/parameters/0/schema',
+                source=CodecSourceRef(
+                    document='/inputs/root',
+                    pointer='/paths/~1segments~1{segment}/get/parameters/0/schema',
+                ),
+                dialect='https://json-schema.org/draft/2020-12/schema',
+                raw=freeze_wire({'type': 'string'}),
+            ),
+            SchemaSource(
+                schema_id='https://dcg.invalid/inputs/root#/paths/~1segments~1%7Bsegment%7D/get/parameters/1/schema',
+                source=CodecSourceRef(
+                    document='/inputs/root',
+                    pointer='/paths/~1segments~1{segment}/get/parameters/1/schema',
+                ),
+                dialect='https://json-schema.org/draft/2020-12/schema',
+                raw=freeze_wire({'type': 'string'}),
+            ),
+            SchemaSource(
+                schema_id='https://dcg.invalid/inputs/root#/paths/~1finds/get/parameters/0/content/application~1json/schema',
+                source=CodecSourceRef(
+                    document='/inputs/root',
+                    pointer='/paths/~1finds/get/parameters/0/content/application~1json/schema',
+                ),
+                dialect='https://json-schema.org/draft/2020-12/schema',
+                raw=freeze_wire({'$ref': '#/components/schemas/Criteria'}),
+            ),
+            SchemaSource(
+                schema_id='https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/0/schema',
+                source=CodecSourceRef(document='/inputs/root', pointer='/paths/~1search/get/parameters/0/schema'),
+                dialect='https://json-schema.org/draft/2020-12/schema',
+                raw=freeze_wire({'$ref': '#/components/schemas/Options'}),
             ),
         ),
     )
@@ -265,6 +373,152 @@ def _model_5() -> ModelBinding:
 
 
 @cache
+def _model_6() -> ModelBinding:
+    return ModelBinding(
+        symbol='models:FieldSegmentsSegmentGetPathSegmentParameter',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1segments~1%7Bsegment%7D/get/parameters/0/schema',
+        root=LeafNode(),
+    )
+
+
+@cache
+def _model_7() -> ModelBinding:
+    return ModelBinding(
+        symbol='models:FieldSegmentsSegmentGetHeaderXRawParameter',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1segments~1%7Bsegment%7D/get/parameters/1/schema',
+        root=LeafNode(),
+    )
+
+
+@cache
+def _model_8() -> ModelBinding:
+    return ModelBinding(
+        symbol='models:Criteria',
+        native_kind='model',
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Criteria',
+        fields=(
+            FieldBinding(
+                field_id='models:Criteria.term',
+                native_name='term',
+                wire_name='term',
+                validation_key='term',
+                validation_keys=('term',),
+                required=False,
+                read_only=False,
+                write_only=False,
+                omit_none=False,
+                type=UnionNode(members=(LeafNode(),), nullable=True),
+            ),
+            FieldBinding(
+                field_id='models:Criteria.start',
+                native_name='start',
+                wire_name='start',
+                validation_key='start',
+                validation_keys=('start',),
+                required=False,
+                read_only=False,
+                write_only=False,
+                omit_none=True,
+                type=LeafNode(),
+            ),
+        ),
+    )
+
+
+@cache
+def _model_9() -> ModelBinding:
+    return ModelBinding(
+        symbol='models:Item',
+        native_kind='model',
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Item',
+        fields=(
+            FieldBinding(
+                field_id='models:Item.id',
+                native_name='id',
+                wire_name='id',
+                validation_key='id',
+                validation_keys=('id',),
+                required=True,
+                read_only=False,
+                write_only=False,
+                omit_none=False,
+                type=LeafNode(),
+            ),
+        ),
+    )
+
+
+@cache
+def _model_10() -> ModelBinding:
+    return ModelBinding(
+        symbol='models:Page',
+        native_kind='model',
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Page',
+        fields=(
+            FieldBinding(
+                field_id='models:Page.data',
+                native_name='data',
+                wire_name='data',
+                validation_key='data',
+                validation_keys=('data',),
+                required=True,
+                read_only=False,
+                write_only=False,
+                omit_none=False,
+                type=ArrayNode(item=ModelNode(symbol='models:Item')),
+            ),
+            FieldBinding(
+                field_id='models:Page.has_more',
+                native_name='has_more',
+                wire_name='has_more',
+                validation_key='has_more',
+                validation_keys=('has_more',),
+                required=True,
+                read_only=False,
+                write_only=False,
+                omit_none=False,
+                type=LeafNode(),
+            ),
+        ),
+    )
+
+
+@cache
+def _model_11() -> ModelBinding:
+    return ModelBinding(
+        symbol='models:Options',
+        native_kind='model',
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Options',
+        fields=(
+            FieldBinding(
+                field_id='models:Options.a',
+                native_name='a',
+                wire_name='a',
+                validation_key='a',
+                validation_keys=('a',),
+                required=False,
+                read_only=False,
+                write_only=False,
+                omit_none=True,
+                type=LeafNode(),
+            ),
+        ),
+    )
+
+
+@cache
+def _model_12() -> ModelBinding:
+    return ModelBinding(
+        symbol='models:FieldSearchGetQueryAParameter',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/1/schema',
+        root=LeafNode(),
+    )
+
+
+@cache
 def _factory_0() -> ParameterCodecAdapterV1:
     return tests_data_python_parameter_adapters.json_cookie()
 
@@ -282,6 +536,26 @@ def _factory_2() -> ParameterCodecAdapterV1:
 @cache
 def _factory_3() -> ParameterCodecAdapterV1:
     return tests_data_python_parameter_adapters.json_path()
+
+
+@cache
+def _factory_4() -> ParameterCodecAdapterV1:
+    return tests_data_python_parameter_adapters.raw_path()
+
+
+@cache
+def _factory_5() -> ParameterCodecAdapterV1:
+    return tests_data_python_parameter_adapters.raw_header()
+
+
+@cache
+def _factory_6() -> ParameterCodecAdapterV1:
+    return tests_data_python_parameter_adapters.json_querystring()
+
+
+@cache
+def _factory_7() -> ParameterCodecAdapterV1:
+    return tests_data_python_parameter_adapters.json_options()
 
 
 CONTEXT_0: Final = CodecContext(
@@ -362,7 +636,7 @@ def parameter_0() -> AdapterParameterCodec:
             ),
             location='cookie',
             name='tags',
-            oas_version='3.1.0',
+            oas_version='3.2.0',
             style='form',
             explode=False,
             required=False,
@@ -516,7 +790,7 @@ def parameter_2() -> AdapterParameterCodec:
             ),
             location='query',
             name='where',
-            oas_version='3.1.0',
+            oas_version='3.2.0',
             style='deepObject',
             explode=True,
             required=False,
@@ -575,7 +849,7 @@ def parameter_3() -> AdapterParameterCodec:
             capabilities=ParameterCodecCapabilities(
                 locations=('header',),
                 styles=('simple',),
-                explode_values=(False,),
+                explode_values=(False, True),
                 value_kinds=('array',),
             ),
         ),
@@ -606,7 +880,7 @@ def parameter_3() -> AdapterParameterCodec:
             ),
             location='header',
             name='X-Labels',
-            oas_version='3.1.0',
+            oas_version='3.2.0',
             style='simple',
             explode=False,
             required=False,
@@ -716,7 +990,7 @@ def parameter_4() -> AdapterParameterCodec:
             ),
             location='path',
             name='key',
-            oas_version='3.1.0',
+            oas_version='3.2.0',
             style='simple',
             explode=False,
             required=True,
@@ -727,3 +1001,497 @@ def parameter_4() -> AdapterParameterCodec:
         ),
         adapter=_factory_3(),
     )
+
+
+CONTEXT_5: Final = CodecContext(
+    surface='client',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1segments~1%7Bsegment%7D/get/parameters/0/schema',
+    operation_id='/paths/~1segments~1{segment}/get',
+)
+
+
+@cache
+def codec_5() -> PydanticModelCodec[models.FieldSegmentsSegmentGetPathSegmentParameter]:
+    """Codec of /paths/~1segments~1{segment}/get parameter (request path segment)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1segments~1%7Bsegment%7D/get/parameters/0/schema|ModelNode(symbol='models:FieldSegmentsSegmentGetPathSegmentParameter')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1segments~1%7Bsegment%7D/get/parameters/0/schema',
+            operation_id='/paths/~1segments~1{segment}/get',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='root',
+            native_export='models:FieldSegmentsSegmentGetPathSegmentParameter',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='models:FieldSegmentsSegmentGetPathSegmentParameter'),
+            models=(_model_6(),),
+        ),
+        models.FieldSegmentsSegmentGetPathSegmentParameter,
+        {'models:FieldSegmentsSegmentGetPathSegmentParameter': models.FieldSegmentsSegmentGetPathSegmentParameter},
+        request_bundle,
+    )
+
+
+@cache
+def outbound_5() -> NativeOutboundCodec[models.FieldSegmentsSegmentGetPathSegmentParameter]:
+    return NativeOutboundCodec(codec_5(), CONTEXT_5)
+
+
+@cache
+def parameter_5() -> AdapterParameterCodec:
+    return AdapterParameterCodec(
+        manifest=AdapterManifest(
+            name='raw-path',
+            import_ref='tests.data.python.parameter_adapters:raw_path',
+            capabilities=ParameterCodecCapabilities(
+                locations=('path',),
+                styles=('simple',),
+                explode_values=(False,),
+                value_kinds=('string',),
+            ),
+        ),
+        plan=ParameterPlanView(
+            binding=CodecBindingView(
+                binding_id="https://dcg.invalid/inputs/root#/paths/~1segments~1%7Bsegment%7D/get/parameters/0/schema|ModelNode(symbol='models:FieldSegmentsSegmentGetPathSegmentParameter')",
+                use=CodecUseView(
+                    owner_kind='operation',
+                    owner=CodecSourceRef(document='/inputs/root', pointer='/paths/~1segments~1{segment}/get'),
+                    role='parameter',
+                    use_site=CodecSourceRef(
+                        document='/inputs/root',
+                        pointer='/paths/~1segments~1{segment}/get/parameters/0',
+                    ),
+                    schema=CodecSourceRef(
+                        document='/inputs/root',
+                        pointer='/paths/~1segments~1{segment}/get/parameters/0/schema',
+                    ),
+                    declaration=CodecSourceRef(
+                        document='/inputs/root',
+                        pointer='/paths/~1segments~1{segment}/get/parameters/0',
+                    ),
+                    direction='request',
+                    projection='value',
+                    location='path',
+                    name='segment',
+                    status=None,
+                    media=None,
+                ),
+                schema=request_registry().get('https://dcg.invalid/inputs/root#/paths/~1segments~1%7Bsegment%7D/get/parameters/0/schema'),
+                backend='pydantic_v2.BaseModel',
+                native_kind='root',
+                native_export=ModelExportView(module='models', symbol='FieldSegmentsSegmentGetPathSegmentParameter'),
+                fields=(),
+                projection_mode='native',
+                converter_strategy='pydantic_type_adapter',
+            ),
+            location='path',
+            name='segment',
+            oas_version='3.2.0',
+            style='simple',
+            explode=False,
+            required=True,
+            allow_reserved=False,
+            allow_empty_value=False,
+            content_media_type=None,
+            reserved_names=(),
+        ),
+        adapter=_factory_4(),
+    )
+
+
+CONTEXT_6: Final = CodecContext(
+    surface='client',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1segments~1%7Bsegment%7D/get/parameters/1/schema',
+    operation_id='/paths/~1segments~1{segment}/get',
+)
+
+
+@cache
+def codec_6() -> PydanticModelCodec[models.FieldSegmentsSegmentGetHeaderXRawParameter]:
+    """Codec of /paths/~1segments~1{segment}/get parameter (request header X-Raw)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1segments~1%7Bsegment%7D/get/parameters/1/schema|ModelNode(symbol='models:FieldSegmentsSegmentGetHeaderXRawParameter')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1segments~1%7Bsegment%7D/get/parameters/1/schema',
+            operation_id='/paths/~1segments~1{segment}/get',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='root',
+            native_export='models:FieldSegmentsSegmentGetHeaderXRawParameter',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='models:FieldSegmentsSegmentGetHeaderXRawParameter'),
+            models=(_model_7(),),
+        ),
+        models.FieldSegmentsSegmentGetHeaderXRawParameter,
+        {'models:FieldSegmentsSegmentGetHeaderXRawParameter': models.FieldSegmentsSegmentGetHeaderXRawParameter},
+        request_bundle,
+    )
+
+
+@cache
+def outbound_6() -> NativeOutboundCodec[models.FieldSegmentsSegmentGetHeaderXRawParameter]:
+    return NativeOutboundCodec(codec_6(), CONTEXT_6)
+
+
+@cache
+def parameter_6() -> AdapterParameterCodec:
+    return AdapterParameterCodec(
+        manifest=AdapterManifest(
+            name='raw-header',
+            import_ref='tests.data.python.parameter_adapters:raw_header',
+            capabilities=ParameterCodecCapabilities(
+                locations=('header',),
+                styles=('simple',),
+                explode_values=(False,),
+                value_kinds=('string',),
+            ),
+        ),
+        plan=ParameterPlanView(
+            binding=CodecBindingView(
+                binding_id="https://dcg.invalid/inputs/root#/paths/~1segments~1%7Bsegment%7D/get/parameters/1/schema|ModelNode(symbol='models:FieldSegmentsSegmentGetHeaderXRawParameter')",
+                use=CodecUseView(
+                    owner_kind='operation',
+                    owner=CodecSourceRef(document='/inputs/root', pointer='/paths/~1segments~1{segment}/get'),
+                    role='parameter',
+                    use_site=CodecSourceRef(
+                        document='/inputs/root',
+                        pointer='/paths/~1segments~1{segment}/get/parameters/1',
+                    ),
+                    schema=CodecSourceRef(
+                        document='/inputs/root',
+                        pointer='/paths/~1segments~1{segment}/get/parameters/1/schema',
+                    ),
+                    declaration=CodecSourceRef(
+                        document='/inputs/root',
+                        pointer='/paths/~1segments~1{segment}/get/parameters/1',
+                    ),
+                    direction='request',
+                    projection='value',
+                    location='header',
+                    name='X-Raw',
+                    status=None,
+                    media=None,
+                ),
+                schema=request_registry().get('https://dcg.invalid/inputs/root#/paths/~1segments~1%7Bsegment%7D/get/parameters/1/schema'),
+                backend='pydantic_v2.BaseModel',
+                native_kind='root',
+                native_export=ModelExportView(module='models', symbol='FieldSegmentsSegmentGetHeaderXRawParameter'),
+                fields=(),
+                projection_mode='native',
+                converter_strategy='pydantic_type_adapter',
+            ),
+            location='header',
+            name='X-Raw',
+            oas_version='3.2.0',
+            style='simple',
+            explode=False,
+            required=False,
+            allow_reserved=False,
+            allow_empty_value=False,
+            content_media_type=None,
+            reserved_names=(),
+        ),
+        adapter=_factory_5(),
+    )
+
+
+CONTEXT_7: Final = CodecContext(
+    surface='client',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1finds/get/parameters/0/content/application~1json/schema',
+    operation_id='/paths/~1finds/get',
+    media_type='application/json',
+)
+
+
+@cache
+def codec_7() -> PydanticModelCodec[models.Criteria]:
+    """Codec of /paths/~1finds/get parameter (request querystring criteria application/json)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/components/schemas/Criteria|ModelNode(symbol='models:Criteria')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1finds/get/parameters/0/content/application~1json/schema',
+            operation_id='/paths/~1finds/get',
+            media_type='application/json',
+            backend='pydantic_v2.BaseModel',
+            native_kind='model',
+            native_export='models:Criteria',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='models:Criteria'),
+            models=(_model_8(),),
+        ),
+        models.Criteria,
+        {'models:Criteria': models.Criteria},
+        request_bundle,
+    )
+
+
+@cache
+def outbound_7() -> NativeOutboundCodec[models.Criteria]:
+    return NativeOutboundCodec(codec_7(), CONTEXT_7)
+
+
+@cache
+def parameter_7() -> AdapterParameterCodec:
+    return AdapterParameterCodec(
+        manifest=AdapterManifest(
+            name='json-querystring',
+            import_ref='tests.data.python.parameter_adapters:json_querystring',
+            capabilities=ParameterCodecCapabilities(
+                locations=('querystring',),
+                styles=(),
+                explode_values=(),
+                value_kinds=('object',),
+                media_types=('application/json',),
+            ),
+        ),
+        plan=ParameterPlanView(
+            binding=CodecBindingView(
+                binding_id="https://dcg.invalid/inputs/root#/components/schemas/Criteria|ModelNode(symbol='models:Criteria')",
+                use=CodecUseView(
+                    owner_kind='operation',
+                    owner=CodecSourceRef(document='/inputs/root', pointer='/paths/~1finds/get'),
+                    role='parameter',
+                    use_site=CodecSourceRef(document='/inputs/root', pointer='/paths/~1finds/get/parameters/0'),
+                    schema=CodecSourceRef(
+                        document='/inputs/root',
+                        pointer='/paths/~1finds/get/parameters/0/content/application~1json/schema',
+                    ),
+                    declaration=CodecSourceRef(document='/inputs/root', pointer='/paths/~1finds/get/parameters/0'),
+                    direction='request',
+                    projection='value',
+                    location='querystring',
+                    name='criteria',
+                    status=None,
+                    media='application/json',
+                ),
+                schema=request_registry().get('https://dcg.invalid/inputs/root#/paths/~1finds/get/parameters/0/content/application~1json/schema'),
+                backend='pydantic_v2.BaseModel',
+                native_kind='model',
+                native_export=ModelExportView(module='models', symbol='Criteria'),
+                fields=(
+                    CodecFieldView(
+                        field_id='models:Criteria.term',
+                        native_name='term',
+                        wire_name='term',
+                        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Criteria/properties/term',
+                        validation_paths=(('term',),),
+                        serialization_alias=None,
+                        required=False,
+                        read_only=False,
+                        write_only=False,
+                        default_kind='none',
+                        excluded=None,
+                    ),
+                    CodecFieldView(
+                        field_id='models:Criteria.start',
+                        native_name='start',
+                        wire_name='start',
+                        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Criteria/properties/start',
+                        validation_paths=(('start',),),
+                        serialization_alias=None,
+                        required=False,
+                        read_only=False,
+                        write_only=False,
+                        default_kind='none',
+                        excluded=None,
+                    ),
+                ),
+                projection_mode='native',
+                converter_strategy='pydantic_type_adapter',
+            ),
+            location='querystring',
+            name='criteria',
+            oas_version='3.2.0',
+            style=None,
+            explode=None,
+            required=False,
+            allow_reserved=False,
+            allow_empty_value=False,
+            content_media_type='application/json',
+            reserved_names=(),
+        ),
+        adapter=_factory_6(),
+    )
+
+
+CONTEXT_8: Final = CodecContext(
+    surface='client',
+    direction='response',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1finds/get/responses/200/content/application~1json/schema',
+    operation_id='/paths/~1finds/get',
+    media_type='application/json',
+)
+
+
+@cache
+def codec_8() -> PydanticModelCodec[models.Page]:
+    """Codec of /paths/~1finds/get response_body (response 200 application/json)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/components/schemas/Page|ModelNode(symbol='models:Page')",
+            direction='response',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1finds/get/responses/200/content/application~1json/schema',
+            operation_id='/paths/~1finds/get',
+            media_type='application/json',
+            backend='pydantic_v2.BaseModel',
+            native_kind='model',
+            native_export='models:Page',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='models:Page'),
+            models=(_model_9(), _model_10()),
+        ),
+        models.Page,
+        {'models:Item': models.Item, 'models:Page': models.Page},
+        response_bundle,
+    )
+
+
+CONTEXT_9: Final = CodecContext(
+    surface='client',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/0/schema',
+    operation_id='/paths/~1search/get',
+)
+
+
+@cache
+def codec_9() -> PydanticModelCodec[models.Options]:
+    """Codec of /paths/~1search/get parameter (request query opts)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/components/schemas/Options|ModelNode(symbol='models:Options')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/0/schema',
+            operation_id='/paths/~1search/get',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='model',
+            native_export='models:Options',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='models:Options'),
+            models=(_model_11(),),
+        ),
+        models.Options,
+        {'models:Options': models.Options},
+        request_bundle,
+    )
+
+
+@cache
+def outbound_9() -> NativeOutboundCodec[models.Options]:
+    return NativeOutboundCodec(codec_9(), CONTEXT_9)
+
+
+@cache
+def parameter_9() -> AdapterParameterCodec:
+    return AdapterParameterCodec(
+        manifest=AdapterManifest(
+            name='json-options',
+            import_ref='tests.data.python.parameter_adapters:json_options',
+            capabilities=ParameterCodecCapabilities(
+                locations=('query',),
+                styles=('form',),
+                explode_values=(True,),
+                value_kinds=('object',),
+            ),
+        ),
+        plan=ParameterPlanView(
+            binding=CodecBindingView(
+                binding_id="https://dcg.invalid/inputs/root#/components/schemas/Options|ModelNode(symbol='models:Options')",
+                use=CodecUseView(
+                    owner_kind='operation',
+                    owner=CodecSourceRef(document='/inputs/root', pointer='/paths/~1search/get'),
+                    role='parameter',
+                    use_site=CodecSourceRef(document='/inputs/root', pointer='/paths/~1search/get/parameters/0'),
+                    schema=CodecSourceRef(document='/inputs/root', pointer='/paths/~1search/get/parameters/0/schema'),
+                    declaration=CodecSourceRef(document='/inputs/root', pointer='/paths/~1search/get/parameters/0'),
+                    direction='request',
+                    projection='value',
+                    location='query',
+                    name='opts',
+                    status=None,
+                    media=None,
+                ),
+                schema=request_registry().get('https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/0/schema'),
+                backend='pydantic_v2.BaseModel',
+                native_kind='model',
+                native_export=ModelExportView(module='models', symbol='Options'),
+                fields=(
+                    CodecFieldView(
+                        field_id='models:Options.a',
+                        native_name='a',
+                        wire_name='a',
+                        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Options/properties/a',
+                        validation_paths=(('a',),),
+                        serialization_alias=None,
+                        required=False,
+                        read_only=False,
+                        write_only=False,
+                        default_kind='none',
+                        excluded=None,
+                    ),
+                ),
+                projection_mode='native',
+                converter_strategy='pydantic_type_adapter',
+            ),
+            location='query',
+            name='opts',
+            oas_version='3.2.0',
+            style='form',
+            explode=True,
+            required=False,
+            allow_reserved=False,
+            allow_empty_value=False,
+            content_media_type=None,
+            reserved_names=('a',),
+        ),
+        adapter=_factory_7(),
+    )
+
+
+CONTEXT_10: Final = CodecContext(
+    surface='client',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/1/schema',
+    operation_id='/paths/~1search/get',
+)
+
+
+@cache
+def codec_10() -> PydanticModelCodec[models.FieldSearchGetQueryAParameter]:
+    """Codec of /paths/~1search/get parameter (request query a)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/1/schema|ModelNode(symbol='models:FieldSearchGetQueryAParameter')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/1/schema',
+            operation_id='/paths/~1search/get',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='root',
+            native_export='models:FieldSearchGetQueryAParameter',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='models:FieldSearchGetQueryAParameter'),
+            models=(_model_12(),),
+        ),
+        models.FieldSearchGetQueryAParameter,
+        {'models:FieldSearchGetQueryAParameter': models.FieldSearchGetQueryAParameter},
+        request_bundle,
+    )
+
+
+@cache
+def outbound_10() -> NativeOutboundCodec[models.FieldSearchGetQueryAParameter]:
+    return NativeOutboundCodec(codec_10(), CONTEXT_10)

@@ -881,23 +881,37 @@ def parameter_view(
     batch: GeneratedTypeContractBatch, version: str, operation: OperationContract, declaration: WireDeclaration
 ) -> ParameterViewPlan:
     """Return one declaration's effective style, explode, and content facts and the names others own."""
-    location = _LOCATIONS[_fact(declaration, "in")]
-    name = declaration.name or ""
-    content = normalize_media_type(declaration.children[0].name or "") if declaration.children else None
-    style = None if content is not None else str(_fact(declaration, "style") or _DEFAULT_STYLES.get(location, "form"))
-    explode = _fact(declaration, "explode")
+    plan = _declared(declaration)
+    location, name = plan.location, plan.name
     names = [*((_fact(item, "in"), item.name or "") for item in operation.parameters), *_auth_names(batch, operation)]
     return ParameterViewPlan(
         location=location,
         name=name,
         oas_version=version,
+        style=plan.style,
+        explode=None if plan.style is None else plan.explode,
+        required=plan.required,
+        allow_reserved=plan.allow_reserved,
+        allow_empty_value=_fact(declaration, "allowEmptyValue") is True,
+        content_media_type=plan.content_media_type,
+        reserved_names=tuple(sorted({other for kind, other in names if kind == location and other != name})),
+    )
+
+
+def _declared(declaration: WireDeclaration) -> AdaptedParameterPlan:
+    """Return a parameter's plan as declared: its style or content media, explode, requiredness, and allowReserved."""
+    location = _LOCATIONS[_fact(declaration, "in")]
+    content = normalize_media_type(declaration.children[0].name or "") if declaration.children else None
+    style = None if content is not None else str(_fact(declaration, "style") or _DEFAULT_STYLES.get(location, "form"))
+    explode = _fact(declaration, "explode")
+    return AdaptedParameterPlan(
+        location=location,
+        name=declaration.name or "",
         style=style,
-        explode=None if style is None else explode if isinstance(explode, bool) else style in {"form", "cookie"},
+        explode=style is not None and (explode if isinstance(explode, bool) else style in {"form", "cookie"}),
         required=_fact(declaration, "required") is True,
         allow_reserved=_fact(declaration, "allowReserved") is True,
-        allow_empty_value=_fact(declaration, "allowEmptyValue") is True,
         content_media_type=content,
-        reserved_names=tuple(sorted({other for kind, other in names if kind == location and other != name})),
     )
 
 
@@ -906,8 +920,8 @@ def parameter_plans(
 ) -> dict[OperationId, dict[tuple[ParameterLocation, str], ParameterPlan]]:
     """Index each operation's parameter plans by location and name.
 
-    A parameter whose use a registered parameter adapter selects gets an adapted plan of its location, name, and
-    requiredness instead, whether or not a builtin form carries it, since its adapter encodes and decodes the value.
+    A parameter whose use a registered parameter adapter selects gets its plan as declared instead, whether or not a
+    builtin form carries it, since its adapter encodes and decodes the value.
     """
     plans = {
         operation: {(plan.location, plan.name): plan for plan in planned} for operation, planned in wire.parameters
@@ -917,10 +931,8 @@ def parameter_plans(
     for operation in operations:
         for declaration in operation.parameters:
             if not adapted.isdisjoint(_uses(declaration)):
-                location, name = _LOCATIONS[_fact(declaration, "in")], declaration.name or ""
-                plans.setdefault(operation.id, {})[location, name] = AdaptedParameterPlan(
-                    location=location, name=name, required=_fact(declaration, "required") is True
-                )
+                plan = _declared(declaration)
+                plans.setdefault(operation.id, {})[plan.location, plan.name] = plan
     return plans
 
 
@@ -1000,7 +1012,11 @@ def _spread(plan: ParameterPlan) -> bool:
     return plan.shape == "object" and plan.explode and plan.style in {"form", "cookie"}
 
 
-def _claimed(plans: list[ParameterPlan], location: str) -> list[str]:
+def _deep(plan: ParameterPlan) -> bool:
+    return plan.style == "deepObject" and not isinstance(plan, AdaptedParameterPlan)
+
+
+def _claimed(plans: Sequence[ParameterPlan], location: str) -> list[str]:
     return [
         name.lower() if location == "header" else name
         for plan in plans
@@ -1028,6 +1044,19 @@ def _parameters(planner: _WirePlanner, operation: OperationContract) -> tuple[Pa
         for declaration in declarations
         if (plan := _planned(planner, operation.id, declaration, names)) is not None
     ]
+    planner.diagnostics.extend(parameter_collisions(planner.batch, operation, plans))
+    return tuple(_reserving(plan, plans) for plan in plans)
+
+
+def parameter_collisions(
+    batch: GeneratedTypeContractBatch, operation: OperationContract, plans: Sequence[ParameterPlan]
+) -> tuple[CodecDiagnostic, ...]:
+    """Report each location whose expanded parameter names or apiKey names collide.
+
+    A parameter a registered adapter carries claims its own name only, however its declaration would expand.
+    """
+    auth = _auth_names(batch, operation)
+    found: list[CodecDiagnostic] = []
     for location in ("query", "header", "cookie"):
         claimed = [
             *_claimed(plans, location),
@@ -1039,15 +1068,15 @@ def _parameters(planner: _WirePlanner, operation: OperationContract) -> tuple[Pa
         if (
             len(set(claimed)) != len(claimed)
             or len(absorbing) > 1
-            or (absorbing and any(plan.location == location and plan.style == "deepObject" for plan in plans))
+            or (absorbing and any(plan.location == location and _deep(plan) for plan in plans))
         ):
-            source = next(item.use_site for item in declarations if _fact(item, "in") == location)
-            planner.diagnostics.append(
+            source = next(item.use_site for item in operation.parameters if _fact(item, "in") == location)
+            found.append(
                 CodecDiagnostic(
                     "MC_PARAMETER_ENCODING", source, f"Expanded {location} parameter names collide", operation.id
                 )
             )
-    return tuple(_reserving(plan, plans) for plan in plans)
+    return tuple(found)
 
 
 def _parameter(planner: _WirePlanner, declaration: WireDeclaration, names: list[tuple[object, str]]) -> ParameterPlan:

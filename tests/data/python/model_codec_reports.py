@@ -26,6 +26,7 @@ from datamodel_code_generator._runtime.model_codecs.media import (
     normalize_media_type,
 )
 from datamodel_code_generator._runtime.model_codecs.parameters import (
+    AdaptedParameterPlan,
     EncodedParameterContribution,
     ParameterPlan,
     QueryStringContribution,
@@ -295,8 +296,11 @@ def _field(data: Mapping[str, object] | None) -> FieldPlan | None:
 
 
 def parameter_plan(data: Mapping[str, object]) -> ParameterPlan:
-    """Build one runtime plan from a fixture record, keeping omitted fields at their defaults."""
-    return ParameterPlan(
+    """Build one runtime plan from a fixture record, keeping omitted fields at their defaults.
+
+    An `adapted` record builds the plan of a parameter a registered adapter carries.
+    """
+    return (AdaptedParameterPlan if data.get("adapted") else ParameterPlan)(
         location=data["location"],
         name=data["name"],
         style=data.get("style"),

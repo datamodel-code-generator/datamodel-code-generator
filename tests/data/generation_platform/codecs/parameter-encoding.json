@@ -1093,6 +1093,17 @@
   "failures": [
     {
       "plan": {
+        "location": "cookie",
+        "name": "tags",
+        "style": "form",
+        "adapted": true
+      },
+      "value": [
+        "a"
+      ]
+    },
+    {
+      "plan": {
         "location": "query",
         "name": "q",
         "style": "form",

@@ -27,6 +27,7 @@ paths:
             $ref: "#/components/schemas/Filter"
         - name: X-Labels
           in: header
+          explode: true
           schema:
             type: array
             items:

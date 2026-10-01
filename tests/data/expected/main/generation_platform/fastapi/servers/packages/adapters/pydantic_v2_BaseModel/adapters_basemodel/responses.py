@@ -29,12 +29,48 @@ class _GetItemResponseCodecs(ResponseCodecs[Never]):
 GetItemResponseCodecs: Final = _GetItemResponseCodecs(())
 
 
+GetSegmentResponsePayload: TypeAlias = Never
+
+
+class _GetSegmentResponseCodecs(ResponseCodecs[Never]):
+    """Outbound codecs of the get_segment response bodies."""
+
+
+GetSegmentResponseCodecs: Final = _GetSegmentResponseCodecs(())
+
+
+FindResponsePayload: TypeAlias = Never
+
+
+class _FindResponseCodecs(ResponseCodecs[Never]):
+    """Outbound codecs of the find response bodies."""
+
+
+FindResponseCodecs: Final = _FindResponseCodecs(())
+
+
+SearchResponsePayload: TypeAlias = Never
+
+
+class _SearchResponseCodecs(ResponseCodecs[Never]):
+    """Outbound codecs of the search response bodies."""
+
+
+SearchResponseCodecs: Final = _SearchResponseCodecs(())
+
+
 __all__ = [
+    'FindResponseCodecs',
+    'FindResponsePayload',
     'GetItemResponseCodecs',
     'GetItemResponsePayload',
+    'GetSegmentResponseCodecs',
+    'GetSegmentResponsePayload',
     'HTTPResult',
     'ListTagsResponseCodecs',
     'ListTagsResponsePayload',
+    'SearchResponseCodecs',
+    'SearchResponsePayload',
     'UNSET',
     'Unset',
 ]

@@ -23,16 +23,78 @@ render pydantic_v2.BaseModel
   write client/_generated/__init__.py
   write client/_generated/model_bindings.py
   write client/_operations.py
+  write client/protocols/_plans.py
+  write client/protocols/_helpers.py
+  write client/protocols/_async_helpers.py
   write client/_generated_docs/README.md
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers [] bindings 5
+  namespace client helpers ['finds.all'] bindings 11
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper finds.all pagination enabled True /inputs/target_config/protocol_metadata/helpers/finds.all 18ede05808fd3262356ec97423f07eece8472da3a8d45fe3d7348aa32180f02a
+  {
+    "helpers": {
+      "finds.all": {
+        "bindings": [
+          {
+            "target": {
+              "in": "querystring",
+              "name": "criteria",
+              "pointer": "/term"
+            },
+            "value": {
+              "literal": null
+            }
+          }
+        ],
+        "continuation": {
+          "first": 0,
+          "has_more": {
+            "from": "body",
+            "pointer": "/has_more"
+          },
+          "kind": "offset",
+          "step": {
+            "literal": 2
+          },
+          "write": {
+            "in": "querystring",
+            "name": "criteria",
+            "pointer": "/start"
+          }
+        },
+        "enabled": true,
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "items": {
+          "from": "body",
+          "pointer": "/data"
+        },
+        "kind": "pagination",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1finds/get"
+        }
+      }
+    },
+    "schema_version": 1
+  }
   /selection/selected_operations/0 default.list_tags(cookie:tags=tags, cookie:session=session, query:where=where, header:X-Labels=x_labels)
     exports client.types.default.ListTagsResponse client.types.default.ListTagsErrorData client.types.default.ListTagsHTTPError
     exports client.types.default.ListTagsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
   /selection/selected_operations/1 default.get_item(path:key=key)
     exports client.types.default.GetItemResponse client.types.default.GetItemErrorData client.types.default.GetItemHTTPError
     exports client.types.default.GetItemRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/2 default.get_segment(path:segment=segment, header:X-Raw=x_raw)
+    exports client.types.default.GetSegmentResponse client.types.default.GetSegmentErrorData client.types.default.GetSegmentHTTPError
+    exports client.types.default.GetSegmentRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/3 default.find(querystring:criteria=criteria)
+    exports client.types.default.FindResponse client.types.default.FindErrorData client.types.default.FindHTTPError
+    exports client.types.default.FindRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/4 default.search(query:opts=opts, query:a=a)
+    exports client.types.default.SearchResponse client.types.default.SearchErrorData client.types.default.SearchHTTPError
+    exports client.types.default.SearchRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

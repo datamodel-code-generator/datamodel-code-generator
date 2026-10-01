@@ -1,0 +1,16 @@
+schema_version: 1
+helpers:
+  finds.all:
+    kind: pagination
+    operation: /paths/~1finds/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/Item}
+    continuation:
+      kind: offset
+      write: {in: querystring, name: criteria, pointer: /start}
+      first: 0
+      step: {literal: 2}
+      has_more: {from: body, pointer: /has_more}
+    bindings:
+      - target: {in: querystring, name: criteria, pointer: /term}
+        value: {literal: null}

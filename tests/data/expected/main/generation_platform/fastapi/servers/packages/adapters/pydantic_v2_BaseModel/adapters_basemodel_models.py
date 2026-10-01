@@ -24,9 +24,30 @@ class Key(BaseModel):
     a: int
 
 
+class Criteria(BaseModel):
+    term: str | None = None
+    start: int | None = None
+
+
+class Options(BaseModel):
+    a: str | None = None
+
+
 class FieldTagsGetCookieSessionParameter(RootModel[str]):
     root: str
 
 
 class FieldTagsGetHeaderXLabelsParameter(RootModel[list[str]]):
     root: list[str]
+
+
+class FieldSegmentsSegmentGetPathSegmentParameter(RootModel[str]):
+    root: str
+
+
+class FieldSegmentsSegmentGetHeaderXRawParameter(RootModel[str]):
+    root: str
+
+
+class FieldSearchGetQueryAParameter(RootModel[str]):
+    root: str

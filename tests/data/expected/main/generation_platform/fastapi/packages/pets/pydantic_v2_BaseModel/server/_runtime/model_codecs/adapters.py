@@ -77,11 +77,12 @@ _PROHIBITED: Final = {
 }
 _TRIPLET: Final = re.compile(rb"%(?![0-9A-Fa-f]{2})")
 _PATH_BYTES: Final = re.compile(rb"[A-Za-z0-9\-._~!$&'()*+,;=:@%]*")
+_DOT_SEGMENT: Final = re.compile(rb"(?:\.|%2[Ee]){1,2}")
 _QUERY_NAME: Final = re.compile(rb"[A-Za-z0-9\-._~!$'()*+,;:@%/?]+")
 _QUERY_VALUE: Final = re.compile(rb"[A-Za-z0-9\-._~!$'()*+,;=:@%/?]*")
 _QUERY: Final = re.compile(rb"[A-Za-z0-9\-._~!$&'()*+,;=:@%/?]+")
 _TOKEN: Final = re.compile(rb"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
-_HEADER_VALUE: Final = re.compile(rb"[\t\x20-\x7e\x80-\xff]*")
+_HEADER_VALUE: Final = re.compile(rb"(?:[\x21-\x7e](?:[\t\x20-\x7e]*[\x21-\x7e])?)?")
 _COOKIE_OCTETS: Final = re.compile(rb"[\x21\x23-\x2B\x2D-\x3A\x3C-\x5B\x5D-\x7E]*")
 
 
@@ -575,7 +576,11 @@ class AdapterParameterCodec:
             name, value = fragment.name, fragment.value
             match location:
                 case "path":
-                    valid = bool(_PATH_BYTES.fullmatch(value)) and not _TRIPLET.search(value)
+                    valid = (
+                        bool(_PATH_BYTES.fullmatch(value))
+                        and not _TRIPLET.search(value)
+                        and not _DOT_SEGMENT.fullmatch(value)
+                    )
                 case "query":
                     valid = (
                         isinstance(name, bytes)

@@ -67,7 +67,12 @@ class ListPets:
         arguments=(
             ParameterArgument(
                 name='limit',
-                plan=AdaptedParameterPlan(location='query', name='limit'),
+                plan=AdaptedParameterPlan(
+                    location='query',
+                    name='limit',
+                    style='form',
+                    explode=True,
+                ),
                 codec=(model_bindings.codec_0, model_bindings.CONTEXT_0),
                 adapter=(model_bindings.parameter_0, model_bindings.CONTEXT_0),
                 default=freeze_wire(20),

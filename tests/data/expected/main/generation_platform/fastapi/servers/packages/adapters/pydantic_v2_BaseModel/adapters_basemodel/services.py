@@ -10,7 +10,14 @@ import adapters_basemodel_models
 from fastapi.responses import Response
 
 from .model_codecs import Unset
-from .responses import GetItemResponsePayload, HTTPResult, ListTagsResponsePayload
+from .responses import (
+    FindResponsePayload,
+    GetItemResponsePayload,
+    GetSegmentResponsePayload,
+    HTTPResult,
+    ListTagsResponsePayload,
+    SearchResponsePayload,
+)
 
 
 class UntaggedService(Protocol):
@@ -32,3 +39,26 @@ class UntaggedService(Protocol):
         *,
         key: adapters_basemodel_models.Key,
     ) -> None | HTTPResult[GetItemResponsePayload] | Response: ...
+
+    @abstractmethod
+    def get_segment(
+        self,
+        *,
+        segment: adapters_basemodel_models.FieldSegmentsSegmentGetPathSegmentParameter,
+        x_raw: adapters_basemodel_models.FieldSegmentsSegmentGetHeaderXRawParameter | Unset,
+    ) -> None | HTTPResult[GetSegmentResponsePayload] | Response: ...
+
+    @abstractmethod
+    def find(
+        self,
+        *,
+        criteria: adapters_basemodel_models.Criteria | Unset,
+    ) -> None | HTTPResult[FindResponsePayload] | Response: ...
+
+    @abstractmethod
+    def search(
+        self,
+        *,
+        opts: adapters_basemodel_models.Options | Unset,
+        a: str | Unset,
+    ) -> None | HTTPResult[SearchResponsePayload] | Response: ...

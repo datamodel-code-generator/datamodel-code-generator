@@ -461,9 +461,9 @@ def _parameters(
             else:
                 get, context = adapter
                 contribution = get().encode(wire, context)
+            request.add(contribution, plan.name)
         except (*DATA_ERRORS, ValueError, TypeError) as error:
             raise _encoding_error(operation, (plan.location, plan.name), error) from None
-        request.add(contribution, plan.name)
     return request
 
 

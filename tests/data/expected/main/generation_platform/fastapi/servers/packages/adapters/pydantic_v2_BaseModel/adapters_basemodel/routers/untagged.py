@@ -4,12 +4,13 @@
 from collections.abc import Sequence
 from typing import Annotated, Final
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import Response
 
 from .._generated import contract
 from .._generated.contract import OperationDependencies
 from .._runtime.server.application import Dependency, Wiring, build
+from .._runtime.server.requests import absent, present
 from .._runtime.server.responses import respond
 from ..services import UntaggedService
 
@@ -83,8 +84,112 @@ def _add_get_item(router: APIRouter, wiring: Wiring) -> None:
     )
 
 
-LITERAL_ROUTES: Final = ((contract.ListTags.OPERATION, _add_list_tags),)
-TEMPLATED_ROUTES: Final = ((contract.GetItem.OPERATION, _add_get_item),)
+def _add_get_segment(router: APIRouter, wiring: Wiring) -> None:
+    get_segment_handler = wiring.handlers['get_segment']
+
+    def get_segment(
+        *,
+        parameters: Annotated[contract.GetSegment.Parameters, Depends(contract.GetSegment.PARAMETERS)],
+    ) -> Response:
+        return respond(
+            get_segment_handler(segment=parameters.segment, x_raw=parameters.x_raw),
+            contract.GetSegment.RESPONSES,
+        )
+
+    router.add_api_route(
+        '/segments/{segment}',
+        get_segment,
+        methods=['GET'],
+        status_code=204,
+        response_model=None,
+        response_class=Response,
+        operation_id='getSegment',
+        response_description='No content.',
+        openapi_extra={
+            'x-dcg-operation': {
+                'version': 1,
+                'package': 'adapters_basemodel',
+                'operation': '/paths/~1segments~1{segment}/get',
+            },
+        },
+        dependencies=wiring.dependencies.get('/paths/~1segments~1{segment}/get'),
+    )
+
+
+def _add_find(router: APIRouter, wiring: Wiring) -> None:
+    find_handler = wiring.handlers['find']
+
+    def find(
+        *,
+        parameters: Annotated[contract.Find.Parameters, Depends(contract.Find.PARAMETERS)],
+    ) -> Response:
+        return respond(
+            find_handler(criteria=parameters.criteria),
+            contract.Find.RESPONSES,
+        )
+
+    router.add_api_route(
+        '/finds',
+        find,
+        methods=['GET'],
+        status_code=204,
+        response_model=None,
+        response_class=Response,
+        operation_id='find',
+        response_description='No content.',
+        openapi_extra={
+            'x-dcg-operation': {
+                'version': 1,
+                'package': 'adapters_basemodel',
+                'operation': '/paths/~1finds/get',
+            },
+        },
+        dependencies=wiring.dependencies.get('/paths/~1finds/get'),
+    )
+
+
+def _add_search(router: APIRouter, wiring: Wiring) -> None:
+    search_handler = wiring.handlers['search']
+
+    def search(
+        *,
+        a: Annotated[str, Query(alias='a', default_factory=absent)],
+        parameters: Annotated[contract.Search.Parameters, Depends(contract.Search.PARAMETERS)],
+    ) -> Response:
+        return respond(
+            search_handler(opts=parameters.opts, a=present(a)),
+            contract.Search.RESPONSES,
+        )
+
+    router.add_api_route(
+        '/search',
+        search,
+        methods=['GET'],
+        status_code=204,
+        response_model=None,
+        response_class=Response,
+        operation_id='search',
+        response_description='No content.',
+        openapi_extra={
+            'x-dcg-operation': {
+                'version': 1,
+                'package': 'adapters_basemodel',
+                'operation': '/paths/~1search/get',
+            },
+        },
+        dependencies=wiring.dependencies.get('/paths/~1search/get'),
+    )
+
+
+LITERAL_ROUTES: Final = (
+    (contract.ListTags.OPERATION, _add_list_tags),
+    (contract.Find.OPERATION, _add_find),
+    (contract.Search.OPERATION, _add_search),
+)
+TEMPLATED_ROUTES: Final = (
+    (contract.GetItem.OPERATION, _add_get_item),
+    (contract.GetSegment.OPERATION, _add_get_segment),
+)
 
 
 def build_router(

@@ -51,7 +51,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_manifest import JSONObject
     from datamodel_code_generator._api_types import TargetKind
     from datamodel_code_generator._client.pagination import PaginationSpec
-    from datamodel_code_generator._client.plan import ClientPlan, MediaSpec, OperationSpec, PartSpec
+    from datamodel_code_generator._client.plan import ClientPlan, MediaSpec, OperationSpec, ParameterSpec, PartSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.webhooks import WebhookSpec
     from datamodel_code_generator._generation_contract import GeneratedTypeContractBatch, TypeUseBinding, TypeUseId
@@ -96,11 +96,8 @@ class ClientTarget:
             exports=config.export_bindings,
             adapters=config.codec_adapters,
         )
-        adapted = (
-            select_adapters(request.batch, wire, declarations, "client").uses("parameter")
-            if config.codec_adapters
-            else frozenset()
-        )
+        selection = select_adapters(request.batch, wire, declarations, "client") if config.codec_adapters else None
+        adapted = frozenset() if selection is None else selection.uses("parameter")
         try:
             plan = Planner(request, config, wire, adapted).plan()
         except PlanError as error:
@@ -115,6 +112,7 @@ class ClientTarget:
             batch = replace(batch, type_uses=(*batch.type_uses, *parts))
         if parts or events:
             wire = _wire(request, batch, parts, received)
+            selection = None
         codecs = plan_model_codecs(
             batch,
             replace(wire, schema_ids=tuple(item for item in wire.schema_ids if item[0] in uses)),
@@ -123,6 +121,7 @@ class ClientTarget:
             surface="client",
             lease=request.lease,
             sources=_sources(request),
+            selection=selection,
         )
         selected = {spec.contract.id for spec in plan.operations}
         if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
@@ -257,6 +256,11 @@ class _TargetData:
         self.codecs = codecs
         self.wire = wire
         self.bindings = dict(codecs.bindings)
+        self.adapters = {
+            item.use: (item.registration.name, item.registration.import_ref, item.registration.capabilities)
+            for item in codecs.adapters
+            if item.parameter is not None
+        }
         self.selected = {operation.id: index for index, operation in enumerate(request.operations)}
         self.spelling = TypeSource(Namespace(()), dict(codecs.imports), lambda module, name: f"{module}.{name}")
 
@@ -388,7 +392,7 @@ class _TargetData:
             "method": spec.contract.method,
             "path": spec.contract.path,
             "servers": spec.servers,
-            "parameters": [(item.plan, self.contract(item.use)) for item in spec.parameters],
+            "parameters": [self.parameter(item) for item in spec.parameters],
             "retry_safety": spec.retry_safety,
             "idempotency": None
             if (idempotency := spec.idempotency) is None
@@ -457,6 +461,13 @@ class _TargetData:
     def type(self, use: TypeUseBinding | None) -> str | None:
         """Return a use's final type spelled with the import locations of its names, or None without a schema."""
         return None if use is None or use.type is None else self.spelling.static(use.type)
+
+    def parameter(self, parameter: ParameterSpec) -> tuple[object, ...]:
+        """Return a parameter's plan and use contract, with the registered adapter that carries it, if any."""
+        contract = (parameter.plan, self.contract(parameter.use))
+        if (use := parameter.use) is None or (adapter := self.adapters.get(use.id)) is None:
+            return contract
+        return (*contract, adapter)
 
     def contract(self, use: TypeUseBinding | None) -> object:
         """Return a use's codec binding and the normalized schema at its site, or None without a schema."""

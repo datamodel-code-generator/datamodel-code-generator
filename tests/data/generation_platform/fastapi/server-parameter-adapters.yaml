@@ -1,4 +1,4 @@
-openapi: 3.1.0
+openapi: 3.2.0
 info:
   title: Parameter adapters
   version: "1"
@@ -44,6 +44,50 @@ paths:
       responses:
         "204":
           description: No content.
+  /segments/{segment}:
+    get:
+      operationId: getSegment
+      parameters:
+        - name: segment
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: X-Raw
+          in: header
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No content.
+  /finds:
+    get:
+      operationId: find
+      parameters:
+        - name: criteria
+          in: querystring
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Criteria"
+      responses:
+        "204":
+          description: No content.
+  /search:
+    get:
+      operationId: search
+      parameters:
+        - name: opts
+          in: query
+          schema:
+            $ref: "#/components/schemas/Options"
+        - name: a
+          in: query
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No content.
 components:
   schemas:
     Tags:
@@ -68,3 +112,15 @@ components:
       properties:
         a:
           type: integer
+    Criteria:
+      type: object
+      properties:
+        term:
+          type: [string, "null"]
+        start:
+          type: integer
+    Options:
+      type: object
+      properties:
+        a:
+          type: string

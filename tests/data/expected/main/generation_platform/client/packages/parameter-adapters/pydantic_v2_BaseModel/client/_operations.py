@@ -13,15 +13,26 @@ from ._runtime.client.operations import (
     ResponseDecoder,
     ServerPlan,
     empty_branch,
+    model_branch,
 )
 from ._runtime.model_codecs.parameters import AdaptedParameterPlan, ParameterPlan
 from .types.default import (
+    FindErrorData,
+    FindHTTPError,
+    FindRequestCodecs,
+    FindResponse,
     GetItemErrorData,
     GetItemHTTPError,
     GetItemResponse,
+    GetSegmentErrorData,
+    GetSegmentHTTPError,
+    GetSegmentResponse,
     ListTagsErrorData,
     ListTagsHTTPError,
     ListTagsResponse,
+    SearchErrorData,
+    SearchHTTPError,
+    SearchResponse,
 )
 
 _SERVERS_0: Final = (ServerPlan(url='https://api.example.com'),)
@@ -34,7 +45,7 @@ OPERATION_0: Final[OperationPlan[ListTagsResponse, ListTagsErrorData]] = Operati
     responses=ResponseDecoder((empty_branch('204'),), (), ListTagsHTTPError),
     parameters=(
         ParameterSpec(
-            plan=AdaptedParameterPlan(location='cookie', name='tags'),
+            plan=AdaptedParameterPlan(location='cookie', name='tags', style='form'),
             encoder=Encoder(model_bindings.codec_0, model_bindings.CONTEXT_0),
             adapter=(model_bindings.parameter_0, model_bindings.CONTEXT_0),
         ),
@@ -49,12 +60,21 @@ OPERATION_0: Final[OperationPlan[ListTagsResponse, ListTagsErrorData]] = Operati
             encoder=Encoder(model_bindings.codec_1, model_bindings.CONTEXT_1),
         ),
         ParameterSpec(
-            plan=AdaptedParameterPlan(location='query', name='where'),
+            plan=AdaptedParameterPlan(
+                location='query',
+                name='where',
+                style='deepObject',
+                explode=True,
+            ),
             encoder=Encoder(model_bindings.codec_2, model_bindings.CONTEXT_2),
             adapter=(model_bindings.parameter_2, model_bindings.CONTEXT_2),
         ),
         ParameterSpec(
-            plan=AdaptedParameterPlan(location='header', name='X-Labels'),
+            plan=AdaptedParameterPlan(
+                location='header',
+                name='X-Labels',
+                style='simple',
+            ),
             encoder=Encoder(model_bindings.codec_3, model_bindings.CONTEXT_3),
             adapter=(model_bindings.parameter_3, model_bindings.CONTEXT_3),
         ),
@@ -69,9 +89,100 @@ OPERATION_1: Final[OperationPlan[GetItemResponse, GetItemErrorData]] = Operation
     responses=ResponseDecoder((empty_branch('204'),), (), GetItemHTTPError),
     parameters=(
         ParameterSpec(
-            plan=AdaptedParameterPlan(location='path', name='key', required=True),
+            plan=AdaptedParameterPlan(
+                location='path',
+                name='key',
+                style='simple',
+                required=True,
+            ),
             encoder=Encoder(model_bindings.codec_4, model_bindings.CONTEXT_4),
             adapter=(model_bindings.parameter_4, model_bindings.CONTEXT_4),
+        ),
+    ),
+)
+
+OPERATION_2: Final[OperationPlan[GetSegmentResponse, GetSegmentErrorData]] = OperationPlan(
+    operation_id='getSegment',
+    method='GET',
+    path='/segments/{segment}',
+    servers=_SERVERS_0,
+    responses=ResponseDecoder((empty_branch('204'),), (), GetSegmentHTTPError),
+    parameters=(
+        ParameterSpec(
+            plan=AdaptedParameterPlan(
+                location='path',
+                name='segment',
+                style='simple',
+                required=True,
+            ),
+            encoder=Encoder(model_bindings.codec_5, model_bindings.CONTEXT_5),
+            adapter=(model_bindings.parameter_5, model_bindings.CONTEXT_5),
+        ),
+        ParameterSpec(
+            plan=AdaptedParameterPlan(location='header', name='X-Raw', style='simple'),
+            encoder=Encoder(model_bindings.codec_6, model_bindings.CONTEXT_6),
+            adapter=(model_bindings.parameter_6, model_bindings.CONTEXT_6),
+        ),
+    ),
+)
+
+OPERATION_3: Final[OperationPlan[FindResponse, FindErrorData]] = OperationPlan(
+    operation_id='find',
+    method='GET',
+    path='/finds',
+    servers=_SERVERS_0,
+    responses=ResponseDecoder(
+        (
+            model_branch(
+                '200',
+                'application/json',
+                'json',
+                model_bindings.codec_8, model_bindings.CONTEXT_8,
+            ),
+        ),
+        (),
+        FindHTTPError,
+    ),
+    parameters=(
+        ParameterSpec(
+            plan=AdaptedParameterPlan(
+                location='querystring',
+                name='criteria',
+                content_media_type='application/json',
+            ),
+            encoder=Encoder(model_bindings.codec_7, model_bindings.CONTEXT_7),
+            adapter=(model_bindings.parameter_7, model_bindings.CONTEXT_7),
+        ),
+    ),
+    codecs=FindRequestCodecs,
+)
+
+OPERATION_4: Final[OperationPlan[SearchResponse, SearchErrorData]] = OperationPlan(
+    operation_id='search',
+    method='GET',
+    path='/search',
+    servers=_SERVERS_0,
+    responses=ResponseDecoder((empty_branch('204'),), (), SearchHTTPError),
+    parameters=(
+        ParameterSpec(
+            plan=AdaptedParameterPlan(
+                location='query',
+                name='opts',
+                style='form',
+                explode=True,
+            ),
+            encoder=Encoder(model_bindings.codec_9, model_bindings.CONTEXT_9),
+            adapter=(model_bindings.parameter_9, model_bindings.CONTEXT_9),
+        ),
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='query',
+                name='a',
+                style='form',
+                explode=True,
+                reserved_names=('opts',),
+            ),
+            encoder=Encoder(model_bindings.codec_10, model_bindings.CONTEXT_10),
         ),
     ),
 )

@@ -147,6 +147,186 @@ _BUNDLE = r"""{
     },
     "security": []
    }
+  },
+  {
+   "key": "/paths/~1segments~1{segment}/get",
+   "method": "get",
+   "route_path": "/segments/{segment}",
+   "slots": [],
+   "fragment": {
+    "parameters": [
+     {
+      "name": "segment",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "X-Raw",
+      "in": "header",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "No content."
+     },
+     "400": {
+      "description": "Invalid request",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_http_error__3be8954473ad"
+        },
+        "example": {
+         "detail": "Invalid request"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_validation_error__3be8954473ad"
+        }
+       }
+      }
+     },
+     "500": {
+      "description": "Internal Server Error",
+      "content": {
+       "text/plain": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_server_error__3be8954473ad"
+        }
+       }
+      }
+     }
+    },
+    "security": []
+   }
+  },
+  {
+   "key": "/paths/~1finds/get",
+   "method": "get",
+   "route_path": "/finds",
+   "slots": [],
+   "fragment": {
+    "parameters": [
+     {
+      "name": "criteria",
+      "in": "querystring",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Criteria__18c301aebe28"
+        }
+       }
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "No content."
+     },
+     "400": {
+      "description": "Invalid request",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_http_error__3be8954473ad"
+        },
+        "example": {
+         "detail": "Invalid request"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_validation_error__3be8954473ad"
+        }
+       }
+      }
+     },
+     "500": {
+      "description": "Internal Server Error",
+      "content": {
+       "text/plain": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_server_error__3be8954473ad"
+        }
+       }
+      }
+     }
+    },
+    "security": []
+   }
+  },
+  {
+   "key": "/paths/~1search/get",
+   "method": "get",
+   "route_path": "/search",
+   "slots": [],
+   "fragment": {
+    "parameters": [
+     {
+      "name": "opts",
+      "in": "query",
+      "schema": {
+       "$ref": "#/components/schemas/Options__7bee14dbe22f"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "No content."
+     },
+     "400": {
+      "description": "Invalid request",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_http_error__3be8954473ad"
+        },
+        "example": {
+         "detail": "Invalid request"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_validation_error__3be8954473ad"
+        }
+       }
+      }
+     },
+     "500": {
+      "description": "Internal Server Error",
+      "content": {
+       "text/plain": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_server_error__3be8954473ad"
+        }
+       }
+      }
+     }
+    },
+    "security": []
+   }
   }
  ],
  "components": {
@@ -238,14 +418,42 @@ _BUNDLE = r"""{
       "type": "integer"
      }
     }
+   },
+   "Criteria__18c301aebe28": {
+    "type": "object",
+    "properties": {
+     "term": {
+      "type": [
+       "string",
+       "null"
+      ]
+     },
+     "start": {
+      "type": "integer"
+     }
+    }
+   },
+   "Options__7bee14dbe22f": {
+    "type": "object",
+    "properties": {
+     "a": {
+      "type": "string"
+     }
+    }
    }
   }
  }
 }"""
 PLAN: Final = OpenAPIPackagePlan(
     package='adapters_basemodel',
-    version='3.1.0',
+    version='3.2.1',
     repeated=False,
-    operation_keys=('/paths/~1tags/get', '/paths/~1items~1{key}/get'),
+    operation_keys=(
+        '/paths/~1tags/get',
+        '/paths/~1items~1{key}/get',
+        '/paths/~1segments~1{segment}/get',
+        '/paths/~1finds/get',
+        '/paths/~1search/get',
+    ),
     bundle=_BUNDLE,
 )

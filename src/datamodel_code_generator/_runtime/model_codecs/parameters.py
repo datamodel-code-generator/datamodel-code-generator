@@ -9,7 +9,7 @@ from itertools import starmap
 from typing import Final, Literal, TypeAlias
 from urllib.parse import quote
 
-from .errors import ParameterEncodingError, WireIssue, WireValidationError
+from .errors import CodecConfigurationError, ParameterEncodingError, WireIssue, WireValidationError
 from .media import (
     FieldPlan,
     LexicalKind,
@@ -80,10 +80,15 @@ class ParameterPlan:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class AdaptedParameterPlan(ParameterPlan):
-    """Describe a parameter a registered adapter carries: its location, name, and requiredness, and no builtin form."""
+    """Describe a parameter a registered adapter carries, as declared, whether or not a builtin form carries it."""
 
     def __post_init__(self) -> None:
-        """Accept the parameter without a builtin form, since its adapter encodes and decodes the value."""
+        """Accept the declaration without a builtin form, since only its adapter encodes and decodes the value."""
+
+
+def _adapted(plan: ParameterPlan) -> CodecConfigurationError:
+    msg = f"The {plan.location} parameter {plan.name!r} goes through its registered adapter, not a builtin form"
+    return CodecConfigurationError(msg)
 
 
 def builtin_content(location: ParameterLocation, media_type: str) -> bool:
@@ -346,6 +351,8 @@ def _content_pairs(plan: ParameterPlan, value: WireValue) -> list[_Entry]:
 
 def encode_parameter(plan: ParameterPlan, value: WireValue) -> EncodedParameterContribution:
     """Encode one validated wire value into its location's ordered raw contribution."""
+    if isinstance(plan, AdaptedParameterPlan):
+        raise _adapted(plan)
     value = freeze_wire(value)
     if plan.location == "querystring":
         return QueryStringContribution(raw_query=_encode_querystring(plan, value))
@@ -602,6 +609,8 @@ def _decode_cookie_value(plan: ParameterPlan, fragments: tuple[ParameterFragment
 
 def decode_parameter(plan: ParameterPlan, raw: RawParameter) -> WireValue | Unset:
     """Decode one parameter from its location's ordered raw occurrences, or UNSET when absent."""
+    if isinstance(plan, AdaptedParameterPlan):
+        raise _adapted(plan)
     match plan.location:
         case "querystring":
             return _decode_querystring(plan, raw.raw_query)

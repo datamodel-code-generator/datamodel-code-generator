@@ -21,4 +21,13 @@ def services(server: ModuleType, models: ModuleType, calls: list[str]) -> dict[s
         async def get_item(self, **arguments: object) -> None:
             record("get_item", arguments)
 
+        def get_segment(self, **arguments: object) -> None:
+            record("get_segment", arguments)
+
+        def find(self, **arguments: object) -> None:
+            record("find", arguments)
+
+        def search(self, **arguments: object) -> None:
+            record("search", arguments)
+
     return {"default": {"untagged": Untagged()}}
