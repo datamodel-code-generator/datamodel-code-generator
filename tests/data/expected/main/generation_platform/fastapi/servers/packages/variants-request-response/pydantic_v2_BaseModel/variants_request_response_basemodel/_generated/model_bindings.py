@@ -214,7 +214,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='variants_request_response_basemodel_models:PetRequest',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Pet',
         fields=(
             FieldBinding(
                 field_id='variants_request_response_basemodel_models:PetRequest.name',
@@ -261,7 +261,7 @@ def _model_3() -> ModelBinding:
     return ModelBinding(
         symbol='variants_request_response_basemodel_models:PetResponse',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Pet',
         fields=(
             FieldBinding(
                 field_id='variants_request_response_basemodel_models:PetResponse.id',

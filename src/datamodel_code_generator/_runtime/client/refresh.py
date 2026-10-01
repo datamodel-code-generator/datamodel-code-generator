@@ -1116,13 +1116,20 @@ def _rejected(
 class SyncTokens(ABC):
     """A synchronous token family of a provider of the SDK: the shared job engine around one token endpoint."""
 
-    __slots__ = ("_audience", "_endpoint", "_refresh")
+    __slots__ = ("_audience", "_endpoint", "_refresh", "_scopes")
 
-    def __init__(self, shared: SharedRefresh, endpoint: TokenEndpoint, audience: str | None) -> None:
-        """Keep the family, its endpoint, and its audience; nothing runs until the first acquisition."""
+    def __init__(
+        self, shared: SharedRefresh, endpoint: TokenEndpoint, audience: str | None, scopes: tuple[str, ...]
+    ) -> None:
+        """Keep the family, its endpoint, its audience, and its requested scopes; nothing runs until it acquires."""
         self._endpoint = endpoint
         self._audience = audience
+        self._scopes = scopes
         self._refresh = SyncSharedRefresh(shared, self._acquire, endpoint.close)
+
+    def identity(self) -> tuple[str | None, tuple[str, ...]]:
+        """Return the audience and the scopes the family requests, which name no secret."""
+        return self._audience, self._scopes
 
     @abstractmethod
     def _acquire(self, job: Job) -> Outcome:
@@ -1158,13 +1165,20 @@ class SyncTokens(ABC):
 class AsyncTokens(ABC):
     """An asyncio token family of a provider of the SDK, bound to one event loop."""
 
-    __slots__ = ("_audience", "_endpoint", "_refresh")
+    __slots__ = ("_audience", "_endpoint", "_refresh", "_scopes")
 
-    def __init__(self, shared: SharedRefresh, endpoint: AsyncTokenEndpoint, audience: str | None) -> None:
-        """Keep the family, its endpoint, and its audience; nothing runs until the first acquisition."""
+    def __init__(
+        self, shared: SharedRefresh, endpoint: AsyncTokenEndpoint, audience: str | None, scopes: tuple[str, ...]
+    ) -> None:
+        """Keep the family, its endpoint, its audience, and its requested scopes; nothing runs until it acquires."""
         self._endpoint = endpoint
         self._audience = audience
+        self._scopes = scopes
         self._refresh = AsyncSharedRefresh(shared, self._acquire, endpoint.aclose)
+
+    def identity(self) -> tuple[str | None, tuple[str, ...]]:
+        """Return the audience and the scopes the family requests, which name no secret."""
+        return self._audience, self._scopes
 
     @abstractmethod
     async def _acquire(self, job: Job) -> Outcome:
@@ -1204,7 +1218,7 @@ class SyncClientCredentials(SyncTokens):
     def __init__(self, options: OAuthProviderOptions, endpoint: TokenEndpoint, grant: ClientCredentialsGrant) -> None:
         """Keep the endpoint and grant; nothing runs until the first acquisition."""
         self._grant = grant
-        super().__init__(SharedRefresh(options), endpoint, grant.audience)
+        super().__init__(SharedRefresh(options), endpoint, grant.audience, grant.scopes)
 
     def _acquire(self, job: Job) -> Outcome:
         endpoint = self._endpoint
@@ -1224,7 +1238,7 @@ class AsyncClientCredentials(AsyncTokens):
     ) -> None:
         """Keep the endpoint and grant; nothing runs until the first acquisition."""
         self._grant = grant
-        super().__init__(SharedRefresh(options), endpoint, grant.audience)
+        super().__init__(SharedRefresh(options), endpoint, grant.audience, grant.scopes)
 
     async def _acquire(self, job: Job) -> Outcome:
         endpoint = self._endpoint

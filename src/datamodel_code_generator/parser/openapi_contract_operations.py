@@ -341,8 +341,9 @@ class FinalOperationBuilder:
         name: str | None = None,
         status: str | None = None,
         media: str | None = None,
+        direction: Literal["request", "response", "neutral"] | None = None,
     ) -> TypeUseId:
-        direction: Literal["request", "response", "neutral"] = (
+        direction = direction or (
             "response" if role.startswith("response") else "neutral" if role == "schema" else "request"
         )
         use = TypeUseId(
@@ -816,7 +817,7 @@ class FinalOperationBuilder:
         )
         for (declaration, _projection), observations in self.schemas.items():
             source = self.location(declaration, "schema")
-            self._use(
+            neutral = self._use(
                 source,
                 "schema",
                 declaration,
@@ -825,6 +826,21 @@ class FinalOperationBuilder:
                 declaration,
                 projection=observations[0].frame.projection,
             )
+            if not self.parser.binding_ledger.variants:
+                continue
+            for direction in ("request", "response"):
+                use = self._use(
+                    source,
+                    "schema",
+                    declaration,
+                    declaration,
+                    declaration,
+                    declaration,
+                    projection=observations[0].frame.projection,
+                    direction=direction,
+                )
+                if self.uses[use].type is None or self.uses[use].type == self.uses[neutral].type:
+                    del self.uses[use]
         self._schema_helpers()
         return FinalOperationInventory(
             operations, tuple(self.uses.values()), tuple(self.diagnostics), self._security_schemes()

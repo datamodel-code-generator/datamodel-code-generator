@@ -1,0 +1,4 @@
+[tool.datamodel-codegen.profiles.first]
+extends = "second"
+[tool.datamodel-codegen.profiles.second]
+extends = "first"

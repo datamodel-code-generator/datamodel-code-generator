@@ -1,0 +1,22 @@
+{
+  "additional_imports": [
+    "decimal.Decimal"
+  ],
+  "aliases": {
+    "userName": "display_name"
+  },
+  "apply_default_values_for_required_fields": true,
+  "default_value_overrides": {
+    "Sample.count": 7
+  },
+  "disable_timestamp": true,
+  "extra_template_data": {
+    "Sample": {}
+  },
+  "field_constraints": false,
+  "formatters": [
+    "builtin"
+  ],
+  "settings_path": "$PROJECT",
+  "target_python_version": "3.11"
+}

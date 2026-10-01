@@ -80,7 +80,7 @@ _QUERY_NAME: Final = re.compile(rb"[A-Za-z0-9\-._~!$'()*+,;:@%/?]+")
 _QUERY_VALUE: Final = re.compile(rb"[A-Za-z0-9\-._~!$'()*+,;=:@%/?]*")
 _QUERY: Final = re.compile(rb"[A-Za-z0-9\-._~!$&'()*+,;=:@%/?]+")
 _TOKEN: Final = re.compile(rb"[!#$%&'*+.^_`|~0-9A-Za-z-]+")
-_HEADER_VALUE: Final = re.compile(rb"[\t\x20-\x7e\x80-\xff]*")
+_HEADER_VALUE: Final = re.compile(rb"(?:[\x21-\x7e](?:[\t\x20-\x7e]*[\x21-\x7e])?)?")
 _COOKIE_OCTETS: Final = re.compile(rb"[\x21\x23-\x2B\x2D-\x3A\x3C-\x5B\x5D-\x7E]*")
 
 
@@ -491,7 +491,7 @@ class AdapterModelCodec(Generic[T]):
 class AdapterParameterCodec:
     """Run a parameter adapter and verify every contribution it returns at the raw HTTP boundary."""
 
-    __slots__ = ("_adapter", "_empty", "_name", "_plan", "_reserved")
+    __slots__ = ("_adapter", "_empty", "_name", "_plan", "_prefix", "_reserved")
 
     def __init__(
         self,
@@ -506,6 +506,7 @@ class AdapterParameterCodec:
         self._plan = plan
         self._empty = manifest.capabilities.supports_empty_containers
         self._name = self._folded(plan.name.encode())
+        self._prefix = self._name + b"[" if plan.style == "deepObject" else None
         self._reserved = frozenset(reserved.encode() for reserved in plan.reserved_names)
 
     def encode(self, value: WireValue, context: CodecContext) -> EncodedParameterContribution:
@@ -544,16 +545,16 @@ class AdapterParameterCodec:
             decoded = self._adapter.decode_parameter(raw=raw, plan=self._plan, context=context)
         except CodecError:
             raise
-        except Exception as error:
+        except Exception:  # noqa: BLE001
             msg = "A parameter adapter failed to decode a value"
-            raise CodecAdapterError(msg) from error
+            raise CodecAdapterError(msg) from None
         if decoded is UNSET:
             return UNSET
         try:
             wire = freeze_wire(decoded)
-        except (TypeError, ValueError) as error:
+        except (TypeError, ValueError):
             msg = "A parameter adapter returned a value outside the wire domain"
-            raise CodecAdapterError(msg) from error
+            raise CodecAdapterError(msg) from None
         if not self._empty and _empty(wire):
             msg = "A parameter adapter returned an empty array or object its capabilities exclude"
             raise CodecAdapterError(msg)
@@ -561,6 +562,12 @@ class AdapterParameterCodec:
 
     def _folded(self, name: bytes) -> bytes:
         return name.lower() if self._plan.location == "header" else name
+
+    def _owned(self, name: bytes) -> bool:
+        """Return whether a decoded query name is the parameter's own, or a member of its declared deepObject."""
+        return name not in self._reserved and (
+            name == self._name or (self._prefix is not None and name.startswith(self._prefix))
+        )
 
     def _rejected(self, fragments: tuple[ParameterFragment, ...]) -> str | None:
         location = self._plan.location
@@ -580,7 +587,7 @@ class AdapterParameterCodec:
                         isinstance(name, bytes)
                         and bool(_QUERY_NAME.fullmatch(name) and _QUERY_VALUE.fullmatch(value))
                         and not (_TRIPLET.search(name) or _TRIPLET.search(value))
-                        and unquote_to_bytes(name.replace(b"+", b" ")) not in self._reserved
+                        and self._owned(unquote_to_bytes(name.replace(b"+", b" ")))
                     )
                 case "header":
                     valid = (

@@ -371,7 +371,8 @@ class _CodecPlanner:
             and use.schema is not None
             and ((resolved := self.wire.schema(use.schema)[0]).document, resolved.pointer)
             == (document, binding.schema.pointer)
-            and (use.id.role == "schema" if binding.direction == "neutral" else use.id.direction == binding.direction)
+            and use.id.direction == binding.direction
+            and (binding.direction != "neutral" or use.id.role == "schema")
         }
         source = SourceLocation(document or self.batch.documents[0].id, binding.schema.pointer, "schema")
         if len(symbols) != 1:
@@ -871,9 +872,14 @@ def plan_model_codecs(  # noqa: PLR0913
     surface: Surface = "server",
     lease: SourceLease | None = None,
     sources: Mapping[str, str] | None = None,
+    selection: AdapterSelection | None = None,
 ) -> CodecPlan:
-    """Bind every directional use to its native type graph, projection mode, and any registered adapter."""
-    selection: AdapterSelection = select_adapters(batch, wire, declarations, surface)
+    """Bind every directional use to its native type graph, projection mode, and any registered adapter.
+
+    A target that already selected the adapters of the same batch passes its `selection`.
+    """
+    if selection is None:
+        selection = select_adapters(batch, wire, declarations, surface)
     planner = _CodecPlanner(batch, wire, backend, declarations, selection.uses("model"))
     for export in declarations.exports:
         planner.export(export, sources or {})
@@ -883,7 +889,7 @@ def plan_model_codecs(  # noqa: PLR0913
     return CodecPlan(
         bindings,
         (
-            *suppressed(wire.diagnostics, wire, adapters),
+            *suppressed(wire.diagnostics, wire, adapters, batch),
             *selection.diagnostics,
             *planner.diagnostics,
             *adapter_diagnostics,

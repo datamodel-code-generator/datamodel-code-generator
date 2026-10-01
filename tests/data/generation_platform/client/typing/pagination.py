@@ -5,8 +5,18 @@ from __future__ import annotations
 from collections.abc import AsyncIterator, Iterator
 
 from pets import AsyncClient, Client
+from pets.errors import PaginationCycleError, SessionLimitError
 from pets.options import RequestOptions, SessionOptions
-from pets.protocols import AsyncPager, Continuation, Page, Pager, PaginationOptions, ProtocolProgress
+from pets.protocols import (
+    AsyncPager,
+    Continuation,
+    Page,
+    Pager,
+    PaginationOptions,
+    ProtocolProgress,
+    ResumeState,
+    import_state,
+)
 from pets.responses import ResponseInfo
 from pets.types.labels import ListLabelsResponse
 from pets.types.users import ListUsersResponse, SearchUsersResponse
@@ -44,6 +54,25 @@ def pages(client: Client, query: UserQuery) -> None:
     del items, progress, wider
 
 
+def checkpoints(client: Client, limit: SessionLimitError, cycle: PaginationCycleError) -> None:
+    """Checkpoint a pager and resume its helper with the same item and page types."""
+    helper = client.protocols.users.all
+    state = helper.iterate().checkpoint()
+    assert_type(state, ResumeState)
+    exported: bytes = state.export()
+    resumed = helper.resume(
+        import_state(exported),
+        pagination_options=PaginationOptions(max_items=10),
+        options=RequestOptions(),
+        session_options=SessionOptions(max_network_sends=5),
+    )
+    assert_type(resumed, Pager[User, ListUsersResponse])
+    assert_type(limit.resume_state, ResumeState | None)
+    assert_type(cycle.resume_state, ResumeState | None)
+    if (saved := limit.resume_state) is not None:
+        assert_type(client.protocols.labels.all.resume(saved), Pager[Label, ListLabelsResponse])
+
+
 async def async_pages(client: AsyncClient) -> None:
     """Yield typed items and pages with asyncio, without awaiting the pager or its page iterator."""
     helper = client.protocols.users.all
@@ -61,4 +90,9 @@ async def async_pages(client: AsyncClient) -> None:
     first = await helper.page()
     assert_type(await helper.next_page(first), Page[User, ListUsersResponse] | None)
     await pager.aclose()
+    state = pager.checkpoint()
+    assert_type(state, ResumeState)
+    assert_type(helper.resume(state), AsyncPager[User, ListUsersResponse])
+    async for user in helper.resume(state, pagination_options=PaginationOptions(max_pages=2)):
+        assert_type(user, User)
     del items
