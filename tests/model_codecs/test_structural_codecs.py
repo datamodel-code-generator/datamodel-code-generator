@@ -1,4 +1,4 @@
-"""Run the structural model codecs of the standard library backends over really generated models."""
+"""Run the structural model codecs that client packages generate for the standard library backends."""
 
 from __future__ import annotations
 
@@ -48,14 +48,15 @@ EXPECTED = DATA / "expected/main/generation_platform/codecs/structural"
         ("pydantic/names", "names-msgspec"),
     ],
 )
-def test_structural_codecs(source: str, cases: str, tmp_path: PathType, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Decode, construct, snapshot, and encode real generated models through their final annotations."""
+def test_structural_codecs(source: str, cases: str, tmp_path: PathType) -> None:
+    """Decode, construct, snapshot, and encode generated models through their final annotations."""
     assert_output(
-        builtin_codec_report(CODECS / f"{source}.yaml", CODECS / "structural" / f"{cases}.json", tmp_path, monkeypatch),
+        builtin_codec_report(CODECS / f"{source}.yaml", CODECS / "structural" / f"{cases}.json", tmp_path),
         EXPECTED / f"{cases}.txt",
     )
 
 
+@pytest.mark.abnormal_path("generated bindings edited out of sync with their models")
 @pytest.mark.parametrize(
     ("source", "cases"),
     [
@@ -64,11 +65,9 @@ def test_structural_codecs(source: str, cases: str, tmp_path: PathType, monkeypa
         ("structural/structs", "structs-startup"),
     ],
 )
-def test_structural_codec_startup(source: str, cases: str, tmp_path: PathType, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_structural_codec_startup(source: str, cases: str, tmp_path: PathType) -> None:
     """Refuse bindings, bundles, and native types that disagree, and native failures past the wire schema."""
     assert_output(
-        builtin_codec_startup_report(
-            CODECS / f"{source}.yaml", CODECS / "structural" / f"{cases}.json", tmp_path, monkeypatch
-        ),
+        builtin_codec_startup_report(CODECS / f"{source}.yaml", CODECS / "structural" / f"{cases}.json", tmp_path),
         EXPECTED / f"{cases}.txt",
     )

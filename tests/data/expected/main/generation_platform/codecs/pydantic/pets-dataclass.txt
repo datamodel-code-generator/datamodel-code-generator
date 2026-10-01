@@ -1,8 +1,6 @@
-diagnostic MC_PARAMETER_ENCODING /paths/~1pets/get/parameters/3/schema: A parameter value needs one unambiguous scalar kind
 use /paths/~1pets/get parameter query limit: native alias models:FieldPetsGetQueryLimitParameter models=[]
 use /paths/~1pets/get parameter query tags: native alias models:FieldPetsGetQueryTagsParameter models=[]
 use /paths/~1pets/get parameter query filter: native alias models:FieldPetsGetQueryFilterParameter models=[]
-use /paths/~1pets/get parameter query choice: native alias models:FieldPetsGetQueryChoiceParameter models=[]
 use /paths/~1pets/get response_body 200: native alias models:FieldPetsGetResponse models=[('models:Owner', 'dataclass', 'allow', True), ('models:Pet', 'dataclass', 'ignore', True)]
 use /paths/~1pets/post request_body: envelope dataclass models:Pet models=[('models:Owner', 'dataclass', 'allow', True), ('models:Pet', 'dataclass', 'ignore', True)]
 use /paths/~1pets/post response_body 201: native dataclass models:Pet models=[('models:Owner', 'dataclass', 'allow', True), ('models:Pet', 'dataclass', 'ignore', True)]

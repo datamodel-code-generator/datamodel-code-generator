@@ -24,12 +24,6 @@ paths:
             type: object
             additionalProperties:
               type: string
-        - name: choice
-          in: query
-          schema:
-            oneOf:
-              - type: integer
-              - type: boolean
       responses:
         "200":
           description: Every pet.

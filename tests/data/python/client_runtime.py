@@ -22,7 +22,7 @@ from tests.data.python.fixture_server import AsyncLocalTransport, FixtureServer,
 from tests.data.python.generated_packages import forget_generated, import_generated
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable, Iterator
+    from collections.abc import AsyncIterator, Callable, Iterator, Mapping
     from types import ModuleType
 
 _CALL_ID: Final = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
@@ -51,25 +51,43 @@ _ERROR_FIELDS: Final = (
 )
 
 
-def _generate(case: dict[str, Any], backend: str, root: Path, package: str) -> None:
-    copy_references(case, root)
+def generate_client(
+    source: Path,
+    root: Path,
+    package: str,
+    backend: str,
+    model: Mapping[str, Any] | None = None,
+    config: Mapping[str, Any] | None = None,
+) -> None:
+    """Generate a client package and its `<package>_models` module under a root, from fixture option values."""
     generate_target(
-        shutil.copy2(SOURCE / case["input"], root / case["input"]),
-        model_config=GenerateConfig(
-            output=root / f"{package}_models.py",
-            input_file_type="openapi",
-            target_python_version="3.11",
-            openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api],
-            output_model_type=DataModelType(backend),
-            disable_timestamp=True,
-            formatters=[Formatter.BUILTIN],
-            **case.get("model", {}),
-        ),
+        source,
+        model_config=GenerateConfig(**{
+            "output": root / f"{package}_models.py",
+            "input_file_type": "openapi",
+            "target_python_version": "3.11",
+            "openapi_scopes": [OpenAPIScope.Schemas, OpenAPIScope.Api],
+            "output_model_type": DataModelType(backend),
+            "disable_timestamp": True,
+            "formatters": [Formatter.BUILTIN],
+            **(model or {}),
+        }),
         config=client_config(
-            {"output": package, "package": package, "model_package": f"{package}_models", **case.get("config", {})},
-            root,
+            {"output": package, "package": package, "model_package": f"{package}_models", **(config or {})}, root
         ),
         generator=ClientTarget(),
+    )
+
+
+def _generate(case: dict[str, Any], backend: str, root: Path, package: str) -> None:
+    copy_references(case, root)
+    generate_client(
+        shutil.copy2(SOURCE / case["input"], root / case["input"]),
+        root,
+        package,
+        backend,
+        case.get("model"),
+        case.get("config"),
     )
 
 
