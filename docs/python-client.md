@@ -864,6 +864,24 @@ handoff. Idle expiry raises a read `PhaseTimeoutError`; stream-total expiry rais
 described above. Async streams apply the bounds to each asynchronous read. Always leave the response's context
 manager, including when abandoning a download early.
 
+`stream_to(path)` writes the decoded body to a new temporary file beside the target and moves it there only once the
+body is complete. A handle whose body is already being read or is gone raises `ResponseConsumedError` before any file
+work, and an existing target raises `FileExistsError` unless `overwrite=True`. A failure while the body streams closes
+the response, removes the temporary file within `cleanup_timeout` (later, after the failure propagates, when removal
+takes longer), and leaves an existing target unchanged.
+
+An async handle does this file work on a disk thread of its own, started by the download and stopped when it ends, so
+the event loop never blocks on the disk: it gathers the body into writes of about 64 KiB, each running while the next
+bytes are read. Creating the file and waiting for a write count against `stream_total_timeout`, the cancel token, and
+client closing, but not against `stream_idle_timeout` or `TimeoutOptions(read=...)`, which measure only the wait for
+body bytes. Once the whole body has been read and written, the write of its last bytes under 64 KiB, the close, and
+the move run to their end; only native task cancellation interrupts them, and the move may still complete after the
+cancellation. Writing a saved body of a buffered response is not bounded by the call at all. Closing the client waits,
+within `cleanup_timeout`, for a download's file work to finish.
+
+`stream_to(file_object)` writes to a borrowed file on the calling thread or event loop and never closes, seeks, or
+truncates it; bytes already written stay there. A failed write closes the response before the failure propagates.
+
 ## Application concurrency limits
 
 There is no default application limiter. Configure one on a client, view, or request through `limiter`. A sync

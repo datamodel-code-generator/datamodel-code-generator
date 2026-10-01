@@ -66,6 +66,7 @@ from tests.data.python.client_runtime import (
 )
 from tests.data.python.client_selectors import selectors
 from tests.data.python.client_signatures import keywords, signatures
+from tests.data.python.client_stream_lifetimes import stream_lifetimes
 from tests.data.python.client_transports import lifecycle, transports
 from tests.data.python.client_validation import arguments, validation
 from tests.data.python.client_webhook_contracts import webhook_contracts
@@ -691,6 +692,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "transports": ("pets", ("pydantic_v2.BaseModel",), transports),
     "lifecycle": ("pets", ("pydantic_v2.BaseModel",), lifecycle),
     "raw": ("pets", ("pydantic_v2.BaseModel",), raw),
+    "stream-lifetimes": ("pets", ("pydantic_v2.BaseModel",), stream_lifetimes),
     "bodies": ("pets", ("pydantic_v2.BaseModel",), bodies),
     "multipart": ("media", ("pydantic_v2.BaseModel", "typing.TypedDict"), multipart),
     "selectors": ("media", ("pydantic_v2.BaseModel", "typing.TypedDict"), selectors),

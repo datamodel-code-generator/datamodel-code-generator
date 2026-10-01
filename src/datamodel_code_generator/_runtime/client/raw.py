@@ -8,6 +8,9 @@ from __future__ import annotations
 
 import errno
 import os
+import threading
+from contextlib import aclosing
+from functools import partial
 from os import PathLike
 from pathlib import Path
 from typing import TYPE_CHECKING, BinaryIO, Final, Generic, Literal, TypeAlias
@@ -33,10 +36,12 @@ from .lifecycle import cleanup_secondary
 from .media import charset
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
+    from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable, Generator, Iterator
+    from concurrent.futures import Future
     from types import TracebackType
 
     from ..model_codecs.wire import JSONValue
+    from .disk import DiskWorker
     from .errors import RetryStopReason
     from .events import CallEvents
     from .lifecycle import Scope
@@ -46,17 +51,19 @@ if TYPE_CHECKING:
     from .responses import ResponseInfo
 
 _BINARY: Final[int] = getattr(os, "O_BINARY", 0)
+_UMASK: Final = threading.Lock()
 Action: TypeAlias = Literal["read", "text", "json", "iter_bytes", "iter_raw_bytes", "stream_to"]
 State: TypeAlias = Literal["buffered", "open", "streaming", "consumed", "closed", "failed"]
 SourceT = TypeVar("SourceT")
 HandleT = TypeVar("HandleT")
+T = TypeVar("T")
 
 
 def _status_error(error: Exception) -> TypeIs[HTTPStatusError[object]]:
     return isinstance(error, HTTPStatusError)
 
 
-def _pieces(data: bytes) -> Iterator[bytes]:
+def _pieces(data: bytes) -> Generator[bytes, None, None]:
     for start in range(0, len(data), CHUNK):
         yield data[start : start + CHUNK]
 
@@ -78,6 +85,10 @@ class _SavedPieces:
         except StopIteration:
             raise StopAsyncIteration from None
 
+    async def aclose(self) -> None:
+        """Stop yielding; saved bytes hold nothing to release."""
+        self._pieces.close()
+
 
 def _temporary(path: Path) -> tuple[int, Path]:
     """Create a new file beside the target that only its owner can read while the download is written."""
@@ -86,9 +97,13 @@ def _temporary(path: Path) -> tuple[int, Path]:
 
 
 def _umask() -> int:
-    """Return the process umask, which reading sets for an instant to one that no new file is looser under."""
-    umask = os.umask(0o077)
-    os.umask(umask)
+    """Return the process umask, which reading sets for an instant to one that no new file is looser under.
+
+    Downloads read it on their own threads, so one lock keeps two reads from restoring each other's instant value.
+    """
+    with _UMASK:
+        umask = os.umask(0o077)
+        os.umask(umask)
     return umask
 
 
@@ -141,6 +156,95 @@ class _Budget:
 def _refuse_existing(path: Path, *, overwrite: bool) -> None:
     if not overwrite and path.exists():
         raise FileExistsError(errno.EEXIST, os.strerror(errno.EEXIST), str(path))
+
+
+def _created(path: Path, overwrite: bool) -> tuple[BinaryIO, Path]:  # noqa: FBT001
+    """Refuse an existing target unless overwriting, then open a new temporary file beside it."""
+    _refuse_existing(path, overwrite=overwrite)
+    handle, temporary = _temporary(path)
+    try:
+        return os.fdopen(handle, "wb"), temporary
+    except BaseException:
+        os.close(handle)
+        temporary.unlink(missing_ok=True)
+        raise
+
+
+def _discarded(created: tuple[BinaryIO, Path]) -> None:
+    """Close and remove an unfinished download."""
+    file, temporary = created
+    try:
+        file.close()
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _committed(created: tuple[BinaryIO, Path], tail: bytes, path: Path, overwrite: bool) -> None:  # noqa: FBT001
+    """Write the last bytes of a completed download, close it, and give it its name."""
+    file, temporary = created
+    file.write(tail)
+    file.close()
+    _commit(temporary, path, overwrite=overwrite)
+
+
+async def _waited(future: Future[int]) -> None:
+    """Wait on the event loop for a write on the worker."""
+    import asyncio  # noqa: PLC0415
+
+    await asyncio.wrap_future(future)
+
+
+class _Download:
+    """A download to a path: its disk worker, its temporary file once created, its unwritten bytes, and its write.
+
+    Chunks are kept until they fill a write of at least CHUNK bytes, which runs while the next ones are read. A write
+    whose outcome was taken gives way to the always finished `done`.
+    """
+
+    __slots__ = ("created", "done", "future", "parts", "size", "worker")
+
+    def __init__(self, worker: DiskWorker) -> None:
+        from concurrent.futures import Future  # noqa: PLC0415
+
+        self.worker = worker
+        self.created: tuple[BinaryIO, Path] | None = None
+        self.parts: list[bytes] = []
+        self.size = 0
+        self.done: Future[int] = Future()
+        self.done.set_result(0)
+        self.future = self.done
+
+    async def create(self, path: Path, overwrite: bool) -> tuple[BinaryIO, Path]:  # noqa: FBT001
+        """Open the temporary file on the worker, keeping it to discard even when the call stops right after."""
+        self.created = created = await self.worker.run(_created, path, overwrite, discard=_discarded)
+        return created
+
+    def add(self, chunk: bytes) -> bytes | None:
+        """Keep a chunk, and return the kept bytes once they fill a write."""
+        self.parts.append(chunk)
+        self.size += len(chunk)
+        if self.size < CHUNK:
+            return None
+        data = b"".join(self.parts)
+        self.parts, self.size = [], 0
+        return data
+
+    async def discard(self) -> None:
+        """Let the last write settle, close and remove the unfinished file on the worker, then release the worker.
+
+        Every late failure of the download's disk work fails the discarding, so the call keeps it as secondary.
+        """
+        from .disk import raise_late  # noqa: PLC0415
+
+        try:
+            if (future := self.future) is not self.done:
+                self.worker.abandon(future)
+            late = await self.worker.settled(every=True)
+            if (created := self.created) is not None:
+                await self.worker.run(_discarded, created, cleanup=True)
+        finally:
+            self.worker.release()
+        raise_late(late)
 
 
 class _Raw(Generic[SourceT, HandleT]):
@@ -250,6 +354,11 @@ class _Raw(Generic[SourceT, HandleT]):
         if isinstance(failure, SDKError):
             failure.info = self._info
         return failure
+
+    def _downloadable(self) -> None:
+        """Refuse a download to a path once the body is being read or is gone, before any disk work."""
+        if self._state not in {"open", "buffered"}:
+            raise self._consumed(action="stream_to")
 
     def _budget(self, limit: int | None, representation: Literal["decoded", "content_coded"]) -> _Budget:
         return _Budget(limit, representation, self._info, self._operation_id)
@@ -372,19 +481,28 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
     def stream_to(self, target: str | PathLike[str] | BinaryIO, *, overwrite: bool = False) -> None:
         """Write the decoded body to a file object, or to a path through a temporary file moved there on success."""
         if not isinstance(target, (str, PathLike)):
-            for chunk in self._iterate(action="stream_to", decoded=True):
-                target.write(chunk)
+            self._write(target.write)
             return
+        self._downloadable()
         path = Path(target)
-        _refuse_existing(path, overwrite=overwrite)
-        handle, temporary = _temporary(path)
+        file, temporary = _created(path, overwrite)
         try:
-            with os.fdopen(handle, "wb") as file:
-                for chunk in self._iterate(action="stream_to", decoded=True):
-                    file.write(chunk)
+            with file:
+                self._write(file.write)
             _commit(temporary, path, overwrite=overwrite)
         except BaseException:
             temporary.unlink(missing_ok=True)
+            raise
+
+    def _write(self, write: Callable[[bytes], object]) -> None:
+        """Write each decoded chunk; a failed write ends the stream it started before its failure propagates."""
+        chunks = self._iterate(action="stream_to", decoded=True)
+        try:
+            for chunk in chunks:
+                write(chunk)
+        except BaseException as error:
+            if self._state == "streaming":
+                self._end("failed", error)
             raise
 
     def raise_for_status(self) -> None:
@@ -636,21 +754,86 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
         return self._iterate(action="iter_raw_bytes", decoded=False)
 
     async def stream_to(self, target: str | PathLike[str] | BinaryIO, *, overwrite: bool = False) -> None:
-        """Write the decoded body to a file object, or to a path through a temporary file moved there on success."""
-        if not isinstance(target, (str, PathLike)):
-            async for chunk in self._iterate(action="stream_to", decoded=True):
-                target.write(chunk)
+        """Write the decoded body to a file object, or to a path through a temporary file moved there on success.
+
+        A file object is written on the event loop. A path's file is created, written, and moved on a disk thread of
+        the handle, which writes about CHUNK bytes at a time while the next ones are read and stops once the download
+        ends.
+        """
+        if isinstance(target, (str, PathLike)):
+            await self._download(Path(target), overwrite=overwrite)
             return
-        path = Path(target)
-        _refuse_existing(path, overwrite=overwrite)
-        handle, temporary = _temporary(path)
+        chunks = self._iterate(action="stream_to", decoded=True)
         try:
-            with os.fdopen(handle, "wb") as file:
-                async for chunk in self._iterate(action="stream_to", decoded=True):
-                    file.write(chunk)
-            _commit(temporary, path, overwrite=overwrite)
-        except BaseException:
-            temporary.unlink(missing_ok=True)
+            async with aclosing(chunks):
+                async for chunk in chunks:
+                    target.write(chunk)
+        except BaseException as error:
+            await self._write_failed(error)
+            raise
+
+    async def _write_failed(self, error: BaseException) -> None:
+        """End the stream a failed write of this call left behind, before the failure propagates."""
+        if self._state == "streaming":
+            await self._end("failed", error)
+
+    async def _download(self, path: Path, *, overwrite: bool) -> None:
+        """Write the body to a path on a disk thread, reading the next chunks while one write runs.
+
+        Opening the file and waiting for a write count against the stream's total limit and the call's deadline, but
+        never against its idle or read limits; the final write and move run to their end. A failure ends the stream
+        and removes the unfinished file before it propagates. Until then the download holds its client's close.
+        """
+        self._downloadable()
+        import asyncio  # noqa: PLC0415
+
+        from .disk import DiskWorker  # noqa: PLC0415 - Only a download to a path starts a disk thread.
+
+        held = asyncio.Event()
+        self._scope.retain_cleanup(asyncio.create_task(held.wait()), owner=self._call)
+        worker = DiskWorker("AsyncRawResponse")
+        worker.acquire()
+        download = _Download(worker)
+        chunks: AsyncGenerator[bytes, None] | _SavedPieces | None = None
+        try:
+            created = await self._disk(partial(download.create, path, overwrite))
+            chunks = self._iterate(action="stream_to", decoded=True)
+            async with aclosing(chunks):
+                async for chunk in chunks:
+                    if (data := download.add(chunk)) is not None:
+                        await self._flushed(download)
+                        download.future = worker.submit(created[0].write, data)
+            await self._flushed(download)
+            await worker.run(_committed, created, b"".join(download.parts), path, overwrite)
+        except BaseException as error:
+            try:
+                if chunks is not None:
+                    await self._write_failed(error)
+            finally:
+                await self._call.cleanup(download.discard, error=error)
+            raise
+        finally:
+            worker.close()
+            held.set()
+        worker.release()
+
+    async def _flushed(self, download: _Download) -> None:
+        """Wait for the download's last write, at once when it already ended, and raise its failure."""
+        if not (future := download.future).done():
+            await self._disk(partial(_waited, future))
+        download.future = download.done
+        future.result()
+
+    async def _disk(self, operation: Callable[[], Awaitable[T]]) -> T:
+        """Await disk work: a saved body's at once, a stream's under its limits, except the idle one, and closing."""
+        if self._state == "buffered":
+            return await operation()
+        try:
+            return await self._call.bounded(
+                operation, phase="stream", delivery_state=DeliveryState.RESPONSE_STARTED, idle=False
+            )
+        except SDKError as error:
+            error.info = self._info
             raise
 
     async def raise_for_status(self) -> None:
@@ -744,7 +927,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             parts.append(chunk)
             yield chunk
 
-    def _iterate(self, *, action: Action, decoded: bool) -> AsyncIterator[bytes]:
+    def _iterate(self, *, action: Action, decoded: bool) -> AsyncGenerator[bytes, None] | _SavedPieces:
         match self._state:
             case "buffered":
                 return _SavedPieces(self._body if decoded else self._raw)
@@ -755,7 +938,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
                 pass
         raise self._consumed(action=action)
 
-    async def _stream(self, *, decoded: bool) -> AsyncIterator[bytes]:
+    async def _stream(self, *, decoded: bool) -> AsyncGenerator[bytes, None]:
         budget = self._budget(self._limits.max_stream_bytes, "decoded" if decoded else "content_coded")
         try:
             source = self._chunks()

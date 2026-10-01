@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, BinaryIO, Final, Literal, Protocol, TypeAlias
 
 from .coding import CHUNK
+from .disk import DiskWorker, carried, raise_late
 from .errors import (
     BodyChangedError,
     BodyFactoryError,
@@ -24,17 +25,13 @@ from .errors import (
     SigningConfigurationError,
     add_secondary,
 )
-from .lifecycle import LEFT_WORK, TaskInterruptionError, task_failure
 
 _SHA256_BYTES: Final = 32
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterable, AsyncIterator, Awaitable, Callable, Coroutine, Iterable, Iterator
-    from concurrent.futures import Future, ThreadPoolExecutor
+    from collections.abc import AsyncIterable, AsyncIterator, Awaitable, Callable, Iterable, Iterator
     from os import PathLike
-    from typing import TypeVar
 
-    T = TypeVar("T")
     Ownership: TypeAlias = Literal["borrowed", "owned"]
     _Identity: TypeAlias = tuple[int, int, int, int]
     _Checked: TypeAlias = Literal["file", "factory"]
@@ -726,179 +723,6 @@ class BodyFactory:
         return _FactoryCall(self, self._open, history)
 
 
-async def _carried(work: Awaitable[None]) -> None:
-    """Keep an interruption of deferred work as its failure, so the call it belongs to still reports it."""
-    try:
-        await work
-    except BaseException as error:
-        if isinstance(error, Exception):
-            raise
-        raise TaskInterruptionError(error) from None
-
-
-def _raise_late(failures: tuple[BaseException, ...]) -> None:
-    """Raise the first late failure of interrupted disk work, carrying the rest as its secondary errors."""
-    if failures:
-        add_secondary(failures[0], *failures[1:])
-        raise failures[0]
-
-
-class _Worker:
-    """The one thread an async file body reads on, started by its first read and stopped by closing."""
-
-    __slots__ = ("closed", "failed", "lock", "pool", "releasing", "settling", "uses")
-
-    def __init__(self) -> None:
-        self.pool: ThreadPoolExecutor | None = None
-        self.lock = threading.Lock()
-        self.closed = False
-        self.uses = 0
-        self.settling: dict[asyncio.Task[None], list[asyncio.Task[None]] | None] = {}
-        self.releasing: set[asyncio.Task[None]] = set()
-        self.failed: list[tuple[list[asyncio.Task[None]] | None, BaseException]] = []
-
-    def acquire(self) -> None:
-        """Keep the worker available until an admitted file attempt finishes its cleanup."""
-        with self.lock:
-            if self.closed:
-                raise BodyNotReplayableError(source_kind="file", condition="consumed")
-            self.uses += 1
-
-    def release(self) -> None:
-        """Release one file attempt's use after all its disk work has settled."""
-        with self.lock:
-            self.uses -= 1
-        self._stop()
-
-    async def run(
-        self,
-        function: Callable[..., T],
-        *arguments: object,
-        discard: Callable[[T], None] | None = None,
-        cleanup: bool = False,
-    ) -> T:
-        """Run one disk operation; an interrupted caller returns at once, and the work settles on a retained task.
-
-        Cleanup, such as closing the file, first waits for the work interrupted callers left; a caller interrupted in
-        that wait leaves the cleanup to a retained task that holds the worker. An interrupted cleanup settles before it
-        ends, redoing a close its cancellation dropped.
-        """
-        with self.lock:
-            if self.closed and not cleanup:
-                raise BodyNotReplayableError(source_kind="file", condition="consumed")
-            if (pool := self.pool) is None:
-                from concurrent.futures import ThreadPoolExecutor  # noqa: PLC0415 - Only async file bodies start one.
-
-                pool = self.pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="AsyncFileBody")
-        late: tuple[BaseException, ...] = ()
-        if cleanup:
-            try:
-                late = await self.settled()
-            except asyncio.CancelledError:
-                with self.lock:
-                    self.uses += 1
-                self.defer(_carried(self._finish(function, *arguments)), release=True)
-                raise
-        future = pool.submit(function, *arguments)
-        try:
-            result = await asyncio.wrap_future(future)
-        except asyncio.CancelledError as error:
-            if not cleanup:
-                self.defer(self._settle(future, discard))
-                raise
-            try:
-                await self._settle(future, discard, lambda: pool.submit(function, *arguments))
-            except BaseException as failure:  # noqa: BLE001
-                add_secondary(error, failure)
-            add_secondary(error, *late)
-            raise
-        except BaseException as error:
-            add_secondary(error, *late)
-            raise
-        _raise_late(late)
-        return result
-
-    async def _finish(self, function: Callable[..., object], *arguments: object) -> None:
-        """Run the cleanup an interrupted caller left before it began, holding the worker until it ends."""
-        try:
-            await self.run(function, *arguments, cleanup=True)
-        finally:
-            self.release()
-
-    def defer(self, work: Coroutine[object, object, None], *, release: bool = False) -> None:
-        """Finish work an interrupted caller left on a retained task, which belongs to the caller's call.
-
-        Disk work settles before any file is released; a deferred release is awaited by the interrupted call instead.
-        """
-        task = asyncio.ensure_future(work)
-        left = LEFT_WORK.get()
-        if release:
-            self.releasing.add(task)
-            task.add_done_callback(self.releasing.discard)
-        else:
-            self.settling[task] = left
-            task.add_done_callback(self._settled)
-        if release and left is not None:
-            left.append(task)
-
-    def _settled(self, task: asyncio.Task[None]) -> None:
-        left = self.settling.pop(task)
-        if (failure := task_failure(task)) is not None:
-            self.failed.append((left, failure))
-
-    async def settled(self) -> tuple[BaseException, ...]:
-        """Wait for the disk work interrupted callers left, and return what the current call's share of it failed late.
-
-        Settling work waits for nothing else, so two interrupted opens of one path never wait for each other. A late
-        failure stays with the worker until its call asks, even when its work finished before that call's release.
-        """
-        if asyncio.current_task() in self.settling:
-            return ()
-        if pending := tuple(self.settling):
-            await asyncio.wait(pending)
-        if not self.failed:
-            return ()
-        owner = LEFT_WORK.get()
-        failures = tuple(failure for left, failure in self.failed if left is owner)
-        self.failed = [entry for entry in self.failed if entry[0] is not owner]
-        return failures
-
-    async def _settle(
-        self,
-        future: Future[T],
-        discard: Callable[[T], None] | None,
-        resubmit: Callable[[], Future[T]] | None = None,
-    ) -> None:
-        """Wait for interrupted disk work, dispose a late file on this same worker, and raise what failed late."""
-        settled = asyncio.wrap_future(future)
-        while not settled.done():
-            try:
-                await asyncio.wait((settled,))
-            except asyncio.CancelledError:  # noqa: PERF203 - Repeated cancellation must not abandon disk work.
-                continue
-        if future.cancelled():
-            if resubmit is not None:
-                await self._settle(resubmit(), None)
-            return
-        result = settled.result()
-        if discard is not None:
-            await self.run(discard, result, cleanup=True)
-
-    def close(self) -> None:
-        """Refuse new reads and stop after admitted attempts finish their owned cleanup."""
-        with self.lock:
-            self.closed = True
-        self._stop()
-
-    def _stop(self) -> None:
-        with self.lock:
-            pool = None
-            if self.closed and not self.uses:
-                pool, self.pool = self.pool, None
-        if pool is not None:
-            pool.shutdown(wait=False)
-
-
 class _AsyncFileAttempt:
     """One async attempt's read of a file on its body's worker, which releases the file once closed."""
 
@@ -909,7 +733,7 @@ class _AsyncFileAttempt:
         file: BinaryIO,
         context: BodyAttemptContext,
         length: int | None,
-        worker: _Worker,
+        worker: DiskWorker,
         release: Callable[[], Awaitable[None]],
         *,
         consume: Callable[[], None] | None = None,
@@ -976,7 +800,7 @@ class _AsyncOpenFile:
 
     __slots__ = ("claim", "file", "ownership", "worker")
 
-    def __init__(self, file: BinaryIO, ownership: Ownership, worker: _Worker) -> None:
+    def __init__(self, file: BinaryIO, ownership: Ownership, worker: DiskWorker) -> None:
         self.file = file
         self.ownership = ownership
         self.worker = worker
@@ -994,7 +818,7 @@ class _AsyncOpenFile:
             length = await self.worker.run(_remaining, self.file, context)
         except BaseException as error:
             if isinstance(error, asyncio.CancelledError):
-                self.worker.defer(_carried(self.release()), release=True)
+                self.worker.defer(carried(self.release()), release=True)
                 raise
             failure = _failed(context, error) if isinstance(error, OSError) else error
             try:
@@ -1016,7 +840,7 @@ class _AsyncOpenFile:
         finally:
             self.claim.lock.release()
             self.worker.release()
-        _raise_late(late)
+        raise_late(late)
 
 
 class _AsyncPathFile:
@@ -1024,7 +848,7 @@ class _AsyncPathFile:
 
     __slots__ = ("identity", "path", "worker")
 
-    def __init__(self, path: Path, worker: _Worker) -> None:
+    def __init__(self, path: Path, worker: DiskWorker) -> None:
         self.path = path
         self.worker = worker
         self.identity = _identity(path.stat())
@@ -1036,7 +860,7 @@ class _AsyncPathFile:
             file = await self.worker.run(_opened, self.path, self.identity, discard=_close_file)
         except BaseException as error:
             if isinstance(error, asyncio.CancelledError):
-                self.worker.defer(_carried(self._settled_release()), release=True)
+                self.worker.defer(carried(self._settled_release()), release=True)
                 raise
             self.worker.release()
             if isinstance(error, OSError):
@@ -1050,7 +874,7 @@ class _AsyncPathFile:
             late = await self.worker.settled()
         finally:
             self.worker.release()
-        _raise_late(late)
+        raise_late(late)
 
     async def release(self, file: BinaryIO) -> None:
         """Close the attempt's file before a stopped worker can shut down."""
@@ -1070,7 +894,7 @@ class AsyncFileBody:
 
     def __init__(self, file: BinaryIO, *, ownership: Ownership = "borrowed") -> None:
         """Send an open binary file, borrowed unless its ownership moves to the client."""
-        self._worker = _Worker()
+        self._worker = DiskWorker("AsyncFileBody")
         self._source: _AsyncOpenFile | _AsyncPathFile = _AsyncOpenFile(file, ownership, self._worker)
 
     @classmethod
@@ -1102,7 +926,7 @@ class _AsyncPathFileBody(AsyncFileBody):
     __slots__ = ()
 
     def __init__(self, path: Path) -> None:
-        self._worker = _Worker()
+        self._worker = DiskWorker("AsyncFileBody")
         self._source = _AsyncPathFile(path, self._worker)
 
 
@@ -1350,7 +1174,7 @@ class _AsyncFileCall:
             self._offset, self._length = await self._source.worker.run(_snapshot, self._source.file)
         except BaseException as error:
             if isinstance(error, asyncio.CancelledError):
-                self._source.worker.defer(_carried(self.aclose()), release=True)
+                self._source.worker.defer(carried(self.aclose()), release=True)
                 raise
             failure = BodyFactoryError(cause=error) if isinstance(error, OSError) else error
             try:
