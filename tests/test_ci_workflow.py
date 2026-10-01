@@ -39,7 +39,13 @@ def test_workflow_matrix_and_coverage_contract() -> None:
         for entries in groups.values()
         for entry in entries
     )
-    shard_entries = [entry for entries in groups.values() for entry in entries if "shard" in entry]
+    shard_entries = [entry for name in ("test-shard", "test-shard-nocov") for entry in groups[name]]
+    shard_groups: dict[tuple[str, str, str, str], list[tuple[int, int]]] = {}
+    for name, entries in groups.items():
+        for entry in entries:
+            if "shard" in entry:
+                key = (name, entry["tox_env"], entry["os"], entry.get("profile", ""))
+                shard_groups.setdefault(key, []).append((int(entry["shard"]), int(entry["shard_total"])))
     all_setup_steps = [step for job in jobs.values() for step in job["steps"] if "setup-uv@" in step.get("uses", "")]
     output = {
         "configurations": sorted(configurations),
@@ -51,6 +57,10 @@ def test_workflow_matrix_and_coverage_contract() -> None:
             if entry.get("extra_tests")
         ),
         "shard_profile_mapping": jobs["test-shard"]["env"]["SHARD_PROFILE"],
+        "shards_complete": all(
+            sorted(shards) == [(index, len(shards)) for index in range(1, len(shards) + 1)]
+            for shards in shard_groups.values()
+        ),
         "shard_profiles_known": all(entry.get("profile") in PROFILES for entry in shard_entries),
         "exclude_tests": sorted({entry["exclude_tests"] for entry in shard_entries if entry.get("exclude_tests")}),
         "exclude_only_without_coverage": all(

@@ -9,9 +9,9 @@ from dataclasses import dataclass, field
 from keyword import iskeyword
 from sys import float_info
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Final, Literal
+from typing import TYPE_CHECKING, Final, Literal, cast
 
-from typing_extensions import TypeIs
+from typing_extensions import TypeIs, TypeVar
 
 from ..client.errors import ProtocolConfigurationError, is_sequence
 from ..client.timing import SessionOptions
@@ -25,6 +25,8 @@ from .websocket_types import (
 
 if TYPE_CHECKING:
     from ssl import SSLContext
+
+V = TypeVar("V")
 
 _CONTROL: Final = re.compile(r"[\x00-\x1f\x7f-\x9f]")
 _PAGINATION: Final = (
@@ -70,6 +72,14 @@ WEBHOOK_LIMITS: Final = (
     ("future_tolerance", True, False, True),
     ("replay_ttl", True, False, False),
 )
+
+
+def layered(layers: tuple[object, ...], name: str, default: V) -> V:
+    """Return an option from the first layer that sets it, skipping None and UNSET layers, or its default."""
+    for layer in layers:
+        if layer is not None and not isinstance(layer, Unset) and not isinstance(value := getattr(layer, name), Unset):
+            return cast("V", value)
+    return default
 
 
 def positive_count(value: object, name: str, *, allow_zero: bool = False) -> None:

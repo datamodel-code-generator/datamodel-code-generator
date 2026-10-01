@@ -10,6 +10,7 @@ render pydantic_v2.BaseModel
   E_CONFIG_VALUE config protocols.helpers['undeclared.links'].continuation.header /paths/~1searches/post: The links of 'undeclared.links' come from the header 'Link', which POST /searches does not declare
   E_CONFIG_VALUE config protocols.helpers['spaced.links'].continuation.rel /paths/~1users/get: The relation 'next page' of 'spaced.links' is no RFC 8288 relation type: a registered name or an absolute URI
   E_CONFIG_VALUE config protocols.helpers['quoted.links'].continuation.rel /paths/~1users/get: The relation 'urn:"next"' of 'quoted.links' is no RFC 8288 relation type: a registered name or an absolute URI
+  E_CONFIG_VALUE config protocols.helpers['written.links'].bindings[2].target /paths/~1users/get: The binding 2 of 'written.links' writes the cookie 'session', which carries credentials no helper writes
   E_CONFIG_VALUE config protocols.helpers['written.links'].bindings[0].target /paths/~1users/get: The binding 0 of 'written.links' writes the query parameter 'limit', which no request after the first sends
   E_CONFIG_VALUE config protocols.helpers['written.links'].bindings[1].target /paths/~1users/get: The binding 1 of 'written.links' gives integer values, which the header parameter 'X-Trace' of GET /users does not accept
   E_CONFIG_CONFLICT config protocols.helpers['written.links'].bindings[3].target /paths/~1users/get: The binding 3 of 'written.links' writes the same target as its binding 1
