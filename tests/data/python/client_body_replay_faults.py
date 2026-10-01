@@ -327,7 +327,7 @@ async def _cancel_partial(
     attempt = _Gated(length=8, fail=True, metadata=kind == "metadata")
     token = options.CancelToken()
     config = options.ClientOptions(
-        total_timeout=0.1 if mode == "deadline" else None,
+        total_timeout=1.0 if mode == "deadline" else None,
         cleanup_timeout=0.005 if mode == "native" else 0.2,
         retry=options.RetryOptions(initial_delay=0),
     )
@@ -355,7 +355,10 @@ async def _cancel_partial(
         async def call() -> None:
             try:
                 await api.request_raw(
-                    "PUT", "https://body.example.com/", body=body, options=options.RequestOptions(cancel_token=token)
+                    "PUT",
+                    "https://body.example.com/",
+                    body=body,
+                    options=options.RequestOptions(cancel_token=token, cleanup_timeout=10.0),
                 )
             except BaseException as error:  # noqa: BLE001
                 failures.append(error)

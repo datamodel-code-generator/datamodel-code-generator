@@ -46,6 +46,7 @@ from tests.data.python.client_pagination_counts import pagination_counts
 from tests.data.python.client_pagination_links import pagination_links
 from tests.data.python.client_pagination_sessions import pagination_auth, pagination_sessions
 from tests.data.python.client_pagination_targets import pagination_querystring, pagination_targets
+from tests.data.python.client_path_segments import path_segments
 from tests.data.python.client_protocol_contracts import protocol_contracts
 from tests.data.python.client_protocol_errors import protocol_errors
 from tests.data.python.client_query import query
@@ -658,6 +659,7 @@ BACKENDS: Final = (
 )
 ALL_BUT_MSGSPEC: Final = BACKENDS[:-1]
 SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, list[str]], None]]]] = {
+    "path-segments": ("pagination-targets", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"), path_segments),
     "pets": ("pets", ("pydantic_v2.BaseModel", "typing.TypedDict"), pets),
     "auth-errors": ("pets", ("pydantic_v2.BaseModel",), auth_errors),
     "auth-values": ("auth", BACKENDS, auth_values),
