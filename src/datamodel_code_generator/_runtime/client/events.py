@@ -343,6 +343,8 @@ class CallEvents:
                 pass
             case Exception():
                 outcome = "error"
+            case _:
+                pass
         events.append(
             self.event(
                 "call_end", sent=self.sent, status=status, duration=self.monotonic() - self.started, outcome=outcome
@@ -496,6 +498,8 @@ class CallEvents:
                 pass
             case Exception():
                 outcome = "error"
+            case _:
+                pass
         status = None if self.info is None else self.info.status_code
         return self.event("stream_end", sent=True, status=status, duration=self.monotonic() - handed, outcome=outcome)
 
