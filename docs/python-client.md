@@ -1198,15 +1198,17 @@ items are supported. Values, errors, and tokens stay out of a record's represent
 
 Each item is encoded once, as the request body's codec encodes it under the call's request validation mode, and its
 compact JSON bytes are measured. Items are grouped in input order into requests of at most
-`min(BatchOptions.batch_size, max_items)` items whose bodies stay within `min(max_request_bytes, 32 MiB,
-BatchOptions.max_buffer_bytes)` bytes; an item whose ID is already in a request starts the next one. An item larger
+`min(BatchOptions.batch_size, max_items)` items, the server's `max_items` from the helper, whose bodies stay within
+`min(max_request_bytes, 32 MiB, BatchOptions.max_buffer_bytes)` bytes; an item whose ID is already in a request starts the next one. An item larger
 than one request can carry, or than `BatchOptions.max_item_bytes`, is never sent: once every earlier item's result has
 been returned, the iterator raises `BatchItemTooLargeError` with its `index`.
 
 At most `BatchOptions.parallelism` requests are in flight, on a private thread pool for `Client` and as tasks for
 `AsyncClient`. Results always come back in input order: a request's slot is held until every one of its results has
-been returned, and items are read only into a free slot and while the bytes prepared for requests in flight stay within
-`max_buffer_bytes`, so at most `parallelism × batch_size` items and one more are read ahead of the results. With `id`
+been returned. Items are read only into a free slot and while the bytes of the items read and not yet answered, those
+in flight and those held for the next request, stay below `max_buffer_bytes`; a request the full buffer would cut
+short waits for the oldest request instead, so at most `parallelism × batch_size` items and one more are read ahead
+of the results. With `id`
 correlation, results may come in any order; with `position`, they must come in item order.
 
 ### Results and failures
@@ -1219,21 +1221,31 @@ array raises `ProtocolDataError`. Item errors are results, never retried.
 
 Each request is a child call with the shared retry policy, so a whole request is resent only when the operation's
 retry safety allows it: a `PUT` is retried after a `503` by default, while a `POST` needs an idempotent declaration or
-a key contract, and each request has its own idempotency key. A request whose transport failed after it may have been
-sent becomes one `<Helper>DeliveryUnknown` record per item, never resent; with `BatchOptions(raise_on_error=True)` the
-iterator raises `BatchDeliveryUnknownError` instead, whose `partial_results` are that request's records and
-`batch_indices` its items' indices. Any other failure of a request, such as an HTTP error, a decoding error, or a
-mismatch, is raised once the results before it have been returned; the iterator then stops sending, waits for or
-cancels the requests in flight, and ends.
+a key contract, and each request has its own idempotency key. A request that may have reached the server without an
+answer the helper can read becomes one `<Helper>DeliveryUnknown` record per item, never resent: a failure whose
+`delivery_state` is `MAYBE_SENT` or `RESPONSE_STARTED`, such as a transport failure, a deadline, or a cancellation
+during the call, and a success response whose body fails to decode or validate, since the server applied the request.
+With `BatchOptions(raise_on_error=True)` the iterator raises `BatchDeliveryUnknownError` instead, whose `cause` is
+that failure, `partial_results` that request's records, and `batch_indices` its items' indices. A deadline, a
+cancellation, or a closed client also ends the iteration: it is raised after those records.
+
+Any other failure of a request, such as an HTTP error or a mismatch, is raised once the results before it have been
+returned. Nothing is read or sent after it, but the requests already in flight are not abandoned: the following steps
+return their records, or raise their own failures, in input order, and then the iteration ends, so
+every request sent either returns its records or raises.
 
 A failure of the caller's items, such as an exception from its iterator or an item its codec refuses, stops reading:
 the items read before it are still sent and their results returned, then the original exception, or the
 `RequestEncodingError` with the location `("items", index)`, is raised.
 
-`close()` or `aclose()`, or leaving a `with` or `async with` block, stops sending: requests not started are cancelled,
+Iterate inside a `with` or `async with` block, so that the requests in flight are waited for or cancelled when the
+loop ends early. `close()` or `aclose()`, or leaving the block, stops sending: requests not started are cancelled,
 `close` waits for the requests in flight and `aclose` cancels them, and their results are dropped; later steps end the
-iteration. Neither closes the client. Calling a step while another one runs raises `ProtocolStateError` with
-`state='iterating'`.
+iteration. Neither closes the client. A step of an `AsyncBatchIterator` that is cancelled, such as by a timeout around
+`anext`, cancels the requests in flight and reads and sends nothing more; the following steps return a
+`<Helper>DeliveryUnknown` record per item of the cancelled requests, or raise `BatchDeliveryUnknownError` with
+`raise_on_error`, then raise `ProtocolStateError` with `state='cancelled'`, so the items read but never sent are not
+dropped silently. Calling a step while another one runs raises `ProtocolStateError` with `state='iterating'`.
 
 ### Limits and sessions
 
@@ -1256,7 +1268,9 @@ key, and the session bounds all of them. Each limit comes from the call's option
 An item past `max_items` raises `SessionLimitError` with the kind `items`, and a request the session has no send slot
 for raises it with the kind `network_sends`, each after the results before it. The options of `iterate` apply to
 every request; they must not fix an idempotency key, and options of another type raise `ProtocolConfigurationError`
-before anything is read. Checkpoints, resumable item sources, and retries of failed items are not supported yet.
+before anything is read. In a package that validates arguments with Pydantic, the shared parameter arguments are
+checked once at the first step, before anything is sent, and an invalid one raises `RequestEncodingError` at every
+step; each item is validated by the request body's codec. Checkpoints, resumable item sources, and retries of failed items are not supported yet.
 
 ### Generation checks
 

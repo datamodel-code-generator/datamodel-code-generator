@@ -3360,11 +3360,15 @@ already in a request starts the next one. Results come back in input order, what
 result item must carry exactly one of its success and error members, and results that do not match the request's
 items by position or declared ID raise `BatchProtocolError`. An item too large for any request raises
 `BatchItemTooLargeError` before it is sent. Item errors are records, never retried; a request is resent only as the
-shared retry policy allows its operation. A request that may have reached the server without a response gives one
+shared retry policy allows its operation. A request that may have reached the server without a readable answer, such
+as after a transport failure, a deadline, a cancellation, or a success response whose body fails to decode, gives one
 unknown delivery record per item, never resent, or raises `BatchDeliveryUnknownError` with
-`BatchOptions(raise_on_error=True)`. Any other failure, and a failure of the caller's items, is raised after the
-results before it, and the iterator then stops sending. `close()` or `aclose()` stops sending and drops the results
-not yet returned; it never closes the client. A call's options must not fix an idempotency key.
+`BatchOptions(raise_on_error=True)`; a deadline, a cancellation, or a closed client is raised after those records.
+Any other failure, and a failure of the caller's items, is raised after the results before it; nothing is read or
+sent after it, and the requests in flight still return their records in order. A cancelled asyncio step cancels the
+requests in flight, whose items become unknown deliveries, and the iteration then ends with `ProtocolStateError`.
+Iterate in a `with` or `async with` block: `close()` or `aclose()` stops sending and drops the results not yet
+returned; it never closes the client. A call's options must not fix an idempotency key.
 """
 
     def polling_runtime(self) -> str:
