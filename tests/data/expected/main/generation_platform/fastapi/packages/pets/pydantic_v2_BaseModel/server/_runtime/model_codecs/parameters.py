@@ -637,7 +637,9 @@ def raw_parameter(plan: ParameterPlan | ParameterTarget, raw: RawParameters) -> 
     """Select one plan's location view from an operation's raw parameters."""
     match plan.location:
         case "path":
-            fragments = () if (captured := raw.path.get(plan.name)) is None else (ParameterFragment(None, captured),)
+            fragments: tuple[ParameterFragment, ...] = (
+                () if (captured := raw.path.get(plan.name)) is None else (ParameterFragment(None, captured),)
+            )
             return RawParameter(location="path", fragments=fragments)
         case "query":
             return RawParameter(location="query", fragments=split_query(raw.query), raw_query=raw.query)
@@ -645,7 +647,9 @@ def raw_parameter(plan: ParameterPlan | ParameterTarget, raw: RawParameters) -> 
             return RawParameter(location="querystring", raw_query=raw.query)
         case "header":
             return RawParameter(location="header", fragments=tuple(starmap(ParameterFragment, raw.headers)))
-    return RawParameter(location="cookie", fragments=split_cookies(raw.headers))
+        case _:
+            fragments = split_cookies(raw.headers)
+    return RawParameter(location="cookie", fragments=fragments)
 
 
 def decode_parameters(
