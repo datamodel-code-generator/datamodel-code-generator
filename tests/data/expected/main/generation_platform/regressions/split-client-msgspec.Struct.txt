@@ -1,0 +1,25 @@
+# split client msgspec.Struct
+  > POST https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"radius":1}'
+  shape {'radius': 1} = CircleResponse(radius=1, id=UNSET)
+  > POST https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 10] b'{"side":2}'
+  shape {'side': 2} = SquareResponse(side=2)
+  > POST https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"radius":1}'
+  shape {'radius': 1, 'id': 4} = CircleResponse(radius=1, id=4)
+  > POST https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 23] b'{"side":2,"secret":"s"}'
+  shape {'side': 2, 'secret': 's'} = SquareResponse(side=2)
+  > POST https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"radius":1}'
+async shape {'radius': 1}: {'radius': 1, 'id': UNSET}
+  > POST https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 10] b'{"side":2}'
+async shape {'side': 2}: {'side': 2}
+  > POST https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"radius":1}'
+async shape {'radius': 1, 'id': 4}: {'radius': 1, 'id': 4}
+  > POST https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 23] b'{"side":2,"secret":"s"}'
+async shape {'side': 2, 'secret': 's'}: {'side': 2}

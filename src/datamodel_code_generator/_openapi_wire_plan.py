@@ -32,6 +32,7 @@ from datamodel_code_generator._runtime.model_codecs.media import (
 from datamodel_code_generator._runtime.model_codecs.parameters import (
     ParameterLocation,
     ParameterPlan,
+    ParameterTarget,
     ValueShape,
     builtin_content,
 )
@@ -898,6 +899,34 @@ def parameter_view(
         content_media_type=content,
         reserved_names=tuple(sorted({other for kind, other in names if kind == location and other != name})),
     )
+
+
+def parameter_plans(
+    batch: GeneratedTypeContractBatch, wire: WirePlan, adapted: frozenset[TypeUseId]
+) -> dict[OperationId, dict[tuple[ParameterLocation, str], ParameterPlan | ParameterTarget]]:
+    """Index builtin plans and retain adapter-owned parameters whose wire shape has no builtin plan."""
+    plans: dict[OperationId, dict[tuple[ParameterLocation, str], ParameterPlan | ParameterTarget]] = {
+        operation: {(plan.location, plan.name): plan for plan in parameters}
+        for operation, parameters in wire.parameters
+    }
+    if not adapted:
+        return plans
+    for operation in batch.operations:
+        for declaration in operation.parameters:
+            if adapted.isdisjoint(_uses(declaration)):
+                continue
+            key = (_LOCATIONS[_fact(declaration, "in")], declaration.name or "")
+            parameters = plans.setdefault(operation.id, {})
+            if key in parameters:
+                continue
+            view = parameter_view(batch, wire.version, operation, declaration)
+            parameters[key] = ParameterTarget(
+                location=view.location,
+                name=view.name,
+                required=view.required,
+                content_media_type=view.content_media_type,
+            )
+    return plans
 
 
 def _planned(

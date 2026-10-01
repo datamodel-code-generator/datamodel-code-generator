@@ -1,0 +1,177 @@
+{
+  "split": {
+    "input": "split.json",
+    "model": {
+      "read_only_write_only_model_type": "request-response"
+    },
+    "payloads": [
+      {
+        "radius": 1
+      },
+      {
+        "side": 2
+      },
+      {
+        "radius": 1,
+        "id": 4
+      },
+      {
+        "side": 2,
+        "secret": "s"
+      }
+    ]
+  },
+  "adapters": {
+    "input": "adapters.json",
+    "codec_adapters": [
+      {
+        "kind": "parameter",
+        "name": "json",
+        "import_ref": "app_codecs:json_parameter",
+        "capabilities": {
+          "record": "ParameterCodecCapabilities",
+          "locations": [
+            "path",
+            "query",
+            "header",
+            "cookie"
+          ],
+          "styles": [
+            "simple",
+            "form"
+          ],
+          "explode_values": [
+            false
+          ],
+          "value_kinds": [
+            "array",
+            "object"
+          ],
+          "media_types": [
+            "application/json"
+          ],
+          "supports_empty_containers": true
+        },
+        "uses": [
+          {
+            "operation": "/paths/~1parameters~1{path}/get",
+            "role": "parameter",
+            "location": "path",
+            "name": "path"
+          },
+          {
+            "operation": "/paths/~1parameters~1{path}/get",
+            "role": "parameter",
+            "location": "query",
+            "name": "query"
+          },
+          {
+            "operation": "/paths/~1parameters~1{path}/get",
+            "role": "parameter",
+            "location": "header",
+            "name": "X-Values"
+          },
+          {
+            "operation": "/paths/~1parameters~1{path}/get",
+            "role": "parameter",
+            "location": "cookie",
+            "name": "tags"
+          },
+          {
+            "operation": "/paths/~1parameters~1{path}/get",
+            "role": "parameter",
+            "location": "cookie",
+            "name": "required"
+          },
+          {
+            "operation": "/paths/~1parameters~1{path}/get",
+            "role": "parameter",
+            "location": "cookie",
+            "name": "content",
+            "media_type": "application/json"
+          }
+        ]
+      }
+    ],
+    "calls": [
+      {
+        "path": [
+          1,
+          2
+        ],
+        "query": [
+          3,
+          4
+        ],
+        "x_values": [
+          5,
+          6
+        ],
+        "tags": [
+          8,
+          9
+        ],
+        "required": [
+          10,
+          11
+        ],
+        "content": {
+          "n": 12
+        }
+      },
+      {
+        "path": [],
+        "query": [],
+        "x_values": [],
+        "tags": [],
+        "required": [],
+        "content": {}
+      },
+      {
+        "path": [
+          1
+        ],
+        "required": [
+          2
+        ]
+      }
+    ],
+    "requests": [
+      {
+        "url": "/parameters/%5B1%2C2%5D?query=%5B3%2C4%5D",
+        "headers": {
+          "X-Values": "%5B5%2C6%5D",
+          "Cookie": "tags=%5B8%2C9%5D; required=%5B10%2C11%5D; content=%7B%22n%22%3A12%7D"
+        }
+      },
+      {
+        "url": "/parameters/%5B%5D?query=%5B%5D",
+        "headers": {
+          "X-Values": "%5B%5D",
+          "Cookie": "tags=%5B%5D; required=%5B%5D; content=%7B%7D"
+        }
+      },
+      {
+        "url": "/parameters/%5B1%5D",
+        "headers": {
+          "Cookie": "required=%5B2%5D"
+        }
+      },
+      {
+        "url": "/parameters/%5B1%5D"
+      },
+      {
+        "url": "/parameters/%5B1%5D",
+        "headers": {
+          "Cookie": "required=%5B2%5D; required=%5B3%5D"
+        }
+      },
+      {
+        "url": "/parameters/%5B1%5D",
+        "headers": {
+          "Cookie": "required=bad"
+        }
+      }
+    ]
+  }
+}

@@ -25,7 +25,7 @@ from urllib.parse import quote, unquote_plus, urlsplit
 import httpx2
 from typing_extensions import Self, TypeIs
 
-from ..model_codecs.parameters import FragmentContribution, QueryStringContribution, encode_parameter
+from ..model_codecs.parameters import FragmentContribution, ParameterPlan, QueryStringContribution
 from ..model_codecs.selectors import MediaSelector, ResponseMedia
 from ..model_codecs.unset import UNSET, Unset
 from .bodies import (
@@ -455,7 +455,7 @@ def _parameters(
                 raise _encoding_error(operation, (plan.location, plan.name))
             continue
         try:
-            contribution = encode_parameter(plan, spec.encode(value, mode))
+            contribution = spec.encode(value, mode)
         except (*DATA_ERRORS, ValueError, TypeError) as error:
             raise _encoding_error(operation, (plan.location, plan.name), error) from None
         request.add(contribution, plan.name)
@@ -770,10 +770,11 @@ def _parameter_names(operation: OperationPlan[object, object], location: str) ->
     for parameter in operation.parameters:
         plan = parameter.plan
         if plan.location == location:
-            if plan.shape == "object" and plan.explode and plan.style in {"form", "cookie"}:
-                yield from (field.name for field in plan.fields)
-            else:
-                yield plan.name
+            match plan:
+                case ParameterPlan(shape="object", explode=True, style="form" | "cookie"):
+                    yield from (field.name for field in plan.fields)
+                case _:
+                    yield plan.name
 
 
 def _auth_event(call: _Call, name: Literal["auth_start", "auth_wait"]) -> None:

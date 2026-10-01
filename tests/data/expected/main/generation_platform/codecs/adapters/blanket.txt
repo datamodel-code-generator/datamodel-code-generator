@@ -1,5 +1,13 @@
 binding /paths/~1visits/post request_body: adapted.models:FieldVisitsPostRequestRequest model pydantic_type_adapter native
+binding /components/schemas/Pet schema request: adapted.models:PetRequest model pydantic_type_adapter native
+binding /components/schemas/Pet schema response: adapted.models:PetResponse model pydantic_type_adapter native
+binding /paths/~1visits/post/requestBody/content/application~1json/schema schema request: adapted.models:FieldVisitsPostRequestRequest model pydantic_type_adapter native
+binding /paths/~1visits/post/requestBody/content/application~1json/schema schema response: adapted.models:FieldVisitsPostRequestResponse model pydantic_type_adapter native
 use /paths/~1visits/post request_body: codec_0 None None
+use /components/schemas/Pet schema request: codec_1 None None
+use /components/schemas/Pet schema response: codec_2 outbound_2 None
+use /paths/~1visits/post/requestBody/content/application~1json/schema schema request: codec_3 None None
+use /paths/~1visits/post/requestBody/content/application~1json/schema schema response: codec_4 outbound_4 None
 visit: model FieldVisitsPostRequestRequest {'pet': {'name': 'Rex'}, 'clinic': {'city': 'Oslo'}} wire={"pet":{"name":"Rex"},"clinic":{"city":"Oslo"}} presence=['', '/pet', '/pet/name', '/clinic', '/clinic/city']
 visit-read-only: WireValidationError schema.readOnly@/pet/id
 visit-missing-pet: WireValidationError schema.required@/pet

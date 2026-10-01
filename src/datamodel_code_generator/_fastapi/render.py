@@ -787,6 +787,9 @@ class ServerRenderer:  # noqa: PLR0904
             ]
             if (use := parameter.use) is not None:
                 entries.append(("codec=", self.codec(module, use.id)))
+                if (accessor := self.accessors[use.id]).parameter is not None:
+                    bindings = module.local("_generated", "model_bindings")
+                    entries.append(("adapter=", f"({bindings}.{accessor.parameter}, {bindings}.{accessor.context})"))
                 if self.envelope(use.id):
                     entries.append(("envelope=", "True"))
                 names.update(self.property_names(use.id))

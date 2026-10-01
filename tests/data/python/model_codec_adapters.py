@@ -63,6 +63,8 @@ print(f"loaded {sorted(module for module in sys.modules if module.split('.')[0] 
 def _use_key(use: object) -> str:
     owner = use.owner.use_site.pointer if isinstance(use.owner, OperationId) else use.owner.pointer
     projection = "" if use.projection == "value" else use.projection
+    if use.role == "schema" and use.direction != "neutral":
+        projection = use.direction
     return " ".join(str(part) for part in (owner, use.role, use.status, use.location, use.name, projection) if part)
 
 

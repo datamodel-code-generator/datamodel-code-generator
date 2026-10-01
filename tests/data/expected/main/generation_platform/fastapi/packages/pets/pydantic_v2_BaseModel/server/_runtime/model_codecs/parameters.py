@@ -55,6 +55,16 @@ _OWS: Final = " \t"
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class ParameterTarget:
+    """Identify an adapter-owned parameter without requiring a reversible builtin wire plan."""
+
+    location: ParameterLocation
+    name: str
+    required: bool = False
+    content_media_type: str | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class ParameterPlan:
     """Describe one effective parameter: location, style or content media, and lexical kinds."""
 
@@ -623,7 +633,7 @@ def split_cookies(headers: tuple[tuple[bytes, bytes], ...]) -> tuple[ParameterFr
     )
 
 
-def raw_parameter(plan: ParameterPlan, raw: RawParameters) -> RawParameter:
+def raw_parameter(plan: ParameterPlan | ParameterTarget, raw: RawParameters) -> RawParameter:
     """Select one plan's location view from an operation's raw parameters."""
     match plan.location:
         case "path":

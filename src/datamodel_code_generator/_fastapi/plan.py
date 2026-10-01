@@ -49,7 +49,9 @@ from datamodel_code_generator._generation_contract import (
     LiteralSequence,
     SourceLocation,
 )
+from datamodel_code_generator._openapi_wire_plan import parameter_plans
 from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, media_kind, normalize_media_type
+from datamodel_code_generator._runtime.model_codecs.parameters import ParameterPlan
 from datamodel_code_generator._runtime.model_codecs.unset import UNSET, Unset
 from datamodel_code_generator._runtime.model_codecs.wire import checked_wire
 
@@ -74,7 +76,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._openapi_codec_adapters import AdapterSelection
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.media import LexicalKind, MediaKind
-    from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
+    from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterTarget
     from datamodel_code_generator._runtime.model_codecs.wire import WireValue
 
 Site: TypeAlias = Literal["parameter", "body", "primary_response"]
@@ -185,7 +187,7 @@ class ParameterSpec:
     wire_name: str
     required: bool
     use: TypeUseBinding | None
-    plan: ParameterPlan | None
+    plan: ParameterPlan | ParameterTarget | None
     decision: Decision
     source: SourceLocation
     native: NativeField | None = None
@@ -462,9 +464,7 @@ class Planner:  # noqa: PLR0904
             for member in reversed(request.batch.fields)
             if member.model_facts is not None
         }
-        self.parameter_plans = {
-            operation: {(plan.location, plan.name): plan for plan in plans} for operation, plans in wire.parameters
-        }
+        self.parameter_plans = parameter_plans(request.batch, wire, selection.uses("parameter"))
         self.header_plans = dict(wire.headers)
         self.scheme_declarations = {
             (declaration.use_site.document, declaration.name): declaration
@@ -700,7 +700,11 @@ class Planner:  # noqa: PLR0904
         )
         if any(item in self.adapted for item in uses):
             return replace(spec, decision=replace(spec.decision, reason="explicit_adapter"))
-        if plan is None or use is None or not _natively_serialized(plan, location, repeated=name in repeated):
+        if (
+            not isinstance(plan, ParameterPlan)
+            or use is None
+            or not _natively_serialized(plan, location, repeated=name in repeated)
+        ):
             return spec
         native, reason, source = self.native_parameter(declaration, use, plan)
         if native is None:

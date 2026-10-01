@@ -9,6 +9,7 @@ from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._python_layout import Doc, Group
+from datamodel_code_generator._runtime.model_codecs.parameters import ParameterTarget
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
@@ -86,9 +87,15 @@ def field_plan(local: Callable[[str, str], str], field: FieldPlan) -> str:
     return f"{local('_runtime.model_codecs.media', 'FieldPlan')}({field.name!r}, {field.kind!r}{repeated})"
 
 
-def parameter_plan(local: Callable[[str, str], str], plan: ParameterPlan) -> Group:
+def parameter_plan(local: Callable[[str, str], str], plan: ParameterPlan | ParameterTarget) -> Group:
     """Return the ParameterPlan constructor of one parameter or header, naming it through `local`."""
     entries: list[tuple[str, Doc]] = [("location=", repr(plan.location)), ("name=", repr(plan.name))]
+    if isinstance(plan, ParameterTarget):
+        if plan.required:
+            entries.append(("required=", "True"))
+        if plan.content_media_type is not None:
+            entries.append(("content_media_type=", repr(plan.content_media_type)))
+        return Group(f"{local('_runtime.model_codecs.parameters', 'ParameterTarget')}(", tuple(entries), ")")
     entries.extend(
         (f"{name}=", repr(value))
         for name, default in _PLAN_DEFAULTS.items()

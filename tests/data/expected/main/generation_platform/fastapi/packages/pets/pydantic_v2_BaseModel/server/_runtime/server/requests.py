@@ -12,8 +12,9 @@ from fastapi.exceptions import RequestValidationError
 from starlette.requests import Request  # noqa: TC002 - FastAPI resolves the dependencies' annotations.
 from typing_extensions import TypeIs
 
+from ..model_codecs.errors import ParameterEncodingError
 from ..model_codecs.media import charset, decode_form, decode_json, decode_text, normalize_media_type
-from ..model_codecs.parameters import RawParameters, decode_parameter, raw_parameter
+from ..model_codecs.parameters import ParameterPlan, RawParameters, decode_parameter, raw_parameter
 from ..model_codecs.unset import UNSET, Unset
 from ..model_codecs.values import ModelValue
 from .errors import (
@@ -29,9 +30,10 @@ from .errors import (
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
 
+    from ..model_codecs.adapters import AdapterParameterCodec
     from ..model_codecs.context import CodecContext
     from ..model_codecs.media import FieldPlan
-    from ..model_codecs.parameters import ParameterPlan, RawParameter
+    from ..model_codecs.parameters import ParameterTarget, RawParameter
     from ..model_codecs.wire import WireValue
     from .errors import Record
 
@@ -74,10 +76,19 @@ class ParameterArgument:
     """One adapter parameter: the handler keyword, its HTTP plan, its codec unless schema-free, and its default."""
 
     name: str
-    plan: ParameterPlan
+    plan: ParameterPlan | ParameterTarget
     codec: tuple[Callable[[], WireDecoder], CodecContext] | None = None
+    adapter: tuple[Callable[[], AdapterParameterCodec], CodecContext] | None = None
     envelope: bool = False
     default: WireValue | Unset = UNSET
+
+    def decode(self, raw: RawParameter) -> WireValue | Unset:
+        """Decode the raw parameter through its registered adapter or builtin style."""
+        if (adapter := self.adapter) is not None:
+            get, context = adapter
+            return get().decode(raw, context)
+        assert isinstance(self.plan, ParameterPlan)
+        return decode_parameter(self.plan, raw)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -152,7 +163,7 @@ class ParameterAdapter:
                     views[plan.location] = view
             location = (plan.location, plan.name)
             try:
-                wire = decode_parameter(plan, view)
+                wire = argument.decode(view)
                 if isinstance(wire, Unset):
                     if plan.required:
                         records.append(missing(location))
@@ -163,6 +174,8 @@ class ParameterAdapter:
                     wire = argument.default
                 codec = argument.codec
                 values[argument.name] = wire if codec is None else _projected(codec, wire, envelope=argument.envelope)
+            except ParameterEncodingError as error:
+                raise malformed_request() from error
             except REQUEST_ERRORS as error:
                 if (found := validation_records(error, location, self.names)) is None:
                     raise malformed_request() from error

@@ -31,7 +31,7 @@ from datamodel_code_generator._generation_contract import (
     SourceLocation,
     TypeUseBinding,
 )
-from datamodel_code_generator._openapi_wire_plan import property_members
+from datamodel_code_generator._openapi_wire_plan import parameter_plans, property_members
 from datamodel_code_generator._runtime.client.media import most_specific
 from datamodel_code_generator._runtime.client.multipart import PartPlan
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalize_media_type
@@ -60,7 +60,11 @@ if TYPE_CHECKING:
     from datamodel_code_generator._runtime.client.multipart import PartKind
     from datamodel_code_generator._runtime.client.security import SecurityBinding, SecuritySchemeEntry
     from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, MediaKind
-    from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
+    from datamodel_code_generator._runtime.model_codecs.parameters import (
+        ParameterLocation,
+        ParameterPlan,
+        ParameterTarget,
+    )
     from datamodel_code_generator._runtime.model_codecs.wire import WireValue
 
 Role: TypeAlias = Literal["success", "error"]
@@ -137,7 +141,7 @@ class ParameterSpec:
     python_name: str
     required: bool
     use: TypeUseBinding | None
-    plan: ParameterPlan
+    plan: ParameterPlan | ParameterTarget
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -342,15 +346,19 @@ def _tags(operation: OperationContract) -> tuple[str, ...]:
 class Planner:
     """Plan every selected operation of one client target from the accepted batch and its wire plan."""
 
-    def __init__(self, request: TargetRequest, config: ClientGenerationConfig, wire: WirePlan) -> None:
+    def __init__(
+        self,
+        request: TargetRequest,
+        config: ClientGenerationConfig,
+        wire: WirePlan,
+        adapted: frozenset[TypeUseId] = frozenset(),
+    ) -> None:
         """Index the batch and the wire plan, and resolve the per-operation settings to operation keys."""
         self.request = request
         self.config = config
         self.wire = wire
         self.uses = {use.id: use for use in request.batch.type_uses}
-        self.parameter_plans = {
-            operation: {(plan.location, plan.name): plan for plan in plans} for operation, plans in wire.parameters
-        }
+        self.parameter_plans = parameter_plans(request.batch, wire, adapted)
         self.header_plans = dict(wire.headers)
         self.forms = {use: (fields, additional, encoded) for use, fields, additional, encoded in wire.forms}
         self.styles = {use: {plan.name: plan for plan in plans} for use, plans in wire.styles}
@@ -367,7 +375,7 @@ class Planner:
         return {
             (use.id.use_site.document, use.id.use_site.pointer): use
             for use in self.request.batch.type_uses
-            if use.id.role == "schema" and use.id.projection == "value"
+            if use.id.role == "schema" and use.id.direction == "neutral" and use.id.projection == "value"
         }
 
     def raise_problems(self) -> None:

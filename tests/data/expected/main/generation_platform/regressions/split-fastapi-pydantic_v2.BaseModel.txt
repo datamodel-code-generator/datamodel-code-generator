@@ -1,0 +1,8 @@
+# split fastapi pydantic_v2.BaseModel
+shape received FieldShapesPostRequestRequest: {'radius': 1}
+response 200: {'radius': 1}
+shape received FieldShapesPostRequestRequest: {'side': 2, 'secret': None}
+response 200: {'side': 2}
+response 422: {'detail': [{'type': 'value_error', 'loc': ['body'], 'msg': 'Invalid value'}]}
+shape received FieldShapesPostRequestRequest: {'side': 2, 'secret': 's'}
+response 200: {'side': 2}

@@ -1,0 +1,19 @@
+# adapters client dataclasses.dataclass
+  > GET https://api.example.com/parameters/%5B1%2C2%5D?query=%5B3%2C4%5D
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-values: %5B5%2C6%5D, cookie: tags=%5B8%2C9%5D; required=%5B10%2C11%5D; content=%7B%22n%22%3A12%7D] b''
+  parameters {'path': [1, 2], 'query': [3, 4], 'x_values': [5, 6], 'tags': [8, 9], 'required': [10, 11], 'content': {'n': 12}} = FieldParametersPathGetResponse()
+  > GET https://api.example.com/parameters/%5B%5D?query=%5B%5D
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-values: %5B%5D, cookie: tags=%5B%5D; required=%5B%5D; content=%7B%7D] b''
+  parameters {'path': [], 'query': [], 'x_values': [], 'tags': [], 'required': [], 'content': {}} = FieldParametersPathGetResponse()
+  > GET https://api.example.com/parameters/%5B1%5D
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cookie: required=%5B2%5D] b''
+  parameters {'path': [1], 'required': [2]} = FieldParametersPathGetResponse()
+  > GET https://api.example.com/parameters/%5B1%2C2%5D?query=%5B3%2C4%5D
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-values: %5B5%2C6%5D, cookie: tags=%5B8%2C9%5D; required=%5B10%2C11%5D; content=%7B%22n%22%3A12%7D] b''
+async parameters {'path': [1, 2], 'query': [3, 4], 'x_values': [5, 6], 'tags': [8, 9], 'required': [10, 11], 'content': {'n': 12}}: {}
+  > GET https://api.example.com/parameters/%5B%5D?query=%5B%5D
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-values: %5B%5D, cookie: tags=%5B%5D; required=%5B%5D; content=%7B%7D] b''
+async parameters {'path': [], 'query': [], 'x_values': [], 'tags': [], 'required': [], 'content': {}}: {}
+  > GET https://api.example.com/parameters/%5B1%5D
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cookie: required=%5B2%5D] b''
+async parameters {'path': [1], 'required': [2]}: {}

@@ -2023,6 +2023,9 @@ class _Registry(_Typing):
         entries: list[tuple[str, Doc]] = [("plan=", parameter_plan(module.local, parameter.plan))]
         if parameter.use is not None and parameter.use.id in self.accessors:
             entries.append(("encoder=", self.encoder(module, parameter.use)))
+            if (accessor := self.accessors[parameter.use.id]).parameter is not None:
+                bindings = module.local("_generated", "model_bindings")
+                entries.append(("adapter=", f"({bindings}.{accessor.parameter}, {bindings}.{accessor.context})"))
         return _call(module.local(_RUNTIME, "ParameterSpec"), entries)
 
     def media(self, module: Module, media: MediaSpec) -> Group:

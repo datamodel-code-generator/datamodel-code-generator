@@ -1,0 +1,10 @@
+# adapters fastapi pydantic_v2.BaseModel
+parameters received {'path': [1, 2], 'query': [3, 4], 'x_values': [5, 6], 'tags': [8, 9], 'required': [10, 11], 'content': {'n': 12}}
+response 200: {'path': [1, 2], 'query': [3, 4], 'x_values': [5, 6], 'tags': [8, 9], 'required': [10, 11], 'content': {'n': 12}}
+parameters received {'path': [], 'query': [], 'x_values': [], 'tags': [], 'required': [], 'content': {}}
+response 200: {'path': [], 'query': [], 'x_values': [], 'tags': [], 'required': [], 'content': {}}
+parameters received {'path': [1], 'tags': [7], 'required': [2]}
+response 200: {'path': [1], 'tags': [7], 'required': [2]}
+response 422: {'detail': [{'type': 'missing', 'loc': ['cookie', 'required'], 'msg': 'Field required'}]}
+response 400: {'detail': 'Invalid request'}
+response 400: {'detail': 'Invalid request'}
