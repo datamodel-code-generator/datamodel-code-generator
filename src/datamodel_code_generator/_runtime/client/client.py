@@ -206,6 +206,7 @@ _MIN_STATUS: Final = 200
 _MAX_STATUS: Final = 599
 _ERROR_STATUS: Final = 400
 _SWITCHING: Final = 101
+_SOCKET_SCHEMES: Final = (("wss:", "https:"), ("ws:", "http:"))
 _UNAUTHORIZED: Final = 401
 _EMPTY_VISITED: Final[frozenset[tuple[str, str]]] = frozenset()
 
@@ -1221,6 +1222,11 @@ class _Call(LogicalCallContext):
             self.events.prepare(original.url, self.attempt_index)
         return frozenset({(original.method, original.url)}) if self.settings.redirects.enabled else _EMPTY_VISITED
 
+    @staticmethod
+    def redirect_headers(headers: HeadersView) -> HeadersView:
+        """Return the response headers whose Location a redirect follows."""
+        return headers
+
     def redirected(
         self,
         request: PreparedRequest[EncodedAttempt],
@@ -1241,7 +1247,7 @@ class _Call(LogicalCallContext):
         assert self.current_origin is not None
         target = redirect_target(
             info.status_code,
-            info.headers,
+            self.redirect_headers(info.headers),
             RedirectState(
                 method=request.method,
                 url=request.url,
@@ -1370,6 +1376,15 @@ class _SessionCall(_Call):
         return planned
 
 
+def _http_location(location: str) -> str:
+    """Return a ws or wss URL as the http or https URL of its handshake, and any other location unchanged."""
+    lowered = location[:4].lower()
+    for socket_scheme, http_scheme in _SOCKET_SCHEMES:
+        if lowered.startswith(socket_scheme):
+            return http_scheme + location[len(socket_scheme) :]
+    return location
+
+
 class _SocketCall(_SessionCall):
     """The handshake of a WebSocket helper: a session child call whose open has one cap for all of its phases.
 
@@ -1401,6 +1416,13 @@ class _SocketCall(_SessionCall):
         )
         self.phase_caps = (cap, cap, cap, cap)
         return ResolvedTimeoutOptions(connect=cap.effective, read=cap.effective, write=cap.effective, pool=None)
+
+    @staticmethod
+    def redirect_headers(headers: HeadersView) -> HeadersView:
+        """Read a ws or wss Location as the http or https URL a handshake requests, so the shared policy applies."""
+        return HeadersView(
+            (name, _http_location(value) if name.lower() == "location" else value) for name, value in headers.items()
+        )
 
 
 class _SessionWait(LogicalCallContext):

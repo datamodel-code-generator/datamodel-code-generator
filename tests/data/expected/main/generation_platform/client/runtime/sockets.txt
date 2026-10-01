@@ -35,6 +35,12 @@
     attempts 1 redirects 1
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | refused
     server GET /rooms/r2/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1000 ''
+  redirected to a wss URL = WebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2')
+    attempts 1 redirects 1
+    server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | refused
+    server GET /rooms/r3/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1000 ''
+  redirected to a ws URL ! RedirectPolicyError: RedirectPolicyError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] redirect_policy_error
+    server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | refused
   redirect not followed ! UnexpectedStatusError: UnexpectedStatusError(status_code=302, operation_id='roomSocket', call_id='<call>') [operation_id='roomSocket', status_code=302, body_bytes=b'', truncated=False] unexpected_status_error
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | refused
   subprotocol not selected ! WebSocketHandshakeError: WebSocketHandshakeError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='connect', condition='negotiation') [operation_id='roomSocket', condition='negotiation', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='connect'] web_socket_handshake_error

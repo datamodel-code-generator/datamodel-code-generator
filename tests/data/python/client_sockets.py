@@ -300,6 +300,16 @@ def _refusals(harness: _Harness, api: Any) -> None:
             (Play(refuse=(302, (("Location", "/rooms/r2/socket"),), b"")), Play(talk=_closing)),
             {"options": options.RequestOptions(redirects=options.RedirectOptions(enabled=True))},
         ),
+        (
+            "redirected to a wss URL",
+            (Play(refuse=(307, (("Location", f"WSS://localhost:{server.port}/rooms/r3/socket"),), b"")), Play(talk=_closing)),
+            {"options": options.RequestOptions(redirects=options.RedirectOptions(enabled=True))},
+        ),
+        (
+            "redirected to a ws URL",
+            (Play(refuse=(307, (("Location", f"ws://localhost:{server.port}/rooms/r3/socket"),), b"")),),
+            {"options": options.RequestOptions(redirects=options.RedirectOptions(enabled=True))},
+        ),
         ("redirect not followed", (Play(refuse=(302, (("Location", "/rooms/r2/socket"),), b"")),), {}),
         ("subprotocol not selected", (Play(subprotocol=None),), {}),
         (
