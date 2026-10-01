@@ -17,7 +17,7 @@ from contextlib import (
     suppress,
 )
 from dataclasses import dataclass, replace
-from functools import partial
+from functools import lru_cache, partial
 from time import monotonic, time
 from typing import TYPE_CHECKING, ClassVar, Final, Generic, Literal, TypeVar
 from urllib.parse import quote, unquote_plus, urlsplit
@@ -120,7 +120,7 @@ from .transports import (
     is_async_adapter,
     response_head,
 )
-from .urls import URLValidationError, absolute_target, canonical_origin, request_origin
+from .urls import URLValidationError, absolute_target, canonical_origin, request_origin, strip_query
 
 if TYPE_CHECKING:
     from collections.abc import (
@@ -695,12 +695,37 @@ def _draw() -> float:
 
 
 _EMPTY_ORIGINS: Final[frozenset[Origin]] = frozenset()
+_EMPTY_NAMES: Final[frozenset[str]] = frozenset()
 _CREDENTIAL_HEADERS: Final = frozenset({"authorization", "proxy-authorization", "cookie", "cookie2"})
 
 
-def _uncredentialed(headers: Iterable[tuple[str, str]]) -> tuple[tuple[str, str], ...]:
-    """Return headers without the credential and cookie fields an original origin's request carried."""
-    return tuple((name, value) for name, value in headers if name.lower() not in _CREDENTIAL_HEADERS)
+@lru_cache(maxsize=32)
+def _secret_names(schemes: tuple[SecuritySchemeEntry, ...]) -> tuple[frozenset[str], frozenset[str]]:
+    """Return the lowercase header names and the query names that carry credentials in a package's requests.
+
+    They are the credential and cookie headers and the positions of the package's declared security schemes, however
+    a request came to fill them.
+    """
+    from .security import SecurityScheme  # noqa: PLC0415 - Only a request to another origin needs the schemes.
+
+    declared = [scheme for scheme in schemes if isinstance(scheme, SecurityScheme)]
+    return (
+        _CREDENTIAL_HEADERS.union(scheme.wire_name.lower() for scheme in declared if scheme.location == "header"),
+        frozenset(scheme.wire_name for scheme in declared if scheme.location == "query"),
+    )
+
+
+def _uncredentialed(
+    headers: Iterable[tuple[str, str]], url: str, schemes: tuple[SecuritySchemeEntry, ...]
+) -> tuple[tuple[tuple[str, str], ...], str]:
+    """Return the headers and URL of a request to another origin without the credentials of the original origin's.
+
+    The credential and cookie headers and every header and query field a declared security scheme names are removed,
+    whether the auth placed them or a patch, a parameter, or the server's URL carried them.
+    """
+    names, query = _secret_names(schemes)
+    kept = tuple((name, value) for name, value in headers if name.lower() not in names)
+    return kept, strip_query(url, query)
 
 
 class _Authentication:
@@ -1124,8 +1149,12 @@ class _Call(LogicalCallContext):
         visited: frozenset[tuple[str, str]],
         *,
         replayable: bool,
+        schemes: tuple[SecuritySchemeEntry, ...],
     ) -> PreparedRequest[EncodedAttempt] | None:
-        """Resolve an allowed redirect without mutating the original retry request."""
+        """Resolve an allowed redirect without mutating the original retry request.
+
+        A hop to another origin carries none of the credentials the package's security schemes name.
+        """
         redirects = self.settings.redirects
         if not redirects.enabled or info.status_code not in {301, 302, 303, 307, 308}:
             return None
@@ -1157,11 +1186,11 @@ class _Call(LogicalCallContext):
             from .auth_policy import strip_managed_query  # noqa: PLC0415
 
             url = strip_managed_query(url, self.auth.bound)
-            if (target.method, url) in visited:
-                raise RedirectPolicyError(delivery_state=DeliveryState.RESPONSE_STARTED, info=info)
         headers = request.headers.items()
         if target.cross_origin:
-            headers = _uncredentialed(headers)
+            headers, url = _uncredentialed(headers, url, schemes)
+        if url != target.url and (target.method, url) in visited:
+            raise RedirectPolicyError(delivery_state=DeliveryState.RESPONSE_STARTED, info=info)
         if target.drop_body:
             headers = tuple(
                 (name, value)
@@ -1208,6 +1237,10 @@ class _SessionCall(_Call):
         self.url = request.url
         return request
 
+    def managed_query(self) -> frozenset[str]:
+        """Return the query fields the call's auth places itself, none without auth."""
+        return _EMPTY_NAMES if (auth := self.auth) is None else auth.bound.managed_query
+
     def restart(self, original: PreparedRequest[EncodedAttempt]) -> frozenset[tuple[str, str]]:
         """Begin the next resource candidate at the original URL."""
         self.url = original.url
@@ -1220,9 +1253,10 @@ class _SessionCall(_Call):
         visited: frozenset[tuple[str, str]],
         *,
         replayable: bool,
+        schemes: tuple[SecuritySchemeEntry, ...],
     ) -> PreparedRequest[EncodedAttempt] | None:
         """Resolve a redirect as an ordinary call does, keeping the URL of the hop it allows."""
-        hop = super().redirected(request, info, visited, replayable=replayable)
+        hop = super().redirected(request, info, visited, replayable=replayable, schemes=schemes)
         if hop is not None:
             self.url = hop.url
         return hop
@@ -1659,7 +1693,8 @@ class _Core(Generic[AdapterT, HandleT]):
             url = strip_managed_query(url, auth.bound)
         headers = prepared.headers
         if request_origin(url) != server:
-            headers = HeadersView(_uncredentialed(headers.items()))
+            items, url = _uncredentialed(headers.items(), url, self._shared.security_schemes)
+            headers = HeadersView(items)
         return PreparedRequest(method=prepared.method, url=url, headers=headers, body=prepared.body), deferred
 
 
@@ -2191,7 +2226,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         plan: _PagePlan,
         operation: OperationPlan[T, object],
         request: Callable[[], tuple[tuple[object, ...], object, str | None]],
-        build: Callable[[T, WireValue, ResponseInfo, str], R],
+        build: Callable[[T, WireValue, ResponseInfo, str, frozenset[str]], R],
         *,
         body: object,
         media_type: str | MediaSelector | None,
@@ -2203,7 +2238,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
 
         The page reads at most `max_page_bytes` of its body, and its arguments, body, and any URL a server gave are
         taken when the call prepares; `body` is the caller's. What the page gives is built with the URL of the hop
-        that returned it.
+        that returned it and the query fields the call's auth manages.
         """
         settings = self._call_settings(options, operation.operation_id)
         if page_limited := (limit := settings.max_response_bytes) is None or max_page_bytes <= limit:
@@ -2217,7 +2252,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             received = self._read(response, info, decoder, call)
             call.check("decode")
             data, wire = _page(decoder, info, received, call, plan, page_limited=page_limited)
-            result = build(data, wire, info, call.url)
+            result = build(data, wire, info, call.url, call.managed_query())
             call.check("decode")
             return Response(data=data, info=info), result
 
@@ -2474,7 +2509,11 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                 if events is not None:
                     events.emit(events.responding(info))
                 redirected = call.redirected(
-                    request, info, visited, replayable=not call.body_enabled or source is None or source.replayable
+                    request,
+                    info,
+                    visited,
+                    replayable=not call.body_enabled or source is None or source.replayable,
+                    schemes=self._shared.security_schemes,
                 )
                 if redirected is not None:
                     closing, response = response, None
@@ -3025,7 +3064,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         plan: _PagePlan,
         operation: OperationPlan[T, object],
         request: Callable[[], tuple[tuple[object, ...], object, str | None]],
-        build: Callable[[T, WireValue, ResponseInfo, str], R],
+        build: Callable[[T, WireValue, ResponseInfo, str, frozenset[str]], R],
         *,
         body: object,
         media_type: str | MediaSelector | None,
@@ -3037,7 +3076,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
 
         The page reads at most `max_page_bytes` of its body, and its arguments, body, and any URL a server gave are
         taken when the call prepares; `body` is the caller's. What the page gives is built with the URL of the hop
-        that returned it.
+        that returned it and the query fields the call's auth manages.
         """
         settings = self._call_settings(options, operation.operation_id)
         if page_limited := (limit := settings.max_response_bytes) is None or max_page_bytes <= limit:
@@ -3052,7 +3091,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             received = await self._read(response, info, decoder, call)
             call.check("decode")
             data, wire = _page(decoder, info, received, call, plan, page_limited=page_limited)
-            result = build(data, wire, info, call.url)
+            result = build(data, wire, info, call.url, call.managed_query())
             call.check("decode")
             return Response(data=data, info=info), result
 
@@ -3315,7 +3354,11 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 if events is not None:
                     await events.aemit(events.responding(info))
                 redirected = call.redirected(
-                    request, info, visited, replayable=not call.body_enabled or source is None or source.replayable
+                    request,
+                    info,
+                    visited,
+                    replayable=not call.body_enabled or source is None or source.replayable,
+                    schemes=self._shared.security_schemes,
                 )
                 if redirected is not None:
                     closing, response = response, None

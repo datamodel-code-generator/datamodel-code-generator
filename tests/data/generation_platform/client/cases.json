@@ -2269,7 +2269,15 @@
       "protocols/pagination-links.yaml"
     ],
     "config": {
-      "protocols": "protocols/pagination-links.yaml"
+      "protocols": "protocols/pagination-links.yaml",
+      "operations": [
+        {
+          "ref": "/paths/~1searches/post",
+          "runtime": {
+            "retry_safety": "idempotent"
+          }
+        }
+      ]
     },
     "modules": [
       [

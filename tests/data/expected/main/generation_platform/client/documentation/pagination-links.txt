@@ -458,7 +458,7 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
     "operation": "searches.search",
     "method": "POST",
     "path": "/searches",
-    "retry_safety": "method_default",
+    "retry_safety": "idempotent",
     "idempotency": null,
     "retry_after_ms_header": null,
     "should_retry_header": null,
@@ -789,10 +789,11 @@ options must not patch a header, the cookies, or a query parameter the helper wr
 A next-URL or Link helper sends the first request as the caller gives it and each later page to the URL the last page
 gave: a GET without a body, or the operation's method and the caller's body when a next URL repeats the body, with the
 call's headers and header and cookie parameters but not its query. A relative URL resolves against the URL that returned
-the page. The URL must be an RFC 3986 reference of at most 8 KiB, or the cursor size when smaller, without a fragment
-or user information, naming an HTTP or HTTPS URL at the server's origin or at one
-`ProtocolSecurityContext.allowed_origins` lists; anything else raises `ProtocolDataError`, and an oversized URL
-`ProtocolSizeError`. A request to another origin carries no credential or cookie header of the server's, and
-authenticates only at an origin `AuthConfig.allowed_origins` lists. A Link header's values must parse as RFC 8288 links
-within the cursor size and give the relation at most once; a page without the relation is the last, and an empty page
-with a URL continues. A URL seen earlier in the session ends it with `PaginationCycleError` after the repeating page.
+the page. The reference must follow RFC 3986, without a fragment, user information, or brackets outside an IPv6 host,
+and name an HTTP or HTTPS URL at the server's origin or at one `ProtocolSecurityContext.allowed_origins` lists; anything
+else raises `ProtocolDataError`, and a resolved URL over 8 KiB, or the cursor size when smaller, `ProtocolSizeError`. A
+request to another origin carries no credential or cookie header and none of the headers or query fields the package's
+security schemes name, and authenticates only at an origin `AuthConfig.allowed_origins` lists. A Link header's values
+must parse as RFC 8288 links within the cursor size and give the relation at most once; a page without the relation is
+the last, and an empty page with a URL continues. A URL seen earlier in the session, the first page's own included, ends
+it with `PaginationCycleError` after the repeating page.

@@ -36,7 +36,7 @@ client/security.py: __future__, dataclasses, typing
 client/tasks.py: __future__, asyncio, contextvars, typing
 client/timing.py: ..model_codecs.unset, .errors, __future__, dataclasses, math, threading, time, typing
 client/transports.py: .bodies, .errors, .evidence, .responses, .timing, __future__, collections.abc, dataclasses, inspect, time, typing, typing_extensions
-client/urls.py: __future__, dataclasses, functools, httpx2, re, typing
+client/urls.py: __future__, dataclasses, functools, httpx2, re, typing, urllib.parse
 model_codecs/__init__.py: -
 model_codecs/adapters.py: .capabilities, .context, .errors, .parameters, .patterns, .schema, .unset, .values, .views, .wire, __future__, collections.abc, decimal, re, types, typing, typing_extensions, urllib.parse
 model_codecs/bindings.py: .context, __future__, dataclasses, typing

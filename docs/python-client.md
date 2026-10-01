@@ -640,16 +640,17 @@ raises `ProtocolDataError` with the condition `inconsistent`. Positions only gro
 
 ### Next URLs and Link headers
 
-A `next_url` or `link` continuation follows the URL a page gives. The first request is sent as the caller gives it,
-and each later page goes to the URL the last page gave, as it came: the caller's query and the query patches of the
-client, a view, or the call are never laid over it, while the call's headers and the operation's header and cookie
-parameters are sent again. A later page is a GET without a body, unless a next URL sets `repeat_request_body: true`,
-which sends the operation's method with the caller's body again. A `next_url` reads the URL with its `read` selector
-and ends like a cursor: at a missing or null value only where an `end` condition says so, or at one of its end values,
-and a missing or null value no end covers, or a value that is not a string, raises `ProtocolDataError`. A `link`
-continuation reads the RFC 8288 links of the `header` field, every value of it, and follows the one whose `rel` lists
-the relation, `next` unless `rel` names another; a page without that link is the last. An empty page with a next URL
-does not end the traversal.
+A `next_url` or `link` continuation follows the URL a page gives. The first request is sent as the caller gives it, and
+each later page goes to the URL the last page gave, as it came: the caller's query and the query patches of the client,
+a view, or the call are never laid over it, while the call's headers and the operation's header and cookie parameters
+are sent again. A later page is a GET without a body, unless a next URL sets `repeat_request_body: true`, which sends
+the operation's method with the caller's body again; generation refuses it, with `E_CONFIG_VALUE`, unless the body may
+be sent again as a 307 or 308 redirect sends it: the operation's method is GET, HEAD, OPTIONS, PUT, or DELETE, or its
+`retry_safety` is `idempotent`. A `next_url` reads the URL with its `read` selector and ends like a cursor: at a missing
+or null value only where an `end` condition says so, or at one of its end values, and a missing or null value no end
+covers, or a value that is not a string, raises `ProtocolDataError`. A `link` continuation reads the RFC 8288 links of
+the `header` field, every value of it, and follows the one whose `rel` lists the relation, `next` unless `rel` names
+another; a page without that link is the last. An empty page with a next URL does not end the traversal.
 
 ```yaml
 helpers:
@@ -670,21 +671,24 @@ counts. A link with an `anchor` parameter describes another resource and is skip
 values whose UTF-8 bytes together exceed `max_cursor_bytes` raise `ProtocolSizeError` with the kind `headers`.
 
 A URL, from either continuation, resolves against the URL of the request that returned the page, after any redirect, as
-RFC 3986 resolves a reference. It must be at most 8 KiB of UTF-8, or `max_cursor_bytes` when that is smaller, or it
-raises `ProtocolSizeError` with the kind `cursor`; a reference with characters outside RFC 3986 raises
-`ProtocolDataError` with `malformed`, and one with a fragment, user information, a scheme other than `http` or `https`,
-or an invalid port raises it with `value`. The URL must name the origin of the server the operation is sent to, its
-scheme, host, and port, or an origin `ProtocolSecurityContext.allowed_origins` lists; any other origin raises
-`ProtocolDataError` with `value` before anything is sent to it, and so does a `next_page` whose options select a server
-whose origin the URL no longer shares or is allowed beside. A request to an allowed origin other than the server's
-carries no `Authorization`, `Proxy-Authorization`, `Cookie`, or `Cookie2` header of the server's request, cookie
-parameters and bindings included, as a redirect to another origin does not; its other headers, the call's and the
-operation's, are sent as usual. The client's authentication sends credentials and signatures there only when its
-`AuthConfig.allowed_origins` lists that origin too; otherwise the page fails with
-`AuthConfigurationError(condition="origin_denied")` before sending. A query credential the URL repeats is removed before
-the client places its own. `Page.continuation` has the kind `next_url` or `link`, and a URL an earlier page of the
-session gave ends the traversal with `PaginationCycleError` after the repeating page; URLs compare once resolved, with
-the host's case, the default port, and dot segments normalized, but not their percent-encoding.
+RFC 3986 resolves a reference. A reference with characters outside RFC 3986, or with brackets anywhere but around an
+IPv6 host, raises `ProtocolDataError` with `malformed`, and one with a fragment, user information, even empty, a scheme
+other than `http` or `https`, or an invalid port raises it with `value`. The resolved URL, without the query fields the
+client's authentication places itself, must be at most 8 KiB of UTF-8, or `max_cursor_bytes` when that is smaller, or it
+raises `ProtocolSizeError` with the kind `cursor`, so relative references cannot grow it page by page. The URL must name
+the origin of the server the operation is sent to, its scheme, host, and port, or an origin
+`ProtocolSecurityContext.allowed_origins` lists; any other origin raises `ProtocolDataError` with `value` before
+anything is sent to it, and so does a `next_page` whose options select a server whose origin the URL no longer shares or
+is allowed beside. A request to an allowed origin other than the server's, like a redirect to another origin, carries no
+`Authorization`, `Proxy-Authorization`, `Cookie`, or `Cookie2` header, and none of the headers or query fields the
+package's security schemes name, whether the authentication, a header patch, a parameter, a binding, or the server's URL
+put them there; its other headers, the call's and the operation's, are sent as usual. The client's authentication sends
+credentials and signatures there only when its `AuthConfig.allowed_origins` lists that origin too; otherwise the page
+fails with `AuthConfigurationError(condition="origin_denied")` before sending. A query credential the URL repeats is
+removed before the client places its own. `Page.continuation` has the kind `next_url` or `link`, and a URL an earlier
+page of the session gave, or the URL of the first page itself, ends the traversal with `PaginationCycleError` after the
+repeating page; URLs compare once resolved and without the authentication's query fields, with the host's case, the
+default port, and dot segments normalized, but not their percent-encoding.
 
 ### Bindings and request targets
 
@@ -749,13 +753,13 @@ needs a required body or one media type a call without `media_type` sends. A bin
 target or another binding's, or a body or querystring member inside or around one, fails with `E_CONFIG_CONFLICT`. An
 offset's or page number's target must accept integers, a page number advances by a literal step, `has_more` must read
 booleans, and `total` must read integers from the body or a header, never the status. A next URL must read strings, or
-null with a `null` end, its end values must be strings, and `repeat_request_body` needs an operation with a body; a Link
-continuation's header must be one the response declares, and `rel` one relation type, a registered name such as `next`
-or an absolute URI. A next-URL or Link helper's binding that writes a path, query, or querystring parameter, which the
-URL replaces, or the body without `repeat_request_body`, fails with `E_CONFIG_VALUE`. Helper names whose classes
-collide, such as `users.all_items` and `users_all.items`, fail with `E_NAME_COLLISION`. Bindings that read the helper's
-input, request bodies other than JSON, envelope-projected responses, and items or selector pointers that read through a
-union or a map are not supported yet:
+null with a `null` end, its end values must be strings, and `repeat_request_body` needs an operation with a body that
+may be sent again; a Link continuation's header must be one the response declares, and `rel` one relation type, a
+registered name such as `next` or an absolute URI. A next-URL or Link helper's binding that writes a path, query, or
+querystring parameter, which the URL replaces, or the body without `repeat_request_body`, fails with `E_CONFIG_VALUE`.
+Helper names whose classes collide, such as `users.all_items` and `users_all.items`, fail with `E_NAME_COLLISION`.
+Bindings that read the helper's input, request bodies other than JSON, envelope-projected responses, and items or
+selector pointers that read through a union or a map are not supported yet:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.pagination.diagnostics -->
 <!-- fmt: off -->
@@ -1876,12 +1880,13 @@ Redirects are disabled by default. `RedirectOptions` merges per field, with `ena
 only the original origin. An allowed destination and permission to downgrade HTTPS are separate conditions.
 
 301/302 follow only GET/HEAD. 303 changes to GET for GET/HEAD or explicit `allow_303_to_get=True`; it removes the body
-and content/framing headers, including Content-Encoding. 307/308 retain the method/body and require replayability
-and operation safety. Every hop consumes a send slot and the same call deadline. Credentials and cookies from the
-original request are stripped across origins. Repeated method/URL loops, invalid or multiple Location values,
-forbidden destinations, exhausted redirect limits, or unsafe replay raise `RedirectPolicyError`. It directly
-inherits `SDKError` and exposes readonly `delivery_state`, `body_available=False`, and available response metadata.
-Native failure while constructing a redirect also raises this error if no response handle can be returned.
+and content/framing headers, including Content-Encoding. 307/308 retain the method/body and require replayability and
+operation safety. Every hop consumes a send slot and the same call deadline. Credentials and cookies from the original
+request are stripped across origins, and so are the headers and query fields the package's security schemes name,
+however the request came to carry them. Repeated method/URL loops, invalid or multiple Location values, forbidden
+destinations, exhausted redirect limits, or unsafe replay raise `RedirectPolicyError`. It directly inherits `SDKError`
+and exposes readonly `delivery_state`, `body_available=False`, and available response metadata. Native failure while
+constructing a redirect also raises this error if no response handle can be returned.
 
 A HEAD operation also follows a 303 as GET, regardless of `allow_303_to_get`. Its typed return contract remains
 bodyless: ordinary and `with_response` calls return `None` data for an empty final body and raise

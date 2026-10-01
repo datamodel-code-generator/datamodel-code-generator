@@ -83,6 +83,10 @@ components:
       type: apiKey
       in: query
       name: api_key
+    header_key:
+      type: apiKey
+      in: header
+      name: X-Api-Key
   schemas:
     User:
       type: object

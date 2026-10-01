@@ -14,5 +14,6 @@ render pydantic_v2.BaseModel
   E_CONFIG_VALUE config protocols.helpers['written.links'].bindings[1].target /paths/~1users/get: The binding 1 of 'written.links' gives integer values, which the header parameter 'X-Trace' of GET /users does not accept
   E_CONFIG_CONFLICT config protocols.helpers['written.links'].bindings[3].target /paths/~1users/get: The binding 3 of 'written.links' writes the same target as its binding 1
   E_CONFIG_VALUE config protocols.helpers['fetched.searches'].bindings[0].target /paths/~1searches/post: The binding 0 of 'fetched.searches' writes the request body, which no request after the first sends
+  E_CONFIG_VALUE config protocols.helpers['repeated.searches'].continuation.repeat_request_body /paths/~1searches/post: The next URL of 'repeated.searches' repeats the request body of POST /searches, which is not safe to send again; declare the operation's retry_safety idempotent
   E_CONFIG_VALUE config protocols.helpers['repeated.searches'].continuation.read /paths/~1searches/post: The next URL of 'repeated.searches' reads the header 'X-Next', which POST /searches does not declare
   E_CONFIG_VALUE config protocols.helpers['repeated.searches'].bindings[0].target /paths/~1searches/post: The binding 0 of 'repeated.searches' gives integer values, which the property '/token' of the request body of POST /searches does not accept

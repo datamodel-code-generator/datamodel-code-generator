@@ -83,7 +83,10 @@ P_co = TypeVar("P_co", covariant=True, default=object)
 _DOT_SEGMENTS: Final = (".", "..")
 _BOOLEANS: Final = MappingProxyType({"true": True, "false": False})
 _MAX_URL_BYTES: Final = 8192
-_REFERENCE: Final = re.compile(r"(?:[A-Za-z0-9\-._~:/?\[\]@!$&'()*+,;=]|%[0-9A-Fa-f]{2})*")
+_REFERENCE: Final = re.compile(
+    r"(?:(?:[A-Za-z][A-Za-z0-9+.\-]*:)?//\[[0-9A-Fa-f:.]+\](?::[0-9]*)?)?"
+    r"(?:[A-Za-z0-9\-._~:/?@!$&'()*+,;=]|%[0-9A-Fa-f]{2})*"
+)
 _USERINFO: Final = re.compile(r"(?:[A-Za-z][A-Za-z0-9+.\-]*:)?//[^/?#]*@")
 
 
@@ -593,16 +596,17 @@ def _followed(  # noqa: PLR0913, PLR0917
     info: ResponseInfo,
     limit: int,
     origins: frozenset[Origin],
+    managed: frozenset[str],
 ) -> str:
     """Return the absolute URL of a server's next-page reference, resolved against the URL that returned the page.
 
-    The reference must stay within 8 KiB of UTF-8, or the cursor size limit when that is smaller, be an RFC 3986
-    URI reference without a fragment, and give an HTTP or HTTPS URL without user information at one of the origins.
+    The reference must be an RFC 3986 URI reference without a fragment, whose brackets enclose only an IP literal
+    host, and give an HTTP or HTTPS URL without user information at one of the origins. The URL is returned without
+    the query fields the auth manages, which it places itself, and must stay within 8 KiB of UTF-8, or the cursor size
+    limit when that is smaller.
     """
-    from ..client.urls import URLValidationError, redirect_target  # noqa: PLC0415 - Only a followed URL is parsed.
+    from ..client.urls import URLValidationError, redirect_target, strip_query  # noqa: PLC0415 - Parse only here.
 
-    if (size := len(reference.encode())) > (limit := min(limit, _MAX_URL_BYTES)):
-        raise _size_error(plan, info, "cursor", limit, size)
     if "#" in reference or _USERINFO.match(reference):
         raise _data_error(plan, info, "value", read)
     if not _REFERENCE.fullmatch(reference):
@@ -613,7 +617,10 @@ def _followed(  # noqa: PLR0913, PLR0917
         raise _data_error(plan, info, "value", read) from None
     if target.origin not in origins:
         raise _data_error(plan, info, "value", read)
-    return target.url
+    followed = strip_query(target.url, managed)
+    if (size := len(followed.encode())) > (limit := min(limit, _MAX_URL_BYTES)):
+        raise _size_error(plan, info, "cursor", limit, size)
+    return followed
 
 
 def _more(plan: PaginationPlan[T, P], read: Selector, wire: WireValue, info: ResponseInfo) -> bool:
@@ -653,7 +660,7 @@ class _Walk(Generic[T, P]):
     keeps the origins it may follow them to once its first fetch resolves them.
     """
 
-    __slots__ = ("delivered", "limits", "link", "origins", "plan", "request", "session", "start")
+    __slots__ = ("delivered", "limits", "link", "origins", "plan", "request", "seed", "session", "start")
 
     def __init__(
         self, plan: PaginationPlan[T, P], request: _Request, limits: _Limits, link: _Link | None = None
@@ -667,6 +674,7 @@ class _Walk(Generic[T, P]):
         self.session: OperationSession | None = None
         self.start: int | None = None
         self.origins: frozenset[Origin] = frozenset()
+        self.seed: bytes | None = None
 
     def progress(self) -> ProtocolProgress:
         """Return the pages fetched, the items delivered, and the session's sends so far."""
@@ -888,28 +896,36 @@ class _Walk(Generic[T, P]):
                 values.append(value)
         return tuple(values)
 
-    def follow(self, rule: NextUrlPlan | LinkPlan, wire: WireValue, info: ResponseInfo, url: str) -> str | Missing:
+    def follow(
+        self, rule: NextUrlPlan | LinkPlan, wire: WireValue, info: ResponseInfo, url: str, managed: frozenset[str]
+    ) -> str | Missing:
         """Return the absolute URL of the page after a page, or MISSING when the page is the last.
 
-        A next URL must be a string; its reference resolves against the URL of the hop that returned the page.
+        A next URL must be a string; its reference resolves against the URL of the hop that returned the page. The
+        first page's own URL is kept as the continuation that led to it, so a page that gives it again is a cycle.
         """
         plan, limit = self.plan, self.limits.max_cursor_bytes
+        if self.link is None:
+            from ..client.urls import absolute_target, strip_query  # noqa: PLC0415 - Only a followed URL is parsed.
+
+            first = strip_query(absolute_target(url).url, managed)
+            self.seed = sha256(continuation_json(Continuation(kind=rule.kind, value=first))).digest()
         reference = _linked(plan, rule, info, limit) if isinstance(rule, LinkPlan) else _ended(plan, rule, wire, info)
         if isinstance(reference, Missing):
             return reference
         if not isinstance(reference, str):
             raise _data_error(plan, info, "type", rule.read)
-        return _followed(plan, rule.read, reference, url, info, limit, self.origins)
+        return _followed(plan, rule.read, reference, url, info, limit, self.origins, managed)
 
     def build(
-        self, data: P, wire: WireValue, info: ResponseInfo, url: str
+        self, data: P, wire: WireValue, info: ResponseInfo, url: str, managed: frozenset[str]
     ) -> tuple[Page[T, P], WireValue | Missing, tuple[WireValue, ...]]:
         """Return a decoded page, what the next request writes, and its bindings' values, refusing bad items and ends.
 
         The items are checked in the wire value before the page's accessor reads them from the decoded one; a value of
         another type fails its response's validation first, in every mode. What the next request writes is the cursor
-        or position, or the URL it follows, MISSING after the last page. The bindings are read only when a page
-        follows, and a dot segment read for a path parameter is refused.
+        or position, or the URL it follows without the query fields the auth manages, MISSING after the last page.
+        The bindings are read only when a page follows, and a dot segment read for a path parameter is refused.
         """
         plan = self.plan
         selector = plan.items_selector
@@ -926,7 +942,7 @@ class _Walk(Generic[T, P]):
         elif isinstance(rule, CountPlan):
             cursor = self.advance(rule, len(items), wire, info)
         else:
-            cursor = self.follow(rule, wire, info, url)
+            cursor = self.follow(rule, wire, info, url, managed)
         if isinstance(cursor, Missing):
             return Page(items=items, data=data, response=info), cursor, ()
         bound = self.bound(wire, info)
@@ -939,12 +955,18 @@ class _Walk(Generic[T, P]):
         return page, cursor, bound
 
     def record(self, page: Page[T, P], cursor: WireValue | Missing, bound: tuple[WireValue, ...]) -> Page[T, P]:
-        """Link a fetched page after the last one, noting whether its continuation was seen before on its line."""
+        """Link a fetched page after the last one, noting whether its continuation was seen before on its line.
+
+        The line of a walk that follows URLs starts with the first page's own URL, as if the first page continued from
+        it, so a first page that gives its own URL is a cycle too.
+        """
         previous = self.link
         index = 0 if previous is None else previous.index + 1
         continuation = page.continuation
         digest = None if continuation is None else sha256(continuation_json(continuation)).digest()
         history = _line(previous)
+        if (seed := self.seed) is not None and previous is None:
+            history.seen[seed] = 0
         first = None if digest is None else history.seen.setdefault(digest, index)
         history.last = index
         link = self.link = _Link(
@@ -955,7 +977,7 @@ class _Walk(Generic[T, P]):
             None if isinstance(cursor, Missing) else cursor,
             bound,
             digest,
-            None if first == index else first,
+            None if first == index and not (index == 0 and digest == seed) else first,
             page.response,
             history,
         )

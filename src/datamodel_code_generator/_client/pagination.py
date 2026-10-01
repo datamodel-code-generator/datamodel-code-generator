@@ -25,6 +25,7 @@ from datamodel_code_generator._generation_contract import (
     SymbolId,
     UnionType,
 )
+from datamodel_code_generator._runtime.client.retry import body_replay_safe
 from datamodel_code_generator._runtime.model_codecs.bindings import ArrayNode, MapNode, ModelNode, UnionNode
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._runtime.protocols.records import canonical_json
@@ -50,7 +51,6 @@ _NULL: Final = frozenset({"null"})
 _SEQUENCES: Final = frozenset({"list", "tuple"})
 _POINTED: Final = frozenset({"body", "querystring"})
 _DOT_SEGMENTS: Final = (".", "..")
-_PLANNED: Final = frozenset({"cursor", "offset", "page", "next_url", "link"})
 _FOLLOWED: Final = frozenset({"next_url", "link"})
 _URL_TYPES: Final = frozenset({"string", "null"})
 _RELATION: Final = re.compile(r"[A-Za-z][A-Za-z0-9.-]*|[A-Za-z][A-Za-z0-9+.-]*:[!#-\[\]-~]+")
@@ -513,12 +513,24 @@ class _Pages:
     def next_url(
         self, helper: Helper, spec: OperationSpec, binding: UseBinding, headers: tuple[HeaderSpec, ...]
     ) -> Iterator[Diagnostic]:
-        """Check that the next URL reads strings, that its ends are typed, and that a repeated body exists."""
+        """Check that the next URL reads strings, that its ends are typed, and that a repeated body may be sent again.
+
+        A body is sent again with its method only where a 307 or 308 redirect would send it again: the operation does
+        not refuse retries, and its method is safe or it declares itself idempotent.
+        """
         at, name = f"{helper.at}.continuation", helper.name
         continuation = helper.tree["continuation"]
-        if continuation["repeat_request_body"] and spec.body is None:
-            message = f"The next URL of {name!r} repeats the request body, which {_label(spec)} does not take"
-            yield _problem("E_CONFIG_VALUE", "config", f"{at}.repeat_request_body", message, spec)
+        if continuation["repeat_request_body"]:
+            message = None
+            if spec.body is None:
+                message = f"The next URL of {name!r} repeats the request body, which {_label(spec)} does not take"
+            elif not body_replay_safe(spec.contract.method.upper(), spec.retry_safety, None, None, now=0.0):
+                message = (
+                    f"The next URL of {name!r} repeats the request body of {_label(spec)}, which is not safe to send "
+                    "again; declare the operation's retry_safety idempotent"
+                )
+            if message is not None:
+                yield _problem("E_CONFIG_VALUE", "config", f"{at}.repeat_request_body", message, spec)
         types = self.read(helper, spec, binding, headers, continuation["read"], f"{at}.read", "next URL")
         if isinstance(types, Diagnostic):
             yield types
@@ -694,7 +706,7 @@ def plan_pagination(
     specs: list[PaginationSpec] = []
     problems: dict[str, list[Diagnostic]] = {}
     for helper in protocols.helpers:
-        if not helper.enabled or helper.kind != "pagination" or helper.tree["continuation"]["kind"] not in _PLANNED:
+        if not helper.enabled or helper.kind != "pagination":
             continue
         spec = operations[protocols.operations[helper.links[0].ref].id]
         planned, problems[helper.name] = pages.helper(helper, spec)

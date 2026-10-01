@@ -183,9 +183,7 @@ def helper_problems(
         if (problems := checked.get(helper.name)) is not None:
             yield from problems
             continue
-        tree = helper.tree
-        continuation = f" with {tree['continuation']['kind']} continuation" if helper.kind == "pagination" else ""
-        message = f"The {helper.kind} helper {helper.name!r}{continuation} is not supported yet"
+        message = f"The {helper.kind} helper {helper.name!r} is not supported yet"
         yield _problem("E_CLIENT_UNSUPPORTED", "target", helper.at, message)
 
 
