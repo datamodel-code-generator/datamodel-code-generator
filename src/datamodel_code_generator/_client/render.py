@@ -42,6 +42,7 @@ if TYPE_CHECKING:
         ResponseSpec,
         ServerSpec,
     )
+    from datamodel_code_generator._client.sockets import SocketSpec
     from datamodel_code_generator._client.streams import StreamSpec
     from datamodel_code_generator._generation_contract import (
         FinalPythonType,
@@ -298,6 +299,9 @@ _PROTOCOL_ERROR_NAMES: Final = (
     "CacheProtocolError",
     "CacheStoreError",
     "CacheValidatorConflictError",
+    "ConcurrentReceiveError",
+    "DeliveryUnknownError",
+    "HandshakeResponse",
     "IncompleteFrameError",
     "OperationCancelledError",
     "OperationFailedError",
@@ -313,6 +317,9 @@ _PROTOCOL_ERROR_NAMES: Final = (
     "StreamInterruptedError",
     "StreamRemoteError",
     "StreamResumeExhaustedError",
+    "WebSocketClosedError",
+    "WebSocketHandshakeError",
+    "WebSocketProxyError",
 )
 _ERRORS: Final = (
     '"""Exceptions of this package\'s clients: every class derives from SDKError."""\n\n'
@@ -361,6 +368,8 @@ from .._runtime.protocols.options import (
     ProtocolDefaults,
     ProtocolSecurityContext,
     StreamOptions,
+    WebSocketTransportOptions,
+    WSOptions,
 )
 from .._runtime.protocols.records import (
     BodySelector,
@@ -389,6 +398,18 @@ from .._runtime.protocols.webhooks import (
     Verifier,
     WebhookOptions,
 )
+from .._runtime.protocols.websocket_types import (
+    AsyncWebSocketConnection,
+    AsyncWebSocketConnector,
+    Message,
+    PingReceipt,
+    ResolvedWebSocketTransportOptions,
+    ResolvedWSOptions,
+    WebSocketConnection,
+    WebSocketConnector,
+    WebSocketOpenRequest,
+    WSFrame,
+)
 
 if TYPE_CHECKING:
     from .._runtime.protocols.cache_stores import AsyncMemoryCacheStore, MemoryCacheStore
@@ -396,6 +417,7 @@ if TYPE_CHECKING:
     from .._runtime.protocols.polling import AsyncLroHandle, LroHandle
     from .._runtime.protocols.replay import AsyncMemoryReplayStore, MemoryReplayStore
     from .._runtime.protocols.streams import AsyncEventStream, EventStream, StreamEvent, UnknownEvent
+    from .._runtime.protocols.websocket import AsyncWebSocketSession, WebSocketSession
 
 __all__ = [
     "AsyncCacheStore",
@@ -405,6 +427,9 @@ __all__ = [
     "AsyncMemoryReplayStore",
     "AsyncPager",
     "AsyncReplayStore",
+    "AsyncWebSocketConnection",
+    "AsyncWebSocketConnector",
+    "AsyncWebSocketSession",
     "BodySelector",
     "BodyTarget",
     "CacheEntry",
@@ -419,12 +444,14 @@ __all__ = [
     "LroHandle",
     "MemoryCacheStore",
     "MemoryReplayStore",
+    "Message",
     "OperationRef",
     "Origin",
     "Page",
     "Pager",
     "PaginationOptions",
     "ParameterTarget",
+    "PingReceipt",
     "PollOptions",
     "PollSnapshot",
     "ProgressKey",
@@ -434,6 +461,8 @@ __all__ = [
     "QuerystringTarget",
     "ReplayStore",
     "RequestTarget",
+    "ResolvedWSOptions",
+    "ResolvedWebSocketTransportOptions",
     "ResolvedWebhookOptions",
     "ResumeState",
     "Selector",
@@ -444,13 +473,20 @@ __all__ = [
     "VerifiedSignature",
     "VerifiedWebhook",
     "Verifier",
+    "WSFrame",
+    "WSOptions",
+    "WebSocketConnection",
+    "WebSocketConnector",
+    "WebSocketOpenRequest",
+    "WebSocketSession",
+    "WebSocketTransportOptions",
     "WebhookOptions",
     "import_state",
 ]
 
 
 def __getattr__(name: str) -> object:
-    """Load a memory store or a pagination, polling, or stream type only when its public class is requested."""
+    """Load a memory store, a pagination, polling, or stream type, or a WebSocket session only when requested."""
     if name in {"AsyncPager", "Page", "Pager"}:
         from .._runtime.protocols import pagination
 
@@ -467,6 +503,10 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import streams
 
         return getattr(streams, name)
+    if name in {"AsyncWebSocketSession", "WebSocketSession"}:
+        from .._runtime.protocols import websocket
+
+        return getattr(websocket, name)
     if name == "MemoryReplayStore":
         from .._runtime.protocols.replay import MemoryReplayStore
 
@@ -1041,6 +1081,7 @@ class _Resources(_Typing):
         unpacked: bool = False,
         helpers: tuple[PaginationSpec | PollingSpec | CacheSpec, ...] = (),
         streams: tuple[StreamSpec, ...] = (),
+        sockets: tuple[SocketSpec, ...] = (),
     ) -> None:
         """Keep the typing context, User-Agent, validation, unpacked methods' TypedDicts, and protocol helpers."""
         super().__init__(plan, codecs, accessors)
@@ -1049,6 +1090,7 @@ class _Resources(_Typing):
         self.records = _Records(self) if unpacked else None
         self.helpers = helpers
         self.streams = streams
+        self.sockets = sockets
 
     def defaults(self, module: Module) -> str:
         """Return the generated defaults of the clients, naming the validation modes that differ from the runtime's."""
@@ -1068,7 +1110,7 @@ class _Resources(_Typing):
                 f"{module.local('_runtime.client.options', 'ValidationModes')}({arguments})",
             ))
         name = module.local("_runtime.client.client", "ClientDefaults")
-        if not (helpers := (*self.helpers, *self.streams)):
+        if not (helpers := (*self.helpers, *self.streams, *self.sockets)):
             return f"{name}({', '.join(f'{prefix}{value}' for prefix, value in entries)})"
         entries.append(("helpers=", _tuple(repr((spec.helper.name, spec.helper.kind)) for spec in helpers)))
         return layout(_call(name, entries), 0, len("_DEFAULTS = "), WIDTH)
@@ -1084,7 +1126,7 @@ class _Resources(_Typing):
         names = {f"{prefix}Client", f"{prefix}ClientWithStreamingResponse", f"{prefix}ProtocolHelpers", "_DEFAULTS"}
         module = Module({*names, *(name for _, name, _ in roots)}, self.symbols, level=1)
         lazy = [(name, path) for _, name, path in roots]
-        protocols = f"{prefix}ProtocolHelpers" if self.helpers or self.streams else None
+        protocols = f"{prefix}ProtocolHelpers" if self.helpers or self.streams or self.sockets else None
         helpers_module = f".protocols.{_helpers_module(asynchronous=asynchronous)}"
         if protocols is not None:
             lazy.append((protocols, helpers_module))
@@ -2278,11 +2320,17 @@ _STREAM_OPTIONS: Final = (
     ("options", "..options", "RequestOptions"),
     ("session_options", "..options", "SessionOptions"),
 )
+_SOCKET_OPTIONS: Final = (
+    ("ws_options", ".", "WSOptions"),
+    ("options", "..options", "RequestOptions"),
+    ("session_options", "..options", "SessionOptions"),
+)
 _HELPER_KINDS: Final = {
     "pagination": "pagination helper",
     "polling": "polling helper",
     "sse": "SSE helper",
     "ndjson": "NDJSON helper",
+    "websocket": "WebSocket helper",
     "cache": "cache helper",
 }
 _STREAM_KINDS: Final = {"sse": "event stream", "ndjson": "NDJSON stream"}
@@ -2306,6 +2354,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         self.resources = resources
         self.helpers = resources.helpers
         self.streams = resources.streams
+        self.sockets = resources.sockets
         self.fingerprints = fingerprints
 
     @staticmethod
@@ -2326,9 +2375,9 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         return "None" if spec.value is None else module.types.static(spec.value)
 
     def plans(self) -> str:
-        """Return the module of every helper's accessors and plan, then each stream helper's plan."""
+        """Return the module of every helper's accessors and plan, then each stream and WebSocket helper's plan."""
         names = ("PLAN_{}", "CANCEL_{}", "_items_{}", "_result_{}", "_immediate_{}")
-        streams = self.streams
+        streams, sockets = self.streams, self.sockets
         module = Module(
             {
                 *(name.format(index) for index in range(len(self.helpers)) for name in names),
@@ -2339,6 +2388,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                     for position in range(len(spec.mutations))
                 ),
                 *(f"STREAM_{index}" for index in range(len(streams))),
+                *(f"SOCKET_{index}" for index in range(len(sockets))),
             },
             self.resources.symbols,
             level=2,
@@ -2352,7 +2402,12 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             else:
                 sections.extend((self.items(module, index, spec), self.plan(module, index, spec)))
         sections.extend(self.stream_plan(module, index, spec) for index, spec in enumerate(streams))
-        kinds = sorted({*(spec.helper.kind for spec in self.helpers), *(("stream",) if streams else ())})
+        sections.extend(self.socket_plan(module, index, spec) for index, spec in enumerate(sockets))
+        kinds = sorted({
+            *(spec.helper.kind for spec in self.helpers),
+            *(("stream",) if streams else ()),
+            *(("WebSocket",) if sockets else ()),
+        })
         return types_template.render(
             docstring=(
                 f"The plans of this package's {kinds[0] if len(kinds) == 1 else 'protocol'} helpers; regenerate them "
@@ -2643,7 +2698,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         nodes: dict[tuple[str, ...], dict[str, tuple[str, str]]] = {(): {}}
         named: dict[str, str] = {}
         kinds: dict[str, str] = {}
-        for spec in (*self.helpers, *self.streams):
+        for spec in (*self.helpers, *self.streams, *self.sockets):
             helper = spec.helper
             for parts, class_name in helper_classes(helper.name, helper.kind):
                 nodes.setdefault(parts[:-1], {})[parts[-1]] = (f"{prefix}{class_name}", ".".join(parts))
@@ -2654,6 +2709,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                     nodes.setdefault(parts, {})
         leaves = {named[spec.helper.name]: spec for spec in self.helpers}
         streams = {named[spec.helper.name]: spec for spec in self.streams}
+        sockets = {named[spec.helper.name]: spec for spec in self.sockets}
         handles = {
             name: _handle(spec, prefix)
             for name, spec in leaves.items()
@@ -2693,6 +2749,17 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                 leaf=True,
             )
             for index, (name, spec) in enumerate(streams.items())
+        )
+        sections.extend(
+            self.node(
+                name,
+                f"the {spec.helper.name} WebSocket helper of {spec.operation.contract.method.upper()} "
+                f"{spec.operation.contract.path}",
+                core,
+                [self.socket_method(module, index, spec, asynchronous=asynchronous)],
+                leaf=True,
+            )
+            for index, (name, spec) in enumerate(sockets.items())
         )
         kind = "asyncio" if asynchronous else "synchronous"
         return types_template.render(
@@ -3066,6 +3133,87 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             f"        return {wait}{layout(_call(opener, passed), 8, 7 + len(wait), WIDTH)}",
         ))
 
+    def message_types(self, module: Module, spec: SocketSpec) -> tuple[str, str]:
+        """Return the types a WebSocket helper sends and receives: a schema's types, str for text, bytes for bytes."""
+        tree, resources = spec.helper.tree, self.resources
+        kinds = {"json": "json", "utf8": "text", "bytes": "binary"}
+        return (
+            resources.surface(module, kinds[tree["send"]["codec"]], spec.send, sent=True),
+            resources.surface(module, kinds[tree["receive"]["codec"]], spec.receive, sent=False),
+        )
+
+    def socket_plan(self, module: Module, index: int, spec: SocketSpec) -> str:
+        """Return a WebSocket helper's plan: its identity, handshake call, connectors, messages, and subprotocols.
+
+        Only the settings that differ from the plan's defaults are written.
+        """
+        runtime = "_runtime.protocols.websocket"
+        factories = "_runtime.protocols.websocket_connectors"
+        helper = spec.helper
+        tree = helper.tree
+        plan = module.local(runtime, "ChannelPlan")
+        connectors = (module.local(factories, "native_connector"), module.local(factories, "async_native_connector"))
+        entries: list[tuple[str, Doc]] = [
+            ("helper_id=", repr(helper.name)),
+            (
+                "operation=",
+                (
+                    f"{module.local('_runtime.protocols.references', 'OperationRef')}"
+                    f"(pointer={spec.operation.contract.id.use_site.pointer!r})"
+                ),
+            ),
+            ("call=", f"{module.root('_operations')}.OPERATION_{spec.operation.index}"),
+            ("fingerprint=", repr(self.fingerprints[helper.name])),
+            ("connectors=", _tuple(connectors)),
+        ]
+        for direction, use in (("send", spec.send), ("receive", spec.receive)):
+            message = tree[direction]
+            if message["codec"] != "json":
+                entries.append((f"{direction}_codec=", repr(message["codec"])))
+            if message["frame"] != "text":
+                entries.append((f"{direction}_frame=", repr(message["frame"])))
+            if use is not None and direction == "send":
+                entries.append((
+                    "encoder=",
+                    f"{module.local(_RUNTIME, 'Encoder')}({self.resources.codec(module, use)})",
+                ))
+            elif use is not None:
+                entries.append(("decoder=", self.decoder(module, use)))
+        if subprotocols := tree["subprotocols"]:
+            entries.append(("subprotocols=", _tuple(map(repr, subprotocols))))
+        if tree["compression"]:
+            entries.append(("compression=", "True"))
+        sent, received = self.message_types(module, spec)
+        head = f"SOCKET_{index}: {module.name('typing', 'Final')}[{plan}[{sent}, {received}]] = "
+        return head + layout(_call(plan, entries), 0, len(head), WIDTH)
+
+    def socket_method(self, module: Module, index: int, spec: SocketSpec, *, asynchronous: bool) -> str:
+        """Return a WebSocket helper's connect method, which takes its operation's parameters."""
+        operation = replace(spec.operation, fields=())
+        runtime = "_runtime.protocols.websocket"
+        arguments = [self.resources.parameter(module, parameter) for parameter in operation.parameters]
+        options = [
+            _Argument(name, f"{module.namespace.name(source, kind)} | None", "none")
+            for name, source, kind in _SOCKET_OPTIONS
+        ]
+        session = module.local(runtime, "AsyncWebSocketSession" if asynchronous else "WebSocketSession")
+        passed = [
+            ("", "self._core"),
+            ("", f"{module.namespace.name('.', '_plans')}.SOCKET_{index}"),
+            ("", _tuple(parameter.python_name for parameter in operation.parameters)),
+            *((f"{name}=", name) for name, _, _ in _SOCKET_OPTIONS),
+        ]
+        opener = module.local(runtime, "aconnect_socket" if asynchronous else "connect_socket")
+        route = f"{operation.contract.method.upper()} {operation.contract.path}"
+        signature = tuple(argument.parameter(module) for argument in (*arguments, *options))
+        wait = "await " if asynchronous else ""
+        sent, received = self.message_types(module, spec)
+        return "\n".join((
+            _signature("connect", signature, f"{session}[{sent}, {received}]", asynchronous=asynchronous, stub=False),
+            f'        """Open the WebSocket of {route}, returning once its handshake got a valid 101."""',
+            f"        return {wait}{layout(_call(opener, passed), 8, 7 + len(wait), WIDTH)}",
+        ))
+
 
 class ClientRenderer:
     """Render every module of one client package from its plan, codec plan, and wire plan."""
@@ -3081,6 +3229,7 @@ class ClientRenderer:
         codecs: CodecPlan,
         helpers: tuple[PaginationSpec | PollingSpec | CacheSpec, ...] = (),
         streams: tuple[StreamSpec, ...] = (),
+        sockets: tuple[SocketSpec, ...] = (),
         fingerprints: Mapping[str, str] | None = None,
         webhooks: Callable[[Mapping[TypeUseId, UseAccessors]], tuple[tuple[PurePosixPath, str], ...]],
     ) -> None:
@@ -3096,6 +3245,7 @@ class ClientRenderer:
         self.codecs = codecs
         self.helpers = helpers
         self.streams = streams
+        self.sockets = sockets
         self.fingerprints = fingerprints or {}
         self.webhooks = webhooks
 
@@ -3182,7 +3332,7 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
 
     def helper_readme(self) -> str:
         """Describe the package's protocol helpers, or nothing when it has none."""
-        if not (self.helpers or self.streams):
+        if not (self.helpers or self.streams or self.sockets):
             return ""
         helpers = [
             {
@@ -3192,7 +3342,7 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
                 "method": spec.operation.contract.method.upper(),
                 "path": spec.operation.contract.path,
             }
-            for spec in (*self.helpers, *self.streams)
+            for spec in (*self.helpers, *self.streams, *self.sockets)
         ]
         kinds = {spec.helper.kind for spec in self.helpers}
         streams = (
@@ -3201,6 +3351,13 @@ An {self.stream_label} helper's `open` sends its operation in a session of its o
 response is a declared success; the stream reads only the bytes each event needs, and `close()` or `aclose()` releases
 the response."""
             if self.streams
+            else ""
+        )
+        sockets = (
+            """
+A WebSocket helper's `connect` sends its operation's handshake in a session of its own and returns a session once the
+server answers 101; the session sends and receives typed messages, and `close()` or `aclose()` closes the connection."""
+            if self.sockets
             else ""
         )
         pagination = (
@@ -3236,7 +3393,7 @@ reference for their limits."""
 
 `client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.{
             streams
-        }{pagination}{polling}{caching}{closing}
+        }{sockets}{pagination}{polling}{caching}{closing}
 
 ```json
 {json.dumps(helpers, indent=2, ensure_ascii=True)}
@@ -3420,7 +3577,7 @@ A limiter permit is acquired before opening a body and released when its respons
 bounded wait, retains unfinished owned work, and preserves the primary error, attaching secondary failures where
 possible. Client/view closure refuses new work and interrupts active calls at observation points. Retrying close can
 wait for retained cleanup; it does not authorize another send or restore an expired logical deadline.
-{self.helper_runtime()}{self.stream_runtime()}"""  # noqa: S608
+{self.helper_runtime()}{self.stream_runtime()}{self.socket_runtime()}"""  # noqa: S608
 
     def helper_runtime(self) -> str:
         """Describe the package's pagination and polling sessions and cache helpers, or nothing without helpers."""
@@ -3642,6 +3799,55 @@ connection `StreamInterruptedError` with its transport failure as the cause. Str
 `CleanupError` once its cleanup timeout passes.
 {lines}"""
 
+    def socket_runtime(self) -> str:
+        """Describe WebSocket sessions and their limits, or nothing for a package without WebSocket helpers."""
+        if not self.sockets:
+            return ""
+        package = self.config.package
+        return f"""
+## WebSocket sessions
+
+A WebSocket helper's `connect` is one session. Its handshake is one logical call of the helper's GET operation, with
+the call's retries, redirects, authentication, limiter, and hooks: a 101 hands the connection to the session, and any
+other response raises the operation's typed `HTTPStatusError` or `UnexpectedStatusError`. Each limit comes from the
+call's options, then `ProtocolClientOptions.defaults` for the helper, then the default below. The session types are
+imported from:
+
+- `{package}.protocols`: `WSOptions`, `WebSocketTransportOptions`, `WebSocketSession`, `AsyncWebSocketSession`,
+  `Message`, `PingReceipt`, and the connector contracts `WebSocketConnector`, `AsyncWebSocketConnector`,
+  `WebSocketConnection`, `AsyncWebSocketConnection`, `WebSocketOpenRequest`, and `WSFrame`
+- `{package}.options`: `SessionOptions` and `ProtocolClientOptions`
+
+| Limit | Effective default |
+|---|---|
+| open timeout | 5 seconds, also capped by the connect, read, and write timeouts and the deadline; None removes it |
+| idle timeout | the call's `stream_idle_timeout` (60 seconds); None removes it |
+| message size | 1 MiB, decompressed |
+| received frames buffered before reading pauses | 16 |
+| send timeout | 30 seconds, waiting for earlier sends included; None removes it |
+| ping interval and pong timeout | 20 seconds each; None removes them |
+| close timeout | 5 seconds |
+| session total timeout | None |
+| network sends per session | 16, for handshakes and token requests; None removes it |
+
+The connection and the handshake's limiter permit belong to the session until it closes or fails, and closing the
+client closes it. One `receive` waits at a time, and a second one raises `ConcurrentReceiveError`; sends go one at a
+time in arrival order beside it. Cancelling an asyncio `receive` leaves the session usable; a cancelled send or ping
+fails it. A message is JSON coded by the helper's schema, UTF-8 text, or bytes, in the frame kind the helper declares;
+one that does not decode raises `StreamDecodeError` and closes the connection with 1002, and one over the size limit
+raises `ProtocolSizeError` after the connection closed with 1009. A receive that waits longer than the idle timeout
+raises `PhaseTimeoutError` and closes with 1001. A closure by the server raises `WebSocketClosedError` with its code and
+reason, and ends iteration when it was normal. A send that sent nothing before its timeout raises `PhaseTimeoutError`
+and keeps the session open; a send that may have reached the server raises `DeliveryUnknownError`, closes the session,
+and is never sent again. Sessions never reconnect, so `WSOptions(reconnect=True)` raises `ProtocolConfigurationError`,
+as does `WSOptions(compression="deflate")` for a helper that does not permit compression.
+
+`ProtocolClientOptions(websocket_connector=...)` borrows a connector, which is never closed; without one, the client
+opens its connections with the `websockets` library, a dependency of this package. `websocket_transport` sets the TLS
+context, an HTTP or HTTPS proxy, and whether environment proxies apply; both reach a borrowed connector too. Closing a
+session sends the code and reason given, 1000 by default, and drops the connection when the closing handshake fails.
+"""
+
     @staticmethod
     def count_runtime(kinds: set[str]) -> str:
         """Describe offset and page-number helpers, or nothing for a package without them."""
@@ -3661,7 +3867,7 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
 
     def helper_files(self, resources: _Resources) -> tuple[RenderedFile, ...]:
         """Return the modules of the package's protocol helpers, none without helpers."""
-        if not (self.helpers or self.streams):
+        if not (self.helpers or self.streams or self.sockets):
             return ()
         helpers = _Helpers(resources, self.fingerprints)
         return (
@@ -3685,6 +3891,7 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
             unpacked=config.signature_style == "unpack",
             helpers=self.helpers,
             streams=self.streams,
+            sockets=self.sockets,
         )
         types = _Types(self.plan, self.codecs, self.accessors)
         registry = _Registry(self.plan, self.codecs, self.accessors)

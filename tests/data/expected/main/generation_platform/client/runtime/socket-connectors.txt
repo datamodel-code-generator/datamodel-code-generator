@@ -1,0 +1,166 @@
+# sockets pydantic_v2.BaseModel
+  connector without open ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('websocket_connector',), condition='wrong_capability'] protocol_configuration_error
+  transport of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('websocket_transport',), condition='invalid_value'] protocol_configuration_error
+  asyncio connector for a synchronous client ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('protocols', 'websocket_connector'), condition='wrong_capability'] protocol_configuration_error
+  synchronous connector for an asyncio client ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('protocols', 'websocket_connector'), condition='wrong_capability'] protocol_configuration_error
+  SOCKS proxy ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('proxy',), condition='invalid_value'] protocol_configuration_error
+  proxy URL without a host ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('proxy',), condition='invalid_value'] protocol_configuration_error
+  proxy URL with a bad port ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('proxy',), condition='invalid_value'] protocol_configuration_error
+  proxy URL of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('proxy',), condition='invalid_value'] protocol_configuration_error
+  proxy URL with a path ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('proxy',), condition='invalid_value'] protocol_configuration_error
+  proxy URL with a query ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('proxy',), condition='invalid_value'] protocol_configuration_error
+  proxy URL with a fragment ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('proxy',), condition='invalid_value'] protocol_configuration_error
+  proxy user without a password ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('proxy',), condition='invalid_value'] protocol_configuration_error
+  proxy URL with a slash WebSocketTransportOptions(ssl_context=UNSET, proxy_ssl_context=UNSET, trust_env=UNSET)
+  proxy TLS context without an HTTPS proxy ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('proxy_ssl_context',), condition='invalid_value'] protocol_configuration_error
+  proxy TLS context with an HTTPS proxy True
+  TLS context of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('ssl_context',), condition='invalid_value'] protocol_configuration_error
+  compression of another kind ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('compression',), condition='invalid_value'] protocol_configuration_error
+  zero message size ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_message_bytes',), condition='invalid_value'] protocol_configuration_error
+    open wss://api.example.com/rooms/r1/socket [('Accept-Encoding', 'gzip, deflate')] subprotocols=('chat.v2', 'chat.v1') WebSocketOpenRequest(subprotocols=('chat.v2', 'chat.v1')) ResolvedWSOptions(open_timeout=5.0, idle_timeout=60.0, max_message_bytes=1048576, max_queue=16, send_timeout=None, ping_interval=20.0, pong_timeout=None, close_timeout=5.0, resume_ack_timeout=30.0, max_ack_buffer_messages=16, max_ack_buffer_bytes=16777216, max_unacked=100, compression=None, reconnect=False, max_reconnects=5) ResolvedWebSocketTransportOptions(ssl_context=None, proxy_ssl_context=None, trust_env=False)
+  session WebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2') headers [('x-socket', '1')]
+    received 1
+    connection send text=True b'{"text":"hi"}' deadline=False
+    connection ping b'probe' deadline=False polled=False
+    ping PingReceipt(latency=0.25)
+    connection close 1002 '' timeout=5.0
+  feed message of another type ! StreamDecodeError: StreamDecodeError(operation_id='roomSocket', call_id='<call>', condition='malformed', sequence=2, truncated=False) [operation_id='roomSocket', condition='malformed', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] stream_decode_error
+    open wss://api.example.com/feed/socket [('Accept-Encoding', 'gzip, deflate')] subprotocols=() WebSocketOpenRequest(subprotocols=()) ResolvedWSOptions(open_timeout=5.0, idle_timeout=60.0, max_message_bytes=1048576, max_queue=16, send_timeout=30.0, ping_interval=20.0, pong_timeout=20.0, close_timeout=5.0, resume_ack_timeout=30.0, max_ack_buffer_messages=16, max_ack_buffer_bytes=16777216, max_unacked=100, compression=None, reconnect=False, max_reconnects=5) ResolvedWebSocketTransportOptions(ssl_context=None, proxy_ssl_context=None, trust_env=False)
+    connection send text=True b'text' deadline=True
+    connection close 1001 '' timeout=5.0
+    open wss://api.example.com/secure/socket [('Accept-Encoding', 'gzip, deflate'), ('Authorization', 'Bearer static-material')] subprotocols=() WebSocketOpenRequest(subprotocols=()) ResolvedWSOptions(open_timeout=5.0, idle_timeout=60.0, max_message_bytes=1048576, max_queue=16, send_timeout=30.0, ping_interval=20.0, pong_timeout=20.0, close_timeout=5.0, resume_ack_timeout=30.0, max_ack_buffer_messages=16, max_ack_buffer_bytes=16777216, max_unacked=100, compression=None, reconnect=False, max_reconnects=5) ResolvedWebSocketTransportOptions(ssl_context=None, proxy_ssl_context=None, trust_env=False)
+    connection send text=False b'bytes' deadline=True
+    connection send text=False b'array' deadline=True
+    text 'café'
+    connection close 1002 '' timeout=5.0
+  text that is not UTF-8 ! StreamDecodeError: StreamDecodeError(operation_id='secureSocket', call_id='<call>', condition='malformed', sequence=2, truncated=False) [operation_id='secureSocket', condition='malformed', truncated=False] stream_decode_error
+  status then 101 = WebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2')
+    connection close 1000 '' timeout=5.0
+  broken evidence with a status ! AdapterContractError: AdapterContractError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=HandshakeResponse()] adapter_contract_error
+  refusal with 101 ! AdapterContractError: AdapterContractError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=HandshakeResponse()] adapter_contract_error
+  refusal with 103 ! AdapterContractError: AdapterContractError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=HandshakeResponse()] adapter_contract_error
+    connection abort
+  broken evidence with a connection ! AdapterContractError: AdapterContractError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error
+    connection abort
+  headers of another type ! AdapterContractError: AdapterContractError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error
+    connection abort
+  subprotocol of another type ! AdapterContractError: AdapterContractError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error
+  unclassified failure ! AdapterExecutionError: AdapterExecutionError(operation_id='roomSocket', call_id='<call>', delivery_state='MAYBE_SENT') [operation_id='roomSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=RuntimeError('connector bug')] adapter_execution_error
+  redirect without a parent send slot ! SessionLimitError: SessionLimitError(operation_id='roomSocket', call_id='<call>', kind='network_sends', limit=1) [operation_id='roomSocket', kind='network_sends', limit=1, cause=BudgetExceededError()] session_limit_error
+  no call send slot ! BudgetExceededError: BudgetExceededError(operation_id='roomSocket', call_id='<call>', budget_kind='network', limit=0, used=0) [operation_id='roomSocket', limit=0] budget_exceeded_error
+    connection send text=True b'message' deadline=True
+  nothing sent before the timeout ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='write', effective_timeout=30.0) [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='write'] phase_timeout_error
+    progress {'reconnects': 0, 'network_send_count': 1, 'network_send_budget_used': 1, 'messages_sent': 0, 'messages_received': 0} WebSocketSession(helper_id='feed.text', state='open', subprotocol=None)
+    connection close 1000 '' timeout=5.0
+    connection send text=True b'message' deadline=True
+    connection abort
+  message that may have gone ! DeliveryUnknownError: DeliveryUnknownError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT') [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=TransportError()] delivery_unknown_error
+    progress {'reconnects': 0, 'network_send_count': 1, 'network_send_budget_used': 1, 'messages_sent': 0, 'messages_received': 0} WebSocketSession(helper_id='feed.text', state='failed', subprotocol=None)
+    connection send text=True b'message' deadline=True
+    connection abort
+  transport failure before sending ! TransportError: TransportError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='write') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='write'] transport_error
+    progress {'reconnects': 0, 'network_send_count': 1, 'network_send_budget_used': 1, 'messages_sent': 0, 'messages_received': 0} WebSocketSession(helper_id='feed.text', state='failed', subprotocol=None)
+    connection send text=True b'message' deadline=True
+    connection abort
+  unclassified send failure ! DeliveryUnknownError: DeliveryUnknownError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT') [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=RuntimeError('send bug')] delivery_unknown_error
+    progress {'reconnects': 0, 'network_send_count': 1, 'network_send_budget_used': 1, 'messages_sent': 0, 'messages_received': 0} WebSocketSession(helper_id='feed.text', state='failed', subprotocol=None)
+    connection send text=True b'message' deadline=True
+    connection close 1001 '' timeout=5.0
+  closed before sending ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', code=1001, clean=True) [operation_id='feedSocket'] web_socket_closed_error
+    progress {'reconnects': 0, 'network_send_count': 1, 'network_send_budget_used': 1, 'messages_sent': 0, 'messages_received': 0} WebSocketSession(helper_id='feed.text', state='ended', subprotocol=None)
+    connection abort
+  transport failure while receiving ! TransportError: TransportError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='write') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='write'] transport_error
+    connection abort
+  unclassified receive failure ! AdapterExecutionError: AdapterExecutionError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=RuntimeError('receive bug')] adapter_execution_error
+    connection abort
+  message over the limit ! ProtocolSizeError: ProtocolSizeError(operation_id='feedSocket', call_id='<call>', kind='message', limit=8, observed=9) [operation_id='feedSocket', kind='message', unit='bytes', limit=8] protocol_size_error
+    connection ping b'' deadline=True polled=False
+    connection close 1001 '' timeout=5.0
+  ping timeout ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=20.0) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout_error
+    connection ping b'' deadline=True polled=False
+    connection close 1001 '' timeout=5.0
+  closed before the ping ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket'] web_socket_closed_error
+    connection ping b'' deadline=True polled=False
+    connection abort
+  transport failure while pinging ! TransportError: TransportError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='write') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='write'] transport_error
+    connection close 1000 '' timeout=5.0
+    connection abort
+  failing close ! CleanupError: CleanupError(operation_id='feedSocket', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='feedSocket', cause=OSError('close failed')] cleanup_error
+    connection close 1001 '' timeout=5.0
+  server closed ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', code=1000, clean=True) [operation_id='feedSocket'] web_socket_closed_error
+    connection send text=True b'first' deadline=True
+  send that waits too long ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='write', effective_timeout=0.05) [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='write'] phase_timeout_error
+    connection send text=True b'third' deadline=True
+  send after the queue moved on = None
+    sends delivered 2
+    connection close 1000 '' timeout=5.0
+    connection close 1000 '' timeout=5.0
+  receive the session's close interrupted: TransportError
+    connection close 1000 '' timeout=5.0
+  receive the session's close ended: ProtocolStateError closed
+    connection close 1000 '' timeout=5.0
+  iteration the session's close ended: returned
+    connection close 1001 '' timeout=5.0
+  client close with a receive waiting ! CleanupError: CleanupError(pending_calls=0, pending_leases=1, timeout=0.05) [] cleanup_error
+  receive the client's close ended: ClientClosedError CLOSING
+    connection send text=True b'first' deadline=True
+  send cancelled while it waits ! RequestCancelledError: RequestCancelledError(operation_id='feedSocket', call_id='<call>', source='cancel_token', delivery_state='RESPONSE_STARTED') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
+    connection close 1000 '' timeout=5.0
+    connection abort
+  receive cancelled at the token interval ! RequestCancelledError: RequestCancelledError(operation_id='feedSocket', call_id='<call>', source='cancel_token', delivery_state='RESPONSE_STARTED') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
+    open wss://api.example.com/feed/socket [('Accept-Encoding', 'gzip, deflate')] subprotocols=() WebSocketOpenRequest(subprotocols=()) ResolvedWSOptions(open_timeout=5.0, idle_timeout=60.0, max_message_bytes=1048576, max_queue=16, send_timeout=30.0, ping_interval=20.0, pong_timeout=20.0, close_timeout=5.0, resume_ack_timeout=30.0, max_ack_buffer_messages=16, max_ack_buffer_bytes=16777216, max_unacked=100, compression=None, reconnect=False, max_reconnects=5) ResolvedWebSocketTransportOptions(ssl_context=None, proxy_ssl_context=None, trust_env=False)
+    connection close 1000 '' timeout=5.0
+  borrowed connector left open
+  async session AsyncWebSocketSession(helper_id='rooms.chat', state='open', subprotocol='chat.v2') received 1
+    connection send text=True b'{"text":"hi"}' deadline=True
+    connection ping b'' deadline=True polled=False
+    async ping PingReceipt(latency=0.25)
+    connection close 1000 '' timeout=5.0
+    connection send text=True b'message' deadline=True
+  async nothing sent before the timeout ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='write', effective_timeout=30.0) [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='write'] phase_timeout_error
+    connection close 1000 '' timeout=5.0
+    connection send text=True b'message' deadline=True
+    connection abort
+  async message that may have gone ! DeliveryUnknownError: DeliveryUnknownError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT') [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=TransportError()] delivery_unknown_error
+    connection send text=True b'message' deadline=True
+    connection abort
+  async transport failure before sending ! TransportError: TransportError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='write') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='write'] transport_error
+    connection send text=True b'message' deadline=True
+    connection close 1001 '' timeout=5.0
+  async closed before sending ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', code=1001, clean=True) [operation_id='feedSocket'] web_socket_closed_error
+    connection ping b'' deadline=True polled=False
+    connection close 1001 '' timeout=5.0
+  async ping timeout ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=20.0) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout_error
+    connection ping b'' deadline=True polled=False
+    connection close 1001 '' timeout=5.0
+  async closed before the ping ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', clean=False) [operation_id='feedSocket'] web_socket_closed_error
+    connection ping b'' deadline=True polled=False
+    connection abort
+  async transport failure while pinging ! TransportError: TransportError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='write') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='write'] transport_error
+    connection close 1000 '' timeout=5.0
+    connection abort
+  async failing close ! CleanupError: CleanupError(operation_id='feedSocket', call_id='<call>', pending_calls=0, pending_leases=0) [operation_id='feedSocket', cause=OSError('close failed')] cleanup_error
+    connection send text=True b'first' deadline=True
+  async send that waits too long ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='write', effective_timeout=0.05) [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='write'] phase_timeout_error
+    connection abort
+  async send stopped at its timeout ! DeliveryUnknownError: DeliveryUnknownError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT') [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=PhaseTimeoutError()] delivery_unknown_error
+    connection close 1001 '' timeout=5.0
+  async receive at the connection's deadline ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=60.0) [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout_error
+    connection close 1001 '' timeout=5.0
+  async server closed ! WebSocketClosedError: WebSocketClosedError(operation_id='feedSocket', call_id='<call>', code=1000, clean=True) [operation_id='feedSocket'] web_socket_closed_error
+    connection abort
+  async headers of another type ! AdapterContractError: AdapterContractError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] adapter_contract_error
+  async no call send slot ! BudgetExceededError: BudgetExceededError(operation_id='feedSocket', call_id='<call>', budget_kind='network', limit=0, used=0) [operation_id='feedSocket', limit=0] budget_exceeded_error
+  async redirect without a parent send slot ! SessionLimitError: SessionLimitError(operation_id='feedSocket', call_id='<call>', kind='network_sends', limit=1) [operation_id='feedSocket', kind='network_sends', limit=1, cause=BudgetExceededError()] session_limit_error
+    connection close 1000 '' timeout=5.0
+  async receive the session's close interrupted ! TransportError: TransportError(operation_id='feedSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='write') [operation_id='feedSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='write'] transport_error
+    connection close 1000 '' timeout=5.0
+  async iteration the session's close ended = []
+    connection send text=True b'first' deadline=True
+    connection abort
+  async send cancelled by its task CancelledError AsyncWebSocketSession(helper_id='feed.text', state='failed', subprotocol=None)
+    connection send text=True b'first' deadline=True
+    connection abort
+  async send holding the turn past its cap ! DeliveryUnknownError: DeliveryUnknownError(operation_id='feedSocket', call_id='<call>', delivery_state='MAYBE_SENT') [operation_id='feedSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=PhaseTimeoutError()] delivery_unknown_error
+  async send given the turn past its cap ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='write', effective_timeout=10.0) [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='write'] phase_timeout_error
+  async send after the stopped turn ! ProtocolStateError: ProtocolStateError(operation_id='feedSocket', call_id='<call>', state='failed', action='send') [operation_id='feedSocket'] protocol_state_error

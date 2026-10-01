@@ -83,6 +83,12 @@ def _cap(
     return PhaseCap(configured, effective, source)
 
 
+def joined_cap(configured: tuple[float | None, ...], remaining: float | None, deadline: Deadline | None) -> PhaseCap:
+    """Return the cap of a phase that several configured limits bound together: the least one set, then the deadline."""
+    limits = [value for value in configured if value is not None]
+    return _cap(min(limits) if limits else None, remaining, deadline)
+
+
 def _secondary(error: BaseException, task: asyncio.Task[object]) -> None:
     if (failure := task_failure(task)) is not None:
         cleanup_secondary(error, failure)
@@ -578,6 +584,28 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
         """Mark the call finished, so its remaining cleanup counts as a lease rather than a running call."""
         self.finished = True
 
+    def lane(self, deadline: Deadline | None) -> LogicalCallContext:
+        """Return a context for one more waiter on this handed-over call, ending at a deadline of its own.
+
+        A handed-over WebSocket waits to send and to receive at once, and the guard of each waiter's lane cancels only
+        that waiter's task. The lane keeps the call's identity, settings, session, and counters.
+        """
+        lane = _Lane(self.settings, self._scope, self.operation_id)
+        lane.call_id = self.call_id
+        lane.session = self.session
+        lane.deadline = deadline
+        lane.streaming = True
+        lane.delivery_state = self.delivery_state
+        lane.resource_attempt_count = self.resource_attempt_count
+        lane.redirect_count = self.redirect_count
+        lane.auth_exchange_count = self.auth_exchange_count
+        lane.network_send_count = self.network_send_count
+        lane.network_send_budget_used = self.network_send_budget_used
+        lane.auth_exchange_budget_used = self.auth_exchange_budget_used
+        lane.auth_refresh_ids = self.auth_refresh_ids
+        lane.wire_send_count = self.wire_send_count
+        return lane
+
     def _native(self, error: BaseException | None) -> BaseException:
         """Return the native cancellation that stops the call, even when the work suppressed or converted it."""
         import asyncio  # noqa: PLC0415
@@ -824,3 +852,13 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
             self.retry_blocked = True
             return False
         return True
+
+
+class _Lane(LogicalCallContext):
+    """One waiter of a handed-over call, which may belong to a helper session."""
+
+    __slots__ = ("session",)
+
+    def __init__(self, settings: Settings, scope: _Scope, operation_id: str | None) -> None:
+        super().__init__(settings, scope, operation_id)
+        self.session: OperationSession | None = None

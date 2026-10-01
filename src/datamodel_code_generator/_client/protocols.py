@@ -76,6 +76,8 @@ __all__ = (
     "StreamResume",
     "TimestampHeader",
     "Tree",
+    "WebSocketHelper",
+    "WebSocketMessage",
     "WebhookHelper",
     "load_protocols",
     "project",
@@ -103,7 +105,7 @@ KINDS: Final = (
     "batch",
     "queue",
 )
-_LATER: Final = frozenset({"websocket", "resumable_upload", "batch", "queue"})
+_LATER: Final = frozenset({"resumable_upload", "batch", "queue"})
 _HMAC_SIGNATURES: Final = ("hmac-sha256", "hmac-sha512")
 _PUBLIC_KEY_SIGNATURES: Final = ("ed25519", "rsa-pss-sha256")
 _SIGNATURES: Final = (*_HMAC_SIGNATURES, *_PUBLIC_KEY_SIGNATURES)
@@ -121,6 +123,7 @@ _ROOT: Final = "protocols"
 _MERGE: Final = "tag:yaml.org,2002:merge"
 _EMPTY_STRING: Final = {"kind": "value", "value": ""}
 _STATE_SETS: Final = ("pending", "succeeded", "failed", "cancelled")
+_FRAMES: Final = {"json": None, "utf8": "text", "bytes": "binary"}
 _MAX_DEPTH: Final = 64
 _VALIDATOR_KINDS: Final = ("etag", "last_modified", "both")
 _TAG: Final = re.compile(r"(?:[^{}]|\{[^{}]+\})+")
@@ -479,6 +482,36 @@ class WebhookHelper:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class WebSocketMessage:
+    """How the messages of one direction are coded: JSON by a schema, UTF-8 text, or bytes, and in which frames.
+
+    The frame defaults to text for JSON and UTF-8 text, and to binary for bytes.
+    """
+
+    codec: Literal["json", "utf8", "bytes"]
+    schema: SchemaRef | None = None
+    frame: Literal["text", "binary"] | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class WebSocketHelper:
+    """Open a WebSocket through an operation's handshake, and send and receive typed messages on it.
+
+    The operation is a GET without a request body; the subprotocols are offered in order, one of which the server must
+    select when any is offered, and compression permits the caller's deflate.
+    """
+
+    kind: ClassVar[Literal["websocket"]] = "websocket"
+
+    operation: OperationSelector
+    send: WebSocketMessage
+    receive: WebSocketMessage
+    subprotocols: tuple[str, ...] = ()
+    compression: bool = False
+    enabled: bool = True
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class CacheMutation:
     """An operation whose explicit wrapper invalidates the cache entries its tags name after it succeeds."""
 
@@ -509,7 +542,9 @@ class CacheHelper:
         object.__setattr__(self, "mutations", _frozen(self.mutations))
 
 
-HelperDefinition: TypeAlias = PaginationHelper | PollingHelper | StreamHelper | WebhookHelper | CacheHelper
+HelperDefinition: TypeAlias = (
+    PaginationHelper | PollingHelper | StreamHelper | WebhookHelper | WebSocketHelper | CacheHelper
+)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -554,6 +589,8 @@ _RECORDS: Final = frozenset({
     AdapterSignature,
     NoSignature,
     WebhookHelper,
+    WebSocketMessage,
+    WebSocketHelper,
     CacheMutation,
     CacheHelper,
     ProtocolConfiguration,
@@ -1134,6 +1171,8 @@ class _Validator:  # noqa: PLR0904
                 tree = self.polling(value, at)
             case "webhook":
                 tree = self.webhook(value, at)
+            case "websocket":
+                tree = self.websocket(value, at)
             case "cache":
                 tree = self.cache(value, at)
             case _:
@@ -1382,6 +1421,50 @@ class _Validator:  # noqa: PLR0904
         reasons = self.items(value, at, self.choice("transport_interruption", "incomplete_eof"), nonempty=True)
         return self.distinct(at, reasons, "a reconnect reason")
 
+    def websocket(self, value: object, at: str) -> Tree | _Invalid:
+        return self.record(
+            value,
+            at,
+            {
+                "kind": (_keep, REQUIRED),
+                "enabled": (self.boolean, True),
+                "operation": (self.operation, REQUIRED),
+                "subprotocols": (self.subprotocols, ()),
+                "compression": (self.boolean, False),
+                "send": (self.message, REQUIRED),
+                "receive": (self.message, REQUIRED),
+            },
+            "a helper definition",
+        )
+
+    def subprotocols(self, value: object, at: str) -> object:
+        def subprotocol(item: object, where: str) -> object:
+            return item if token(item) else self.value(where, f"{where} must be a subprotocol token")
+
+        return self.distinct(at, self.items(value, at, subprotocol), "a subprotocol")
+
+    def message(self, value: object, at: str) -> object:
+        """Convert a message definition, giving it the frame its codec defaults to and refusing a mismatched one."""
+        spec: Spec = {
+            "codec": (self.choice(*_FRAMES), REQUIRED),
+            "frame": (self.choice("text", "binary"), OMITTED),
+            "schema": (self.schema, OMITTED),
+        }
+        if (message := self.record(value, at, spec, "a message definition")) is INVALID:
+            return INVALID
+        codec, fixed = message["codec"], _FRAMES[message["codec"]]
+        if (codec == "json") != ("schema" in message):
+            where = f"{at}.schema"
+            if codec == "json":
+                return self.value(where, f"{at} needs 'schema' for JSON messages")
+            self.conflict(where, f"{where} applies only to JSON messages")
+            return INVALID
+        frame = message.setdefault("frame", fixed or "text")
+        if fixed is not None and frame != fixed:
+            self.conflict(f"{at}.frame", f"{at}.frame must be {fixed!r} for {codec} messages")
+            return INVALID
+        return message
+
     def cache(self, value: object, at: str) -> Tree | _Invalid:
         return self.record(
             value,
@@ -1608,6 +1691,8 @@ def _links(kind: str, tree: Tree, at: str) -> Iterator[Link]:
             )
         case "webhook":
             return
+        case "websocket":
+            yield Link(at=f"{at}.operation", ref=tree["operation"])
         case "cache":
             yield Link(at=f"{at}.operation", ref=tree["operation"])
             for name, mutation in tree["mutations"].items():
