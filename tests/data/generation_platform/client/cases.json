@@ -2885,6 +2885,12 @@
               "role": "parameter",
               "location": "header",
               "name": "X-Labels"
+            },
+            {
+              "operation": "/paths/~1reports/get",
+              "role": "parameter",
+              "location": "header",
+              "name": "X-Tags"
             }
           ]
         },
@@ -3281,6 +3287,12 @@
               "role": "parameter",
               "location": "header",
               "name": "X-Labels"
+            },
+            {
+              "operation": "/paths/~1reports/get",
+              "role": "parameter",
+              "location": "header",
+              "name": "X-Tags"
             }
           ]
         },

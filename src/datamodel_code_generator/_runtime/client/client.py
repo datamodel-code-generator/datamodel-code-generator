@@ -504,8 +504,12 @@ def _coded(operation: OperationPlan[object, object], spec: ParameterSpec, code: 
 
 
 def _parameter(spec: ParameterSpec, value: object, mode: RequestValidation) -> object:
-    """Return the contribution of one argument to its request, encoded as a call encodes it."""
-    return encode_parameter(spec.plan, spec.encode(value, mode))
+    """Return the contribution of one argument to its request, encoded as a call encodes it, adapter included."""
+    wire = spec.encode(value, mode)
+    if (adapter := spec.adapter) is None:
+        return encode_parameter(spec.plan, wire)
+    get, context = adapter
+    return get().encode(wire, context)
 
 
 def _unsaved(plan: _PagePlan, path: tuple[str, ...]) -> ProtocolConfigurationError:
