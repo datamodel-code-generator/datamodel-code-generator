@@ -92,7 +92,6 @@ class RangeReader(Protocol):
 
     def close(self) -> None:
         """Release the reader; closing again does nothing."""
-        ...
 
 
 class AsyncRangeReader(Protocol):
@@ -104,7 +103,6 @@ class AsyncRangeReader(Protocol):
 
     async def aclose(self) -> None:
         """Release the reader; closing again does nothing."""
-        ...
 
 
 class UploadSource(Protocol):

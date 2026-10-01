@@ -709,7 +709,7 @@ def _expiry(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, li
     for label, value in (
         ("no date", "tomorrow"),
         ("no day", "2999-02-30T00:00:00Z"),
-        ("a leap second", "2999-12-31T23:59:60Z"),
+        ("a leap second", "2999-12-31T23:59:60Z"), ("a fraction", "2999-01-01t00:00:00.123456789z"),
     ):
         server.expires = value
         exchange.respond(server)
