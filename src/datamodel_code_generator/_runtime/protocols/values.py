@@ -7,9 +7,12 @@ and media that apply patches live in `writes`, which only a helper's plan loads.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from enum import Enum
+from time import time
 from typing import TYPE_CHECKING, Final
 
 from ..model_codecs.unset import Unset
@@ -22,7 +25,12 @@ if TYPE_CHECKING:
     from ..model_codecs.wire import WireValue
     from .records import Selector
 
-__all__ = ("MISSING", "Missing", "Patch", "RepeatedValueError", "resolve", "selected")
+__all__ = ("MISSING", "Missing", "Patch", "RepeatedValueError", "resolve", "selected", "server_expiry")
+
+_RFC3339: Final = re.compile(
+    r"([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:)([0-9]{2})((?:\.[0-9]+)?(?:Z|[+-][0-9]{2}:[0-9]{2}))"
+)
+_LEAP_SECOND: Final = "60"
 
 
 class Missing(Enum):
@@ -98,3 +106,21 @@ class Patch:
         for pointer, new in self.writes:
             wire = _patched(wire, _tokens(pointer), new)
         return wire
+
+
+def server_expiry(value: str) -> datetime | None:
+    """Return the UTC time an RFC 3339 date-time with an offset or an HTTP date gives, or None for another value.
+
+    A leap second is the second after the one before it, as in an HTTP date.
+    """
+    try:
+        if (matched := _RFC3339.fullmatch(value.upper())) is not None:
+            head, second, tail = matched.groups()
+            leap = second == _LEAP_SECOND
+            parsed = datetime.fromisoformat(f"{head}{'59' if leap else second}{tail}")
+            return (parsed + timedelta(seconds=leap)).astimezone(timezone.utc)
+        from ..client.retry import http_date  # noqa: PLC0415 - Only a helper with an expiry parses HTTP dates.
+
+        return http_date(value, time())
+    except (ValueError, OverflowError):
+        return None

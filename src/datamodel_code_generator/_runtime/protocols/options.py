@@ -38,6 +38,12 @@ _STREAM: Final = (
     ("max_reconnects", False, True, True),
     ("max_reconnect_wait", True, True, False),
 )
+_UPLOAD: Final = (
+    ("chunk_bytes", False, False, False),
+    ("max_parts", False, True, False),
+    ("parallelism", False, False, False),
+    ("max_uncertain_probes", False, False, True),
+)
 WEBHOOK_LIMITS: Final = (
     ("max_body_bytes", False, False, False),
     ("max_header_bytes", False, False, False),
@@ -187,6 +193,23 @@ class StreamOptions:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class UploadOptions:
+    """Upload limits; only max_parts takes None, and only max_uncertain_probes takes 0.
+
+    The offset profile always sends one chunk at a time, whatever the parallelism.
+    """
+
+    chunk_bytes: int | Unset = UNSET
+    max_parts: int | Unset | None = UNSET
+    parallelism: int | Unset = UNSET
+    max_uncertain_probes: int | Unset = UNSET
+
+    def __post_init__(self) -> None:
+        """Reject booleans, other types, and every forbidden None or zero."""
+        check_limits(self, _UPLOAD)
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class ProtocolSecurityContext:
     """The nonsecret credential partition of helper state and the origins permitted beyond the same origin."""
 
@@ -217,12 +240,12 @@ class ProtocolDefaults:
     """Defaults of one helper, below its call arguments and above the kind's effective defaults."""
 
     session: SessionOptions | Unset = UNSET
-    options: PaginationOptions | PollOptions | StreamOptions | Unset = UNSET
+    options: PaginationOptions | PollOptions | StreamOptions | UploadOptions | Unset = UNSET
 
     def __post_init__(self) -> None:
         """Refuse values other than session options and one kind's options."""
         _instance(self.session, (SessionOptions, Unset), "session")
-        _instance(self.options, (PaginationOptions, PollOptions, StreamOptions, Unset), "options")
+        _instance(self.options, (PaginationOptions, PollOptions, StreamOptions, UploadOptions, Unset), "options")
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -248,6 +271,7 @@ _KIND_OPTIONS: Final[Mapping[str, type]] = MappingProxyType({
     "polling": PollOptions,
     "sse": StreamOptions,
     "ndjson": StreamOptions,
+    "resumable_upload": UploadOptions,
 })
 
 

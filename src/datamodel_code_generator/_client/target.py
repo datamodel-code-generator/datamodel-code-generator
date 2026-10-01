@@ -35,6 +35,7 @@ from datamodel_code_generator._client.protocol_plan import (
 from datamodel_code_generator._client.render import ClientRenderer
 from datamodel_code_generator._client.security import security_contract
 from datamodel_code_generator._client.streams import plan_streams, stream_uses
+from datamodel_code_generator._client.uploads import plan_uploads
 from datamodel_code_generator._client.validation import admission_problems, allowed, argument_uses
 from datamodel_code_generator._client.webhooks import (
     key_class,
@@ -63,6 +64,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.polling import PollingSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.streams import StreamSpec
+    from datamodel_code_generator._client.uploads import UploadSpec
     from datamodel_code_generator._client.webhooks import WebhookSpec
     from datamodel_code_generator._generation_contract import GeneratedTypeContractBatch, TypeUseBinding, TypeUseId
     from datamodel_code_generator._openapi_codec_plan import CodecBackend, CodecPlan
@@ -140,15 +142,16 @@ class ClientTarget:
         plan, named = plan_fields(plan, codecs, batch, wire)
         pages, checked = plan_pagination(protocols, plan, codecs, wire, request)
         polls, polled = plan_polling(protocols, plan, codecs, wire, request)
+        uploads, uploaded = plan_uploads(protocols, plan, codecs, wire, request)
         order = {} if protocols is None else {helper.name: index for index, helper in enumerate(protocols.helpers)}
-        helpers = tuple(sorted((*pages, *polls), key=lambda spec: order[spec.helper.name]))
+        helpers = tuple(sorted((*pages, *polls, *uploads), key=lambda spec: order[spec.helper.name]))
         streams = plan_streams(streamed, protocols, plan, codecs, wire, request, stream_problems)
         webhooks = plan_webhooks(events, codecs, config, hooked)
         ordinary = replace(codecs, bindings=tuple(item for item in codecs.bindings if item[0] not in received))
         if refused := (
             *named,
             *admission_problems(config.validation, ordinary, argument_uses(plan)),
-            *helper_problems(protocols, plan, {**checked, **polled, **hooked, **stream_problems}),
+            *helper_problems(protocols, plan, {**checked, **polled, **uploaded, **hooked, **stream_problems}),
         ):
             raise APIGenerationError(
                 tuple(
@@ -160,6 +163,7 @@ class ClientTarget:
         metadata = helper_metadata(protocols, request)
         fingerprints = {spec.helper.name: data.fingerprint(spec, metadata[spec.helper.name]) for spec in pages}
         fingerprints.update((spec.helper.name, data.polling(spec, metadata[spec.helper.name])) for spec in polls)
+        fingerprints.update((spec.helper.name, data.upload(spec, metadata[spec.helper.name])) for spec in uploads)
         fingerprints.update((spec.helper.name, data.webhook(spec, metadata[spec.helper.name])) for spec in webhooks)
         fingerprints.update((spec.helper.name, data.stream(spec, metadata[spec.helper.name])) for spec in streams)
         renderer = ClientRenderer(
@@ -354,6 +358,37 @@ class _TargetData:
                 documents.operation(item.contract.id)
                 for item in (operation, spec.poll, *(() if fetch is None else (fetch,)))
             ],
+            "schemas": list(spec.schemas),
+            "type_uses": [self.contract(use) for use in uses],
+            "adapters": [],
+        })
+
+    def upload(self, spec: UploadSpec, settings: JSONValue) -> str:
+        """Return the digest of an upload helper's contract closure: its signature and settings, operations, and uses.
+
+        The signature spells the create call's arguments, the size it writes, and the result type, and the uses are the
+        create responses' and the completion's.
+        """
+        operation, helper = spec.operation, spec.helper
+        body = operation.body
+        uses = (*spec.create_uses, *(() if spec.completion_use is None else (spec.completion_use,)))
+        signature = {
+            "name": helper.name,
+            "parameters": [(item.python_name, item.required, self.type(item.use)) for item in operation.parameters],
+            "size": None if spec.size is None else spec.size.python_name,
+            "body": None
+            if body is None
+            else (body.required, [(media.media_type, self.type(media.use)) for media in body.media]),
+            "result": None if spec.completion_use is None else self.type(spec.completion_use),
+            "uses": [self.type(use) for use in uses],
+            "settings": settings,
+        }
+        documents = self.request.documents
+        operations = (operation, spec.probe, spec.append, *(() if spec.completion is None else (spec.completion,)))
+        return _digest({
+            "kind": helper.kind,
+            "signatures": [signature],
+            "operations": [documents.operation(item.contract.id) for item in operations],
             "schemas": list(spec.schemas),
             "type_uses": [self.contract(use) for use in uses],
             "adapters": [],

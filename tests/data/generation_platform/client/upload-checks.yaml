@@ -1,0 +1,202 @@
+openapi: 3.2.0
+info:
+  title: Resumable upload checks
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /files:
+    post:
+      operationId: createFile
+      tags: [files]
+      parameters:
+        - {name: Upload-Length, in: header, required: true, schema: {type: integer}}
+        - {name: X-Name, in: header, schema: {type: string}}
+        - {name: session, in: cookie, schema: {type: string}}
+      responses:
+        '201':
+          description: The upload was created.
+          headers:
+            Upload-Expires:
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Upload'}
+  /drafts:
+    post:
+      operationId: createDraft
+      tags: [files]
+      responses:
+        '400':
+          description: Drafts cannot be uploaded.
+  /files/{fileId}:
+    head:
+      operationId: probeFile
+      tags: [files]
+      parameters:
+        - {name: fileId, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: The offset the server holds.
+          headers:
+            Upload-Offset:
+              schema: {type: integer}
+    patch:
+      operationId: appendFile
+      tags: [files]
+      parameters:
+        - {name: fileId, in: path, required: true, schema: {type: string}}
+        - {name: Upload-Offset, in: header, required: true, schema: {type: integer}}
+        - {name: X-Note, in: header, schema: {type: string}}
+        - {name: session, in: cookie, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/offset+octet-stream:
+            schema: {type: string, format: binary}
+      responses:
+        '204':
+          description: The chunk was appended.
+    put:
+      operationId: replaceFile
+      tags: [files]
+      parameters:
+        - {name: fileId, in: path, required: true, schema: {type: string}}
+        - {name: Upload-Offset, in: header, required: true, schema: {type: integer}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Note'}
+      responses:
+        '204':
+          description: The file was replaced.
+  /files/{fileId}/status:
+    get:
+      operationId: getFileStatus
+      tags: [files]
+      parameters:
+        - {name: fileId, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: The offset as text.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Status'}
+    post:
+      operationId: findFileStatus
+      tags: [files]
+      parameters:
+        - {name: fileId, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Note'}
+      responses:
+        '200':
+          description: The offset.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Offset'}
+  /files/{fileId}/search:
+    post:
+      operationId: searchFileStatus
+      tags: [files]
+      parameters:
+        - {name: fileId, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Note'}
+          application/vnd.note+json:
+            schema: {$ref: '#/components/schemas/Note'}
+      responses:
+        '200':
+          description: The offset.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Offset'}
+  /files/{fileId}/form:
+    post:
+      operationId: formFileStatus
+      tags: [files]
+      parameters:
+        - {name: fileId, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema: {$ref: '#/components/schemas/Note'}
+      responses:
+        '200':
+          description: The offset.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Offset'}
+  /files/{fileId}/gone:
+    delete:
+      operationId: deleteFile
+      tags: [files]
+      parameters:
+        - {name: fileId, in: path, required: true, schema: {type: string}}
+      responses:
+        '404':
+          description: The file is gone.
+  /files/{fileId}/complete:
+    post:
+      operationId: completeFile
+      tags: [files]
+      parameters:
+        - {name: fileId, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Note'}
+      responses:
+        '200':
+          description: The stored file.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Stored'}
+  /files/{fileId}/finish:
+    post:
+      operationId: finishFile
+      tags: [files]
+      parameters:
+        - {name: fileId, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: The stored file as text.
+          content:
+            text/plain:
+              schema: {type: string}
+components:
+  schemas:
+    Upload:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string}
+        expires: {type: integer}
+    Status:
+      type: object
+      required: [offset]
+      properties:
+        offset: {type: string}
+    Offset:
+      type: object
+      required: [offset]
+      properties:
+        offset: {type: integer}
+    Note:
+      type: object
+      properties:
+        text: {type: string}
+    Stored:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string}

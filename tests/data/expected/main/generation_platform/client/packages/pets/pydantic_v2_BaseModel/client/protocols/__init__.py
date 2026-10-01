@@ -12,6 +12,7 @@ from .._runtime.protocols.options import (
     ProtocolDefaults,
     ProtocolSecurityContext,
     StreamOptions,
+    UploadOptions,
 )
 from .._runtime.protocols.records import (
     BodySelector,
@@ -29,6 +30,15 @@ from .._runtime.protocols.records import (
 )
 from .._runtime.protocols.references import OperationRef
 from .._runtime.protocols.resume import ResumeState, import_state
+from .._runtime.protocols.sources import (
+    AsyncRangeReader,
+    AsyncUploadSource,
+    PartReceipt,
+    RangeReader,
+    UploadIdentity,
+    UploadProgress,
+    UploadSource,
+)
 from .._runtime.protocols.webhooks import (
     AsyncReplayStore,
     KeySet,
@@ -50,17 +60,31 @@ if TYPE_CHECKING:
         StreamEvent,
         UnknownEvent,
     )
+    from .._runtime.protocols.upload_sources import (
+        AsyncBytesUploadSource,
+        AsyncFileUploadSource,
+        BytesUploadSource,
+        FileUploadSource,
+    )
+    from .._runtime.protocols.uploads import AsyncUploadHandle, UploadHandle
 
 __all__ = [
+    "AsyncBytesUploadSource",
     "AsyncEventStream",
+    "AsyncFileUploadSource",
     "AsyncLroHandle",
     "AsyncMemoryReplayStore",
     "AsyncPager",
+    "AsyncRangeReader",
     "AsyncReplayStore",
+    "AsyncUploadHandle",
+    "AsyncUploadSource",
     "BodySelector",
     "BodyTarget",
+    "BytesUploadSource",
     "Continuation",
     "EventStream",
+    "FileUploadSource",
     "HeaderSelector",
     "KeySet",
     "LroHandle",
@@ -71,6 +95,7 @@ __all__ = [
     "Pager",
     "PaginationOptions",
     "ParameterTarget",
+    "PartReceipt",
     "PollOptions",
     "PollSnapshot",
     "ProgressKey",
@@ -78,6 +103,7 @@ __all__ = [
     "ProtocolProgress",
     "ProtocolSecurityContext",
     "QuerystringTarget",
+    "RangeReader",
     "ReplayStore",
     "RequestTarget",
     "ResolvedWebhookOptions",
@@ -87,6 +113,11 @@ __all__ = [
     "StreamEvent",
     "StreamOptions",
     "UnknownEvent",
+    "UploadHandle",
+    "UploadIdentity",
+    "UploadOptions",
+    "UploadProgress",
+    "UploadSource",
     "VerifiedSignature",
     "VerifiedWebhook",
     "Verifier",
@@ -96,7 +127,7 @@ __all__ = [
 
 
 def __getattr__(name: str) -> object:
-    """Load a memory store or a pagination, polling, or stream type only when its public class is requested."""
+    """Load a memory store, a builtin upload source, or a pagination, polling, stream, or upload type on first use."""
     if name in {"AsyncPager", "Page", "Pager"}:
         from .._runtime.protocols import pagination
 
@@ -109,6 +140,14 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import streams
 
         return getattr(streams, name)
+    if name in {"AsyncUploadHandle", "UploadHandle"}:
+        from .._runtime.protocols import uploads
+
+        return getattr(uploads, name)
+    if name in {"AsyncBytesUploadSource", "AsyncFileUploadSource", "BytesUploadSource", "FileUploadSource"}:
+        from .._runtime.protocols import upload_sources
+
+        return getattr(upload_sources, name)
     if name == "MemoryReplayStore":
         from .._runtime.protocols.replay import MemoryReplayStore
 

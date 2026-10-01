@@ -71,7 +71,9 @@ from ._runtime.client.errors import (
 
 if TYPE_CHECKING:
     from ._runtime.protocols.errors import (
+        DeliveryUnknownError,
         IncompleteFrameError,
+        NonResumableSourceError,
         OperationCancelledError,
         OperationFailedError,
         PaginationCycleError,
@@ -86,6 +88,10 @@ if TYPE_CHECKING:
         StreamInterruptedError,
         StreamRemoteError,
         StreamResumeExhaustedError,
+        UploadDeliveryUnknownError,
+        UploadExpiredError,
+        UploadOffsetError,
+        UploadSourceChangedError,
     )
 
 __all__ = [
@@ -116,12 +122,14 @@ __all__ = [
     'DecodeError',
     'DecompressionLimitError',
     'DeliveryState',
+    'DeliveryUnknownError',
     'HTTPStatusError',
     'HookExecutionError',
     'IOPhase',
     'IncompleteFrameError',
     'InsufficientScopeError',
     'LimiterExecutionError',
+    'NonResumableSourceError',
     'OAuthExchangeError',
     'OperationCancelledError',
     'OperationFailedError',
@@ -162,12 +170,18 @@ __all__ = [
     'UnexpectedStatusError',
     'UnsupportedAsyncBackendError',
     'UnsupportedContentCodingError',
+    'UploadDeliveryUnknownError',
+    'UploadExpiredError',
+    'UploadOffsetError',
+    'UploadSourceChangedError',
     'WebhookReplayError',
     'WebhookStoreError',
     'WebhookVerificationError',
 ]
 _PROTOCOL_ERRORS = frozenset({
+    'DeliveryUnknownError',
     'IncompleteFrameError',
+    'NonResumableSourceError',
     'OperationCancelledError',
     'OperationFailedError',
     'PaginationCycleError',
@@ -182,6 +196,10 @@ _PROTOCOL_ERRORS = frozenset({
     'StreamInterruptedError',
     'StreamRemoteError',
     'StreamResumeExhaustedError',
+    'UploadDeliveryUnknownError',
+    'UploadExpiredError',
+    'UploadOffsetError',
+    'UploadSourceChangedError',
 })
 
 
