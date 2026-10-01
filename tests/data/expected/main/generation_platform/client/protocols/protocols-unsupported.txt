@@ -3,9 +3,7 @@ render pydantic_v2.BaseModel
   APIGenerationError
   E_NAME_COLLISION target protocols.helpers['tags.all'] /paths/~1tags/get: The pagination helper 'tags.all' reserves the argument 'items' of GET /tags; rename them with parameter_names or body_field_names
   E_NAME_COLLISION target protocols.helpers['jobs.run'] /paths/~1jobs/post: The polling helper 'jobs.run' reserves the argument 'state' of POST /jobs; rename them with parameter_names or body_field_names
-  E_CLIENT_UNSUPPORTED target protocols.helpers['users.follow']: The pagination helper 'users.follow' with next_url continuation is not supported yet
-  E_CLIENT_UNSUPPORTED target protocols.helpers['users.linked']: The pagination helper 'users.linked' with link continuation is not supported yet
-  E_CLIENT_UNSUPPORTED target protocols.helpers['labels.all']: The pagination helper 'labels.all' with link continuation is not supported yet
+  E_CONFIG_VALUE config protocols.helpers['labels.all'].continuation.header /paths/~1labels/get: The links of 'labels.all' come from the header 'Link', which GET /labels does not declare
   E_CLIENT_UNSUPPORTED target protocols.helpers['jobs.run']: The polling helper 'jobs.run' is not supported yet
   E_CLIENT_UNSUPPORTED target protocols.helpers['events.watch']: The sse helper 'events.watch' is not supported yet
   E_CLIENT_UNSUPPORTED target protocols.helpers['records.watch']: The ndjson helper 'records.watch' is not supported yet
