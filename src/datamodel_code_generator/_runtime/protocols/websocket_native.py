@@ -56,6 +56,7 @@ from .errors import (
     WebSocketHandshakeError,
     WebSocketProxyError,
 )
+from .options import valid_proxy
 from .websocket_types import WSFrame
 
 if TYPE_CHECKING:
@@ -73,7 +74,6 @@ if TYPE_CHECKING:
 __all__ = ("AsyncNativeConnection", "AsyncNativeConnector", "NativeConnection", "NativeConnector")
 
 _FRAGMENT: Final = 32768
-_PROXY_SCHEMES: Final = ("http://", "https://")
 _WRITE_LIMIT: Final = 32768
 _TOO_BIG: Final = 1009
 _CONDITIONS: Final[tuple[tuple[type[InvalidHandshake], HandshakeCondition], ...]] = (
@@ -269,10 +269,10 @@ def _frame(data: str | bytes) -> WSFrame:
 
 
 def _proxy(url: str, transport: ResolvedWebSocketTransportOptions) -> str | None:
-    """Return the proxy to use: the explicit one, else the environment's when trusted, which must be HTTP or HTTPS."""
+    """Return the proxy to use: the explicit one, else the environment's when trusted, which must be valid as one."""
     if transport.proxy is not None or not transport.trust_env:
         return transport.proxy
-    if (proxy := get_proxy(parse_uri(url))) is not None and not proxy.lower().startswith(_PROXY_SCHEMES):
+    if (proxy := get_proxy(parse_uri(url))) is not None and not valid_proxy(proxy):
         raise ProtocolConfigurationError(field_path=("websocket_transport", "trust_env"), condition="invalid_value")
     return proxy
 

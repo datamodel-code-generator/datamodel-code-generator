@@ -229,6 +229,14 @@ def _construction(harness: _Harness) -> None:
     record(lines, "proxy URL without a host", lambda: harness.protocols.WebSocketTransportOptions(proxy="http://:8080"))
     record(lines, "proxy URL with a bad port", lambda: harness.protocols.WebSocketTransportOptions(proxy="http://proxy.test:x"))
     record(lines, "proxy URL of another type", lambda: harness.protocols.WebSocketTransportOptions(proxy=8080))
+    for label, proxy in (
+        ("proxy URL with a path", "http://user:secret@proxy.test:3128/path"),
+        ("proxy URL with a query", "http://proxy.test:3128?secret=1"),
+        ("proxy URL with a fragment", "http://proxy.test:3128#secret"),
+        ("proxy user without a password", "http://user@proxy.test:3128"),
+    ):
+        record(lines, label, lambda proxy=proxy: harness.protocols.WebSocketTransportOptions(proxy=proxy))
+    lines.append(f"  proxy URL with a slash {harness.protocols.WebSocketTransportOptions(proxy='http://proxy.test:3128/')!r}")
     context = ssl.create_default_context()
     record(
         lines,

@@ -679,11 +679,15 @@ def _proxies(harness: _Harness) -> None:
             with harness.package.Client(options=harness.client(transport=harness.transport(proxy=broken.url))) as api:
                 record(lines, label, api.protocols.feed.text.connect)
             lines.append(f"  {label} requests {[request.replace(port, '<port>') for request in broken.requests]}")
-        with (
-            _environment(https_proxy="ftp://proxy.test:21", no_proxy=""),
-            harness.package.Client(options=harness.client(transport=harness.transport(trust_env=True))) as api,
+        for label, environment_proxy in (
+            ("environment proxy of another scheme", "ftp://proxy.test:21"),
+            ("environment proxy user without a password", "http://user@proxy.test:3128"),
         ):
-            record(lines, "environment proxy of another scheme", api.protocols.feed.text.connect)
+            with (
+                _environment(https_proxy=environment_proxy, no_proxy=""),
+                harness.package.Client(options=harness.client(transport=harness.transport(trust_env=True))) as api,
+            ):
+                record(lines, label, api.protocols.feed.text.connect)
     finally:
         proxy.stop()
         refusing.stop()

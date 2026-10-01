@@ -175,6 +175,7 @@
   garbled proxy ! WebSocketProxyError: WebSocketProxyError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='connect') [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect', cause=InvalidProxyMessage] web_socket_proxy_error
   garbled proxy requests ['CONNECT localhost:<port> HTTP/1.1']
   environment proxy of another scheme ! ProtocolConfigurationError: ProtocolConfigurationError(operation_id='feedSocket', call_id='<call>', condition='invalid_value') [operation_id='feedSocket', field_path=('websocket_transport', 'trust_env'), condition='invalid_value'] protocol_configuration_error
+  environment proxy user without a password ! ProtocolConfigurationError: ProtocolConfigurationError(operation_id='feedSocket', call_id='<call>', condition='invalid_value') [operation_id='feedSocket', field_path=('websocket_transport', 'trust_env'), condition='invalid_value'] protocol_configuration_error
   async connected 101 'chat.v2'
     1 text ServerMessage{'kind': 'joined', 'user': 'ann'} raw=b'{"kind": "joined", "user": "ann"}'
     async iterated 2 text ServerMessage{'kind': 'said', 'text': 'BYE'} raw=b'{"kind": "said", "text": "BYE"}'

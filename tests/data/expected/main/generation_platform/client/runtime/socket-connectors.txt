@@ -7,6 +7,11 @@
   proxy URL without a host ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('proxy',), condition='invalid_value'] protocol_configuration_error
   proxy URL with a bad port ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('proxy',), condition='invalid_value'] protocol_configuration_error
   proxy URL of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('proxy',), condition='invalid_value'] protocol_configuration_error
+  proxy URL with a path ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('proxy',), condition='invalid_value'] protocol_configuration_error
+  proxy URL with a query ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('proxy',), condition='invalid_value'] protocol_configuration_error
+  proxy URL with a fragment ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('proxy',), condition='invalid_value'] protocol_configuration_error
+  proxy user without a password ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('proxy',), condition='invalid_value'] protocol_configuration_error
+  proxy URL with a slash WebSocketTransportOptions(ssl_context=UNSET, proxy_ssl_context=UNSET, trust_env=UNSET)
   proxy TLS context without an HTTPS proxy ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('proxy_ssl_context',), condition='invalid_value'] protocol_configuration_error
   proxy TLS context with an HTTPS proxy True
   TLS context of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('ssl_context',), condition='invalid_value'] protocol_configuration_error

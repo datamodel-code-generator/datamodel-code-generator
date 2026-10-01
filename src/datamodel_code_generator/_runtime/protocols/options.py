@@ -251,17 +251,31 @@ def _context(value: object, name: str) -> None:
     _instance(value, (SSLContext,), name)
 
 
-def _proxy(value: object) -> None:
-    if value is None or isinstance(value, Unset):
-        return
-    from urllib.parse import urlsplit  # noqa: PLC0415 - Only a given proxy is parsed.
+def valid_proxy(value: object) -> bool:
+    """Return whether a value is a proxy URL the WebSocket library accepts, of the HTTP or HTTPS scheme.
+
+    It has a host and a nonzero port, a path of at most a slash, no query or fragment, and a password with any user.
+    """
+    from urllib.parse import urlparse  # noqa: PLC0415 - Only a given proxy is parsed.
 
     try:
-        parts = urlsplit(value) if isinstance(value, str) else None
-        valid = parts is not None and parts.scheme in _PROXY_SCHEMES and bool(parts.hostname) and parts.port != 0
+        parts = urlparse(value) if isinstance(value, str) else None
+        return (
+            parts is not None
+            and parts.scheme in _PROXY_SCHEMES
+            and bool(parts.hostname)
+            and parts.port != 0
+            and parts.path in {"", "/"}
+            and not parts.query
+            and not parts.fragment
+            and (parts.username is None or parts.password is not None)
+        )
     except ValueError:
-        valid = False
-    if not valid:
+        return False
+
+
+def _proxy(value: object) -> None:
+    if value is not None and not isinstance(value, Unset) and not valid_proxy(value):
         raise ProtocolConfigurationError(field_path=("proxy",), condition="invalid_value")
 
 
