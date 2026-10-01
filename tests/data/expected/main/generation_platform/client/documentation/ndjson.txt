@@ -243,8 +243,8 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
 `client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.
 An NDJSON helper's `open` sends its operation in a session of its own and returns an event stream once the
 response is a declared success; the stream reads only the bytes each event needs, and `close()` or `aclose()` releases
-the response. See the runtime reference for
-their limits.
+the response.
+See the runtime reference for their limits.
 
 ```json
 [

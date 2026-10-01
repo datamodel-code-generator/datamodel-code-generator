@@ -432,8 +432,8 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
 An SSE or NDJSON helper's `open` sends its operation in a session of its own and returns an event stream once the
 response is a declared success; the stream reads only the bytes each event needs, and `close()` or `aclose()` releases
 the response. A helper that declares `resume` also has `resume`, which reopens a stream after its
-`checkpoint()`, and its streams reconnect when `StreamOptions(reconnect=True)`. See the runtime reference for
-their limits.
+`checkpoint()`, and its streams reconnect when `StreamOptions(reconnect=True)`.
+See the runtime reference for their limits.
 
 ```json
 [
