@@ -566,6 +566,7 @@ def _refusals(resumes: _Resumes, api: Any) -> None:
         ("a saved cookie", _replaced(state, arguments=[[], [], ["c"]])),
         ("negative sequence", _replaced(state, sequence=-1)),
         ("retry time over its limit", _replaced(state, retry_ms=10**18)),
+        ("cursor the reopen cannot encode", _replaced(state, cursor="5 ")),
     ):
         record(lines, f"resume {label}", lambda saved=saved: helper.resume(_crafted(harness, state, saved)))
     record(lines, "resume a payload", lambda: helper.resume(_crafted(harness, state, payload=b"x")))

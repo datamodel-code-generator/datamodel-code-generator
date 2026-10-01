@@ -377,6 +377,7 @@ refusals
   resume a saved cookie ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   resume negative sequence ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   resume retry time over its limit ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  resume cursor the reopen cannot encode ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   resume a payload ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   retry of NDJSON ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   object cursor ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
