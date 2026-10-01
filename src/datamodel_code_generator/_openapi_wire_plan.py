@@ -878,12 +878,24 @@ class ParameterViewPlan:
 
 
 def parameter_view(
-    batch: GeneratedTypeContractBatch, version: str, operation: OperationContract, declaration: WireDeclaration
+    version: str,
+    operation: OperationContract,
+    declaration: WireDeclaration,
+    plans: Iterable[ParameterPlan],
+    auth: Iterable[tuple[object, str]],
 ) -> ParameterViewPlan:
-    """Return one declaration's effective style, explode, and content facts and the names others own."""
+    """Return one declaration's effective style, explode, and content facts and the names others own.
+
+    The names others own are the operation's other declared names, its apiKey names, and the members the effective
+    `plans` of its other parameters expand to, so an adapted neighbor reserves its own name only.
+    """
     plan = _declared(declaration)
     location, name = plan.location, plan.name
-    names = [*((_fact(item, "in"), item.name or "") for item in operation.parameters), *_auth_names(batch, operation)]
+    names = [
+        *((_fact(item, "in"), item.name or "") for item in operation.parameters),
+        *auth,
+        *((other.location, field.name) for other in plans if _spread(other) for field in other.fields),
+    ]
     return ParameterViewPlan(
         location=location,
         name=name,
@@ -993,7 +1005,8 @@ def _requirement_names(value: FrozenLiteral | None) -> list[str]:
             return []
 
 
-def _auth_names(batch: GeneratedTypeContractBatch, operation: OperationContract) -> list[tuple[object, str]]:
+def auth_names(batch: GeneratedTypeContractBatch, operation: OperationContract) -> list[tuple[object, str]]:
+    """Return the locations and names of the apiKey credentials the operation's security requirements send."""
     document = (
         operation.declaration.location.document if operation.security_declared else operation.id.use_site.document
     )
@@ -1010,10 +1023,6 @@ def _auth_names(batch: GeneratedTypeContractBatch, operation: OperationContract)
 
 def _spread(plan: ParameterPlan) -> bool:
     return plan.shape == "object" and plan.explode and plan.style in {"form", "cookie"}
-
-
-def _deep(plan: ParameterPlan) -> bool:
-    return plan.style == "deepObject" and not isinstance(plan, AdaptedParameterPlan)
 
 
 def _claimed(plans: Sequence[ParameterPlan], location: str) -> list[str]:
@@ -1037,25 +1046,24 @@ def _reserving(plan: ParameterPlan, plans: list[ParameterPlan]) -> ParameterPlan
 
 def _parameters(planner: _WirePlanner, operation: OperationContract) -> tuple[ParameterPlan, ...]:
     declarations = operation.parameters
-    auth = _auth_names(planner.batch, operation)
+    auth = auth_names(planner.batch, operation)
     names = [*((_fact(item, "in"), item.name or "") for item in declarations), *auth]
     plans = [
         plan
         for declaration in declarations
         if (plan := _planned(planner, operation.id, declaration, names)) is not None
     ]
-    planner.diagnostics.extend(parameter_collisions(planner.batch, operation, plans))
+    planner.diagnostics.extend(parameter_collisions(operation, plans, auth))
     return tuple(_reserving(plan, plans) for plan in plans)
 
 
 def parameter_collisions(
-    batch: GeneratedTypeContractBatch, operation: OperationContract, plans: Sequence[ParameterPlan]
+    operation: OperationContract, plans: Sequence[ParameterPlan], auth: Sequence[tuple[object, str]]
 ) -> tuple[CodecDiagnostic, ...]:
-    """Report each location whose expanded parameter names or apiKey names collide.
+    """Report each location whose expanded parameter names or the `auth` apiKey names collide.
 
     A parameter a registered adapter carries claims its own name only, however its declaration would expand.
     """
-    auth = _auth_names(batch, operation)
     found: list[CodecDiagnostic] = []
     for location in ("query", "header", "cookie"):
         claimed = [
@@ -1068,7 +1076,7 @@ def parameter_collisions(
         if (
             len(set(claimed)) != len(claimed)
             or len(absorbing) > 1
-            or (absorbing and any(plan.location == location and _deep(plan) for plan in plans))
+            or (absorbing and any(plan.location == location and plan.style == "deepObject" for plan in plans))
         ):
             source = next(item.use_site for item in operation.parameters if _fact(item, "in") == location)
             found.append(

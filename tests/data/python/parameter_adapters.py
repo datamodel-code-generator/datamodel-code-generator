@@ -86,6 +86,34 @@ class JsonParameter(_Adapter):
             raise public.ParameterEncodingError(msg) from error
 
 
+class Members(JsonParameter):
+    """Send each member of a query object under its own name, as the builtin exploded form does, for refusal."""
+
+    def encode_parameter(self, *, value: object, plan: object, context: object) -> object:  # noqa: ARG002
+        """Return one fragment per member, named after the member instead of the parameter."""
+        public = _public(plan)
+        fragments = tuple(
+            public.ParameterFragment(name=quote(name, safe="").encode(), value=quote(str(item), safe="").encode())
+            for name, item in public.thaw_wire(value).items()
+        )
+        return public.FragmentContribution(location=plan.location, ordered_fragments=fragments)
+
+
+class Brackets(JsonParameter):
+    """Send each member of a deepObject query object as `name[member]`, as the builtin deepObject form does."""
+
+    def encode_parameter(self, *, value: object, plan: object, context: object) -> object:  # noqa: ARG002
+        """Return one fragment per member, named after the parameter and the member."""
+        public = _public(plan)
+        fragments = tuple(
+            public.ParameterFragment(
+                name=quote(f"{plan.name}[{name}]", safe="").encode(), value=quote(str(item), safe="").encode()
+            )
+            for name, item in public.thaw_wire(value).items()
+        )
+        return public.FragmentContribution(location=plan.location, ordered_fragments=fragments)
+
+
 class RawText(_Adapter):
     """Carry one string parameter's UTF-8 bytes as given, which the runtime checks at the HTTP boundary."""
 
@@ -124,6 +152,16 @@ def json_query() -> JsonParameter:
 def json_options() -> JsonParameter:
     """Carry a form query object whose builtin expansion would take the name of another query parameter."""
     return JsonParameter(locations=("query",), styles=("form",), explode_values=(True,), value_kinds=("object",))
+
+
+def brackets() -> Brackets:
+    """Send a deepObject query object's members under the parameter's bracketed names, which the runtime accepts."""
+    return Brackets(locations=("query",), styles=("deepObject",), explode_values=(True,), value_kinds=("object",))
+
+
+def members() -> Members:
+    """Send a form query object's members under their own names, which the runtime refuses."""
+    return Members(locations=("query",), styles=("form",), explode_values=(True,), value_kinds=("object",))
 
 
 def json_header() -> JsonParameter:

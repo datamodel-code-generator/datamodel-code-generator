@@ -9,9 +9,9 @@
     [host: api.example.com, accept-encoding: gzip, deflate] b''
   adapted path = None
   empty header array ! RequestEncodingError: RequestEncodingError(operation_id='listTags', call_id='<call>', location='header.X-Labels') [operation_id='listTags', location=('header', 'X-Labels'), cause=ParameterEncodingError('The X-Labels parameter adapter cannot encode an empty array or object')] request_encoding_error
-  > GET https://api.example.com/search?opts=%7B%22a%22%3A%22x%22%7D&a=y
+  > GET https://api.example.com/search?opts=%7B%22a%22%3A%22x%22%7D&a=y&near%5Bb%5D=x%20y
     [host: api.example.com, accept-encoding: gzip, deflate] b''
-  adapted object beside a member's name = None
+  adapted objects beside a member's name = None
   path segment '.' ! CodecAdapterError: A parameter adapter returned a path fragment outside its syntax or ownership []
   path segment '..' ! CodecAdapterError: A parameter adapter returned a path fragment outside its syntax or ownership []
   path segment '%2e' ! CodecAdapterError: A parameter adapter returned a path fragment outside its syntax or ownership []
@@ -30,6 +30,7 @@
   > GET https://api.example.com/segments/a.b
     [host: api.example.com, accept-encoding: gzip, deflate, x-raw: a	b] b''
   header value 'a\tb' = None
+  query member names ! CodecAdapterError: A parameter adapter returned a query fragment outside its syntax or ownership []
   > GET https://api.example.com/finds?%7B%22term%22%3A%22a%22%2C%22start%22%3A4%7D
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   adapted querystring = [Item(id='1')]

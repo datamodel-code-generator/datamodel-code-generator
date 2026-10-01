@@ -28,6 +28,7 @@ from datamodel_code_generator._openapi_wire_plan import (
     CodecDiagnostic,
     CodecReason,
     ParameterViewPlan,
+    auth_names,
     parameter_collisions,
     parameter_plans,
     parameter_view,
@@ -476,11 +477,13 @@ class _AdapterPlanner:
         wire: WirePlan,
         bindings: Mapping[TypeUseId, UseBinding],
         lease: SourceLease | None,
+        adapted: frozenset[TypeUseId],
     ) -> None:
         self.batch = batch
         self.wire = wire
         self.bindings = bindings
         self.lease = lease
+        self.adapted = adapted
         self.uses: dict[TypeUseId, TypeUseBinding] = {use.id: use for use in batch.type_uses}
         self.logical = dict(wire.documents)
         self.documents = {resource.uri: resource.contents for resource in wire.resources}
@@ -602,7 +605,8 @@ class _AdapterPlanner:
         operation: OperationContract,
         declaration: WireDeclaration,
     ) -> ParameterViewPlan:
-        plan = parameter_view(self.batch, self.wire.version, operation, declaration)
+        plans = parameter_plans(self.wire, (operation,), self.adapted)[operation.id].values()
+        plan = parameter_view(self.wire.version, operation, declaration, plans, auth_names(self.batch, operation))
         kinds = _kinds(self.resolved(use)[1])
         gaps = (
             plan.location not in capabilities.locations,
@@ -707,7 +711,7 @@ def plan_adapters(
     lease: SourceLease | None,
 ) -> tuple[tuple[AdapterPlan, ...], tuple[CodecDiagnostic, ...]]:
     """Check each selected adapter's capabilities against its use and build its data-only views."""
-    planner = _AdapterPlanner(batch, wire, bindings, lease)
+    planner = _AdapterPlanner(batch, wire, bindings, lease, selection.uses("parameter"))
     plans = tuple(
         plan
         for (kind, use), registration in selection.chosen.items()
@@ -765,8 +769,9 @@ def _collisions(
     replaced: set[CodecDiagnostic] = set()
     added: list[CodecDiagnostic] = []
     for operation in operations:
-        before = set(parameter_collisions(batch, operation, builtin.get(operation.id, ())))
-        after = parameter_collisions(batch, operation, tuple(effective[operation.id].values()))
+        auth = auth_names(batch, operation)
+        before = set(parameter_collisions(operation, builtin.get(operation.id, ()), auth))
+        after = parameter_collisions(operation, tuple(effective[operation.id].values()), auth)
         replaced.update(before.difference(after))
         added.extend(item for item in after if item not in before)
     return frozenset(replaced), tuple(added)

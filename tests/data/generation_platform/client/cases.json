@@ -2618,6 +2618,62 @@
               "name": "opts"
             }
           ]
+        },
+        {
+          "kind": "parameter",
+          "name": "members",
+          "import_ref": "tests.data.python.parameter_adapters:members",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "query"
+            ],
+            "styles": [
+              "form"
+            ],
+            "explode_values": [
+              true
+            ],
+            "value_kinds": [
+              "object"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1spread/get",
+              "role": "parameter",
+              "location": "query",
+              "name": "opts"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "brackets",
+          "import_ref": "tests.data.python.parameter_adapters:brackets",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "query"
+            ],
+            "styles": [
+              "deepObject"
+            ],
+            "explode_values": [
+              true
+            ],
+            "value_kinds": [
+              "object"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1search/get",
+              "role": "parameter",
+              "location": "query",
+              "name": "near"
+            }
+          ]
         }
       ]
     },
@@ -2872,6 +2928,62 @@
               "role": "parameter",
               "location": "query",
               "name": "opts"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "members",
+          "import_ref": "tests.data.python.parameter_adapters:members",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "query"
+            ],
+            "styles": [
+              "form"
+            ],
+            "explode_values": [
+              true
+            ],
+            "value_kinds": [
+              "object"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1spread/get",
+              "role": "parameter",
+              "location": "query",
+              "name": "opts"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "brackets",
+          "import_ref": "tests.data.python.parameter_adapters:brackets",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "query"
+            ],
+            "styles": [
+              "deepObject"
+            ],
+            "explode_values": [
+              true
+            ],
+            "value_kinds": [
+              "object"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1search/get",
+              "role": "parameter",
+              "location": "query",
+              "name": "near"
             }
           ]
         }

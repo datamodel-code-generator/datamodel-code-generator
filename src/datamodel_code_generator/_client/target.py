@@ -257,7 +257,12 @@ class _TargetData:
         self.wire = wire
         self.bindings = dict(codecs.bindings)
         self.adapters = {
-            item.use: (item.registration.name, item.registration.import_ref, item.registration.capabilities)
+            item.use: (
+                item.registration.name,
+                item.registration.import_ref,
+                item.registration.capabilities,
+                item.parameter,
+            )
             for item in codecs.adapters
             if item.parameter is not None
         }

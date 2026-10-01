@@ -58,3 +58,44 @@ paths:
       responses:
         "204":
           description: No content.
+  /mix:
+    get:
+      parameters:
+        - name: where
+          in: query
+          style: deepObject
+          explode: true
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+        - name: extra
+          in: query
+          schema:
+            type: object
+            additionalProperties:
+              type: string
+      responses:
+        "204":
+          description: No content.
+  /spread:
+    get:
+      parameters:
+        - name: opts
+          in: query
+          schema:
+            type: object
+            properties:
+              b:
+                type: string
+        - name: filter
+          in: query
+          schema:
+            type: object
+            properties:
+              b:
+                type: string
+      responses:
+        "204":
+          description: No content.

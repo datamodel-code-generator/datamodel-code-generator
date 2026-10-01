@@ -67,6 +67,7 @@ def _resources() -> tuple[SchemaResource, ...]:
                         },
                         'Item': {'type': 'object', 'required': ['id'], 'properties': {'id': {'type': 'string'}}},
                         'Key': {'type': 'object', 'required': ['a'], 'properties': {'a': {'type': 'integer'}}},
+                        'Members': {'type': 'object', 'properties': {'b': {'type': 'string'}}},
                         'Options': {'type': 'object', 'properties': {'a': {'type': 'string'}}},
                         'Page': {
                             'type': 'object',
@@ -121,11 +122,20 @@ def _resources() -> tuple[SchemaResource, ...]:
                             'parameters': [
                                 {'schema': {'$ref': 'https://dcg.invalid/inputs/root#/components/schemas/Options'}},
                                 {'schema': {'type': 'string'}},
+                                {'schema': {'$ref': 'https://dcg.invalid/inputs/root#/components/schemas/Members'}},
                             ],
                         },
                     },
                     '/segments/{segment}': {
                         'get': {'parameters': [{'schema': {'type': 'string'}}, {'schema': {'type': 'string'}}]},
+                    },
+                    '/spread': {
+                        'get': {
+                            'parameters': [
+                                {'schema': {'$ref': 'https://dcg.invalid/inputs/root#/components/schemas/Members'}},
+                                {'schema': {'$ref': 'https://dcg.invalid/inputs/root#/components/schemas/Members'}},
+                            ],
+                        },
                     },
                     '/tags': {
                         'get': {
@@ -144,6 +154,7 @@ def _resources() -> tuple[SchemaResource, ...]:
                 '/components/schemas/Filter',
                 '/components/schemas/Item',
                 '/components/schemas/Key',
+                '/components/schemas/Members',
                 '/components/schemas/Options',
                 '/components/schemas/Page',
                 '/components/schemas/Tags',
@@ -152,8 +163,11 @@ def _resources() -> tuple[SchemaResource, ...]:
                 '/paths/~1items~1{key}/get/parameters/0/schema',
                 '/paths/~1search/get/parameters/0/schema',
                 '/paths/~1search/get/parameters/1/schema',
+                '/paths/~1search/get/parameters/2/schema',
                 '/paths/~1segments~1{segment}/get/parameters/0/schema',
                 '/paths/~1segments~1{segment}/get/parameters/1/schema',
+                '/paths/~1spread/get/parameters/0/schema',
+                '/paths/~1spread/get/parameters/1/schema',
                 '/paths/~1tags/get/parameters/0/schema',
                 '/paths/~1tags/get/parameters/1/schema',
                 '/paths/~1tags/get/parameters/2/schema',
@@ -244,6 +258,18 @@ def request_registry() -> BundleSchemaRegistry:
                 source=CodecSourceRef(document='/inputs/root', pointer='/paths/~1search/get/parameters/0/schema'),
                 dialect='https://json-schema.org/draft/2020-12/schema',
                 raw=freeze_wire({'$ref': '#/components/schemas/Options'}),
+            ),
+            SchemaSource(
+                schema_id='https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/2/schema',
+                source=CodecSourceRef(document='/inputs/root', pointer='/paths/~1search/get/parameters/2/schema'),
+                dialect='https://json-schema.org/draft/2020-12/schema',
+                raw=freeze_wire({'$ref': '#/components/schemas/Members'}),
+            ),
+            SchemaSource(
+                schema_id='https://dcg.invalid/inputs/root#/paths/~1spread/get/parameters/0/schema',
+                source=CodecSourceRef(document='/inputs/root', pointer='/paths/~1spread/get/parameters/0/schema'),
+                dialect='https://json-schema.org/draft/2020-12/schema',
+                raw=freeze_wire({'$ref': '#/components/schemas/Members'}),
             ),
         ),
     )
@@ -519,6 +545,29 @@ def _model_12() -> ModelBinding:
 
 
 @cache
+def _model_13() -> ModelBinding:
+    return ModelBinding(
+        symbol='models:Members',
+        native_kind='model',
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Members',
+        fields=(
+            FieldBinding(
+                field_id='models:Members.b',
+                native_name='b',
+                wire_name='b',
+                validation_key='b',
+                validation_keys=('b',),
+                required=False,
+                read_only=False,
+                write_only=False,
+                omit_none=True,
+                type=LeafNode(),
+            ),
+        ),
+    )
+
+
+@cache
 def _factory_0() -> ParameterCodecAdapterV1:
     return tests_data_python_parameter_adapters.json_cookie()
 
@@ -556,6 +605,16 @@ def _factory_6() -> ParameterCodecAdapterV1:
 @cache
 def _factory_7() -> ParameterCodecAdapterV1:
     return tests_data_python_parameter_adapters.json_options()
+
+
+@cache
+def _factory_8() -> ParameterCodecAdapterV1:
+    return tests_data_python_parameter_adapters.members()
+
+
+@cache
+def _factory_9() -> ParameterCodecAdapterV1:
+    return tests_data_python_parameter_adapters.brackets()
 
 
 CONTEXT_0: Final = CodecContext(
@@ -1454,7 +1513,7 @@ def parameter_9() -> AdapterParameterCodec:
             allow_reserved=False,
             allow_empty_value=False,
             content_media_type=None,
-            reserved_names=('a',),
+            reserved_names=('a', 'near'),
         ),
         adapter=_factory_7(),
     )
@@ -1495,3 +1554,248 @@ def codec_10() -> PydanticModelCodec[models.FieldSearchGetQueryAParameter]:
 @cache
 def outbound_10() -> NativeOutboundCodec[models.FieldSearchGetQueryAParameter]:
     return NativeOutboundCodec(codec_10(), CONTEXT_10)
+
+
+CONTEXT_11: Final = CodecContext(
+    surface='client',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/2/schema',
+    operation_id='/paths/~1search/get',
+)
+
+
+@cache
+def codec_11() -> PydanticModelCodec[models.Members]:
+    """Codec of /paths/~1search/get parameter (request query near)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/components/schemas/Members|ModelNode(symbol='models:Members')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/2/schema',
+            operation_id='/paths/~1search/get',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='model',
+            native_export='models:Members',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='models:Members'),
+            models=(_model_13(),),
+        ),
+        models.Members,
+        {'models:Members': models.Members},
+        request_bundle,
+    )
+
+
+@cache
+def outbound_11() -> NativeOutboundCodec[models.Members]:
+    return NativeOutboundCodec(codec_11(), CONTEXT_11)
+
+
+@cache
+def parameter_11() -> AdapterParameterCodec:
+    return AdapterParameterCodec(
+        manifest=AdapterManifest(
+            name='brackets',
+            import_ref='tests.data.python.parameter_adapters:brackets',
+            capabilities=ParameterCodecCapabilities(
+                locations=('query',),
+                styles=('deepObject',),
+                explode_values=(True,),
+                value_kinds=('object',),
+            ),
+        ),
+        plan=ParameterPlanView(
+            binding=CodecBindingView(
+                binding_id="https://dcg.invalid/inputs/root#/components/schemas/Members|ModelNode(symbol='models:Members')",
+                use=CodecUseView(
+                    owner_kind='operation',
+                    owner=CodecSourceRef(document='/inputs/root', pointer='/paths/~1search/get'),
+                    role='parameter',
+                    use_site=CodecSourceRef(document='/inputs/root', pointer='/paths/~1search/get/parameters/2'),
+                    schema=CodecSourceRef(document='/inputs/root', pointer='/paths/~1search/get/parameters/2/schema'),
+                    declaration=CodecSourceRef(document='/inputs/root', pointer='/paths/~1search/get/parameters/2'),
+                    direction='request',
+                    projection='value',
+                    location='query',
+                    name='near',
+                    status=None,
+                    media=None,
+                ),
+                schema=request_registry().get('https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/2/schema'),
+                backend='pydantic_v2.BaseModel',
+                native_kind='model',
+                native_export=ModelExportView(module='models', symbol='Members'),
+                fields=(
+                    CodecFieldView(
+                        field_id='models:Members.b',
+                        native_name='b',
+                        wire_name='b',
+                        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Members/properties/b',
+                        validation_paths=(('b',),),
+                        serialization_alias=None,
+                        required=False,
+                        read_only=False,
+                        write_only=False,
+                        default_kind='none',
+                        excluded=None,
+                    ),
+                ),
+                projection_mode='native',
+                converter_strategy='pydantic_type_adapter',
+            ),
+            location='query',
+            name='near',
+            oas_version='3.2.0',
+            style='deepObject',
+            explode=True,
+            required=False,
+            allow_reserved=False,
+            allow_empty_value=False,
+            content_media_type=None,
+            reserved_names=('a', 'opts'),
+        ),
+        adapter=_factory_9(),
+    )
+
+
+CONTEXT_12: Final = CodecContext(
+    surface='client',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1spread/get/parameters/0/schema',
+    operation_id='/paths/~1spread/get',
+)
+
+
+@cache
+def codec_12() -> PydanticModelCodec[models.Members]:
+    """Codec of /paths/~1spread/get parameter (request query opts)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/components/schemas/Members|ModelNode(symbol='models:Members')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1spread/get/parameters/0/schema',
+            operation_id='/paths/~1spread/get',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='model',
+            native_export='models:Members',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='models:Members'),
+            models=(_model_13(),),
+        ),
+        models.Members,
+        {'models:Members': models.Members},
+        request_bundle,
+    )
+
+
+@cache
+def outbound_12() -> NativeOutboundCodec[models.Members]:
+    return NativeOutboundCodec(codec_12(), CONTEXT_12)
+
+
+@cache
+def parameter_12() -> AdapterParameterCodec:
+    return AdapterParameterCodec(
+        manifest=AdapterManifest(
+            name='members',
+            import_ref='tests.data.python.parameter_adapters:members',
+            capabilities=ParameterCodecCapabilities(
+                locations=('query',),
+                styles=('form',),
+                explode_values=(True,),
+                value_kinds=('object',),
+            ),
+        ),
+        plan=ParameterPlanView(
+            binding=CodecBindingView(
+                binding_id="https://dcg.invalid/inputs/root#/components/schemas/Members|ModelNode(symbol='models:Members')",
+                use=CodecUseView(
+                    owner_kind='operation',
+                    owner=CodecSourceRef(document='/inputs/root', pointer='/paths/~1spread/get'),
+                    role='parameter',
+                    use_site=CodecSourceRef(document='/inputs/root', pointer='/paths/~1spread/get/parameters/0'),
+                    schema=CodecSourceRef(document='/inputs/root', pointer='/paths/~1spread/get/parameters/0/schema'),
+                    declaration=CodecSourceRef(document='/inputs/root', pointer='/paths/~1spread/get/parameters/0'),
+                    direction='request',
+                    projection='value',
+                    location='query',
+                    name='opts',
+                    status=None,
+                    media=None,
+                ),
+                schema=request_registry().get('https://dcg.invalid/inputs/root#/paths/~1spread/get/parameters/0/schema'),
+                backend='pydantic_v2.BaseModel',
+                native_kind='model',
+                native_export=ModelExportView(module='models', symbol='Members'),
+                fields=(
+                    CodecFieldView(
+                        field_id='models:Members.b',
+                        native_name='b',
+                        wire_name='b',
+                        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Members/properties/b',
+                        validation_paths=(('b',),),
+                        serialization_alias=None,
+                        required=False,
+                        read_only=False,
+                        write_only=False,
+                        default_kind='none',
+                        excluded=None,
+                    ),
+                ),
+                projection_mode='native',
+                converter_strategy='pydantic_type_adapter',
+            ),
+            location='query',
+            name='opts',
+            oas_version='3.2.0',
+            style='form',
+            explode=True,
+            required=False,
+            allow_reserved=False,
+            allow_empty_value=False,
+            content_media_type=None,
+            reserved_names=('b', 'filter'),
+        ),
+        adapter=_factory_8(),
+    )
+
+
+CONTEXT_13: Final = CodecContext(
+    surface='client',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1spread/get/parameters/1/schema',
+    operation_id='/paths/~1spread/get',
+)
+
+
+@cache
+def codec_13() -> PydanticModelCodec[models.Members]:
+    """Codec of /paths/~1spread/get parameter (request query filter)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/components/schemas/Members|ModelNode(symbol='models:Members')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1spread/get/parameters/1/schema',
+            operation_id='/paths/~1spread/get',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='model',
+            native_export='models:Members',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='models:Members'),
+            models=(_model_13(),),
+        ),
+        models.Members,
+        {'models:Members': models.Members},
+        request_bundle,
+    )
+
+
+@cache
+def outbound_13() -> NativeOutboundCodec[models.Members]:
+    return NativeOutboundCodec(codec_13(), CONTEXT_13)

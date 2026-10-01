@@ -454,13 +454,10 @@ def _parameters(
             if plan.required:
                 raise _encoding_error(operation, (plan.location, plan.name))
             continue
+        bound = None if (adapter := spec.adapter) is None else (adapter[0](), adapter[1])
         try:
             wire = spec.encode(value, mode)
-            if (adapter := spec.adapter) is None:
-                contribution = encode_parameter(plan, wire)
-            else:
-                get, context = adapter
-                contribution = get().encode(wire, context)
+            contribution = encode_parameter(plan, wire) if bound is None else bound[0].encode(wire, bound[1])
             request.add(contribution, plan.name)
         except (*DATA_ERRORS, ValueError, TypeError) as error:
             raise _encoding_error(operation, (plan.location, plan.name), error) from None

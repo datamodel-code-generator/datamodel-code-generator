@@ -15,6 +15,7 @@ from ._runtime.client.operations import (
     empty_branch,
     model_branch,
 )
+from ._runtime.model_codecs.media import FieldPlan
 from ._runtime.model_codecs.parameters import AdaptedParameterPlan, ParameterPlan
 from .types.default import (
     FindErrorData,
@@ -33,6 +34,9 @@ from .types.default import (
     SearchErrorData,
     SearchHTTPError,
     SearchResponse,
+    SpreadErrorData,
+    SpreadHTTPError,
+    SpreadResponse,
 )
 
 _SERVERS_0: Final = (ServerPlan(url='https://api.example.com'),)
@@ -180,9 +184,52 @@ OPERATION_4: Final[OperationPlan[SearchResponse, SearchErrorData]] = OperationPl
                 name='a',
                 style='form',
                 explode=True,
-                reserved_names=('opts',),
+                reserved_names=('near', 'opts'),
             ),
             encoder=Encoder(model_bindings.codec_10, model_bindings.CONTEXT_10),
+        ),
+        ParameterSpec(
+            plan=AdaptedParameterPlan(
+                location='query',
+                name='near',
+                style='deepObject',
+                explode=True,
+            ),
+            encoder=Encoder(model_bindings.codec_11, model_bindings.CONTEXT_11),
+            adapter=(model_bindings.parameter_11, model_bindings.CONTEXT_11),
+        ),
+    ),
+)
+
+OPERATION_5: Final[OperationPlan[SpreadResponse, SpreadErrorData]] = OperationPlan(
+    operation_id='spread',
+    method='GET',
+    path='/spread',
+    servers=_SERVERS_0,
+    responses=ResponseDecoder((empty_branch('204'),), (), SpreadHTTPError),
+    parameters=(
+        ParameterSpec(
+            plan=AdaptedParameterPlan(
+                location='query',
+                name='opts',
+                style='form',
+                explode=True,
+            ),
+            encoder=Encoder(model_bindings.codec_12, model_bindings.CONTEXT_12),
+            adapter=(model_bindings.parameter_12, model_bindings.CONTEXT_12),
+        ),
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='query',
+                name='filter',
+                style='form',
+                explode=True,
+                shape='object',
+                fields=(FieldPlan('b', 'string'),),
+                additional=FieldPlan('', 'string'),
+                reserved_names=('opts',),
+            ),
+            encoder=Encoder(model_bindings.codec_13, model_bindings.CONTEXT_13),
         ),
     ),
 )

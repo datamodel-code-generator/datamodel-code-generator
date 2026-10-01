@@ -4,4 +4,5 @@
   default.get_item same ['response', 'security', 'signature'] different ['request']
   default.get_segment same ['request', 'response', 'security', 'signature'] different []
   default.find same ['request', 'response', 'security', 'signature'] different []
-  default.search same ['request', 'response', 'security', 'signature'] different []
+  default.search same ['response', 'security', 'signature'] different ['request']
+  default.spread same ['request', 'response', 'security', 'signature'] different []

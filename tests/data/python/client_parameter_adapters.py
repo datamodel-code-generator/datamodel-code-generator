@@ -35,6 +35,8 @@ def _arguments(package: ModuleType) -> dict[str, Any]:
         "criteria": criteria.from_wire({"term": "a", "start": 4}),
         "opts": search(location="query", name="opts").from_wire({"a": "x"}),
         "a": search(location="query", name="a").from_wire("y"),
+        "near": search(location="query", name="near").from_wire({"b": "x y"}),
+        "members": codecs.SpreadRequestCodecs.parameter(location="query", name="opts").from_wire({"b": "1"}),
         "segments": {text: segment(location="path", name="segment").from_wire(text) for text in _SEGMENTS},
         "headers": {text: segment(location="header", name="X-Raw").from_wire(text) for text in _HEADERS},
     }
@@ -64,8 +66,8 @@ def parameter_adapters(package: ModuleType, lines: list[str]) -> None:
         record(lines, "empty header array", lambda: api.default.list_tags(x_labels=values["unlabeled"]))
         record(
             lines,
-            "adapted object beside a member's name",
-            lambda: api.default.search(opts=values["opts"], a=values["a"]),
+            "adapted objects beside a member's name",
+            lambda: api.default.search(opts=values["opts"], a=values["a"], near=values["near"]),
         )
         _boundaries(api, values, exchange, lines)
         exchange.respond(_page("1", more=False))
@@ -79,7 +81,7 @@ def parameter_adapters(package: ModuleType, lines: list[str]) -> None:
 
 
 def _boundaries(api: Any, values: dict[str, Any], exchange: Exchange, lines: list[str]) -> None:
-    """Send path segments and header values as an adapter gives them, refusing dot segments and loose header text.
+    """Send path segments, header values, and query names as an adapter gives them, refusing the ones others own.
 
     Only the last two segments and the last header value are sent.
     """
@@ -92,6 +94,7 @@ def _boundaries(api: Any, values: dict[str, Any], exchange: Exchange, lines: lis
             f"header value {text!r}",
             lambda header=header: api.default.get_segment(segment=values["segments"]["a.b"], x_raw=header),
         )
+    record(lines, "query member names", lambda: api.default.spread(opts=values["members"]))
 
 
 async def _async_parameter_adapters(package: ModuleType, values: dict[str, Any], lines: list[str]) -> None:

@@ -91,11 +91,37 @@ paths:
           in: query
           schema:
             type: string
+        - name: near
+          in: query
+          style: deepObject
+          explode: true
+          schema:
+            $ref: "#/components/schemas/Members"
+      responses:
+        "204":
+          description: No content.
+  /spread:
+    get:
+      operationId: spread
+      parameters:
+        - name: opts
+          in: query
+          schema:
+            $ref: "#/components/schemas/Members"
+        - name: filter
+          in: query
+          schema:
+            $ref: "#/components/schemas/Members"
       responses:
         "204":
           description: No content.
 components:
   schemas:
+    Members:
+      type: object
+      properties:
+        b:
+          type: string
     Tags:
       type: array
       items:

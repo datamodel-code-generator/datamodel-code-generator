@@ -30,7 +30,7 @@ render pydantic_v2.BaseModel
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['finds.all'] bindings 11
+  namespace client helpers ['finds.all'] bindings 14
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   helper finds.all pagination enabled True /inputs/target_config/protocol_metadata/helpers/finds.all 18ede05808fd3262356ec97423f07eece8472da3a8d45fe3d7348aa32180f02a
   {
@@ -94,7 +94,10 @@ render pydantic_v2.BaseModel
   /selection/selected_operations/3 default.find(querystring:criteria=criteria)
     exports client.types.default.FindResponse client.types.default.FindErrorData client.types.default.FindHTTPError
     exports client.types.default.FindRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/4 default.search(query:opts=opts, query:a=a)
+  /selection/selected_operations/4 default.search(query:opts=opts, query:a=a, query:near=near)
     exports client.types.default.SearchResponse client.types.default.SearchErrorData client.types.default.SearchHTTPError
     exports client.types.default.SearchRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/5 default.spread(query:opts=opts, query:filter=filter)
+    exports client.types.default.SpreadResponse client.types.default.SpreadErrorData client.types.default.SpreadHTTPError
+    exports client.types.default.SpreadRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

@@ -2,4 +2,5 @@
 render pydantic_v2.BaseModel
   APIGenerationError
   MC_PARAMETER_ENCODING binding /paths/~1kept/get/parameters/0: Expanded query parameter names collide
+  MC_PARAMETER_ENCODING binding /paths/~1mix/get/parameters/0: Expanded query parameter names collide
   MC_PARAMETER_ENCODING binding /paths/~1added/get/parameters/0: Expanded cookie parameter names collide

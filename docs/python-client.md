@@ -1414,6 +1414,25 @@ E_CONFIG_VALUE binding validation.response /paths/~1pets/post/responses/201: The
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.validation.diagnostics -->
 
+### Parameter adapters
+
+A parameter that a registered parameter adapter selects (`codec_adapters`, a `CodecAdapterRegistration` of kind
+`parameter`) is validated against its schema and then encoded by the adapter instead of the builtin OpenAPI style, so
+it can also carry declarations no builtin style can, such as a `form` cookie array with `explode: false`. The client
+checks what the adapter returns before anything is sent:
+
+- A contribution outside its location's syntax or ownership raises `CodecAdapterError`: a path segment that is a dot
+  segment (`.`, `..`, or either spelled with `%2e`), a header value that is not visible ASCII with only spaces or tabs
+  inside it, a query name other than the parameter's own (or `name[member]` for a `deepObject`) or one another
+  parameter owns, and a cookie of another name.
+- An empty array or object the adapter's capabilities exclude, and a `ParameterEncodingError` the adapter raises,
+  raise `RequestEncodingError` with that `ParameterEncodingError` as its cause.
+- The first call that sends the parameter builds the adapter: capabilities that differ from the registration raise
+  `CodecAdapterError`, and an exception the factory raises propagates unchanged.
+
+Pagination helpers that write a page position or a binding into an adapted parameter encode it through the same
+adapter.
+
 ### Cost
 
 `none` and `native` never build the package's schema bundle or import `jsonschema`, which the strict factories still
