@@ -154,6 +154,7 @@
         "append": "\n\n    \"\"\"missing: Optional[str] = None is documentation, not a declaration.\"\"\"\n\n    def _binding_example(self):\n        missing: str = \"local only\"\n        return missing\n\n    class Nested:\n        missing: str = \"nested only\"\n\nclass Unrelated:\n    missing: str = \"unrelated only\"\n"
       }
     ],
+    "rewrites_pin": "#4299: the package ships rewritten models with their old bindings and no diagnostic",
     "rewrites": [
       {
         "render": "pydantic_v2.BaseModel plain",
@@ -324,6 +325,7 @@
         "new": "Meta(\"max_length\"=4)"
       }
     ],
+    "rewrites_pin": "#4299: the package ships rewritten models with their old bindings and no diagnostic",
     "rewrites": [
       {
         "render": "msgspec.Struct annotated",
@@ -585,13 +587,15 @@
         "render": "msgspec.Struct default",
         "id": "unexpected-emission",
         "old": "    pass",
-        "new": "    type: str = 'started'"
+        "new": "    type: str = 'started'",
+        "pins": "#4299: the package keeps its bindings and drops the capture's binding diagnostic"
       },
       {
         "render": "msgspec.Struct default",
         "id": "missing-class",
         "old": "class StartedEvent",
-        "new": "class RenamedEvent"
+        "new": "class RenamedEvent",
+        "pins": "#4299: the package keeps its bindings and drops the capture's binding diagnostic"
       }
     ]
   },
@@ -1170,10 +1174,18 @@
     ]
   },
   "field-ownership-conflict": {
+    "pins": "#4300: the conflicting base order gives an unimportable model and an empty binding; #4299: its BND_FIELD_AMBIGUOUS diagnostic is dropped",
     "source": "generation_platform/binding/field-ownership-conflict.json",
     "backends": [
       "pydantic_v2.BaseModel",
       "typing.TypedDict"
+    ]
+  },
+  "field-ownership-cycle": {
+    "pins": "#4300: cyclic allOf bases give unimportable models and empty bindings; #4299: their BND_FIELD_AMBIGUOUS diagnostic is dropped",
+    "source": "generation_platform/binding/field-ownership-cycle.json",
+    "backends": [
+      "pydantic_v2.BaseModel"
     ]
   },
   "functional-name-collision": {
@@ -1184,6 +1196,7 @@
   },
   "synthetic-origins": {
     "source": "generation_platform/binding/synthetic-origins.json",
+    "rewrites_pin": "#4299: the package ships rewritten models with their old bindings and no diagnostic",
     "rewrites": [
       {
         "render": "pydantic_v2.BaseModel default",

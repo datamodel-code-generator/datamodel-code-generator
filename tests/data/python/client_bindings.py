@@ -18,7 +18,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
 
-import pytest
 import yaml
 
 from tests.data.python.client_generation import render_client
@@ -109,8 +108,8 @@ def _difference(before: list[str], after: list[str]) -> list[str]:
     return changed or ["unchanged"]
 
 
-def _renders(case: dict[str, Any], root: Path) -> Iterator[tuple[str, Callable[..., list[str]], list[str]]]:
-    """Render a case's fixture for each backend and variant, yielding its label, a re-render, and what it ships."""
+def _renders(case: dict[str, Any], root: Path) -> Iterator[tuple[str, Callable[..., list[str]]]]:
+    """Yield the label of each backend and variant of a case, and a function that renders it under a directory."""
     source = _document(DATA / case["source"], root, case.get("skip", []))
     config = {**CLIENT, **case.get("config", {})}
     for count, (backend, (variant, options)) in enumerate(
@@ -124,11 +123,24 @@ def _renders(case: dict[str, Any], root: Path) -> Iterator[tuple[str, Callable[.
         })
 
         def render(
-            name: str, extra: dict[str, Any] | None = None, *, backend: str = backend, model: dict = model
+            name: str,
+            extra: dict[str, Any] | None = None,
+            *,
+            binding_diagnostics: bool = False,
+            backend: str = backend,
+            model: dict = model,
         ) -> list[str]:
-            return _shipped(*render_client(source, root / name, backend, {**model, **(extra or {})}, config))
+            shipped = render_client(
+                source,
+                root / name,
+                backend,
+                {**model, **(extra or {})},
+                config,
+                binding_diagnostics=binding_diagnostics,
+            )
+            return _shipped(*shipped)
 
-        yield f"{backend} {variant}", render, render(str(count))
+        yield f"{count} {backend} {variant}", render
 
 
 def _edits(case: dict[str, Any], key: str) -> dict[str, list[dict[str, str]]]:
@@ -149,7 +161,9 @@ def client_binding_report(case_name: str, root: Path) -> str:
     case = json.loads(CASES.read_text(encoding="utf-8"))[case_name]
     changes = _edits(case, "changes")
     lines: list[str] = []
-    for label, render, shipped in _renders(case, root):
+    for key, render in _renders(case, root):
+        count, label = key.split(" ", 1)
+        shipped = render(count)
         lines.extend((f"render {label}", *(f"  {line}" for line in shipped)))
         for change in changes.pop(label, ()):
             edit = {key: change[key] for key in ("old", "new", "append") if key in change}
@@ -173,15 +187,21 @@ def _rewritten_stage(old: str, new: str) -> Iterator[None]:
         yield
 
 
-@pytest.mark.abnormal_path("another process rewrites the staged models between their generation and their checks")
 def client_binding_rewrite_report(case_name: str, root: Path) -> str:
-    """Render each rewritten render of a fixture again, with its staged models rewritten after generation."""
+    """Render each rewritten render of a fixture again, with its staged models rewritten after generation.
+
+    Both renders also report the diagnostics of the model binding batch, because packages drop them (#4299).
+    """
     case = json.loads(CASES.read_text(encoding="utf-8"))[case_name]
     rewrites = _edits(case, "rewrites")
     lines: list[str] = []
-    for label, render, shipped in _renders(case, root):
-        for rewrite in rewrites.pop(label, ()):
+    for key, render in _renders(case, root):
+        count, label = key.split(" ", 1)
+        if not (selected := rewrites.pop(label, ())):
+            continue
+        shipped = render(count, binding_diagnostics=True)
+        for rewrite in selected:
             with _rewritten_stage(rewrite["old"], rewrite["new"]):
-                edited = render(rewrite["id"])
+                edited = render(rewrite["id"], binding_diagnostics=True)
             lines.extend((f"rewrite {label} {rewrite['id']}", *(f"  {line}" for line in _difference(shipped, edited))))
     return _report(case_name, lines, rewrites, root)

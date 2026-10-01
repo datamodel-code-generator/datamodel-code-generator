@@ -34,6 +34,8 @@ from tests.data.python.codec_declarations import declaration
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
+    from datamodel_code_generator._api_generation import TargetRender, TargetRequest
+
 SOURCE = Path(__file__).parents[1] / "generation_platform" / "client"
 PACKAGE = "client"
 MANIFEST = ".dcg-target-manifest.json"
@@ -242,25 +244,52 @@ def _render(
     return lines
 
 
+class _BindingDiagnosticsTarget(ClientTarget):
+    """Render a client package and keep the binding diagnostics of the batch it renders from."""
+
+    def __init__(self) -> None:
+        self.binding_diagnostics: list[str] = []
+
+    def render(self, request: TargetRequest) -> TargetRender:
+        """Keep the batch's binding diagnostics, then render as the client target does."""
+        self.binding_diagnostics = [
+            " ".join(["binding", item.code, *(f"{key}={value}" for key, value in item.details)])
+            for item in request.batch.diagnostics
+        ]
+        return super().render(request)
+
+
 def render_client(
-    source: Path, root: Path, backend: str, model: Mapping[str, Any], config: Mapping[str, Any]
+    source: Path,
+    root: Path,
+    backend: str,
+    model: Mapping[str, Any],
+    config: Mapping[str, Any],
+    *,
+    binding_diagnostics: bool = False,
 ) -> tuple[list[str], Modules]:
-    """Render a document's client package under a root, returning the refusal or diagnostics and the Python modules."""
+    """Render a document's client package under a root, returning the refusal or diagnostics and the Python modules.
+
+    With binding_diagnostics, the diagnostics also hold those of the model binding batch, which no package shows.
+    """
+    target = _BindingDiagnosticsTarget()
     try:
         project = render_target(
             source,
             model_config=model_config(root / "models.py", backend, model),
             config=client_config(dict(config), root),
-            generator=ClientTarget(),
+            generator=target,
         )
     except APIGenerationError as error:
-        return ["APIGenerationError", *(_diagnostic(item).strip() for item in error.diagnostics)], {}
+        lines = ["APIGenerationError", *(_diagnostic(item).strip() for item in error.diagnostics)]
+        return [*lines, *(target.binding_diagnostics if binding_diagnostics else ())], {}
     modules: Modules = {
         path.parts: (artifact.content or b"").decode()
         for artifact in project.artifacts
         if (path := artifact.path.relative_to(root)).suffix == ".py" and "_runtime" not in path.parts
     }
-    return [_diagnostic(item).strip() for item in project.diagnostics], modules
+    lines = [_diagnostic(item).strip() for item in project.diagnostics]
+    return [*lines, *(target.binding_diagnostics if binding_diagnostics else ())], modules
 
 
 def _manifest(case: dict[str, Any], root: Path) -> tuple[dict[str, Any], bytes]:

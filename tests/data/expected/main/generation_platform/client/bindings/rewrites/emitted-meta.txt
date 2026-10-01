@@ -1,9 +1,13 @@
 # emitted-meta
 rewrite msgspec.Struct annotated nested-meta
-  @@ -30 +30 @@
+  @@ -0,0 +1 @@
+  +diagnostic binding BND_TYPE_EXPRESSION_UNSUPPORTED symbol=4 artifact=models.py
+  @@ -30 +31 @@
   -    nested: Annotated[List[List[NestedItem]], Meta(max_length=4, min_length=1)]
   +    nested: Annotated[List[List[NestedItem]], Meta(max_length=5, min_length=1)]
 rewrite msgspec.Struct annotated number-meta
-  @@ -29 +29 @@
+  @@ -0,0 +1 @@
+  +diagnostic binding BND_TYPE_EXPRESSION_UNSUPPORTED symbol=4 artifact=models.py
+  @@ -29 +30 @@
   -    number: Annotated[float, Meta(ge=1.5, lt=9.75, multiple_of=0.5)]
   +    number: Annotated[float, Meta(ge=1.5, lt=9.5, multiple_of=0.5)]

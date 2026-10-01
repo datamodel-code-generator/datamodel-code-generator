@@ -16,12 +16,22 @@ BINDING_CASES = json.loads(CASES.read_text(encoding="utf-8"))
 
 @pytest.mark.parametrize("case", list(BINDING_CASES))
 def test_client_model_bindings(case: str, tmp_path: Path) -> None:
-    """Ship every model with bindings that match its declarations, and drop the bindings an edited model breaks."""
+    """Report the models and bindings a package ships, and what each formatter edit of the models changes.
+
+    An edit the bindings cannot project drops the field's binding. Cases marked "pins" keep current behaviour that
+    #4299 (binding diagnostics never reach a package) and #4300 (conflicting allOf base order) will change.
+    """
     assert_output(client_binding_report(case, tmp_path), EXPECTED / f"{case}.txt")
 
 
-@pytest.mark.abnormal_path("another process rewrites the staged models between their generation and their checks")
+@pytest.mark.abnormal_path(
+    "another process rewrites the staged models between their generation and their checks; "
+    "the batch diagnostics are read from the render request because packages drop them (#4299)"
+)
 @pytest.mark.parametrize("case", [name for name, case in BINDING_CASES.items() if "rewrites" in case])
 def test_client_model_bindings_rewritten(case: str, tmp_path: Path) -> None:
-    """Report what a package ships when its staged models change after their bindings were captured."""
+    """Report the binding diagnostics and package of models whose staged file changed after capture.
+
+    The package still ships the old bindings without a diagnostic until #4299 is fixed.
+    """
     assert_output(client_binding_rewrite_report(case, tmp_path), EXPECTED / "rewrites" / f"{case}.txt")
