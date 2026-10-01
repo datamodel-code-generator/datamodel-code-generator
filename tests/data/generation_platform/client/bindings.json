@@ -1,0 +1,1248 @@
+{
+  "functional-fields": {
+    "source": "generation_platform/binding/functional-fields.json",
+    "backends": [
+      "typing.TypedDict"
+    ],
+    "model": {
+      "use_frozen_field": true
+    },
+    "variants": {
+      "total": {},
+      "total-false": {
+        "use_total_false_for_typed_dict": true
+      }
+    },
+    "changes": [
+      {
+        "render": "typing.TypedDict total",
+        "id": "missing-symbol",
+        "old": "Payload =",
+        "new": "Other ="
+      },
+      {
+        "render": "typing.TypedDict total",
+        "id": "wrong-callee",
+        "old": "Payload = TypedDict(",
+        "new": "Payload = dict("
+      },
+      {
+        "render": "typing.TypedDict total",
+        "id": "wrong-name",
+        "old": "TypedDict('Payload',",
+        "new": "TypedDict('Other',"
+      },
+      {
+        "render": "typing.TypedDict total",
+        "id": "dynamic-fields",
+        "old": "TypedDict('Payload',",
+        "new": "TypedDict('Payload', fields,"
+      },
+      {
+        "render": "typing.TypedDict total",
+        "id": "dynamic-key",
+        "old": "'ship-to':",
+        "new": "field_key:"
+      },
+      {
+        "render": "typing.TypedDict total",
+        "id": "unpacked-fields",
+        "old": "'': str,",
+        "new": "**other,"
+      },
+      {
+        "render": "typing.TypedDict total",
+        "id": "wrong-key",
+        "old": "'': str,",
+        "new": "'changed': str,"
+      },
+      {
+        "render": "typing.TypedDict total",
+        "id": "missing-entry",
+        "old": "    'class': NotRequired[str],\n"
+      },
+      {
+        "render": "typing.TypedDict total",
+        "id": "wrong-key-type",
+        "old": "'ship-to':",
+        "new": "0:"
+      },
+      {
+        "render": "typing.TypedDict total",
+        "id": "shadowed-callee",
+        "old": "Payload =",
+        "new": "from custom import TypedDict\nPayload ="
+      },
+      {
+        "render": "typing.TypedDict total",
+        "id": "trailing-expression",
+        "old": "NotRequired[str],})",
+        "new": "NotRequired[str],}) or 1"
+      },
+      {
+        "render": "typing.TypedDict total",
+        "id": "unclosed-body",
+        "old": "NotRequired[str],})",
+        "new": "NotRequired[str],}"
+      },
+      {
+        "render": "typing.TypedDict total",
+        "id": "invalid-unicode-key",
+        "old": "'ship-to':",
+        "new": "u'\\uZZZZ':"
+      },
+      {
+        "render": "typing.TypedDict total",
+        "id": "class-declaration",
+        "old": "Payload = TypedDict('Payload', {",
+        "new": "class Payload(TypedDict):\n    ship_to: str\n\n\nPayload = TypedDict('Payload', {"
+      }
+    ]
+  },
+  "emitted-defaults": {
+    "source": "generation_platform/binding/emitted-defaults.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "backend_model": {
+      "pydantic_v2.BaseModel": {
+        "use_missing_sentinel": true
+      }
+    },
+    "variants": {
+      "plain": {},
+      "annotated": {
+        "use_annotated": true,
+        "field_constraints": true
+      }
+    },
+    "changes": [
+      {
+        "render": "pydantic_v2.BaseModel plain",
+        "id": "scope-noise",
+        "append": "\n\n    \"\"\"missing: Optional[str] = None is documentation, not a declaration.\"\"\"\n\n    def _binding_example(self):\n        missing: str = \"local only\"\n        return missing\n\n    class Nested:\n        missing: str = \"nested only\"\n\nclass Unrelated:\n    missing: str = \"unrelated only\"\n"
+      },
+      {
+        "render": "pydantic_v2.dataclass plain",
+        "id": "scope-noise",
+        "append": "\n\n    \"\"\"missing: Optional[str] = None is documentation, not a declaration.\"\"\"\n\n    def _binding_example(self):\n        missing: str = \"local only\"\n        return missing\n\n    class Nested:\n        missing: str = \"nested only\"\n\nclass Unrelated:\n    missing: str = \"unrelated only\"\n"
+      },
+      {
+        "render": "dataclasses.dataclass plain",
+        "id": "scope-noise",
+        "append": "\n\n    \"\"\"missing: Optional[str] = None is documentation, not a declaration.\"\"\"\n\n    def _binding_example(self):\n        missing: str = \"local only\"\n        return missing\n\n    class Nested:\n        missing: str = \"nested only\"\n\nclass Unrelated:\n    missing: str = \"unrelated only\"\n"
+      },
+      {
+        "render": "typing.TypedDict plain",
+        "id": "scope-noise",
+        "append": "\n\n    \"\"\"missing: Optional[str] = None is documentation, not a declaration.\"\"\"\n\n    def _binding_example(self):\n        missing: str = \"local only\"\n        return missing\n\n    class Nested:\n        missing: str = \"nested only\"\n\nclass Unrelated:\n    missing: str = \"unrelated only\"\n"
+      },
+      {
+        "render": "msgspec.Struct plain",
+        "id": "scope-noise",
+        "append": "\n\n    \"\"\"missing: Optional[str] = None is documentation, not a declaration.\"\"\"\n\n    def _binding_example(self):\n        missing: str = \"local only\"\n        return missing\n\n    class Nested:\n        missing: str = \"nested only\"\n\nclass Unrelated:\n    missing: str = \"unrelated only\"\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel plain",
+        "id": "PydanticV2BaseModel-quote",
+        "old": "'enabled'",
+        "new": "\"enabled\""
+      },
+      {
+        "render": "pydantic_v2.BaseModel plain",
+        "id": "PydanticV2BaseModel-literal",
+        "old": " = 4",
+        "new": " = 5"
+      },
+      {
+        "render": "pydantic_v2.BaseModel plain",
+        "id": "PydanticV2BaseModel-factory",
+        "old": "default_factory=list",
+        "new": "default_factory=set"
+      },
+      {
+        "render": "pydantic_v2.BaseModel plain",
+        "id": "PydanticV2BaseModel-explicit_null",
+        "old": "explicit_null: Optional[str] = None",
+        "new": "explicit_null: Optional[str] = \"value\""
+      },
+      {
+        "render": "pydantic_v2.BaseModel plain",
+        "id": "PydanticV2BaseModel-model",
+        "old": "class Defaults(BaseModel):",
+        "new": "class Defaults(Other):"
+      },
+      {
+        "render": "pydantic_v2.dataclass plain",
+        "id": "PydanticV2Dataclass-quote",
+        "old": "'enabled'",
+        "new": "\"enabled\""
+      },
+      {
+        "render": "pydantic_v2.dataclass plain",
+        "id": "PydanticV2Dataclass-literal",
+        "old": " = 4",
+        "new": " = 5"
+      },
+      {
+        "render": "pydantic_v2.dataclass plain",
+        "id": "PydanticV2Dataclass-factory",
+        "old": "default_factory=list",
+        "new": "default_factory=set"
+      },
+      {
+        "render": "pydantic_v2.dataclass plain",
+        "id": "PydanticV2Dataclass-explicit_null",
+        "old": "explicit_null: Optional[str] = None",
+        "new": "explicit_null: Optional[str] = \"value\""
+      },
+      {
+        "render": "pydantic_v2.dataclass plain",
+        "id": "PydanticV2Dataclass-model",
+        "old": "@dataclass",
+        "new": "@dataclass(frozen=True)"
+      },
+      {
+        "render": "dataclasses.dataclass plain",
+        "id": "DataclassesDataclass-quote",
+        "old": "'enabled'",
+        "new": "\"enabled\""
+      },
+      {
+        "render": "dataclasses.dataclass plain",
+        "id": "DataclassesDataclass-literal",
+        "old": " = 4",
+        "new": " = 5"
+      },
+      {
+        "render": "dataclasses.dataclass plain",
+        "id": "DataclassesDataclass-factory",
+        "old": "default_factory=list",
+        "new": "default_factory=set"
+      },
+      {
+        "render": "dataclasses.dataclass plain",
+        "id": "DataclassesDataclass-explicit_null",
+        "old": "explicit_null: Optional[str] = None",
+        "new": "explicit_null: Optional[str] = \"value\""
+      },
+      {
+        "render": "dataclasses.dataclass plain",
+        "id": "DataclassesDataclass-model",
+        "old": "@dataclass",
+        "new": "@dataclass(frozen=True)"
+      },
+      {
+        "render": "typing.TypedDict plain",
+        "id": "TypingTypedDict-quote",
+        "old": "'enabled'",
+        "new": "\"enabled\""
+      },
+      {
+        "render": "typing.TypedDict plain",
+        "id": "TypingTypedDict-model",
+        "old": "class Defaults(TypedDict):",
+        "new": "class Defaults(TypedDict, total=False):"
+      },
+      {
+        "render": "msgspec.Struct plain",
+        "id": "MsgspecStruct-quote",
+        "old": "'enabled'",
+        "new": "\"enabled\""
+      },
+      {
+        "render": "msgspec.Struct plain",
+        "id": "MsgspecStruct-literal",
+        "old": " = 4",
+        "new": " = 5"
+      },
+      {
+        "render": "msgspec.Struct plain",
+        "id": "MsgspecStruct-factory",
+        "old": "default_factory=list",
+        "new": "default_factory=set"
+      },
+      {
+        "render": "msgspec.Struct plain",
+        "id": "MsgspecStruct-explicit_null",
+        "old": "explicit_null: Union[str, UnsetType] = UNSET",
+        "new": "explicit_null: Union[str, UnsetType] = \"value\""
+      },
+      {
+        "render": "msgspec.Struct plain",
+        "id": "MsgspecStruct-model",
+        "old": "class Defaults(Struct):",
+        "new": "class Defaults(Struct, kw_only=True):"
+      },
+      {
+        "render": "pydantic_v2.BaseModel plain",
+        "id": "PydanticV2BaseModel-lost-assignment",
+        "old": "explicit_null: Optional[str] = None",
+        "new": "explicit_null: Optional[str]"
+      }
+    ]
+  },
+  "emitted-meta": {
+    "source": "generation_platform/binding/emitted-meta.json",
+    "backends": [
+      "msgspec.Struct"
+    ],
+    "model": {
+      "field_constraints": true,
+      "collapse_root_models": true
+    },
+    "variants": {
+      "plain": {},
+      "annotated": {
+        "use_annotated": true
+      }
+    },
+    "changes": [
+      {
+        "render": "msgspec.Struct annotated",
+        "id": "nested-meta",
+        "old": "Meta(max_length=4, min_length=1)",
+        "new": "Meta(max_length=5, min_length=1)"
+      },
+      {
+        "render": "msgspec.Struct annotated",
+        "id": "number-meta",
+        "old": "Meta(ge=1.5, lt=9.75, multiple_of=0.5)",
+        "new": "Meta(ge=1.5, lt=9.5, multiple_of=0.5)"
+      },
+      {
+        "render": "msgspec.Struct annotated",
+        "id": "malformed-meta-position",
+        "old": "Meta(max_length=4, min_length=1)",
+        "new": "Meta(4)"
+      },
+      {
+        "render": "msgspec.Struct annotated",
+        "id": "malformed-meta-key",
+        "old": "Meta(max_length=4, min_length=1)",
+        "new": "Meta(\"max_length\"=4)"
+      }
+    ]
+  },
+  "type-projection": {
+    "source": "generation_platform/binding/type-projection.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_unique_items_as_set": true,
+      "enum_field_as_literal": "all",
+      "output_datetime_class": "AwareDatetime"
+    },
+    "skip": [
+      "Types",
+      "BoundNative"
+    ],
+    "changes": [
+      {
+        "render": "msgspec.Struct default",
+        "id": "builtin",
+        "old": "flag: Union[bool, UnsetType]",
+        "new": "flag: Union[int, UnsetType]"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "reference",
+        "old": "child: Union[Child, UnsetType]",
+        "new": "child: Union[Types, UnsetType]"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "import",
+        "old": "native: Union[UUID, UnsetType]",
+        "new": "native: Union[str, UnsetType]"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "bound",
+        "old": "bound_native: Union[argparse.HelpFormatter._Section, UnsetType]",
+        "new": "bound_native: Union[argparse.HelpFormatter, UnsetType]"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "import-shadow",
+        "old": "import argparse",
+        "new": "import argparse\nargparse = object()"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "qualified-call-shadow",
+        "old": "import argparse",
+        "new": "import argparse\nparser = argparse.ArgumentParser()"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "container",
+        "old": "items: Union[List[int], UnsetType]",
+        "new": "items: Union[List[str], UnsetType]"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "union-order",
+        "old": "choice: Union[str, int, UnsetType]",
+        "new": "choice: Union[int, str, UnsetType]"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "union-missing",
+        "old": "choice: Union[str, int, UnsetType]",
+        "new": "choice: Union[str, UnsetType]"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "container-arity",
+        "old": "Dict[str, bool]",
+        "new": "Dict[str, bool, int]"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "literal-order",
+        "old": "Literal[True, 1, 'one']",
+        "new": "Literal[1, True, 'one']"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "constraint",
+        "old": "conint(ge=2)",
+        "new": "conint(ge=3)"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "constraint-name",
+        "old": "conint(ge=2)",
+        "new": "conint(gt=2)"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "constructor",
+        "old": "conint(ge=2)",
+        "new": "int"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "literal-arity",
+        "old": "Literal[True, 1, 'one']",
+        "new": "Literal[True, 1]"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "builtin-forward-multiple",
+        "old": "flag: Union[bool, UnsetType]",
+        "new": "flag: Union[\"bool; int\", UnsetType]"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "builtin-forward-empty",
+        "old": "flag: Union[bool, UnsetType]",
+        "new": "flag: Union[\"\", UnsetType]"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "container-not-subscript",
+        "old": "items: Union[List[int], UnsetType]",
+        "new": "items: Union[List, UnsetType]"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "constraint-positional",
+        "old": "conint(ge=2)",
+        "new": "conint(2)"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "literal-callee",
+        "old": "Literal[True, 1, 'one']",
+        "new": "tuple[True, 1, 'one']"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "nested-optional-type",
+        "old": "Dict[str, bool]",
+        "new": "Dict[str, Optional[None]]"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "duplicate-field",
+        "old": "flag: Union[bool, UnsetType] = UNSET",
+        "new": "flag: Union[bool, UnsetType] = UNSET; flag: Union[bool, UnsetType] = UNSET"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "duplicate-class",
+        "old": "class Types(Struct):",
+        "new": "class Types(Struct):\n    pass\nclass Types(Struct):"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "empty-annotation",
+        "old": "flag: Union[bool, UnsetType] = UNSET",
+        "new": "flag: = UNSET"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "chained-default",
+        "old": "flag: Union[bool, UnsetType] = UNSET",
+        "new": "flag: Union[bool, UnsetType] = one = two"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "positional-field-default",
+        "old": "child: Optional[Child] = None",
+        "new": "child: Optional[Child] = Field(None, 'extra')"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "empty-semicolon-prefix",
+        "old": "class Types(Struct):",
+        "new": ";;\nfrom typing import (Any,)\nclass Types(Struct):\n    flag: int = 1"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "malformed-import-alias",
+        "old": "class Types(Struct):",
+        "new": "from typing import Any as 2\nclass Types(Struct):\n    flag: int = 1"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "parenthesized-noncall",
+        "old": "flag: Union[bool, UnsetType]",
+        "new": "flag: Union[(bool)(int), UnsetType]"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "union-extra-member",
+        "old": "flag: Union[bool, UnsetType]",
+        "new": "flag: Union[bool, int, UnsetType]"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "nullable-reversed",
+        "old": "nullable: Union[str, None, UnsetType]",
+        "new": "nullable: Union[None, str, UnsetType]"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "malformed-import-target",
+        "old": "import argparse",
+        "new": "import 2 as argparse"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "parenthesized-callee",
+        "old": "items: Union[List[int], UnsetType]",
+        "new": "items: Union[(List)[int], UnsetType]"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "nested-optional-member",
+        "old": "position: Union[List[Union[str, int]], UnsetType]",
+        "new": "position: Union[List[Optional[str]], UnsetType]"
+      }
+    ]
+  },
+  "model-facts": {
+    "source": "generation_platform/binding/model-facts.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ]
+  },
+  "tag-fields": {
+    "source": "openapi/discriminator_enum_single_value_msgspec.yaml",
+    "backends": [
+      "msgspec.Struct"
+    ],
+    "model": {
+      "enum_field_as_literal": "all",
+      "use_one_literal_as_default": true
+    },
+    "changes": [
+      {
+        "render": "msgspec.Struct default",
+        "id": "unexpected-emission",
+        "old": "    pass",
+        "new": "    type: str = 'started'"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "missing-class",
+        "old": "class StartedEvent",
+        "new": "class RenamedEvent"
+      }
+    ]
+  },
+  "metadata-types": {
+    "source": "generation_platform/binding/metadata-types.json",
+    "model": {
+      "collapse_root_models": true
+    },
+    "changes": [
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "discriminator",
+        "old": "Field(discriminator='kind')",
+        "new": "Field(discriminator='other')"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "missing-metadata",
+        "old": "Annotated[Union[A, B], Field(discriminator='kind')]",
+        "new": "Union[A, B]"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "wrong-callee",
+        "old": "Field(discriminator='kind')",
+        "new": "BaseModel(discriminator='kind')"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "missing-keyword",
+        "old": "Field(discriminator='kind')",
+        "new": "Field()"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "positional",
+        "old": "Field(discriminator='kind')",
+        "new": "Field('kind')"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "short-annotated",
+        "old": "Annotated[Union[A, B], Field(discriminator='kind')]",
+        "new": "Annotated[Union[A, B]]"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "literal-metadata",
+        "old": "Field(discriminator='kind')",
+        "new": "'kind'"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "metadata-unpack",
+        "old": "Field(discriminator='kind')",
+        "new": "Field(**settings)"
+      }
+    ]
+  },
+  "container-types": {
+    "source": "generation_platform/binding/container-types.json",
+    "model": {
+      "use_unique_items_as_set": true,
+      "use_generic_container_types": true
+    },
+    "variants": {
+      "typing": {
+        "use_standard_collections": false
+      },
+      "standard": {
+        "use_standard_collections": true
+      }
+    }
+  },
+  "decimal-types": {
+    "source": "generation_platform/binding/decimal-types.json",
+    "model": {
+      "use_decimal_for_multiple_of": true
+    },
+    "changes": [
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "equivalent-exponent",
+        "old": "Decimal('0.1')",
+        "new": "Decimal('1e-1')"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "different-value",
+        "old": "Decimal('0.1')",
+        "new": "Decimal('0.2')"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "plain-float",
+        "old": "Decimal('0.1')",
+        "new": "0.1"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "different-callee",
+        "old": "Decimal('0.1')",
+        "new": "float('0.1')"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "extra-argument",
+        "old": "Decimal('0.1')",
+        "new": "Decimal('0.1', None)"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "non-string",
+        "old": "Decimal('0.1')",
+        "new": "Decimal(0.1)"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "invalid-value",
+        "old": "Decimal('0.1')",
+        "new": "Decimal('invalid')"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "infinity",
+        "old": "Decimal('0.1')",
+        "new": "Decimal('Infinity')"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "signaling-nan",
+        "old": "Decimal('0.1')",
+        "new": "Decimal('sNaN')"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "qualified-callee",
+        "old": "Decimal('0.1')",
+        "new": "decimal.Decimal('0.1')"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "bare-callee",
+        "old": "Decimal('0.1')",
+        "new": "Decimal"
+      }
+    ]
+  },
+  "decimal-default-types": {
+    "source": "generation_platform/binding/decimal-default-types.json",
+    "model": {
+      "use_decimal_for_multiple_of": true,
+      "deserialize_default_values": [
+        "decimal"
+      ]
+    },
+    "changes": [
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "equivalent-exponent",
+        "old": "Decimal('0.1')",
+        "new": "Decimal('1e-1')"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "different-value",
+        "old": "Decimal('0.1')",
+        "new": "Decimal('0.2')"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "plain-float",
+        "old": "Decimal('0.1')",
+        "new": "0.1"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "different-callee",
+        "old": "Decimal('0.1')",
+        "new": "float('0.1')"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "extra-argument",
+        "old": "Decimal('0.1')",
+        "new": "Decimal('0.1', None)"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "non-string",
+        "old": "Decimal('0.1')",
+        "new": "Decimal(0.1)"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "invalid-value",
+        "old": "Decimal('0.1')",
+        "new": "Decimal('invalid')"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "infinity",
+        "old": "Decimal('0.1')",
+        "new": "Decimal('Infinity')"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "signaling-nan",
+        "old": "Decimal('0.1')",
+        "new": "Decimal('sNaN')"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "qualified-callee",
+        "old": "Decimal('0.1')",
+        "new": "decimal.Decimal('0.1')"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "bare-callee",
+        "old": "Decimal('0.1')",
+        "new": "Decimal"
+      }
+    ]
+  },
+  "bound-types": {
+    "source": "generation_platform/binding/bound-types.json",
+    "skip": [
+      "NativeField"
+    ],
+    "changes": [
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "argument-list",
+        "old": "[[UUID,",
+        "new": "[UUID,"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "literal-value",
+        "old": "Literal['uuid.UUID', True, 1]",
+        "new": "Literal['uuid.UUID', 1, 1]"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "literal-order",
+        "old": "Literal['uuid.UUID', True, 1]",
+        "new": "Literal[True, 'uuid.UUID', 1]"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "bound-import",
+        "old": "from uuid import UUID",
+        "new": "from decimal import UUID"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "return-type",
+        "old": "]], str]",
+        "new": "]], int]"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "ellipsis",
+        "old": "Callable[..., str]",
+        "new": "Callable[int, str]"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "tuple-order",
+        "old": "tuple[int, str]",
+        "new": "tuple[str, int]"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "union-order",
+        "old": "choice: UUID | str",
+        "new": "choice: str | UUID"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "optional-union",
+        "old": "Optional[UUID | str]",
+        "new": "Optional[UUID | bool]"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "empty-parameters",
+        "old": "Callable[[], bool]",
+        "new": "Callable[[int], bool]"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "empty-tuple",
+        "old": "tuple[()]",
+        "new": "tuple[str]"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "native-name",
+        "old": "__annotations__['raw-key']",
+        "new": "__annotations__['other-key']"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "native-family",
+        "old": "__annotations__['raw-key']",
+        "new": "model_fields['raw-key']"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "native-index",
+        "old": ".__args__[0]",
+        "new": ".__args__[1]"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "native-annotation",
+        "old": ".annotation.__args__",
+        "new": ".other.__args__"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "native-base",
+        "old": "external.Model.model_fields",
+        "new": "external.Other.model_fields"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "native-without-lookup",
+        "old": "__annotations__['raw-key']",
+        "new": "__annotations__"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "native-empty-lookup",
+        "old": "__annotations__['raw-key']",
+        "new": "__annotations__[]"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "empty-argument-group",
+        "old": "Callable[[], bool]",
+        "new": "Callable[(), bool]"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "native-unbalanced-square",
+        "old": "__annotations__['raw-key']",
+        "new": "__annotations__('raw-key']"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "native-unbalanced-bracket",
+        "old": "__annotations__['raw-key']",
+        "new": "__annotations__{'raw-key']"
+      }
+    ]
+  },
+  "reference-policies": {
+    "source": "generation_platform/binding/reference-policies.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_serialize_as_any": true
+    },
+    "variants": {
+      "kept": {},
+      "collapsed": {
+        "collapse_root_models": true
+      }
+    }
+  },
+  "empty-fixed-tuple": {
+    "source": "generation_platform/binding/empty-fixed-tuple.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_tuple_for_fixed_length_arrays": true
+    },
+    "variants": {
+      "typing": {
+        "use_standard_collections": false
+      },
+      "standard": {
+        "use_standard_collections": true
+      }
+    },
+    "changes": [
+      {
+        "render": "pydantic_v2.BaseModel typing",
+        "id": "element-type",
+        "old": "[()]",
+        "new": "[str]"
+      },
+      {
+        "render": "pydantic_v2.BaseModel standard",
+        "id": "element-type",
+        "old": "[()]",
+        "new": "[str]"
+      },
+      {
+        "render": "pydantic_v2.dataclass typing",
+        "id": "element-type",
+        "old": "[()]",
+        "new": "[str]"
+      },
+      {
+        "render": "pydantic_v2.dataclass standard",
+        "id": "element-type",
+        "old": "[()]",
+        "new": "[str]"
+      },
+      {
+        "render": "dataclasses.dataclass typing",
+        "id": "element-type",
+        "old": "[()]",
+        "new": "[str]"
+      },
+      {
+        "render": "dataclasses.dataclass standard",
+        "id": "element-type",
+        "old": "[()]",
+        "new": "[str]"
+      },
+      {
+        "render": "typing.TypedDict typing",
+        "id": "element-type",
+        "old": "[()]",
+        "new": "[str]"
+      },
+      {
+        "render": "typing.TypedDict standard",
+        "id": "element-type",
+        "old": "[()]",
+        "new": "[str]"
+      },
+      {
+        "render": "msgspec.Struct typing",
+        "id": "element-type",
+        "old": "[()]",
+        "new": "[str]"
+      },
+      {
+        "render": "msgspec.Struct standard",
+        "id": "element-type",
+        "old": "[()]",
+        "new": "[str]"
+      }
+    ]
+  },
+  "discriminator-members": {
+    "source": "generation_platform/binding/session-discriminator-override.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_subclass_enum": true,
+      "reuse_model": true
+    },
+    "variants": {
+      "members": {},
+      "values": {
+        "use_enum_values_in_discriminator": true
+      }
+    }
+  },
+  "default-policies": {
+    "source": "generation_platform/binding/session-default-policies.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "default_value_overrides": {
+        "override_null": null
+      }
+    },
+    "variants": {
+      "required": {},
+      "optional": {
+        "force_optional_for_required_fields": true
+      }
+    }
+  },
+  "type-statement": {
+    "source": "generation_platform/binding/reference-policies.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "target_python_version": "3.12",
+      "use_type_alias": true
+    }
+  },
+  "field-edges": {
+    "source": "generation_platform/binding/field-edges.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_default_kwarg": true
+    }
+  },
+  "builtin-shadow": {
+    "source": "generation_platform/binding/builtin-shadow.json",
+    "changes": [
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "shadow-0",
+        "old": "class Record",
+        "new": "str = int\n\nclass Record"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "shadow-1",
+        "old": "class Record",
+        "new": "from builtins import int as str\n\nclass Record"
+      }
+    ]
+  },
+  "builtin-bound-shadow": {
+    "source": "generation_platform/binding/builtin-bound-shadow.json",
+    "changes": [
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "shadow-0",
+        "old": "class Record",
+        "new": "str = int\n\nclass Record"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "shadow-1",
+        "old": "class Record",
+        "new": "from builtins import int as str\n\nclass Record"
+      }
+    ]
+  },
+  "field-ownership": {
+    "source": "generation_platform/binding/field-ownership.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict"
+    ]
+  },
+  "field-ownership-chain": {
+    "source": "generation_platform/binding/field-ownership-chain.json",
+    "backends": [
+      "msgspec.Struct"
+    ]
+  },
+  "functional-name-collision": {
+    "source": "generation_platform/binding/functional-name-collision.json",
+    "backends": [
+      "typing.TypedDict"
+    ]
+  },
+  "synthetic-origins": {
+    "source": "generation_platform/binding/synthetic-origins.json",
+    "changes": [
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "PydanticV2BaseModel-extra-annotations",
+        "old": "'__pydantic_extra__': Dict[str, int],",
+        "new": "'other': int,\n        '__pydantic_extra__': Dict[str, int],"
+      }
+    ]
+  },
+  "model-facts-configured": {
+    "source": "generation_platform/binding/model-facts.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "backend_model": {
+      "pydantic_v2.BaseModel": {
+        "extra_template_data": {
+          "#all#": {
+            "config": {
+              "strict": true,
+              "extra": "forbid",
+              "populate_by_name": true
+            }
+          }
+        }
+      },
+      "pydantic_v2.dataclass": {
+        "extra_template_data": {
+          "#all#": {
+            "config": {
+              "strict": true,
+              "extra": "forbid",
+              "populate_by_name": true
+            }
+          }
+        },
+        "dataclass_arguments": {
+          "init": false,
+          "frozen": true,
+          "slots": true,
+          "kw_only": true
+        }
+      },
+      "dataclasses.dataclass": {
+        "dataclass_arguments": {
+          "init": false,
+          "frozen": true,
+          "slots": true,
+          "kw_only": true
+        }
+      },
+      "typing.TypedDict": {
+        "use_total_false_for_typed_dict": true
+      },
+      "msgspec.Struct": {
+        "keyword_only": true,
+        "extra_template_data": {
+          "#all#": {
+            "base_class_kwargs": {
+              "tag": "record",
+              "tag_field": "kind",
+              "array_like": true,
+              "forbid_unknown_fields": true,
+              "omit_defaults": true,
+              "kw_only": false,
+              "frozen": true,
+              "rename": {
+                "wireName": "wire_name"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
