@@ -246,7 +246,6 @@ requests in flight after a failure
     > u0000 POST /users/batch items=2 last=u0001 bytes=73
   interrupted while reading
   after the interruption ! StopIteration:  []
-  interrupted: 0 requests
 records
   success UsersCreateSuccess outcome=success id=u0004 token=None value=user 4
   failure UsersCreateError outcome=error error=taken

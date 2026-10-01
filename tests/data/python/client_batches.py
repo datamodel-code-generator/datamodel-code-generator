@@ -405,13 +405,23 @@ def _siblings(harness: _Batches, api: Any, server: _Server, lines: list[str]) ->
     release.set()
     lines.append(f"  request received {received.is_set()}")
     server.report("deadline while answered")
-    iterator = users.iterate(_interrupted(harness.users(1)), batch_options=single)
-    try:
-        next(iterator)
-    except _Interrupt:
-        lines.append("  interrupted while reading")
-    record(lines, "after the interruption", lambda: _record(next(iterator)))
-    server.report("interrupted")
+    _interruption(harness, lines)
+
+
+def _interruption(harness: _Batches, lines: list[str]) -> None:
+    """Stop at an interruption while reading, with a request in flight that may or may not be sent.
+
+    Whether the cancelled request reaches the server depends on its thread, so it is sent to a server of its own.
+    """
+    with _Server([]).client() as native, harness.package.Client(http_client=native) as api:
+        iterator = api.protocols.users.create.iterate(
+            _interrupted(harness.users(3)), batch_options=harness.batch(batch_size=2, parallelism=2)
+        )
+        try:
+            next(iterator)
+        except _Interrupt:
+            lines.append("  interrupted while reading")
+        record(lines, "after the interruption", lambda: _record(next(iterator)))
 
 
 def _failing_source(items: list[Any]) -> Iterator[Any]:
