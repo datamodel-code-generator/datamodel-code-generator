@@ -51,7 +51,7 @@ def _expired(entry: CacheEntry, now: datetime) -> bool:
 class _Entries:
     """The entries of one store by slot, in least-recently-used order, with the secret of their fingerprints."""
 
-    __slots__ = ("_bytes", "_entries", "_lock", "_max_bytes", "_max_entries", "_secret")
+    __slots__ = ("_bytes", "_entries", "_keys", "_lock", "_max_bytes", "_max_entries", "_secret")
 
     def __init__(self, max_entries: int, max_bytes: int) -> None:
         positive_count(max_entries, "max_entries")
@@ -59,6 +59,7 @@ class _Entries:
         self._max_entries = max_entries
         self._max_bytes = max_bytes
         self._entries: OrderedDict[_Slot, CacheEntry] = OrderedDict()
+        self._keys: dict[bytes, set[_Slot]] = {}
         self._bytes = 0
         self._secret = token_bytes(32)
         self._lock = Lock()
@@ -80,7 +81,7 @@ class _Entries:
         """Return the most recently stored entry of the key whose fingerprints match, marking it recently used."""
         base_key = _key(base_key)
         with self._lock:
-            candidates = [slot for slot in self._entries if slot[0] == base_key]
+            candidates = self._keys.get(base_key, ())
             for slot in sorted(candidates, key=lambda slot: self._entries[slot].stored_at, reverse=True):
                 if self.fingerprint_vary(slot[1], request_headers) == slot[2]:
                     self._entries.move_to_end(slot)
@@ -104,13 +105,10 @@ class _Entries:
                 return False
             if current is not None:
                 self._remove(slot)
-            now = datetime.now(timezone.utc)
-            for victim in [*(item for item, stored in self._entries.items() if _expired(stored, now)), *self._entries]:
-                if len(self._entries) < self._max_entries and self._bytes + size <= self._max_bytes:
-                    break
-                if victim in self._entries:
-                    self._remove(victim)
+            if len(self._entries) >= self._max_entries or self._bytes + size > self._max_bytes:
+                self._evict(size)
             self._entries[slot] = entry
+            self._keys.setdefault(base_key, set()).add(slot)
             self._bytes += size
             return True
 
@@ -119,10 +117,7 @@ class _Entries:
         base_key = _key(base_key)
         _argument(isinstance(version, str), "version")
         with self._lock:
-            slot = next(
-                (slot for slot, entry in self._entries.items() if slot[0] == base_key and entry.version == version),
-                None,
-            )
+            slot = next((slot for slot in self._keys.get(base_key, ()) if self._entries[slot].version == version), None)
             if slot is None:
                 return False
             self._remove(slot)
@@ -137,8 +132,21 @@ class _Entries:
                 self._remove(slot)
             return len(removed)
 
+    def _evict(self, size: int) -> None:
+        """Remove expired entries, then the least recently used ones, until an entry of the size fits."""
+        now = datetime.now(timezone.utc)
+        for victim in [*(item for item, stored in self._entries.items() if _expired(stored, now)), *self._entries]:
+            if len(self._entries) < self._max_entries and self._bytes + size <= self._max_bytes:
+                return
+            if victim in self._entries:
+                self._remove(victim)
+
     def _remove(self, slot: _Slot) -> None:
         self._bytes -= _size(self._entries.pop(slot))
+        slots = self._keys[slot[0]]
+        slots.discard(slot)
+        if not slots:
+            del self._keys[slot[0]]
 
 
 class MemoryCacheStore:

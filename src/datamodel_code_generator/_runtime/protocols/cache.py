@@ -18,7 +18,7 @@ from uuid import uuid4
 from typing_extensions import TypeVar
 
 from ..client.client import stored_value
-from ..client.errors import ProtocolConfigurationError
+from ..client.errors import ProtocolConfigurationError, add_secondary
 from ..client.media import normalized
 from ..client.options import RequestOptions
 from ..client.responses import HeadersView, Response, ResponseInfo
@@ -71,7 +71,7 @@ _HOP_BY_HOP: Final = frozenset({
     "transfer-encoding",
     "upgrade",
 })
-_UNSTORED: Final = _HOP_BY_HOP | {"content-encoding", "content-length"}
+_UNSTORED: Final = _HOP_BY_HOP | {"age", "content-encoding", "content-length"}
 _UNMERGED: Final = _UNSTORED | {"content-type"}
 _RESPONSE_DIRECTIVES: Final = frozenset({
     "max-age",
@@ -89,6 +89,7 @@ _DELTAS: Final = frozenset({"max-age", "s-maxage"})
 _FIELD_LISTS: Final = frozenset({"no-cache", "private"})
 _REQUEST_DIRECTIVES: Final = frozenset({"max-age", "no-cache", "no-store"})
 _REFUSED: Final = ("Range", "If-Range", "If-Match", "If-Unmodified-Since")
+_NOT_VARIED: Final = frozenset({"cache-control", "if-modified-since", "if-none-match"})
 _VALIDATORS: Final[tuple[tuple[Literal["If-None-Match", "If-Modified-Since"], str], ...]] = (
     ("If-None-Match", "etag"),
     ("If-Modified-Since", "last-modified"),
@@ -154,6 +155,7 @@ class _Received(Generic[T]):
     body: bytes
     headers: HeadersView
     source: CacheSource
+    received: HeadersView
 
 
 def _option(layers: tuple[object, ...], name: str, default: V) -> V:
@@ -238,8 +240,10 @@ class _Fetch(Generic[T]):
 
     __slots__ = (
         "base_key",
+        "credential_headers",
         "directives",
         "entry",
+        "implicit",
         "max_entry_bytes",
         "max_ttl",
         "options",
@@ -265,17 +269,27 @@ class _Fetch(Generic[T]):
         self.entry: CacheEntry | None = None
         self.usable: CacheEntry | None = None
         self.max_entry_bytes, self.max_ttl, self.options = limits
-        self.settings, self.request, url, credentials, partition = core.cache_request(
-            plan.call, arguments, self.options
+        prepared = core.cache_request(plan.call, arguments, self.options)
+        self.settings, self.request, self.credential_headers = (
+            prepared.settings,
+            prepared.request,
+            prepared.credential_headers,
         )
+        credentials, partition = prepared.credentials, prepared.partition
         headers = self.request.headers
         if (refused := next((name for name in _REFUSED if name in headers), None)) is not None:
             raise _invalid(plan, ("headers", refused))
         self.directives = _requested(plan, headers.get_all("cache-control"))
+        if prepared.foreign_auth:
+            raise _configuration(plan, ("options", "auth"), "security_partition")
         if (credentials is not None) != plan.authenticated:
             raise _configuration(plan, ("auth",), "binding_mismatch")
         if credentials is not None and partition is None:
             raise _configuration(plan, ("protocols", "security"), "security_partition")
+        patched = {name.lower() for layer in self.settings.headers for name, _ in layer}
+        declared = {spec.plan.name.lower() for spec in plan.call.parameters if spec.plan.location == "header"}
+        self.implicit = frozenset(patched | declared) - _NOT_VARIED
+        url = prepared.url
         self.base_key = sha256(
             canonical_json({
                 "method": self.request.method,
@@ -362,8 +376,10 @@ class _Fetch(Generic[T]):
     @staticmethod
     def modified(response: Response[T], body: bytes) -> tuple[Response[T], _Received[T]]:
         """Keep a decoded network response with its body and the headers an entry of it stores."""
-        headers = HeadersView(_without(response.info.headers, _UNSTORED, len(body)))
-        return response, _Received(response, body, headers, "network")
+        received = response.info.headers
+        return response, _Received(
+            response, body, HeadersView(_without(received, _UNSTORED, len(body))), "network", received
+        )
 
     def not_modified(self, info: ResponseInfo) -> tuple[Response[T], _Received[T]]:
         """Decode the looked-up representation a 304 validates, with its headers merged, or refuse the 304.
@@ -377,14 +393,16 @@ class _Fetch(Generic[T]):
         headers = _merged(entry.headers, info.headers, len(entry.body))
         merged = self.info(entry.status_code, headers, info)
         response = Response(data=stored_value(plan.call, merged, entry.body, self.settings), info=merged)
-        return response, _Received(response, entry.body, headers, "revalidated")
+        return response, _Received(response, entry.body, headers, "revalidated", info.headers)
 
     def stored(self, received: _Received[T], arguments: tuple[object, ...]) -> dict[str, Any] | None:
         """Return the fields of the entry a response becomes but its Vary fingerprints, or None to store nothing.
 
         It is refused for an unlisted status, a redirect, a body over the limit, a Set-Cookie, an unsupported or
-        malformed Cache-Control, no-store, a Vary outside the allowlist or `*`, a revalidation whose Vary changed, and
-        a response that is neither fresh nor revalidatable.
+        malformed Cache-Control, no-store, a Vary outside the allowlist or `*`, a Vary naming a header credentials
+        travel in, a revalidation whose Vary changed, and a response that is neither fresh nor revalidatable. The
+        entry varies on the response's Vary and on every header a patch or a declared parameter fills, and its date
+        and age are those of the response received, so a 304 without Age makes the entry's age 0.
         """
         plan, headers, now = self.plan, received.headers, time()
         directives = _directives(headers.get_all("cache-control"))
@@ -394,9 +412,11 @@ class _Fetch(Generic[T]):
             or not _well_formed(directives)
             or not self.fits(received, vary)
             or not plan.vary_allowlist.issuperset(vary)
+            or not self.credential_headers.isdisjoint(vary)
         ):
             return None
-        date = None if (value := headers.get("date")) is None else http_date(value, now)
+        origin = received.received
+        date = None if (value := origin.get("date")) is None else http_date(value, now)
         date = now if date is None else date
         lifetime = 0.0
         if "no-cache" not in directives:
@@ -407,11 +427,11 @@ class _Fetch(Generic[T]):
         freshness = min(lifetime, self.max_ttl)
         if "no-store" in directives or (freshness <= 0 and _validator(plan, headers) is None):
             return None
-        age = _delta(headers.get("age")) if "age" in headers else 0
+        age = _delta(origin.get("age")) if "age" in origin else 0
         initial = max(now - date, (_MAX_DELTA if age is None else age) + (now - self.requested_at), 0.0)
         return {
             "version": uuid4().hex,
-            "vary": vary,
+            "vary": tuple(sorted(self.implicit.union(vary))),
             "status_code": received.response.info.status_code,
             "headers": headers,
             "body": received.body,
@@ -432,7 +452,7 @@ class _Fetch(Generic[T]):
             and not received.response.info.redirect_count
             and len(received.body) <= self.max_entry_bytes
             and "set-cookie" not in received.headers
-            and (received.source == "network" or usable is None or vary == usable.vary)
+            and (received.source == "network" or usable is None or vary == _vary(usable.headers))
         )
 
     def expected(self, vary: tuple[str, ...], fingerprints: tuple[bytes, ...]) -> str | None:
@@ -636,11 +656,21 @@ def fetch(
         found = state.found(_run(plan, "lookup", lambda: store.lookup(key, headers)))
     if (hit := state.fresh(found)) is not None:
         return hit
-    received = core.execute_cached(
-        plan.call, state.conditional(found), state.settings, state.modified, state.not_modified, state.options
-    )
+    try:
+        received = core.execute_cached(
+            plan.call, state.conditional(found), state.settings, state.modified, state.not_modified, state.options
+        )
+    except CacheProtocolError as error:
+        if (usable := state.usable) is not None:
+            version = usable.version
+            try:
+                _run(plan, "delete", lambda: store.delete(key, version))
+            except CacheStoreError as failure:
+                add_secondary(error, failure)
+        raise
     if state.directives.no_store:
         return state.result(received)
+    current, expected = state.entry, None
     if (fields := state.stored(received, arguments)) is not None:
         names = fields["vary"]
         prints = _run(plan, "fingerprint_vary", lambda: store.fingerprint_vary(names, headers))
@@ -649,7 +679,7 @@ def fetch(
         expected = state.expected(names, fingerprints)
         stored = _run(plan, "compare_exchange", lambda: store.compare_exchange(key, expected, entry))
         _checked(plan, "compare_exchange", type(stored) is bool)
-    elif (current := state.entry) is not None:
+    if current is not None and expected is None:
         version = current.version
         _checked(plan, "delete", type(_run(plan, "delete", lambda: store.delete(key, version))) is bool)
     return state.result(received)
@@ -673,11 +703,21 @@ async def afetch(
         found = state.found(await _arun(plan, "lookup", lambda: store.lookup(key, headers)))
     if (hit := state.fresh(found)) is not None:
         return hit
-    received = await core.execute_cached(
-        plan.call, state.conditional(found), state.settings, state.modified, state.not_modified, state.options
-    )
+    try:
+        received = await core.execute_cached(
+            plan.call, state.conditional(found), state.settings, state.modified, state.not_modified, state.options
+        )
+    except CacheProtocolError as error:
+        if (usable := state.usable) is not None:
+            version = usable.version
+            try:
+                await _arun(plan, "delete", lambda: store.delete(key, version))
+            except CacheStoreError as failure:
+                add_secondary(error, failure)
+        raise
     if state.directives.no_store:
         return state.result(received)
+    current, expected = state.entry, None
     if (fields := state.stored(received, arguments)) is not None:
         names = fields["vary"]
         prints = await _arun(plan, "fingerprint_vary", lambda: store.fingerprint_vary(names, headers))
@@ -686,7 +726,7 @@ async def afetch(
         expected = state.expected(names, fingerprints)
         stored = await _arun(plan, "compare_exchange", lambda: store.compare_exchange(key, expected, entry))
         _checked(plan, "compare_exchange", type(stored) is bool)
-    elif (current := state.entry) is not None:
+    if current is not None and expected is None:
         version = current.version
         _checked(plan, "delete", type(await _arun(plan, "delete", lambda: store.delete(key, version))) is bool)
     return state.result(received)
@@ -725,14 +765,15 @@ def mutate(  # noqa: PLR0913
 ) -> T:
     """Call the mutation's operation as its method does, then remove the entries its tags name after it succeeds.
 
-    A failed call removes nothing. A failed removal raises CacheInvalidationError keeping the call's result, which is
+    The tags are rendered before sending, so arguments that cannot fill them fail before the call. A failed call
+    removes nothing. A failed removal raises CacheInvalidationError keeping the call's result, which is
     never sent again.
     """
     store: CacheStore = _store(core, plan)
-    result = core.execute(plan.call, arguments, body=body, media_type=media_type, options=options).data
     tags = _tags(
         plan.call, plan.tags, arguments, core.call_settings(options, plan.call), body=body, media_type=media_type
     )
+    result = core.execute(plan.call, arguments, body=body, media_type=media_type, options=options).data
     try:
         count = store.invalidate(tags)
     except Exception as error:  # noqa: BLE001
@@ -752,10 +793,10 @@ async def amutate(  # noqa: PLR0913
 ) -> T:
     """Call the mutation as `mutate` does, awaiting the asyncio call and the asynchronous store."""
     store: AsyncCacheStore = _store(core, plan)
-    result = (await core.execute(plan.call, arguments, body=body, media_type=media_type, options=options)).data
     tags = _tags(
         plan.call, plan.tags, arguments, core.call_settings(options, plan.call), body=body, media_type=media_type
     )
+    result = (await core.execute(plan.call, arguments, body=body, media_type=media_type, options=options)).data
     try:
         count = await store.invalidate(tags)
     except Exception as error:  # noqa: BLE001

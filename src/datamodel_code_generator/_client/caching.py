@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Final, TypeAlias
 from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._client.pagination import _Pages
 from datamodel_code_generator._codec_declarations import OperationRef
+from datamodel_code_generator._runtime.client.security import SecurityScheme
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
@@ -33,6 +34,7 @@ _UNSAFE: Final = frozenset({"post", "put", "patch", "delete"})
 _SCALARS: Final = frozenset({"string", "integer", "number", "boolean"})
 _TAGGED: Final = frozenset({"path", "query"})
 _MIN_SUCCESS: Final = 200
+_CREDENTIAL_HEADERS: Final = frozenset({"authorization", "proxy-authorization", "cookie", "cookie2"})
 _MAX_SUCCESS: Final = 299
 
 
@@ -79,10 +81,17 @@ def _problem(code: str, stage: DiagnosticStage, at: str, message: str, spec: Ope
 class _Caches:
     """Check and plan every enabled cache helper of a client target."""
 
-    def __init__(self, protocols: Protocols, codecs: CodecPlan, wire: WirePlan, request: TargetRequest) -> None:
-        """Index the use bindings, and the schema reader that types parameters."""
+    def __init__(
+        self, protocols: Protocols, codecs: CodecPlan, wire: WirePlan, request: TargetRequest, plan: ClientPlan
+    ) -> None:
+        """Index the use bindings, the schema reader that types parameters, and the headers credentials travel in."""
         self.pages = _Pages(protocols, codecs, wire, request)
         self.bindings = dict(codecs.bindings)
+        self.credential_headers = _CREDENTIAL_HEADERS.union(
+            scheme.wire_name.lower()
+            for scheme in plan.security_schemes
+            if isinstance(scheme, SecurityScheme) and scheme.location == "header"
+        )
 
     def helper(
         self, helper: Helper, spec: OperationSpec, mutations: Mapping[str, OperationSpec]
@@ -105,6 +114,13 @@ class _Caches:
         if not tree["authenticated"] and security is not None and security.alternatives and all(security.alternatives):
             message = f"The cache helper {name!r} is declared anonymous, but {label} requires credentials"
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.authenticated", message, spec))
+        for index, header in enumerate(tree["vary_allowlist"]):
+            if header.lower() in self.credential_headers:
+                message = (
+                    f"The cache helper {name!r} allows a Vary on {header!r}, which credentials travel in; the auth "
+                    "adds it after the cache looks a request up"
+                )
+                problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.vary_allowlist[{index}]", message, spec))
         tags = tuple(self.tags(helper, spec, tree["tags"], f"{at}.tags", problems))
         planned: list[MutationSpec] = []
         for key, mutation in tree["mutations"].items():
@@ -204,7 +220,7 @@ def plan_caches(
     """Plan every enabled cache helper, returning the planned ones and each checked helper's problems."""
     if protocols is None:
         return (), {}
-    caches = _Caches(protocols, codecs, wire, request)
+    caches = _Caches(protocols, codecs, wire, request, plan)
     operations = {spec.contract.id: spec for spec in plan.operations}
     specs: list[CacheSpec] = []
     problems: dict[str, list[Diagnostic]] = {}

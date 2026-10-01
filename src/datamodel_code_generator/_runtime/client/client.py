@@ -711,10 +711,28 @@ RAW_DECODER: Final[ResponseDecoder[object, object]] = ResponseDecoder((), (), HT
 
 
 def stored_value(operation: OperationPlan[T, object], info: ResponseInfo, body: bytes, settings: Settings) -> T:
-    """Decode a stored success body as a call's decoder decodes a received one, under the call's validation."""
-    received = _Body(None, success=True)
+    """Decode a stored success body as a call's decoder decodes a received one, under the call's settings."""
+    received = _Body(settings.max_response_bytes, success=True)
     received.add(body)
     return _completed(operation.responses, info, received, settings, operation.operation_id).data
+
+
+@dataclass(frozen=True, slots=True)
+class CacheRequest:
+    """What a cache fetch keys and sends, prepared once before its call.
+
+    `credentials` identifies the credentials the request carries, None for none; `foreign_auth` tells that a view or
+    the call replaced the client's own auth; `credential_headers` are the lowercase names of the headers credentials
+    travel in, which the auth may add after the cache looked the request up.
+    """
+
+    settings: Settings
+    request: PreparedRequest[EncodedAttempt]
+    url: str
+    credentials: WireValue
+    partition: str | None
+    foreign_auth: bool
+    credential_headers: frozenset[str]
 
 
 def _retry_error(error: BaseException) -> TypeIs[HTTPStatusError[object] | TransportError]:
@@ -1333,6 +1351,7 @@ class _Shared(Generic[AdapterT]):
         "modes",
         "protocols",
         "providers",
+        "root_auth",
         "security_schemes",
         "transport",
         "trusted",
@@ -1353,6 +1372,7 @@ class _Shared(Generic[AdapterT]):
         self.closing_tasks: dict[Scope[AsyncRawResponse], asyncio.Task[list[Exception]]] | None = None
         self.loop: asyncio.AbstractEventLoop | None = None
         self.protocols: ProtocolClientOptions | None = None
+        self.root_auth: AuthConfig | None = None
 
 
 class _Core(Generic[AdapterT, HandleT]):
@@ -1706,17 +1726,17 @@ class _Core(Generic[AdapterT, HandleT]):
 
     def cache_request(
         self, operation: OperationPlan[object, object], arguments: tuple[object, ...], options: RequestOptions | None
-    ) -> tuple[Settings, PreparedRequest[EncodedAttempt], str, WireValue, str | None]:
-        """Return a cache fetch's settings, request before auth, URL, credentials, and the client's partition.
+    ) -> CacheRequest:
+        """Return what a cache fetch keys and sends: its settings, its request before auth, and its credentials.
 
-        A closing client refuses the fetch first. The URL is the request's own as the client interprets it. The
-        credentials are, for each credential the auth binds, its scheme, kind, and required scopes and the audience of
-        an SDK token provider, and each signer's declared capabilities; they are None for a request that carries no
-        credential, from the auth or from a credential header, a cookie, or a security scheme's header or query field.
+        A cancelled, closing, or expired fetch is refused first, as a call is. The URL is the request's own as the
+        client interprets it. The credentials are, for each credential the auth binds, its scheme, kind, and required
+        scopes and the audience of an SDK token provider, and each signer's declared capabilities; they are None for a
+        request that carries no credential, from the auth or from a credential header, a cookie, or a security scheme's
+        header or query field.
         """
-        if (closed := self._scope.closing()) is not None:
-            raise closed
         settings = self._call_settings(options, operation.operation_id)
+        LogicalCallContext(settings, self._scope, operation.operation_id).check()
         request, _ = self._prepare(
             operation,
             arguments,
@@ -1733,33 +1753,32 @@ class _Core(Generic[AdapterT, HandleT]):
         url = absolute_target(request.url).url
         bound = self._bound(operation, settings.auth)
         names, queries = _secret_names(self._shared.security_schemes)
-        if bound is None and not (
-            any(name.lower() in names for name, _ in request.headers)
-            or any(unquote_plus(pair.partition("=")[0]) in queries for pair in urlsplit(url).query.split("&") if pair)
-        ):
-            return settings, request, url, None, partition
-        from .grants import grant_audience  # noqa: PLC0415 - Only an authenticated cache fetch keys its credentials.
+        credential: WireValue = None
+        if bound is not None:
+            from .grants import grant_audience  # noqa: PLC0415 - Only an authenticated cache fetch keys its credentials.
 
-        credentials: WireValue = (
-            ()
-            if bound is None
-            else tuple(
-                (item.scheme.name, item.scheme.kind, item.required_scopes, grant_audience(item.provider))
-                for item in bound.credentials
-            ),
-            ()
-            if bound is None
-            else tuple(
-                (
-                    tuple(sorted(capabilities.allowed_origins)),
-                    tuple(sorted(capabilities.managed_headers)),
-                    tuple(sorted(capabilities.managed_query)),
-                    capabilities.requires_body_digest,
-                )
-                for capabilities in (signer.capabilities for signer in bound.signers)
-            ),
-        )
-        return settings, request, url, credentials, partition
+            names = names.union(bound.managed_headers, ("cookie",) if bound.managed_cookies else ())
+            credential = (
+                tuple(
+                    (item.scheme.name, item.scheme.kind, item.required_scopes, grant_audience(item.provider))
+                    for item in bound.credentials
+                ),
+                tuple(
+                    (
+                        tuple(sorted(capabilities.allowed_origins)),
+                        tuple(sorted(capabilities.managed_headers)),
+                        tuple(sorted(capabilities.managed_query)),
+                        capabilities.requires_body_digest,
+                    )
+                    for capabilities in (signer.capabilities for signer in bound.signers)
+                ),
+            )
+        elif any(name.lower() in names for name, _ in request.headers) or any(
+            unquote_plus(pair.partition("=")[0]) in queries for pair in urlsplit(url).query.split("&") if pair
+        ):
+            credential = ((), ())
+        foreign = bound is not None and settings.auth is not self._shared.root_auth
+        return CacheRequest(settings, request, url, credential, partition, foreign, names)
 
     def follow_origins(
         self, operation: OperationPlan[object, object], options: RequestOptions | None
@@ -2273,6 +2292,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         adapter, owned = _adapter(http_client, http_client_ownership, transport_adapter, transport)
         shared = _Shared(defaults, adapter, transport, trusted=isinstance(adapter, Httpx2Transport))
         shared.protocols = protocols
+        shared.root_auth = settings.auth
         result = cls(shared, settings, Scope(), owned=owned)
         if settings.auth is not None:
             result._adopt_auth(settings.auth)
@@ -3142,6 +3162,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         adapter, owned = _async_adapter(http_client, http_client_ownership, transport_adapter, transport)
         shared = _Shared(defaults, adapter, transport, trusted=isinstance(adapter, AsyncHttpx2Transport))
         shared.protocols = protocols
+        shared.root_auth = settings.auth
         with suppress(RuntimeError):
             shared.loop = asyncio.get_running_loop()
         result = cls(shared, settings, Scope(), owned=owned)
