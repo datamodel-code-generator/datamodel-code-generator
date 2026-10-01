@@ -22,6 +22,8 @@
      "models": {"models:Ticket": "tests.data.python.model_codec_stdlib:UnresolvedTicket"}},
     {"name": "leaf-disagrees", "use": "/paths/~1tickets/post request_body",
      "models": {"models:Ticket": "tests.data.python.model_codec_stdlib:ListTicket"}},
+    {"name": "bytes-leaf", "use": "/paths/~1tickets/post request_body",
+     "models": {"models:Ticket": "tests.data.python.model_codec_stdlib:BytesTicket"}},
     {"name": "union-disagrees", "use": "/paths/~1tickets/post request_body",
      "models": {"models:Ticket": "tests.data.python.model_codec_stdlib:ChoiceTicket"}},
     {"name": "container-disagrees", "use": "/paths/~1records/put request_body",

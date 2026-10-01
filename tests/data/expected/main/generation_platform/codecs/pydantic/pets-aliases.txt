@@ -1,8 +1,7 @@
-diagnostic MC_PARAMETER_ENCODING /paths/~1pets/get/parameters/3/schema: A parameter value needs one unambiguous scalar kind
+refused nothing
 use /paths/~1pets/get parameter query limit: native root models:FieldPetsGetQueryLimitParameter models=[('models:FieldPetsGetQueryLimitParameter', 'root', 'ignore', True)]
 use /paths/~1pets/get parameter query tags: native root models:FieldPetsGetQueryTagsParameter models=[('models:FieldPetsGetQueryTagsParameter', 'root', 'ignore', True)]
 use /paths/~1pets/get parameter query filter: native root models:FieldPetsGetQueryFilterParameter models=[('models:FieldPetsGetQueryFilterParameter', 'root', 'ignore', True)]
-use /paths/~1pets/get parameter query choice: native root models:FieldPetsGetQueryChoiceParameter models=[('models:FieldPetsGetQueryChoiceParameter', 'root', 'ignore', True)]
 use /paths/~1pets/get response_body 200: native root models:FieldPetsGetResponse models=[('models:FieldPetsGetResponse', 'root', 'ignore', True), ('models:Owner', 'model', 'allow', True), ('models:Pet', 'model', 'ignore', True)]
 use /paths/~1pets/post request_body: envelope model models:Pet models=[('models:Owner', 'model', 'allow', True), ('models:Pet', 'model', 'ignore', True)]
 use /paths/~1pets/post response_body 201: native model models:Pet models=[('models:Owner', 'model', 'allow', True), ('models:Pet', 'model', 'ignore', True)]
@@ -18,4 +17,3 @@ created-server-serialize-snapshot: wire={"id":1,"name":"Mimi","status":"new","ni
 created-client-convert: converted Pet(id=1, name='Mimi', status='new', label=None, nick_name=None, password=None, kind=<Kind.cat: 'cat'>, owner=None, co_owner=None, born=None, price=None, cost=None, weight=None, labels=None, scores=None, visits=0)
 created-client-convert-long: NativeValidationError native.string_too_long@/name['name']
 created-client-convert-type: NativeValidationError native.int_parsing@/id['id']
-created-client-needs-schema: needs schema False ambiguous False

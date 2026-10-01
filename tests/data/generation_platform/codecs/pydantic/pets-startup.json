@@ -14,6 +14,9 @@
     {"name": "missing-model", "use": "/paths/~1pets/post response_body 201", "models": {"models:Owner": ""}},
     {"name": "other-model", "use": "/paths/~1pets/post response_body 201", "models": {"models:Pet": "models:Owner"}},
     {"name": "root-model", "use": "/paths/~1pets/get response_body 200", "models": {"models:FieldPetsGetResponse": "models:Pet"}},
+    {"name": "opaque-model", "use": "/paths/~1pets/post response_body 201", "surface": "client",
+     "binding": {"native_kind": "scalar", "models": [], "type": {"node": "LeafNode"}},
+     "decode": {"id": 1, "name": "Mimi", "status": "new", "owner": {"name": "Ann", "e-mail": "ann@example"}}},
     {"name": "unknown-schema", "use": "/paths/~1pets/post response_body 201", "binding": {"schema_id": "https://dcg.invalid/inputs/missing#"},
      "surface": "client", "decode": {}}
   ]
