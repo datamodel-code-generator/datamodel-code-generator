@@ -174,11 +174,26 @@ def _stat(file: BinaryIO) -> _Stat:
     return stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns
 
 
-def _regular(path: Path) -> BinaryIO:
-    """Open a regular file, refusing anything else before opening it, since a FIFO's open would wait for a writer."""
-    if not S_ISREG(path.stat().st_mode):
+def _irregular(stat: os.stat_result) -> None:
+    """Refuse a file that is not a regular file, such as a FIFO, a device, or a directory."""
+    if not S_ISREG(stat.st_mode):
         raise NonResumableSourceError(source_kind="stream")
-    return path.open("rb")
+
+
+def _regular(path: Path) -> BinaryIO:
+    """Open a regular file, refusing anything else before opening it and the descriptor it opened.
+
+    The open does not wait for a writer, even when the path became a FIFO after it was checked, and the descriptor is
+    checked again; nonblocking mode changes nothing for a regular file's reads.
+    """
+    _irregular(path.stat())
+    descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_BINARY", 0))
+    with ExitStack() as stack:
+        stack.callback(os.close, descriptor)
+        _irregular(os.fstat(descriptor))
+        file = os.fdopen(descriptor, "rb")
+        stack.pop_all()
+    return file
 
 
 def _digested(file: BinaryIO, size: int) -> UploadIdentity:
