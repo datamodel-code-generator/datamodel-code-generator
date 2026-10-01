@@ -32,6 +32,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._runtime.protocols.records import RequestTarget, Selector
 
 __all__ = (
+    "AdapterSignature",
     "AsciiBytes",
     "Binding",
     "Continuation",
@@ -54,6 +55,7 @@ __all__ = (
     "LiteralValue",
     "NextUrlContinuation",
     "NoResult",
+    "NoSignature",
     "OperationResult",
     "PaginationHelper",
     "PollInterval",
@@ -101,7 +103,7 @@ _LATER: Final = frozenset({"websocket", "cache", "resumable_upload", "batch", "q
 _HMAC_SIGNATURES: Final = ("hmac-sha256", "hmac-sha512")
 _PUBLIC_KEY_SIGNATURES: Final = ("ed25519", "rsa-pss-sha256")
 _SIGNATURES: Final = (*_HMAC_SIGNATURES, *_PUBLIC_KEY_SIGNATURES)
-_LATER_SIGNATURES: Final = ("adapter", "none")
+_FACT_CHOICES: Final = ("required", "none")
 _ENCODINGS: Final = {
     "hex": frozenset("0123456789ABCDEFabcdef"),
     "base64": frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="),
@@ -442,13 +444,30 @@ class PublicKeySignature(_Signature):
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class AdapterSignature:
+    """A signature the caller's verifier checks, and whether it must return each fact; `none` declares it absent."""
+
+    kind: ClassVar[Literal["adapter"]] = "adapter"
+
+    timestamp: Literal["required", "none"]
+    delivery_id: Literal["required", "none"]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class NoSignature:
+    """No signature: the helper only decodes an event, whose delivery nothing authenticates."""
+
+    kind: ClassVar[Literal["none"]] = "none"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class WebhookHelper:
-    """Verify a signed webhook delivery and decode its event."""
+    """Verify a signed webhook delivery and decode its event, or only decode an unsigned one."""
 
     kind: ClassVar[Literal["webhook"]] = "webhook"
 
     event_schema: SchemaRef | EventMapping
-    signature: HmacSignature | PublicKeySignature
+    signature: HmacSignature | PublicKeySignature | AdapterSignature | NoSignature
     duplicates: Literal["report", "reject"] = "report"
     enabled: bool = True
 
@@ -495,6 +514,8 @@ _RECORDS: Final = frozenset({
     AsciiBytes,
     HmacSignature,
     PublicKeySignature,
+    AdapterSignature,
+    NoSignature,
     WebhookHelper,
     ProtocolConfiguration,
 })
@@ -1320,7 +1341,8 @@ class _Validator:  # noqa: PLR0904
         return self.distinct(at, reasons, "a reconnect reason")
 
     def webhook(self, value: object, at: str) -> Tree | _Invalid:
-        return self.record(
+        """Convert a webhook helper, refusing to reject duplicates of deliveries that are unsigned."""
+        webhook = self.record(
             value,
             at,
             {
@@ -1332,12 +1354,14 @@ class _Validator:  # noqa: PLR0904
             },
             "a helper definition",
         )
+        if webhook is not INVALID and webhook["signature"]["kind"] == "none" and webhook["duplicates"] == "reject":
+            self.conflict(f"{at}.duplicates", f"{at}.duplicates can be 'reject' only for a signed webhook")
+            return INVALID
+        return webhook
 
     def signature(self, value: object, at: str) -> object:
-        """Convert a signature profile, refusing later kinds unread and framing that leaves a signed part ambiguous."""
-        if isinstance(value, Mapping) and (kind := value.get("kind")) in _LATER_SIGNATURES:
-            self.problems.append(_unsupported(f"{at}.kind", f"The {kind} signature is not supported yet"))
-            return INVALID
+        """Convert a signature profile, refusing framing that leaves a signed part of a builtin one ambiguous."""
+        fact = self.choice(*_FACT_CHOICES)
         settings: Spec = {
             "header": (self.header, REQUIRED),
             "encoding": (self.choice(*_ENCODINGS), REQUIRED),
@@ -1349,8 +1373,17 @@ class _Validator:  # noqa: PLR0904
             "signed_parts": (self.signed_parts, REQUIRED),
             "field_constraints": (self.constraints, {}),
         }
-        signature = self.tagged(value, at, "kind", dict.fromkeys(_SIGNATURES, settings), "a signature")
-        if signature is not INVALID and (conflict := _ambiguity(signature, at)) is not None:
+        variants: dict[str, Spec] = {
+            **dict.fromkeys(_SIGNATURES, settings),
+            "adapter": {"timestamp": (fact, REQUIRED), "delivery_id": (fact, REQUIRED)},
+            "none": {},
+        }
+        signature = self.tagged(value, at, "kind", variants, "a signature")
+        if (
+            signature is not INVALID
+            and signature["kind"] in _SIGNATURES
+            and (conflict := _ambiguity(signature, at)) is not None
+        ):
             self.conflict(*conflict)
             return INVALID
         return signature

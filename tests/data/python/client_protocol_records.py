@@ -7,6 +7,7 @@ from functools import reduce
 from typing import TYPE_CHECKING
 
 from datamodel_code_generator._client.protocols import (
+    AdapterSignature,
     AsciiBytes,
     Binding,
     CountContinuation,
@@ -23,6 +24,7 @@ from datamodel_code_generator._client.protocols import (
     LiteralValue,
     NextUrlContinuation,
     NoResult,
+    NoSignature,
     OperationResult,
     PaginationHelper,
     PollingHelper,
@@ -488,10 +490,51 @@ PUBLIC_KEYS = ProtocolConfiguration(
     }
 )
 
+INVOICE = SchemaRef(pointer="/components/schemas/Invoice")
+CUSTOMER = SchemaRef(pointer="/components/schemas/Customer")
+BY_TYPE = EventDiscriminator(from_="body", pointer="/type")
+ADAPTERS = ProtocolConfiguration(
+    helpers={
+        "stripe.event": WebhookHelper(
+            event_schema=EventMapping(
+                discriminator=BY_TYPE,
+                mapping={"invoice.paid": INVOICE, "invoice.updated": INVOICE, "customer.created": CUSTOMER},
+            ),
+            signature=AdapterSignature(timestamp="required", delivery_id="none"),
+        ),
+        "adapted.message": WebhookHelper(
+            event_schema=MESSAGE, signature=AdapterSignature(timestamp="required", delivery_id="required")
+        ),
+        "adapted.plain": WebhookHelper(
+            event_schema=MESSAGE,
+            duplicates="reject",
+            signature=AdapterSignature(timestamp="none", delivery_id="none"),
+        ),
+        "mapped.event": WebhookHelper(
+            event_schema=EventMapping(
+                discriminator=BY_TYPE, mapping={"invoice.paid": INVOICE, "customer.created": CUSTOMER}
+            ),
+            signature=BODY_ONLY,
+        ),
+        "unsigned.event": WebhookHelper(
+            event_schema=EventMapping(
+                discriminator=EventDiscriminator(from_="body", pointer="/meta/type"),
+                mapping={"invoice.paid": INVOICE, "customer.created": CUSTOMER},
+            ),
+            signature=NoSignature(),
+        ),
+        "unsigned.message": WebhookHelper(
+            event_schema=SchemaRef(pointer="/webhooks/message/post/requestBody/content/application~1json/schema"),
+            signature=NoSignature(),
+        ),
+    }
+)
+
 RECORDS = {
     "disabled": DISABLED,
     "invalid": INVALID,
     "shape": SHAPE,
     "webhooks": WEBHOOKS,
     "public_keys": PUBLIC_KEYS,
+    "adapters": ADAPTERS,
 }

@@ -8,8 +8,17 @@ helpers:
     signature: hmac
   shape.kind: {kind: webhook, event_schema: {pointer: /components/schemas/Message}, signature: {kind: hmac-md5}}
   shape.ed25519: {kind: webhook, event_schema: {pointer: /components/schemas/Message}, signature: {kind: ed25519}}
-  later.adapter: {kind: webhook, event_schema: {pointer: /components/schemas/Message}, signature: {kind: adapter}}
-  later.none: {kind: webhook, event_schema: {pointer: /components/schemas/Message}, signature: {kind: none}}
+  shape.adapter: {kind: webhook, event_schema: {pointer: /components/schemas/Message}, signature: {kind: adapter}}
+  shape.adapter_facts:
+    kind: webhook
+    event_schema: {pointer: /components/schemas/Message}
+    signature: {kind: adapter, timestamp: optional, delivery_id: {header: X-Id}, header: X-Signature}
+  shape.none: {kind: webhook, event_schema: {pointer: /components/schemas/Message}, signature: {kind: none, prefix: ""}}
+  conflict.unsigned_duplicates:
+    kind: webhook
+    event_schema: {pointer: /components/schemas/Message}
+    duplicates: reject
+    signature: {kind: none}
   shape.settings:
     kind: webhook
     event_schema: {pointer: /components/schemas/Message}

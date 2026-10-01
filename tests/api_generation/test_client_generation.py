@@ -72,6 +72,8 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
         "webhooks",
         "webhooks-schema",
         "webhooks-public-keys",
+        "webhooks-adapters",
+        "webhooks-unsigned",
         "streams",
         "streams-mixed",
         "ndjson",
@@ -146,6 +148,7 @@ def test_client_protocols(case: str, tmp_path: Path) -> None:
         ("pagination", "pagination-documents", "helper-documents"),
         ("webhooks", "webhooks-python", "webhook-records"),
         ("webhooks-public-keys", "webhooks-public-keys-python", "webhook-public-key-records"),
+        ("webhooks-adapters", "webhooks-adapters-python", "webhook-adapter-records"),
     ],
 )
 def test_client_helper_digests(first: str, second: str, expected: str, tmp_path: Path) -> None:
