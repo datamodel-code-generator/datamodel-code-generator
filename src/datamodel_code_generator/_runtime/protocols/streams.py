@@ -1,8 +1,8 @@
-"""Server-sent event streams: the WHATWG event-stream parser, typed events, and the handles that read them.
+"""Server-sent event and NDJSON streams: their parsers, typed events, and the handles that read them.
 
 A stream helper opens its operation as one child call of a session of its own and hands the response to a handle, which
-reads only the bytes the next event needs. The response's idle limit counts only while a step waits for bytes; between
-steps only the stream's total limit and the session's deadline run.
+reads only the bytes the next event or record needs. The response's idle limit counts only while a step waits for
+bytes; between steps only the stream's total limit and the session's deadline run.
 """
 
 from __future__ import annotations
@@ -105,8 +105,9 @@ class StreamEvent(Generic[T_co]):
     """One event of a stream: its decoded data, SSE type, last event ID, reconnection time, sequence, and raw data.
 
     The event ID is the last one the stream set, None when it set none or an empty one, and the reconnection time the
-    last valid `retry` in milliseconds. Events are numbered from 1 in the order the stream dispatched them. The data,
-    the event ID, and the raw data never appear in the representation.
+    last valid `retry` in milliseconds. Events are numbered from 1 in the order the stream dispatched them. An NDJSON
+    record has the empty string as its type, and neither an ID nor a reconnection time. The data, the event ID, and the
+    raw data never appear in the representation.
     """
 
     data: T_co = field(repr=False)
@@ -134,12 +135,14 @@ def unknown_event(discriminator: str, raw_data: str) -> UnknownEvent:
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class EventPlan(Generic[T]):
-    """Everything fixed about one generated SSE helper: its identity, call, media type, events, errors, and end.
+    """Everything fixed about one generated stream helper: its identity, call, media type, events, errors, and end.
 
-    `event` decodes the data of a helper with one event schema; `routes` decode it by the discriminator the event's SSE
-    type gives, or the string `discriminator` reads from its JSON data, and `unknown` keeps an unmapped one. `errors`
-    decode the declared error events, by the same discriminator. A `sentinel` completion ends at the raw data
-    `terminal` and an `event_type` one at that SSE type; neither terminal event is decoded or delivered.
+    `kind` frames the body as server-sent events or as NDJSON records, one line each. `event` decodes the data of a
+    helper with one event schema; `routes` decode it by the discriminator the event's SSE type gives, or the string
+    `discriminator` reads from its JSON data, and `unknown` keeps an unmapped one. `errors` decode the declared error
+    events, by the same discriminator. A `sentinel` completion ends at the raw data `terminal` and an `event_type` one
+    at that SSE type; neither terminal event is decoded or delivered. An NDJSON body's bytes after its last line end
+    are a record only when `final_line` is `allow_eof`.
     """
 
     helper_id: str
@@ -154,16 +157,28 @@ class EventPlan(Generic[T]):
     errors: tuple[tuple[str, NativeValue[object]], ...] = ()
     completion: Literal["eof", "sentinel", "event_type"] = "eof"
     terminal: str | None = None
+    kind: Literal["sse", "ndjson"] = "sse"
+    final_line: Literal["require_newline", "allow_eof"] = "require_newline"
 
 
 @dataclass(frozen=True, slots=True)
 class _Frame:
-    """A dispatched event: its joined data, its type, the last event ID, and the reconnection time."""
+    """A dispatched event: its joined data, its type, the last event ID, and the reconnection time.
+
+    An NDJSON record is a frame of its line, without a type, an event ID, or a reconnection time, that keeps the line's
+    bytes as `raw`, which its data was decoded from.
+    """
 
     data: str
     event_type: str
     event_id: str | None
     retry_ms: int | None
+    raw: bytes | None = None
+
+    @property
+    def body(self) -> bytes:
+        """Return the bytes of the data: the line's own, or the data encoded as UTF-8."""
+        return self.data.encode() if self.raw is None else self.raw
 
 
 class _Parser:
@@ -258,6 +273,10 @@ class _Parser:
         pending = len(self._buffer)
         return self._frame_bytes + pending if pending or self._fields else None
 
+    @staticmethod
+    def last() -> None:
+        """Return no event at the end of the stream, which dispatches only at a blank line."""
+
     def _line(self, line: bytes) -> _Frame | None:
         """Interpret one line: dispatch at a blank one, skip a comment, and keep a field's value."""
         if not line:
@@ -300,6 +319,78 @@ class _Parser:
 def _limit(kind: Literal["line", "event"], limit: int, observed: int) -> None:
     if observed > limit:
         raise ProtocolSizeError(kind=kind, limit=limit, observed=observed, unit="bytes")
+
+
+_NO_TYPE: Final = ""
+
+
+class _Lines:
+    """Split an NDJSON body into records, one line each, ended by LF, or CRLF whose CR is not part of the record.
+
+    A record is strict UTF-8, whose failure raises UnicodeDecodeError. A record counts toward the line and the record
+    limits, the smaller of which, counted in bytes before the line is kept, raises ProtocolSizeError of its kind; the
+    CR of a CRLF is not counted, nor is a CR that ends the bytes kept, which may be one. Each byte kept is searched for
+    LF at most twice, so a line arriving in many chunks costs time linear in its length. The bytes after the last LF
+    are a final record at the end of the body only when `allow_eof` is set.
+    """
+
+    __slots__ = ("_buffer", "_kind", "_maximum", "_scanned", "allow_eof")
+
+    def __init__(self, max_line: int, max_record: int, *, allow_eof: bool) -> None:
+        """Start before the first byte, with an empty buffer."""
+        self._kind: Literal["line", "event"] = "line" if max_line <= max_record else "event"
+        self._maximum = min(max_line, max_record)
+        self.allow_eof = allow_eof
+        self._buffer = bytearray()
+        self._scanned = 0
+
+    def feed(self, chunk: bytes) -> None:
+        """Keep the bytes of the next chunk, refusing them first when they extend the unended line over its limit.
+
+        The bytes kept are all of a line that has not ended, as `next` consumed the others.
+        """
+        buffer = self._buffer
+        end = len(chunk) if (ended := chunk.find(b"\n")) < 0 else ended
+        last = chunk[end - 1] if end else buffer[-1] if buffer else None
+        _limit(self._kind, self._maximum, len(buffer) + end - (last == _CR))
+        buffer += chunk
+
+    def next(self) -> _Frame | None:
+        """Return the next record from the bytes kept, or None when its line has not ended yet."""
+        buffer = self._buffer
+        if (end := buffer.find(b"\n", self._scanned)) < 0:
+            self._scanned = len(buffer)
+            self._measure(buffer, len(buffer))
+            return None
+        self._measure(buffer, end)
+        record = buffer[:end]
+        del buffer[: end + 1]
+        self._scanned = 0
+        return _record(record)
+
+    def _measure(self, buffer: bytearray, end: int) -> None:
+        """Refuse the record of the bytes kept up to an end over its limit, without the CR the end may follow."""
+        _limit(self._kind, self._maximum, end - (end > 0 and buffer[end - 1] == _CR))
+
+    def last(self) -> _Frame | None:
+        """Return the record of the bytes after the last line end at the end of the body, when it allows one."""
+        if not self.allow_eof or not (buffer := self._buffer):
+            return None
+        record = _record(buffer)
+        buffer.clear()
+        return record
+
+    def incomplete(self) -> int | None:
+        """Return the bytes of the line an end of the stream cuts, or None when it ends after a line end."""
+        return len(self._buffer) or None
+
+
+def _record(line: bytearray) -> _Frame:
+    """Return the record of a line, without the CR of a CRLF, decoded as strict UTF-8."""
+    if line.endswith(b"\r"):
+        del line[-1]
+    raw = bytes(line)
+    return _Frame(raw.decode(), _NO_TYPE, None, None, raw)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -439,7 +530,10 @@ _ENDED: Final = _End.END
 
 
 class _Events(Generic[T]):
-    """What the synchronous and asyncio streams share: the parser, the plan's decoding, the state, and the counts."""
+    """What the synchronous and asyncio streams share: the parser, the plan's decoding, the state, and the counts.
+
+    The plan's kind chooses the parser: the event-stream parser for SSE, or the line splitter for NDJSON.
+    """
 
     __slots__ = (
         "_delivered",
@@ -447,9 +541,9 @@ class _Events(Generic[T]):
         "_frames",
         "_info",
         "_lock",
-        "_max_event_bytes",
         "_native",
         "_plan",
+        "_prefix",
         "_routes",
         "_sequence",
         "_session",
@@ -464,8 +558,12 @@ class _Events(Generic[T]):
         self._session = session
         self._info = info
         self._native = native
-        self._max_event_bytes = limits.max_event_bytes
-        self._frames = _Parser(limits.max_line_bytes, limits.max_event_bytes)
+        self._prefix = min(limits.max_event_bytes, MAX_RAW_PREFIX)
+        self._frames = (
+            _Parser(limits.max_line_bytes, limits.max_event_bytes)
+            if plan.kind == "sse"
+            else _Lines(limits.max_line_bytes, limits.max_event_bytes, allow_eof=plan.final_line == "allow_eof")
+        )
         self._routes: Mapping[str, NativeValue[T]] = dict(plan.routes)
         self._errors: Mapping[str, NativeValue[object]] = dict(plan.errors)
         self._lock = threading.Lock()
@@ -537,14 +635,31 @@ class _Events(Generic[T]):
         )
         return error
 
-    def _frame(self, chunk: bytes | None = None) -> _Frame | None:
-        """Keep a chunk read, then return the next dispatched event the bytes kept hold, or None when it needs more."""
+    def _frame(self, chunk: bytes | None = None, *, last: bool = False) -> _Frame | None:
+        """Keep a chunk read, then return the next dispatched event the bytes kept hold, or None when it needs more.
+
+        At the end of the body, `last` returns the event the bytes kept end with instead. A record that is not UTF-8
+        raises StreamDecodeError with neither a cause nor a context, either of which would hold the whole record.
+        """
+        frames = self._frames
+        prefix = b""
         try:
+            if last:
+                return frames.last()
             if chunk is not None:
-                self._frames.feed(chunk)
-            return self._frames.next()
+                frames.feed(chunk)
+            return frames.next()
         except ProtocolSizeError as error:
             raise self._stamped(error) from None
+        except UnicodeDecodeError as error:
+            prefix = error.object[: self._prefix + 1]
+        self._sequence += 1
+        raise self._stamped(self._decode_error(prefix, "malformed"))
+
+    def _last(self) -> StreamEvent[T] | _End:
+        """Return the event the body ends with, or else how the stream ended."""
+        frame = self._frame(last=True)
+        return self._ended() if frame is None else self._event(frame)
 
     def _ended(self) -> _End:
         """Return the end of a response that ended the stream as declared, raising the failure of one that did not."""
@@ -577,14 +692,16 @@ class _Events(Generic[T]):
                 condition: Literal["missing", "null", "type"] = (
                     "missing" if found is MISSING else "null" if found is None else "type"
                 )
-                raise self._stamped(self._decode_error(frame, condition, location=selector))
+                raise self._stamped(self._decode_error(frame.body, condition, location=selector))
             key = found
         if (error := self._errors.get(key)) is not None:
             data = self._decoded(error, frame, wire)
-            raise self._stamped(StreamRemoteError(event_type=frame.event_type, data=data, sequence=self._sequence))
+            raise self._stamped(
+                StreamRemoteError(event_type=frame.event_type or None, data=data, sequence=self._sequence)
+            )
         if (decoder := plan.event) is None and (decoder := self._routes.get(key)) is None:
             if (unknown := plan.unknown) is None:
-                raise self._stamped(self._decode_error(frame, "value", location=selector))
+                raise self._stamped(self._decode_error(frame.body, "value", location=selector))
             value = unknown(key, frame.data)
         else:
             value = self._decoded(decoder, frame, wire)
@@ -600,10 +717,11 @@ class _Events(Generic[T]):
 
     def _wire(self, frame: _Frame) -> WireValue:
         """Return an event's data parsed as JSON, raising StreamDecodeError for data that does not parse."""
+        data = frame.body
         try:
-            return decode_json(frame.data.encode())
+            return decode_json(data)
         except _DATA_ERRORS as error:
-            raise self._stamped(self._decode_error(frame, "malformed", cause=error)) from None
+            raise self._stamped(self._decode_error(data, "malformed", cause=error)) from None
 
     def _decoded(self, decoder: NativeValue[U], frame: _Frame, wire: WireValue | None) -> U:
         """Return an event's data decoded, by its schema or through its converter alone as the call validates."""
@@ -612,19 +730,18 @@ class _Events(Generic[T]):
         try:
             return decoder.convert(wire) if self._native else decoder(wire)
         except _DATA_ERRORS as error:
-            raise self._stamped(self._decode_error(frame, "value", cause=error)) from None
+            raise self._stamped(self._decode_error(frame.body, "value", cause=error)) from None
 
     def _decode_error(
         self,
-        frame: _Frame,
+        data: bytes,
         condition: Literal["missing", "null", "type", "value", "malformed"],
         *,
         location: BodySelector | None = None,
         cause: BaseException | None = None,
     ) -> StreamDecodeError:
         """Return the decode failure of an event, keeping at most the event limit or 64 KiB of its raw data."""
-        data = frame.data.encode()
-        limit = min(self._max_event_bytes, MAX_RAW_PREFIX)
+        limit = self._prefix
         return StreamDecodeError(
             sequence=self._sequence,
             raw_prefix=data[:limit],
@@ -637,7 +754,7 @@ class _Events(Generic[T]):
 
 @final
 class EventStream(_Events[T]):
-    """A synchronous SSE stream: iterate over its events, or over their data with `data()`.
+    """A synchronous SSE or NDJSON stream: iterate over its events, or over their data with `data()`.
 
     The stream owns its response until it ends, fails, or closes. It is read by one consumer at a time; after a failure
     or `close()` every step raises ProtocolStateError, and after its end every step stops.
@@ -698,7 +815,7 @@ class EventStream(_Events[T]):
         frame = self._frame()
         while frame is None:
             if (chunk := next(self._chunks, None)) is None:
-                return self._ended()
+                return self._last()
             frame = self._frame(chunk)
         return self._event(frame)
 
@@ -721,7 +838,7 @@ class EventStream(_Events[T]):
 
 @final
 class AsyncEventStream(_Events[T]):
-    """An asyncio SSE stream: iterate over its events with `async for`, or over their data with `data()`.
+    """An asyncio SSE or NDJSON stream: iterate over its events with `async for`, or over their data with `data()`.
 
     The stream owns its response until it ends, fails, or closes. It is read by one task at a time; after a failure or
     `aclose()` every step raises ProtocolStateError, and after its end every step stops.
@@ -782,7 +899,7 @@ class AsyncEventStream(_Events[T]):
         frame = self._frame()
         while frame is None:
             if (chunk := await anext(self._chunks, None)) is None:
-                return self._ended()
+                return self._last()
             frame = self._frame(chunk)
         return self._event(frame)
 

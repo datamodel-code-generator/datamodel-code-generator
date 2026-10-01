@@ -12,20 +12,20 @@
   write client/transports.py
   write client/protocols/__init__.py
   write client/resources/__init__.py
-  write client/resources/events/__init__.py
-  write client/resources/events/_sync.py
-  write client/resources/events/_async.py
-  write client/resources/feed/__init__.py
-  write client/resources/feed/_sync.py
-  write client/resources/feed/_async.py
+  write client/resources/records/__init__.py
+  write client/resources/records/_sync.py
+  write client/resources/records/_async.py
+  write client/resources/search/__init__.py
+  write client/resources/search/_sync.py
+  write client/resources/search/_async.py
   write client/resources/status/__init__.py
   write client/resources/status/_sync.py
   write client/resources/status/_async.py
   write client/types/__init__.py
-  write client/types/events/__init__.py
-  write client/types/events/_operations.py
-  write client/types/feed/__init__.py
-  write client/types/feed/_operations.py
+  write client/types/records/__init__.py
+  write client/types/records/_operations.py
+  write client/types/search/__init__.py
+  write client/types/search/_operations.py
   write client/types/status/__init__.py
   write client/types/status/_operations.py
   write client/_generated/__init__.py
@@ -38,15 +38,15 @@
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['events.messages', 'events.typed', 'events.tagged', 'feed.all'] bindings 13
+  namespace client helpers ['records.all', 'records.lenient', 'records.tagged', 'search.all'] bindings 9
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper events.messages sse enabled True /inputs/target_config/protocol_metadata/helpers/events.messages 47deb62e9b7f5c9aca31b278bef559cf79bf8ebfb407d55aa696a19b7c29efab
-  helper events.typed sse enabled True /inputs/target_config/protocol_metadata/helpers/events.typed 047624039d1515adc69e1e230e74d8dd69aaf6b29e945ee089eda87db70cc580
-  helper events.tagged sse enabled True /inputs/target_config/protocol_metadata/helpers/events.tagged 30242dd9c3bbafd4d580c05e69ae1f3239c9b39fd434847ffb202cf0286fa4e6
-  helper feed.all sse enabled True /inputs/target_config/protocol_metadata/helpers/feed.all cbd2a9efc2b2e8cace2e77be641622bce70d90e03fb73d0b57bc730a8d182152
+  helper records.all ndjson enabled True /inputs/target_config/protocol_metadata/helpers/records.all e08a809dc409a6397205f0a58c6f60003179fda3a6e995c74a4b4ffb55f233bf
+  helper records.lenient ndjson enabled True /inputs/target_config/protocol_metadata/helpers/records.lenient 6a9c73866b74cae0dcf4f235570bb56f18a7325658aaff8e416d02e9aae64fa7
+  helper records.tagged ndjson enabled True /inputs/target_config/protocol_metadata/helpers/records.tagged e48aab088550d428cfc8a3b5b2e0c23e594bba7dee87b492461ed2df63d4ad7e
+  helper search.all ndjson enabled True /inputs/target_config/protocol_metadata/helpers/search.all 8868f178172b709d45f8bb91c4c0a51560d0f13fd2fef17d7956a584cda0abb9
   {
     "helpers": {
-      "events.messages": {
+      "records.all": {
         "completion": {
           "kind": "eof"
         },
@@ -54,20 +54,43 @@
         "error_events": {},
         "event_schema": {
           "document": "/inputs/root",
-          "pointer": "/components/schemas/Message"
+          "pointer": "/components/schemas/Record"
         },
-        "kind": "sse",
-        "media": "text/event-stream",
+        "final_line": "require_newline",
+        "kind": "ndjson",
+        "media": "application/x-ndjson",
         "operation": {
           "document": "/inputs/root",
-          "pointer": "/paths/~1events/get"
+          "pointer": "/paths/~1records/get"
         },
         "resume": {
           "enabled": false
         },
         "unknown": "error"
       },
-      "events.tagged": {
+      "records.lenient": {
+        "completion": {
+          "kind": "eof"
+        },
+        "enabled": true,
+        "error_events": {},
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Record"
+        },
+        "final_line": "allow_eof",
+        "kind": "ndjson",
+        "media": "application/x-ndjson",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1records/get"
+        },
+        "resume": {
+          "enabled": false
+        },
+        "unknown": "error"
+      },
+      "records.tagged": {
         "completion": {
           "kind": "sentinel",
           "value": "[DONE]"
@@ -95,56 +118,19 @@
             }
           }
         },
-        "kind": "sse",
-        "media": "text/event-stream",
+        "final_line": "require_newline",
+        "kind": "ndjson",
+        "media": "application/x-ndjson",
         "operation": {
           "document": "/inputs/root",
-          "pointer": "/paths/~1events/get"
-        },
-        "resume": {
-          "enabled": false
-        },
-        "unknown": "error"
-      },
-      "events.typed": {
-        "completion": {
-          "kind": "event_type",
-          "value": "done"
-        },
-        "enabled": true,
-        "error_events": {
-          "error": {
-            "document": "/inputs/root",
-            "pointer": "/components/schemas/StreamError"
-          }
-        },
-        "event_schema": {
-          "discriminator": {
-            "from": "event_type"
-          },
-          "mapping": {
-            "created": {
-              "document": "/inputs/root",
-              "pointer": "/components/schemas/Created"
-            },
-            "deleted": {
-              "document": "/inputs/root",
-              "pointer": "/components/schemas/Deleted"
-            }
-          }
-        },
-        "kind": "sse",
-        "media": "text/event-stream",
-        "operation": {
-          "document": "/inputs/root",
-          "pointer": "/paths/~1events/get"
+          "pointer": "/paths/~1records/get"
         },
         "resume": {
           "enabled": false
         },
         "unknown": "raw"
       },
-      "feed.all": {
+      "search.all": {
         "completion": {
           "kind": "sentinel",
           "value": "[DONE]"
@@ -153,13 +139,14 @@
         "error_events": {},
         "event_schema": {
           "document": "/inputs/root",
-          "pointer": "/components/schemas/Message"
+          "pointer": "/components/schemas/Record"
         },
-        "kind": "sse",
-        "media": "text/event-stream",
+        "final_line": "allow_eof",
+        "kind": "ndjson",
+        "media": "application/jsonl",
         "operation": {
           "document": "/inputs/root",
-          "pointer": "/paths/~1feed/post"
+          "pointer": "/paths/~1search/post"
         },
         "resume": {
           "enabled": false
@@ -169,12 +156,12 @@
     },
     "schema_version": 1
   }
-  /selection/selected_operations/0 events.stream_events(query:topic=topic, header:Last-Event-ID=last_event_id)
-    exports client.types.events.StreamEventsResponse client.types.events.StreamEventsErrorData client.types.events.StreamEventsHTTPError
-    exports client.types.events.StreamEventsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/1 feed.stream_feed()
-    exports client.types.feed.StreamFeedResponse client.types.feed.StreamFeedErrorData client.types.feed.StreamFeedHTTPError
-    exports client.types.feed.StreamFeedRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/0 records.stream_records(query:topic=topic)
+    exports client.types.records.StreamRecordsResponse client.types.records.StreamRecordsErrorData client.types.records.StreamRecordsHTTPError
+    exports client.types.records.StreamRecordsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 search.search()
+    exports client.types.search.SearchResponse client.types.search.SearchErrorData client.types.search.SearchHTTPError
+    exports client.types.search.SearchRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
   /selection/selected_operations/2 status.get_status()
     exports client.types.status.GetStatusResponse client.types.status.GetStatusErrorData client.types.status.GetStatusHTTPError
     exports client.types.status.GetStatusRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
@@ -216,9 +203,9 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
 ```json
 [
   {
-    "operation": "events.stream_events",
+    "operation": "records.stream_records",
     "method": "GET",
-    "path": "/events",
+    "path": "/records",
     "retry_safety": "method_default",
     "idempotency": null,
     "retry_after_ms_header": null,
@@ -227,9 +214,9 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
     "auth_challenge_less_401": false
   },
   {
-    "operation": "feed.stream_feed",
+    "operation": "search.search",
     "method": "POST",
-    "path": "/feed",
+    "path": "/search",
     "retry_safety": "method_default",
     "idempotency": null,
     "retry_after_ms_header": null,
@@ -254,7 +241,7 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
 ## Protocol helpers
 
 `client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.
-An SSE helper's `open` sends its operation in a session of its own and returns an event stream once the
+An NDJSON helper's `open` sends its operation in a session of its own and returns an event stream once the
 response is a declared success; the stream reads only the bytes each event needs, and `close()` or `aclose()` releases
 the response.
 See the runtime reference for their limits.
@@ -262,32 +249,32 @@ See the runtime reference for their limits.
 ```json
 [
   {
-    "helper": "events.messages",
-    "kind": "sse",
-    "operation": "events.stream_events",
+    "helper": "records.all",
+    "kind": "ndjson",
+    "operation": "records.stream_records",
     "method": "GET",
-    "path": "/events"
+    "path": "/records"
   },
   {
-    "helper": "events.typed",
-    "kind": "sse",
-    "operation": "events.stream_events",
+    "helper": "records.lenient",
+    "kind": "ndjson",
+    "operation": "records.stream_records",
     "method": "GET",
-    "path": "/events"
+    "path": "/records"
   },
   {
-    "helper": "events.tagged",
-    "kind": "sse",
-    "operation": "events.stream_events",
+    "helper": "records.tagged",
+    "kind": "ndjson",
+    "operation": "records.stream_records",
     "method": "GET",
-    "path": "/events"
+    "path": "/records"
   },
   {
-    "helper": "feed.all",
-    "kind": "sse",
-    "operation": "feed.stream_feed",
+    "helper": "search.all",
+    "kind": "ndjson",
+    "operation": "search.search",
     "method": "POST",
-    "path": "/feed"
+    "path": "/search"
   }
 ]
 ```
@@ -467,9 +454,9 @@ bounded wait, retains unfinished owned work, and preserves the primary error, at
 possible. Client/view closure refuses new work and interrupts active calls at observation points. Retrying close can
 wait for retained cleanup; it does not authorize another send or restore an expired logical deadline.
 
-## SSE streams
+## NDJSON streams
 
-An SSE helper's `open` is one session holding one logical call. The call's total timeout bounds only
+An NDJSON helper's `open` is one session holding one logical call. The call's total timeout bounds only
 acquiring the response, which must be a declared success of the helper's media type; afterward the stream's idle
 timeout, the call's `stream_total_timeout`, and the session's deadline apply. Each limit comes from the call's
 options, then `ProtocolClientOptions.defaults` for the helper, then the default below. The stream types are imported
@@ -495,3 +482,9 @@ connection `StreamInterruptedError` with its transport failure as the cause. Str
 `StreamOptions(reconnect=True)` raises `ProtocolConfigurationError`. Close a stream with `with`, `async with`, or
 `close()`; leaving a loop early does not release its response, and closing the client with a stream open raises
 `CleanupError` once its cleanup timeout passes.
+
+An NDJSON body is read one line at a time: LF or CRLF ends a line, which is one record of strict UTF-8 JSON, so a
+blank line or one that is not UTF-8 or JSON raises `StreamDecodeError`. A record, without its LF or the CR of a CRLF,
+counts toward both the line and the event data size. Bytes after the last line end raise `IncompleteFrameError` unless
+the helper's `final_line` is `allow_eof`, which decodes them as the last record. A record has the empty string as its
+event type and no event ID, and a declared error record raises `StreamRemoteError` with the event type None.

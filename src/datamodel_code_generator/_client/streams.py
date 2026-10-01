@@ -1,7 +1,7 @@
-"""Plan the server-sent event stream helpers of a client target and the checks they must pass.
+"""Plan the server-sent event and NDJSON stream helpers of a client target and the checks they must pass.
 
-An SSE helper decodes the JSON data of each event by the schema its discriminator maps the event to. Each schema is
-bound as a use of the helper's stream response at the schema's location, typed as the schema's own value use, so its
+A stream helper decodes the JSON data of each event, or record, by the schema its discriminator maps it to. Each schema
+is bound as a use of the helper's stream response at the schema's location, typed as the schema's own value use, so its
 codec reads a received value; these uses join the codec plan before it is made, as the parts of a body do.
 """
 
@@ -39,16 +39,27 @@ if TYPE_CHECKING:
 
 __all__ = ("StreamSpec", "plan_streams", "stream_uses")
 
-_EVENT_STREAM: Final = "text/event-stream"
+_MEDIA: Final = {
+    "sse": ("text/event-stream",),
+    "ndjson": (
+        "application/jsonl",
+        "application/jsonlines",
+        "application/ndjson",
+        "application/x-jsonl",
+        "application/x-jsonlines",
+        "application/x-ndjson",
+    ),
+}
+_LABELS: Final = {"sse": "SSE", "ndjson": "NDJSON"}
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class StreamSpec:
-    """An SSE helper ready to render: its operation and stream media, each event and error schema's use, its schemas.
+    """A stream helper ready to render: its operation and stream media, each event and error schema's use, its schemas.
 
-    `media` is the event stream media type the operation declares, which the helper requests. An event's key is its
-    discriminator value, None for a helper with one event schema. `schemas` holds the manifest reference of every
-    schema the helper decodes, in the order of its settings.
+    `media` is the event stream or NDJSON media type the operation declares, which the helper requests. An event's key
+    is its discriminator value, None for a helper with one event schema. `schemas` holds the manifest reference of
+    every schema the helper decodes, in the order of its settings.
     """
 
     helper: Helper
@@ -91,20 +102,29 @@ def _essence(media: str) -> str:
     return media.partition(";")[0].strip().lower()
 
 
-def _stream_response(spec: OperationSpec) -> ResponseSpec | None:
-    """Return the first success response of an operation that declares an event stream, whatever its parameters."""
+def _stream_response(spec: OperationSpec, essence: str) -> ResponseSpec | None:
+    """Return the first success response of an operation that declares a media type, whatever its parameters."""
     return next(
         (
             response
             for response in spec.responses
-            if response.success and any(_essence(item.media_type) == _EVENT_STREAM for item in response.media)
+            if response.success and any(_essence(item.media_type) == essence for item in response.media)
         ),
         None,
     )
 
 
+def _media_problem(helper: Helper) -> str | None:
+    """Return why a helper's media type does not fit its kind, an event stream for SSE and JSON lines for NDJSON."""
+    media, accepted = helper.tree["media"], _MEDIA[helper.kind]
+    if _essence(media) in accepted:
+        return None
+    expected = accepted[0] if len(accepted) == 1 else f"one of {_listed(list(accepted))}"
+    return f"The media type {media!r} of {helper.name!r} is not {expected}"
+
+
 class _Streams:
-    """Check every enabled SSE helper against its operation and bind the schemas of its events."""
+    """Check every enabled stream helper against its operation and bind the schemas of its events."""
 
     def __init__(self, protocols: Protocols, request: TargetRequest, wire: WirePlan) -> None:
         """Index the documents by manifest pointer and the value use of each schema by its location."""
@@ -130,17 +150,17 @@ class _Streams:
     def helper(self, helper: Helper, spec: OperationSpec) -> tuple[StreamSpec | None, list[Diagnostic]]:
         """Check one enabled helper's settings against its operation, and bind its schemas when every check passes."""
         tree = helper.tree
-        at, name, media = helper.at, helper.name, tree["media"]
+        at, name, label = helper.at, helper.name, _LABELS[helper.kind]
+        essence = _essence(tree["media"])
         problems: list[Diagnostic] = []
         if tree["resume"]["enabled"]:
-            message = f"The SSE helper {name!r} resumes its stream, which is not supported yet"
+            message = f"The {label} helper {name!r} resumes its stream, which is not supported yet"
             problems.append(_problem("E_CLIENT_UNSUPPORTED", "target", f"{at}.resume", message, spec))
         response = None
-        if _essence(media) != _EVENT_STREAM:
-            message = f"The media type {media!r} of {name!r} is not {_EVENT_STREAM}"
+        if (message := _media_problem(helper)) is not None:
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.media", message, spec))
-        elif (response := _stream_response(spec)) is None:
-            message = f"{_label(spec)} declares no {_EVENT_STREAM} success response for the SSE helper {name!r}"
+        elif (response := _stream_response(spec, essence)) is None:
+            message = f"{_label(spec)} declares no {essence} success response for the {label} helper {name!r}"
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.operation", message, spec))
         problems.extend(self.terminal(helper, spec))
         locations: dict[str, SourceLocation] = {}
@@ -152,7 +172,7 @@ class _Streams:
                 locations[where] = location
         if problems or response is None:
             return None, problems
-        media = next(item.media_type for item in response.media if _essence(item.media_type) == _EVENT_STREAM)
+        media = next(item.media_type for item in response.media if _essence(item.media_type) == essence)
         return StreamSpec(
             helper=helper,
             operation=spec,
@@ -201,7 +221,7 @@ class _Streams:
 def stream_uses(
     protocols: Protocols | None, plan: ClientPlan, request: TargetRequest, wire: WirePlan
 ) -> tuple[tuple[StreamSpec, ...], tuple[TypeUseBinding, ...], dict[str, list[Diagnostic]]]:
-    """Check every enabled SSE helper before its codecs are planned, returning the helpers, their uses, and problems.
+    """Check every enabled stream helper before its codecs are planned, returning the helpers, uses, and problems.
 
     Each use appears once, however many helpers decode its schema from the same response.
     """
@@ -212,7 +232,7 @@ def stream_uses(
     specs: list[StreamSpec] = []
     problems: dict[str, list[Diagnostic]] = {}
     for helper in protocols.helpers:
-        if not helper.enabled or helper.kind != "sse":
+        if not helper.enabled or helper.kind not in _LABELS:
             continue
         spec = operations[protocols.operations[helper.links[0].ref].id]
         planned, problems[helper.name] = streams.helper(helper, spec)
@@ -230,7 +250,7 @@ def plan_streams(  # noqa: PLR0913, PLR0917
     request: TargetRequest,
     problems: dict[str, list[Diagnostic]],
 ) -> tuple[StreamSpec, ...]:
-    """Plan every SSE helper whose events have native codecs and whose body discriminator each schema declares.
+    """Plan every stream helper whose events have native codecs and whose body discriminator each schema declares.
 
     The problems found are added to each helper's.
     """
@@ -246,7 +266,8 @@ def plan_streams(  # noqa: PLR0913, PLR0917
             binding = bindings[use.id]
             if binding.projection_mode != "native" or binding.converter_strategy == "registered_adapter":
                 message = (
-                    f"The SSE helper {helper.name!r} decodes an envelope-projected event, which is not supported yet"
+                    f"The {_LABELS[helper.kind]} helper {helper.name!r} decodes an envelope-projected event, which is "
+                    "not supported yet"
                 )
                 found.append(_problem("E_CLIENT_UNSUPPORTED", "target", where, message, operation))
         found.extend(_discriminated(helper, spec, pages))
