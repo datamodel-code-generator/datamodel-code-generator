@@ -635,6 +635,33 @@ def _is_limiter(value: object) -> TypeIs[Limiter | AsyncLimiter]:
     return callable(getattr(value, "acquire", None))
 
 
+CompressionOrigin: TypeAlias = Literal["client", "view", "call"]
+_CODING: Final = re.compile(r"[!#$%&'*+.^_`|~0-9a-z-]+")
+_ENCODERS: Final = frozenset({"gzip"})
+
+
+def _compression(value: object) -> str | None:
+    """Return a selected request coding in lowercase, refusing another type, an invalid token, and identity.
+
+    Only codings with a builtin encoder are accepted.
+    """
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ConfigurationError(field_path=("compression",), condition="invalid_type")
+    if not _CODING.fullmatch(token := value.lower()) or token not in _ENCODERS:
+        raise ConfigurationError(field_path=("compression",), condition="invalid_value")
+    return token
+
+
+@dataclass(frozen=True, slots=True)
+class ResolvedCompression:
+    """The request coding a layer selected and which layer selected it: the client, a view, or the call."""
+
+    token: str
+    origin: CompressionOrigin
+
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class _Options:
     server: ServerSelection | Unset = UNSET
@@ -660,6 +687,7 @@ class _Options:
     redirects: RedirectOptions | Unset = UNSET
     idempotency_key: IdempotencyKey | Unset | None = UNSET
     auth: AuthConfig | Unset | None = field(default=UNSET, repr=False)
+    compression: str | Unset | None = UNSET
 
     def _check_timing(self) -> None:
         checked_instance(self.timeout, (TimeoutOptions, Unset, type(None)), ("timeout",))
@@ -703,6 +731,8 @@ class _Options:
             _positive_seconds(self.cleanup_timeout, ("cleanup_timeout",))
         if self.max_stream_bytes is not None and not isinstance(self.max_stream_bytes, Unset):
             checked_count(self.max_stream_bytes, ("max_stream_bytes",))
+        if not isinstance(self.compression, Unset):
+            object.__setattr__(self, "compression", _compression(self.compression))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -764,6 +794,7 @@ class Settings:
     redirects: ResolvedRedirectOptions = DEFAULT_REDIRECTS
     idempotency_key: IdempotencyKey | Unset | None = UNSET
     auth: AuthConfig | None = field(default=None, repr=False)
+    compression: ResolvedCompression | None = None
 
 
 def network_send_limit(settings: Settings, *, exchanges: int = 0) -> int | None:

@@ -463,6 +463,14 @@ def _limits(
     )
 
 
+def _coded(plan: EventPlan[T], limits: _Limits, body: object) -> None:
+    """Refuse a coding the helper call selects unless the stream's request sends a body its operation accepts."""
+    if (options := limits.options) is not None and isinstance(selected := options.compression, str):
+        from ..client.compression import helper_children  # noqa: PLC0415 - Only a selected coding loads the encoder.
+
+        helper_children(selected, ((plan.call, not isinstance(body, Unset)),))
+
+
 def _progress(session: OperationSession) -> ProtocolProgress:
     return MappingProxyType({
         "reconnects": 0,
@@ -969,6 +977,7 @@ def open_events(  # noqa: PLR0913
 ) -> EventStream[T]:
     """Open a helper's stream in a session of its own, returning once its response is a declared success."""
     limits = _limits(core, plan, stream_options, options, session_options)
+    _coded(plan, limits, body)
     native = core.native_responses(limits.options, plan.call.operation_id)
     session = _session(plan, limits)
     try:
@@ -1002,6 +1011,7 @@ async def aopen_events(  # noqa: PLR0913
 ) -> AsyncEventStream[T]:
     """Open a helper's stream with asyncio, returning once its response is a declared success."""
     limits = _limits(core, plan, stream_options, options, session_options)
+    _coded(plan, limits, body)
     native = core.native_responses(limits.options, plan.call.operation_id)
     session = _session(plan, limits)
     try:

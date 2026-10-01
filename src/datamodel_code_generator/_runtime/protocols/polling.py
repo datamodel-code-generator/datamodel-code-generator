@@ -21,7 +21,7 @@ from ..client.errors import BudgetExceededError, ProtocolConfigurationError
 from ..client.options import RequestOptions
 from ..client.responses import ResponseInfo
 from ..client.timing import SessionOptions
-from ..model_codecs.unset import UNSET
+from ..model_codecs.unset import UNSET, Unset
 from .errors import (
     OperationCancelledError,
     OperationFailedError,
@@ -932,6 +932,17 @@ class AsyncLroHandle(_Operation[T, P]):
         self._close("aclose", quiet=exc is not None)
 
 
+def _coded(plan: PollingPlan[T, P, C], limits: _Limits, body: object) -> None:
+    """Refuse a coding the helper call selects unless the create request sends a body its operation accepts.
+
+    Polls and the result fetch send no body of the caller's, so they never make a coding applicable here.
+    """
+    if (options := limits.options) is not None and isinstance(selected := options.compression, str):
+        from ..client.compression import helper_children  # noqa: PLC0415 - Only a selected coding loads the encoder.
+
+        helper_children(selected, ((plan.create, not isinstance(body, Unset)),))
+
+
 def _session(limits: _Limits) -> OperationSession:
     from ..client.logical import OperationSession  # noqa: PLC0415 - Only a started helper loads the call runtime.
 
@@ -953,6 +964,7 @@ def start_operation(  # noqa: PLR0913
 ) -> LroHandle[T, P]:
     """Create a helper's operation in a session of its own and return the handle that polls it."""
     limits = _limits(core, plan, poll_options, options, session_options)
+    _coded(plan, limits, body)
     handle = LroHandle(core, plan, limits, _session(limits))
     handle._create(arguments, body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return handle
@@ -971,6 +983,7 @@ async def astart_operation(  # noqa: PLR0913
 ) -> AsyncLroHandle[T, P]:
     """Create a helper's operation with asyncio in a session of its own and return the handle that polls it."""
     limits = _limits(core, plan, poll_options, options, session_options)
+    _coded(plan, limits, body)
     handle = AsyncLroHandle(core, plan, limits, _session(limits))
     await handle._create(arguments, body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return handle

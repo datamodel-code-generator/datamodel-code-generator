@@ -82,6 +82,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
         "ndjson",
         "compatibility",
         "circuits",
+        "compression",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:
@@ -188,6 +189,7 @@ def test_client_retry_metadata_digests(tmp_path: Path) -> None:
         "streams",
         "ndjson",
         "circuits",
+        "compression",
     ],
 )
 def test_client_documentation(case: str, tmp_path: Path) -> None:
@@ -276,6 +278,10 @@ def test_client_body_arguments_digests(tmp_path: Path) -> None:
         "circuit-invalid",
         "toml-circuit-values",
         "toml-circuit-type",
+        "compression-values",
+        "compression-invalid",
+        "toml-compression-values",
+        "toml-compression-type",
         "protocols-path",
         "protocols-type",
         "protocols-records",

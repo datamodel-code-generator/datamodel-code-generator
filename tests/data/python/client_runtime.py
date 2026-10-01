@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import gzip
 import json
 import re
 import shutil
@@ -76,9 +77,7 @@ class Exchange:
         """Queue the responders of the next requests."""
         self.responders.extend(responders)
 
-    def client(
-        self, connections: int = 10, kind: type[httpx2.Client] = httpx2.Client, **options: Any
-    ) -> httpx2.Client:
+    def client(self, connections: int = 10, kind: type[httpx2.Client] = httpx2.Client, **options: Any) -> httpx2.Client:
         """Return an HTTPX2 client of a kind that sends through this exchange's server over at most `connections`."""
         self.transports += 1
         return kind(transport=LocalTransport(self, connections), **options)
@@ -108,10 +107,18 @@ class Exchange:
             server.stop()
 
     def handle(self, request: httpx2.Request) -> httpx2.Response:
-        """Record a request and answer it with the next queued responder."""
+        """Record a request and answer it with the next queued responder.
+
+        A gzip body is recorded decompressed, with its compressed length masked, which zlib builds may change.
+        """
         request.read()
-        headers = ", ".join(f"{name}: {value}" for name, value in request.headers.multi_items())
-        self.lines.extend((f"  > {request.method} {request.url}", f"    [{headers}] {request.content!r}"))
+        content, coded = request.content, request.headers.get("content-encoding") == "gzip"
+        headers = ", ".join(
+            f"{name}: {'<gzip>' if coded and name == 'content-length' else value}"
+            for name, value in request.headers.multi_items()
+        )
+        body = f"gzip {gzip.decompress(content)!r}" if coded else repr(content)
+        self.lines.extend((f"  > {request.method} {request.url}", f"    [{headers}] {body}"))
         return self.responders.pop(0)(request)
 
     async def ahandle(self, request: httpx2.Request) -> httpx2.Response:
@@ -189,7 +196,9 @@ def _streamed(status: int, content: bytes, headers: dict[str, str]) -> Callable[
 def json_response(status: int, payload: object, **headers: str) -> Callable[[httpx2.Request], httpx2.Response]:
     """Return a responder of a JSON body, encoded as HTTPX2 encodes one."""
     content = json.dumps(payload, ensure_ascii=False, separators=(",", ":"), allow_nan=False).encode()
-    return _streamed(status, content, {**headers, "content-length": str(len(content)), "content-type": "application/json"})
+    return _streamed(
+        status, content, {**headers, "content-length": str(len(content)), "content-type": "application/json"}
+    )
 
 
 def raw_response(
