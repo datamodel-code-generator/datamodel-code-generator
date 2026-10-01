@@ -2527,8 +2527,12 @@ class _Helpers:
     def event_type(module: Module, spec: StreamSpec) -> str:
         """Return the type of a stream's event data: its event types, with UnknownEvent when it keeps unknown events."""
         types = [use.type for _, use in spec.events if use.type is not None]
-        raw = spec.helper.tree["unknown"] == "raw"
-        return _union((_merged(module, types), *([module.local("_runtime.protocols.streams", "UnknownEvent")] * raw)))
+        unknown = (
+            (module.local("_runtime.protocols.streams", "UnknownEvent"),)
+            if spec.helper.tree["unknown"] == "raw"
+            else ()
+        )
+        return _union((_merged(module, types), *unknown))
 
     def decoder(self, module: Module, use: TypeUseBinding) -> str:
         """Return the decoder of an event or error schema's data, by its use's codec."""
@@ -2742,7 +2746,8 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
         streams = (
             """
 An SSE helper's `open` sends its operation in a session of its own and returns an event stream once the response
-is a declared success; the stream reads only the bytes each event needs, and closing it releases the response."""
+is a declared success; the stream reads only the bytes each event needs, and `close()` or `aclose()` releases the
+response."""
             if self.streams
             else ""
         )

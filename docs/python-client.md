@@ -910,9 +910,10 @@ session without a send slot raises `SessionLimitError` without sending. Streams 
 
 ### Stream generation checks
 
-The helper's `media` must be `text/event-stream` and a success response of its operation must declare it. Each event
-and error schema must exist and decode natively, without an envelope; a schema outside the selected model scopes fails
-with `BND_MODEL_SCOPE_REQUIRED`. A body discriminator must name a declared property of each mapped and error schema
+The helper's `media` must be `text/event-stream`, compared without case and with any parameters allowed, and a success
+response of its operation must declare an event stream media type, which the helper then requests as declared. Each
+event and error schema must exist and decode natively, without an envelope; a schema outside the selected model scopes
+fails with `BND_MODEL_SCOPE_REQUIRED`. A body discriminator must name a declared property of each mapped and error schema
 whose values can be strings, and an `event_type` completion cannot be a key of the event type mapping or the error
 events. Resuming a stream is not supported yet:
 

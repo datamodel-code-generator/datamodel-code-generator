@@ -72,6 +72,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
         "webhooks",
         "webhooks-schema",
         "streams",
+        "streams-mixed",
         "compatibility",
     ],
 )

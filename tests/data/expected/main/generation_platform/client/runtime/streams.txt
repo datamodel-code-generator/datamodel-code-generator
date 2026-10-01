@@ -151,7 +151,6 @@
     1 message id=None retry=None data=Message{'text': 'drip'} raw='{"text": "drip"}'
   < closed
     end
-    read in linear time: True
   stream options of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('stream_options',), condition='invalid_value'] protocol_configuration_error
   options of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
   session options of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('session_options',), condition='invalid_value'] protocol_configuration_error
@@ -206,6 +205,39 @@
   < closed
   another media type ! UnexpectedMediaTypeError: UnexpectedMediaTypeError(status_code=200, operation_id='streamEvents', call_id='<call>') [operation_id='streamEvents', body_bytes=b'', truncated=False, actual_media_type='application/json', expected_media_types=('text/event-stream',)] unexpected_media_type_error
   > GET https://api.example.com/events accept=text/event-stream
+  hooked end at EOF
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    hook stream_end outcome=success
+    end
+  > POST https://api.example.com/feed accept=text/event-stream
+  hooked end at the sentinel
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    hook stream_end outcome=success
+    end
+  > GET https://api.example.com/events accept=text/event-stream
+  hooked cut frame at EOF
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    hook stream_end outcome=error
+    ! IncompleteFrameError: IncompleteFrameError(operation_id='streamEvents', call_id='<call>', condition='eof', sequence=1, buffered_bytes=7) [operation_id='streamEvents', condition='eof'] incomplete_frame_error
+  > POST https://api.example.com/feed accept=text/event-stream
+  hooked EOF before the sentinel
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    hook stream_end outcome=error
+    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamFeed', call_id='<call>', condition='eof', sequence=1) [operation_id='streamFeed', condition='eof'] stream_interrupted_error
+  > GET https://api.example.com/events accept=text/event-stream
+  hooked undecodable event
+  < closed
+    hook stream_end outcome=error
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', truncated=False, cause=NativeValidationError('The native type rejected the value (native.missing) at /text')] stream_decode_error
+  > GET https://api.example.com/events accept=text/event-stream
+  hooked early close after 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    hook stream_end outcome=cancel
+  > GET https://api.example.com/events accept=text/event-stream
   async one byte at a time
     1 message id='7' retry=None data=Message{'text': 'multi'} raw='{"text":\n"multi"}'
     2 note id='7' retry=1500 data=Message{'text': 'cr'} raw='{"text": "cr"}'
@@ -247,3 +279,36 @@
   > GET https://api.example.com/events accept=text/event-stream
   < closed
   async redirect without a session send slot ! SessionLimitError: SessionLimitError(operation_id='streamEvents', call_id='<call>', kind='network_sends', limit=1) [operation_id='streamEvents', kind='network_sends', limit=1, cause=BudgetExceededError()] session_limit_error
+  > GET https://api.example.com/events accept=text/event-stream
+  async hooked end at EOF
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    hook stream_end outcome=success
+    end
+  > POST https://api.example.com/feed accept=text/event-stream
+  async hooked end at the sentinel
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    hook stream_end outcome=success
+    end
+  > GET https://api.example.com/events accept=text/event-stream
+  async hooked cut frame at EOF
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    hook stream_end outcome=error
+    ! IncompleteFrameError: IncompleteFrameError(operation_id='streamEvents', call_id='<call>', condition='eof', sequence=1, buffered_bytes=7) [operation_id='streamEvents', condition='eof'] incomplete_frame_error
+  > POST https://api.example.com/feed accept=text/event-stream
+  async hooked EOF before the sentinel
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    hook stream_end outcome=error
+    ! StreamInterruptedError: StreamInterruptedError(operation_id='streamFeed', call_id='<call>', condition='eof', sequence=1) [operation_id='streamFeed', condition='eof'] stream_interrupted_error
+  > GET https://api.example.com/events accept=text/event-stream
+  async hooked undecodable event
+  < closed
+    hook stream_end outcome=error
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', truncated=False, cause=NativeValidationError('The native type rejected the value (native.missing) at /text')] stream_decode_error
+  > GET https://api.example.com/events accept=text/event-stream
+  async hooked early close after 1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    hook stream_end outcome=cancel

@@ -429,6 +429,31 @@ def checked(response: _Raw[SourceT, HandleT]) -> None:
     response._check()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
 
 
+def held(response: RawResponse) -> Generator[bytes, None, None]:
+    """Read an open streaming handle's decoded body, leaving its end to the reader, which reports it with `finished`.
+
+    A reader that stops at a terminal event of the body, or finds its end premature, decides how the stream ended.
+    """
+    response._state = "streaming"  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    return response._stream(decoded=True, held=True)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+
+
+def aheld(response: AsyncRawResponse) -> AsyncGenerator[bytes, None]:
+    """Read an open asyncio streaming handle's decoded body, leaving its end to the reader, as `held` does."""
+    response._state = "streaming"  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    return response._stream(decoded=True, held=True)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+
+
+def finished(response: RawResponse, error: BaseException | None = None) -> None:
+    """End a held stream as read, or as failed with the reader's error, releasing it and reporting its end once."""
+    response._end("consumed" if error is None else "failed", error)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+
+
+async def afinished(response: AsyncRawResponse, error: BaseException | None = None) -> None:
+    """End a held asyncio stream as read, or as failed with the reader's error, as `finished` does."""
+    await response._end("consumed" if error is None else "failed", error)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+
+
 class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
     """A raw response of a synchronous client: buffered, or a streaming handle whose body is read at most once."""
 
@@ -614,7 +639,7 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
                 pass
         raise self._consumed(action=action)
 
-    def _stream(self, *, decoded: bool) -> Iterator[bytes]:
+    def _stream(self, *, decoded: bool, held: bool = False) -> Generator[bytes, None, None]:
         budget = self._budget(self._limits.max_stream_bytes, "decoded" if decoded else "content_coded")
         try:
             source = self._chunks()
@@ -630,7 +655,8 @@ class RawResponse(_Raw["Callable[[], Iterator[bytes]]", "RawResponse"]):
             if not isinstance(error, GeneratorExit):
                 self._end("failed", error)
             raise
-        self._end("consumed")
+        if not held:
+            self._end("consumed")
 
     def _error_prefix(self) -> BaseException:
         """Read the error prefix of a streaming handle and return its typed failure."""
@@ -946,7 +972,7 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
                 pass
         raise self._consumed(action=action)
 
-    async def _stream(self, *, decoded: bool) -> AsyncGenerator[bytes, None]:
+    async def _stream(self, *, decoded: bool, held: bool = False) -> AsyncGenerator[bytes, None]:
         budget = self._budget(self._limits.max_stream_bytes, "decoded" if decoded else "content_coded")
         try:
             source = self._chunks()
@@ -962,7 +988,8 @@ class AsyncRawResponse(_Raw["Callable[[], AsyncIterator[bytes]]", "AsyncRawRespo
             if not isinstance(error, GeneratorExit):
                 await self._end("failed", error)
             raise
-        await self._end("consumed")
+        if not held:
+            await self._end("consumed")
 
     async def _error_prefix(self) -> BaseException:
         """Read the error prefix of a streaming handle and return its typed failure."""

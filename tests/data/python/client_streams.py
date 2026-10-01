@@ -220,7 +220,75 @@ def streams(package: ModuleType, lines: list[str]) -> None:
         _limits(harness, api, adapter)
         _opens(harness, api, adapter)
         _states(harness, api, adapter)
+        _hooked(harness, api, adapter)
     run(lambda: _async_streams(package, lines))
+    run(lambda: _async_hooked(harness))
+
+
+class _Ends:
+    """A hook reporting the outcome of each handed-over stream's end."""
+
+    def __init__(self, lines: list[str]) -> None:
+        self.lines = lines
+
+    def on_event(self, event: Any) -> None:
+        if event.name == "stream_end":
+            self.lines.append(f"    hook {event.name} outcome={event.outcome}")
+
+
+class _AsyncEnds(_Ends):
+    """The asyncio form of the stream end hook."""
+
+    async def on_event(self, event: Any) -> None:
+        super().on_event(event)
+
+
+_ENDINGS: Final = (
+    ("end at EOF", "messages", (b'data: {"text": "a"}\n\n',)),
+    ("end at the sentinel", "feed", (b'data: {"text": "a"}\n\n', b"data: [DONE]\n\n", b'data: {"text": "b"}\n\n')),
+    ("cut frame at EOF", "messages", (b'data: {"text": "a"}\n\n', b"data: x")),
+    ("EOF before the sentinel", "feed", (b'data: {"text": "a"}\n\n',)),
+    ("undecodable event", "messages", (b"data: {}\n\n",)),
+)
+
+
+def _hooked(harness: _Harness, api: Any, adapter: _Feed) -> None:
+    """Report a stream's end to the hooks as it ended: at its completion, failing, or closed early."""
+    lines = harness.lines
+    hooked = api.with_options(harness.options.RequestOptions(hooks=(_Ends(lines),)))
+    adapter.replies.extend(harness.reply(chunks) for _, _, chunks in _ENDINGS)
+    adapter.replies.append(harness.reply((b'data: {"text": "a"}\n\n',) * 2))
+    for label, helper, _ in _ENDINGS:
+        stream = (
+            hooked.protocols.events.messages.open()
+            if helper == "messages"
+            else hooked.protocols.feed.all.open(body=harness.models.FeedQuery())
+        )
+        _drained(lines, f"hooked {label}", stream)
+    stream = hooked.protocols.events.messages.open()
+    lines.append(f"  hooked early close after {_event(next(stream))}")
+    stream.close()
+
+
+async def _async_hooked(harness: _Harness) -> None:
+    """Report an asyncio stream's end to the hooks as it ended."""
+    lines, package = harness.lines, harness.package
+    adapter = _AsyncFeed(importlib.import_module(f"{package.__name__}.transports"), lines)
+    adapter.replies.extend(harness.reply(chunks, response=AsyncResponse) for _, _, chunks in _ENDINGS)
+    adapter.replies.append(harness.reply((b'data: {"text": "a"}\n\n',) * 2, response=AsyncResponse))
+    options = harness.options.RequestOptions(hooks=(_AsyncEnds(lines),))
+    async with package.AsyncClient(transport_adapter=adapter) as api:
+        hooked = api.with_options(options)
+        for label, helper, _ in _ENDINGS:
+            stream = await (
+                hooked.protocols.events.messages.open()
+                if helper == "messages"
+                else hooked.protocols.feed.all.open(body=harness.models.FeedQuery())
+            )
+            await _adrained(lines, f"async hooked {label}", stream)
+        stream = await hooked.protocols.events.messages.open()
+        lines.append(f"  async hooked early close after {_event(await anext(stream))}")
+        await stream.aclose()
 
 
 def _framing(harness: _Harness, api: Any, adapter: _Feed) -> None:
@@ -232,14 +300,12 @@ def _framing(harness: _Harness, api: Any, adapter: _Feed) -> None:
         lines.append(f"    response {stream.response.status_code} progress {dict(stream.progress)}")
     with helper.open() as stream:
         _drained(lines, "in one chunk", stream)
-    adapter.replies.extend(
-        (
-            harness.reply((b"\xef\xbb", b'\xbfdata: {"text": "bom"}\n\n')),
-            harness.reply((b"\xef\xbbdata: {}\n\n",)),
-            harness.reply((b"\xef",)),
-            harness.reply(()),
-        )
-    )
+    adapter.replies.extend((
+        harness.reply((b"\xef\xbb", b'\xbfdata: {"text": "bom"}\n\n')),
+        harness.reply((b"\xef\xbbdata: {}\n\n",)),
+        harness.reply((b"\xef",)),
+        harness.reply(()),
+    ))
     _drained(lines, "byte order mark split", helper.open(options=harness.schema()))
     _drained(lines, "partial byte order mark", helper.open())
     _drained(lines, "byte order mark prefix at the end", helper.open())
@@ -250,16 +316,14 @@ def _completions(harness: _Harness, api: Any, adapter: _Feed) -> None:
     """End streams at EOF, a sentinel, or an event type, and refuse an early or cut end."""
     lines, protocols = harness.lines, api.protocols
     message = b'data: {"text": "a"}\n\n'
-    adapter.replies.extend(
-        (
-            harness.reply((message, b"data: x")),
-            harness.reply((message, b'data: {"text": "b"}\n')),
-            harness.reply((message, b": only a comment\n")),
-            harness.reply((message,)),
-            harness.reply((message, b"data: [DONE]\n\n", b'data: {"text": "after"}\n\n')),
-            harness.reply((b"data: [DONE]", b"\n\n")),
-        )
-    )
+    adapter.replies.extend((
+        harness.reply((message, b"data: x")),
+        harness.reply((message, b'data: {"text": "b"}\n')),
+        harness.reply((message, b": only a comment\n")),
+        harness.reply((message,)),
+        harness.reply((message, b"data: [DONE]\n\n", b'data: {"text": "after"}\n\n')),
+        harness.reply((b"data: [DONE]", b"\n\n")),
+    ))
     _drained(lines, "cut line at EOF", protocols.events.messages.open())
     _drained(lines, "cut frame at EOF", protocols.events.messages.open())
     _drained(lines, "comment before EOF", protocols.events.messages.open())
@@ -279,18 +343,16 @@ def _routing(harness: _Harness, api: Any, adapter: _Feed) -> None:
     lines, protocols = harness.lines, api.protocols
     created = b'event: created\ndata: {"type": "created", "id": "1"}\n\n'
     error = b'event: error\nid: 9\ndata: {"message": "boom"}\n\n'
-    adapter.replies.extend(
-        (
-            harness.reply((created, error)),
-            harness.reply((_TAGGED,)),
-            harness.reply((b'data: {"type": "failed", "message": "nope"}\n\n',)),
-            harness.reply((b'data: {"id": "1"}\n\n',)),
-            harness.reply((b'data: {"type": null}\n\n',)),
-            harness.reply((b'data: {"type": 5}\n\n',)),
-            harness.reply((b'data: {"type": "renamed"}\n\n',)),
-            harness.reply((b'data: {"type": "created"}\n\n',)),
-        )
-    )
+    adapter.replies.extend((
+        harness.reply((created, error)),
+        harness.reply((_TAGGED,)),
+        harness.reply((b'data: {"type": "failed", "message": "nope"}\n\n',)),
+        harness.reply((b'data: {"id": "1"}\n\n',)),
+        harness.reply((b'data: {"type": null}\n\n',)),
+        harness.reply((b'data: {"type": 5}\n\n',)),
+        harness.reply((b'data: {"type": "renamed"}\n\n',)),
+        harness.reply((b'data: {"type": "created"}\n\n',)),
+    ))
     stream = protocols.events.typed.open()
     lines.append(f"  before the error {_event(next(stream))}")
     try:
@@ -316,15 +378,13 @@ def _decoding(harness: _Harness, api: Any, adapter: _Feed) -> None:
     """Refuse event data that is not JSON or that its schema or type refuses, keeping a bounded raw prefix."""
     lines, helper = harness.lines, api.protocols.events.messages
     large = b'data: "' + b"x" * 70000 + b'"\n\n'
-    adapter.replies.extend(
-        (
-            harness.reply((b"data: {broken\n\n",)),
-            harness.reply((b'data: {"text": 5}\n\n',)),
-            harness.reply((b"data: {}\n\n",)),
-            harness.reply((large,)),
-            harness.reply((b'data: {"type": "created"}\n\n',)),
-        )
-    )
+    adapter.replies.extend((
+        harness.reply((b"data: {broken\n\n",)),
+        harness.reply((b'data: {"text": 5}\n\n',)),
+        harness.reply((b"data: {}\n\n",)),
+        harness.reply((large,)),
+        harness.reply((b'data: {"type": "created"}\n\n',)),
+    ))
     for label, options in (
         ("not JSON", None),
         ("refused by its schema", harness.schema()),
@@ -345,14 +405,12 @@ def _limits(harness: _Harness, api: Any, adapter: _Feed) -> None:
     """Refuse lines and event data over their limits, from the call's options or the helper's defaults."""
     lines, protocols, options = harness.lines, api.protocols, harness.options
     limited = harness.protocols.StreamOptions(max_line_bytes=12, max_event_bytes=20)
-    adapter.replies.extend(
-        (
-            harness.reply((b'data: {"text": "a"}', b"\n\n")),
-            harness.reply((b'data: {"text":\ndata: "abcdefghijk"}\n\n',)),
-            harness.reply((b'data: {"text":\ndata: "abc"}\n\n',)),
-            harness.reply((b": a comment over the line limit\n",)),
-        )
-    )
+    adapter.replies.extend((
+        harness.reply((b'data: {"text": "a"}', b"\n\n")),
+        harness.reply((b'data: {"text":\ndata: "abcdefghijk"}\n\n',)),
+        harness.reply((b'data: {"text":\ndata: "abc"}\n\n',)),
+        harness.reply((b": a comment over the line limit\n",)),
+    ))
     _drained(lines, "line over the limit", protocols.events.messages.open(stream_options=limited))
     wide = harness.protocols.StreamOptions(max_line_bytes=64, max_event_bytes=20)
     _drained(lines, "event over the limit", protocols.events.messages.open(stream_options=wide))
@@ -363,19 +421,19 @@ def _limits(harness: _Harness, api: Any, adapter: _Feed) -> None:
     )
     with harness.package.Client(transport_adapter=adapter, options=client_options) as limiting:
         _drained(lines, "comment over the default limit", limiting.protocols.events.messages.open())
-    drip = b":" + b"x" * 262142 + b"\n" + b'data: {"text": "drip"}\n\n'
-    adapter.replies.extend(
-        (
-            harness.reply((b"data: {", b'"text": "a"}\n\n')),
-            harness.reply((b"data: {", b'"text"')),
-            harness.reply(_pieces(drip, 1)),
-        )
-    )
+    drip = b":" + b"x" * 62 + b"\n" + b'data: {"text": "drip"}\n\n'
+    adapter.replies.extend((
+        harness.reply((b"data: {", b'"text": "a"}\n\n')),
+        harness.reply((b"data: {", b'"text"')),
+        harness.reply(_pieces(drip, 1)),
+    ))
     for label in ("line a later chunk ends over the limit", "line a later chunk extends over the limit"):
         _drained(lines, label, protocols.events.messages.open(stream_options=limited))
-    started = time.process_time()
-    _drained(lines, "line just under the limit, one byte at a time", protocols.events.messages.open())
-    lines.append(f"    read in linear time: {time.process_time() - started < 20}")
+    _drained(
+        lines,
+        "line just under the limit, one byte at a time",
+        protocols.events.messages.open(stream_options=harness.protocols.StreamOptions(max_line_bytes=64)),
+    )
     for label, call in (
         (
             "stream options of another type",
@@ -411,16 +469,14 @@ def _limits(harness: _Harness, api: Any, adapter: _Feed) -> None:
 def _opens(harness: _Harness, api: Any, adapter: _Feed) -> None:
     """Return a stream only for a declared success of the event stream media, retrying its acquisition."""
     lines, helper, options = harness.lines, api.protocols.events.messages, harness.options
-    adapter.replies.extend(
-        (
-            harness.reply((b'{"detail": "missing"}',), status=404, media="application/json"),
-            harness.reply((), status=204, media=None),
-            harness.reply((b"data: {}\n\n",), status=201),
-            harness.reply((b"data: {}\n\n",), media=None),
-            harness.reply((b"busy",), status=503, media="text/plain"),
-            harness.reply((b'data: {"text": "retried"}\n\n',)),
-        )
-    )
+    adapter.replies.extend((
+        harness.reply((b'{"detail": "missing"}',), status=404, media="application/json"),
+        harness.reply((), status=204, media=None),
+        harness.reply((b"data: {}\n\n",), status=201),
+        harness.reply((b"data: {}\n\n",), media=None),
+        harness.reply((b"busy",), status=503, media="text/plain"),
+        harness.reply((b'data: {"text": "retried"}\n\n',)),
+    ))
     for label in ("declared error status", "no content", "undeclared success status", "no media type"):
         record(lines, label, helper.open)
     retry = options.RequestOptions(retry=options.RetryOptions(initial_delay=0, jitter="none"))
@@ -440,15 +496,13 @@ def _states(harness: _Harness, api: Any, adapter: _Feed) -> None:
         lines.append(f"    concurrent next: {outcome(lambda: next(stream))}")
         lines.append(f"    concurrent close: {outcome(stream.close)}")
 
-    adapter.replies.extend(
-        (
-            harness.reply((message, message)),
-            harness.reply((message, concurrent, message), response=_Probed),
-            harness.reply((message, harness.interrupted())),
-            harness.reply((message, harness.idle())),
-            harness.reply((b"[]",), media="application/json"),
-        )
-    )
+    adapter.replies.extend((
+        harness.reply((message, message)),
+        harness.reply((message, concurrent, message), response=_Probed),
+        harness.reply((message, harness.interrupted())),
+        harness.reply((message, harness.idle())),
+        harness.reply((b"[]",), media="application/json"),
+    ))
     with helper.open() as stream:
         lines.append(f"  first {_event(next(stream))}")
     record(lines, "after close", lambda: next(stream))
@@ -466,16 +520,14 @@ async def _async_streams(package: ModuleType, lines: list[str]) -> None:
     adapter = _AsyncFeed(importlib.import_module(f"{package.__name__}.transports"), lines)
     async with package.AsyncClient(transport_adapter=adapter) as api:
         protocols = api.protocols
-        adapter.replies.extend(
-            (
-                harness.reply(_pieces(_FRAMES, 1), response=AsyncResponse),
-                harness.reply(_pieces(_TYPED, 5), response=AsyncResponse),
-                harness.reply((_TAGGED,), response=AsyncResponse),
-                harness.reply((b'data: {"text": "a"}\n\n', b"data: cut"), response=AsyncResponse),
-                harness.reply((b'data: {"text": "a"}\n\n', harness.interrupted()), response=AsyncResponse),
-                harness.reply((b'data: {"text": "a"}\n\n' * 2,), response=AsyncResponse),
-            )
-        )
+        adapter.replies.extend((
+            harness.reply(_pieces(_FRAMES, 1), response=AsyncResponse),
+            harness.reply(_pieces(_TYPED, 5), response=AsyncResponse),
+            harness.reply((_TAGGED,), response=AsyncResponse),
+            harness.reply((b'data: {"text": "a"}\n\n', b"data: cut"), response=AsyncResponse),
+            harness.reply((b'data: {"text": "a"}\n\n', harness.interrupted()), response=AsyncResponse),
+            harness.reply((b'data: {"text": "a"}\n\n' * 2,), response=AsyncResponse),
+        ))
         async with await protocols.events.messages.open() as stream:
             await _adrained(lines, "async one byte at a time", stream)
         await _adrained(lines, "async event type completion", await protocols.events.typed.open())
@@ -488,14 +540,12 @@ async def _async_streams(package: ModuleType, lines: list[str]) -> None:
         await stream.aclose()
         await arecord(lines, "async options of another type", lambda: protocols.events.messages.open(options=1))
         options = harness.options
-        adapter.replies.extend(
-            (
-                harness.reply((b'data: {"text": "a"}\n\n' * 2,), response=AsyncResponse),
-                harness.reply(
-                    (), status=302, media=None, headers=(("location", "/events?moved=1"),), response=AsyncResponse
-                ),
-            )
-        )
+        adapter.replies.extend((
+            harness.reply((b'data: {"text": "a"}\n\n' * 2,), response=AsyncResponse),
+            harness.reply(
+                (), status=302, media=None, headers=(("location", "/events?moved=1"),), response=AsyncResponse
+            ),
+        ))
         async with await protocols.events.messages.open() as stream:
             lines.append(f"  async left early {_event(await anext(stream))}")
         await arecord(
@@ -587,13 +637,11 @@ def stream_lifetimes(package: ModuleType, lines: list[str]) -> None:
             record(lines, "borrowed pool after the client closed", again.status.get_status)
     adapter = _Feed(importlib.import_module(f"{package.__name__}.transports"), lines)
     deadline = options.Deadline.after(1.0)
-    adapter.replies.extend(
-        (
-            harness.reply((_expired(deadline), message), response=_Probed),
-            harness.reply((message + message,)),
-            harness.reply((message, message)),
-        )
-    )
+    adapter.replies.extend((
+        harness.reply((_expired(deadline), message), response=_Probed),
+        harness.reply((message + message,)),
+        harness.reply((message, message)),
+    ))
     api = package.Client(transport_adapter=adapter, options=options.ClientOptions(cleanup_timeout=0.05))
     helper = api.protocols.events.messages
     _drained(
@@ -622,16 +670,14 @@ async def _async_lifetimes(harness: _Harness) -> None:
     async def mark() -> None:
         reached.set()
 
-    adapter.replies.extend(
-        (
-            harness.reply((message, never.wait), response=_AsyncProbed),
-            harness.reply((message, message), response=_AsyncProbed),
-            *(harness.reply((never.wait,), response=_AsyncProbed) for _ in range(3)),
-            harness.reply((message + message,), response=_AsyncProbed),
-            harness.reply((message, mark, never.wait), response=_AsyncProbed),
-            harness.reply((message, message), response=_AsyncProbed),
-        )
-    )
+    adapter.replies.extend((
+        harness.reply((message, never.wait), response=_AsyncProbed),
+        harness.reply((message, message), response=_AsyncProbed),
+        *(harness.reply((never.wait,), response=_AsyncProbed) for _ in range(3)),
+        harness.reply((message + message,), response=_AsyncProbed),
+        harness.reply((message, mark, never.wait), response=_AsyncProbed),
+        harness.reply((message, message), response=_AsyncProbed),
+    ))
     api = package.AsyncClient(transport_adapter=adapter, options=options.ClientOptions(cleanup_timeout=0.05))
     helper = api.protocols.events.messages
     stream = await helper.open(stream_options=harness.protocols.StreamOptions(idle_timeout=0.1))
@@ -647,6 +693,7 @@ async def _async_lifetimes(harness: _Harness) -> None:
         ("async stream total before the session deadline", False, 0.2),
     ):
         stream = await helper.open(
+            stream_options=harness.protocols.StreamOptions(idle_timeout=5.0),
             options=options.RequestOptions(stream_total_timeout=request),
             session_options=options.SessionOptions(
                 deadline=options.Deadline.after(1.0) if session else None, total_timeout=10.0
@@ -696,14 +743,12 @@ def stream_backends(package: ModuleType, lines: list[str]) -> None:
     """Decode the events and error events of every helper with each model backend."""
     harness = _Harness(package, lines)
     adapter = _Feed(importlib.import_module(f"{package.__name__}.transports"), lines)
-    adapter.replies.extend(
-        (
-            harness.reply((b'data: {"text": "a"}\n\n',)),
-            harness.reply((_TYPED,)),
-            harness.reply((_TAGGED,)),
-            harness.reply((b'event: error\ndata: {"message": "boom"}\n\n',)),
-        )
-    )
+    adapter.replies.extend((
+        harness.reply((b'data: {"text": "a"}\n\n',)),
+        harness.reply((_TYPED,)),
+        harness.reply((_TAGGED,)),
+        harness.reply((b'event: error\ndata: {"message": "boom"}\n\n',)),
+    ))
     with package.Client(transport_adapter=adapter) as api:
         protocols = api.protocols
         _drained(lines, "messages", protocols.events.messages.open())

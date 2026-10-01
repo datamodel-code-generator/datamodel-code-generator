@@ -2446,5 +2446,26 @@
         "schemas"
       ]
     }
+  },
+  "streams-mixed": {
+    "input": "streams-mixed.yaml",
+    "references": [
+      "protocols/streams-mixed.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/streams-mixed.yaml"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ]
+    ]
   }
 }

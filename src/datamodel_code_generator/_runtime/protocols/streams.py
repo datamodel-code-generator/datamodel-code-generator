@@ -26,7 +26,7 @@ from ..client.errors import (
     set_error_counters,
 )
 from ..client.options import RequestOptions
-from ..client.raw import checked
+from ..client.raw import afinished, aheld, checked, finished, held
 from ..client.timing import SessionOptions
 from ..model_codecs.errors import (
     CodecBindingError,
@@ -51,7 +51,7 @@ from .options import StreamOptions
 from .values import MISSING, resolve
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator, AsyncIterator, Callable, Generator, Iterator, Mapping
+    from collections.abc import AsyncIterator, Callable, Iterator, Mapping
     from types import TracebackType
 
     from ..client.client import AsyncClientCore, ClientCore
@@ -172,7 +172,7 @@ class _Parser:
     A leading byte order mark is skipped, and CR, LF, and CRLF end lines, a CRLF split across chunks included. A line
     over the line limit and data over the event limit, counted in bytes before they are kept, raise ProtocolSizeError.
     Invalid UTF-8 decodes to replacement characters. A `retry` of more than 18 digits is ignored. The bytes kept are
-    searched for a line end once each, so a line arriving in many chunks costs time linear in its length.
+    searched for a line end at most twice, so a line arriving in many chunks costs time linear in its length.
     """
 
     __slots__ = (
@@ -657,7 +657,7 @@ class EventStream(_Events[T]):
         """Take the open response, whose body is read only as the events need it."""
         super().__init__(plan, limits, session, response.info, native=native)
         self._response = response
-        self._chunks = cast("Generator[bytes, None, None]", response.iter_bytes())
+        self._chunks = held(response)
 
     def __iter__(self) -> Self:
         """Iterate over the events."""
@@ -683,11 +683,13 @@ class EventStream(_Events[T]):
         except BaseException as error:  # noqa: BLE001
             self._state = _State.FAILED
             failure = self._broken(error)
-            self._release(failure)
+            self._chunks.close()
+            finished(self._response, failure)
             raise failure from None
         if isinstance(event, _End):
             self._state = _State.ENDED
-            self._release(None)
+            self._chunks.close()
+            finished(self._response)
             raise StopIteration
         return event
 
@@ -700,18 +702,11 @@ class EventStream(_Events[T]):
             frame = self._frame(chunk)
         return self._event(frame)
 
-    def _release(self, failure: BaseException | None) -> None:
-        """Stop reading the body and release the response, keeping a close failure beside a failure."""
-        self._chunks.close()
-        if failure is None:
-            self._response.close()
-        else:
-            self._response.discard(failure)
-
     def close(self) -> None:
         """Release the response; later steps raise ProtocolStateError, and closing again does nothing."""
         if self._closing("close"):
-            self._release(None)
+            self._chunks.close()
+            self._response.close()
 
     def __enter__(self) -> Self:
         """Return this stream, which leaving the block closes."""
@@ -746,7 +741,7 @@ class AsyncEventStream(_Events[T]):
         """Take the open response, whose body is read only as the events need it."""
         super().__init__(plan, limits, session, response.info, native=native)
         self._response = response
-        self._chunks = cast("AsyncGenerator[bytes, None]", response.iter_bytes())
+        self._chunks = aheld(response)
 
     def __aiter__(self) -> Self:
         """Iterate over the events."""
@@ -772,11 +767,13 @@ class AsyncEventStream(_Events[T]):
         except BaseException as error:  # noqa: BLE001
             self._state = _State.FAILED
             failure = self._broken(error)
-            await self._release(failure)
+            await self._chunks.aclose()
+            await afinished(self._response, failure)
             raise failure from None
         if isinstance(event, _End):
             self._state = _State.ENDED
-            await self._release(None)
+            await self._chunks.aclose()
+            await afinished(self._response)
             raise StopAsyncIteration
         return event
 
@@ -789,18 +786,11 @@ class AsyncEventStream(_Events[T]):
             frame = self._frame(chunk)
         return self._event(frame)
 
-    async def _release(self, failure: BaseException | None) -> None:
-        """Stop reading the body and release the response, keeping a close failure beside a failure."""
-        await self._chunks.aclose()
-        if failure is None:
-            await self._response.aclose()
-        else:
-            await self._response.discard(failure)
-
     async def aclose(self) -> None:
         """Release the response; later steps raise ProtocolStateError, and closing again does nothing."""
         if self._closing("aclose"):
-            await self._release(None)
+            await self._chunks.aclose()
+            await self._response.aclose()
 
     async def __aenter__(self) -> Self:
         """Return this stream, which leaving the block closes."""
