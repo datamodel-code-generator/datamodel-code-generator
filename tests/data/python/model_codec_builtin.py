@@ -48,6 +48,12 @@ def _uses(root: Path, package: str) -> list[str]:
     return [_use_key(item["use_id"]) for item in manifest["bindings"]]
 
 
+def copied_input(source: Path, root: Path) -> Path:
+    """Copy a fixture document under the generation root, so it shares a drive with the target on every platform."""
+    (inputs := root / "inputs").mkdir(parents=True, exist_ok=True)
+    return shutil.copy2(source, inputs / source.name)
+
+
 def generate_package(
     source: Path, fixture: dict[str, Any], root: Path, backend: str, config: dict[str, Any]
 ) -> list[str]:
@@ -314,6 +320,7 @@ def builtin_codec_report(source: Path, cases: Path, root: Path) -> str:
     A fixture's `refusal` configuration first reports the diagnostics of a generation the target refuses; its
     `config` then generates the package that runs the cases.
     """
+    source = copied_input(source, root)
     fixture = json.loads(cases.read_text(encoding="utf-8"))
     package = fixture["package"]
     lines: list[str] = []
@@ -332,6 +339,7 @@ def builtin_codec_report(source: Path, cases: Path, root: Path) -> str:
 
 def backend_comparison_report(source: Path, cases: Path, root: Path) -> str:
     """Run one set of wire cases through the codecs generated for every backend, grouping backends that agree."""
+    source = copied_input(source, root)
     fixture = json.loads(cases.read_text(encoding="utf-8"))
     outcomes: dict[str, dict[str, str]] = {case["name"]: {} for case in fixture["cases"]}
     for backend in fixture["backends"]:
@@ -494,6 +502,7 @@ def builtin_codec_startup_report(source: Path, cases: Path, root: Path) -> str:
     Each case edits the generated files as a stale or hand-edited package would: it rebinds model names in the
     models module, or changes the binding, models, bundle, or directional view of one generated codec.
     """
+    source = copied_input(source, root)
     fixture = json.loads(cases.read_text(encoding="utf-8"))
     package = fixture["package"]
     generated = root / "generated"
