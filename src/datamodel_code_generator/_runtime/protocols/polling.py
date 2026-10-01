@@ -11,7 +11,6 @@ from collections.abc import Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from enum import Enum
-from time import monotonic, time
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, Generic, Literal, cast, final
 
@@ -20,7 +19,7 @@ from typing_extensions import Self, TypeVar
 from ..client.errors import BudgetExceededError, ProtocolConfigurationError
 from ..client.options import RequestOptions
 from ..client.responses import ResponseInfo
-from ..client.timing import SessionOptions
+from ..client.timing import SYSTEM_CLOCK, SessionOptions
 from ..model_codecs.unset import UNSET
 from .errors import (
     OperationCancelledError,
@@ -47,7 +46,7 @@ if TYPE_CHECKING:
     from ..client.client import AsyncClientCore, ClientCore
     from ..client.logical import LogicalCallContext, OperationSession
     from ..client.operations import OperationPlan
-    from ..client.timing import Deadline
+    from ..client.timing import Clock, Deadline
     from ..model_codecs.selectors import MediaSelector
     from ..model_codecs.wire import WireValue
     from .errors import _DataCondition  # pyright: ignore[reportPrivateUsage]
@@ -212,6 +211,7 @@ class _Limits:
     deadline: Deadline | None = None
     max_network_sends: int | None = 2000
     options: RequestOptions | None = None
+    clock: Clock = SYSTEM_CLOCK
 
 
 _DEFAULTS: Final = _Limits(interval=1.0)
@@ -265,6 +265,7 @@ def _limits(
         deadline=layered(sessions, "deadline", _DEFAULTS.deadline),
         max_network_sends=layered(sessions, "max_network_sends", _DEFAULTS.max_network_sends),
         options=request,
+        clock=core.clock,
     )
     interval, deadline = limits.interval, limits.deadline
     session = (limits.total_timeout, None if deadline is None else deadline.remaining())
@@ -433,7 +434,7 @@ class _Operation(Generic[T, P]):
         if call is self._plan.polled.call and (limit := self._limits.max_polls) is not None and self._polls >= limit:
             raise self._limit(limit, "polls")
         self._sendable()
-        if (required := self._not_before - monotonic()) <= 0:
+        if (required := self._not_before - self._limits.clock.monotonic()) <= 0:
             return None
         limits = self._limits
         if (allowed := limits.max_wait) is not None and required > allowed:
@@ -513,12 +514,12 @@ class _Operation(Generic[T, P]):
 
         Only the header the helper declares gives a server delay; one that is not a valid delay is ignored.
         """
-        received = monotonic()
-        delay = self._limits.interval
+        limits = self._limits
+        received, delay = limits.clock.monotonic(), limits.interval
         if (name := self._plan.retry_after_header) is not None:
             from ..client.retry import header_delay  # noqa: PLC0415 - Only a helper with a delay header reads one.
 
-            if (server := header_delay(info.headers, name, time())) is not None:
+            if (server := header_delay(info.headers, name, limits.clock.time())) is not None:
                 delay = max(delay, server)
         return received + delay
 
@@ -587,7 +588,8 @@ class _Operation(Generic[T, P]):
             bound = self._values(plan.polled, plan.bindings, wire, info, operation, self._bound)
         elif phase is _Phase.SUCCEEDED:
             bound, result = self._succeeded(data, wire, info)
-        return _Step(phase, self._after(info) if phase is _Phase.PENDING else monotonic(), snapshot, bound, result)
+        settled = self._after(info) if phase is _Phase.PENDING else self._limits.clock.monotonic()
+        return _Step(phase, settled, snapshot, bound, result)
 
     def _succeeded(self, data: P, wire: WireValue, info: ResponseInfo) -> tuple[tuple[WireValue, ...], T | Missing]:
         """Return what the result fetch writes after a successful poll, or the result the poll carries itself."""
@@ -936,7 +938,10 @@ def _session(limits: _Limits) -> OperationSession:
     from ..client.logical import OperationSession  # noqa: PLC0415 - Only a started helper loads the call runtime.
 
     return OperationSession(
-        total_timeout=limits.total_timeout, deadline=limits.deadline, max_network_sends=limits.max_network_sends
+        total_timeout=limits.total_timeout,
+        deadline=limits.deadline,
+        max_network_sends=limits.max_network_sends,
+        clock=limits.clock,
     )
 
 

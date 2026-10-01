@@ -11,7 +11,6 @@ import threading
 from collections.abc import Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
-from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from enum import Enum
 from hashlib import sha256
@@ -1176,8 +1175,9 @@ def _restored(
 ) -> tuple[_Walk[T, P], tuple[T, ...], int]:
     """Return the walk a checkpoint continues, with the items it left of its last page and the position among them.
 
-    The checkpoint must be this helper's, made under the security the call runs with, and unexpired. Its continuation
-    is checked as one a server just gave, and a state or saved page that does not fit the helper is malformed.
+    The checkpoint must be this helper's, made under the security the call runs with, and unexpired by the client's
+    wall clock. Its continuation is checked as one a server just gave, and a state or saved page that does not fit the
+    helper is malformed.
     """
     if not isinstance(state, ResumeState):
         raise _invalid(plan, ("state",))
@@ -1186,7 +1186,7 @@ def _restored(
         raise _resume_error(plan, "fingerprint")
     if security != sha256(canonical_json(core.checkpoint_security(plan.call, limits.options)[0])).hexdigest():
         raise _resume_error(plan, "security")
-    if expires_at is not None and expires_at <= datetime.now(timezone.utc):
+    if expires_at is not None and expires_at.timestamp() <= core.clock.time():
         raise _resume_error(plan, "expired")
     try:
         return _walked(core, plan, decode_json(state_json), payload, limits)
