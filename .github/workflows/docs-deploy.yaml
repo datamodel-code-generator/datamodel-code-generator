@@ -30,7 +30,7 @@ jobs:
           ref: ${{ inputs.checkout_ref }}
           persist-credentials: false
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           python-version: 3.14.6
       - name: Install dependencies
@@ -88,7 +88,7 @@ jobs:
           cp -R site/assets/playground/. site/playground/
       - name: Deploy
         if: inputs.deploy_branch != '' && github.repository == 'datamodel-code-generator/datamodel-code-generator'
-        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4.0.0
+        uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4.1.3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
