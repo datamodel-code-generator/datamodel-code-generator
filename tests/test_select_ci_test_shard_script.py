@@ -67,10 +67,10 @@ def _collect(*args: str) -> list[str]:
     result = subprocess.run(
         [sys.executable, "-m", "pytest", "--collect-only", "-q", "-p", "no:cacheprovider", SHARDED_TESTS, *args],
         cwd=ROOT,
-        env=environment,
+        env={**environment, "PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"},
         check=True,
         capture_output=True,
-        text=True,
+        encoding="utf-8",
     )
     return [line for line in result.stdout.splitlines() if "::" in line]
 
