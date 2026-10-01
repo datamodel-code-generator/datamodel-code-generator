@@ -1,0 +1,9 @@
+# parameter-adapters and parameter-adapters-variant
+  models same False
+  default.list_tags same ['response', 'security', 'signature'] different ['request']
+  default.get_item same ['response', 'security', 'signature'] different ['request']
+  default.get_segment same ['request', 'response', 'security', 'signature'] different []
+  default.find same ['request', 'response', 'security', 'signature'] different []
+  default.search same ['response', 'security', 'signature'] different ['request']
+  default.spread same ['request', 'response', 'security', 'signature'] different []
+  default.list_shelf same ['request', 'response', 'security', 'signature'] different []

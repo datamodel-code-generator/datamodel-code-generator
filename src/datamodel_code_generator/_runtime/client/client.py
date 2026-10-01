@@ -535,11 +535,13 @@ def _parameters(
             if plan.required:
                 raise _encoding_error(operation, (plan.location, plan.name))
             continue
+        bound = None if (adapter := spec.adapter) is None else (adapter[0](), adapter[1])
         try:
-            contribution = encode_parameter(plan, spec.encode(value, mode))
+            wire = spec.encode(value, mode)
+            contribution = encode_parameter(plan, wire) if bound is None else bound[0].encode(wire, bound[1])
+            request.add(contribution, plan.name)
         except (*DATA_ERRORS, ValueError, TypeError) as error:
             raise _encoding_error(operation, (plan.location, plan.name), error) from None
-        request.add(contribution, plan.name)
     return request
 
 
@@ -1443,6 +1445,19 @@ class _Core(Generic[AdapterT, HandleT]):
             return None
         return defaults.get(name)
 
+    def native_responses(self, options: RequestOptions | None, operation_id: str | None) -> bool:
+        """Return whether a call with these options reads response values through their converters alone."""
+        return self._call_settings(options, operation_id).validation.response == "native"
+
+    def _raw_call(
+        self, operation: OperationPlan[object, object], options: RequestOptions | None, session: OperationSession | None
+    ) -> _Call:
+        """Return the state of a raw call, a child of the helper session that gives one."""
+        settings = self._call_settings(options, operation.operation_id)
+        if session is None:
+            return _Call(settings, self._scope, operation)
+        return _SessionCall(settings, self._scope, operation, session)
+
     def view(self, options: object) -> Self:
         """Return a view with the options layered on these, sharing the transport and counting its calls here too."""
         if not isinstance(options, RequestOptions):
@@ -1891,11 +1906,14 @@ class _Core(Generic[AdapterT, HandleT]):
         request: Callable[[], tuple[tuple[object, ...], object, str | None]],
         media_type: str | MediaSelector | None,
         options: RequestOptions | None,
-    ) -> None:
-        """Prepare a helper's request as its page's call prepares it, without sending, raising what that raises."""
+    ) -> tuple[str, HeadersView]:
+        """Prepare a helper's request as its page's call prepares it, without sending, raising what that raises.
+
+        The URL and headers it would send are returned, every patch applied.
+        """
         arguments, body, url = request()
         settings = self._call_settings(options, operation.operation_id)
-        self._prepare(
+        prepared = self._prepare(
             operation,
             arguments,
             settings,
@@ -1905,7 +1923,8 @@ class _Core(Generic[AdapterT, HandleT]):
             accept=None,
             narrowed=False,
             url=url,
-        )
+        )[0]
+        return prepared.url, prepared.headers
 
     def saved_page(
         self,
@@ -1938,8 +1957,9 @@ class _Core(Generic[AdapterT, HandleT]):
         request: Callable[[], tuple[tuple[object, ...], object, str | None]],
         media_type: str | MediaSelector | None,
         options: RequestOptions | None,
+        read_request: Callable[[str, HeadersView], None] | None,
     ) -> tuple[PreparedRequest[EncodedAttempt], object]:
-        """Return a page's request, sent to the URL a server gave when the walk follows one.
+        """Return a page's request, sent to the URL a server gave when the walk follows one, shown to any reader first.
 
         A followed URL is sent without the query fields of the package's security schemes and the auth's own, which
         the auth adds again, and to another origin than the server's without the credential and cookie headers, which
@@ -1959,6 +1979,8 @@ class _Core(Generic[AdapterT, HandleT]):
             narrowed=False,
             url=url,
         )
+        if read_request is not None:
+            read_request(prepared.url, prepared.headers)
         if url is None:
             return prepared, deferred
         server = call.server_origin = request_origin(self._base(operation, call.settings))
@@ -2505,6 +2527,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         options: RequestOptions | None,
         session: OperationSession,
         max_page_bytes: int | None,
+        read_request: Callable[[str, HeadersView], None] | None = None,
     ) -> R:
         """Execute one page of a helper session as a child logical call, building what the page's response gives.
 
@@ -2521,7 +2544,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         call = _SessionCall(settings, self._scope, operation, session)
         events = call.events = self._started(call, operation.path, options)
         decoder = call.decoder = operation.responses
-        prepare = partial(self._page_request, call, request, media_type, options)
+        prepare = partial(self._page_request, call, request, media_type, options, read_request)
 
         def receive(response: TransportResponse, info: ResponseInfo) -> tuple[Response[T], R]:
             received = self._read(response, info, decoder, call)
@@ -2548,7 +2571,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             self._scope.release()
             call.finish()
 
-    def execute_raw(  # noqa: PLR0913
+    def execute_raw(  # noqa: PLR0912, PLR0913
         self,
         operation: OperationPlan[object, object],
         arguments: tuple[object, ...],
@@ -2559,9 +2582,14 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         options: RequestOptions | None = None,
         response_media_type: str | MediaSelector | None = None,
         stream: bool = False,
+        session: OperationSession | None = None,
     ) -> RawResponse:
-        """Execute one encoded logical call through its retry and redirect policy."""
-        call = _Call(self._call_settings(options, operation.operation_id), self._scope, operation)
+        """Execute one encoded logical call through its retry and redirect policy.
+
+        A helper's stream passes its session: the call is a child of it, and a response other than a declared success
+        of the response media type raises the call's typed failure before the stream is handed over.
+        """
+        call = self._raw_call(operation, options, session)
         events = call.events = self._started(call, operation.path, options)
         decoder = operation.responses
         result: RawResponse | None = None
@@ -2590,8 +2618,10 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                 body = operation.bound(body, fields, media_type)
             result = self._run(call, body, prepare, receive, options)
             call.check("send")
-            if _auth_failed(call):
+            if _auth_failed(call) or session is not None:
                 result.raise_for_status()
+            if session is not None:
+                decoder.streamed(result.info)
             if stream:
                 self._scope.handoff(result)
                 handed = True
@@ -3346,6 +3376,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         options: RequestOptions | None,
         session: OperationSession,
         max_page_bytes: int | None,
+        read_request: Callable[[str, HeadersView], None] | None = None,
     ) -> R:
         """Execute one page of a helper session as a child logical call, building what the page's response gives.
 
@@ -3363,7 +3394,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         self._running(call.operation_id, call.call_id)
         events = call.events = await self._started(call, operation.path, options)
         decoder = call.decoder = operation.responses
-        prepare = partial(self._page_request, call, request, media_type, options)
+        prepare = partial(self._page_request, call, request, media_type, options, read_request)
 
         async def receive(response: AsyncTransportResponse, info: ResponseInfo) -> tuple[Response[T], R]:
             received = await self._read(response, info, decoder, call)
@@ -3390,7 +3421,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             self._scope.release()
             call.finish()
 
-    async def execute_raw(  # noqa: PLR0913
+    async def execute_raw(  # noqa: PLR0912, PLR0913
         self,
         operation: OperationPlan[object, object],
         arguments: tuple[object, ...],
@@ -3401,9 +3432,14 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         options: RequestOptions | None = None,
         response_media_type: str | MediaSelector | None = None,
         stream: bool = False,
+        session: OperationSession | None = None,
     ) -> AsyncRawResponse:
-        """Execute one encoded logical call through its retry and redirect policy."""
-        call = _Call(self._call_settings(options, operation.operation_id), self._scope, operation)
+        """Execute one encoded logical call through its retry and redirect policy.
+
+        A helper's stream passes its session: the call is a child of it, and a response other than a declared success
+        of the response media type raises the call's typed failure before the stream is handed over.
+        """
+        call = self._raw_call(operation, options, session)
         self._running(call.operation_id, call.call_id)
         events = call.events = await self._started(call, operation.path, options)
         decoder = operation.responses
@@ -3435,8 +3471,10 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 lambda: self._run(call, body, prepare, receive, options), cleanup=AsyncRawResponse.aclose
             )
             call.check("send")
-            if _auth_failed(call):
+            if _auth_failed(call) or session is not None:
                 await result.raise_for_status()
+            if session is not None:
+                decoder.streamed(result.info)
             if stream:
                 self._scope.handoff(result)
                 handed = True

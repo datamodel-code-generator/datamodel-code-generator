@@ -259,6 +259,12 @@
   page number resumed after 1 ['2', '3']
   resumed with another body media type ! ConfigurationError: ConfigurationError(operation_id='search', field_path='headers.Content-Type', condition='conflicts_with_body_media') [operation_id='search', field_path=('headers', 'Content-Type'), condition='conflicts_with_body_media'] configuration_error
   resumed with a query patch ! ConfigurationError: ConfigurationError(operation_id='query', field_path='query', condition='conflicts_with_querystring') [operation_id='query', field_path=('query',), condition='conflicts_with_querystring'] configuration_error
+  > GET https://api.example.com/v1/users?offset=40
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  offset from a client default taking 2 = ['1', '2']
+  > GET https://api.example.com/v1/users?offset=42
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  offset from a client default resumed ['3']
   anonymous export ! ProtocolConfigurationError: ProtocolConfigurationError(condition='security_partition') [field_path=('protocols', 'security'), condition='security_partition'] protocol_configuration_error
   anonymous resumes anonymous = mappingproxy({'pages': 0, 'items': 0, 'network_send_count': 0, 'network_send_budget_used': 0})
   tenant export = True

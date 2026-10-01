@@ -43,6 +43,7 @@ from tests.data.python.client_oauth_refresh import oauth_refresh, oauth_refresh_
 from tests.data.python.client_oauth_shared import oauth_shared
 from tests.data.python.client_oauth_store import oauth_refresh_store
 from tests.data.python.client_pagination import pagination, pagination_backends, pagination_limits
+from tests.data.python.client_pagination_count_values import pagination_count_defaults, pagination_count_values
 from tests.data.python.client_pagination_counts import pagination_counts
 from tests.data.python.client_pagination_links import pagination_links
 from tests.data.python.client_pagination_resume import pagination_resume
@@ -53,6 +54,7 @@ from tests.data.python.client_pagination_targets import (
     pagination_targets,
     path_arguments,
 )
+from tests.data.python.client_parameter_adapters import parameter_adapters
 from tests.data.python.client_polling import polling
 from tests.data.python.client_protocol_contracts import protocol_contracts
 from tests.data.python.client_protocol_errors import protocol_errors
@@ -82,11 +84,20 @@ from tests.data.python.client_runtime import (
 from tests.data.python.client_selectors import selectors
 from tests.data.python.client_signatures import keywords, signatures
 from tests.data.python.client_stream_lifetimes import stream_lifetimes
+from tests.data.python.client_streams import ndjson, ndjson_backends, stream_backends, streams
+from tests.data.python.client_streams import stream_lifetimes as event_stream_lifetimes
 from tests.data.python.client_transports import lifecycle, transports
 from tests.data.python.client_unions import schema_unions, unions
 from tests.data.python.client_validation import arguments, validation
+from tests.data.python.client_webhook_adapters import (
+    webhook_adapter_imports,
+    webhook_adapters,
+    webhook_mapped_backends,
+    webhook_unsigned,
+)
 from tests.data.python.client_webhook_contracts import webhook_contracts
 from tests.data.python.client_webhook_errors import webhook_errors
+from tests.data.python.client_webhook_public_keys import webhook_public_keys
 from tests.data.python.client_webhooks import webhook_backends, webhook_replay, webhook_verification
 
 if TYPE_CHECKING:
@@ -775,6 +786,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "selectors": ("media", ("pydantic_v2.BaseModel", "typing.TypedDict"), selectors),
     "headers": ("pets", ("pydantic_v2.BaseModel",), headers),
     "query": ("pets", ("pydantic_v2.BaseModel",), query),
+    "parameter-adapters": ("parameter-adapters", ("pydantic_v2.BaseModel",), parameter_adapters),
     "signatures": ("pets", BACKENDS, signatures),
     "signatures-unpack": ("pets-unpack", BACKENDS, signatures),
     "keywords": ("keywords", ("pydantic_v2.BaseModel",), keywords),
@@ -792,10 +804,17 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "pagination-targets": ("pagination-targets", ("pydantic_v2.BaseModel",), pagination_targets),
     "pagination-paths": ("pagination-paths", ("pydantic_v2.BaseModel",), pagination_paths),
     "pagination-querystring": ("pagination-querystring", ("pydantic_v2.BaseModel",), pagination_querystring),
+    "pagination-count-values": ("pagination-counts", ALL_BUT_MSGSPEC, pagination_count_values),
+    "pagination-count-defaults": ("pagination-counts", BACKENDS, pagination_count_defaults),
     "pagination-counts": ("pagination-counts", ("pydantic_v2.BaseModel",), pagination_counts),
     "pagination-links": ("pagination-links", ("pydantic_v2.BaseModel",), pagination_links),
     "pagination-resume": ("pagination-resume", ("pydantic_v2.BaseModel",), pagination_resume),
     "polling": ("polling", ("pydantic_v2.BaseModel",), polling),
+    "streams": ("streams", ("pydantic_v2.BaseModel",), streams),
+    "stream-events": ("streams", ("pydantic_v2.BaseModel",), event_stream_lifetimes),
+    "stream-backends": ("streams", BACKENDS, stream_backends),
+    "ndjson": ("ndjson", ("pydantic_v2.BaseModel",), ndjson),
+    "ndjson-backends": ("ndjson", BACKENDS, ndjson_backends),
     "protocol-errors": ("pets", ("pydantic_v2.BaseModel",), protocol_errors),
     "evolution": ("evolution", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"), evolution),
     "evolution-schema": (
@@ -821,6 +840,11 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "webhook-verification": ("webhooks", ("pydantic_v2.BaseModel",), webhook_verification),
     "webhook-backends": ("webhooks", BACKENDS, webhook_backends),
     "webhook-replay": ("webhooks", ("pydantic_v2.BaseModel",), webhook_replay),
+    "webhook-public-keys": ("webhooks-public-keys", ("pydantic_v2.BaseModel",), webhook_public_keys),
+    "webhook-adapters": ("webhooks-adapters", ("pydantic_v2.BaseModel",), webhook_adapters),
+    "webhook-unsigned": ("webhooks-adapters", ("pydantic_v2.BaseModel",), webhook_unsigned),
+    "webhook-mapped-backends": ("webhooks-adapters", BACKENDS, webhook_mapped_backends),
+    "webhook-adapter-imports": ("webhooks-unsigned", ("pydantic_v2.BaseModel",), webhook_adapter_imports),
     "unions": ("unions", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), unions),
     "unions-tagged": ("unions-tagged", ("msgspec.Struct",), unions),
     "unions-schema": ("unions-schema", BACKENDS, schema_unions),

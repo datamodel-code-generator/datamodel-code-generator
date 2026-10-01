@@ -34,10 +34,18 @@ from datamodel_code_generator._client.protocol_plan import (
 )
 from datamodel_code_generator._client.render import ClientRenderer
 from datamodel_code_generator._client.security import security_contract
+from datamodel_code_generator._client.streams import plan_streams, stream_uses
 from datamodel_code_generator._client.validation import admission_problems, allowed, argument_uses
-from datamodel_code_generator._client.webhooks import plan_webhooks, webhook_files, webhook_uses
+from datamodel_code_generator._client.webhooks import (
+    key_class,
+    plan_webhooks,
+    webhook_dependencies,
+    webhook_files,
+    webhook_uses,
+)
 from datamodel_code_generator._codec_declarations import CodecDeclarations
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
+from datamodel_code_generator._openapi_codec_adapters import select_adapters
 from datamodel_code_generator._openapi_codec_plan import artifact_module, plan_model_codecs
 from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
 from datamodel_code_generator._runtime.model_codecs.wire import checked_scalar
@@ -51,9 +59,10 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_manifest import JSONObject
     from datamodel_code_generator._api_types import TargetKind
     from datamodel_code_generator._client.pagination import PaginationSpec
-    from datamodel_code_generator._client.plan import ClientPlan, MediaSpec, OperationSpec, PartSpec
+    from datamodel_code_generator._client.plan import ClientPlan, MediaSpec, OperationSpec, ParameterSpec, PartSpec
     from datamodel_code_generator._client.polling import PollingSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
+    from datamodel_code_generator._client.streams import StreamSpec
     from datamodel_code_generator._client.webhooks import WebhookSpec
     from datamodel_code_generator._generation_contract import GeneratedTypeContractBatch, TypeUseBinding, TypeUseId
     from datamodel_code_generator._openapi_codec_plan import CodecBackend, CodecPlan
@@ -92,32 +101,38 @@ class ClientTarget:
         backend = _BACKENDS[request.model_config.output_model_type]
         protocols = plan_protocols(request, config.protocols)
         wire = _wire(request, request.batch)
+        declarations = CodecDeclarations(
+            compatibility=config.builtin_codec_compatibility,
+            exports=config.export_bindings,
+            adapters=config.codec_adapters,
+        )
+        selection = select_adapters(request.batch, wire, declarations, "client") if config.codec_adapters else None
+        adapted = frozenset() if selection is None else selection.uses("parameter")
         try:
-            plan = Planner(request, config, wire).plan()
+            plan = Planner(request, config, wire, adapted).plan()
         except PlanError as error:
             raise APIGenerationError(
                 tuple(replace(item, target_id=request.target_id) for item in error.diagnostics)
             ) from None
         events, hooked = webhook_uses(protocols, request)
-        received = frozenset(event.use.id for event in events)
-        uses = frozenset(plan_uses(plan)) | received
+        received = frozenset(event.use.id for spec in events for event in spec.events)
+        streamed, stream_events, stream_problems = stream_uses(protocols, plan, request, wire)
+        uses = frozenset(plan_uses(plan)) | received | frozenset(use.id for use in stream_events)
         batch = request.batch
-        if parts := tuple(part_uses(plan)):
+        if parts := (*part_uses(plan), *stream_events):
             batch = replace(batch, type_uses=(*batch.type_uses, *parts))
         if parts or events:
             wire = _wire(request, batch, parts, received)
+            selection = None
         codecs = plan_model_codecs(
             batch,
             replace(wire, schema_ids=tuple(item for item in wire.schema_ids if item[0] in uses)),
             backend,
-            declarations=CodecDeclarations(
-                compatibility=config.builtin_codec_compatibility,
-                exports=config.export_bindings,
-                adapters=config.codec_adapters,
-            ),
+            declarations=declarations,
             surface="client",
             lease=request.lease,
             sources=_sources(request),
+            selection=selection,
         )
         selected = {spec.contract.id for spec in plan.operations}
         if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
@@ -127,12 +142,13 @@ class ClientTarget:
         polls, polled = plan_polling(protocols, plan, codecs, wire, request)
         order = {} if protocols is None else {helper.name: index for index, helper in enumerate(protocols.helpers)}
         helpers = tuple(sorted((*pages, *polls), key=lambda spec: order[spec.helper.name]))
+        streams = plan_streams(streamed, protocols, plan, codecs, wire, request, stream_problems)
         webhooks = plan_webhooks(events, codecs, config, hooked)
         ordinary = replace(codecs, bindings=tuple(item for item in codecs.bindings if item[0] not in received))
         if refused := (
             *named,
             *admission_problems(config.validation, ordinary, argument_uses(plan)),
-            *helper_problems(protocols, plan, {**checked, **polled, **hooked}),
+            *helper_problems(protocols, plan, {**checked, **polled, **hooked, **stream_problems}),
         ):
             raise APIGenerationError(
                 tuple(
@@ -145,6 +161,7 @@ class ClientTarget:
         fingerprints = {spec.helper.name: data.fingerprint(spec, metadata[spec.helper.name]) for spec in pages}
         fingerprints.update((spec.helper.name, data.polling(spec, metadata[spec.helper.name])) for spec in polls)
         fingerprints.update((spec.helper.name, data.webhook(spec, metadata[spec.helper.name])) for spec in webhooks)
+        fingerprints.update((spec.helper.name, data.stream(spec, metadata[spec.helper.name])) for spec in streams)
         renderer = ClientRenderer(
             config=config,
             package=request.layout.package,
@@ -153,6 +170,7 @@ class ClientTarget:
             wire=wire,
             codecs=codecs,
             helpers=helpers,
+            streams=streams,
             fingerprints=fingerprints,
             webhooks=partial(webhook_files, webhooks, dict(codecs.imports), fingerprints),
         )
@@ -172,6 +190,7 @@ class ClientTarget:
                     ),
                 )),
                 *((PATTERNS,) if patterned(wire) else ()),
+                *webhook_dependencies(webhooks),
                 *model_dependencies(request.models),
             ),
             bindings=_bindings(codecs, backend),
@@ -256,6 +275,16 @@ class _TargetData:
         self.codecs = codecs
         self.wire = wire
         self.bindings = dict(codecs.bindings)
+        self.adapters = {
+            item.use: (
+                item.registration.name,
+                item.registration.import_ref,
+                item.registration.capabilities,
+                item.parameter,
+            )
+            for item in codecs.adapters
+            if item.parameter is not None
+        }
         self.selected = {operation.id: index for index, operation in enumerate(request.operations)}
         self.spelling = TypeSource(Namespace(()), dict(codecs.imports), lambda module, name: f"{module}.{name}")
 
@@ -331,20 +360,51 @@ class _TargetData:
         })
 
     def webhook(self, spec: WebhookSpec, settings: JSONValue) -> str:
-        """Return the digest of a webhook helper's contract closure: its signature, settings, schema, and event use."""
+        """Return the digest of a webhook helper's contract closure: its signature, settings, schemas, and event uses.
+
+        A mapped helper digests the type and decoding mode of each event name.
+        """
+        events = spec.events
+        mapped = events[0].name is not None
         signature = {
             "name": spec.helper.name,
-            "event": self.type(spec.use),
-            "key": "HmacKey",
-            "validate": spec.validate,
+            "event": {event.name: self.type(event.use) for event in events} if mapped else self.type(events[0].use),
+            "key": key_class(spec.helper.tree["signature"]["kind"]),
+            "validate": {event.name: event.validate for event in events} if mapped else events[0].validate,
             "settings": settings,
         }
         return _digest({
             "kind": "webhook",
             "signatures": [signature],
             "operations": [],
-            "schemas": [spec.event_schema],
-            "type_uses": [self.contract(spec.use)],
+            "schemas": [event.schema for event in events],
+            "type_uses": [self.contract(event.use) for event in events],
+            "adapters": [],
+        })
+
+    def stream(self, spec: StreamSpec, settings: JSONValue) -> str:
+        """Return the digest of a stream helper's contract closure: its signature, settings, operation, and schemas.
+
+        Each event and error use contributes its type and contract, so a changed schema changes the digest.
+        """
+        operation, helper = spec.operation, spec.helper
+        body = operation.body
+        signature = {
+            "name": helper.name,
+            "parameters": [(item.python_name, item.required, self.type(item.use)) for item in operation.parameters],
+            "body": None
+            if body is None
+            else (body.required, [(media.media_type, self.type(media.use)) for media in body.media]),
+            "events": [(key, self.type(use)) for key, use in spec.events],
+            "errors": [(key, self.type(use)) for key, use in spec.errors],
+            "settings": settings,
+        }
+        return _digest({
+            "kind": helper.kind,
+            "signatures": [signature],
+            "operations": [self.request.documents.operation(operation.contract.id)],
+            "schemas": list(spec.schemas),
+            "type_uses": [self.contract(use) for use in spec.uses],
             "adapters": [],
         })
 
@@ -419,7 +479,7 @@ class _TargetData:
             "method": spec.contract.method,
             "path": spec.contract.path,
             "servers": spec.servers,
-            "parameters": [(item.plan, self.contract(item.use)) for item in spec.parameters],
+            "parameters": [self.parameter(item) for item in spec.parameters],
             "retry_safety": spec.retry_safety,
             "idempotency": None
             if (idempotency := spec.idempotency) is None
@@ -488,6 +548,13 @@ class _TargetData:
     def type(self, use: TypeUseBinding | None) -> str | None:
         """Return a use's final type spelled with the import locations of its names, or None without a schema."""
         return None if use is None or use.type is None else self.spelling.static(use.type)
+
+    def parameter(self, parameter: ParameterSpec) -> tuple[object, ...]:
+        """Return a parameter's plan and use contract, with the registered adapter that carries it, if any."""
+        contract = (parameter.plan, self.contract(parameter.use))
+        if (use := parameter.use) is None or (adapter := self.adapters.get(use.id)) is None:
+            return contract
+        return (*contract, adapter)
 
     def contract(self, use: TypeUseBinding | None) -> object:
         """Return a use's codec binding and the normalized schema at its site, or None without a schema."""

@@ -1,0 +1,187 @@
+# webhooks-adapters
+render pydantic_v2.BaseModel
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/events/__init__.py
+  write client/resources/events/_sync.py
+  write client/resources/events/_async.py
+  write client/types/__init__.py
+  write client/types/events/__init__.py
+  write client/types/events/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/webhooks/__init__.py
+  write client/webhooks/keys.py
+  write client/webhooks/adapted/__init__.py
+  write client/webhooks/mapped/__init__.py
+  write client/webhooks/stripe/__init__.py
+  write client/webhooks/unsigned/__init__.py
+  write client/webhooks/stripe/event.py
+  write client/webhooks/adapted/message.py
+  write client/webhooks/adapted/plain.py
+  write client/webhooks/mapped/event.py
+  write client/webhooks/unsigned/event.py
+  write client/webhooks/unsigned/message.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['stripe.event', 'adapted.message', 'adapted.plain', 'mapped.event', 'unsigned.event', 'unsigned.message'] bindings 3
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper stripe.event webhook enabled True /inputs/target_config/protocol_metadata/helpers/stripe.event f7acef64453f78983fb772a0f68e7996a659f3b3a0f91c51a7ded6b7827cd088
+  helper adapted.message webhook enabled True /inputs/target_config/protocol_metadata/helpers/adapted.message 56bec9b4752c0dae8f962e829e9da69c2d8fb3a61687fa167319f874196a9aa2
+  helper adapted.plain webhook enabled True /inputs/target_config/protocol_metadata/helpers/adapted.plain 599bbad08283673d538acfedcefe3b91358b1bff901d889c5fb13f45fb5efaaf
+  helper mapped.event webhook enabled True /inputs/target_config/protocol_metadata/helpers/mapped.event dc39a6c3038809e766dded9ac0f80813e5025a26bdaf97d8f19336b9d9409c95
+  helper unsigned.event webhook enabled True /inputs/target_config/protocol_metadata/helpers/unsigned.event 3fdee0e98dfecfa2cdd4c5560876f425005424f0a2794f804e75f199b5c71dc9
+  helper unsigned.message webhook enabled True /inputs/target_config/protocol_metadata/helpers/unsigned.message 4d3a0fc0344c514574ea9f1715bf2d84f1ff91bace72e6d5f21c76fcd2623064
+  {
+    "helpers": {
+      "adapted.message": {
+        "duplicates": "report",
+        "enabled": true,
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Message"
+        },
+        "kind": "webhook",
+        "signature": {
+          "delivery_id": "required",
+          "kind": "adapter",
+          "timestamp": "required"
+        }
+      },
+      "adapted.plain": {
+        "duplicates": "reject",
+        "enabled": true,
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Message"
+        },
+        "kind": "webhook",
+        "signature": {
+          "delivery_id": "none",
+          "kind": "adapter",
+          "timestamp": "none"
+        }
+      },
+      "mapped.event": {
+        "duplicates": "report",
+        "enabled": true,
+        "event_schema": {
+          "discriminator": {
+            "from": "body",
+            "pointer": "/type"
+          },
+          "mapping": {
+            "customer.created": {
+              "document": "/inputs/root",
+              "pointer": "/components/schemas/Customer"
+            },
+            "invoice.paid": {
+              "document": "/inputs/root",
+              "pointer": "/components/schemas/Invoice"
+            }
+          }
+        },
+        "kind": "webhook",
+        "signature": {
+          "delivery_id": "none",
+          "encoding": "hex",
+          "field_constraints": {},
+          "header": "X-Signature",
+          "key_id": "none",
+          "kind": "hmac-sha256",
+          "prefix": "",
+          "separator": "none",
+          "signed_parts": [
+            "raw-body"
+          ],
+          "timestamp": "none"
+        }
+      },
+      "stripe.event": {
+        "duplicates": "report",
+        "enabled": true,
+        "event_schema": {
+          "discriminator": {
+            "from": "body",
+            "pointer": "/type"
+          },
+          "mapping": {
+            "customer.created": {
+              "document": "/inputs/root",
+              "pointer": "/components/schemas/Customer"
+            },
+            "invoice.paid": {
+              "document": "/inputs/root",
+              "pointer": "/components/schemas/Invoice"
+            },
+            "invoice.updated": {
+              "document": "/inputs/root",
+              "pointer": "/components/schemas/Invoice"
+            }
+          }
+        },
+        "kind": "webhook",
+        "signature": {
+          "delivery_id": "none",
+          "kind": "adapter",
+          "timestamp": "required"
+        }
+      },
+      "unsigned.event": {
+        "duplicates": "report",
+        "enabled": true,
+        "event_schema": {
+          "discriminator": {
+            "from": "body",
+            "pointer": "/meta/type"
+          },
+          "mapping": {
+            "customer.created": {
+              "document": "/inputs/root",
+              "pointer": "/components/schemas/Customer"
+            },
+            "invoice.paid": {
+              "document": "/inputs/root",
+              "pointer": "/components/schemas/Invoice"
+            }
+          }
+        },
+        "kind": "webhook",
+        "signature": {
+          "kind": "none"
+        }
+      },
+      "unsigned.message": {
+        "duplicates": "report",
+        "enabled": true,
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/webhooks/message/post/requestBody/content/application~1json/schema"
+        },
+        "kind": "webhook",
+        "signature": {
+          "kind": "none"
+        }
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 events.list_events()
+    exports client.types.events.ListEventsResponse client.types.events.ListEventsErrorData client.types.events.ListEventsHTTPError
+    exports client.types.events.ListEventsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

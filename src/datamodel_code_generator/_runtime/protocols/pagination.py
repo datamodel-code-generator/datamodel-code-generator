@@ -12,6 +12,7 @@ from collections.abc import Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation
 from enum import Enum
 from hashlib import sha256
 from types import MappingProxyType
@@ -32,7 +33,6 @@ from ..client.responses import ResponseInfo
 from ..client.timing import SessionOptions
 from ..model_codecs.errors import CodecError
 from ..model_codecs.media import decode_json
-from ..model_codecs.parameters import path_text
 from ..model_codecs.unset import UNSET, Unset
 from .errors import PaginationCycleError, ProtocolDataError, ProtocolStateError, ResumeStateError, SessionLimitError
 from .options import PaginationOptions, layered
@@ -40,6 +40,7 @@ from .records import (
     BodySelector,
     Continuation,
     HeaderSelector,
+    ParameterTarget,
     ProtocolProgress,
     RequestTarget,
     Sealed,
@@ -59,6 +60,7 @@ if TYPE_CHECKING:
     from ..client.client import AsyncClientCore, ClientCore
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan
+    from ..client.responses import HeadersView
     from ..client.timing import Deadline
     from ..client.urls import Origin
     from ..model_codecs.selectors import MediaSelector
@@ -585,6 +587,20 @@ def _more(plan: PaginationPlan[T, P], read: Selector, wire: WireValue, info: Res
     return value
 
 
+def _integer(value: object) -> int | None:
+    """Return a finite integer value without rounding it or treating a boolean as a count."""
+    if isinstance(value, int):
+        return None if isinstance(value, bool) else value
+    match value:
+        case float() if value.is_integer():
+            return int(value)
+        case Decimal() if value.is_finite() and value == value.to_integral_value():
+            return int(value)
+        case _:
+            pass
+    return None
+
+
 def _total(plan: PaginationPlan[T, P], read: Selector, wire: WireValue, info: ResponseInfo) -> int:
     """Return the total item count a page gives: a nonnegative JSON integer, or a header of signed decimal digits."""
     value = _selected(plan, read, wire, info)
@@ -598,11 +614,11 @@ def _total(plan: PaginationPlan[T, P], read: Selector, wire: WireValue, info: Re
             value = int(value)
         except ValueError:
             raise _data_error(plan, info, "value", read) from None
-    if isinstance(value, bool) or not isinstance(value, int):
+    if (count := _integer(value)) is None:
         raise _data_error(plan, info, _unfit(value), read)
-    if value < 0:
+    if count < 0:
         raise _data_error(plan, info, "value", read)
-    return value
+    return count
 
 
 class _Walk(Generic[T, P]):
@@ -669,7 +685,7 @@ class _Walk(Generic[T, P]):
             plan, arguments = self.plan, self.request.arguments
             parameters = plan.call.parameters
             texts = self.paths = {
-                name: path_text(parameters[position].plan, parameters[position].encode(arguments[position], "none"))
+                name: parameters[position].path_text(parameters[position].encode(arguments[position], "none"))
                 for _, parts in plan.dotted
                 for name, index, _, position in parts
                 if index is None
@@ -799,11 +815,17 @@ class _Walk(Generic[T, P]):
             return plan.continued
         if not isinstance(plan.continuation, CountPlan):
             return plan.call
+        call = plan.call
+        if (
+            (position := plan.writes[-1][0]) is not None
+            and call.parameters[position].plan.location in {"query", "header"}
+            and isinstance(self.request.arguments[position], Unset)
+        ):
+            return call
         from .writes import ReadMedia, ReadParameter  # noqa: PLC0415 - Only a plan loads the operation runtime.
 
-        call = plan.call
         read = self.started
-        if (position := plan.writes[-1][0]) is None:
+        if position is None:
             body = call.body
             assert body is not None
             media = tuple(
@@ -813,7 +835,7 @@ class _Walk(Generic[T, P]):
             return replace(call, body=replace(body, media=media))
         parameters = list(call.parameters)
         spec = parameters[position]
-        parameters[position] = ReadParameter(plan=spec.plan, encoder=spec.encoder, read=read)
+        parameters[position] = ReadParameter(plan=spec.plan, encoder=spec.encoder, adapter=spec.adapter, read=read)
         return replace(call, parameters=tuple(parameters))
 
     def started(self, wire: WireValue) -> None:
@@ -823,17 +845,48 @@ class _Walk(Generic[T, P]):
         """
         plan = self.plan
         pointer = plan.writes[-1][1]
-        if (value := wire if pointer is None else resolve(wire, pointer)) is MISSING:
+        value = wire if pointer is None else resolve(wire, pointer)
+        if value is MISSING:
             return
-        if isinstance(value, float) and value.is_integer():
-            value = int(value)
-        if isinstance(value, bool) or not isinstance(value, int):
+        if (position := _integer(value)) is None:
             rule = plan.continuation
             assert isinstance(rule, CountPlan)
             raise ProtocolDataError(
                 condition="type", location=rule.write, helper_id=plan.helper_id, operation=plan.operation
             )
-        self.start = value
+        self.start = position
+
+    def sent(self, url: str, headers: HeadersView) -> None:
+        """Read a first count request's default position after all query and header patches have been applied.
+
+        An encoded typed start overrides client and view patches, and call patches of the target are refused, so it
+        already gives the sent position without reparsing the request.
+        """
+        if self.start is not None or self.link is not None or not isinstance(rule := self.plan.continuation, CountPlan):
+            return
+        match rule.write:
+            case ParameterTarget(location="query", name=name):
+                from urllib.parse import unquote_plus, urlsplit  # noqa: PLC0415 - Only a first query is inspected.
+
+                values = tuple(
+                    unquote_plus(parts[2])
+                    for pair in urlsplit(url).query.split("&")
+                    if unquote_plus((parts := pair.partition("="))[0]) == name
+                )
+            case ParameterTarget(location="header", name=name):
+                values = headers.get_all(name)
+            case _:
+                return
+        self.start = None
+        if not values:
+            return
+        wire: WireValue = values
+        if len(values) == 1:
+            try:
+                wire = Decimal(values[0])
+            except InvalidOperation:
+                wire = values[0]
+        self.started(wire)
 
     def advance(self, rule: CountPlan, count: int, wire: WireValue, info: ResponseInfo) -> int | Missing:
         """Return the offset or page number the request after a page writes, or MISSING when the page is the last.
@@ -1160,27 +1213,27 @@ def _resent(
         given = sent[0], cast("str", declared), concrete
     try:
         restored, restored_body, media_type = core.restored_request(call, wire, given)
+        texts = {
+            spec.plan.name: spec.path_text(value)
+            for spec, value in zip(call.parameters, wire, strict=True)
+            if spec.plan.location == "path" and not isinstance(value, Unset)
+        }
     except (SDKError, CodecError):
         raise _MalformedError from None
-    texts = {
-        spec.plan.name: path_text(spec.plan, value)
-        for spec, value in zip(call.parameters, wire, strict=True)
-        if spec.plan.location == "path" and not isinstance(value, Unset)
-    }
     _require(
         not any(texts.keys() >= {*names} and dot_segment(segment, texts) for segment, names in path_segments(call.path))
     )
     return _Request(restored, restored_body, media_type)
 
 
-def _checked(core: ClientCore | AsyncClientCore, walk: _Walk[T, P]) -> None:
+def _checked(core: ClientCore | AsyncClientCore, walk: _Walk[T, P]) -> tuple[str, HeadersView]:
     """Prepare the request a walk sends next as its call would, refusing one whose saved values cannot be sent.
 
     Only the encoding and validation of the saved values is the checkpoint's; any other refusal, such as one of the
-    resumed call's options, is raised as the call raises it.
+    resumed call's options, is raised as the call raises it. The URL and headers it would send are returned.
     """
     try:
-        core.checked_page(walk.operation(), walk.next_request, walk.request.media_type, walk.limits.options)
+        return core.checked_page(walk.operation(), walk.next_request, walk.request.media_type, walk.limits.options)
     except (RequestEncodingError, ProtocolDataError, CodecError):
         raise _MalformedError from None
 
@@ -1191,14 +1244,15 @@ def _walked(
     """Return the walk of a checkpoint's decoded state, with the items it left of its last page and their position.
 
     The next request is prepared as its call would prepare it, without sending, and so is the first one, which gives an
-    offset or page number its start, unless a followed URL replaced it without the body the checkpoint left out.
+    offset or page number its start as the first page read it, unless a followed URL replaced it without the body the
+    checkpoint left out.
     """
     _require(isinstance(state, Mapping) and frozenset(state) == _STATE)
     fields = cast("Mapping[str, WireValue]", state)
     request = _resent(core, plan, fields["arguments"], fields["body"])
     first = _Walk(plan, request, limits, core)
     if (page := fields["page"]) is None or not plan.follows or plan.continued.body is not None:
-        _checked(core, first)
+        first.sent(*_checked(core, first))
     if page is None:
         _require(not payload)
         return first, (), 0
@@ -1601,6 +1655,7 @@ def _fetch(
         options=limits.options,
         session=session,
         max_page_bytes=limits.max_page_bytes,
+        read_request=walk.sent,
     )
 
 
@@ -1620,6 +1675,7 @@ async def _afetch(
         options=limits.options,
         session=session,
         max_page_bytes=limits.max_page_bytes,
+        read_request=walk.sent,
     )
 
 
