@@ -808,14 +808,9 @@ class _Upload(Generic[T]):
         session sent nothing. A response the server started, such as a success whose body does not decode, keeps it
         unknown with RESPONSE_STARTED.
         """
-        info = getattr(error, "info", None)
-        status = getattr(info, "status_code", 0)
-        unapplied = (
-            (isinstance(error, (HTTPStatusError, UnexpectedStatusError)) and not _MIN_SUCCESS <= status <= _MAX_SUCCESS)
-            or getattr(error, "delivery_state", None) is DeliveryState.NOT_SENT
-            or self._session.network_send_count == sends
-        )
-        started = info is not None or getattr(error, "delivery_state", None) is DeliveryState.RESPONSE_STARTED
+        delivery = _delivery_of(error)
+        unapplied = _refused(error) or delivery is DeliveryState.NOT_SENT or self._session.network_send_count == sends
+        started = (isinstance(error, SDKError) and error.info is not None) or delivery is DeliveryState.RESPONSE_STARTED
         with self._guard:
             if unapplied:
                 self._phase, self._delivery = _Phase.UPLOADING, None
@@ -885,6 +880,20 @@ def _dotted(
             raise ProtocolDataError(
                 condition="value", location=read, helper_id=plan.helper_id, operation=plan.operation, info=info
             )
+
+
+def _refused(error: BaseException) -> bool:
+    """Return whether the server answered a call with an error status, so it did not apply the call."""
+    return (
+        isinstance(error, (HTTPStatusError, UnexpectedStatusError))
+        and not _MIN_SUCCESS <= error.info.status_code <= _MAX_SUCCESS
+    )
+
+
+def _delivery_of(error: BaseException) -> DeliveryState | None:
+    """Return how far a failed call got, when its error says."""
+    delivery: object = getattr(error, "delivery_state", None)
+    return delivery if isinstance(delivery, DeliveryState) else None
 
 
 def _probed_again(error: Exception) -> bool:
