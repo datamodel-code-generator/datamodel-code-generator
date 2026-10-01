@@ -19,7 +19,7 @@ from pydantic import BaseModel
 from datamodel_code_generator import SchemaParseError
 from datamodel_code_generator.api_types import APIGenerationError
 from tests.data.python.client_generation import generate_client
-from tests.data.python.generated_packages import forget_generated, import_generated
+from tests.data.python.generated_packages import forget_generated, import_generated_codecs
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -82,7 +82,7 @@ class GeneratedCodecs:
     def __init__(self, name: str, root: Path) -> None:
         """Import the package generated under a root, its bindings, and the runtime modules reports read."""
         self.name = name
-        import_generated(name)
+        import_generated_codecs(name, root)
         self.bindings = importlib.import_module(f"{name}._generated.model_bindings")
         self.public = importlib.import_module(f"{name}.model_codecs")
         self.media = importlib.import_module(f"{name}._runtime.model_codecs.media")
