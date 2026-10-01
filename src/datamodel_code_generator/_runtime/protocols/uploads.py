@@ -74,10 +74,10 @@ if TYPE_CHECKING:
     from ..model_codecs.selectors import MediaSelector
     from ..model_codecs.wire import WireValue
     from .pagination import PageBinding
-    from .polling import _Targeted  # pyright: ignore[reportPrivateUsage]
-    from .records import ParameterTarget, ProtocolProgress, RequestTarget, Selector
+    from .records import ParameterTarget, ProtocolProgress, Selector
     from .references import OperationRef
     from .sources import AsyncRangeReader, AsyncUploadSource, RangeReader, UploadSource
+    from .writes import Targeted
 
 __all__ = (
     "AsyncUploadHandle",
@@ -110,24 +110,6 @@ class _Phase(Enum):
 
 
 _PHASES: Final = MappingProxyType({phase.value: phase for phase in _Phase})
-
-
-def _position(call: OperationPlan[Any, object], target: ParameterTarget) -> int:
-    """Return the argument position of the parameter a target names, matching a header's name without case."""
-    from .writes import _position as position  # noqa: PLC0415  # pyright: ignore[reportPrivateUsage]
-
-    return position(call, target.location, target.name)
-
-
-def _targeted(
-    call: OperationPlan[T, object], bindings: tuple[PageBinding, ...], extra: tuple[RequestTarget, ...] = ()
-) -> _Targeted[T]:
-    """Return an operation taking the bindings' values and then a value for each extra target, as wire values."""
-    from .polling import _Targeted  # noqa: PLC0415  # pyright: ignore[reportPrivateUsage]
-    from .writes import read_paths, targeted  # noqa: PLC0415 - Only a plan loads the operation runtime.
-
-    sources = (*((binding.target, binding.selector) for binding in bindings), *((target, None) for target in extra))
-    return _Targeted(*targeted(call, (target for target, _ in sources)), read_paths(call, sources))
 
 
 def _unreplayed(call: OperationPlan[T, object]) -> OperationPlan[T, object]:
@@ -178,9 +160,9 @@ class UploadPlan(Generic[T, C]):
     completion: OperationPlan[T, object] | None = None
     completion_bindings: tuple[PageBinding, ...] = ()
     size_position: int | None = field(init=False)
-    probed: _Targeted[object] = field(init=False)
-    appended: _Targeted[object] = field(init=False)
-    completed: _Targeted[T] | None = field(init=False)
+    probed: Targeted[object] = field(init=False)
+    appended: Targeted[object] = field(init=False)
+    completed: Targeted[T] | None = field(init=False)
     headers: frozenset[str] = field(init=False)
     queries: frozenset[str] = field(init=False)
 
@@ -188,18 +170,21 @@ class UploadPlan(Generic[T, C]):
         """Derive the operations writing the bindings, the chunk's offset and length, and the size's position."""
         from dataclasses import replace  # noqa: PLC0415
 
-        probed = _targeted(self.probe, self.probe_bindings)
+        from .writes import position, targeted_writes  # noqa: PLC0415 - Only a plan loads the operation runtime.
+
+        probed = targeted_writes(self.probe, self.probe_bindings)
         extra = (self.offset,) if self.length is None else (self.offset, self.length)
-        appended = _targeted(self.append, self.append_bindings, extra)
+        appended = targeted_writes(self.append, self.append_bindings, extra)
         appended = replace(appended, call=_unreplayed(appended.call))
-        completed = None if self.completion is None else _targeted(self.completion, self.completion_bindings)
+        completed = None if self.completion is None else targeted_writes(self.completion, self.completion_bindings)
         children = (probed, appended, *(() if completed is None else (completed,)))
         headers, queries = set[str](), set[str]()
         if (size := self.size) is not None:
             (headers if size.location == "header" else queries).add(
                 size.name.lower() if size.location == "header" else size.name
             )
-        object.__setattr__(self, "size_position", None if size is None else _position(self.create, size))
+        size_position = None if size is None else position(self.create, size.location, size.name)
+        object.__setattr__(self, "size_position", size_position)
         object.__setattr__(self, "probed", probed)
         object.__setattr__(self, "appended", appended)
         object.__setattr__(self, "completed", completed)
@@ -671,7 +656,7 @@ class _Upload(Generic[T]):
         return value
 
     def _values(
-        self, targeted: _Targeted[Any], bindings: tuple[PageBinding, ...], wire: WireValue, info: ResponseInfo
+        self, targeted: Targeted[Any], bindings: tuple[PageBinding, ...], wire: WireValue, info: ResponseInfo
     ) -> tuple[WireValue, ...]:
         """Return what bindings write: their literals and what the create response gives, refusing dot segments."""
         written = tuple(
@@ -871,17 +856,15 @@ class _Upload(Generic[T]):
 
 
 def _dotted(
-    plan: UploadPlan[Any, Any], targeted: _Targeted[Any], written: tuple[WireValue, ...], info: ResponseInfo | None
+    plan: UploadPlan[Any, Any], targeted: Targeted[Any], written: tuple[WireValue, ...], info: ResponseInfo | None
 ) -> None:
     """Refuse read values that make a path segment a dot segment once encoded, as data a server gave."""
-    from .writes import dotted_read  # noqa: PLC0415 - A plan loaded the operation runtime.
+    from .writes import dotted_write  # noqa: PLC0415 - A plan loaded the operation runtime.
 
-    parameters = targeted.call.parameters
-    for segment, parts in targeted.dotted:
-        if (read := dotted_read(parameters, segment, parts, written, dict)) is not None:
-            raise ProtocolDataError(
-                condition="value", location=read, helper_id=plan.helper_id, operation=plan.operation, info=info
-            )
+    if (read := dotted_write(targeted, written)) is not None:
+        raise ProtocolDataError(
+            condition="value", location=read, helper_id=plan.helper_id, operation=plan.operation, info=info
+        )
 
 
 def _refused(error: BaseException) -> bool:
@@ -1585,7 +1568,7 @@ def _checked(
 
     probe, append, completion = saved.bound
     offsets = (0,) if plan.length is None else (0, 0)
-    requests: list[tuple[_Targeted[Any], tuple[WireValue, ...], tuple[WireValue, ...], object]] = [
+    requests: list[tuple[Targeted[Any], tuple[WireValue, ...], tuple[WireValue, ...], object]] = [
         (plan.probed, probe, (), None),
         (plan.appended, append, offsets, b""),
     ]
