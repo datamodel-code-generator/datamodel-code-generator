@@ -669,7 +669,7 @@ from:
 | event data size | 1 MiB |
 | session total timeout | None |
 | network sends per session | 16; None removes it |
-| reconnections per session | 5; None removes the limit, and 0 allows none |
+| reconnections, counted across resumes | 5; None removes the limit, and 0 allows none |
 | reconnection wait | 60 seconds; None removes it |
 
 The idle timeout runs only while the next step waits for bytes. An event's data is JSON decoded by the schema its
