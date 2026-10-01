@@ -1,0 +1,143 @@
+# webhooks-schema
+render pydantic_v2.BaseModel
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/subscriptions/__init__.py
+  write client/resources/subscriptions/_sync.py
+  write client/resources/subscriptions/_async.py
+  write client/types/__init__.py
+  write client/types/subscriptions/__init__.py
+  write client/types/subscriptions/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/webhooks/__init__.py
+  write client/webhooks/keys.py
+  write client/webhooks/callbacks/__init__.py
+  write client/webhooks/github/__init__.py
+  write client/webhooks/standard/__init__.py
+  write client/webhooks/standard/message.py
+  write client/webhooks/github/push.py
+  write client/webhooks/callbacks/delivered.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['standard.message', 'github.push', 'callbacks.delivered'] bindings 5
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper standard.message webhook enabled True /inputs/target_config/protocol_metadata/helpers/standard.message b5b38df2cf921df07ceec63cd5815cefee8fa7dd3275d43c73884e1ac057488c
+  helper github.push webhook enabled True /inputs/target_config/protocol_metadata/helpers/github.push 1bcd628998336dfb8e3121aad30cf08b74af5ef26573e12ced5993c67619670b
+  helper callbacks.delivered webhook enabled True /inputs/target_config/protocol_metadata/helpers/callbacks.delivered 1b70270f05f54e0720bbe93a1e9d023294490c14d86f06fdb19827e08360e0ce
+  {
+    "helpers": {
+      "callbacks.delivered": {
+        "duplicates": "report",
+        "enabled": true,
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Delivery"
+        },
+        "kind": "webhook",
+        "signature": {
+          "delivery_id": "none",
+          "encoding": "hex",
+          "field_constraints": {},
+          "header": "X-Signature",
+          "key_id": "none",
+          "kind": "hmac-sha256",
+          "prefix": "",
+          "separator": "none",
+          "signed_parts": [
+            "raw-body",
+            {
+              "literal": "!"
+            }
+          ],
+          "timestamp": "none"
+        }
+      },
+      "github.push": {
+        "duplicates": "report",
+        "enabled": true,
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Push"
+        },
+        "kind": "webhook",
+        "signature": {
+          "delivery_id": "none",
+          "encoding": "hex",
+          "field_constraints": {},
+          "header": "X-Hub-Signature-256",
+          "key_id": "none",
+          "kind": "hmac-sha256",
+          "prefix": "sha256=",
+          "separator": "none",
+          "signed_parts": [
+            "raw-body"
+          ],
+          "timestamp": "none"
+        }
+      },
+      "standard.message": {
+        "duplicates": "report",
+        "enabled": true,
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Message"
+        },
+        "kind": "webhook",
+        "signature": {
+          "delivery_id": {
+            "header": "webhook-id"
+          },
+          "encoding": "base64",
+          "field_constraints": {
+            "delivery-id": {
+              "ascii_bytes": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
+            },
+            "timestamp": {
+              "ascii_bytes": "0123456789"
+            }
+          },
+          "header": "webhook-signature",
+          "key_id": "none",
+          "kind": "hmac-sha256",
+          "prefix": "v1,",
+          "separator": " ",
+          "signed_parts": [
+            "delivery-id",
+            {
+              "literal": "."
+            },
+            "timestamp",
+            {
+              "literal": "."
+            },
+            "raw-body"
+          ],
+          "timestamp": {
+            "header": "webhook-timestamp",
+            "unit": "seconds"
+          }
+        }
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 subscriptions.subscribe(query:dry_run=dry_run)
+    exports client.types.subscriptions.SubscribeResponse client.types.subscriptions.SubscribeErrorData client.types.subscriptions.SubscribeHTTPError
+    exports client.types.subscriptions.SubscribeRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

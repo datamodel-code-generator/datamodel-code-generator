@@ -14,9 +14,9 @@ same OpenAPI document and model settings produce the same model files whichever 
 ## Webhook contracts and replay stores
 
 Generated packages expose webhook contracts from `pkg.protocols` and their exceptions from `pkg.errors`, where
-`pkg` is the generated package name. These imports need no HTTP or cryptography library. API-specific signature
-verification and event-decoding helpers are still being implemented; constructing a signature or event record
-does not verify received data.
+`pkg` is the generated package name. These imports need no HTTP or cryptography library. The
+[webhook verification helpers](#webhook-verification-helpers) verify HMAC signatures and decode events; constructing
+a signature or event record yourself does not verify received data.
 
 All records below are immutable and keyword-only. `KeySet` retains the original tuple and key objects without
 inspecting or copying the keys. Its representation excludes key material. `VerifiedWebhook` excludes event data
@@ -304,10 +304,11 @@ explicitly before using it as a model.
 Pagination, polling, and SSE or NDJSON stream helpers of an API are declared in a helper configuration, which the
 client target reads through its `protocols` setting. The helpers are still being implemented: generation validates
 every helper, resolves its references against the selected API, and records it in the target manifest. An enabled
-cursor pagination helper generates the [pagination helper](#pagination-helpers) below; any other enabled helper fails
-with `E_CLIENT_UNSUPPORTED`. A disabled helper generates nothing, so the package is the same as without it. The
-`websocket`, `webhook`, `cache`, `resumable_upload`, `batch`, and `queue` kinds fail with `E_CLIENT_UNSUPPORTED`
-whether they are enabled or not, and their settings are not read yet.
+cursor pagination helper generates the [pagination helper](#pagination-helpers) below, and an enabled HMAC webhook
+helper the [webhook verification helper](#webhook-verification-helpers); any other enabled helper fails with
+`E_CLIENT_UNSUPPORTED`. A disabled helper generates nothing, so the package is the same as without it. The
+`websocket`, `cache`, `resumable_upload`, `batch`, and `queue` kinds fail with `E_CLIENT_UNSUPPORTED` whether they are
+enabled or not, and their settings are not read yet.
 
 | Setting | Values | Default | Where |
 |---|---|---|---|
@@ -453,6 +454,7 @@ querystring, or its request body. An operation that owns a querystring takes no 
 | `pagination` | `operation`, `items` (a body selector), `item_schema`, `continuation` | `bindings` (`[]`), such as a snapshot token each request carries |
 | `polling` | `create`, `accepted_statuses`, `poll`, `bindings` (create to poll), `state`, `pending`, `succeeded`, `result` | `failed` and `cancelled` (`[]`), `interval` (`{seconds: 1, retry_after_header: null}`), `remote_cancel` (`{operation, bindings?}`), `immediate_result` (`{statuses, selector, schema}`), `expires_at` |
 | `sse`, `ndjson` | `operation`, `media`, `event_schema`, `completion`, and for `ndjson` `final_line` (`require_newline` or `allow_eof`) | `unknown` (`error`, the default, or `raw`), `error_events` (`{}`), `resume` (`{enabled: false}`) |
+| `webhook` | `event_schema`, `signature` (see [webhook verification helpers](#webhook-verification-helpers)) | `duplicates` (`report`, the default, or `reject`) |
 
 A pagination `continuation` is one of these:
 
@@ -497,11 +499,13 @@ E_SELECTOR_DEPENDENCY selection protocols.helpers['audit.all'].operation /paths/
 
 ### Python records and the manifest
 
-`ProtocolConfiguration(schema_version=1, helpers={...})` takes `PaginationHelper`, `PollingHelper`, and
-`StreamHelper` records, which mirror the file: their fields have the file's names, with `from_` for `from`, and they
-take the client's `Selector` and `RequestTarget` records, `OperationRef` or a pointer string, and `SchemaRef`. They are
-validated as the file is, with the same diagnostics, when the client configuration is constructed. The later kinds
-have no records yet.
+`ProtocolConfiguration(schema_version=1, helpers={...})` takes `PaginationHelper`, `PollingHelper`, `StreamHelper`,
+and `WebhookHelper` records, which mirror the file: their fields have the file's names, with `from_` for `from`, and
+they take the client's `Selector` and `RequestTarget` records, `OperationRef` or a pointer string, and `SchemaRef`. A
+webhook's `HmacSignature` takes `HeaderName`, `TimestampHeader`, `SignedLiteral`, `FixedBytes`, and `AsciiBytes`
+records, or `"none"`, and `signed_parts` entries `"raw-body"`, `"timestamp"`, and `"delivery-id"`. They are validated
+as the file is, with the same diagnostics, when the client configuration is constructed. The later kinds have no
+records yet.
 
 ```python
 ClientGenerationConfig(
@@ -2314,3 +2318,181 @@ and store callbacks must not call their own provider, which waits for them.
 
 Basic charset overrides, resource audience metadata, and generated OAuth provider factories are not available yet;
 applications construct providers explicitly.
+
+## Webhook verification helpers
+
+An enabled `webhook` helper with an `hmac-sha256` or `hmac-sha512` signature generates the module
+`pkg.webhooks.<name>`, where each dotted part of the helper's name is a package or the module. It verifies one received
+delivery and decodes its JSON event; it creates no client, server, or route. The key type is in `pkg.webhooks.keys`,
+whose name a helper cannot take, and a package exists only when at least one webhook helper is enabled. With the
+package `pets` and the `standard.message` helper below:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.usage -->
+<!-- fmt: off -->
+
+```python
+def receive(raw_body: bytes, headers: list[tuple[str, str]], secret: bytes, store: MemoryReplayStore) -> Message:
+    """Verify one delivery with the active key, claim its delivery id once, and return its event."""
+    keys = KeySet(keys=(HmacKey(id="2026-09", secret=secret),))
+    verified = message.verify(raw_body, headers, keys, now=datetime.now(timezone.utc), replay_store=store)
+    return verified.data
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.usage -->
+
+The generated functions take the delivery and the keys positionally and everything else by keyword:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.helper -->
+<!-- fmt: off -->
+
+```python
+def verify(
+    raw_body: bytes,
+    headers: Sequence[tuple[str, str]],
+    keys: KeySet[HmacKey],
+    *,
+    now: datetime,
+    replay_store: ReplayStore | None = None,
+    options: WebhookOptions | None = None,
+) -> VerifiedWebhook[_dcg_type_0]:
+    """Verify a delivery and decode its event, claiming it in a store.
+
+    Deliveries outside the timestamp window are rejected, and a replay store keeps
+    claims until the window closes. Without a replay store, duplicate=False does not
+    mean the delivery is new.
+    """
+    return verify_webhook(
+        _PLAN,
+        raw_body,
+        headers,
+        keys,
+        now=now,
+        replay_store=replay_store,
+        options=options,
+    )
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.helper -->
+
+`verify(raw_body, headers, keys, *, now, replay_store=None, options=None)` returns `VerifiedWebhook[Event]`, where
+`Event` is the event schema's model type; `async def verify_async(...)` takes an `AsyncReplayStore` instead and returns
+the same facts. `raw_body` is the exact received `bytes`, `headers` a list or tuple of `(name, value)` string pairs in
+received order, and `now` an aware datetime. `HmacKey(*, id: str, secret: bytes)` passes the secret to HMAC unchanged;
+the id is a nonempty string without NUL, CR, or LF, the secret must be `bytes`, and its representation names the id
+only. Keys cannot be changed, copied into new objects, or pickled.
+
+### Signature settings
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.yaml -->
+<!-- fmt: off -->
+
+```yaml
+schema_version: 1
+helpers:
+  standard.message:
+    kind: webhook
+    event_schema: {pointer: /components/schemas/Message}
+    signature:
+      kind: hmac-sha256
+      header: webhook-signature
+      encoding: base64
+      prefix: "v1,"
+      separator: " "
+      key_id: none
+      timestamp: {header: webhook-timestamp, unit: seconds}
+      delivery_id: {header: webhook-id}
+      signed_parts: [delivery-id, {literal: "."}, timestamp, {literal: "."}, raw-body]
+      field_constraints:
+        delivery-id: {ascii_bytes: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"}
+        timestamp: {ascii_bytes: "0123456789"}
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.yaml -->
+
+| Setting | Values |
+|---|---|
+| `event_schema` | A schema reference to the JSON request body schema of a webhook or callback operation of the input, directly or through `$ref`; the event decodes with that operation's request-body model |
+| `header` | The signature header; every occurrence is read, in order |
+| `encoding` | `hex` (either case), `base64` (padded), or `base64url` (padding optional) |
+| `prefix` | Visible ASCII text each signature starts with, possibly empty |
+| `separator` | `none`, or one printable ASCII character that splits each header value into signatures |
+| `key_id` | `none`, or `{header}` whose value selects the keys with exactly that id |
+| `timestamp` | `none`, or `{header, unit}` with `unit` `seconds` or `milliseconds`; the value is 1 to 19 digits |
+| `delivery_id` | `none`, or `{header}`; the value is visible ASCII |
+| `signed_parts` | The signed bytes in order: `raw-body`, the original bytes of `timestamp` and `delivery-id`, and `{literal}` visible ASCII text |
+| `field_constraints` | For each signed `timestamp` and `delivery-id`, `{fixed_bytes: <positive integer>}` or `{ascii_bytes: <its printable ASCII characters>}`; default `{}` |
+
+Every setting is required except `field_constraints`, `enabled`, and `duplicates`; a missing timestamp, delivery id, or
+key id is declared with `none`. The signed parts must determine each part from the bytes alone: `raw-body` appears once
+and only literals follow it, each signed fact has exactly one constraint, and a fact with `ascii_bytes` is followed by a
+literal whose first character is outside its set. A declared timestamp or delivery id must be signed, a signed one
+declared, the four header names distinct, and the separator outside the encoding's alphabet and the prefix; otherwise
+generation fails with `E_CONFIG_CONFLICT`:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.diagnostics -->
+<!-- fmt: off -->
+
+```text
+E_CONFIG_CONFLICT config protocols.helpers['conflict.headers'].signature.delivery_id: protocols.helpers['conflict.headers'].signature.delivery_id names the same header as protocols.helpers['conflict.headers'].signature.header
+E_CONFIG_CONFLICT config protocols.helpers['conflict.facts'].signature.timestamp: protocols.helpers['conflict.facts'].signature.timestamp names the same header as protocols.helpers['conflict.facts'].signature.key_id
+E_CONFIG_CONFLICT config protocols.helpers['conflict.alphabet'].signature.separator: protocols.helpers['conflict.alphabet'].signature.separator '+' can occur in a signature
+E_CONFIG_CONFLICT config protocols.helpers['conflict.prefix'].signature.separator: protocols.helpers['conflict.prefix'].signature.separator ',' can occur in a signature
+E_CONFIG_CONFLICT config protocols.helpers['conflict.no_body'].signature.signed_parts: protocols.helpers['conflict.no_body'].signature.signed_parts must name 'raw-body' exactly once
+E_CONFIG_CONFLICT config protocols.helpers['conflict.two_bodies'].signature.signed_parts: protocols.helpers['conflict.two_bodies'].signature.signed_parts must name 'raw-body' exactly once
+E_CONFIG_CONFLICT config protocols.helpers['conflict.after_body'].signature.signed_parts[2]: protocols.helpers['conflict.after_body'].signature.signed_parts[2] follows 'raw-body', after which only literals may come
+E_CONFIG_CONFLICT config protocols.helpers['conflict.unsigned'].signature.timestamp: protocols.helpers['conflict.unsigned'].signature.timestamp names a header that protocols.helpers['conflict.unsigned'].signature.signed_parts does not sign
+E_CONFIG_CONFLICT config protocols.helpers['conflict.undeclared'].signature.signed_parts: protocols.helpers['conflict.undeclared'].signature.signed_parts signs 'delivery-id' without a header in protocols.helpers['conflict.undeclared'].signature.delivery_id
+E_CONFIG_CONFLICT config protocols.helpers['conflict.unused'].signature.field_constraints['timestamp']: protocols.helpers['conflict.unused'].signature.field_constraints constrains 'timestamp', which protocols.helpers['conflict.unused'].signature.signed_parts does not sign
+E_CONFIG_CONFLICT config protocols.helpers['conflict.unconstrained'].signature.field_constraints: protocols.helpers['conflict.unconstrained'].signature.field_constraints needs one constraint of 'delivery-id', which protocols.helpers['conflict.unconstrained'].signature.signed_parts signs before 'raw-body'
+E_CONFIG_CONFLICT config protocols.helpers['conflict.adjacent'].signature.signed_parts[0]: protocols.helpers['conflict.adjacent'].signature.signed_parts[0] must be followed by a literal starting outside its ascii_bytes
+E_CONFIG_CONFLICT config protocols.helpers['conflict.delimiter'].signature.signed_parts[0]: protocols.helpers['conflict.delimiter'].signature.signed_parts[0] must be followed by a literal starting outside its ascii_bytes
+E_CONFIG_CONFLICT config protocols.helpers['conflict.facts_adjacent'].signature.signed_parts[0]: protocols.helpers['conflict.facts_adjacent'].signature.signed_parts[0] must be followed by a literal starting outside its ascii_bytes
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.diagnostics -->
+
+Other signature kinds (`ed25519`, `rsa-pss-sha256`, `adapter`, `none`) fail with `E_CLIENT_UNSUPPORTED` even when the
+helper is disabled, and their settings are not read yet. Event mappings, and an event whose model needs an envelope,
+fail with `E_CLIENT_UNSUPPORTED` when the helper is enabled. A header value is read as ASCII; a format that keeps its
+timestamp and signatures in one header, such as `t=...,v1=...`, needs an adapter, which is not supported yet.
+
+### Verification order and limits
+
+A call first checks its arguments, raising `ProtocolConfigurationError` with the field path of the first wrong one
+(`raw_body`, `headers`, `keys`, `now`, `options`, `replay_store`, then each key: `("keys", "<index>")` for another key
+type, `("keys", "<index>", "id")` for a repeated id or one a key-id header cannot carry). It then checks sizes, raising
+`ProtocolSizeError`, header syntax, the timestamp window, and the signatures, raising `WebhookVerificationError`, before
+it decodes the event, raising `ProtocolDataError`, and finally claims the delivery. Errors keep no key, signature,
+header value, or body.
+
+| Limit (`WebhookOptions`) | Default |
+|---|---|
+| `max_body_bytes` | 8 MiB |
+| `max_header_bytes`, counting each name and value | 16 KiB |
+| `max_keys`, `max_signatures` | 8 |
+| `past_tolerance`, `future_tolerance` | 300 and 30 seconds; 0 is allowed |
+| `replay_ttl` | 300 seconds |
+
+- `malformed_signature`: no signature, a signature without the exact prefix, an empty, misencoded, or wrong-size one, or
+  a timestamp, delivery-id, or key-id header that is missing, repeated, outside its syntax, or breaks its constraint.
+  One malformed signature fails the call even when another would verify.
+- `timestamp_window`: the timestamp lies outside `now - past_tolerance` to `now + future_tolerance`, both inclusive,
+  compared in exact microseconds.
+- `missing_key`: no key is eligible, such as an empty key set or a key id no key has.
+- `invalid_signature`: keys are tried in key-set order and signatures in header order, and none verifies; HMAC digests
+  are compared in constant time. The first key that verifies gives `matched_key_id`.
+- `missing_delivery_id`: a replay store was given to a helper without a delivery id.
+
+### Replay detection
+
+With a replay store, a verified and decoded delivery is claimed with the helper's contract fingerprint as namespace,
+until `timestamp + past_tolerance + future_tolerance`, or `now + replay_ttl` without a timestamp, which the helper's
+documentation states. A duplicate returns `duplicate=True`, or raises `WebhookReplayError` with `duplicates: reject`.
+A store failure raises `WebhookStoreError`, with the store's own `WebhookStoreError` raised as it is, and native
+cancellation propagates unchanged; no failure is treated as a success. Regenerating a helper with another contract
+changes its namespace. `MemoryReplayStore` expires claims by the wall clock, not by `now`. Without a replay store,
+`duplicate=False` guarantees nothing: the delivery may have been received before.

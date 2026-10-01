@@ -1,0 +1,43 @@
+mypy pets and webhook_helpers.py: clean
+pyright pets and webhook_helpers.py: clean
+ty pets and webhook_helpers.py: clean
+webhook_helpers_negative.py 11 marked lines
+mypy webhook_helpers_negative.py: 11/11 marked lines with one error, 0 elsewhere, 0 in other files
+  19 arg-type
+  20 arg-type
+  21 arg-type
+  22 call-arg
+  23 call-arg
+  24 call-arg
+  25 arg-type
+  26 arg-type
+  27 misc
+  28 assignment
+  29 attr-defined
+pyright webhook_helpers_negative.py: 10/11 marked lines with one error, 0 elsewhere, 0 in other files
+  19 reportArgumentType
+  20 reportArgumentType
+  21 reportArgumentType
+  22 reportCallIssue
+  23 reportCallIssue
+  24 reportCallIssue
+  25 reportArgumentType
+  26 reportArgumentType
+  27 reportGeneralTypeIssues
+  28 reportAssignmentType
+  29 reportAttributeAccessIssue
+  29 reportUnknownMemberType
+  29 reportUnknownVariableType
+ty webhook_helpers_negative.py: 10/11 marked lines with one error, 0 elsewhere, 0 in other files
+  19 invalid-argument-type
+  20 invalid-argument-type
+  21 invalid-argument-type
+  22 missing-argument
+  22 too-many-positional-arguments
+  23 missing-argument
+  24 unknown-argument
+  25 invalid-argument-type
+  26 invalid-argument-type
+  27 invalid-await
+  28 invalid-assignment
+  29 unresolved-attribute

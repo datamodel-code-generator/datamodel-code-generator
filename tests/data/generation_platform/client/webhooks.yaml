@@ -1,0 +1,152 @@
+openapi: 3.1.0
+info:
+  title: Webhooks
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /subscriptions:
+    post:
+      operationId: subscribe
+      tags: [subscriptions]
+      parameters:
+        - name: dry_run
+          in: query
+          schema: {type: boolean}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Subscription'}
+      responses:
+        '201':
+          description: Subscribed.
+      callbacks:
+        delivered:
+          '{$request.body#/url}':
+            post:
+              requestBody:
+                content:
+                  application/json:
+                    schema: {$ref: '#/components/schemas/Delivery'}
+              responses:
+                '200':
+                  description: Received.
+webhooks:
+  message:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Message'}
+      responses:
+        '200':
+          description: Received.
+  push:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Push'}
+      responses:
+        '200':
+          description: Received.
+  command:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Command'}
+      responses:
+        '200':
+          description: Received.
+  count:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Count'}
+      responses:
+        '200':
+          description: Received.
+  shape:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Shape'}
+      responses:
+        '200':
+          description: Received.
+  audit:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Audit'}
+      responses:
+        '200':
+          description: Received.
+  form:
+    post:
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema: {$ref: '#/components/schemas/Form'}
+      responses:
+        '200':
+          description: Received.
+components:
+  schemas:
+    Subscription:
+      type: object
+      required: [url]
+      properties:
+        url: {type: string}
+    Delivery:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string}
+    Message:
+      type: object
+      required: [test]
+      properties:
+        test: {type: integer}
+    Push:
+      type: object
+      properties:
+        ref: {type: string}
+    Command:
+      type: object
+      properties:
+        command: {type: string}
+    Count:
+      type: integer
+    Circle:
+      type: object
+      required: [radius]
+      properties:
+        radius: {type: number}
+    Square:
+      type: object
+      required: [side]
+      properties:
+        side: {type: number}
+    Shape:
+      oneOf:
+        - $ref: '#/components/schemas/Circle'
+        - $ref: '#/components/schemas/Square'
+    Audit:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string, readOnly: true}
+    Form:
+      type: object
+      properties:
+        text: {type: string}
+    Unused:
+      type: object
+      properties:
+        name: {type: string}

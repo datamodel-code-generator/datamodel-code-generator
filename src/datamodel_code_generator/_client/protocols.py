@@ -32,6 +32,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._runtime.protocols.records import RequestTarget, Selector
 
 __all__ = (
+    "AsciiBytes",
     "Binding",
     "Continuation",
     "Converter",
@@ -40,9 +41,12 @@ __all__ = (
     "EndCondition",
     "EventDiscriminator",
     "EventMapping",
+    "FixedBytes",
+    "HeaderName",
     "Helper",
     "HelperDefinition",
     "HelperKind",
+    "HmacSignature",
     "ImmediateResult",
     "InlineResult",
     "Link",
@@ -56,13 +60,16 @@ __all__ = (
     "PollingHelper",
     "ProtocolConfiguration",
     "RemoteCancel",
+    "SignedLiteral",
     "Source",
     "SourceValue",
     "Spec",
     "StreamCompletion",
     "StreamHelper",
     "StreamResume",
+    "TimestampHeader",
     "Tree",
+    "WebhookHelper",
     "load_protocols",
     "project",
     "protocol_problems",
@@ -89,7 +96,14 @@ KINDS: Final = (
     "batch",
     "queue",
 )
-_LATER: Final = frozenset({"websocket", "webhook", "cache", "resumable_upload", "batch", "queue"})
+_LATER: Final = frozenset({"websocket", "cache", "resumable_upload", "batch", "queue"})
+_LATER_SIGNATURES: Final = ("ed25519", "rsa-pss-sha256", "adapter", "none")
+_ENCODINGS: Final = {
+    "hex": frozenset("0123456789ABCDEFabcdef"),
+    "base64": frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="),
+    "base64url": frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_="),
+}
+_FACTS: Final = ("timestamp", "delivery-id")
 _SOURCES: Final = ("input", "initial", "previous")
 _BRACKETED: Final = frozenset({"helpers", "mapping", "error_events"})
 _KEYS: Final = {"from_": "from"}
@@ -349,7 +363,79 @@ class StreamHelper:
         object.__setattr__(self, "error_events", _frozen(self.error_events))
 
 
-HelperDefinition: TypeAlias = PaginationHelper | PollingHelper | StreamHelper
+@dataclass(frozen=True, slots=True, kw_only=True)
+class HeaderName:
+    """A request header that carries a webhook fact, by its name."""
+
+    header: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class TimestampHeader:
+    """The request header that carries a webhook's signed timestamp, and the unit of its decimal value."""
+
+    header: str
+    unit: Literal["seconds", "milliseconds"]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class SignedLiteral:
+    """Fixed ASCII text between the signed parts."""
+
+    literal: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class FixedBytes:
+    """A signed fact whose original bytes always have this length."""
+
+    fixed_bytes: int
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class AsciiBytes:
+    """A signed fact whose original bytes are all among these ASCII characters."""
+
+    ascii_bytes: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class HmacSignature:
+    """How an HMAC webhook signature is carried and which bytes it signs, in order.
+
+    `none` declares that a webhook has no key id, timestamp, or delivery id header, and a separator of `none` keeps
+    each signature header value whole.
+    """
+
+    kind: Literal["hmac-sha256", "hmac-sha512"]
+    header: str
+    encoding: Literal["hex", "base64", "base64url"]
+    prefix: str
+    separator: str
+    key_id: HeaderName | Literal["none"]
+    timestamp: TimestampHeader | Literal["none"]
+    delivery_id: HeaderName | Literal["none"]
+    signed_parts: tuple[Literal["raw-body", "timestamp", "delivery-id"] | SignedLiteral, ...]
+    field_constraints: Mapping[str, FixedBytes | AsciiBytes] = field(default_factory=lambda: MappingProxyType({}))
+
+    def __post_init__(self) -> None:
+        """Keep a read-only copy of the constraints."""
+        object.__setattr__(self, "field_constraints", _frozen(self.field_constraints))
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class WebhookHelper:
+    """Verify a signed webhook delivery and decode its event."""
+
+    kind: ClassVar[Literal["webhook"]] = "webhook"
+
+    event_schema: SchemaRef | EventMapping
+    signature: HmacSignature
+    duplicates: Literal["report", "reject"] = "report"
+    enabled: bool = True
+
+
+HelperDefinition: TypeAlias = PaginationHelper | PollingHelper | StreamHelper | WebhookHelper
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -384,6 +470,13 @@ _RECORDS: Final = frozenset({
     EventMapping,
     StreamCompletion,
     StreamHelper,
+    HeaderName,
+    TimestampHeader,
+    SignedLiteral,
+    FixedBytes,
+    AsciiBytes,
+    HmacSignature,
+    WebhookHelper,
     ProtocolConfiguration,
 })
 _ROLES: Final[Mapping[tuple[type, str], str]] = {
@@ -395,6 +488,7 @@ _ROLES: Final[Mapping[tuple[type, str], str]] = {
     (PollingHelper, "cancelled"): "json",
     (EventMapping, "mapping"): "mapping",
     (StreamHelper, "error_events"): "mapping",
+    (HmacSignature, "field_constraints"): "mapping",
     (ProtocolConfiguration, "helpers"): "mapping",
 }
 
@@ -945,6 +1039,8 @@ class _Validator:  # noqa: PLR0904
                 tree = self.pagination(value, at)
             case "polling":
                 tree = self.polling(value, at)
+            case "webhook":
+                tree = self.webhook(value, at)
             case _:
                 tree = self.stream(value, at, sse=kind == "sse")
         if tree is INVALID:
@@ -1189,9 +1285,145 @@ class _Validator:  # noqa: PLR0904
         reasons = self.items(value, at, self.choice("transport_interruption", "incomplete_eof"), nonempty=True)
         return self.distinct(at, reasons, "a reconnect reason")
 
+    def webhook(self, value: object, at: str) -> Tree | _Invalid:
+        return self.record(
+            value,
+            at,
+            {
+                "kind": (_keep, REQUIRED),
+                "enabled": (self.boolean, True),
+                "event_schema": (partial(self.event_schema, sse=False), REQUIRED),
+                "duplicates": (self.choice("report", "reject"), "report"),
+                "signature": (self.signature, REQUIRED),
+            },
+            "a helper definition",
+        )
+
+    def signature(self, value: object, at: str) -> object:
+        """Convert a signature profile, refusing later kinds unread and framing that leaves a signed part ambiguous."""
+        if isinstance(value, Mapping) and (kind := value.get("kind")) in _LATER_SIGNATURES:
+            self.problems.append(_unsupported(f"{at}.kind", f"The {kind} signature is not supported yet"))
+            return INVALID
+        settings: Spec = {
+            "header": (self.header, REQUIRED),
+            "encoding": (self.choice(*_ENCODINGS), REQUIRED),
+            "prefix": (partial(self.visible, empty=True), REQUIRED),
+            "separator": (self.separator, REQUIRED),
+            "key_id": (self.fact_header, REQUIRED),
+            "timestamp": (self.timestamp_header, REQUIRED),
+            "delivery_id": (self.fact_header, REQUIRED),
+            "signed_parts": (self.signed_parts, REQUIRED),
+            "field_constraints": (self.constraints, {}),
+        }
+        signature = self.tagged(
+            value, at, "kind", dict.fromkeys(("hmac-sha256", "hmac-sha512"), settings), "a signature"
+        )
+        if signature is not INVALID and (conflict := _ambiguity(signature, at)) is not None:
+            self.conflict(*conflict)
+            return INVALID
+        return signature
+
+    def visible(self, value: object, at: str, *, empty: bool = False) -> object:
+        valid = isinstance(value, str) and (empty or value) and all("!" <= char <= "~" for char in value)
+        return value if valid else self.value(at, f"{at} must be {'' if empty else 'nonempty '}visible ASCII text")
+
+    def separator(self, value: object, at: str) -> object:
+        valid = isinstance(value, str) and (value == "none" or (len(value) == 1 and _printable(value)))
+        return value if valid else self.value(at, f"{at} must be 'none' or one printable ASCII character")
+
+    def fact_header(self, value: object, at: str) -> object:
+        if value == "none":
+            return value
+        return self.record(value, at, {"header": (self.header, REQUIRED)}, "'none' or a header")
+
+    def timestamp_header(self, value: object, at: str) -> object:
+        if value == "none":
+            return value
+        spec: Spec = {"header": (self.header, REQUIRED), "unit": (self.choice("seconds", "milliseconds"), REQUIRED)}
+        return self.record(value, at, spec, "'none' or a timestamp header")
+
+    def signed_parts(self, value: object, at: str) -> object:
+        return self.items(value, at, self.signed_part, nonempty=True)
+
+    def signed_part(self, value: object, at: str) -> object:
+        if isinstance(value, Mapping):
+            return self.record(value, at, {"literal": (self.visible, REQUIRED)}, "a signed part")
+        return self.choice("raw-body", "timestamp", "delivery-id")(value, at)
+
+    def constraints(self, value: object, at: str) -> object:
+        return self.record(value, at, dict.fromkeys(_FACTS, (self.constraint, OMITTED)), "a mapping")
+
+    def constraint(self, value: object, at: str) -> object:
+        spec: Spec = {"fixed_bytes": (self.positive, OMITTED), "ascii_bytes": (self.byte_set, OMITTED)}
+        if (constraint := self.record(value, at, spec, "a field constraint")) is not INVALID and len(constraint) != 1:
+            return self.value(at, f"{at} needs exactly one of 'fixed_bytes' and 'ascii_bytes'")
+        return constraint
+
+    def byte_set(self, value: object, at: str) -> object:
+        valid = isinstance(value, str) and _printable(value) and len(set(value)) == len(value)
+        return (
+            value if valid else self.value(at, f"{at} must be nonempty printable ASCII text that repeats no character")
+        )
+
+
+def _printable(text: str) -> bool:
+    return bool(text) and text.isascii() and text.isprintable()
+
 
 def _keep(value: object, _: str) -> object:
     return value
+
+
+def _ambiguity(signature: Tree, at: str) -> tuple[str, str] | None:
+    """Return where and why a valid signature profile is ambiguous, by its headers and then by its signed parts."""
+    named = [(key, signature[key]) for key in ("key_id", "timestamp", "delivery_id") if signature[key] != "none"]
+    owners: dict[str, str] = {}
+    for key, header in (("header", signature["header"]), *((key, value["header"]) for key, value in named)):
+        if (owner := owners.setdefault(header.lower(), key)) != key:
+            return f"{at}.{key}", f"{at}.{key} names the same header as {at}.{owner}"
+    separator = signature["separator"]
+    if separator != "none" and (separator in _ENCODINGS[signature["encoding"]] or separator in signature["prefix"]):
+        return f"{at}.separator", f"{at}.separator {separator!r} can occur in a signature"
+    return _framing(signature, at)
+
+
+def _framing(signature: Tree, at: str) -> tuple[str, str] | None:
+    """Return where signed parts leave a part's boundary undetermined or a returned fact unsigned."""
+    where, parts, constraints = f"{at}.signed_parts", signature["signed_parts"], signature["field_constraints"]
+    names = [part if isinstance(part, str) else None for part in parts]
+    if names.count("raw-body") != 1:
+        return where, f"{where} must name 'raw-body' exactly once"
+    body = names.index("raw-body")
+    if (late := next((index for index, name in enumerate(names) if name and index > body), None)) is not None:
+        return f"{where}[{late}]", f"{where}[{late}] follows 'raw-body', after which only literals may come"
+    if (unsigned := _unsigned(signature, names, at)) is not None:
+        return unsigned
+    return next(
+        (
+            (f"{where}[{index}]", f"{where}[{index}] must be followed by a literal starting outside its ascii_bytes")
+            for index, name in enumerate(names)
+            if name in constraints
+            and "ascii_bytes" in (constraint := constraints[name])
+            and (isinstance(following := parts[index + 1], str) or following["literal"][0] in constraint["ascii_bytes"])
+        ),
+        None,
+    )
+
+
+def _unsigned(signature: Tree, names: list[str | None], at: str) -> tuple[str, str] | None:
+    """Return where a fact header is declared but unsigned, signed but undeclared, or not constrained exactly once."""
+    where, here, constraints = f"{at}.signed_parts", f"{at}.field_constraints", signature["field_constraints"]
+    for fact, key in zip(_FACTS, ("timestamp", "delivery_id"), strict=True):
+        signed, declared = fact in names, signature[key] != "none"
+        if declared and not signed:
+            return f"{at}.{key}", f"{at}.{key} names a header that {where} does not sign"
+        if signed and not declared:
+            return where, f"{where} signs {fact!r} without a header in {at}.{key}"
+        if fact in constraints and not signed:
+            return f"{here}[{fact!r}]", f"{here} constrains {fact!r}, which {where} does not sign"
+        if signed and fact not in constraints:
+            return here, f"{here} needs one constraint of {fact!r}, which {where} signs before 'raw-body'"
+    return None
 
 
 def _unsupported(at: str, message: str) -> Diagnostic:
@@ -1213,6 +1445,8 @@ def _links(kind: str, tree: Tree, at: str) -> Iterator[Link]:
                 ref=tree["operation"],
                 targets=(*written, *_targets(tree["bindings"], f"{at}.bindings")),
             )
+        case "webhook":
+            return
         case "polling":
             yield Link(at=f"{at}.create", ref=tree["create"])
             yield Link(at=f"{at}.poll", ref=tree["poll"], targets=_targets(tree["bindings"], f"{at}.bindings"))
