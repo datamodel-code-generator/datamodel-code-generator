@@ -1,6 +1,7 @@
-"""Builtin HMAC signature profiles: their signed parts, signature encodings, and constant-time comparison.
+"""Builtin signature profiles: their signed parts, signature encodings, and the HMAC algorithms.
 
-Only generated webhook helpers import this module, so ordinary clients never load HMAC or base64.
+Only generated webhook helpers import this module, so ordinary clients never load HMAC or base64. The public-key
+algorithms live in their own module, which alone imports cryptography.
 """
 
 from __future__ import annotations
@@ -30,6 +31,7 @@ __all__ = (
     "SignatureProfile",
     "SignedPart",
     "TimestampField",
+    "UnsupportedKeyError",
     "satisfied",
     "signature_bytes",
 )
@@ -61,16 +63,21 @@ _DECODERS: Final[Mapping[Encoding, Callable[[str], bytes]]] = {
 }
 
 
+class UnsupportedKeyError(Exception):
+    """Raised by an algorithm whose backend cannot verify with a key; the call reports the key's wrong capability."""
+
+
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class SignatureAlgorithm(Generic[K]):
     """A builtin signature algorithm: its key class, signature size, the id of a key, and verification with one key.
 
-    `matches` returns whether a key signed the parts, in order, as one of the signatures.
+    A None size leaves the size to each key. `matches` returns whether a key signed the parts, in order, as one of the
+    signatures, trying them in order, and raises UnsupportedKeyError for a key its backend cannot use.
     """
 
     key_type: type[K]
-    size: int
+    size: int | None
     key_id: Callable[[K], str]
     matches: Callable[[K, tuple[bytes, ...], tuple[bytes, ...]], bool]
 
@@ -133,7 +140,7 @@ def signature_bytes(profile: SignatureProfile[K], element: str) -> bytes | None:
     """Return the signature one header element carries, or None for an empty, unprefixed, or misencoded element.
 
     Spaces and tabs around the element are ignored; the prefix must match exactly, and the decoded signature must have
-    the algorithm's size.
+    the algorithm's size, or any nonzero size when each key decides its own.
     """
     text = element.strip(" \t")
     if not text or not text.startswith(profile.prefix):
@@ -142,7 +149,9 @@ def signature_bytes(profile: SignatureProfile[K], element: str) -> bytes | None:
     if not _ENCODED[profile.encoding].fullmatch(encoded):
         return None
     value = _DECODERS[profile.encoding](encoded)
-    return value if len(value) == profile.algorithm.size else None
+    if (size := profile.algorithm.size) is None:
+        return value or None
+    return value if len(value) == size else None
 
 
 def satisfied(field: FactField, value: bytes) -> bool:

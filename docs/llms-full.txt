@@ -9427,6 +9427,50 @@ result = generate(json_schema, config=config)
 print(result)
 ```
 
+### Loading Project Configuration
+
+`generate()` uses the options passed to it. To reuse `[tool.datamodel-codegen]`
+from `pyproject.toml`, explicitly load a `GenerateConfig`:
+
+```python
+from datamodel_code_generator import generate, load_pyproject_config
+
+config = load_pyproject_config()
+result = generate(json_schema, config=config)
+```
+
+The loader searches upward from the working directory, stopping at a Git project
+boundary, as the CLI does. Pass `path="project"`, a `Path`, or a `pyproject.toml` path
+to start elsewhere, and `profile="models"` to select a profile, including its
+`extends` inheritance. Without project settings, it returns the API defaults;
+a requested profile must exist.
+
+Both a `GenerateConfig` and a dictionary of individual Python API options can
+override the project settings:
+
+```python
+from datamodel_code_generator import GenerateConfig, InputFileType
+
+options = {"input_file_type": InputFileType.JsonSchema, "output": None}
+config = load_pyproject_config(overrides=options)
+result = generate(json_schema, config=config)
+
+existing_config = GenerateConfig(output=None, disable_timestamp=True)
+config = load_pyproject_config(profile="models", overrides=existing_config)
+result = generate(json_schema, config=config)
+```
+
+The precedence is API defaults, project settings, profile settings, then
+overrides. Only explicitly set fields of a `GenerateConfig` override are merged;
+explicit `False`, `None`, and empty lists also replace project values. Paths
+loaded from TOML are relative to its directory, including JSON configuration
+files such as `aliases`. Override paths remain relative to the caller's working
+directory. The project directory supplies formatter settings unless
+`settings_path` is explicitly overridden. CLI-only settings such as `input`,
+`check`, and batch jobs are ignored: pass the schema to `generate()` yourself.
+The loader validates the merged settings and preserves the existing rule that
+`config=` cannot be combined with individual `generate()` options.
+
 ### 📝 Reading Input From a File
 
 Pass a `Path` to `input_` for file input. Plain strings are treated as schema
@@ -11201,6 +11245,17 @@ mode = "request"
 module = "project.hooks"
 callable = "rename"
 ```
+
+## Codec adapters
+
+`FastAPIConfig.codec_adapters`, set through the Python API, registers `CodecAdapterRegistration` records. A
+parameter adapter decodes the parameters it selects from their raw path, query, header, and cookie bytes instead of
+the builtin OpenAPI styles, so it also carries declarations no builtin style can, such as a `form` cookie array
+with `explode: false`. The server validates the value the adapter returns against the parameter's schema, answering
+a violation with 422, and answers a `ParameterEncodingError` the adapter raises for malformed input with
+`400 Invalid request`. An adapter that fails, or returns a value its capabilities exclude, such as an empty array or
+object without `supports_empty_containers`, raises `CodecAdapterError`, which FastAPI answers with
+`500 Internal Server Error`; refuse input the adapter cannot represent with `ParameterEncodingError` instead.
 
 ## The generated package
 

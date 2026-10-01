@@ -1,0 +1,8 @@
+[tool.datamodel-codegen]
+target-python-version = "3.11"
+formatters = ["builtin"]
+disable-timestamp = true
+use-default = true
+aliases = "aliases.json"
+default-values = "defaults.json"
+extra-template-data = "extra_string.json"

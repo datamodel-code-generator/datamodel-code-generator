@@ -718,6 +718,7 @@ dev = [
     { name = "check-wheel-contents" },
     { name = "covdefaults" },
     { name = "coverage", extra = ["toml"], marker = "(extra == 'group-24-datamodel-code-generator-black22' and extra == 'group-24-datamodel-code-generator-black23') or (extra == 'group-24-datamodel-code-generator-black22' and extra == 'group-24-datamodel-code-generator-black24') or (extra == 'group-24-datamodel-code-generator-black22' and extra == 'group-24-datamodel-code-generator-blacklatest') or (extra == 'group-24-datamodel-code-generator-black23' and extra == 'group-24-datamodel-code-generator-black24') or (extra == 'group-24-datamodel-code-generator-black23' and extra == 'group-24-datamodel-code-generator-blacklatest') or (extra == 'group-24-datamodel-code-generator-black24' and extra == 'group-24-datamodel-code-generator-blacklatest') or (extra != 'group-24-datamodel-code-generator-blacklatest' and extra == 'group-24-datamodel-code-generator-dev') or (extra != 'group-24-datamodel-code-generator-blacklatest' and extra == 'group-24-datamodel-code-generator-isort5' and extra == 'group-24-datamodel-code-generator-isort6') or (extra != 'group-24-datamodel-code-generator-blacklatest' and extra == 'group-24-datamodel-code-generator-isort5' and extra == 'group-24-datamodel-code-generator-isort7') or (extra != 'group-24-datamodel-code-generator-blacklatest' and extra == 'group-24-datamodel-code-generator-isort5' and extra == 'group-24-datamodel-code-generator-isort8') or (extra != 'group-24-datamodel-code-generator-blacklatest' and extra == 'group-24-datamodel-code-generator-isort6' and extra == 'group-24-datamodel-code-generator-isort7') or (extra != 'group-24-datamodel-code-generator-blacklatest' and extra == 'group-24-datamodel-code-generator-isort6' and extra == 'group-24-datamodel-code-generator-isort8') or (extra != 'group-24-datamodel-code-generator-blacklatest' and extra == 'group-24-datamodel-code-generator-isort7' and extra == 'group-24-datamodel-code-generator-isort8') or (extra != 'group-24-datamodel-code-generator-black22' and extra != 'group-24-datamodel-code-generator-black23' and extra != 'group-24-datamodel-code-generator-black24' and extra == 'group-24-datamodel-code-generator-dev') or (extra != 'group-24-datamodel-code-generator-black22' and extra != 'group-24-datamodel-code-generator-black23' and extra != 'group-24-datamodel-code-generator-black24' and extra == 'group-24-datamodel-code-generator-isort5' and extra == 'group-24-datamodel-code-generator-isort6') or (extra != 'group-24-datamodel-code-generator-black22' and extra != 'group-24-datamodel-code-generator-black23' and extra != 'group-24-datamodel-code-generator-black24' and extra == 'group-24-datamodel-code-generator-isort5' and extra == 'group-24-datamodel-code-generator-isort7') or (extra != 'group-24-datamodel-code-generator-black22' and extra != 'group-24-datamodel-code-generator-black23' and extra != 'group-24-datamodel-code-generator-black24' and extra == 'group-24-datamodel-code-generator-isort5' and extra == 'group-24-datamodel-code-generator-isort8') or (extra != 'group-24-datamodel-code-generator-black22' and extra != 'group-24-datamodel-code-generator-black23' and extra != 'group-24-datamodel-code-generator-black24' and extra == 'group-24-datamodel-code-generator-isort6' and extra == 'group-24-datamodel-code-generator-isort7') or (extra != 'group-24-datamodel-code-generator-black22' and extra != 'group-24-datamodel-code-generator-black23' and extra != 'group-24-datamodel-code-generator-black24' and extra == 'group-24-datamodel-code-generator-isort6' and extra == 'group-24-datamodel-code-generator-isort8') or (extra != 'group-24-datamodel-code-generator-black22' and extra != 'group-24-datamodel-code-generator-black23' and extra != 'group-24-datamodel-code-generator-black24' and extra == 'group-24-datamodel-code-generator-isort7' and extra == 'group-24-datamodel-code-generator-isort8')" },
+    { name = "cryptography" },
     { name = "diff-cover" },
     { name = "email-validator" },
     { name = "fastapi" },
@@ -781,6 +782,7 @@ playground = [
 test = [
     { name = "covdefaults" },
     { name = "coverage", extra = ["toml"] },
+    { name = "cryptography" },
     { name = "diff-cover" },
     { name = "email-validator" },
     { name = "google-re2" },
@@ -803,6 +805,7 @@ test = [
 type = [
     { name = "covdefaults" },
     { name = "coverage", extra = ["toml"] },
+    { name = "cryptography" },
     { name = "diff-cover" },
     { name = "email-validator" },
     { name = "fastapi" },
@@ -891,6 +894,7 @@ dev = [
     { name = "check-wheel-contents", specifier = ">=0.6.1" },
     { name = "covdefaults", specifier = ">=2.3" },
     { name = "coverage", extras = ["toml"], specifier = ">=7.6.1" },
+    { name = "cryptography", specifier = ">=50.0.0" },
     { name = "diff-cover", specifier = ">=9.7.2" },
     { name = "email-validator", specifier = ">=2.2" },
     { name = "fastapi", specifier = ">=0.141.1,<0.142" },
@@ -947,6 +951,7 @@ playground = [
 test = [
     { name = "covdefaults", specifier = ">=2.3" },
     { name = "coverage", extras = ["toml"], specifier = ">=7.6.1" },
+    { name = "cryptography", specifier = ">=50.0.0" },
     { name = "diff-cover", specifier = ">=9.7.2" },
     { name = "email-validator", specifier = ">=2.2" },
     { name = "google-re2", specifier = ">=1.1.20251105,<2" },
@@ -969,6 +974,7 @@ test = [
 type = [
     { name = "covdefaults", specifier = ">=2.3" },
     { name = "coverage", extras = ["toml"], specifier = ">=7.6.1" },
+    { name = "cryptography", specifier = ">=50.0.0" },
     { name = "diff-cover", specifier = ">=9.7.2" },
     { name = "email-validator", specifier = ">=2.2" },
     { name = "fastapi", specifier = ">=0.141.1,<0.142" },
