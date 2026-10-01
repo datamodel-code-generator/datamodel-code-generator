@@ -147,7 +147,8 @@ class CancelPlan(Generic[K]):
         """Derive the cancel operation writing the bindings' values."""
         from .writes import targeted_writes  # noqa: PLC0415 - Only a plan loads the operation runtime.
 
-        object.__setattr__(self, "targeted", targeted_writes(self.call, self.bindings))
+        targeted = targeted_writes(self.call, (binding.written for binding in self.bindings))
+        object.__setattr__(self, "targeted", targeted)
 
 
 @final
@@ -211,8 +212,11 @@ class PollingPlan(Generic[T, P, C]):
             )
             for value in values
         }
-        polled = targeted_writes(self.poll, self.bindings)
-        fetched = None if self.fetch is None else targeted_writes(self.fetch, self.fetch_bindings)
+        polled = targeted_writes(self.poll, (binding.written for binding in self.bindings))
+        fetch = self.fetch
+        fetched = (
+            None if fetch is None else targeted_writes(fetch, (binding.written for binding in self.fetch_bindings))
+        )
         others = (*(() if fetched is None else (fetched,)), *(() if self.cancel is None else (self.cancel.targeted,)))
         object.__setattr__(self, "phases", MappingProxyType(phases))
         object.__setattr__(

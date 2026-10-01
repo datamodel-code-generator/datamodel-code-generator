@@ -172,11 +172,16 @@ class UploadPlan(Generic[T, C]):
 
         from .writes import position, targeted_writes  # noqa: PLC0415 - Only a plan loads the operation runtime.
 
-        probed = targeted_writes(self.probe, self.probe_bindings)
+        probed = targeted_writes(self.probe, (binding.written for binding in self.probe_bindings))
         extra = (self.offset,) if self.length is None else (self.offset, self.length)
-        appended = targeted_writes(self.append, self.append_bindings, extra)
+        appended = targeted_writes(self.append, (binding.written for binding in self.append_bindings), extra)
         appended = replace(appended, call=_unreplayed(appended.call))
-        completed = None if self.completion is None else targeted_writes(self.completion, self.completion_bindings)
+        completion = self.completion
+        completed = (
+            None
+            if completion is None
+            else targeted_writes(completion, (binding.written for binding in self.completion_bindings))
+        )
         children = (probed, appended, *(() if completed is None else (completed,)))
         headers, queries = set[str](), set[str]()
         if (size := self.size) is not None:
