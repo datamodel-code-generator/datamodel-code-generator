@@ -1,0 +1,160 @@
+schema_version: 1
+helpers:
+  standard.message:
+    kind: webhook
+    event_schema: {pointer: /components/schemas/Message}
+    signature:
+      kind: hmac-sha256
+      header: webhook-signature
+      encoding: base64
+      prefix: "v1,"
+      separator: " "
+      key_id: none
+      timestamp: {header: webhook-timestamp, unit: seconds}
+      delivery_id: {header: webhook-id}
+      signed_parts: [delivery-id, {literal: "."}, timestamp, {literal: "."}, raw-body]
+      field_constraints:
+        delivery-id: {ascii_bytes: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"}
+        timestamp: {ascii_bytes: "0123456789"}
+  standard.rejecting:
+    kind: webhook
+    event_schema: {pointer: /webhooks/message/post/requestBody/content/application~1json/schema}
+    duplicates: reject
+    signature:
+      kind: hmac-sha256
+      header: webhook-signature
+      encoding: base64
+      prefix: "v1,"
+      separator: " "
+      key_id: none
+      timestamp: {header: webhook-timestamp, unit: seconds}
+      delivery_id: {header: webhook-id}
+      signed_parts: [delivery-id, {literal: "."}, timestamp, {literal: "."}, raw-body]
+      field_constraints:
+        delivery-id: {ascii_bytes: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"}
+        timestamp: {ascii_bytes: "0123456789"}
+  github.push:
+    kind: webhook
+    event_schema: {pointer: /components/schemas/Push}
+    signature:
+      kind: hmac-sha256
+      header: X-Hub-Signature-256
+      encoding: hex
+      prefix: "sha256="
+      separator: none
+      key_id: none
+      timestamp: none
+      delivery_id: none
+      signed_parts: [raw-body]
+  slack.command:
+    kind: webhook
+    event_schema: {pointer: /components/schemas/Command}
+    signature:
+      kind: hmac-sha256
+      header: X-Slack-Signature
+      encoding: hex
+      prefix: "v0="
+      separator: none
+      key_id: none
+      timestamp: {header: X-Slack-Request-Timestamp, unit: seconds}
+      delivery_id: none
+      signed_parts: [{literal: "v0:"}, timestamp, {literal: ":"}, raw-body]
+      field_constraints:
+        timestamp: {ascii_bytes: "0123456789"}
+  rfc.sha256:
+    kind: webhook
+    event_schema: {pointer: /components/schemas/Push}
+    signature:
+      kind: hmac-sha256
+      header: X-Signature
+      encoding: hex
+      prefix: ""
+      separator: none
+      key_id: none
+      timestamp: none
+      delivery_id: none
+      signed_parts: [raw-body]
+  rfc.sha512:
+    kind: webhook
+    event_schema: {pointer: /components/schemas/Push}
+    signature:
+      kind: hmac-sha512
+      header: X-Signature
+      encoding: hex
+      prefix: ""
+      separator: none
+      key_id: none
+      timestamp: none
+      delivery_id: none
+      signed_parts: [raw-body]
+  keyed.event:
+    kind: webhook
+    event_schema: {pointer: /components/schemas/Message}
+    signature:
+      kind: hmac-sha512
+      header: X-Signature
+      encoding: base64url
+      prefix: ""
+      separator: ","
+      key_id: {header: X-Key-Id}
+      timestamp: {header: X-Timestamp, unit: milliseconds}
+      delivery_id: {header: X-Delivery}
+      signed_parts: [timestamp, {literal: "."}, delivery-id, {literal: "."}, raw-body]
+      field_constraints:
+        timestamp: {ascii_bytes: "0123456789"}
+        delivery-id: {ascii_bytes: "abcdefghijklmnopqrstuvwxyz0123456789-"}
+  framed.count:
+    kind: webhook
+    event_schema: {pointer: /components/schemas/Count}
+    signature:
+      kind: hmac-sha256
+      header: X-Framed-Signature
+      encoding: hex
+      prefix: ""
+      separator: none
+      key_id: none
+      timestamp: none
+      delivery_id: {header: X-Framed-Id}
+      signed_parts: [delivery-id, raw-body]
+      field_constraints:
+        delivery-id: {fixed_bytes: 1}
+  shapes.drawn:
+    kind: webhook
+    event_schema: {pointer: /components/schemas/Shape}
+    signature:
+      kind: hmac-sha256
+      header: X-Signature
+      encoding: hex
+      prefix: ""
+      separator: none
+      key_id: none
+      timestamp: none
+      delivery_id: none
+      signed_parts: [raw-body]
+  callbacks.delivered:
+    kind: webhook
+    event_schema: {pointer: /components/schemas/Delivery}
+    signature:
+      kind: hmac-sha256
+      header: X-Signature
+      encoding: hex
+      prefix: ""
+      separator: none
+      key_id: none
+      timestamp: none
+      delivery_id: none
+      signed_parts: [raw-body, {literal: "!"}]
+  disabled.hook:
+    kind: webhook
+    enabled: false
+    event_schema: {pointer: /components/schemas/Unused}
+    signature:
+      kind: hmac-sha256
+      header: X-Signature
+      encoding: hex
+      prefix: ""
+      separator: none
+      key_id: none
+      timestamp: none
+      delivery_id: none
+      signed_parts: [raw-body]

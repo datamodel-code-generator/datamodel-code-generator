@@ -15,8 +15,8 @@ from tests.data.python.client_auth_errors import auth_errors
 from tests.data.python.client_auth_flows import auth_flows
 from tests.data.python.client_auth_options import auth_options
 from tests.data.python.client_auth_values import auth_values
-from tests.data.python.client_body_digest import body_digest
 from tests.data.python.client_bodies import bodies
+from tests.data.python.client_body_digest import body_digest
 from tests.data.python.client_body_replay import body_replay, multipart_replay
 from tests.data.python.client_body_replay_faults import body_replay_faults
 from tests.data.python.client_deadline_cleanup import deadline_cleanup
@@ -77,6 +77,7 @@ from tests.data.python.client_transports import lifecycle, transports
 from tests.data.python.client_validation import arguments, validation
 from tests.data.python.client_webhook_contracts import webhook_contracts
 from tests.data.python.client_webhook_errors import webhook_errors
+from tests.data.python.client_webhooks import webhook_backends, webhook_replay, webhook_verification
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -743,6 +744,9 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
         ("pydantic_v2.BaseModel", "dataclasses.dataclass", "msgspec.Struct"),
         optional_models,
     ),
+    "webhook-verification": ("webhooks", ("pydantic_v2.BaseModel",), webhook_verification),
+    "webhook-backends": ("webhooks", BACKENDS, webhook_backends),
+    "webhook-replay": ("webhooks", ("pydantic_v2.BaseModel",), webhook_replay),
 }
 
 

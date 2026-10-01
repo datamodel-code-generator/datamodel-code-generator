@@ -2041,6 +2041,197 @@
     },
     "modules": false
   },
+  "webhooks": {
+    "input": "webhooks.yaml",
+    "references": [
+      "protocols/webhooks.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/webhooks.yaml"
+    },
+    "modules": [
+      [
+        "client",
+        "_generated",
+        "model_bindings.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "keys.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "standard",
+        "message.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "standard",
+        "rejecting.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "github",
+        "push.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "slack",
+        "command.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "rfc",
+        "sha256.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "rfc",
+        "sha512.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "keyed",
+        "event.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "framed",
+        "count.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "shapes",
+        "drawn.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "callbacks",
+        "delivered.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "callbacks",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "framed",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "github",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "keyed",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "rfc",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "shapes",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "slack",
+        "__init__.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "standard",
+        "__init__.py"
+      ]
+    ]
+  },
+  "webhooks-python": {
+    "input": "webhooks.yaml",
+    "config": {
+      "protocols": {
+        "python": "webhooks"
+      }
+    }
+  },
+  "protocols-webhook-errors": {
+    "input": "webhooks.yaml",
+    "references": [
+      "protocols/webhook-errors.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/webhook-errors.yaml"
+    },
+    "modules": false
+  },
+  "protocols-webhook-checks": {
+    "input": "webhooks.yaml",
+    "references": [
+      "protocols/webhook-checks.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/webhook-checks.yaml"
+    },
+    "modules": false
+  },
+  "webhooks-typing": {
+    "input": "webhooks.yaml",
+    "references": [
+      "protocols/webhook-typing.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/webhook-typing.yaml"
+    }
+  },
+  "webhooks-schema": {
+    "input": "webhooks.yaml",
+    "references": [
+      "protocols/webhook-typing.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/webhook-typing.yaml",
+      "validation": {
+        "response": "schema"
+      }
+    },
+    "modules": [
+      [
+        "client",
+        "webhooks",
+        "standard",
+        "message.py"
+      ]
+    ]
+  },
   "pagination-counts": {
     "input": "pagination-counts.yaml",
     "references": [

@@ -130,7 +130,7 @@ class _ExpiringResponse(_AsyncResponse):
 
     async def aclose(self) -> None:
         self.close()
-        self.clock.value = 102.0
+        self.clock.value = 200.0
 
 
 class _Fault:
@@ -340,18 +340,18 @@ async def _capped_timeout(
         )
 
     adapter = _AsyncFault(transports, responses, timed_out)
-    chunks = _GatedChunks()
+    attempt = _GatedBody()
     with _clock(package, clock):
         api = package.AsyncClient(
             transport_adapter=adapter, options=options.ClientOptions(total_timeout=0.05, cleanup_timeout=1.0)
         )
-        body = bodies.AsyncStreamBody(chunks, ownership="owned")
+        body = attempt.factory(bodies)
         await arecord(
             lines,
             "deadline timer during the release of a capped timeout",
             lambda: _acaptured(lambda: api.request_raw("POST", "https://race.example/capped", body=body)),
         )
-        chunks.proceed.set()
+        attempt.proceed.set()
         await api.aclose()
 
 
@@ -419,7 +419,7 @@ async def _expired_read(
     adapter.response = _ExpiringResponse(responses, clock)
     with _clock(package, clock):
         async with package.AsyncClient(
-            transport_adapter=adapter, options=options.ClientOptions(total_timeout=1.0)
+            transport_adapter=adapter, options=options.ClientOptions(total_timeout=60.0)
         ) as api:
             await arecord(
                 lines,
@@ -460,28 +460,28 @@ async def _nested_waits(
             raise RuntimeError("send after a stopped hook")
 
         adapter = _AsyncFault(transports, responses, unexpected_send)
-        api = package.AsyncClient(
-            transport_adapter=adapter,
-            options=options.ClientOptions(
-                hooks=(hook,),
-                total_timeout=0.2 if reason == "deadline" else None,
-                cancel_token=token if reason == "token" else None,
-            ),
-        )
-        caller = asyncio.create_task(_acaptured(lambda: api.request_raw("GET", "https://race.example/nested")))
-        await hook.entered.wait()
-        closer: asyncio.Task[None] | None = None
-        if reason == "token":
-            await asyncio.sleep(0.075)
-            token.cancel()
-        elif reason == "closing":
-            closer = asyncio.create_task(api.aclose())
-        elif reason == "native":
-            caller.cancel()
-        await arecord(lines, f"nested hook {reason}", lambda: caller)
-        if closer is not None:
-            await closer
-        await api.aclose()
+        with _clock(package, _Clock()):
+            api = package.AsyncClient(
+                transport_adapter=adapter,
+                options=options.ClientOptions(
+                    hooks=(hook,),
+                    total_timeout=0.2 if reason == "deadline" else None,
+                    cancel_token=token if reason == "token" else None,
+                ),
+            )
+            caller = asyncio.create_task(_acaptured(lambda: api.request_raw("GET", "https://race.example/nested")))
+            await hook.entered.wait()
+            closer: asyncio.Task[None] | None = None
+            if reason == "token":
+                token.cancel()
+            elif reason == "closing":
+                closer = asyncio.create_task(api.aclose())
+            elif reason == "native":
+                caller.cancel()
+            await arecord(lines, f"nested hook {reason}", lambda: caller)
+            if closer is not None:
+                await closer
+            await api.aclose()
         record(lines, f"nested hook {reason} sends", lambda: adapter.sent)
 
 
@@ -591,21 +591,22 @@ async def _stopped_releases(
         adapter = _AsyncFault(transports, responses, sent)
         response = _GatedResponse(responses, failure=True)
         adapter.response = response
-        api = package.AsyncClient(
-            transport_adapter=adapter,
-            options=options.ClientOptions(
-                total_timeout=0.1 if reason == "deadline" else None,
-                cancel_token=token if reason == "token" else None,
-                cleanup_timeout=1.0,
-            ),
-        )
-        errors: list[BaseException] = []
-        label = f"{reason} stops response release"
-        await arecord(
-            lines, label, lambda: _acaptured(lambda: api.request_raw("GET", "https://race.example/release"), errors)
-        )
-        response.proceed.set()
-        await arecord(lines, f"{label} close", lambda: _acaptured(api.aclose))
+        with _clock(package, _Clock()):
+            api = package.AsyncClient(
+                transport_adapter=adapter,
+                options=options.ClientOptions(
+                    total_timeout=0.1 if reason == "deadline" else None,
+                    cancel_token=token if reason == "token" else None,
+                    cleanup_timeout=1.0,
+                ),
+            )
+            errors: list[BaseException] = []
+            label = f"{reason} stops response release"
+            await arecord(
+                lines, label, lambda: _acaptured(lambda: api.request_raw("GET", "https://race.example/release"), errors)
+            )
+            response.proceed.set()
+            await arecord(lines, f"{label} close", lambda: _acaptured(api.aclose))
         record(
             lines,
             f"{label} late failure",
@@ -617,23 +618,38 @@ class _Interrupted(BaseException):
     pass
 
 
-class _GatedChunks:
+class _GatedBody:
+    content_length = None
+    content_type = None
+
     def __init__(self, *, failure: bool = False) -> None:
         self.proceed = asyncio.Event()
+        self.closing = False
         self.closed = False
         self.failure = failure
 
-    def __aiter__(self) -> _GatedChunks:
-        return self
+    def __aiter__(self) -> AsyncIterator[bytes]:
+        return self.aiter_bytes()
 
-    async def __anext__(self) -> bytes:
-        raise StopAsyncIteration
+    async def aiter_bytes(self) -> AsyncIterator[bytes]:
+        yield b"body"
 
     async def aclose(self) -> None:
+        if self.closing:
+            return
+        self.closing = True
         await self.proceed.wait()
         self.closed = True
         if self.failure:
             raise RuntimeError("late body close failed")
+
+    def factory(self, bodies: ModuleType) -> object:
+        """Return a factory body whose only attempt is this one, so its release is the call's first cleanup."""
+
+        async def opened(_context: object) -> _GatedBody:  # noqa: RUF029
+            return self
+
+        return bodies.AsyncBodyFactory(opened)
 
 
 class _PartAttempt:
@@ -670,28 +686,29 @@ async def _stopped_binding(
             raise RuntimeError("send after a stopped binding")
 
         adapter = _AsyncFault(transports, responses, unexpected_send)
-        api = package.AsyncClient(
-            transport_adapter=adapter,
-            options=options.ClientOptions(
-                total_timeout=0.1 if reason == "deadline" else None,
-                cancel_token=token if reason == "token" else None,
-                retry=options.RetryOptions(max_retries=0),
-                cleanup_timeout=1.0,
-            ),
-        )
-        body = bodies.AsyncMultipartBody((
-            bodies.FilePart("a", bodies.AsyncBodyFactory(first, content_length=3)),
-            bodies.FilePart("b", bodies.AsyncBodyFactory(second, content_length=3)),
-        ))
-        errors: list[BaseException] = []
-        caller = asyncio.create_task(
-            _acaptured(lambda: api.request_raw("POST", "https://race.example/upload", body=body), errors)
-        )
-        await opening.wait()
-        if reason == "token":
-            token.cancel()
-        await arecord(lines, f"{reason} stops multipart binding", lambda: caller)
-        await api.aclose()
+        with _clock(package, _Clock()):
+            api = package.AsyncClient(
+                transport_adapter=adapter,
+                options=options.ClientOptions(
+                    total_timeout=0.1 if reason == "deadline" else None,
+                    cancel_token=token if reason == "token" else None,
+                    retry=options.RetryOptions(max_retries=0),
+                    cleanup_timeout=1.0,
+                ),
+            )
+            body = bodies.AsyncMultipartBody((
+                bodies.FilePart("a", bodies.AsyncBodyFactory(first, content_length=3)),
+                bodies.FilePart("b", bodies.AsyncBodyFactory(second, content_length=3)),
+            ))
+            errors: list[BaseException] = []
+            caller = asyncio.create_task(
+                _acaptured(lambda: api.request_raw("POST", "https://race.example/upload", body=body), errors)
+            )
+            await opening.wait()
+            if reason == "token":
+                token.cancel()
+            await arecord(lines, f"{reason} stops multipart binding", lambda: caller)
+            await api.aclose()
         record(
             lines,
             f"{reason} stops multipart binding late failure",
@@ -721,28 +738,71 @@ async def _stopped_attempts(
             raise failure
 
         adapter = _AsyncFault(transports, responses, failed)
-        chunks, limiter = _GatedChunks(failure=late), _Limiter()
-        api = package.AsyncClient(
-            transport_adapter=adapter,
-            options=options.ClientOptions(total_timeout=0.1, limiter=limiter, cleanup_timeout=1.0),
-        )
+        attempt, limiter = _GatedBody(failure=late), _Limiter()
         label = f"deadline stops body release after {type(failure).__name__}{' and a late close failure' * late}"
-        body = bodies.AsyncStreamBody(chunks, ownership="owned")
+        body = attempt.factory(bodies)
         errors: list[BaseException] = []
-        await arecord(
-            lines,
-            label,
-            lambda: _acaptured(lambda: api.request_raw("POST", "https://race.example/body", body=body), errors),
-        )
-        record(lines, f"{label} permit", lambda: (limiter.permit.released, chunks.closed))
-        chunks.proceed.set()
-        await api.aclose()
+        with _clock(package, _Clock()):
+            api = package.AsyncClient(
+                transport_adapter=adapter,
+                options=options.ClientOptions(total_timeout=0.1, limiter=limiter, cleanup_timeout=1.0),
+            )
+            await arecord(
+                lines,
+                label,
+                lambda: _acaptured(lambda: api.request_raw("POST", "https://race.example/body", body=body), errors),
+            )
+            record(lines, f"{label} permit", lambda: (limiter.permit.released, attempt.closed))
+            attempt.proceed.set()
+            await api.aclose()
         record(
             lines,
             f"{label} resources",
             lambda: (
                 adapter.sent,
                 limiter.permit.released,
+                attempt.closed,
+                tuple(type(error).__name__ for error in getattr(errors[0], "secondary_errors", ())),
+            ),
+        )
+
+
+class _FailedLimiter:
+    async def acquire(self, context: object) -> _LatePermit:
+        raise RuntimeError("acquire failed")
+
+
+async def _stopped_owned_release(
+    package: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
+) -> None:
+    bodies = importlib.import_module(f"{package.__name__}.bodies")
+    for late in (False, True):
+
+        async def unexpected_send() -> None:
+            raise RuntimeError("send after a failed acquire")
+
+        adapter, chunks = _AsyncFault(transports, responses, unexpected_send), _GatedBody(failure=late)
+        label = f"deadline stops owned stream release after a limiter failure{' and a late close failure' * late}"
+        body = bodies.AsyncStreamBody(chunks, ownership="owned")
+        errors: list[BaseException] = []
+        with _clock(package, _Clock()):
+            api = package.AsyncClient(
+                transport_adapter=adapter,
+                options=options.ClientOptions(total_timeout=0.1, limiter=_FailedLimiter(), cleanup_timeout=1.0),
+            )
+            await arecord(
+                lines,
+                label,
+                lambda: _acaptured(lambda: api.request_raw("POST", "https://race.example/owned", body=body), errors),
+            )
+            record(lines, f"{label} closed", lambda: chunks.closed)
+            chunks.proceed.set()
+            await api.aclose()
+        record(
+            lines,
+            f"{label} resources",
+            lambda: (
+                adapter.sent,
                 chunks.closed,
                 tuple(type(error).__name__ for error in getattr(errors[0], "secondary_errors", ())),
             ),
@@ -793,7 +853,10 @@ async def _late_permits(
         api = package.AsyncClient(
             transport_adapter=adapter,
             options=options.ClientOptions(
-                total_timeout=None, cancel_token=None if native else token, limiter=limiter, cleanup_timeout=0.01
+                total_timeout=None,
+                cancel_token=None if native else token,
+                limiter=limiter,
+                cleanup_timeout=1.0 if native else 0.01,
             ),
         )
         errors: list[BaseException] = []
@@ -888,6 +951,7 @@ async def _async(
     await _acompound_cleanup(package, options, transports, responses, lines)
     await _stopped_releases(package, options, transports, responses, lines)
     await _stopped_attempts(package, options, transports, responses, lines)
+    await _stopped_owned_release(package, options, transports, responses, lines)
     await _stopped_binding(package, options, transports, responses, lines)
     await _startup_cancellation(package, options, transports, responses, lines)
 
