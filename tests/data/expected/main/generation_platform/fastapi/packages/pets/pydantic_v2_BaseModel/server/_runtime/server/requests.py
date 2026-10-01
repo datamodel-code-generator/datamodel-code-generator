@@ -12,7 +12,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.requests import Request  # noqa: TC002 - FastAPI resolves the dependencies' annotations.
 from typing_extensions import TypeIs
 
-from ..model_codecs.media import decode_form, decode_json, decode_text, normalize_media_type
+from ..model_codecs.media import charset, decode_form, decode_json, decode_text, normalize_media_type
 from ..model_codecs.parameters import RawParameters, decode_parameter, raw_parameter
 from ..model_codecs.unset import UNSET, Unset
 from ..model_codecs.values import ModelValue
@@ -203,12 +203,12 @@ class BodyMedia:
     additional: FieldPlan | None = None
 
 
-def _read(media: BodyMedia, body: bytes) -> WireValue | bytes:
+def _read(media: BodyMedia, media_type: str, body: bytes) -> WireValue | bytes:
     match media.kind:
         case "json":
             return decode_json(body)
         case "text":
-            return decode_text(body)
+            return decode_text(body, charset(media_type))
         case "form":
             return decode_form(body, media.fields, media.additional)
         case _:
@@ -249,15 +249,15 @@ class BodyAdapter:
             return None, UNSET
         if (selected := self._select(header)) is None:
             raise unsupported_media()
-        media, media_type = selected
+        media, media_type, received_type = selected
         try:
-            if isinstance(value := _read(media, body), bytes) or media.codec is None:
+            if isinstance(value := _read(media, received_type, body), bytes) or media.codec is None:
                 return media_type, value
             return media_type, _projected(media.codec, value, envelope=media.envelope)
         except REQUEST_ERRORS as error:
             raise request_failure(error, ("body",), self.names) from error
 
-    def _select(self, header: str | None) -> tuple[BodyMedia, str] | None:
+    def _select(self, header: str | None) -> tuple[BodyMedia, str, str] | None:
         if header is None:
             return None
         try:
@@ -265,10 +265,10 @@ class BodyAdapter:
         except ValueError:
             return None
         if (exact := next((media for media in self.media if media.media_type == normalized), None)) is not None:
-            return exact, exact.media_type
+            return exact, exact.media_type, normalized
         received = normalized.partition(";")[0]
         kind = received.partition("/")[0]
         for essence, media in self._essences:
             if essence in {received, f"{kind}/*", "*/*"}:
-                return media, media.media_type if "*" not in essence else received
+                return media, media.media_type if "*" not in essence else received, normalized
         return None

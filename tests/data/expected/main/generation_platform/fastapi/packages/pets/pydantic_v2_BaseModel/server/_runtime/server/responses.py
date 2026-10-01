@@ -12,7 +12,7 @@ from starlette.responses import Response
 from typing_extensions import TypeIs, TypeVar
 
 from ..model_codecs.errors import CodecError
-from ..model_codecs.media import encode_json, normalize_media_type
+from ..model_codecs.media import charset, encode_json, normalize_media_type
 from ..model_codecs.parameters import ParameterFragment, ParameterPlan, RawParameter, decode_parameter
 from ..model_codecs.unset import UNSET, Unset
 from ..model_codecs.values import ModelInput, ModelValue
@@ -240,7 +240,7 @@ def _result(result: HTTPResult[object], plan: OperationResponses) -> Response:
         msg = f"The {status} response needs a body"
         raise response_failure(msg)
     media, media_type = selected
-    return _response(status, media_type, _encode(media, result.body), headers)
+    return _response(status, media_type, _encode(media, media_type, result.body), headers)
 
 
 def _primary(value: object, plan: OperationResponses) -> Response:
@@ -254,7 +254,7 @@ def _primary(value: object, plan: OperationResponses) -> Response:
             msg = f"The {status} response carries no body"
             raise response_failure(msg)
         return _response(status, None, None, headers)
-    return _response(status, media.media_type, _encode(media, value), headers)
+    return _response(status, media.media_type, _encode(media, media.media_type, value), headers)
 
 
 def _json(value: object) -> WireValue:
@@ -265,16 +265,16 @@ def _json(value: object) -> WireValue:
         raise response_failure(msg) from None
 
 
-def _encode(media: MediaPlan, value: object) -> bytes:
+def _encode(media: MediaPlan, media_type: str, value: object) -> bytes:
     codec = media.codec
     if media.kind == "json":
         return encode_json(_json(value) if codec is None else codec[0]().encode(value, codec[1]))
     payload = value if codec is None else codec[0]().encode(value, codec[1])
     if media.kind == "text" and isinstance(payload, str):
         try:
-            return payload.encode(_charset(media.media_type))
+            return payload.encode(charset(media_type))
         except (LookupError, UnicodeEncodeError) as error:
-            msg = f"The text payload cannot be encoded as {media.media_type}"
+            msg = f"The text payload cannot be encoded as {media_type}"
             raise response_failure(msg) from error
     if media.kind == "binary" and isinstance(payload, bytes):
         return payload
@@ -307,11 +307,6 @@ def _pair(item: object) -> tuple[str, str]:
             pass
     msg = "Result headers must be a tuple of name and value pairs"
     raise response_failure(msg)
-
-
-def _charset(media_type: str) -> str:
-    parameters = (parameter.partition("=") for parameter in media_type.split(";")[1:])
-    return next((value.strip().strip('"') for name, _, value in parameters if name.strip() == "charset"), "utf-8")
 
 
 def _headers(headers: object, declared: ResponsePlan) -> tuple[tuple[str, str], ...]:
