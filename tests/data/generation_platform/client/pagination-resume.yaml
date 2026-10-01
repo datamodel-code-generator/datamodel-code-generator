@@ -1,4 +1,4 @@
-openapi: 3.1.0
+openapi: 3.2.0
 info:
   title: Pagination resume
   version: 1.0.0
@@ -82,11 +82,63 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/UserPage'}
+  /keyed/users:
+    get:
+      operationId: listKeyedUsers
+      tags: [keyed]
+      parameters:
+        - name: cursor
+          in: query
+          schema: {type: string}
+        - name: api_key
+          in: query
+          schema: {type: string}
+        - name: X-Api-Key
+          in: header
+          schema: {type: string}
+        - name: Proxy-Authorization
+          in: header
+          schema: {type: string}
+      responses:
+        '200':
+          description: One page of users for a key.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /queries:
+    get:
+      operationId: query
+      tags: [queries]
+      parameters:
+        - name: filter
+          in: querystring
+          content:
+            application/x-www-form-urlencoded:
+              schema:
+                type: object
+                properties:
+                  term: {type: string}
+                  cursor: {type: string}
+                  api_key: {type: string}
+      responses:
+        '200':
+          description: One page of users matching a query.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
 components:
   securitySchemes:
     bearer:
       type: http
       scheme: bearer
+    query_key:
+      type: apiKey
+      in: query
+      name: api_key
+    header_key:
+      type: apiKey
+      in: header
+      name: X-Api-Key
   schemas:
     User:
       type: object

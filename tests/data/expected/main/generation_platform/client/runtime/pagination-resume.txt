@@ -181,6 +181,41 @@
   search source = ['1']
   undeclared body media ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   short body ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  cursor over its maxLength ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  limit of another type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  header with a line break ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  header with a NUL ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  path argument '.' ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  path argument '..' ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  body its schema refuses ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  media type its selector refuses ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  unparsable media type ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  media type with a line break ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  literal binding first = ['1']
+  > GET https://api.example.com/v1/users?cursor=a&limit=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  literal binding from the plan ['2']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  snapshot source = ['1']
+  bound header with a line break ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  offset source = ['1', '2']
+  offset -5 ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  offset 7 ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  page size source = ['1']
+  saved page over the resumed page limit ! ProtocolSizeError: ProtocolSizeError(kind='page', limit=10, observed=50) [kind='page', unit='bytes', limit=10] protocol_size_error
+  query key argument ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('arguments', 'query', 'api_key'), condition='wrong_capability'] protocol_configuration_error
+  header key argument ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('arguments', 'header', 'X-Api-Key'), condition='wrong_capability'] protocol_configuration_error
+  proxy credential argument ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('arguments', 'header', 'Proxy-Authorization'), condition='wrong_capability'] protocol_configuration_error
+  querystring with a key field ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('arguments', 'querystring', 'filter'), condition='wrong_capability'] protocol_configuration_error
+  querystring saved {"arguments": [[{"term": "a"}]], "body": [], "page": null} payload=b''
+  saved querystring with a key field ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   anonymous export ! ProtocolConfigurationError: ProtocolConfigurationError(condition='security_partition') [field_path=('protocols', 'security'), condition='security_partition'] protocol_configuration_error
   anonymous resumes anonymous = mappingproxy({'pages': 0, 'items': 0, 'network_send_count': 0, 'network_send_budget_used': 0})
   tenant export = True
@@ -207,6 +242,16 @@
   > GET https://api.example.com/v1/secure/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
   bearer tenant resumed ['1']
+  audience a checkpointed
+  audience a again resumes = mappingproxy({'pages': 0, 'items': 0, 'network_send_count': 0, 'network_send_budget_used': 0})
+  audience b resumes ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error
+  other scopes resumes ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error
+  static token checkpointed
+  static token again resumes = mappingproxy({'pages': 0, 'items': 0, 'network_send_count': 0, 'network_send_budget_used': 0})
+  auth origins resumes ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error
+  selection resumes ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error
+  anonymous schemes resumes ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error
+  signer resumes ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async first 1
@@ -220,3 +265,4 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async resumed pages ['[2]']
   async another helper's state ! ResumeStateError: ResumeStateError(condition='fingerprint') [condition='fingerprint'] resume_state_error
+  async granted checkpoint resumes = mappingproxy({'pages': 0, 'items': 0, 'network_send_count': 0, 'network_send_budget_used': 0})

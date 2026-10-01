@@ -46,37 +46,15 @@ PLAN_0: Final[PaginationPlan[_dcg_type_0, ListUsersResponse]] = PaginationPlan(
 
 
 def _items_1(data: ListUsersResponse) -> Sequence[_dcg_type_0] | None:
-    """Return the items of one page of users.by_cookie."""
-    return data.data
-
-
-PLAN_1: Final[PaginationPlan[_dcg_type_0, ListUsersResponse]] = PaginationPlan(
-    helper_id='users.by_cookie',
-    operation=OperationRef(pointer='/paths/~1users/get'),
-    call=_operations.OPERATION_0,
-    items=_items_1,
-    items_selector=BodySelector(pointer='/data'),
-    continuation=CursorPlan(
-        read=BodySelector(pointer='/next_cursor'),
-        write=ParameterTarget(location='cookie', name='page_token'),
-        end_missing=True,
-        end_null=True,
-        empty_string_ends=True,
-    ),
-    fingerprint='ccc8eb93f663cd2130f0cf37480a42a6b468aa841e0211f14b9eaa8bc8bed0c7',
-)
-
-
-def _items_2(data: ListUsersResponse) -> Sequence[_dcg_type_0] | None:
     """Return the items of one page of users.bound."""
     return data.data
 
 
-PLAN_2: Final[PaginationPlan[_dcg_type_0, ListUsersResponse]] = PaginationPlan(
+PLAN_1: Final[PaginationPlan[_dcg_type_0, ListUsersResponse]] = PaginationPlan(
     helper_id='users.bound',
     operation=OperationRef(pointer='/paths/~1users/get'),
     call=_operations.OPERATION_0,
-    items=_items_2,
+    items=_items_1,
     items_selector=BodySelector(pointer='/data'),
     continuation=CursorPlan(
         read=BodySelector(pointer='/next_cursor'),
@@ -107,16 +85,16 @@ PLAN_2: Final[PaginationPlan[_dcg_type_0, ListUsersResponse]] = PaginationPlan(
 )
 
 
-def _items_3(data: SearchResponse) -> Sequence[_dcg_type_0] | None:
+def _items_2(data: SearchResponse) -> Sequence[_dcg_type_0] | None:
     """Return the items of one page of searches.all."""
     return data.data
 
 
-PLAN_3: Final[PaginationPlan[_dcg_type_0, SearchResponse]] = PaginationPlan(
+PLAN_2: Final[PaginationPlan[_dcg_type_0, SearchResponse]] = PaginationPlan(
     helper_id='searches.all',
     operation=OperationRef(pointer='/paths/~1searches/post'),
     call=_operations.OPERATION_2,
-    items=_items_3,
+    items=_items_2,
     items_selector=BodySelector(pointer='/data'),
     continuation=CursorPlan(
         read=BodySelector(pointer='/next'),
@@ -141,16 +119,16 @@ PLAN_3: Final[PaginationPlan[_dcg_type_0, SearchResponse]] = PaginationPlan(
 )
 
 
-def _items_4(data: ListFolderResponse) -> Sequence[_dcg_type_0] | None:
+def _items_3(data: ListFolderResponse) -> Sequence[_dcg_type_0] | None:
     """Return the items of one page of folders.all."""
     return data.data
 
 
-PLAN_4: Final[PaginationPlan[_dcg_type_0, ListFolderResponse]] = PaginationPlan(
+PLAN_3: Final[PaginationPlan[_dcg_type_0, ListFolderResponse]] = PaginationPlan(
     helper_id='folders.all',
     operation=OperationRef(pointer='/paths/~1folders~1{folder}/get'),
     call=_operations.OPERATION_1,
-    items=_items_4,
+    items=_items_3,
     items_selector=BodySelector(pointer='/data'),
     continuation=CursorPlan(
         read=BodySelector(pointer='/next_cursor'),

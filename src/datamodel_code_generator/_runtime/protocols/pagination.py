@@ -23,8 +23,8 @@ from ..client.errors import BudgetExceededError, ProtocolConfigurationError, Pro
 from ..client.options import RequestOptions
 from ..client.responses import ResponseInfo
 from ..client.timing import SessionOptions
+from ..model_codecs.errors import CodecError
 from ..model_codecs.media import decode_json
-from ..model_codecs.selectors import MediaSelector, RequestMedia, select_media
 from ..model_codecs.unset import UNSET, Unset
 from .errors import PaginationCycleError, ProtocolDataError, ProtocolStateError, ResumeStateError, SessionLimitError
 from .options import PaginationOptions
@@ -56,6 +56,7 @@ if TYPE_CHECKING:
     from ..client.operations import OperationPlan
     from ..client.timing import Deadline
     from ..client.urls import Origin
+    from ..model_codecs.selectors import MediaSelector
     from ..model_codecs.wire import WireValue
     from .references import OperationRef
 
@@ -228,9 +229,9 @@ class PaginationPlan(Generic[T, P]):
     position as wire values: a parameter's replaces its argument, and a querystring property or a JSON body member
     is written into the caller's encoded value. They skip the schema and argument checks, since the server chose them.
     A helper that `follows` a server's URLs writes no cursor and sends each later page to the URL with GET and no body,
-    unless it repeats the request body with the operation's method. `headers` and `queries` name the header, cookie,
-    and query parameters it writes, which a call's options must not patch, and `dotted` the writes of read values into
-    path parameters, which must not be dot segments.
+    unless it repeats the request body with the operation's method. `headers` and `queries` name the header and query
+    parameters it writes, which a call's options must not patch, and `dotted` the writes of read values into path
+    parameters, which must not be dot segments. Generation refuses a helper writing a cookie or a credential position.
     """
 
     helper_id: str
@@ -278,8 +279,6 @@ class PaginationPlan(Generic[T, P]):
                 position, pointer = _position(call, target.location, target.name), None
                 if (location := target.location) == "header":
                     headers.add(target.name.lower())
-                elif location == "cookie":
-                    headers.add("cookie")
                 elif location == "query":
                     queries.add(target.name)
             spec = parameters[position]
@@ -322,14 +321,12 @@ class PaginationPlan(Generic[T, P]):
 class _Request:
     """The arguments, body, and body media type the first page of a helper call was requested with.
 
-    A call resumed from a checkpoint gives their saved wire values, which `operations` send in place of the helper's
-    first and continued operations.
+    A call resumed from a checkpoint gives them as its codecs build them from their saved wire values.
     """
 
     arguments: tuple[object, ...]
     body: object
     media_type: str | MediaSelector | None
-    operations: tuple[OperationPlan[object, object], OperationPlan[object, object]] | None = None
 
 
 class _History:
@@ -841,20 +838,16 @@ class _Walk(Generic[T, P]):
         """Return the operation the next page calls: the helper's for the first page, its continued one after it.
 
         The first page of an offset or page-number helper reads the position the caller's own value for its target
-        gives, from the parameter or the JSON body media the position is written to. A resumed call sends the saved
-        wire values through the operations its request gives.
+        gives, from the parameter or the JSON body media the position is written to.
         """
         plan = self.plan
-        call, continued = cast(
-            "tuple[OperationPlan[P, object], OperationPlan[P, object]]",
-            self.request.operations or (plan.call, plan.continued),
-        )
         if self.link is not None:
-            return continued
+            return plan.continued
         if not isinstance(plan.continuation, CountPlan):
-            return call
+            return plan.call
         from .writes import ReadMedia, ReadParameter  # noqa: PLC0415 - Only a plan loads the operation runtime.
 
+        call = plan.call
         read = self.started
         if (position := plan.writes[-1][0]) is None:
             body = call.body
@@ -1068,9 +1061,10 @@ class _Walk(Generic[T, P]):
         """
         plan, link, request, core = self.plan, self.link, self.request, self.core
         options = self.limits.options
-        call = plan.call if (operations := request.operations) is None else operations[0]
         body = request.body if link is None or plan.continued.body is not None else UNSET
-        arguments, saved_body = core.saved_request(plan, call, request.arguments, body, request.media_type, options)
+        arguments, saved_body = core.saved_request(
+            plan, plan.call, request.arguments, body, request.media_type, options
+        )
         facts, exportable = core.checkpoint_security(plan.call, options)
         saved = self.saved if remaining else None
         page: WireValue = None
@@ -1160,17 +1154,6 @@ def _digest(value: WireValue) -> bytes:
     return bytes.fromhex(cast("str", value))
 
 
-def _plain(operation: OperationPlan[P, object]) -> OperationPlan[P, object]:
-    """Return an operation that sends wire values as they are: no argument checks, and no parameter or body codecs."""
-    body = operation.body
-    return replace(
-        operation,
-        parameters=tuple(replace(spec, encoder=None) for spec in operation.parameters),
-        body=None if body is None else replace(body, media=tuple(replace(media, encoder=None) for media in body.media)),
-        checks=(),
-    )
-
-
 def _resume_error(
     plan: PaginationPlan[T, P], condition: Literal["fingerprint", "security", "expired", "malformed"]
 ) -> ResumeStateError:
@@ -1203,60 +1186,75 @@ def _restored(
 def _resent(
     core: ClientCore | AsyncClientCore, plan: PaginationPlan[T, P], arguments: WireValue, body: WireValue
 ) -> _Request:
-    """Return the request a checkpoint saved: wire arguments and any JSON body, sent through plain operations.
+    """Return the request a checkpoint saved, its arguments and any JSON body built as a caller builds them.
 
-    A saved value of a parameter a checkpoint never saves is refused, and a body is sent as its declared JSON media, or
-    through a selector of the concrete media type it was sent as.
+    An argument a checkpoint never saves and a dot segment for a path parameter are refused, and so is a value its
+    codec refuses, a body the operation does not take, and a media type its select method refuses.
     """
-    operations = _plain(plan.call), _plain(plan.continued)
-    call = operations[0]
+    call = plan.call
     saved = [_array(argument) for argument in _array(arguments)]
-    unsaved = core.unsaved_parameters(call)
+    _require(len(saved) == len(call.parameters) and all(len(argument) <= 1 for argument in saved))
+    wire = tuple(argument[0] if argument else UNSET for argument in saved)
     _require(
-        len(saved) == len(call.parameters)
-        and all(len(argument) <= 1 for argument in saved)
-        and not any(saved[index] for index in unsaved)
+        core.unsaved_argument(call, wire) is None
+        and not any(
+            spec.plan.location == "path" and value in _DOT_SEGMENTS
+            for spec, value in zip(call.parameters, wire, strict=True)
+        )
     )
     sent = _array(body)
-    media_type: str | MediaSelector | None = None
+    given: tuple[WireValue, str, str | None] | None = None
     if sent:
-        _require(len(sent) == _BODY_FIELDS)
-        media = () if (declared := call.body) is None else declared.media
-        declared_media = next((item.media_type for item in media if item.media_type == sent[1]), None)
-        concrete = _text(sent[2])
-        _require(declared_media is not None)
-        media_type = (
-            declared_media
-            if concrete is None
-            else cast("MediaSelector", select_media(RequestMedia, cast("str", declared_media), concrete, call.codecs))
-        )
-    return _Request(
-        tuple(argument[0] if argument else UNSET for argument in saved),
-        sent[0] if sent else UNSET,
-        media_type,
-        cast("tuple[OperationPlan[object, object], OperationPlan[object, object]]", operations),
-    )
+        _require(len(sent) == _BODY_FIELDS and call.body is not None)
+        declared, concrete = _text(sent[1]), _text(sent[2])
+        _require(declared is not None)
+        given = sent[0], cast("str", declared), concrete
+    try:
+        restored, restored_body, media_type = core.restored_request(call, wire, given)
+    except (SDKError, CodecError):
+        raise _MalformedError from None
+    return _Request(restored, restored_body, media_type)
+
+
+def _checked(core: ClientCore | AsyncClientCore, walk: _Walk[T, P]) -> None:
+    """Prepare the request a walk sends next as its call would, refusing one that cannot be sent."""
+    try:
+        core.checked_page(walk.operation(), walk.next_request, walk.request.media_type, walk.limits.options)
+    except (SDKError, CodecError):
+        raise _MalformedError from None
 
 
 def _walked(
     core: ClientCore | AsyncClientCore, plan: PaginationPlan[T, P], state: WireValue, payload: bytes, limits: _Limits
 ) -> tuple[_Walk[T, P], tuple[T, ...], int]:
-    """Return the walk of a checkpoint's decoded state, with the items it left of its last page and their position."""
+    """Return the walk of a checkpoint's decoded state, with the items it left of its last page and their position.
+
+    The next request is prepared as its call would prepare it, without sending, and so is the first one whenever the
+    body it saved is sent again.
+    """
     _require(isinstance(state, Mapping) and frozenset(state) == _STATE)
     fields = cast("Mapping[str, WireValue]", state)
     request = _resent(core, plan, fields["arguments"], fields["body"])
-    if (page := fields["page"]) is None:
+    first = _Walk(plan, request, limits, core)
+    if (page := fields["page"]) is None or plan.continued.body is not None:
+        _checked(core, first)
+    if page is None:
         _require(not payload)
-        return _Walk(plan, request, limits, core), (), 0
+        return first, (), 0
     saved = _array(page)
     _require(len(saved) == _PAGE_FIELDS)
     link = _relinked(plan, request, saved)
     walk = _Walk(plan, request, limits, core, link)
     if link.digest is not None:
-        _continued(core, walk, link.cursor, link.bound)
+        _continued(core, walk, first.start)
+        _checked(core, walk)
     if (left := saved[6]) is None:
         _require(not payload)
         return walk, (), 0
+    if (size := len(payload)) > (limit := limits.max_page_bytes):
+        raise ProtocolSizeError(
+            kind="page", limit=limit, observed=size, unit="bytes", helper_id=plan.helper_id, operation=plan.operation
+        )
     rest = _array(left)
     _require(len(rest) == _LEFT_FIELDS)
     remaining, status, content_type = _count(rest[0]), _count(rest[1]), _text(rest[2])
@@ -1275,7 +1273,10 @@ def _walked(
 
 
 def _relinked(plan: PaginationPlan[T, P], request: _Request, saved: tuple[WireValue, ...]) -> _Link:
-    """Return the link of the last page a checkpoint saved: its position, continuation, bindings, and line history."""
+    """Return the link of the last page a checkpoint saved: its position, continuation, bindings, and line history.
+
+    A literal binding's value is the plan's, whatever the state saved.
+    """
     index, items = _count(saved[0]), _count(saved[1])
     cursor, bound = _array(saved[2]), _array(saved[3])
     rule = plan.continuation
@@ -1292,6 +1293,10 @@ def _relinked(plan: PaginationPlan[T, P], request: _Request, saved: tuple[WireVa
             )
         )
     )
+    bound = tuple(
+        value if binding.selector is not None else binding.literal
+        for binding, value in zip(plan.bindings[: len(bound)], bound, strict=True)
+    )
     seen = None if saved[4] is None else _count(saved[4], index)
     history: dict[bytes, int] = {}
     for entry in map(_array, _array(saved[5])):
@@ -1301,27 +1306,25 @@ def _relinked(plan: PaginationPlan[T, P], request: _Request, saved: tuple[WireVa
     return _Link(plan.fingerprint, request, index, items, value, bound, digest, seen, None, _History(history, index))
 
 
-def _continued(
-    core: ClientCore | AsyncClientCore, walk: _Walk[T, P], value: WireValue, bound: tuple[WireValue, ...]
-) -> None:
-    """Check a resumed continuation as one a server just gave: its size, followed URL and origin, and dot segments."""
-    plan, limits = walk.plan, walk.limits
-    rule = plan.continuation
+def _continued(core: ClientCore | AsyncClientCore, walk: _Walk[T, P], start: int | None) -> None:
+    """Check a resumed continuation as one a server just gave: its size, followed URL and origin, and dot segments.
+
+    An offset or page number must be the position the walk reaches from where its first request starts.
+    """
+    plan, limits, link = walk.plan, walk.limits, cast("_Link", walk.link)
+    rule, value = plan.continuation, link.cursor
     if isinstance(rule, CursorPlan):
         _sized(plan, value, None, limits.max_cursor_bytes)
-    elif isinstance(rule, (NextUrlPlan, LinkPlan)):
-        walk.origins = core.follow_origins(plan.call, limits.options)
-        _followed(
-            plan,
-            rule.read,
-            cast("str", value),
-            cast("str", value),
-            None,
-            limits.max_cursor_bytes,
-            walk.origins,
-            frozenset(),
+    elif isinstance(rule, CountPlan):
+        reached = (rule.first if start is None else start) + (
+            link.items if rule.step is None else rule.step * (link.index + 1)
         )
-    _dotted(plan, bound if plan.follows else (*bound, value), None)
+        _require(value == reached >= 0)
+    else:
+        walk.origins = core.follow_origins(plan.call, limits.options)
+        url = cast("str", value)
+        _followed(plan, rule.read, url, url, None, limits.max_cursor_bytes, walk.origins, frozenset())
+    _dotted(plan, link.bound if plan.follows else (*link.bound, value), None)
 
 
 class _State(Enum):

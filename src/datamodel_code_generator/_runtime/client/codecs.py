@@ -102,6 +102,15 @@ class RequestCodecs(Generic[BodyT_co, ParameterT_co, PartT_co, RequestMediaT_co,
         return cast("ResponseMediaT_co", select_media(ResponseMedia, declared, concrete, self))
 
 
+def request_media(codecs: object, declared_media: str, concrete_media: str) -> MediaSelector:
+    """Return the selector an operation's request codecs make for a declared and a concrete media type.
+
+    It is checked as the operation's select method checks it, raising CodecSelectionError otherwise.
+    """
+    owner = cast("RequestCodecs[object, object, object, MediaSelector, object]", codecs)
+    return owner._request_media(declared_media, concrete_media)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+
+
 def _chosen(
     declarations: tuple[str, ...], declared_media: str, concrete_media: str, *, winner: bool
 ) -> tuple[str, str]:

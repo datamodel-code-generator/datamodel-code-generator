@@ -2313,5 +2313,15 @@
         ]
       }
     }
+  },
+  "protocols-pagination-resume-checks": {
+    "input": "pagination-resume.yaml",
+    "references": [
+      "protocols/pagination-resume-checks.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-resume-checks.yaml"
+    },
+    "modules": false
   }
 }

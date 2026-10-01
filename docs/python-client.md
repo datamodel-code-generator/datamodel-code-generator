@@ -588,8 +588,9 @@ early holds no response. Its `progress` reports the pages fetched, the items del
 ### Cursors and end conditions
 
 A page's items must be a JSON array at the `items` pointer; an empty array does not end the traversal. The cursor is
-read from the page's body, a response header, or its status, and written to the target of `write`: a path, query,
-header, or cookie parameter, a property of the querystring, or a member of the JSON request body. A cursor the server
+read from the page's body, a response header, or its status, and written to the target of `write`: a path, query, or
+header parameter, a property of the querystring, or a member of the JSON request body, never a position that carries
+credentials. A cursor the server
 returned is sent as it came, without its target's schema checks even under `request="schema"` validation, while a
 start cursor the caller passes is checked like any other argument. The traversal ends at a page whose cursor is missing
 or null where the helper declares that end, is one of its end values, or is empty with `empty_string: end`. A missing
@@ -697,14 +698,13 @@ position. A binding writes a `literal`, or what its selector reads from the `ini
 whole traversal, or from the `previous` page's; a header selector with `occurrence: all` reads every value of the header
 as an array. The bindings are read from every page that has a next page, even one a caller never continues, and a value
 its selector finds missing raises `ProtocolDataError`; a header none of whose values is present counts as missing under
-`occurrence: all` too. A next-URL or Link helper writes no cursor; its bindings write headers and cookies, and the JSON
-body only when a next URL repeats it. A `null` is written as it is to a JSON body or a querystring of JSON content, the
+`occurrence: all` too. A next-URL or Link helper writes no cursor; its bindings write headers, and the JSON body only
+when a next URL repeats it. A `null` is written as it is to a JSON body or a querystring of JSON content, the
 only targets that can carry it. A parameter target replaces the argument. A querystring or body target writes into the
 caller's querystring or JSON body, encoded and checked as in any call, or into an empty object when the call gives none;
 a missing, null, or other non-object value on its pointer is replaced by an empty object. The querystring is then
 encoded once, so no query pair is added. The values a server gave are never checked against their targets' schemas. A
-call's `options` must not patch a header, the `Cookie` header when the helper writes a cookie, or a query parameter the
-helper writes: `iterate`, `page`, and `next_page` raise `ProtocolConfigurationError` with a `field_path` of `("options",
+call's `options` must not patch a header or a query parameter the helper writes: `iterate`, `page`, and `next_page` raise `ProtocolConfigurationError` with a `field_path` of `("options",
 "headers" or "query", <name>)` before sending. A binding with `source: input` is not supported yet.
 
 ### Limits and sessions
@@ -771,14 +771,17 @@ with Client() as client:
 | The last page's index, the items fetched so far, its continuation and binding values, and the digests of the continuations its pages returned | The session, its deadline, and its send counters |
 | The last page's body, status, and media type while items of it are left | Model objects, which are decoded again from the body |
 
-A call that gives a cookie parameter, a header the client treats as a credential, or a parameter at the position of a
-declared security scheme cannot be checkpointed: `checkpoint()` raises `ProtocolConfigurationError` with a `field_path`
-of `("arguments", <location>, <name>)`, and its limit and cycle errors keep `resume_state=None`. Otherwise
+A call that gives a cookie parameter, a header the client treats as a credential, a parameter at the position of a
+declared security scheme, or a querystring with a field at such a position cannot be checkpointed: `checkpoint()` raises
+`ProtocolConfigurationError` with a `field_path` of `("arguments", <location>, <name>)`, and its limit and cycle errors
+keep `resume_state=None`. Otherwise
 `SessionLimitError` and `PaginationCycleError` keep a checkpoint of where the pager stopped as `resume_state`, with the
 item a limit refused still to come.
 
 A resumed pager first delivers the items left of the saved page, decoded again under the call's response validation,
-and then continues with the saved continuation, bindings, and request; with items left it iterates items only, so
+and then continues with the saved continuation, bindings, and request, whose arguments and body are built from their
+wire values as their codecs build a caller's, so the call's request validation applies to them again. A literal binding
+sends the plan's value, never a saved one; with items left it iterates items only, so
 `iter_pages()` raises `ProtocolStateError`. Its pages continue with `next_page` as any other. Pages and items count on
 from the checkpoint against the resumed call's limits, so a limit that stopped the pager stops it again unless it is
 raised, while the session's timeout, deadline, and sends start afresh. The cycle history carries over, so a resumed cycle
@@ -790,10 +793,10 @@ raises `PaginationCycleError` again without sending.
 |---|---|
 | Not a `ResumeState` | `ProtocolConfigurationError(field_path=("state",), condition="invalid_value")` |
 | Another helper's, or one generated differently | `ResumeStateError(condition="fingerprint")` |
-| Made under another credential partition, allowed origins, server origin, declared security, or configured auth schemes | `ResumeStateError(condition="security")` |
+| Made under another credential partition, allowed origins, server origin, or declared security and scopes, or under another auth: a provider type, an OAuth grant's audience or requested scopes, `allowed_origins`, `selection`, `send_on_anonymous`, `anonymous_schemes`, or signer types | `ResumeStateError(condition="security")` |
 | An expiry that has passed | `ResumeStateError(condition="expired")` |
-| A state, saved argument, body, or page that does not fit the helper, a value for a parameter that is never saved included | `ResumeStateError(condition="malformed")` |
-| A cursor over the resumed call's `max_cursor_bytes`, a URL a server could not have given, or a dot segment for a path parameter | `ProtocolSizeError` or `ProtocolDataError`, as for a page |
+| A state, saved argument, body, or page that does not fit the helper: a value its codec refuses, a media type the operation's select method refuses, a dot segment for a path argument, a value for a parameter that is never saved, an offset or page number other than the one the saved pages reach, or a first or next request that cannot be prepared, such as one with CR, LF, or NUL in a header | `ResumeStateError(condition="malformed")` |
+| A cursor over the resumed call's `max_cursor_bytes`, a URL a server could not have given, a dot segment a server value would write to a path parameter, or a saved page over the resumed call's `max_page_bytes` | `ProtocolSizeError` or `ProtocolDataError`, as for a page |
 
 `ResumeState.export()` of a helper's checkpoint requires `ProtocolSecurityContext.credential_partition` when the
 operation declares security or the call configures auth, and raises `ProtocolConfigurationError` with
@@ -818,6 +821,9 @@ null with a `null` end, its end values must be strings, and `repeat_request_body
 may be sent again; a Link continuation's header must be one the response declares, and `rel` one relation type, a
 registered name such as `next` or an absolute URI. A next-URL or Link helper's binding that writes a path, query, or
 querystring parameter, which the URL replaces, or the body without `repeat_request_body`, fails with `E_CONFIG_VALUE`.
+So does a cursor, position, or binding, a literal one included, that writes a cookie, the `Authorization`,
+`Proxy-Authorization`, `Cookie`, or `Cookie2` header, or a header, query parameter, or querystring property at the
+position of a declared security scheme: credentials are never written from what a server or a checkpoint gives.
 Helper names whose classes collide, such as `users.all_items` and `users_all.items`, fail with `E_NAME_COLLISION`.
 Bindings that read the helper's input, request bodies other than JSON, envelope-projected responses, and items or
 selector pointers that read through a union or a map are not supported yet:
@@ -828,9 +834,11 @@ selector pointers that read through a union or a map are not supported yet:
 ```text
 E_NAME_COLLISION target protocols.helpers['users_all.items'] /paths/~1users/get: The helper name 'users_all.items' gives the class name 'UsersAllItemsPagination', which 'users.all_items' already gives
 E_CLIENT_UNSUPPORTED target protocols.helpers['bindings.input'].bindings[0].value.source /paths/~1users/get: The binding 0 of 'bindings.input' reads the helper's input, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['bindings.reads'].bindings[2].target /paths/~1users/get: The binding 2 of 'bindings.reads' writes the cookie 'session', which carries credentials no helper writes
 E_CONFIG_VALUE config protocols.helpers['bindings.reads'].bindings[0].value.selector /paths/~1users/get: The binding 0 pointer '/nothing' of 'bindings.reads' names no property of the GET /users response
 E_CONFIG_VALUE config protocols.helpers['bindings.reads'].bindings[1].value.selector /paths/~1users/get: The binding 1 of 'bindings.reads' reads the header 'X-Missing', which GET /users does not declare
 E_CLIENT_UNSUPPORTED target protocols.helpers['bindings.reads'].bindings[2].value.selector /paths/~1users/get: The binding 2 pointer '/grouped/admins' of 'bindings.reads' reads through a union or map, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['bindings.types'].bindings[2].target /paths/~1users/get: The binding 2 of 'bindings.types' writes the cookie 'session', which carries credentials no helper writes
 E_CONFIG_VALUE config protocols.helpers['bindings.types'].bindings[0].target /paths/~1users/get: The binding 0 of 'bindings.types' gives integer values, which the header parameter 'X-Cursor' of GET /users does not accept
 E_CONFIG_VALUE config protocols.helpers['bindings.types'].bindings[1].target /paths/~1users/get: The binding 1 of 'bindings.types' gives string values, which the query parameter 'size' of GET /users does not accept
 E_CONFIG_VALUE config protocols.helpers['bindings.types'].bindings[2].target /paths/~1users/get: The binding 2 of 'bindings.types' gives array values, which the cookie parameter 'session' of GET /users does not accept

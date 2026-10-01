@@ -5,19 +5,11 @@ from __future__ import annotations
 import importlib
 from typing import TYPE_CHECKING, Any
 
-from tests.data.python.client_pagination import Harness, adrained, afetched, drained, fetched, users
-from tests.data.python.client_runtime import Exchange, json_response, run
+from tests.data.python.client_pagination import Harness, adrained, afetched, drained, fetched, user_page, users
+from tests.data.python.client_runtime import Exchange, run
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
     from types import ModuleType
-
-    import httpx2
-
-
-def _page(*ids: str, **members: object) -> Callable[[httpx2.Request], httpx2.Response]:
-    """Return a responder of one page of users with the given members."""
-    return json_response(200, {"data": [{"id": value} for value in ids], **members})
 
 
 def pagination_counts(package: ModuleType, lines: list[str]) -> None:
@@ -37,18 +29,18 @@ def pagination_counts(package: ModuleType, lines: list[str]) -> None:
 def _steps(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Advance an offset by its literal step through an empty page until has_more is false."""
     helper = api.protocols.users.offsets
-    exchange.respond(_page("1", "2", has_more=True), _page(has_more=True), _page("3", has_more=False))
+    exchange.respond(user_page("1", "2", has_more=True), user_page(has_more=True), user_page("3", has_more=False))
     drained(lines, "literal offsets", helper.iterate())
-    exchange.respond(_page("1"))
+    exchange.respond(user_page("1"))
     drained(lines, "missing has_more", helper.iterate())
-    exchange.respond(_page("1", "2", has_more=True))
+    exchange.respond(user_page("1", "2", has_more=True))
     limits = harness.protocols.PaginationOptions(max_pages=1)
     drained(lines, "literal offsets past the page limit", helper.iterate(pagination_options=limits))
-    exchange.respond(_page("1", has_more=True), _page("2", has_more=False))
+    exchange.respond(user_page("1", has_more=True), user_page("2", has_more=False))
     pager = helper.iterate()
     drained(lines, "literal offset pages", pager.iter_pages())
     lines.append(f"  literal offset progress {dict(pager.progress)!r}")
-    exchange.respond(_page("1", total=15), _page("2", total=15))
+    exchange.respond(user_page("1", total=15), user_page("2", total=15))
     drained(lines, "body offsets", api.protocols.searches.all.iterate(body=_search(harness, {"query": "a"})))
 
 
@@ -65,17 +57,17 @@ def _starts(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
     """
     listing = api.protocols.users
     start = harness.argument("users", "ListUsers", "query", "offset", 40)
-    exchange.respond(_page("1", "2", has_more=True), _page("3", has_more=False))
+    exchange.respond(user_page("1", "2", has_more=True), user_page("3", has_more=False))
     drained(lines, "query start", listing.offsets.iterate(offset=start))
-    exchange.respond(_page("1", "2", total=42))
+    exchange.respond(user_page("1", "2", total=42))
     drained(lines, "query start near the total", listing.items.iterate(offset=start))
-    exchange.respond(_page("1", has_more=True), _page("2", has_more=False))
+    exchange.respond(user_page("1", has_more=True), user_page("2", has_more=False))
     first = fetched(lines, "query start page", lambda: listing.offsets.page(offset=start))
     fetched(lines, "query start next page", lambda: listing.offsets.next_page(first))
     numbered = harness.argument("users", "ListUsers", "header", "X-Page", 5)
     exchange.respond(users("1", **{"X-Has-More": "true"}), users("2", **{"X-Has-More": "false"}))
     drained(lines, "header start", listing.by_header.iterate(x_page=numbered))
-    exchange.respond(_page("1", total=45), _page("2", total=45))
+    exchange.respond(user_page("1", total=45), user_page("2", total=45))
     body = _search(harness, {"query": "a", "window": {"start": 30}})
     drained(lines, "body start", api.protocols.searches.all.iterate(body=body))
     types = importlib.import_module(f"{harness.package.__name__}.types.finds")
@@ -85,12 +77,12 @@ def _starts(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
         ("querystring without a start", {"criteria": codec.from_wire({"term": "a"})}),
         ("no querystring", {}),
     ):
-        exchange.respond(_page("1", has_more=True), _page("2", has_more=False))
+        exchange.respond(user_page("1", has_more=True), user_page("2", has_more=False))
         drained(lines, label, api.protocols.finds.all.iterate(**arguments))
     options = harness.options
     checked = options.RequestOptions(validation=options.ValidationOptions(request="schema"))
     drained(lines, "text start", listing.offsets.iterate(offset="forty"))
-    exchange.respond(_page("1", has_more=True), _page("2", has_more=False))
+    exchange.respond(user_page("1", has_more=True), user_page("2", has_more=False))
     integral = harness.argument("users", "ListUsers", "query", "position", 40.0)
     drained(lines, "integral number start", listing.positions.iterate(position=integral))
     fraction = harness.argument("users", "ListUsers", "query", "position", 40.5)
@@ -107,33 +99,33 @@ def _starts(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
 def _items(api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Advance an offset by each page's item count until the total, refusing an empty page that continues."""
     helper = api.protocols.users.items
-    exchange.respond(_page("1", "2", "3", total=5), _page("4", "5", total=5))
+    exchange.respond(user_page("1", "2", "3", total=5), user_page("4", "5", total=5))
     drained(lines, "counted offsets", helper.iterate())
-    exchange.respond(_page(total=0))
+    exchange.respond(user_page(total=0))
     drained(lines, "zero total", helper.iterate())
-    exchange.respond(_page("1", "2", "3", total=4), _page("4", "5", "6", total=4))
+    exchange.respond(user_page("1", "2", "3", total=4), user_page("4", "5", "6", total=4))
     drained(lines, "offsets past the total", helper.iterate())
-    exchange.respond(_page("1", total=3), _page(total=3))
+    exchange.respond(user_page("1", total=3), user_page(total=3))
     drained(lines, "empty page before the total", helper.iterate())
     for label, members in (
         ("negative total", {"total": -1}),
         ("missing total", {}),
     ):
-        exchange.respond(_page("1", **members))
+        exchange.respond(user_page("1", **members))
         drained(lines, label, helper.iterate())
 
 
 def _flags(api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Read has_more from an untyped member and from a header, refusing anything but a boolean."""
     helper = api.protocols.users.loose
-    exchange.respond(_page("1", more=True), _page("2", "3", more=True), _page(more=False))
+    exchange.respond(user_page("1", more=True), user_page("2", "3", more=True), user_page(more=False))
     drained(lines, "offsets from the first position", helper.iterate())
     for label, members in (
         ("string has_more", {"more": "yes"}),
         ("null has_more", {"more": None}),
         ("missing untyped has_more", {}),
     ):
-        exchange.respond(_page("1", **members))
+        exchange.respond(user_page("1", **members))
         drained(lines, label, helper.iterate())
     helper = api.protocols.users.by_header
     exchange.respond(users("1", **{"X-Has-More": "true"}), users("2", **{"X-Has-More": "false"}))
@@ -163,21 +155,21 @@ def _numbers(api: Any, exchange: Exchange, lines: list[str]) -> None:
         exchange.respond(users("1", **headers))
         drained(lines, label, helper.iterate())
     helper = api.protocols.users.counted
-    exchange.respond(_page("1", count=3), _page(count=3))
+    exchange.respond(user_page("1", count=3), user_page(count=3))
     drained(lines, "page numbers ended by an empty page", helper.iterate())
     for label, members in (
         ("fractional total", {"count": 2.5}),
         ("boolean total", {"count": True}),
         ("null total", {"count": None}),
     ):
-        exchange.respond(_page("1", **members))
+        exchange.respond(user_page("1", **members))
         drained(lines, label, helper.iterate())
 
 
 def _pages(api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Fetch counted pages one call at a time, continuing an earlier page again at the same position."""
     helper = api.protocols.users.items
-    exchange.respond(_page("1", "2", total=3), _page("3", total=3), _page("3", total=3))
+    exchange.respond(user_page("1", "2", total=3), user_page("3", total=3), user_page("3", total=3))
     first = fetched(lines, "first counted page", helper.page)
     fetched(lines, "next counted page", lambda: helper.next_page(first))
     second = fetched(lines, "next counted page again", lambda: helper.next_page(first))
@@ -189,7 +181,7 @@ async def _async_counts(harness: Harness, lines: list[str]) -> None:
     package = harness.package
     exchange = Exchange(lines)
     async with exchange.async_client() as native, package.AsyncClient(http_client=native) as api:
-        exchange.respond(_page("1", "2", has_more=True), _page("3", has_more=False))
+        exchange.respond(user_page("1", "2", has_more=True), user_page("3", has_more=False))
         await adrained(lines, "async literal offsets", api.protocols.users.offsets.iterate())
         helper = api.protocols.users.pages
         exchange.respond(users("1", **{"X-Total-Count": "2"}), users("2", **{"X-Total-Count": "2"}))

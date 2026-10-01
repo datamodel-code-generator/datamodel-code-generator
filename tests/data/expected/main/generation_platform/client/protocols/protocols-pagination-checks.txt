@@ -3,9 +3,11 @@ render pydantic_v2.BaseModel
   APIGenerationError
   E_NAME_COLLISION target protocols.helpers['users_all.items'] /paths/~1users/get: The helper name 'users_all.items' gives the class name 'UsersAllItemsPagination', which 'users.all_items' already gives
   E_CLIENT_UNSUPPORTED target protocols.helpers['bindings.input'].bindings[0].value.source /paths/~1users/get: The binding 0 of 'bindings.input' reads the helper's input, which is not supported yet
+  E_CONFIG_VALUE config protocols.helpers['bindings.reads'].bindings[2].target /paths/~1users/get: The binding 2 of 'bindings.reads' writes the cookie 'session', which carries credentials no helper writes
   E_CONFIG_VALUE config protocols.helpers['bindings.reads'].bindings[0].value.selector /paths/~1users/get: The binding 0 pointer '/nothing' of 'bindings.reads' names no property of the GET /users response
   E_CONFIG_VALUE config protocols.helpers['bindings.reads'].bindings[1].value.selector /paths/~1users/get: The binding 1 of 'bindings.reads' reads the header 'X-Missing', which GET /users does not declare
   E_CLIENT_UNSUPPORTED target protocols.helpers['bindings.reads'].bindings[2].value.selector /paths/~1users/get: The binding 2 pointer '/grouped/admins' of 'bindings.reads' reads through a union or map, which is not supported yet
+  E_CONFIG_VALUE config protocols.helpers['bindings.types'].bindings[2].target /paths/~1users/get: The binding 2 of 'bindings.types' writes the cookie 'session', which carries credentials no helper writes
   E_CONFIG_VALUE config protocols.helpers['bindings.types'].bindings[0].target /paths/~1users/get: The binding 0 of 'bindings.types' gives integer values, which the header parameter 'X-Cursor' of GET /users does not accept
   E_CONFIG_VALUE config protocols.helpers['bindings.types'].bindings[1].target /paths/~1users/get: The binding 1 of 'bindings.types' gives string values, which the query parameter 'size' of GET /users does not accept
   E_CONFIG_VALUE config protocols.helpers['bindings.types'].bindings[2].target /paths/~1users/get: The binding 2 of 'bindings.types' gives array values, which the cookie parameter 'session' of GET /users does not accept

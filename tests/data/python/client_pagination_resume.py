@@ -8,9 +8,16 @@ import json
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Final
 
-import httpx2
-
-from tests.data.python.client_pagination import Harness, adrained, drained, fetched, item_id, progress
+from tests.data.python.client_pagination import (
+    Harness,
+    adrained,
+    drained,
+    fetched,
+    headed_page,
+    item_id,
+    progress,
+    user_page,
+)
 from tests.data.python.client_runtime import Exchange, describe, json_response, record, run
 
 if TYPE_CHECKING:
@@ -20,17 +27,6 @@ if TYPE_CHECKING:
 _SERVER: Final = "https://api.example.com/v1"
 _OTHER: Final = "https://other.example.com"
 _PAST: Final = datetime(2000, 1, 1, tzinfo=timezone.utc)
-
-
-def _page(*ids: str, **members: object) -> Callable[[httpx2.Request], httpx2.Response]:
-    """Return a responder of one page of users with the given members."""
-    return json_response(200, {"data": [{"id": value} for value in ids], **members})
-
-
-def _headed(*ids: str, headers: tuple[tuple[str, str], ...], **members: object) -> Callable[[httpx2.Request], Any]:
-    """Return a responder of one page of users with response headers."""
-    payload = {"data": [{"id": value} for value in ids], **members}
-    return lambda _: httpx2.Response(200, headers=list(headers), json=payload)
 
 
 def _envelope(state: Any) -> dict[str, Any]:
@@ -85,6 +81,16 @@ def _failure(call: Callable[[], object]) -> BaseException | None:
     return None
 
 
+class _Signer:
+    """A request signer whose identity is its type; it is never asked to sign."""
+
+    def __init__(self, capabilities: object) -> None:
+        self.capabilities = capabilities
+
+    def sign(self, request: object) -> object:
+        return request
+
+
 class _Checkpointing:
     """A hook that checkpoints a pager once, while one of its pages is being fetched."""
 
@@ -110,7 +116,10 @@ def pagination_resume(package: ModuleType, lines: list[str]) -> None:
         _requests(harness, api, exchange, lines)
         _refusals(harness, api, exchange, lines)
         _malformed(harness, api, exchange, lines)
+        _validated(harness, api, exchange, lines)
+        _credentials(harness, api, lines)
     _security(harness, exchange, lines)
+    _identities(harness, exchange, lines)
     run(lambda: _async_resume(harness, lines))
 
 
@@ -121,7 +130,7 @@ def _items(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> 
     trace = harness.argument("users", "ListUsers", "header", "X-Trace", "t")
     pager = helper.iterate(limit=limit, x_trace=trace)
     _saved(lines, "before any page", pager.checkpoint())
-    exchange.respond(_page("1", "2", "3", next_cursor="a"), _page("4", next_cursor="b"), _page("5"))
+    exchange.respond(user_page("1", "2", "3", next_cursor="a"), user_page("4", next_cursor="b"), user_page("5"))
     _taken(lines, "first items", pager, 1)
     state = pager.checkpoint()
     _saved(lines, "mid page", state)
@@ -131,17 +140,17 @@ def _items(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> 
     record(lines, "resumed pages", resumed.iter_pages)
     drained(lines, "resumed items", resumed)
     lines.append(f"  resumed progress after {progress(resumed)}")
-    exchange.respond(_page("4", next_cursor="b"), _page("5"))
+    exchange.respond(user_page("4", next_cursor="b"), user_page("5"))
     drained(lines, "original items", pager)
     again = helper.resume(state)
     _taken(lines, "resumed again", again, 2)
     _saved(lines, "resumed checkpoint", again.checkpoint())
-    exchange.respond(_page("4"))
+    exchange.respond(user_page("4"))
     drained(lines, "resumed again rest", again)
     fresh = helper.resume(helper.iterate(limit=limit).checkpoint())
-    exchange.respond(_page("1"))
+    exchange.respond(user_page("1"))
     drained(lines, "resumed before any page", fresh)
-    exchange.respond(_page("1", "2"))
+    exchange.respond(user_page("1", "2"))
     last = helper.iterate()
     _taken(lines, "last page first", last, 1)
     drained(lines, "resumed last page", helper.resume(last.checkpoint()))
@@ -154,31 +163,31 @@ def _pages(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> 
     """Resume page iteration, continue resumed pages one call at a time, and checkpoint after a failed page."""
     helper = api.protocols.users.all
     pager = helper.iterate()
-    exchange.respond(_page("1", "2", next_cursor="a"))
+    exchange.respond(user_page("1", "2", next_cursor="a"))
     first = next(pager.iter_pages())
     lines.append(f"  first page {[item_id(item) for item in first.items]}")
     state = pager.checkpoint()
     _saved(lines, "pages", state)
-    exchange.respond(_page("3", next_cursor="b"), _page("4"))
+    exchange.respond(user_page("3", next_cursor="b"), user_page("4"))
     resumed = helper.resume(state)
     pages = resumed.iter_pages()
     second = fetched(lines, "resumed page", lambda: next(pages))
     fetched(lines, "next page of a resumed page", lambda: helper.next_page(second))
     lines.append(f"  resumed page progress {progress(resumed)}")
     exchange.respond(
-        _page("1", next_cursor="a"),
+        user_page("1", next_cursor="a"),
         json_response(503, {"message": "busy"}),
         json_response(503, {"message": "busy"}),
         json_response(503, {"message": "busy"}),
     )
     failed = helper.iterate()
     drained(lines, "second page failing", failed)
-    exchange.respond(_page("2"))
+    exchange.respond(user_page("2"))
     drained(lines, "resumed after the failed page", helper.resume(failed.checkpoint()))
     hook = _Checkpointing(lines)
     watched = helper.iterate(options=harness.options.RequestOptions(hooks=(hook,)))
     hook.pager = watched
-    exchange.respond(_page("1"))
+    exchange.respond(user_page("1"))
     drained(lines, "checkpointed while fetching", watched)
 
 
@@ -186,22 +195,22 @@ def _limits(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
     """Keep a checkpoint on limit and cycle errors; pages and items count on, while sends start afresh."""
     protocols, options = harness.protocols, harness.options
     helper = api.protocols.users.all
-    exchange.respond(_page("1", "2", "3", next_cursor="a"))
+    exchange.respond(user_page("1", "2", "3", next_cursor="a"))
     limited = helper.iterate(pagination_options=protocols.PaginationOptions(max_items=2))
     error = _failure(lambda: list(limited))
     lines.append(f"  item limit ! {describe(error)} {_resume_state(error)}")
     state = getattr(error, "resume_state", None)
     _saved(lines, "item limit", state)
     drained(lines, "same item limit", helper.resume(state, pagination_options=protocols.PaginationOptions(max_items=2)))
-    exchange.respond(_page("4"))
+    exchange.respond(user_page("4"))
     raised = helper.resume(state, pagination_options=protocols.PaginationOptions(max_items=10))
     drained(lines, "raised item limit", raised)
     lines.append(f"    progress {progress(raised)}")
-    exchange.respond(_page("1", next_cursor="a"), _page("2", next_cursor="b"))
+    exchange.respond(user_page("1", next_cursor="a"), user_page("2", next_cursor="b"))
     pages = helper.iterate(pagination_options=protocols.PaginationOptions(max_pages=2))
     error = _failure(lambda: list(pages))
     lines.append(f"  page limit ! {describe(error)} {_resume_state(error)}")
-    exchange.respond(_page("3"))
+    exchange.respond(user_page("3"))
     drained(
         lines,
         "raised page limit",
@@ -209,17 +218,17 @@ def _limits(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
             getattr(error, "resume_state", None), pagination_options=protocols.PaginationOptions(max_pages=3)
         ),
     )
-    exchange.respond(_page("1", next_cursor="a"))
+    exchange.respond(user_page("1", next_cursor="a"))
     sends = helper.iterate(session_options=options.SessionOptions(max_network_sends=1))
     error = _failure(lambda: list(sends))
     lines.append(f"  send limit ! {describe(error)} {_resume_state(error)}")
-    exchange.respond(_page("2", next_cursor="b"))
+    exchange.respond(user_page("2", next_cursor="b"))
     budget = helper.resume(
         getattr(error, "resume_state", None), session_options=options.SessionOptions(max_network_sends=1)
     )
     drained(lines, "new session budget", budget)
     lines.append(f"    progress {progress(budget)}")
-    exchange.respond(_page("1", next_cursor="a"), _page("2", next_cursor="a"))
+    exchange.respond(user_page("1", next_cursor="a"), user_page("2", next_cursor="a"))
     cycling = helper.iterate()
     error = _failure(lambda: list(cycling))
     lines.append(f"  cycle ! {describe(error)} {_resume_state(error)}")
@@ -230,22 +239,22 @@ def _continuations(harness: Harness, api: Any, exchange: Exchange, lines: list[s
     """Resume each continuation kind: snapshot bindings, offsets, next URLs, Link headers, and body cursors."""
     users = api.protocols.users
     exchange.respond(
-        _headed("1", headers=(("X-Snapshot", "s1"),), next_cursor="a"),
-        _headed("2", headers=(("X-Snapshot", "s2"),), next_cursor="b"),
-        _page("3"),
+        headed_page("1", headers=(("X-Snapshot", "s1"),), next_cursor="a"),
+        headed_page("2", headers=(("X-Snapshot", "s2"),), next_cursor="b"),
+        user_page("3"),
     )
     snapshot = users.snapshot.iterate()
     _taken(lines, "snapshot first", snapshot, 1)
     state = snapshot.checkpoint()
     _saved(lines, "snapshot", state)
     drained(lines, "resumed snapshot", users.snapshot.resume(state))
-    exchange.respond(_page("1", "2", has_more=True), _page("3", has_more=False))
+    exchange.respond(user_page("1", "2", has_more=True), user_page("3", has_more=False))
     offsets = users.offsets.iterate()
     _taken(lines, "offset first", offsets, 2)
     state = offsets.checkpoint()
     _saved(lines, "offsets", state)
     drained(lines, "resumed offsets", users.offsets.resume(state))
-    exchange.respond(_page("1", next=f"{_SERVER}/users?cursor=2"), _page("2"))
+    exchange.respond(user_page("1", next=f"{_SERVER}/users?cursor=2"), user_page("2"))
     follow = users.follow.iterate()
     _taken(lines, "followed first", follow, 1)
     state = follow.checkpoint()
@@ -253,7 +262,7 @@ def _continuations(harness: Harness, api: Any, exchange: Exchange, lines: list[s
     drained(lines, "resumed followed", users.follow.resume(state))
     moved = harness.options.RequestOptions(base_url=f"{_OTHER}/v1")
     record(lines, "followed at another server", lambda: users.follow.resume(state, options=moved))
-    exchange.respond(_headed("1", headers=(("Link", "<?page=2>; rel=next"),)), _page("2"))
+    exchange.respond(headed_page("1", headers=(("Link", "<?page=2>; rel=next"),)), user_page("2"))
     linked = users.linked.iterate()
     _taken(lines, "linked first", linked, 1)
     state = linked.checkpoint()
@@ -261,13 +270,13 @@ def _continuations(harness: Harness, api: Any, exchange: Exchange, lines: list[s
     drained(lines, "resumed linked", users.linked.resume(state))
     searches = api.protocols.searches.all
     body = _body(harness, "searches", "Search", {"query": "a"})
-    exchange.respond(_page("1", next_cursor="c1"), _page("2", next_cursor="c2"), _page("3"))
+    exchange.respond(user_page("1", next_cursor="c1"), user_page("2", next_cursor="c2"), user_page("3"))
     search = searches.iterate(body=body)
     _taken(lines, "search first", search, 1)
     state = search.checkpoint()
     _saved(lines, "search", state)
     drained(lines, "resumed search", searches.resume(state))
-    exchange.respond(_page("1", next_cursor="a"), _page("2"))
+    exchange.respond(user_page("1", next_cursor="a"), user_page("2"))
     archive = api.protocols.archive.all
     path = archive.iterate(cursor=harness.argument("archive", "ListArchive", "path", "cursor", "start"))
     _taken(lines, "archive first", path, 1)
@@ -289,7 +298,7 @@ def _requests(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) 
     _saved(lines, "pydantic arguments", helper.iterate(limit=limit, options=checked).checkpoint())
     session = harness.argument("users", "ListUsers", "cookie", "session", "secret")
     record(lines, "cookie argument", helper.iterate(session=session).checkpoint)
-    exchange.respond(_page("1", next_cursor="a"))
+    exchange.respond(user_page("1", next_cursor="a"))
     error = _failure(
         lambda: list(helper.iterate(session=session, pagination_options=protocols.PaginationOptions(max_pages=1)))
     )
@@ -302,7 +311,7 @@ def _requests(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) 
     selector = types.SearchRequestCodecs.select_request_media(
         declared_media="application/json", concrete_media="application/json; charset=utf-8"
     )
-    exchange.respond(_page("1", next_cursor="c1"), _page("2"))
+    exchange.respond(user_page("1", next_cursor="c1"), user_page("2"))
     selected = searches.iterate(body=_body(harness, "searches", "Search", {"query": "a"}), media_type=selector)
     _taken(lines, "selected media first", selected, 1)
     state = selected.checkpoint()
@@ -316,7 +325,7 @@ def _refusals(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) 
     """Check a resumed continuation as one a server just gave, sending nothing for a refused one."""
     protocols = harness.protocols
     helper = api.protocols.users.all
-    exchange.respond(_page("1", "2", next_cursor="abcdef"))
+    exchange.respond(user_page("1", "2", next_cursor="abcdef"))
     pager = helper.iterate()
     _taken(lines, "long cursor first", pager, 1)
     state = pager.checkpoint()
@@ -325,13 +334,13 @@ def _refusals(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) 
         "cursor over the resumed limit",
         lambda: helper.resume(state, pagination_options=protocols.PaginationOptions(max_cursor_bytes=4)),
     )
-    exchange.respond(_page("1", next_cursor="a"))
+    exchange.respond(user_page("1", next_cursor="a"))
     archive = api.protocols.archive.all
     path = archive.iterate(cursor=harness.argument("archive", "ListArchive", "path", "cursor", "start"))
     _taken(lines, "archive", path, 1)
     dotted = _crafted(harness, path.checkpoint(), _replaced(path.checkpoint(), ("page", 2, 0), ".."))
     record(lines, "dot segment cursor", lambda: archive.resume(dotted))
-    exchange.respond(_page("1", next=f"{_SERVER}/users?cursor=2"))
+    exchange.respond(user_page("1", next=f"{_SERVER}/users?cursor=2"))
     follow = api.protocols.users.follow
     started = follow.iterate()
     _taken(lines, "followed", started, 1)
@@ -344,7 +353,7 @@ def _refusals(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) 
 def _malformed(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
     """Refuse a state or saved page that does not fit the helper as malformed, before sending."""
     helper = api.protocols.users.all
-    exchange.respond(_page("1", "2", next_cursor="a"))
+    exchange.respond(user_page("1", "2", next_cursor="a"))
     pager = helper.iterate()
     _taken(lines, "malformed source", pager, 1)
     state = pager.checkpoint()
@@ -356,7 +365,7 @@ def _malformed(harness: Harness, api: Any, exchange: Exchange, lines: list[str])
         ("bad history digest", _replaced(state, ("page", 5, 0, 0), "zz"), {}),
         ("text status", _replaced(state, ("page", 6, 1), "200"), {}),
         ("cookie value", _replaced(state, ("arguments", 4), session), {}),
-        ("undeclared body", _replaced(state, ("body",), [{}, "application/json"]), {}),
+        ("undeclared body", _replaced(state, ("body",), [{}, "application/json", None]), {}),
         ("too many items left", _replaced(state, ("page", 6, 0), 3), {}),
         ("payload without items left", _replaced(state, ("page", 6), None), {}),
         ("payload it cannot decode", None, {"payload": b"{"}),
@@ -365,7 +374,7 @@ def _malformed(harness: Harness, api: Any, exchange: Exchange, lines: list[str])
             lines, label, lambda saved=saved, fields=fields: helper.resume(_crafted(harness, state, saved, **fields))
         )
     searches = api.protocols.searches.all
-    exchange.respond(_page("1", next_cursor="c1"))
+    exchange.respond(user_page("1", next_cursor="c1"))
     search = searches.iterate(body=_body(harness, "searches", "Search", {"query": "a"}))
     _taken(lines, "search source", search, 1)
     saved = search.checkpoint()
@@ -401,8 +410,155 @@ def _security(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
                     lines, f"{label} resumes {source}", lambda saved=saved, helper=helper: helper.resume(saved).progress
                 )
             if label.startswith("bearer"):
-                exchange.respond(_page("1"))
+                exchange.respond(user_page("1"))
                 drained(lines, f"{label} resumed", helper.resume(state))
+
+
+def _validated(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Build saved values as their codecs build a caller's and prepare the next request, sending nothing when refused.
+
+    A literal binding sends the plan's value, and an offset must be where the pages reached from the first request's.
+    """
+    users = api.protocols.users
+    state = users.all.iterate().checkpoint()
+    for label, index, value in (
+        ("cursor over its maxLength", 0, "123456789"),
+        ("limit of another type", 2, "1;drop"),
+        ("header with a line break", 3, "a\r\nAuthorization: Bearer x"),
+        ("header with a NUL", 3, "a\x00b"),
+    ):
+        record(
+            lines,
+            label,
+            lambda index=index, value=value: users.all.resume(
+                _crafted(harness, state, _replaced(state, ("arguments", index), [value]))
+            ),
+        )
+    archive = api.protocols.archive.all
+    start = archive.iterate(cursor=harness.argument("archive", "ListArchive", "path", "cursor", "start")).checkpoint()
+    for value in (".", ".."):
+        record(
+            lines,
+            f"path argument {value!r}",
+            lambda value=value: archive.resume(_crafted(harness, start, _replaced(start, ("arguments", 0), [value]))),
+        )
+    searches = api.protocols.searches.all
+    saved = searches.iterate(body=_body(harness, "searches", "Search", {"query": "a"})).checkpoint()
+    for label, path, value in (
+        ("body its schema refuses", ("body", 0), {"query": 5, "extra": "x"}),
+        ("media type its selector refuses", ("body", 2), "text/plain"),
+        ("unparsable media type", ("body", 2), "%%%"),
+        ("media type with a line break", ("body", 2), "application/json\r\nX-Injected: 1"),
+    ):
+        record(
+            lines,
+            label,
+            lambda path=path, value=value: searches.resume(_crafted(harness, saved, _replaced(saved, path, value))),
+        )
+    exchange.respond(user_page("1", next_cursor="a"))
+    limited = users.limited.iterate()
+    _taken(lines, "literal binding first", limited, 1)
+    literal = limited.checkpoint()
+    exchange.respond(user_page("2"))
+    drained(
+        lines,
+        "literal binding from the plan",
+        users.limited.resume(_crafted(harness, literal, _replaced(literal, ("page", 3, 0), 99))),
+    )
+    exchange.respond(headed_page("1", headers=(("X-Snapshot", "s1"),), next_cursor="a"))
+    snapshot = users.snapshot.iterate()
+    _taken(lines, "snapshot source", snapshot, 1)
+    bound = snapshot.checkpoint()
+    record(
+        lines,
+        "bound header with a line break",
+        lambda: users.snapshot.resume(_crafted(harness, bound, _replaced(bound, ("page", 3, 0), "s\r\nX-Injected: 1"))),
+    )
+    exchange.respond(user_page("1", "2", has_more=True))
+    offsets = users.offsets.iterate()
+    _taken(lines, "offset source", offsets, 2)
+    position = offsets.checkpoint()
+    for value in (-5, 7):
+        record(
+            lines,
+            f"offset {value}",
+            lambda value=value: users.offsets.resume(
+                _crafted(harness, position, _replaced(position, ("page", 2, 0), value))
+            ),
+        )
+    exchange.respond(user_page("1", "2", next_cursor="a"))
+    pager = users.all.iterate()
+    _taken(lines, "page size source", pager, 1)
+    record(
+        lines,
+        "saved page over the resumed page limit",
+        lambda: users.all.resume(
+            pager.checkpoint(), pagination_options=harness.protocols.PaginationOptions(max_page_bytes=10)
+        ),
+    )
+
+
+def _credentials(harness: Harness, api: Any, lines: list[str]) -> None:
+    """Never save an argument at a credential position, a querystring field included, nor resume one."""
+    keyed = api.protocols.keyed.all
+    for label, location, name, value in (
+        ("query key argument", "query", "api_key", "k"),
+        ("header key argument", "header", "X-Api-Key", "k"),
+        ("proxy credential argument", "header", "Proxy-Authorization", "Basic x"),
+    ):
+        argument = harness.argument("keyed", "ListKeyedUsers", location, name, value)
+        record(lines, label, keyed.iterate(**{name.lower().replace("-", "_"): argument}).checkpoint)
+    queries = api.protocols.queries.all
+    keyless = harness.argument("queries", "Query", "querystring", "filter", {"term": "a"})
+    keyed_filter = harness.argument("queries", "Query", "querystring", "filter", {"term": "a", "api_key": "k"})
+    record(lines, "querystring with a key field", queries.iterate(filter=keyed_filter).checkpoint)
+    state = queries.iterate(filter=keyless).checkpoint()
+    _saved(lines, "querystring", state)
+    record(
+        lines,
+        "saved querystring with a key field",
+        lambda: queries.resume(
+            _crafted(harness, state, _replaced(state, ("arguments", 0), [{"term": "a", "api_key": "k"}]))
+        ),
+    )
+
+
+def _identities(harness: Harness, exchange: Exchange, lines: list[str]) -> None:
+    """Bind checkpoints to the auth's identity under one partition: grants, origins, selection, and signers."""
+    package, options, protocols = harness.package, harness.options, harness.protocols
+    auth = importlib.import_module(f"{package.__name__}.auth")
+    secret = auth.StaticCredentialProvider(auth.ApiKeyCredential("secret"))
+    token = auth.StaticTokenProvider(auth.AccessToken("token"))
+
+    def granted(**grant: Any) -> Any:
+        return auth.ClientCredentialsProvider(
+            "https://auth.example.com/token", client_id="client", client_secret=secret, **grant
+        )
+
+    signer = _Signer(auth.SignerCapabilities(("https://api.example.com",), ("X-Signature",), (), False))
+    configurations = (
+        ("audience a", True, auth.AuthConfig({"bearer": granted(audience="a", scopes=("read",))})),
+        ("audience a again", False, auth.AuthConfig({"bearer": granted(audience="a", scopes=("read",))})),
+        ("audience b", False, auth.AuthConfig({"bearer": granted(audience="b", scopes=("read",))})),
+        ("other scopes", False, auth.AuthConfig({"bearer": granted(audience="a", scopes=("write",))})),
+        ("static token", True, auth.AuthConfig({"bearer": token})),
+        ("static token again", False, auth.AuthConfig({"bearer": token})),
+        ("auth origins", False, auth.AuthConfig({"bearer": token}, allowed_origins=("https://other.example.com",))),
+        ("selection", False, auth.AuthConfig({"bearer": token}, selection=0)),
+        ("anonymous schemes", False, auth.AuthConfig({"bearer": token}, anonymous_schemes=("bearer",))),
+        ("signer", False, auth.AuthConfig({"bearer": token}, signers=(signer,))),
+    )
+    tenant = options.ProtocolClientOptions(security=protocols.ProtocolSecurityContext(credential_partition="tenant"))
+    source: Any = None
+    for label, starts, configuration in configurations:
+        settings = options.ClientOptions(auth=configuration, protocols=tenant)
+        with exchange.client() as native, package.Client(http_client=native, options=settings) as api:
+            helper = api.protocols.secure.users
+            if starts:
+                source = helper.iterate().checkpoint()
+                lines.append(f"  {label} checkpointed")
+                continue
+            record(lines, f"{label} resumes", lambda helper=helper, source=source: helper.resume(source).progress)
 
 
 async def _async_resume(harness: Harness, lines: list[str]) -> None:
@@ -410,15 +566,34 @@ async def _async_resume(harness: Harness, lines: list[str]) -> None:
     exchange = Exchange(lines)
     async with exchange.async_client() as native, harness.package.AsyncClient(http_client=native) as api:
         helper = api.protocols.users.all
-        exchange.respond(_page("1", "2", next_cursor="a"), _page("3"))
+        exchange.respond(user_page("1", "2", next_cursor="a"), user_page("3"))
         pager = helper.iterate()
         first = await anext(aiter(pager))
         lines.append(f"  async first {item_id(first)}")
         state = pager.checkpoint()
         _saved(lines, "async mid page", state)
         await adrained(lines, "async resumed items", helper.resume(state))
-        exchange.respond(_page("1", next_cursor="a"), _page("2"))
+        exchange.respond(user_page("1", next_cursor="a"), user_page("2"))
         pages = helper.iterate()
         await anext(aiter(pages.iter_pages()))
         await adrained(lines, "async resumed pages", helper.resume(pages.checkpoint()).iter_pages())
         record(lines, "async another helper's state", lambda: api.protocols.users.snapshot.resume(state))
+    auth = importlib.import_module(f"{harness.package.__name__}.auth")
+    secret = auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("secret"))
+    grant = auth.AsyncClientCredentialsProvider(
+        "https://auth.example.com/token", client_id="client", client_secret=secret, audience="a"
+    )
+    options = harness.options
+    settings = options.ClientOptions(
+        auth=auth.AuthConfig({"bearer": grant}),
+        protocols=options.ProtocolClientOptions(
+            security=harness.protocols.ProtocolSecurityContext(credential_partition="tenant")
+        ),
+    )
+    async with (
+        exchange.async_client() as native,
+        harness.package.AsyncClient(http_client=native, options=settings) as api,
+    ):
+        helper = api.protocols.secure.users
+        saved = helper.iterate().checkpoint()
+        record(lines, "async granted checkpoint resumes", lambda: helper.resume(saved).progress)
