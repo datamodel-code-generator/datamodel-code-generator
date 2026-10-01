@@ -26,7 +26,7 @@ from datamodel_code_generator.format import Formatter
 from tests.data.python.client_generation import generate_client
 from tests.data.python.codec_declarations import declaration
 from tests.data.python.fastapi_generation import fastapi_config
-from tests.data.python.generated_packages import generated_root, import_generated
+from tests.data.python.generated_packages import generated_root, import_generated_codecs
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -158,7 +158,7 @@ class _Package:
     """A generated package imported for its model bindings, with the report name of each bound use."""
 
     def __init__(self, root: Path) -> None:
-        import_generated(PACKAGE)
+        import_generated_codecs(PACKAGE, root)
         self.bindings = importlib.import_module(f"{PACKAGE}._generated.model_bindings")
         self.public = importlib.import_module(f"{PACKAGE}.model_codecs")
         self.media = importlib.import_module(f"{PACKAGE}._runtime.model_codecs.media")
