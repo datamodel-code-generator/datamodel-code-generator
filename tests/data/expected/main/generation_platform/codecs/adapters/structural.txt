@@ -106,7 +106,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='adapted.models:Cat',
         native_kind='dataclass',
-        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Pet/oneOf/0',
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Cat',
         fields=(
             FieldBinding(
                 field_id='adapted.models:Cat.kind',

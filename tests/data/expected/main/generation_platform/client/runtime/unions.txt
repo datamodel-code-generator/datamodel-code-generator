@@ -1,0 +1,74 @@
+# unions pydantic_v2.BaseModel
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  circle native = FieldShapesGetResponse(root=Circle(radius=1))
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  square native = FieldShapesGetResponse(root=Square(side=2))
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  cat native = FieldPetsGetResponse(root=Cat(kind='cat', lives=9))
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  dog native = FieldPetsGetResponse(root=Dog(kind='dog', good=True))
+  > GET https://api.example.com/overlaps
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  paired native = FieldOverlapsGetResponse(root=Paired(x='s', y='t'))
+  > GET https://api.example.com/overlaps
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  single, which the paired schema refuses native = FieldOverlapsGetResponse(root=Paired(x='s', y=None))
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  circle schema = FieldShapesGetResponse(root=Circle(radius=1))
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  square schema = FieldShapesGetResponse(root=Square(side=2))
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  cat schema = FieldPetsGetResponse(root=Cat(kind='cat', lives=9))
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  dog schema = FieldPetsGetResponse(root=Dog(kind='dog', good=True))
+  > GET https://api.example.com/overlaps
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  paired schema = FieldOverlapsGetResponse(root=Paired(x='s', y='t'))
+  > GET https://api.example.com/overlaps
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  single, which the paired schema refuses schema ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='getOverlap', call_id='<call>') [operation_id='getOverlap', body_bytes=b'{"x":"s"}', truncated=False, cause=ModelProjectionError('The native union member at / does not match the wire schema')] response_validation_error
+# unions pydantic_v2.dataclass
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  circle native = Circle(radius=1)
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  square native = Square(side=2)
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  cat native = Cat(kind='cat', lives=9)
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  dog native = Dog(kind='dog', good=True)
+  > GET https://api.example.com/overlaps
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  paired native = Paired(x='s', y='t')
+  > GET https://api.example.com/overlaps
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  single, which the paired schema refuses native = Paired(x='s', y=None)
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  circle schema = Circle(radius=1)
+  > GET https://api.example.com/shapes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  square schema = Square(side=2)
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  cat schema = Cat(kind='cat', lives=9)
+  > GET https://api.example.com/pets
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  dog schema = Dog(kind='dog', good=True)
+  > GET https://api.example.com/overlaps
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  paired schema = Paired(x='s', y='t')
+  > GET https://api.example.com/overlaps
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  single, which the paired schema refuses schema ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='getOverlap', call_id='<call>') [operation_id='getOverlap', body_bytes=b'{"x":"s"}', truncated=False, cause=ModelProjectionError('The native union member at / does not match the wire schema')] response_validation_error

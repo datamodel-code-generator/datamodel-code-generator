@@ -100,9 +100,9 @@ def test_client_typing_pagination(backend: DataModelType, tmp_path: Path) -> Non
     )
 
 
-@pytest.mark.parametrize("case", ["pagination-targets", "pagination-querystring"])
+@pytest.mark.parametrize("case", ["pagination-targets", "pagination-querystring", "pagination-counts"])
 def test_client_typing_package(case: str, tmp_path: Path) -> None:
-    """Check packages whose helpers write each kind of request target and bindings, with no samples."""
+    """Check packages whose helpers write each kind of request target, bindings, and positions, with no samples."""
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
     assert_output(
@@ -128,4 +128,24 @@ def test_client_typing_webhooks(backend: DataModelType, tmp_path: Path) -> None:
     assert_output(
         client_typing_report(tmp_path, backend, "webhooks-typing", ("webhook_helpers",)),
         EXPECTED / f"{backend.value.replace('.', '-')}-webhooks.txt",
+    )
+
+
+@pytest.mark.parametrize(
+    "backend",
+    [
+        DataModelType.PydanticV2BaseModel,
+        DataModelType.PydanticV2Dataclass,
+        DataModelType.DataclassesDataclass,
+        DataModelType.TypingTypedDict,
+        DataModelType.MsgspecStruct,
+    ],
+)
+def test_client_typing_unions(backend: DataModelType, tmp_path: Path) -> None:
+    """Check a package whose responses are unions of models, with each union's codec typed for its members."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(
+        client_typing_report(tmp_path, backend, "unions-schema", ("unions",)),
+        EXPECTED / f"{backend.value.replace('.', '-')}-unions.txt",
     )

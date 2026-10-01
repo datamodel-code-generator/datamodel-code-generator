@@ -34,7 +34,7 @@ __all__ = ["verify", "verify_async"]
 
 _PLAN: Final[WebhookPlan[_dcg_type_0, HmacKey]] = WebhookPlan(
     helper_id='github.push',
-    fingerprint='b3503b9ba500e823ea8d342423f0340b415f99316a903ef06465f0ea75bff662',
+    fingerprint='db5dd04d96ec941efee24451300a154baf59aab8455fab1e755425f4e7fa8be3',
     signature=SignatureProfile(
         algorithm=HMAC_SHA256,
         header='x-hub-signature-256',

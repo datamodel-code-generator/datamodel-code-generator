@@ -235,7 +235,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:Thing',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Thing',
         fields=(
             FieldBinding(
                 field_id='models:Thing.id',
@@ -255,7 +255,12 @@ def _model_0() -> ModelBinding:
 
 @cache
 def _model_1() -> ModelBinding:
-    return ModelBinding(symbol='models:FieldCreatedPostResponse', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:FieldCreatedPostResponse',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1created/post/responses/201/content/text~1plain/schema',
+        root=LeafNode(),
+    )
 
 
 @cache
@@ -263,7 +268,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldCreatedPostResponse201LocationHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1created/post/responses/201/headers/Location/schema',
         root=LeafNode(),
     )
 
@@ -273,7 +278,7 @@ def _model_3() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldCreatedPostResponse201XRateHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1created/post/responses/201/headers/X-Rate/schema',
         root=LeafNode(),
     )
 
@@ -283,7 +288,7 @@ def _model_4() -> ModelBinding:
     return ModelBinding(
         symbol='models:Problem',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Problem',
         fields=(
             FieldBinding(
                 field_id='models:Problem.title',
@@ -303,7 +308,12 @@ def _model_4() -> ModelBinding:
 
 @cache
 def _model_5() -> ModelBinding:
-    return ModelBinding(symbol='models:FieldRangesGetResponse', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:FieldRangesGetResponse',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1ranges/get/responses/2XX/content/application~1json/schema',
+        root=LeafNode(),
+    )
 
 
 @cache
@@ -311,7 +321,7 @@ def _model_6() -> ModelBinding:
     return ModelBinding(
         symbol='models:Loose',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Loose',
         fields=(
             FieldBinding(
                 field_id='models:Loose.name',
@@ -334,7 +344,7 @@ def _model_7() -> ModelBinding:
     return ModelBinding(
         symbol='models:Secret',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Secret',
         fields=(
             FieldBinding(
                 field_id='models:Secret.name',
@@ -366,7 +376,12 @@ def _model_7() -> ModelBinding:
 
 @cache
 def _model_8() -> ModelBinding:
-    return ModelBinding(symbol='models:FieldDownloadGetResponse', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:FieldDownloadGetResponse',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1download/get/responses/200/content/text~1csv/schema',
+        root=LeafNode(),
+    )
 
 
 @cache
@@ -374,7 +389,7 @@ def _model_9() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldDownloadGetResponse303LocationHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1download/get/responses/303/headers/Location/schema',
         root=LeafNode(),
     )
 

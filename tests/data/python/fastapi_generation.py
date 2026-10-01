@@ -269,7 +269,7 @@ def fastapi_scenario_report(case_name: str, root: Path) -> str:
                 (root / name).write_text(json.dumps(data, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
                 lines.append(f"patch {name} {pointer}")
             case _:
-                raise AssertionError(step)
+                raise ValueError(step)
     return "\n".join(lines) + "\n"
 
 

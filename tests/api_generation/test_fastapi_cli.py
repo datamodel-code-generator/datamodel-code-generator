@@ -587,6 +587,7 @@ def test_fastapi_cli_config_value_errors(
     assert_output(capsys.readouterr().err, EXPECTED / "cli" / "config-errors.txt")
 
 
+@pytest.mark.abnormal_path("no input makes the FastAPI target raise while rendering")
 def test_fastapi_cli_failures(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:

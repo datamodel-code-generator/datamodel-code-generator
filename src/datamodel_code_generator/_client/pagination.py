@@ -1,8 +1,8 @@
-"""Plan the cursor pagination helpers of a client target: their page, items, cursor, and the checks they must pass.
+"""Plan the cursor, offset, and page-number pagination helpers of a client target and the checks they must pass.
 
-A helper's items are read through the page model's fields, by a typed accessor the package generates, and its cursor
-and binding values from the page's wire value, a response header, or the status; each is checked against the operation
-it calls and the request target it writes.
+A helper's items are read through the page model's fields, by a typed accessor the package generates, and its cursor,
+end evidence, and binding values from the page's wire value, a response header, or the status; each is checked against
+the operation it calls and the request target it writes.
 """
 
 from __future__ import annotations
@@ -11,6 +11,7 @@ import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from decimal import Decimal
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
 
 from datamodel_code_generator._api_types import Diagnostic
@@ -49,6 +50,9 @@ _NULL: Final = frozenset({"null"})
 _SEQUENCES: Final = frozenset({"list", "tuple"})
 _POINTED: Final = frozenset({"body", "querystring"})
 _DOT_SEGMENTS: Final = (".", "..")
+_PLANNED: Final = frozenset({"cursor", "offset", "page"})
+_WRITES: Final = MappingProxyType({"cursor": "cursor", "offset": "offset", "page": "page number"})
+_EVIDENCE: Final = MappingProxyType({"has_more": "boolean", "total": "integer"})
 _Types: TypeAlias = frozenset[str] | None
 
 
@@ -68,7 +72,7 @@ class ItemStep:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class PaginationSpec:
-    """A cursor pagination helper ready to render: its operation, page use, item type, and items accessor."""
+    """A pagination helper ready to render: its operation, page use, item type, and items accessor."""
 
     helper: Helper
     operation: OperationSpec
@@ -79,8 +83,18 @@ class PaginationSpec:
 
     @property
     def continuation(self) -> Mapping[str, Any]:
-        """Return the helper's normalized cursor continuation."""
+        """Return the helper's normalized continuation."""
         return self.helper.tree["continuation"]
+
+    @property
+    def evidence(self) -> Literal["has_more", "total"]:
+        """Return which end evidence an offset or page-number continuation reads."""
+        return evidence(self.continuation)
+
+
+def evidence(continuation: Mapping[str, Any]) -> Literal["has_more", "total"]:
+    """Return which end evidence an offset or page-number continuation reads, `has_more` or `total`."""
+    return "has_more" if "has_more" in continuation else "total"
 
 
 @dataclass(frozen=True, slots=True)
@@ -167,7 +181,7 @@ def _unwrapped(node: TypeNode, models: Mapping[str, ModelBinding], steps: list[I
 
 
 class _Pages:
-    """Check and plan every enabled cursor pagination helper of a client target."""
+    """Check and plan every enabled cursor, offset, and page-number pagination helper of a client target."""
 
     def __init__(self, protocols: Protocols, codecs: CodecPlan, wire: WirePlan, request: TargetRequest) -> None:
         """Index the use bindings, the model fields by symbol and wire name, and the documents by manifest pointer."""
@@ -301,7 +315,7 @@ class _Pages:
         return self.wire.schema(location)[0]
 
     def helper(self, helper: Helper, spec: OperationSpec) -> tuple[PaginationSpec | None, list[Diagnostic]]:
-        """Check one enabled cursor helper against its operation, and plan it when every check passes."""
+        """Check one enabled helper against its operation, and plan it when every check passes."""
         tree = helper.tree
         at, name, label = helper.at, helper.name, _label(spec)
         problems: list[Diagnostic] = []
@@ -324,7 +338,8 @@ class _Pages:
             return None, problems
         planned = self.items(helper, spec, binding, page, problems)
         headers = successes[0].headers
-        problems.extend(self.cursor(helper, spec, binding, headers))
+        check = self.cursor if helper.tree["continuation"]["kind"] == "cursor" else self.count
+        problems.extend(check(helper, spec, binding, headers))
         problems.extend(self.values(helper, spec, binding, headers))
         if planned is None or problems:
             return None, problems
@@ -390,7 +405,8 @@ class _Pages:
     ) -> _Types | Diagnostic:
         """Return the JSON types a selector of the page reads, every occurrence of a header being an array of them.
 
-        A body pointer must name a property of the page's models and a header one the page response declares.
+        A body pointer must name a property of the page's models and a header one the page response declares. A header
+        read as end evidence spells a value of the types its declared schema gives.
         """
         name, label = helper.name, _label(spec)
         types: _Types = frozenset({"integer"})
@@ -408,12 +424,15 @@ class _Pages:
                     return _problem("E_CONFIG_VALUE", "config", at, message, spec)
                 types = self.types(reached.member.schema)
             case "header":
-                if read["name"].lower() not in {header.name.lower() for header in headers}:
+                uses = {header.name.lower(): header.use for header in headers}
+                if (key := read["name"].lower()) not in uses:
                     message = (
                         f"The {what} of {name!r} reads the header {read['name']!r}, which {label} does not declare"
                     )
                     return _problem("E_CONFIG_VALUE", "config", at, message, spec)
                 types = frozenset({"array" if read["occurrence"] == "all" else "string"})
+                if what in _EVIDENCE:
+                    types = None if (use := uses[key]) is None or use.schema is None else self.types(use.schema)
         return types
 
     def accepted(
@@ -480,6 +499,36 @@ class _Pages:
                 message = f"The end value {end['value']!r} of {name!r} is {kind}, which its cursor never reads"
                 yield _problem("E_CONFIG_VALUE", "config", f"{at}.end[{index}].value", message, spec)
 
+    def count(
+        self, helper: Helper, spec: OperationSpec, binding: UseBinding, headers: tuple[HeaderSpec, ...]
+    ) -> Iterator[Diagnostic]:
+        """Check that an offset or page number is an integer its target accepts and that its end evidence is typed.
+
+        A page number advances by a literal step. `has_more` must read booleans and `total` integers; a header is
+        typed by its declared schema, whose text spells the value.
+        """
+        at, name = f"{helper.at}.continuation", helper.name
+        continuation = helper.tree["continuation"]
+        kind = continuation["kind"]
+        if kind == "page" and "page_items_count" in continuation["step"]:
+            message = f"The page number of {name!r} advances by a literal step, never by the page's item count"
+            yield _problem("E_CONFIG_VALUE", "config", f"{at}.step", message, spec)
+        yield from self.fits(
+            helper, spec, continuation["write"], frozenset({"integer"}), f"{at}.write", _WRITES[kind], null=False
+        )
+        chosen = evidence(continuation)
+        expected, read, where = _EVIDENCE[chosen], continuation[chosen], f"{at}.{chosen}"
+        if chosen == "total" and read["from"] == "status":
+            message = f"The total of {name!r} reads the response status, which counts no items"
+            yield _problem("E_CONFIG_VALUE", "config", where, message, spec)
+            return
+        types = self.read(helper, spec, binding, headers, read, where, chosen)
+        if isinstance(types, Diagnostic):
+            yield types
+        elif types is not None and (others := sorted(types - {expected})):
+            message = f"The {chosen} of {name!r} reads {_listed(others)} values, where only {expected} values fit"
+            yield _problem("E_CONFIG_VALUE", "config", where, message, spec)
+
     def fits(  # noqa: PLR0913, PLR0917
         self,
         helper: Helper,
@@ -519,7 +568,8 @@ class _Pages:
         A binding's null is written, so its target must accept null too, and a literal dot segment is no path value.
         """
         tree = helper.tree
-        written = [(_target_key(tree["continuation"]["write"]), "its cursor")]
+        continuation = tree["continuation"]
+        written = [(_target_key(continuation["write"]), f"its {_WRITES[continuation['kind']]}")]
         for index, item in enumerate(tree["bindings"]):
             at, what, value, target = (
                 f"{helper.at}.bindings[{index}]",
@@ -567,7 +617,7 @@ def _child(location: SourceLocation, token: str) -> SourceLocation:
 def plan_pagination(
     protocols: Protocols | None, plan: ClientPlan, codecs: CodecPlan, wire: WirePlan, request: TargetRequest
 ) -> tuple[tuple[PaginationSpec, ...], dict[str, list[Diagnostic]]]:
-    """Plan every enabled cursor pagination helper, returning the planned ones and each checked helper's problems.
+    """Plan every enabled cursor, offset, or page-number helper, returning them and each checked helper's problems.
 
     Helpers of other kinds and continuations are left to the caller, which refuses them.
     """
@@ -578,7 +628,7 @@ def plan_pagination(
     specs: list[PaginationSpec] = []
     problems: dict[str, list[Diagnostic]] = {}
     for helper in protocols.helpers:
-        if not helper.enabled or helper.kind != "pagination" or helper.tree["continuation"]["kind"] != "cursor":
+        if not helper.enabled or helper.kind != "pagination" or helper.tree["continuation"]["kind"] not in _PLANNED:
             continue
         spec = operations[protocols.operations[helper.links[0].ref].id]
         planned, problems[helper.name] = pages.helper(helper, spec)

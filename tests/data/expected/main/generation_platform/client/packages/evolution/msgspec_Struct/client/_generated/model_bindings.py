@@ -143,7 +143,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:Card',
         native_kind='struct',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Card',
         fields=(
             FieldBinding(
                 field_id='models:Card.last4',
@@ -167,7 +167,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='models:Order',
         native_kind='struct',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Order',
         fields=(
             FieldBinding(
                 field_id='models:Order.id',
@@ -238,7 +238,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='models:Transfer',
         native_kind='struct',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Transfer',
         fields=(
             FieldBinding(
                 field_id='models:Transfer.iban',
@@ -262,7 +262,7 @@ def _model_3() -> ModelBinding:
     return ModelBinding(
         symbol='models:Problem',
         native_kind='struct',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Problem',
         fields=(
             FieldBinding(
                 field_id='models:Problem.code',

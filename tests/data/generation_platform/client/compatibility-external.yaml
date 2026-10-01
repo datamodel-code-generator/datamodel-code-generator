@@ -1,0 +1,9 @@
+components:
+  schemas:
+    Remote:
+      type: object
+      additionalProperties: false
+      required: [code]
+      properties:
+        code:
+          type: integer

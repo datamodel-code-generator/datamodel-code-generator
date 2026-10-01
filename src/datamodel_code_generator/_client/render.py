@@ -2244,15 +2244,14 @@ class _Helpers:
     @staticmethod
     def selector(module: Module, selector: Mapping[str, Any]) -> str:
         """Return the runtime record of a selector; a header selector names its occurrence only when it is all."""
-        records = "_runtime.protocols.records"
-        value = f"{module.local(records, 'StatusSelector')}()"
+        record, arguments = "StatusSelector", ""
         match selector["from"]:
             case "body":
-                value = f"{module.local(records, 'BodySelector')}(pointer={selector['pointer']!r})"
+                record, arguments = "BodySelector", f"pointer={selector['pointer']!r}"
             case "header":
                 every = ", occurrence='all'" if selector["occurrence"] == "all" else ""
-                value = f"{module.local(records, 'HeaderSelector')}(name={selector['name']!r}{every})"
-        return value
+                record, arguments = "HeaderSelector", f"name={selector['name']!r}{every}"
+        return f"{module.local('_runtime.protocols.records', record)}({arguments})"
 
     @staticmethod
     def target(module: Module, target: Mapping[str, Any]) -> str:
@@ -2279,21 +2278,40 @@ class _Helpers:
             ))
         return _call(module.local("_runtime.protocols.pagination", "PageBinding"), entries)
 
-    def plan(self, module: Module, index: int, spec: PaginationSpec) -> str:
-        """Return a helper's plan: its identity, operation, items, cursor continuation, fingerprint, and bindings."""
-        records = "_runtime.protocols.records"
+    def continuation(self, module: Module, spec: PaginationSpec) -> Doc:
+        """Return the runtime record of a cursor continuation, or of an offset or page-number one."""
         runtime = "_runtime.protocols.pagination"
-        helper, continuation = spec.helper, spec.continuation
+        continuation = spec.continuation
+        write = ("write=", self.target(module, continuation["write"]))
+        if (kind := continuation["kind"]) != "cursor":
+            evidence = spec.evidence
+            return _call(
+                module.local(runtime, "CountPlan"),
+                (
+                    ("kind=", repr(kind)),
+                    write,
+                    ("first=", repr(continuation["first"])),
+                    ("step=", repr(continuation["step"].get("literal"))),
+                    (f"{evidence}=", self.selector(module, continuation[evidence])),
+                ),
+            )
         ends = [end["kind"] for end in continuation["end"]]
         values = [repr(end["value"]) for end in continuation["end"] if end["kind"] == "value"]
         entries: list[tuple[str, Doc]] = [
             ("read=", self.selector(module, continuation["read"])),
-            ("write=", self.target(module, continuation["write"])),
+            write,
             *((("end_missing=", "True"),) if "missing" in ends else ()),
             *((("end_null=", "True"),) if "null" in ends else ()),
             *((("end_values=", _tuple(values)),) if values else ()),
             *((("empty_string_ends=", "True"),) if continuation["empty_string"] == "end" else ()),
         ]
+        return _call(module.local(runtime, "CursorPlan"), entries)
+
+    def plan(self, module: Module, index: int, spec: PaginationSpec) -> str:
+        """Return a helper's plan: its identity, operation, items, continuation, fingerprint, and bindings."""
+        records = "_runtime.protocols.records"
+        runtime = "_runtime.protocols.pagination"
+        helper = spec.helper
         plan = module.local(runtime, "PaginationPlan")
         value = _call(
             plan,
@@ -2312,7 +2330,7 @@ class _Helpers:
                     "items_selector=",
                     f"{module.local(records, 'BodySelector')}(pointer={helper.tree['items']['pointer']!r})",
                 ),
-                ("continuation=", _call(module.local(runtime, "CursorPlan"), entries)),
+                ("continuation=", self.continuation(module, spec)),
                 ("fingerprint=", repr(self.fingerprints[helper.name])),
                 *(
                     (("bindings=", _tuple([self.binding(module, item) for item in bindings])),)
@@ -2773,9 +2791,32 @@ wait for retained cleanup; it does not authorize another send or restore an expi
 {self.helper_runtime()}"""  # noqa: S608
 
     def helper_runtime(self) -> str:
-        """Describe pagination sessions and their limits, or nothing for a package without helpers."""
+        """Describe pagination sessions and their limits, or nothing for a package without helpers.
+
+        Cursors and their size limit are described only for a package with a cursor helper, and counted positions only
+        for one with an offset or page-number helper.
+        """
         if not self.helpers:
             return ""
+        kinds = {spec.continuation["kind"] for spec in self.helpers}
+        cursors = "cursor" in kinds
+        size = "| cursor size | 64 KiB |\n" if cursors else ""
+        rules = (
+            """\
+A page's items must be a JSON array; an empty array does not end the traversal. A server's cursor, and each value a
+binding reads, is sent as it came, without its target's schema checks; a dot segment for a path parameter raises
+`ProtocolDataError`. The cursor ends the traversal only through the declared end conditions, and a missing or null
+cursor that no condition covers, or a missing binding value, raises `ProtocolDataError`. A continuation seen earlier in
+the session ends it with `PaginationCycleError` after the repeating page. A limit reached while pages remain raises
+`SessionLimitError` with the progress so far; a pager then refuses further steps. A call's options must not patch a
+header, the cookies, or a query parameter the helper writes."""
+            if cursors
+            else """\
+A page's items must be a JSON array. Each value a binding reads is sent as it came, without its target's schema
+checks; a dot segment for a path parameter, and a missing binding value, raise `ProtocolDataError`. A limit reached
+while pages remain raises `SessionLimitError` with the progress so far; a pager then refuses further steps. A call's
+options must not patch a header, the cookies, or a query parameter the helper writes."""
+        )
         return f"""
 ## Pagination sessions
 
@@ -2792,17 +2833,27 @@ another kind's options, fail construction. The session types are imported from:
 | pages per session | 1000; None removes it |
 | items per session | 100000; None removes it, and 0 ends a pager at once |
 | decoded body per page | 8 MiB |
-| cursor size | 64 KiB |
-| session total timeout | 300 seconds; None removes it |
+{size}| session total timeout | 300 seconds; None removes it |
 | network sends per session | 3000; None removes it |
 
-A page's items must be a JSON array; an empty array does not end the traversal. A server's cursor, and each value a
-binding reads, is sent as it came, without its target's schema checks; a dot segment for a path parameter raises
-`ProtocolDataError`. The cursor ends the traversal only through the declared end conditions, and a missing or null
-cursor that no condition covers, or a missing binding value, raises `ProtocolDataError`. A continuation seen earlier in
-the session ends it with `PaginationCycleError` after the repeating page. A limit reached while pages remain raises
-`SessionLimitError` with the progress so far; a pager then refuses further steps. A call's options must not patch a
-header, the cookies, or a query parameter the helper writes.
+{rules}
+{self.count_runtime(kinds)}"""
+
+    @staticmethod
+    def count_runtime(kinds: set[str]) -> str:
+        """Describe offset and page-number helpers, or nothing for a package without them."""
+        if not kinds - {"cursor"}:
+            return ""
+        return """
+An offset or page-number helper sends the first request as the caller gives it and starts at the position the caller
+passes for the written target, or else at the configured first position; a starting value that is not an integer raises
+`RequestEncodingError` when validation checks it and `ProtocolDataError` otherwise, before sending. Each later page's
+position is the last one advanced by the configured step, or by the last page's item count. A page whose `has_more` is
+false ends the traversal, and so does one after which the items counted before the next position reach its `total`: the
+offsets past the first position for an offset, the items delivered since the start for a page number, which also ends
+at a page without items. Any other empty page continues. A header spells `true`, `false`, or a signed decimal count. A
+missing, null, or mistyped value, a negative total, and a page without items that continues while the step counts items
+raise `ProtocolDataError`; positions only grow, so they never repeat.
 """
 
     def helper_files(self, resources: _Resources) -> tuple[RenderedFile, ...]:

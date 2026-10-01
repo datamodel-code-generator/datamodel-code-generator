@@ -143,8 +143,29 @@ class WirePlan:
         """Return the bundled schema identifier of a planned source location."""
         return f"{dict(self.documents)[location.document]}#{quote(location.pointer, safe=_FRAGMENT_SAFE)}"
 
+    def resolved(self, locations: Iterable[SourceLocation]) -> dict[SourceLocation, SourceLocation]:
+        """Map each location whose schema the bundle holds to that schema's location, past whole-schema references.
+
+        A location the normalized bundle lacks, such as a legacy reference's dropped sibling, maps to nothing.
+        """
+        return {
+            location: target
+            for location in locations
+            if isinstance(self._node(target := self.schema(location)[0]), Mapping | bool)
+        }
+
     def schema(self, location: SourceLocation) -> tuple[SourceLocation, Mapping[str, WireValue]]:
         """Return the normalized schema object at a location, following whole-schema references."""
+        value = self._node(location)
+        schema: Mapping[str, WireValue] = value if isinstance(value, Mapping) else {}
+        uri, fragment = urldefrag(str(schema.get("$ref", "")))
+        target = next((document for document, logical in self.documents if logical == uri), None)
+        if target is None or len(schema) != 1:
+            return location, schema
+        return self.schema(SourceLocation(target, unquote(fragment), "schema"))
+
+    def _node(self, location: SourceLocation) -> WireValue:
+        """Return the bundled value at a location, or None when the bundle holds nothing there."""
         documents = dict(self.documents)
         value: WireValue = next(
             (resource.contents for resource in self.resources if resource.uri == documents.get(location.document)), None
@@ -157,12 +178,7 @@ class WirePlan:
                 if isinstance(value, tuple) and token.isdigit() and int(token) < len(value)
                 else None
             )
-        schema: Mapping[str, WireValue] = value if isinstance(value, Mapping) else {}
-        uri, fragment = urldefrag(str(schema.get("$ref", "")))
-        target = next((document for document, logical in self.documents if logical == uri), None)
-        if target is None or len(schema) != 1:
-            return location, schema
-        return self.schema(SourceLocation(target, unquote(fragment), "schema"))
+        return value
 
 
 class _PlanError(Exception):

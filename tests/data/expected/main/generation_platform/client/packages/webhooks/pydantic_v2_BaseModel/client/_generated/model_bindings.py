@@ -192,7 +192,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldSubscriptionsPostQueryDryRunParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1subscriptions/post/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -202,7 +202,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='models:Subscription',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Subscription',
         fields=(
             FieldBinding(
                 field_id='models:Subscription.url',
@@ -225,7 +225,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='models:Delivery',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Delivery',
         fields=(
             FieldBinding(
                 field_id='models:Delivery.id',
@@ -248,7 +248,7 @@ def _model_3() -> ModelBinding:
     return ModelBinding(
         symbol='models:Message',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Message',
         fields=(
             FieldBinding(
                 field_id='models:Message.test',
@@ -271,7 +271,7 @@ def _model_4() -> ModelBinding:
     return ModelBinding(
         symbol='models:Push',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Push',
         fields=(
             FieldBinding(
                 field_id='models:Push.ref',
@@ -294,7 +294,7 @@ def _model_5() -> ModelBinding:
     return ModelBinding(
         symbol='models:Command',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Command',
         fields=(
             FieldBinding(
                 field_id='models:Command.command',
@@ -314,7 +314,12 @@ def _model_5() -> ModelBinding:
 
 @cache
 def _model_6() -> ModelBinding:
-    return ModelBinding(symbol='models:Count', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:Count',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Count',
+        root=LeafNode(),
+    )
 
 
 @cache
@@ -322,7 +327,7 @@ def _model_7() -> ModelBinding:
     return ModelBinding(
         symbol='models:Circle',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Circle',
         fields=(
             FieldBinding(
                 field_id='models:Circle.radius',
@@ -345,7 +350,7 @@ def _model_8() -> ModelBinding:
     return ModelBinding(
         symbol='models:Shape',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Shape',
         root=UnionNode(members=(ModelNode(symbol='models:Circle'), ModelNode(symbol='models:Square'))),
     )
 
@@ -355,7 +360,7 @@ def _model_9() -> ModelBinding:
     return ModelBinding(
         symbol='models:Square',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Square',
         fields=(
             FieldBinding(
                 field_id='models:Square.side',

@@ -235,7 +235,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='pets_basemodel_models:FieldPetsGetCookieSessionParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets/get/parameters/5/schema',
         root=LeafNode(),
     )
 
@@ -245,7 +245,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='pets_basemodel_models:FieldPetsGetResponse',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets/get/responses/200/content/application~1json/schema',
         root=ArrayNode(item=ModelNode(symbol='pets_basemodel_models:Pet')),
     )
 
@@ -255,7 +255,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='pets_basemodel_models:Pet',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Pet',
         fields=(
             FieldBinding(
                 field_id='pets_basemodel_models:Pet.id',
@@ -302,7 +302,7 @@ def _model_3() -> ModelBinding:
     return ModelBinding(
         symbol='pets_basemodel_models:Error',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Error',
         fields=(
             FieldBinding(
                 field_id='pets_basemodel_models:Error.code',
@@ -337,7 +337,7 @@ def _model_4() -> ModelBinding:
     return ModelBinding(
         symbol='pets_basemodel_models:FieldPetsMineGetResponse',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pets~1mine/get/responses/200/content/application~1json/schema',
         root=ArrayNode(item=ModelNode(symbol='pets_basemodel_models:Pet')),
     )
 
@@ -347,7 +347,7 @@ def _model_5() -> ModelBinding:
     return ModelBinding(
         symbol='pets_basemodel_models:FieldStoreInventoryGetResponse',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1store~1inventory/get/responses/200/content/application~1json/schema',
         root=MapNode(value=LeafNode()),
     )
 

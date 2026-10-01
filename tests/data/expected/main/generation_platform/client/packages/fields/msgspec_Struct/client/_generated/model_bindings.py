@@ -294,7 +294,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:NewPet',
         native_kind='struct',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/NewPet',
         fields=(
             FieldBinding(
                 field_id='models:NewPet.name',
@@ -389,7 +389,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='models:Owner',
         native_kind='struct',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Owner',
         fields=(
             FieldBinding(
                 field_id='models:Owner.email',
@@ -424,7 +424,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='models:PetForm',
         native_kind='struct',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/PetForm',
         fields=(
             FieldBinding(
                 field_id='models:PetForm.name',
@@ -459,7 +459,7 @@ def _model_3() -> ModelBinding:
     return ModelBinding(
         symbol='models:Pet',
         native_kind='struct',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Pet',
         fields=(
             FieldBinding(
                 field_id='models:Pet.id',
@@ -506,7 +506,7 @@ def _model_4() -> ModelBinding:
     return ModelBinding(
         symbol='models:PetPatch',
         native_kind='struct',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/PetPatch',
         fields=(
             FieldBinding(
                 field_id='models:PetPatch.name',
@@ -541,7 +541,7 @@ def _model_5() -> ModelBinding:
     return ModelBinding(
         symbol='models:Visit',
         native_kind='struct',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Visit',
         fields=(
             FieldBinding(
                 field_id='models:Visit.note',
@@ -576,7 +576,7 @@ def _model_6() -> ModelBinding:
     return ModelBinding(
         symbol='models:Labels',
         native_kind='struct',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Labels',
         fields=(
             FieldBinding(
                 field_id='models:Labels.size',

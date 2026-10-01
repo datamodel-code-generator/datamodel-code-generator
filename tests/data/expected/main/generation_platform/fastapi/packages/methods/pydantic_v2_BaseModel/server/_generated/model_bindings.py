@@ -76,7 +76,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldSearchQueryResponse',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1search/query/responses/200/content/application~1json/schema',
         root=ArrayNode(item=LeafNode()),
     )
 

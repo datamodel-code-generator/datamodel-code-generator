@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import typing
+from collections.abc import Mapping
 from functools import cache
 from typing import Final
 
@@ -697,7 +698,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldFormsPostRequest',
         native_kind='typed_dict',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1forms/post/requestBody/content/application~1x-www-form-urlencoded/schema',
         fields=(
             FieldBinding(
                 field_id='models:FieldFormsPostRequest.name',
@@ -744,7 +745,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldFormsPostResponse',
         native_kind='typed_dict',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1forms/post/responses/200/content/application~1x-www-form-urlencoded/schema',
         fields=(
             FieldBinding(
                 field_id='models:FieldFormsPostResponse.name',
@@ -779,7 +780,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='models:Address',
         native_kind='typed_dict',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Address',
         fields=(
             FieldBinding(
                 field_id='models:Address.city',
@@ -814,7 +815,7 @@ def _model_3() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldProfilesPostRequest',
         native_kind='typed_dict',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1profiles/post/requestBody/content/multipart~1form-data/schema',
         fields=(
             FieldBinding(
                 field_id='models:FieldProfilesPostRequest.name',
@@ -897,7 +898,7 @@ def _model_4() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldProfilesGetResponse',
         native_kind='typed_dict',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1profiles/get/responses/200/content/multipart~1form-data/schema',
         fields=(
             FieldBinding(
                 field_id='models:FieldProfilesGetResponse.name',
@@ -994,7 +995,7 @@ def _model_5() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldAttachmentsGetResponse',
         native_kind='typed_dict',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1attachments/get/responses/202/content/multipart~1form-data/schema',
         fields=(
             FieldBinding(
                 field_id='models:FieldAttachmentsGetResponse.id',
@@ -1010,6 +1011,7 @@ def _model_5() -> ModelBinding:
             ),
         ),
         extra='forbid',
+        open=False,
     )
 
 
@@ -1018,7 +1020,7 @@ def _model_6() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldSearchesPostRequest',
         native_kind='typed_dict',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1searches/post/requestBody/content/application~1x-www-form-urlencoded/schema',
         fields=(
             FieldBinding(
                 field_id='models:FieldSearchesPostRequest.term',
@@ -1113,7 +1115,7 @@ def _model_7() -> ModelBinding:
     return ModelBinding(
         symbol='models:Filter',
         native_kind='typed_dict',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1searches/post/requestBody/content/application~1x-www-form-urlencoded/schema/properties/filter',
         fields=(
             FieldBinding(
                 field_id='models:Filter.name',
@@ -1148,7 +1150,7 @@ def _model_8() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldCardsPostRequest',
         native_kind='typed_dict',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1cards/post/requestBody/content/multipart~1form-data/schema',
         fields=(
             FieldBinding(
                 field_id='models:FieldCardsPostRequest.title',
@@ -1195,7 +1197,7 @@ def _model_9() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldStickersPostRequest',
         native_kind='typed_dict',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1stickers/post/requestBody/content/multipart~1form-data/schema',
         fields=(
             FieldBinding(
                 field_id='models:FieldStickersPostRequest.tags',
@@ -1290,7 +1292,7 @@ def _model_10() -> ModelBinding:
     return ModelBinding(
         symbol='models:Point',
         native_kind='typed_dict',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1stickers/post/requestBody/content/multipart~1form-data/schema/properties/point',
         fields=(
             FieldBinding(
                 field_id='models:Point.x',
@@ -1315,7 +1317,7 @@ def _model_11() -> ModelBinding:
     return ModelBinding(
         symbol='models:Draft',
         native_kind='typed_dict',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Draft',
         fields=(
             FieldBinding(
                 field_id='models:Draft.id',
@@ -1362,7 +1364,7 @@ def _model_12() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldDocumentsIdGetPathIdParameter',
         native_kind='typed_dict',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1documents~1%7Bid%7D/get/parameters/0/content/application~1json/schema',
         fields=(
             FieldBinding(
                 field_id='models:FieldDocumentsIdGetPathIdParameter.key',
@@ -1385,7 +1387,7 @@ def _model_13() -> ModelBinding:
     return ModelBinding(
         symbol='models:Bounds',
         native_kind='typed_dict',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1albums/post/requestBody/content/multipart~1form-data/schema/allOf/0/properties/bounds',
         fields=(
             FieldBinding(
                 field_id='models:Bounds.w',
@@ -1403,6 +1405,34 @@ def _model_13() -> ModelBinding:
         extra='allow',
         extra_items=LeafNode(),
     )
+
+
+@cache
+def _types_0() -> Mapping[str, type]:
+    return {'models:Address': models.Address, 'models:FieldProfilesPostRequest': models.FieldProfilesPostRequest}
+
+
+@cache
+def _types_1() -> Mapping[str, type]:
+    return {'models:Address': models.Address, 'models:FieldProfilesGetResponse': models.FieldProfilesGetResponse}
+
+
+@cache
+def _types_2() -> Mapping[str, type]:
+    return {
+        'models:Address': models.Address,
+        'models:FieldSearchesPostRequest': models.FieldSearchesPostRequest,
+        'models:Filter': models.Filter,
+    }
+
+
+@cache
+def _types_3() -> Mapping[str, type]:
+    return {
+        'models:FieldStickersPostRequest': models.FieldStickersPostRequest,
+        'models:Filter': models.Filter,
+        'models:Point': models.Point,
+    }
 
 
 CONTEXT_0: Final = CodecContext(
@@ -1504,7 +1534,7 @@ def codec_2() -> StructuralModelCodec[models.FieldProfilesPostRequest]:
             models=(_model_2(), _model_3()),
         ),
         models.FieldProfilesPostRequest,
-        {'models:Address': models.Address, 'models:FieldProfilesPostRequest': models.FieldProfilesPostRequest},
+        _types_0(),
         request_bundle,
     )
 
@@ -1542,7 +1572,7 @@ def codec_3() -> StructuralModelCodec[models.FieldProfilesGetResponse]:
             models=(_model_2(), _model_4()),
         ),
         models.FieldProfilesGetResponse,
-        {'models:Address': models.Address, 'models:FieldProfilesGetResponse': models.FieldProfilesGetResponse},
+        _types_1(),
         response_bundle,
     )
 
@@ -1793,11 +1823,7 @@ def codec_10() -> StructuralModelCodec[models.FieldSearchesPostRequest]:
             models=(_model_2(), _model_6(), _model_7()),
         ),
         models.FieldSearchesPostRequest,
-        {
-            'models:Address': models.Address,
-            'models:FieldSearchesPostRequest': models.FieldSearchesPostRequest,
-            'models:Filter': models.Filter,
-        },
+        _types_2(),
         request_bundle,
     )
 
@@ -2025,11 +2051,7 @@ def codec_16() -> StructuralModelCodec[models.FieldStickersPostRequest]:
             models=(_model_9(), _model_7(), _model_10()),
         ),
         models.FieldStickersPostRequest,
-        {
-            'models:FieldStickersPostRequest': models.FieldStickersPostRequest,
-            'models:Filter': models.Filter,
-            'models:Point': models.Point,
-        },
+        _types_3(),
         request_bundle,
     )
 

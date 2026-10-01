@@ -169,7 +169,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='variants_request_response_basemodel_models:Name',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Name',
         root=LeafNode(),
     )
 
@@ -179,7 +179,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='variants_request_response_basemodel_models:Owner',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/documents/0#/components/schemas/Owner',
         fields=(
             FieldBinding(
                 field_id='variants_request_response_basemodel_models:Owner.name',
@@ -308,7 +308,7 @@ def _model_4() -> ModelBinding:
     return ModelBinding(
         symbol='variants_request_response_basemodel_models:FieldOwnersGetResponse',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1owners/get/responses/200/content/application~1json/schema',
         root=ArrayNode(item=ModelNode(symbol='variants_request_response_basemodel_models:Owner')),
     )
 

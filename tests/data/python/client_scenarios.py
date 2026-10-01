@@ -42,6 +42,7 @@ from tests.data.python.client_oauth_refresh import oauth_refresh, oauth_refresh_
 from tests.data.python.client_oauth_shared import oauth_shared
 from tests.data.python.client_oauth_store import oauth_refresh_store
 from tests.data.python.client_pagination import pagination, pagination_backends, pagination_limits
+from tests.data.python.client_pagination_counts import pagination_counts
 from tests.data.python.client_pagination_sessions import pagination_auth, pagination_sessions
 from tests.data.python.client_pagination_targets import pagination_querystring, pagination_targets
 from tests.data.python.client_protocol_contracts import protocol_contracts
@@ -73,6 +74,7 @@ from tests.data.python.client_selectors import selectors
 from tests.data.python.client_signatures import keywords, signatures
 from tests.data.python.client_stream_lifetimes import stream_lifetimes
 from tests.data.python.client_transports import lifecycle, transports
+from tests.data.python.client_unions import schema_unions, unions
 from tests.data.python.client_validation import arguments, validation
 from tests.data.python.client_webhook_contracts import webhook_contracts
 from tests.data.python.client_webhook_errors import webhook_errors
@@ -720,6 +722,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "pagination-limits": ("pagination-limits", ("pydantic_v2.BaseModel",), pagination_limits),
     "pagination-targets": ("pagination-targets", ("pydantic_v2.BaseModel",), pagination_targets),
     "pagination-querystring": ("pagination-querystring", ("pydantic_v2.BaseModel",), pagination_querystring),
+    "pagination-counts": ("pagination-counts", ("pydantic_v2.BaseModel",), pagination_counts),
     "protocol-errors": ("pets", ("pydantic_v2.BaseModel",), protocol_errors),
     "evolution": ("evolution", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"), evolution),
     "evolution-schema": (
@@ -745,6 +748,11 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "webhook-verification": ("webhooks", ("pydantic_v2.BaseModel",), webhook_verification),
     "webhook-backends": ("webhooks", BACKENDS, webhook_backends),
     "webhook-replay": ("webhooks", ("pydantic_v2.BaseModel",), webhook_replay),
+    "unions": ("unions", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), unions),
+    "unions-tagged": ("unions-tagged", ("msgspec.Struct",), unions),
+    "unions-schema": ("unions-schema", BACKENDS, schema_unions),
+    "unions-legacy": ("unions-legacy", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), unions),
+    "unions-legacy-schema": ("unions-legacy-schema", BACKENDS, schema_unions),
 }
 
 
