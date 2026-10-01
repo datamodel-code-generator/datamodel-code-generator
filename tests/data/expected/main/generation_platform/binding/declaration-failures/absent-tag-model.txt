@@ -1,1 +1,0 @@
-A tag-excluded field's final symbol is absent from its accepted artifact
