@@ -1,0 +1,109 @@
+openapi: 3.1.0
+info:
+  title: Pagination links
+  version: 1.0.0
+servers:
+  - url: https://api.example.com/v1
+paths:
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      parameters:
+        - name: limit
+          in: query
+          schema: {type: integer}
+        - name: X-Trace
+          in: header
+          schema: {type: string}
+        - name: session
+          in: cookie
+          schema: {type: string}
+      responses:
+        '200':
+          description: One page of users.
+          headers:
+            Link:
+              schema: {type: string}
+            X-Next:
+              schema: {type: string}
+            X-Snapshot:
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /searches:
+    post:
+      operationId: search
+      tags: [searches]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SearchQuery'}
+      responses:
+        '200':
+          description: One page of matching users.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /secure/users:
+    get:
+      operationId: listSecureUsers
+      tags: [secure]
+      security:
+        - bearer: []
+      responses:
+        '200':
+          description: One page of users for a bearer.
+          headers:
+            Link:
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+  /keyed/users:
+    get:
+      operationId: listKeyedUsers
+      tags: [keyed]
+      security:
+        - query_key: []
+      responses:
+        '200':
+          description: One page of users for a query key.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UserPage'}
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+    query_key:
+      type: apiKey
+      in: query
+      name: api_key
+  schemas:
+    User:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string}
+    UserPage:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: {$ref: '#/components/schemas/User'}
+        next: {type: string}
+        maybe_next: {type: [string, 'null']}
+        loose_next: {}
+        token: {type: string}
+        number: {type: integer}
+    SearchQuery:
+      type: object
+      required: [query]
+      properties:
+        query: {type: string}
+        token: {type: string}

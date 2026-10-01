@@ -1,4 +1,4 @@
-"""Cursor, offset, and page-number pagination: pages, the pagers over them, and the session their child calls share.
+"""Cursor, offset, page-number, next-URL, and Link pagination: pages, their pagers, and the session their calls share.
 
 A pager sends nothing until it is iterated and fetches a page only once the previous one is consumed. Every page is
 read, decoded, and closed inside its own child call, so abandoning a pager holds no response.
@@ -6,6 +6,7 @@ read, decoded, and closed inside its own child call, so abandoning a pager holds
 
 from __future__ import annotations
 
+import re
 import threading
 from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
@@ -49,6 +50,7 @@ if TYPE_CHECKING:
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan
     from ..client.timing import Deadline
+    from ..client.urls import Origin
     from ..model_codecs.selectors import MediaSelector
     from ..model_codecs.wire import WireValue
     from .references import OperationRef
@@ -57,6 +59,8 @@ __all__ = (
     "AsyncPager",
     "CountPlan",
     "CursorPlan",
+    "LinkPlan",
+    "NextUrlPlan",
     "Page",
     "PageBinding",
     "Pager",
@@ -78,6 +82,9 @@ P_co = TypeVar("P_co", covariant=True, default=object)
 
 _DOT_SEGMENTS: Final = (".", "..")
 _BOOLEANS: Final = MappingProxyType({"true": True, "false": False})
+_MAX_URL_BYTES: Final = 8192
+_REFERENCE: Final = re.compile(r"(?:[A-Za-z0-9\-._~:/?\[\]@!$&'()*+,;=]|%[0-9A-Fa-f]{2})*")
+_USERINFO: Final = re.compile(r"(?:[A-Za-z][A-Za-z0-9+.\-]*:)?//[^/?#]*@")
 
 
 @final
@@ -125,6 +132,47 @@ class CountPlan:
 
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
+class NextUrlPlan:
+    """How a helper reads the URL of the next page from a page, and which values end the traversal.
+
+    An absent URL or JSON null ends it only when its end condition says so, and `end_values` are compared by their
+    canonical JSON. Each request after the first is a GET of the URL, or the operation's method with the caller's body
+    when `repeat_request_body` is set.
+    """
+
+    read: Selector
+    end_missing: bool = False
+    end_null: bool = False
+    end_values: tuple[WireValue, ...] = ()
+    repeat_request_body: bool = False
+    kind: Literal["next_url"] = field(default="next_url", init=False)
+    ends: frozenset[bytes] = field(init=False)
+
+    def __post_init__(self) -> None:
+        """Keep the canonical JSON of each end value."""
+        object.__setattr__(self, "ends", frozenset(canonical_json(value) for value in self.end_values))
+
+
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
+class LinkPlan:
+    """Which RFC 8288 Link header field and relation give the URL of the next page; a page without one is the last.
+
+    Each request after the first is a GET of the URL; `read` names every value of the header, for errors to locate.
+    """
+
+    header: str
+    rel: str = "next"
+    kind: Literal["link"] = field(default="link", init=False)
+    read: HeaderSelector = field(init=False)
+
+    def __post_init__(self) -> None:
+        """Select every value of the header."""
+        object.__setattr__(self, "read", HeaderSelector(name=self.header, occurrence="all"))
+
+
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
 class PageBinding:
     """A value every request after the first writes into a target: a literal, or what a selector reads.
 
@@ -164,8 +212,10 @@ class PaginationPlan(Generic[T, P]):
     Pages after the first call `continued`, the same operation taking each binding's value and then the cursor or
     position as wire values: a parameter's replaces its argument, and a querystring property or a JSON body member
     is written into the caller's encoded value. They skip the schema and argument checks, since the server chose them.
-    `headers` and `queries` name the header, cookie, and query parameters it writes, which a call's options must not
-    patch, and `dotted` the writes of read values into path parameters, which must not be dot segments.
+    A helper that `follows` a server's URLs writes no cursor and sends each later page to the URL with GET and no body,
+    unless it repeats the request body with the operation's method. `headers` and `queries` name the header, cookie,
+    and query parameters it writes, which a call's options must not patch, and `dotted` the writes of read values into
+    path parameters, which must not be dot segments.
     """
 
     helper_id: str
@@ -173,9 +223,10 @@ class PaginationPlan(Generic[T, P]):
     call: OperationPlan[P, object]
     items: Callable[[P], Sequence[T] | None]
     items_selector: BodySelector
-    continuation: CursorPlan | CountPlan
+    continuation: CursorPlan | CountPlan | NextUrlPlan | LinkPlan
     fingerprint: str
     bindings: tuple[PageBinding, ...] = ()
+    follows: bool = field(init=False)
     writes: tuple[tuple[int | None, str | None], ...] = field(init=False)
     headers: frozenset[str] = field(init=False)
     queries: frozenset[str] = field(init=False)
@@ -197,8 +248,10 @@ class PaginationPlan(Generic[T, P]):
         queries: set[str] = set()
         patched = False
         rule = self.continuation
-        read = rule.read if isinstance(rule, CursorPlan) else None
-        sources = (*((binding.target, binding.selector) for binding in self.bindings), (rule.write, read))
+        follows = isinstance(rule, (NextUrlPlan, LinkPlan))
+        sources = tuple((binding.target, binding.selector) for binding in self.bindings)
+        if isinstance(rule, (CursorPlan, CountPlan)):
+            sources = (*sources, (rule.write, rule.read if isinstance(rule, CursorPlan) else None))
         for target, _ in sources:
             if isinstance(target, BodyTarget):
                 writes.append((None, target.pointer))
@@ -231,6 +284,7 @@ class PaginationPlan(Generic[T, P]):
                     for media in body.media
                 ),
             )
+        object.__setattr__(self, "follows", follows)
         object.__setattr__(self, "writes", tuple(writes))
         object.__setattr__(self, "headers", frozenset(headers))
         object.__setattr__(self, "queries", frozenset(queries))
@@ -243,7 +297,10 @@ class PaginationPlan(Generic[T, P]):
                 if isinstance(target, ParameterTarget) and target.location == "path" and selector is not None
             ),
         )
-        object.__setattr__(self, "continued", replace(call, parameters=tuple(parameters), body=body, checks=()))
+        continued = replace(call, parameters=tuple(parameters), body=body, checks=())
+        if follows and not (isinstance(rule, NextUrlPlan) and rule.repeat_request_body):
+            continued = replace(continued, method="GET", body=None, retry_safety="method_default", idempotency=None)
+        object.__setattr__(self, "continued", continued)
 
 
 @dataclass(frozen=True, slots=True)
@@ -465,6 +522,37 @@ def _selected(plan: PaginationPlan[T, P], read: Selector, wire: WireValue, info:
     return info.status_code
 
 
+def _size_error(
+    plan: PaginationPlan[T, P], info: ResponseInfo, kind: Literal["cursor", "headers"], limit: int, size: int
+) -> ProtocolSizeError:
+    return ProtocolSizeError(
+        kind=kind,
+        limit=limit,
+        observed=size,
+        unit="bytes",
+        helper_id=plan.helper_id,
+        operation=plan.operation,
+        info=info,
+    )
+
+
+def _ended(
+    plan: PaginationPlan[T, P], rule: CursorPlan | NextUrlPlan, wire: WireValue, info: ResponseInfo
+) -> WireValue | Missing:
+    """Return the value a page's cursor or next URL reads, or MISSING when an end condition ends the traversal there."""
+    read = rule.read
+    value = _selected(plan, read, wire, info)
+    if value is MISSING or value is None:
+        if rule.end_missing if value is MISSING else rule.end_null:
+            return MISSING
+        raise _data_error(plan, info, _absence(value), read)
+    if (
+        isinstance(rule, CursorPlan) and isinstance(value, str) and not value and rule.empty_string_ends
+    ) or canonical_json(value) in rule.ends:
+        return MISSING
+    return value
+
+
 def _cursor(
     plan: PaginationPlan[T, P], rule: CursorPlan, wire: WireValue, info: ResponseInfo, limit: int
 ) -> WireValue | Missing:
@@ -472,26 +560,60 @@ def _cursor(
 
     A cursor over its size limit, in UTF-8 bytes for a string and canonical JSON bytes otherwise, is refused.
     """
-    read = rule.read
-    value = _selected(plan, read, wire, info)
-    if value is MISSING or value is None:
-        if rule.end_missing if value is MISSING else rule.end_null:
-            return MISSING
-        raise _data_error(plan, info, _absence(value), read)
-    encoded = canonical_json(value)
-    if (isinstance(value, str) and not value and rule.empty_string_ends) or encoded in rule.ends:
-        return MISSING
-    if (size := len(value.encode()) if isinstance(value, str) else len(encoded)) > limit:
-        raise ProtocolSizeError(
-            kind="cursor",
-            limit=limit,
-            observed=size,
-            unit="bytes",
-            helper_id=plan.helper_id,
-            operation=plan.operation,
-            info=info,
-        )
+    if isinstance(value := _ended(plan, rule, wire, info), Missing):
+        return value
+    if (size := len(value.encode()) if isinstance(value, str) else len(canonical_json(value))) > limit:
+        raise _size_error(plan, info, "cursor", limit, size)
     return value
+
+
+def _linked(plan: PaginationPlan[T, P], rule: LinkPlan, info: ResponseInfo, limit: int) -> str | Missing:
+    """Return the target of the one link of the helper's relation a page's Link header gives, or MISSING without one.
+
+    The header's values together must stay within the cursor size limit in UTF-8 bytes, parse as RFC 8288 links, and
+    give the relation at most once.
+    """
+    from .links import related  # noqa: PLC0415 - Only a Link helper parses Link headers.
+
+    values = info.headers.get_all(rule.header)
+    if (size := sum(len(value.encode()) for value in values)) > limit:
+        raise _size_error(plan, info, "headers", limit, size)
+    if (targets := related(values, rule.rel)) is None:
+        raise _data_error(plan, info, "malformed", rule.read)
+    if len(targets) > 1:
+        raise _data_error(plan, info, "inconsistent", rule.read)
+    return targets[0] if targets else MISSING
+
+
+def _followed(  # noqa: PLR0913, PLR0917
+    plan: PaginationPlan[T, P],
+    read: Selector,
+    reference: str,
+    url: str,
+    info: ResponseInfo,
+    limit: int,
+    origins: frozenset[Origin],
+) -> str:
+    """Return the absolute URL of a server's next-page reference, resolved against the URL that returned the page.
+
+    The reference must stay within 8 KiB of UTF-8, or the cursor size limit when that is smaller, be an RFC 3986
+    URI reference without a fragment, and give an HTTP or HTTPS URL without user information at one of the origins.
+    """
+    from ..client.urls import URLValidationError, redirect_target  # noqa: PLC0415 - Only a followed URL is parsed.
+
+    if (size := len(reference.encode())) > (limit := min(limit, _MAX_URL_BYTES)):
+        raise _size_error(plan, info, "cursor", limit, size)
+    if "#" in reference or _USERINFO.match(reference):
+        raise _data_error(plan, info, "value", read)
+    if not _REFERENCE.fullmatch(reference):
+        raise _data_error(plan, info, "malformed", read)
+    try:
+        target = redirect_target(url, reference)
+    except URLValidationError:
+        raise _data_error(plan, info, "value", read) from None
+    if target.origin not in origins:
+        raise _data_error(plan, info, "value", read)
+    return target.url
 
 
 def _more(plan: PaginationPlan[T, P], read: Selector, wire: WireValue, info: ResponseInfo) -> bool:
@@ -527,10 +649,11 @@ def _total(plan: PaginationPlan[T, P], read: Selector, wire: WireValue, info: Re
 class _Walk(Generic[T, P]):
     """The pages of one helper call: its request, limits, session, the last page's link, and the items delivered.
 
-    Its continuations are remembered by digest along the line of pages it extends.
+    Its continuations are remembered by digest along the line of pages it extends. A walk that follows a server's URLs
+    keeps the origins it may follow them to once its first fetch resolves them.
     """
 
-    __slots__ = ("delivered", "limits", "link", "plan", "request", "session", "start")
+    __slots__ = ("delivered", "limits", "link", "origins", "plan", "request", "session", "start")
 
     def __init__(
         self, plan: PaginationPlan[T, P], request: _Request, limits: _Limits, link: _Link | None = None
@@ -543,6 +666,7 @@ class _Walk(Generic[T, P]):
         self.delivered = 0 if link is None else link.items
         self.session: OperationSession | None = None
         self.start: int | None = None
+        self.origins: frozenset[Origin] = frozenset()
 
     def progress(self) -> ProtocolProgress:
         """Return the pages fetched, the items delivered, and the session's sends so far."""
@@ -624,7 +748,7 @@ class _Walk(Generic[T, P]):
         if link is not None and link.seen is not None:
             plan = self.plan
             rule = plan.continuation
-            assert isinstance(rule, CursorPlan)
+            assert not isinstance(rule, CountPlan)
             raise PaginationCycleError(
                 page_index=link.index,
                 first_seen_page_index=link.seen,
@@ -655,7 +779,7 @@ class _Walk(Generic[T, P]):
         plan = self.plan
         if self.link is not None:
             return plan.continued
-        if isinstance(plan.continuation, CursorPlan):
+        if not isinstance(plan.continuation, CountPlan):
             return plan.call
         from .writes import ReadMedia, ReadParameter  # noqa: PLC0415 - Only a plan loads the operation runtime.
 
@@ -686,8 +810,10 @@ class _Walk(Generic[T, P]):
         if isinstance(value, float) and value.is_integer():
             value = int(value)
         if isinstance(value, bool) or not isinstance(value, int):
+            rule = plan.continuation
+            assert isinstance(rule, CountPlan)
             raise ProtocolDataError(
-                condition="type", location=plan.continuation.write, helper_id=plan.helper_id, operation=plan.operation
+                condition="type", location=rule.write, helper_id=plan.helper_id, operation=plan.operation
             )
         self.start = value
 
@@ -716,18 +842,22 @@ class _Walk(Generic[T, P]):
             raise _data_error(plan, info, "inconsistent", plan.items_selector)
         return following
 
-    def next_request(self) -> tuple[tuple[object, ...], object]:
-        """Return the next page's arguments and body: the first page's, with the last page's writes.
+    def next_request(self) -> tuple[tuple[object, ...], object, str | None]:
+        """Return the next page's arguments, body, and followed URL: the first page's, with the last page's writes.
 
         Each binding's value and then the cursor or position replace a parameter's argument, or are written by pointer
-        into the caller's querystring or body.
+        into the caller's querystring or body; a helper that follows a server's URLs writes no cursor and returns the
+        URL the last page gave.
         """
         request = self.request
         if (link := self.link) is None:
-            return request.arguments, request.body
+            return request.arguments, request.body, None
+        plan = self.plan
+        follows = plan.follows
         arguments = list(request.arguments)
         patches: dict[int | None, list[tuple[str, WireValue]]] = {}
-        for (position, pointer), value in zip(self.plan.writes, (*link.bound, link.cursor), strict=True):
+        values = link.bound if follows else (*link.bound, link.cursor)
+        for (position, pointer), value in zip(plan.writes, values, strict=True):
             if pointer is None:
                 arguments[cast("int", position)] = value
             else:
@@ -738,7 +868,7 @@ class _Walk(Generic[T, P]):
                 body = Patch(body, tuple(writes))
             else:
                 arguments[position] = Patch(arguments[position], tuple(writes))
-        return tuple(arguments), body
+        return tuple(arguments), body, cast("str", link.cursor) if follows else None
 
     def bound(self, wire: WireValue, info: ResponseInfo) -> tuple[WireValue, ...]:
         """Return the values of the helper's bindings the request after a page writes, refusing a missing one.
@@ -758,15 +888,28 @@ class _Walk(Generic[T, P]):
                 values.append(value)
         return tuple(values)
 
+    def follow(self, rule: NextUrlPlan | LinkPlan, wire: WireValue, info: ResponseInfo, url: str) -> str | Missing:
+        """Return the absolute URL of the page after a page, or MISSING when the page is the last.
+
+        A next URL must be a string; its reference resolves against the URL of the hop that returned the page.
+        """
+        plan, limit = self.plan, self.limits.max_cursor_bytes
+        reference = _linked(plan, rule, info, limit) if isinstance(rule, LinkPlan) else _ended(plan, rule, wire, info)
+        if isinstance(reference, Missing):
+            return reference
+        if not isinstance(reference, str):
+            raise _data_error(plan, info, "type", rule.read)
+        return _followed(plan, rule.read, reference, url, info, limit, self.origins)
+
     def build(
-        self, data: P, wire: WireValue, info: ResponseInfo
+        self, data: P, wire: WireValue, info: ResponseInfo, url: str
     ) -> tuple[Page[T, P], WireValue | Missing, tuple[WireValue, ...]]:
         """Return a decoded page, what the next request writes, and its bindings' values, refusing bad items and ends.
 
         The items are checked in the wire value before the page's accessor reads them from the decoded one; a value of
         another type fails its response's validation first, in every mode. What the next request writes is the cursor
-        or position, MISSING after the last page. The bindings are read only when a page follows, and a dot segment
-        read for a path parameter is refused.
+        or position, or the URL it follows, MISSING after the last page. The bindings are read only when a page
+        follows, and a dot segment read for a path parameter is refused.
         """
         plan = self.plan
         selector = plan.items_selector
@@ -778,15 +921,16 @@ class _Walk(Generic[T, P]):
             raise _data_error(plan, info, _absence(selected), selector)
         items = tuple(native)
         rule = plan.continuation
-        cursor = (
-            _cursor(plan, rule, wire, info, self.limits.max_cursor_bytes)
-            if isinstance(rule, CursorPlan)
-            else self.advance(rule, len(items), wire, info)
-        )
+        if isinstance(rule, CursorPlan):
+            cursor = _cursor(plan, rule, wire, info, self.limits.max_cursor_bytes)
+        elif isinstance(rule, CountPlan):
+            cursor = self.advance(rule, len(items), wire, info)
+        else:
+            cursor = self.follow(rule, wire, info, url)
         if isinstance(cursor, Missing):
             return Page(items=items, data=data, response=info), cursor, ()
         bound = self.bound(wire, info)
-        written = (*bound, cursor)
+        written = bound if plan.follows else (*bound, cursor)
         for index, read in plan.dotted:
             if written[index] in _DOT_SEGMENTS:
                 raise _data_error(plan, info, "value", read)
@@ -1105,10 +1249,31 @@ class AsyncPager(_Traversal[T, P]):
         await self.aclose()
 
 
+def _origins(core: ClientCore | AsyncClientCore, walk: _Walk[T, P]) -> None:
+    """Resolve the origins a walk that follows a server's URLs may follow them to, once, before its first fetch.
+
+    A walk continuing an earlier page with options that select another server refuses the page's URL when its origin
+    is no longer one of them, before sending.
+    """
+    plan = walk.plan
+    if not plan.follows or walk.origins:
+        return
+    origins = walk.origins = core.follow_origins(plan.call, walk.limits.options)
+    if (link := walk.link) is None:
+        return
+    from ..client.urls import request_origin  # noqa: PLC0415 - Only a followed URL is parsed.
+
+    if request_origin(cast("str", link.cursor)) not in origins:
+        rule = plan.continuation
+        assert not isinstance(rule, (CursorPlan, CountPlan))
+        raise _data_error(plan, link.response, "value", rule.read)
+
+
 def _fetch(
     core: ClientCore, walk: _Walk[T, P], session: OperationSession
 ) -> tuple[Page[T, P], WireValue | Missing, tuple[WireValue, ...]]:
     """Fetch the walk's next page as a child call of its session."""
+    _origins(core, walk)
     request, limits = walk.request, walk.limits
     return core.execute_page(
         walk.plan,
@@ -1127,6 +1292,7 @@ async def _afetch(
     core: AsyncClientCore, walk: _Walk[T, P], session: OperationSession
 ) -> tuple[Page[T, P], WireValue | Missing, tuple[WireValue, ...]]:
     """Fetch the walk's next page as an asyncio child call of its session."""
+    _origins(core, walk)
     request, limits = walk.request, walk.limits
     return await core.execute_page(
         walk.plan,

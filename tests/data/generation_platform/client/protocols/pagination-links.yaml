@@ -1,0 +1,96 @@
+schema_version: 1
+helpers:
+  users.follow:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: next_url
+      read: {from: body, pointer: /next}
+      end: [{kind: missing}]
+  users.nullable:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: next_url
+      read: {from: body, pointer: /maybe_next}
+      end: [{kind: "null"}, {kind: value, value: ""}]
+  users.loose:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: next_url
+      read: {from: body, pointer: /loose_next}
+      end: [{kind: missing}]
+  users.headed:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: next_url
+      read: {from: header, name: X-Next}
+      end: [{kind: missing}]
+  users.linked:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation: {kind: link, header: link}
+  users.snapshot:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation: {kind: link, header: Link}
+    bindings:
+      - target: {in: header, name: X-Trace}
+        value: {source: initial, selector: {from: header, name: X-Snapshot}}
+  users.related:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation: {kind: link, header: Link, rel: "https://example.com/rel/More"}
+  searches.repeated:
+    kind: pagination
+    operation: /paths/~1searches/post
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: next_url
+      read: {from: body, pointer: /next}
+      end: [{kind: missing}]
+      repeat_request_body: true
+    bindings:
+      - target: {in: body, pointer: /token}
+        value: {source: previous, selector: {from: body, pointer: /token}}
+  searches.fetched:
+    kind: pagination
+    operation: /paths/~1searches/post
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: next_url
+      read: {from: body, pointer: /next}
+      end: [{kind: missing}]
+  secure.users:
+    kind: pagination
+    operation: /paths/~1secure~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation: {kind: link, header: Link}
+  keyed.users:
+    kind: pagination
+    operation: /paths/~1keyed~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: next_url
+      read: {from: body, pointer: /next}
+      end: [{kind: missing}]
