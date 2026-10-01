@@ -333,8 +333,8 @@ an enabled SSE helper the [SSE stream helper](#sse-stream-helpers), an enabled N
 [webhook verification helper](#webhook-verification-helpers); any other enabled helper fails with `E_CLIENT_UNSUPPORTED`.
 A disabled helper generates nothing, so the package is the same as without it. The `websocket`, `cache`, `batch`, and
 `queue` kinds, and the `parts` profile of `resumable_upload`, fail with `E_CLIENT_UNSUPPORTED` whether they are enabled
-or not, and their settings are not read yet; an upload helper's `abort` and `create.session_url` are refused the same
-way.
+or not, and their settings are not read yet; an enabled upload helper declaring `abort` or `create.session_url` fails
+with `E_CLIENT_UNSUPPORTED` too.
 
 | Setting | Values | Default | Where |
 |---|---|---|---|
