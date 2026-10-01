@@ -637,15 +637,15 @@ def _more(plan: PaginationPlan[T, P], read: Selector, wire: WireValue, info: Res
 
 def _integer(value: object) -> int | None:
     """Return a finite integer value without rounding it or treating a boolean as a count."""
+    if isinstance(value, int):
+        return None if isinstance(value, bool) else value
     match value:
-        case bool():
-            return None
-        case int():
-            return value
         case float() if value.is_integer():
             return int(value)
         case Decimal() if value.is_finite() and value == value.to_integral_value():
             return int(value)
+        case _:
+            pass
     return None
 
 
@@ -805,11 +805,17 @@ class _Walk(Generic[T, P]):
             return plan.continued
         if not isinstance(plan.continuation, CountPlan):
             return plan.call
+        call = plan.call
+        if (
+            (position := plan.writes[-1][0]) is not None
+            and call.parameters[position].plan.location in {"query", "header"}
+            and isinstance(self.request.arguments[position], Unset)
+        ):
+            return call
         from .writes import ReadMedia, ReadParameter  # noqa: PLC0415 - Only a plan loads the operation runtime.
 
-        call = plan.call
         read = self.started
-        if (position := plan.writes[-1][0]) is None:
+        if position is None:
             body = call.body
             assert body is not None
             media = tuple(
@@ -841,8 +847,12 @@ class _Walk(Generic[T, P]):
         self.start = position
 
     def sent(self, url: str, headers: HeadersView) -> None:
-        """Read the first count request's position after all query and header patches have been applied."""
-        if self.link is not None or not isinstance(rule := self.plan.continuation, CountPlan):
+        """Read a first count request's default position after all query and header patches have been applied.
+
+        An encoded typed start overrides client and view patches, and call patches of the target are refused, so it
+        already gives the sent position without reparsing the request.
+        """
+        if self.start is not None or self.link is not None or not isinstance(rule := self.plan.continuation, CountPlan):
             return
         match rule.write:
             case ParameterTarget(location="query", name=name):
