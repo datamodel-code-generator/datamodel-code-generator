@@ -1,0 +1,110 @@
+# webhooks-public-keys pydantic_v2.BaseModel
+  import <package> loads []
+  import <package>.protocols loads []
+  import <package>.errors loads []
+  import <package>.options loads []
+  import <package>.webhooks loads []
+  import <package>.webhooks.github.push loads ['verification', 'signatures', 'webhook_keys']
+  import <package>.webhooks.keys loads ['verification', 'signatures', 'webhook_keys', 'public_keys', 'cryptography']
+  helper loads ['verification', 'signatures', 'webhook_keys', 'public_keys', 'cryptography']
+  helper optional imports=['cryptography']
+  verify hints=['headers', 'keys', 'now', 'options', 'raw_body', 'replay_store', 'return']
+  verify_async hints=['headers', 'keys', 'now', 'options', 'raw_body', 'replay_store', 'return']
+  import <package>.webhooks.wycheproof.rsa loads ['verification', 'signatures', 'webhook_keys', 'public_keys', 'cryptography']
+  helper loads ['verification', 'signatures', 'webhook_keys', 'public_keys', 'cryptography']
+  helper optional imports=['cryptography']
+  verify hints=['headers', 'keys', 'now', 'options', 'raw_body', 'replay_store', 'return']
+  verify_async hints=['headers', 'keys', 'now', 'options', 'raw_body', 'replay_store', 'return']
+  Ed25519Key hints={'id': 'str', 'public_key': 'Ed25519PublicKey', 'return': 'NoneType'}
+  RSAPSSKey hints={'id': 'str', 'public_key': 'RSAPublicKey', 'return': 'NoneType'}
+  key public names=['Ed25519Key', 'HmacKey', 'RSAPSSKey']
+  RFC 8032 section 7.1 Ed25519 TEST 1, the empty message = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error
+  RFC 8032 section 7.1 Ed25519 TEST 2, the message 0x72 = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error
+  Wycheproof RSA-PSS 2048 SHA-256 MGF1 32 tcId 1, valid signature of the empty message = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error
+  Wycheproof RSA-PSS 2048 SHA-256 MGF1 32 tcId 4, valid signature of 313233343030 = Count Count(root=123400) delivery_id=None timestamp=None matched_key_id='active' duplicate=False
+  Wycheproof RSA-PSS 2048 SHA-256 MGF1 32 tcId 73, valid signature of 313233343030 whose salt is all 0 = Count Count(root=123400) delivery_id=None timestamp=None matched_key_id='active' duplicate=False
+  printf 'msg_ed25519.1614265330.{"test": 25519}' > msg; openssl pkeyutl -sign -rawin -inkey ed25519.pem -in msg | openssl base64 -A = Message Message(test=25519) delivery_id='msg_ed25519' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False
+  printf '32503680000123.evt-9.{"test": 2048}' | openssl dgst -sha256 -sigopt rsa_padding_mode:pss -sigopt rsa_pss_saltlen:32 -sigopt rsa_mgf1_md:sha256 -sign rsa2048.pem | openssl base64 -A | tr '+/' '-_' | tr -d '=' = Message Message(test=2048) delivery_id='evt-9' timestamp=3000-01-01T00:00:00.123000+00:00 matched_key_id='rsa-2048' duplicate=False
+  printf '32503680000456.evt-10.{"test": 3072}' | openssl dgst -sha256 -sigopt rsa_padding_mode:pss -sigopt rsa_pss_saltlen:32 -sigopt rsa_mgf1_md:sha256 -sign rsa3072.pem | openssl base64 -A | tr '+/' '-_' | tr -d '=' = Message Message(test=3072) delivery_id='evt-10' timestamp=3000-01-01T00:00:00.456000+00:00 matched_key_id='rsa-3072' duplicate=False
+  GitHub 'Validating webhook deliveries', the test values for verifying an implementation = ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error
+  Wycheproof RSA-PSS 2048 SHA-256 MGF1 32 tcId 62, invalid: first byte of m_hash modified = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  Wycheproof RSA-PSS 2048 SHA-256 MGF1 32 tcId 67, invalid: s_len changed to 0 = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  Wycheproof RSA-PSS 2048 SHA-256 MGF1 32 tcId 71, invalid: s_len changed to 33 = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  Wycheproof RSA-PSS 2048 SHA-256 MGF1 32 tcId 104, invalid: prepending 0's to signature, 258 bytes = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  Wycheproof RSA-PSS 2048 SHA-256 MGF1 32 tcId 106, invalid: truncated signature, 254 bytes = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  Wycheproof RSA-PSS 2048 SHA-256 MGF1 32 tcId 108, invalid: PKCS #1 v1.5 signature with SHA-256 = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  RFC 8032 TEST 2 with the message 0x73 = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  RFC 8032 TEST 1 with the last signature byte changed from 0b to 0a = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  RFC 8032 TEST 1 signature of 63 bytes = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
+  RFC 8032 TEST 1 signature of 65 bytes = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
+  Wycheproof tcId 4 with one changed body byte = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  Wycheproof tcId 4 with a trailing newline = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  Ed25519 changed body = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  Ed25519 new timestamp = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  Ed25519 new delivery id = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  RSA new delivery id = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  RSA changed body = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  RSA empty signature = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
+  RSA prefix only = WebhookVerificationError: WebhookVerificationError(condition='malformed_signature') [condition='malformed_signature'] webhook_verification_error
+  Ed25519 rotated to the new key = Message Message(test=25519) delivery_id='msg_ed25519' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False
+  Ed25519 both keys match = Message Message(test=25519) delivery_id='msg_ed25519' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False
+  Ed25519 only the retired key = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  Ed25519 empty key set = WebhookVerificationError: WebhookVerificationError(condition='missing_key') [condition='missing_key'] webhook_verification_error
+  Ed25519 bad signature first = Message Message(test=25519) delivery_id='msg_ed25519' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False
+  Ed25519 signature header twice = Message Message(test=25519) delivery_id='msg_ed25519' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False
+  RSA keys of two sizes = Count Count(root=123400) delivery_id=None timestamp=None matched_key_id='wycheproof' duplicate=False
+  RSA key id selects the 2048-bit key = Message Message(test=2048) delivery_id='evt-9' timestamp=3000-01-01T00:00:00.123000+00:00 matched_key_id='rsa-2048' duplicate=False
+  RSA key id selects the 3072-bit key = Message Message(test=3072) delivery_id='evt-10' timestamp=3000-01-01T00:00:00.456000+00:00 matched_key_id='rsa-3072' duplicate=False
+  RSA key id names the other key = WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error
+  RSA unknown key id = WebhookVerificationError: WebhookVerificationError(condition='missing_key') [condition='missing_key'] webhook_verification_error
+  RSA 3072-bit signature before the 2048-bit one = Message Message(test=2048) delivery_id='evt-9' timestamp=3000-01-01T00:00:00.123000+00:00 matched_key_id='rsa-2048' duplicate=False
+  RSA claimed = Message Message(test=2048) delivery_id='evt-9' timestamp=3000-01-01T00:00:00.123000+00:00 matched_key_id='rsa-2048' duplicate=False
+  RSA duplicate = Message Message(test=2048) delivery_id='evt-9' timestamp=3000-01-01T00:00:00.123000+00:00 matched_key_id='rsa-2048' duplicate=True
+  HMAC key for RSA-PSS = ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('keys', '0'), condition='wrong_capability'] protocol_configuration_error
+  Ed25519 key for RSA-PSS = ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('keys', '0'), condition='wrong_capability'] protocol_configuration_error
+  Ed25519 key after an RSA-PSS key = ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('keys', '1'), condition='wrong_capability'] protocol_configuration_error
+  RSA-PSS key for Ed25519 = ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('keys', '0'), condition='wrong_capability'] protocol_configuration_error
+  Ed25519 key for HMAC = ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('keys', '0'), condition='wrong_capability'] protocol_configuration_error
+  key Ed25519 private key ! TypeError: public_key must be an Ed25519PublicKey []
+  key Ed25519 raw bytes ! TypeError: public_key must be an Ed25519PublicKey []
+  key Ed25519 RSA key ! TypeError: public_key must be an Ed25519PublicKey []
+  key Ed25519 integer id ! TypeError: id must be a string []
+  key Ed25519 empty id ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('id',), condition='invalid_value'] protocol_configuration_error
+  key Ed25519 id with LF ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('id',), condition='invalid_value'] protocol_configuration_error
+  key RSA private key ! TypeError: public_key must be an RSAPublicKey []
+  key RSA DER bytes ! TypeError: public_key must be an RSAPublicKey []
+  key RSA PEM text ! TypeError: public_key must be an RSAPublicKey []
+  key RSA Ed25519 key ! TypeError: public_key must be an RSAPublicKey []
+  key RSA id with NUL ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('id',), condition='invalid_value'] protocol_configuration_error
+  key RSA no public key ! TypeError: public_key must be an RSAPublicKey []
+  private keys asked for their public keys=[]
+  Ed25519Key positional=TypeError
+  Ed25519Key id and the same public key = ('active', True)
+  Ed25519Key assignment ! FrozenInstanceError: Ed25519Key is immutable []
+  Ed25519Key deletion ! FrozenInstanceError: Ed25519Key is immutable []
+  Ed25519Key pickling ! TypeError: Ed25519Key cannot be pickled []
+  Ed25519Key representation = "Ed25519Key(id='active')"
+  Ed25519Key copies are the key=True
+  RSAPSSKey positional=TypeError
+  RSAPSSKey id and the same public key = ('active', True)
+  RSAPSSKey assignment ! FrozenInstanceError: RSAPSSKey is immutable []
+  RSAPSSKey deletion ! FrozenInstanceError: RSAPSSKey is immutable []
+  RSAPSSKey pickling ! TypeError: RSAPSSKey cannot be pickled []
+  RSAPSSKey representation = "RSAPSSKey(id='active')"
+  RSAPSSKey copies are the key=True
+  recorded Ed25519 key = Message Message(test=25519) delivery_id='msg_ed25519' timestamp=2021-02-25T15:02:10+00:00 matched_key_id='active' duplicate=False
+  recorded RSA key = Count Count(root=123400) delivery_id=None timestamp=None matched_key_id='active' duplicate=False
+  recorded calls=[['verify', 'verify'], ['verify', 'verify']]
+  unsupported algorithm = ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('keys', '1'), condition='wrong_capability'] protocol_configuration_error
+  unsupported algorithm calls=[['verify', 'verify'], ['verify', 'verify'], []]
+  invalid signature from a valid key = Count Count(root=123400) delivery_id=None timestamp=None matched_key_id='last' duplicate=False
+  invalid signature from a valid key calls=[['verify', 'verify'], ['verify', 'verify'], ['verify', 'verify']]
+  programmer error = RuntimeError: scripted []
+  programmer error calls=[['verify', 'verify'], ['verify', 'verify'], []]
+  unsupported algorithm of the key the key id selects = ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('keys', '1'), condition='wrong_capability'] protocol_configuration_error
+  cancelled verify propagated, calls [['verify'], []]
+  cancelled verify async propagated, calls [['verify'], []]
+  unsupported key ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('keys', '0'), condition='wrong_capability'] protocol_configuration_error context=UnsupportedKeyError()
+  invalid signature ! WebhookVerificationError: WebhookVerificationError(condition='invalid_signature') [condition='invalid_signature'] webhook_verification_error context=None
+  empty event ! ProtocolDataError: ProtocolDataError(condition='malformed') [condition='malformed'] protocol_data_error context=None
+  markers shown=[] calls=['verify', 'verify', 'verify']

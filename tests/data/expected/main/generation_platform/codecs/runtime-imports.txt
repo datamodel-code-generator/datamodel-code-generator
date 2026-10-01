@@ -62,6 +62,7 @@ protocols/errors.py: ..client.errors, ..client.responses, .records, .references,
 protocols/names.py: .options, __future__, typing
 protocols/options.py: ..client.errors, ..client.timing, ..client.urls, ..model_codecs.unset, .records, __future__, collections.abc, dataclasses, keyword, re, sys, types, typing, typing_extensions
 protocols/pagination.py: ..client.client, ..client.errors, ..client.logical, ..client.operations, ..client.options, ..client.responses, ..client.timing, ..model_codecs.selectors, ..model_codecs.unset, ..model_codecs.wire, .errors, .options, .records, .references, .values, .writes, __future__, collections.abc, contextlib, dataclasses, enum, hashlib, threading, types, typing, typing_extensions
+protocols/public_keys.py: .records, .signatures, .webhook_keys, __future__, collections.abc, cryptography.exceptions, cryptography.hazmat.primitives.asymmetric.ed25519, cryptography.hazmat.primitives.asymmetric.padding, cryptography.hazmat.primitives.asymmetric.rsa, cryptography.hazmat.primitives.hashes, typing
 protocols/records.py: ..client.responses, ..model_codecs.errors, ..model_codecs.media, ..model_codecs.wire, __future__, collections.abc, dataclasses, decimal, re, typing, typing_extensions
 protocols/references.py: __future__, dataclasses
 protocols/replay.py: ..client.errors, .options, __future__, datetime, heapq, threading, time, typing

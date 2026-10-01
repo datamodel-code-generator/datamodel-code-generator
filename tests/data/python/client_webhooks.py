@@ -45,20 +45,22 @@ import importlib
 import sys
 from typing import get_type_hints
 sys.path[:0] = sys.argv[1:3]
-package = sys.argv[3]
-watched = ('verification', 'signatures', 'webhook_keys')
+package, helper_name, *names = sys.argv[3:]
+watched = ('verification', 'signatures', 'webhook_keys', 'public_keys')
 def loaded():
-    return [name for name in watched if f'{package}._runtime.protocols.{name}' in sys.modules]
-for name in ('', '.protocols', '.errors', '.options', '.webhooks', '.webhooks.keys'):
+    runtime = [name for name in watched if f'{package}._runtime.protocols.{name}' in sys.modules]
+    return runtime + [name for name in ('cryptography',) if name in sys.modules]
+for name in names:
     importlib.import_module(package + name)
     print(f'import {package}{name} loads {loaded()}')
-helper = importlib.import_module(package + '.webhooks.standard.message')
+helper = importlib.import_module(f'{package}.webhooks.{helper_name}')
 print(f'helper loads {loaded()}')
 optional = ('httpx2', 'httpcore2', 'cryptography')
 print('helper optional imports=' + repr([name for name in optional if name in sys.modules]))
 print('verify hints=' + repr(sorted(get_type_hints(helper.verify))))
 print('verify_async hints=' + repr(sorted(get_type_hints(helper.verify_async))))
 """
+PUBLIC_MODULES: Final = ("", ".protocols", ".errors", ".options", ".webhooks")
 
 
 @dataclass(frozen=True, slots=True)
@@ -295,7 +297,7 @@ def shown(result: Any) -> str:
     )
 
 
-def _failure(call: Callable[[], object]) -> str:
+def failure(call: Callable[[], object]) -> str:
     """Name the class of a call's failure, whose message Python words differently across versions."""
     try:
         call()
@@ -327,6 +329,10 @@ class Webhooks:
         self.protocols = importlib.import_module(f"{self.package.__name__}.protocols")
         self.keys = importlib.import_module(f"{self.package.__name__}.webhooks.keys")
 
+    def default_keys(self, vector: Any) -> Any:
+        """Return the key set of a vector's own key."""
+        return self.key_set((vector.key_id, vector.secret))
+
     def helper(self, name: str) -> ModuleType:
         """Import a helper module by its dotted name."""
         return importlib.import_module(f"{self.package.__name__}.webhooks.{name}")
@@ -351,7 +357,7 @@ class Webhooks:
         arguments = (
             vector.body if body is None else body,
             list(vector.headers) if headers is None else headers,
-            self.key_set((vector.key_id, vector.secret)) if keys is None else keys,
+            self.default_keys(vector) if keys is None else keys,
         )
         moment = vector.now if now is None else now
         sync = outcome(lambda: helper.verify(*arguments, now=moment, **options))
@@ -378,6 +384,11 @@ def webhook_verification(package: ModuleType, lines: list[str]) -> None:
 
 def _imports(package: ModuleType, lines: list[str]) -> None:
     """Import the package and its public modules in a fresh process, then one helper and its type hints."""
+    imports(package, lines, "standard.message", (*PUBLIC_MODULES, ".webhooks.keys"))
+
+
+def imports(package: ModuleType, lines: list[str], helper: str, modules: tuple[str, ...]) -> None:
+    """Import modules of a package in order in a fresh process, reporting what each loads, then a helper's hints."""
     if (location := package.__file__) is None:
         msg = "Generated package has no source path"
         raise RuntimeError(msg)
@@ -385,7 +396,7 @@ def _imports(package: ModuleType, lines: list[str]) -> None:
     models_file = f"{package.__name__}_models.py"
     models = next(parent for parent in (source, *source.parents) if (parent / models_file).is_file())
     completed = subprocess.run(
-        [sys.executable, "-I", "-c", _IMPORT_PROBE, str(models), str(source), package.__name__],
+        [sys.executable, "-I", "-c", _IMPORT_PROBE, str(models), str(source), package.__name__, helper, *modules],
         check=True,
         capture_output=True,
         text=True,
@@ -572,7 +583,7 @@ def _keys(hooks: Webhooks) -> None:
         ("empty secret", {"id": "key", "secret": b""}),
     ):
         record(hooks.lines, f"key {label}", lambda arguments=arguments: key_type(**arguments))
-    hooks.lines.append(f"  key positional={_failure(lambda: key_type('key', b'secret'))}")
+    hooks.lines.append(f"  key positional={failure(lambda: key_type('key', b'secret'))}")
     key = key_type(id="active", secret=b"MARKER-SECRET")
     record(hooks.lines, "key id and secret", lambda: (key.id, len(key.secret)))
     record(hooks.lines, "key assignment", lambda: setattr(key, "id", "other"))
@@ -582,7 +593,7 @@ def _keys(hooks: Webhooks) -> None:
     hooks.lines.append(f"  key public names={hooks.keys.__all__}")
 
 
-def _reachable(value: object, seen: set[int]) -> Iterator[str]:
+def reachable(value: object, seen: set[int]) -> Iterator[str]:
     """Yield the text of a value and of everything an error reaches: its causes, context, arguments, and attributes."""
     if id(value) in seen:
         return
@@ -598,7 +609,7 @@ def _reachable(value: object, seen: set[int]) -> Iterator[str]:
             *vars(value).values(),
         )
         for item in reached:
-            yield from _reachable(item, seen)
+            yield from reachable(item, seen)
 
 
 def _secrecy(hooks: Webhooks) -> None:
@@ -616,7 +627,7 @@ def _secrecy(hooks: Webhooks) -> None:
             helper.verify(vector.body, headers, keys, now=vector.now)
         except Exception as error:  # noqa: BLE001
             hooks.lines.append(f"  {label} ! {describe(error)} context={error.__context__!r}")
-            texts.extend(_reachable(error, set()))
+            texts.extend(reachable(error, set()))
     hooks.lines.append(f"  markers shown={[text for text in texts if 'MARKER' in text]}")
 
 

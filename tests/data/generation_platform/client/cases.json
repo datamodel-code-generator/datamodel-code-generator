@@ -2232,6 +2232,60 @@
       ]
     ]
   },
+  "webhooks-public-keys": {
+    "input": "webhooks.yaml",
+    "references": [
+      "protocols/webhook-public-keys.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/webhook-public-keys.yaml"
+    },
+    "modules": [
+      [
+        "client",
+        "webhooks",
+        "keys.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "rfc8032",
+        "ed25519.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "wycheproof",
+        "rsa.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "standard",
+        "ed25519.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "keyed",
+        "rsa.py"
+      ],
+      [
+        "client",
+        "webhooks",
+        "github",
+        "push.py"
+      ]
+    ]
+  },
+  "webhooks-public-keys-python": {
+    "input": "webhooks.yaml",
+    "config": {
+      "protocols": {
+        "python": "public_keys"
+      }
+    }
+  },
   "unions": {
     "input": "unions.yaml",
     "config": {

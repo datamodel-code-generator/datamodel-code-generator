@@ -34,7 +34,13 @@ from datamodel_code_generator._client.protocol_plan import (
 from datamodel_code_generator._client.render import ClientRenderer
 from datamodel_code_generator._client.security import security_contract
 from datamodel_code_generator._client.validation import admission_problems, allowed, argument_uses
-from datamodel_code_generator._client.webhooks import plan_webhooks, webhook_files, webhook_uses
+from datamodel_code_generator._client.webhooks import (
+    key_class,
+    plan_webhooks,
+    webhook_dependencies,
+    webhook_files,
+    webhook_uses,
+)
 from datamodel_code_generator._codec_declarations import CodecDeclarations
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._openapi_codec_plan import artifact_module, plan_model_codecs
@@ -166,6 +172,7 @@ class ClientTarget:
                     ),
                 )),
                 *((PATTERNS,) if patterned(wire) else ()),
+                *webhook_dependencies(webhooks),
                 *model_dependencies(request.models),
             ),
             bindings=_bindings(codecs, backend),
@@ -297,7 +304,7 @@ class _TargetData:
         signature = {
             "name": spec.helper.name,
             "event": self.type(spec.use),
-            "key": "HmacKey",
+            "key": key_class(spec.helper.tree["signature"]["kind"]),
             "validate": spec.validate,
             "settings": settings,
         }

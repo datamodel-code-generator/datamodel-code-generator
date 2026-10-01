@@ -28,6 +28,7 @@ from datamodel_code_generator._client.protocols import (
     PollingHelper,
     PollInterval,
     ProtocolConfiguration,
+    PublicKeySignature,
     RemoteCancel,
     SignedLiteral,
     SourceValue,
@@ -404,4 +405,65 @@ WEBHOOKS = ProtocolConfiguration(
     }
 )
 
-RECORDS = {"disabled": DISABLED, "invalid": INVALID, "shape": SHAPE, "webhooks": WEBHOOKS}
+ED25519_BODY = PublicKeySignature(
+    kind="ed25519",
+    header="X-Signature",
+    encoding="hex",
+    prefix="",
+    separator="none",
+    key_id="none",
+    timestamp="none",
+    delivery_id="none",
+    signed_parts=("raw-body",),
+)
+PUBLIC_KEYS = ProtocolConfiguration(
+    helpers={
+        "rfc8032.ed25519": WebhookHelper(event_schema=PUSH, signature=ED25519_BODY),
+        "wycheproof.rsa": WebhookHelper(
+            event_schema=SchemaRef(pointer="/components/schemas/Count"),
+            signature=replace(ED25519_BODY, kind="rsa-pss-sha256"),
+        ),
+        "standard.ed25519": WebhookHelper(
+            event_schema=MESSAGE,
+            signature=PublicKeySignature(
+                kind="ed25519",
+                header=STANDARD.header,
+                encoding=STANDARD.encoding,
+                prefix="v1a,",
+                separator=STANDARD.separator,
+                key_id=STANDARD.key_id,
+                timestamp=STANDARD.timestamp,
+                delivery_id=STANDARD.delivery_id,
+                signed_parts=STANDARD.signed_parts,
+                field_constraints=STANDARD.field_constraints,
+            ),
+        ),
+        "keyed.rsa": WebhookHelper(
+            event_schema=MESSAGE,
+            signature=PublicKeySignature(
+                kind="rsa-pss-sha256",
+                header="X-Signature",
+                encoding="base64url",
+                prefix="v1=",
+                separator=",",
+                key_id=HeaderName(header="X-Key-Id"),
+                timestamp=TimestampHeader(header="X-Timestamp", unit="milliseconds"),
+                delivery_id=HeaderName(header="X-Delivery"),
+                signed_parts=("timestamp", DOT, "delivery-id", DOT, "raw-body"),
+                field_constraints={
+                    "timestamp": DIGITS,
+                    "delivery-id": AsciiBytes(ascii_bytes="abcdefghijklmnopqrstuvwxyz0123456789-"),
+                },
+            ),
+        ),
+        "github.push": WEBHOOKS.helpers["github.push"],
+    }
+)
+
+RECORDS = {
+    "disabled": DISABLED,
+    "invalid": INVALID,
+    "shape": SHAPE,
+    "webhooks": WEBHOOKS,
+    "public_keys": PUBLIC_KEYS,
+}

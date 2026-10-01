@@ -34,7 +34,7 @@ from ..model_codecs.errors import (
 from ..model_codecs.media import decode_json
 from ..model_codecs.unset import Unset
 from .errors import ProtocolDataError
-from .signatures import DELIVERY_ID, RAW_BODY, TIMESTAMP, satisfied, signature_bytes
+from .signatures import DELIVERY_ID, RAW_BODY, TIMESTAMP, UnsupportedKeyError, satisfied, signature_bytes
 from .webhooks import KeySet, ResolvedWebhookOptions, VerifiedWebhook, WebhookOptions
 
 if TYPE_CHECKING:
@@ -43,7 +43,7 @@ if TYPE_CHECKING:
     from ..client.operations import InboundModelCodec
     from ..model_codecs.context import CodecContext
     from ..model_codecs.wire import WireValue
-    from .signatures import FactField, SignatureProfile
+    from .signatures import FactField, SignatureAlgorithm, SignatureProfile
     from .webhooks import AsyncReplayStore, ReplayStore
 
 __all__ = ("EventDecoder", "WebhookPlan", "averify_webhook", "verify_webhook")
@@ -266,6 +266,21 @@ def _within(now: int, timestamp: int, limits: ResolvedWebhookOptions) -> bool:
     return (now - timestamp) * past_scale <= past * 1_000_000 and (timestamp - now) * future_scale <= future * 1_000_000
 
 
+def _matches(  # noqa: PLR0913, PLR0917
+    algorithm: SignatureAlgorithm[K],
+    index: int,
+    key: K,
+    parts: tuple[bytes, ...],
+    signatures: tuple[bytes, ...],
+    helper_id: str,
+) -> bool:
+    """Return whether a key made one of the signatures, refusing a key its backend cannot use by its index."""
+    try:
+        return algorithm.matches(key, parts, signatures)
+    except UnsupportedKeyError:
+        raise _configuration(("keys", str(index)), "wrong_capability", helper_id) from None
+
+
 def _authenticate(  # noqa: PLR0913, PLR0914
     plan: WebhookPlan[T, K],
     raw_body: bytes,
@@ -322,12 +337,20 @@ def _authenticate(  # noqa: PLR0913, PLR0914
         DELIVERY_ID: (delivery or "").encode("ascii"),
     }
     parts = tuple(part if isinstance(part, bytes) else values[part] for part in profile.parts)
-    eligible = [(key, identity) for key, identity in candidates if key_id is None or identity == key_id]
+    eligible = [
+        (index, key, identity)
+        for index, (key, identity) in enumerate(candidates)
+        if key_id is None or identity == key_id
+    ]
     if not eligible:
         _reject("missing_key", helper_id)
     verified = tuple(signature for signature in signatures if signature is not None)
-    matches = profile.algorithm.matches
-    if (matched := next((identity for key, identity in eligible if matches(key, parts, verified)), None)) is None:
+    found = (
+        identity
+        for index, key, identity in eligible
+        if _matches(profile.algorithm, index, key, parts, verified, helper_id)
+    )
+    if (matched := next(found, None)) is None:
         _reject("invalid_signature", helper_id)
     if store is not None and delivery is None:
         _reject("missing_delivery_id", helper_id)
