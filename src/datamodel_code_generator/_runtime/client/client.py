@@ -1272,6 +1272,19 @@ class _Core(Generic[AdapterT, HandleT]):
             return None
         return defaults.get(name)
 
+    def native_responses(self, options: RequestOptions | None, operation_id: str | None) -> bool:
+        """Return whether a call with these options reads response values through their converters alone."""
+        return self._call_settings(options, operation_id).validation.response == "native"
+
+    def _raw_call(
+        self, operation: OperationPlan[object, object], options: RequestOptions | None, session: OperationSession | None
+    ) -> _Call:
+        """Return the state of a raw call, a child of the helper session that gives one."""
+        settings = self._call_settings(options, operation.operation_id)
+        if session is None:
+            return _Call(settings, self._scope, operation)
+        return _SessionCall(settings, self._scope, operation, session)
+
     def view(self, options: object) -> Self:
         """Return a view with the options layered on these, sharing the transport and counting its calls here too."""
         if not isinstance(options, RequestOptions):
@@ -2161,7 +2174,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             self._scope.release()
             call.finish()
 
-    def execute_raw(  # noqa: PLR0913
+    def execute_raw(  # noqa: PLR0912, PLR0913
         self,
         operation: OperationPlan[object, object],
         arguments: tuple[object, ...],
@@ -2172,9 +2185,14 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         options: RequestOptions | None = None,
         response_media_type: str | MediaSelector | None = None,
         stream: bool = False,
+        session: OperationSession | None = None,
     ) -> RawResponse:
-        """Execute one encoded logical call through its retry and redirect policy."""
-        call = _Call(self._call_settings(options, operation.operation_id), self._scope, operation)
+        """Execute one encoded logical call through its retry and redirect policy.
+
+        A helper's stream passes its session: the call is a child of it, and a response other than a declared success
+        of the response media type raises the call's typed failure before the stream is handed over.
+        """
+        call = self._raw_call(operation, options, session)
         events = call.events = self._started(call, operation.path, options)
         decoder = operation.responses
         result: RawResponse | None = None
@@ -2203,8 +2221,10 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                 body = operation.bound(body, fields, media_type)
             result = self._run(call, body, prepare, receive, options)
             call.check("send")
-            if _auth_failed(call):
+            if _auth_failed(call) or session is not None:
                 result.raise_for_status()
+            if session is not None:
+                decoder.streamed(result.info)
             if stream:
                 self._scope.handoff(result)
                 handed = True
@@ -3002,7 +3022,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             self._scope.release()
             call.finish()
 
-    async def execute_raw(  # noqa: PLR0913
+    async def execute_raw(  # noqa: PLR0912, PLR0913
         self,
         operation: OperationPlan[object, object],
         arguments: tuple[object, ...],
@@ -3013,9 +3033,14 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         options: RequestOptions | None = None,
         response_media_type: str | MediaSelector | None = None,
         stream: bool = False,
+        session: OperationSession | None = None,
     ) -> AsyncRawResponse:
-        """Execute one encoded logical call through its retry and redirect policy."""
-        call = _Call(self._call_settings(options, operation.operation_id), self._scope, operation)
+        """Execute one encoded logical call through its retry and redirect policy.
+
+        A helper's stream passes its session: the call is a child of it, and a response other than a declared success
+        of the response media type raises the call's typed failure before the stream is handed over.
+        """
+        call = self._raw_call(operation, options, session)
         self._running(call.operation_id, call.call_id)
         events = call.events = await self._started(call, operation.path, options)
         decoder = operation.responses
@@ -3047,8 +3072,10 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 lambda: self._run(call, body, prepare, receive, options), cleanup=AsyncRawResponse.aclose
             )
             call.check("send")
-            if _auth_failed(call):
+            if _auth_failed(call) or session is not None:
                 await result.raise_for_status()
+            if session is not None:
+                decoder.streamed(result.info)
             if stream:
                 self._scope.handoff(result)
                 handed = True

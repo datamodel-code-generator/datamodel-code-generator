@@ -74,6 +74,8 @@ from tests.data.python.client_runtime import (
 from tests.data.python.client_selectors import selectors
 from tests.data.python.client_signatures import keywords, signatures
 from tests.data.python.client_stream_lifetimes import stream_lifetimes
+from tests.data.python.client_streams import stream_backends, streams
+from tests.data.python.client_streams import stream_lifetimes as event_stream_lifetimes
 from tests.data.python.client_transports import lifecycle, transports
 from tests.data.python.client_unions import schema_unions, unions
 from tests.data.python.client_validation import arguments, validation
@@ -725,6 +727,9 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "pagination-targets": ("pagination-targets", ("pydantic_v2.BaseModel",), pagination_targets),
     "pagination-querystring": ("pagination-querystring", ("pydantic_v2.BaseModel",), pagination_querystring),
     "pagination-counts": ("pagination-counts", ("pydantic_v2.BaseModel",), pagination_counts),
+    "streams": ("streams", ("pydantic_v2.BaseModel",), streams),
+    "stream-events": ("streams", ("pydantic_v2.BaseModel",), event_stream_lifetimes),
+    "stream-backends": ("streams", BACKENDS, stream_backends),
     "protocol-errors": ("pets", ("pydantic_v2.BaseModel",), protocol_errors),
     "evolution": ("evolution", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "msgspec.Struct"), evolution),
     "evolution-schema": (
