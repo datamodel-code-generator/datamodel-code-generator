@@ -23,6 +23,14 @@
 > text/plain; format=flowed 636166c3a9
   receive text/plain 'café'
 < 204
+> text/plain; note="x;charset=iso-8859-1" 636166c3a9
+  receive text/plain 'café'
+< 204
+> text/plain; note="x;charset=ascii"; charset=iso-8859-1 636166e9
+  receive text/plain 'café'
+< 204
+> text/plain; charset=idna 786e2d2d61
+< 422
 > utf8
 < 200 text/plain; charset=utf-8 b'caf\xc3\xa9'
 > latin1
@@ -39,6 +47,13 @@
   {'type': 'value_error', 'loc': ('response',), 'msg': 'The text payload cannot be encoded as text/plain; charset=unknown'}
 > other-parameter
 < 200 text/plain; format=flowed; charset=utf-8 b'caf\xc3\xa9'
+> quoted-note
+< 200 text/plain; note="x;charset=iso-8859-1" b'caf\xc3\xa9'
+> quoted-note-latin1
+< 200 text/plain; note="x;charset=ascii"; charset=iso-8859-1 b'caf\xe9'
+> idna
+< ResponseValidationError: 1 validation error:
+  {'type': 'value_error', 'loc': ('response',), 'msg': 'The text payload cannot be encoded as text/plain; charset=idna'}
 > label .normal
   label 'normal'
 < 204
@@ -80,6 +95,14 @@
 > text/plain; format=flowed 636166c3a9
   receive text/plain 'café'
 < 204
+> text/plain; note="x;charset=iso-8859-1" 636166c3a9
+  receive text/plain 'café'
+< 204
+> text/plain; note="x;charset=ascii"; charset=iso-8859-1 636166e9
+  receive text/plain 'café'
+< 204
+> text/plain; charset=idna 786e2d2d61
+< 422
 > utf8
 < 200 text/plain; charset=utf-8 b'caf\xc3\xa9'
 > latin1
@@ -96,6 +119,13 @@
   {'type': 'value_error', 'loc': ('response',), 'msg': 'The text payload cannot be encoded as text/plain; charset=unknown'}
 > other-parameter
 < 200 text/plain; format=flowed; charset=utf-8 b'caf\xc3\xa9'
+> quoted-note
+< 200 text/plain; note="x;charset=iso-8859-1" b'caf\xc3\xa9'
+> quoted-note-latin1
+< 200 text/plain; note="x;charset=ascii"; charset=iso-8859-1 b'caf\xe9'
+> idna
+< ResponseValidationError: 1 validation error:
+  {'type': 'value_error', 'loc': ('response',), 'msg': 'The text payload cannot be encoded as text/plain; charset=idna'}
 > label .normal
   label 'normal'
 < 204

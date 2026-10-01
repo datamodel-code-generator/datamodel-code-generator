@@ -43,6 +43,18 @@
     {
       "media": "text/plain; format=flowed",
       "hex": "636166c3a9"
+    },
+    {
+      "media": "text/plain; note=\"x;charset=iso-8859-1\"",
+      "hex": "636166c3a9"
+    },
+    {
+      "media": "text/plain; note=\"x;charset=ascii\"; charset=iso-8859-1",
+      "hex": "636166e9"
+    },
+    {
+      "media": "text/plain; charset=idna",
+      "hex": "786e2d2d61"
     }
   ],
   "outputs": {
@@ -73,6 +85,18 @@
     "other-parameter": {
       "media": "text/plain; format=flowed",
       "body": "café"
+    },
+    "quoted-note": {
+      "media": "text/plain; note=\"x;charset=iso-8859-1\"",
+      "body": "café"
+    },
+    "quoted-note-latin1": {
+      "media": "text/plain; note=\"x;charset=ascii\"; charset=iso-8859-1",
+      "body": "café"
+    },
+    "idna": {
+      "media": "text/plain; charset=idna",
+      "body": ""
     }
   },
   "labels": [

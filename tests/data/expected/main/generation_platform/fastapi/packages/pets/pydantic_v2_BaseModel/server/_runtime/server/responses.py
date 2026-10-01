@@ -273,7 +273,7 @@ def _encode(media: MediaPlan, media_type: str, value: object) -> bytes:
     if media.kind == "text" and isinstance(payload, str):
         try:
             return payload.encode(charset(media_type))
-        except (LookupError, UnicodeEncodeError) as error:
+        except (LookupError, UnicodeError) as error:
             msg = f"The text payload cannot be encoded as {media_type}"
             raise response_failure(msg) from error
     if media.kind == "binary" and isinstance(payload, bytes):
