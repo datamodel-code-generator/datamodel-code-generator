@@ -12,6 +12,7 @@ from .._runtime.protocols.caches import (
     CacheStore,
 )
 from .._runtime.protocols.options import (
+    BatchOptions,
     CacheOptions,
     Origin,
     PaginationOptions,
@@ -73,6 +74,7 @@ from .._runtime.protocols.websocket_types import (
 )
 
 if TYPE_CHECKING:
+    from .._runtime.protocols.batches import AsyncBatchIterator, BatchIterator
     from .._runtime.protocols.cache_stores import AsyncMemoryCacheStore, MemoryCacheStore
     from .._runtime.protocols.pagination import AsyncPager, Page, Pager
     from .._runtime.protocols.polling import AsyncLroHandle, LroHandle
@@ -93,6 +95,7 @@ if TYPE_CHECKING:
     from .._runtime.protocols.websocket import AsyncWebSocketSession, WebSocketSession
 
 __all__ = [
+    "AsyncBatchIterator",
     "AsyncBytesUploadSource",
     "AsyncCacheStore",
     "AsyncEventStream",
@@ -108,6 +111,8 @@ __all__ = [
     "AsyncWebSocketConnection",
     "AsyncWebSocketConnector",
     "AsyncWebSocketSession",
+    "BatchIterator",
+    "BatchOptions",
     "BodySelector",
     "BodyTarget",
     "BytesUploadSource",
@@ -190,6 +195,10 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import streams
 
         return getattr(streams, name)
+    if name in {"AsyncBatchIterator", "BatchIterator"}:
+        from .._runtime.protocols import batches
+
+        return getattr(batches, name)
     if name in {"AsyncUploadHandle", "UploadHandle"}:
         from .._runtime.protocols import uploads
 

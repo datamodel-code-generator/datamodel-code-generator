@@ -60,6 +60,7 @@ model_codecs/views.py: .bindings, .capabilities, .context, .parameters, .wire, _
 model_codecs/wire.py: .errors, __future__, collections.abc, dataclasses, decimal, math, re, types, typing, typing_extensions
 protocols/__init__.py: -
 protocols/adapters.py: ..client.errors, .webhook_events, .webhooks, __future__, collections.abc, dataclasses, datetime, types, typing, typing_extensions
+protocols/batches.py: ..client.client, ..client.errors, ..client.logical, ..client.operations, ..client.options, ..client.responses, ..client.timing, ..model_codecs.media, ..model_codecs.unset, ..model_codecs.wire, .errors, .options, .records, .references, .values, .writes, __future__, asyncio, collections, collections.abc, concurrent.futures, contextlib, dataclasses, functools, threading, types, typing, typing_extensions
 protocols/cache.py: ..client.bodies, ..client.client, ..client.errors, ..client.media, ..client.operations, ..client.options, ..client.responses, ..client.retry, ..client.transports, ..model_codecs.selectors, ..model_codecs.unset, ..model_codecs.wire, .caches, .errors, .options, .records, .references, __future__, collections.abc, dataclasses, datetime, hashlib, re, typing, typing_extensions, uuid
 protocols/cache_stores.py: ..client.errors, ..client.responses, .caches, .options, __future__, collections, hashlib, heapq, hmac, math, secrets, threading, time, typing
 protocols/caches.py: ..client.responses, __future__, dataclasses, datetime, math, typing, typing_extensions
