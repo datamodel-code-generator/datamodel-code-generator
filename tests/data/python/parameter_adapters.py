@@ -1,12 +1,13 @@
 """Parameter adapters that carry values as percent-encoded compact JSON or as given, for any generated package.
 
-Each adapter reaches the public `model_codecs` module of the generated package that calls it, so one fixture
-serves every package a test generates.
+Each adapter reaches the public `model_codecs` module of the generated package whose bindings build it, so one
+fixture serves every package a test generates.
 """
 
 from __future__ import annotations
 
 import importlib
+import inspect
 import json
 from typing import TYPE_CHECKING, Literal
 from urllib.parse import quote, unquote
@@ -15,9 +16,15 @@ if TYPE_CHECKING:
     from types import ModuleType
 
 
-def _public(plan: object) -> ModuleType:
-    """Return the public `model_codecs` module of the package whose runtime made the plan."""
-    return importlib.import_module(f"{type(plan).__module__.partition('._runtime.')[0]}.model_codecs")
+def _caller() -> ModuleType:
+    """Return the public `model_codecs` module of the generated package whose model bindings build an adapter."""
+    frame = inspect.currentframe()
+    while frame is not None:
+        if (name := frame.f_globals.get("__name__", "")).endswith("._generated.model_bindings"):
+            return importlib.import_module(f"{name.removesuffix('._generated.model_bindings')}.model_codecs")
+        frame = frame.f_back
+    msg = "A fixture adapter is built only by a generated package's model bindings"
+    raise LookupError(msg)
 
 
 def _key(name: bytes, location: str) -> bytes:
@@ -31,17 +38,17 @@ class _Adapter:
     api_version: Literal[1] = 1
 
     def __init__(self, **declared: object) -> None:
-        """Keep the capabilities the adapter declares, as the registration's record takes them."""
+        """Keep the capabilities the adapter declares, as the registration's record takes them, and its package."""
         self._declared = declared
+        self._public = _caller()
 
-    def capabilities(self, *, plan: object) -> object:
+    def capabilities(self, *, plan: object) -> object:  # noqa: ARG002
         """Report the declared capabilities as the calling package's record."""
-        return _public(plan).ParameterCodecCapabilities(**self._declared)
+        return self._public.ParameterCodecCapabilities(**self._declared)
 
-    @staticmethod
-    def _contribution(plan: object, value: bytes) -> object:
+    def _contribution(self, plan: object, value: bytes) -> object:
         """Return the value as the whole query, one unnamed path fragment, or one fragment named after the parameter."""
-        public = _public(plan)
+        public = self._public
         if plan.location == "querystring":
             return public.QueryStringContribution(raw_query=value)
         name = None if plan.location == "path" else plan.name.encode()
@@ -49,8 +56,7 @@ class _Adapter:
             location=plan.location, ordered_fragments=(public.ParameterFragment(name=name, value=value),)
         )
 
-    @staticmethod
-    def _raw(raw: object, plan: object) -> bytes | None:
+    def _raw(self, raw: object, plan: object) -> bytes | None:
         """Return the raw value of the parameter, or None without one, refusing a repeated one."""
         if plan.location == "querystring":
             return raw.raw_query or None
@@ -62,7 +68,7 @@ class _Adapter:
         ]
         if len(values) > 1:
             msg = f"The {plan.location} parameter {plan.name} appears more than once"
-            raise _public(plan).ParameterEncodingError(msg)
+            raise self._public.ParameterEncodingError(msg)
         return values[0] if values else None
 
 
@@ -71,12 +77,12 @@ class JsonParameter(_Adapter):
 
     def encode_parameter(self, *, value: object, plan: object, context: object) -> object:  # noqa: ARG002
         """Return the value's JSON as the parameter's one contribution."""
-        text = json.dumps(_public(plan).thaw_wire(value), separators=(",", ":"), ensure_ascii=False)
+        text = json.dumps(self._public.thaw_wire(value), separators=(",", ":"), ensure_ascii=False)
         return self._contribution(plan, quote(text, safe="").encode())
 
     def decode_parameter(self, *, raw: object, plan: object, context: object) -> object:  # noqa: ARG002
         """Return the value the parameter's JSON holds, or UNSET without one."""
-        public = _public(plan)
+        public = self._public
         if (value := self._raw(raw, plan)) is None:
             return public.UNSET
         try:
@@ -91,7 +97,7 @@ class Members(JsonParameter):
 
     def encode_parameter(self, *, value: object, plan: object, context: object) -> object:  # noqa: ARG002
         """Return one fragment per member, named after the member instead of the parameter."""
-        public = _public(plan)
+        public = self._public
         fragments = tuple(
             public.ParameterFragment(name=quote(name, safe="").encode(), value=quote(str(item), safe="").encode())
             for name, item in public.thaw_wire(value).items()
@@ -104,7 +110,7 @@ class Brackets(JsonParameter):
 
     def encode_parameter(self, *, value: object, plan: object, context: object) -> object:  # noqa: ARG002
         """Return one fragment per member, named after the parameter and the member."""
-        public = _public(plan)
+        public = self._public
         fragments = tuple(
             public.ParameterFragment(
                 name=quote(f"{plan.name}[{name}]", safe="").encode(), value=quote(str(item), safe="").encode()
@@ -123,7 +129,7 @@ class RawText(_Adapter):
 
     def decode_parameter(self, *, raw: object, plan: object, context: object) -> object:  # noqa: ARG002
         """Return the parameter's bytes as text, without decoding any percent-encoding, or UNSET without them."""
-        public = _public(plan)
+        public = self._public
         if (value := self._raw(raw, plan)) is None:
             return public.UNSET
         try:
