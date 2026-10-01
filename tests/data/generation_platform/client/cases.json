@@ -2499,6 +2499,18 @@
       }
     }
   },
+  "unions-split": {
+    "input": "unions-split.yaml",
+    "model": {
+      "read_only_write_only_model_type": "request-response"
+    },
+    "config": {
+      "validation": {
+        "request": "schema",
+        "response": "schema"
+      }
+    }
+  },
   "pagination-counts": {
     "input": "pagination-counts.yaml",
     "references": [

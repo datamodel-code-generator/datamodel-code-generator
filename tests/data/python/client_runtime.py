@@ -46,10 +46,10 @@ _ERROR_FIELDS: Final = (
 )
 
 
-def _generate(case: dict[str, Any], backend: str, root: Path, package: str, source: Path = SOURCE) -> None:
+def _generate(case: dict[str, Any], backend: str, root: Path, package: str) -> None:
     copy_references(case, root)
     generate_client(
-        shutil.copy2(source / case["input"], root / case["input"]),
+        shutil.copy2(SOURCE / case["input"], root / case["input"]),
         root,
         package,
         backend,

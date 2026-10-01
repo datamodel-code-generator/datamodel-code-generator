@@ -85,7 +85,7 @@ from tests.data.python.client_stream_lifetimes import stream_lifetimes
 from tests.data.python.client_streams import ndjson, ndjson_backends, stream_backends, streams
 from tests.data.python.client_streams import stream_lifetimes as event_stream_lifetimes
 from tests.data.python.client_transports import lifecycle, transports
-from tests.data.python.client_unions import schema_unions, unions
+from tests.data.python.client_unions import schema_unions, split_unions, unions
 from tests.data.python.client_validation import arguments, validation
 from tests.data.python.client_webhook_adapters import (
     webhook_adapter_imports,
@@ -846,6 +846,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "unions-schema": ("unions-schema", BACKENDS, schema_unions),
     "unions-legacy": ("unions-legacy", ("pydantic_v2.BaseModel", "pydantic_v2.dataclass"), unions),
     "unions-legacy-schema": ("unions-legacy-schema", BACKENDS, schema_unions),
+    "unions-split": ("unions-split", BACKENDS, split_unions),
 }
 
 
