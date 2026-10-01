@@ -23,6 +23,7 @@ from .._runtime.protocols.options import (
 from .._runtime.protocols.records import (
     BodySelector,
     BodyTarget,
+    CancelReceipt,
     Continuation,
     HeaderSelector,
     ParameterTarget,
@@ -73,6 +74,7 @@ __all__ = [
     "CacheOptions",
     "CacheResult",
     "CacheStore",
+    "CancelReceipt",
     "Continuation",
     "EventStream",
     "HeaderSelector",

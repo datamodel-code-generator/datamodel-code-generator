@@ -363,6 +363,7 @@ from .._runtime.protocols.options import (
 from .._runtime.protocols.records import (
     BodySelector,
     BodyTarget,
+    CancelReceipt,
     Continuation,
     HeaderSelector,
     ParameterTarget,
@@ -408,6 +409,7 @@ __all__ = [
     "CacheOptions",
     "CacheResult",
     "CacheStore",
+    "CancelReceipt",
     "Continuation",
     "EventStream",
     "HeaderSelector",
@@ -686,6 +688,40 @@ def _mode(*, asynchronous: bool) -> str:
 
 def _helpers_module(*, asynchronous: bool) -> str:
     return "_async_helpers" if asynchronous else "_helpers"
+
+
+def _resume_method(
+    module: Module,
+    plan: str,
+    returns: str,
+    options: tuple[list[_Argument], list[tuple[str, Doc]]],
+    *,
+    asynchronous: bool,
+) -> str:
+    """Return a polling helper's resume method, which is never awaited and returns the handle start returns."""
+    keywords, forwarded = options
+    resume = module.local(_POLLING, "aresume_operation" if asynchronous else "resume_operation")
+    state = f"state: {module.local('_runtime.protocols.resume', 'ResumeState')}"
+    return "\n".join((
+        layout(
+            Group(
+                "    def resume(",
+                items(("self", state, "*", *(argument.parameter(module) for argument in keywords))),
+                f") -> {returns}:",
+            ),
+            4,
+            0,
+            WIDTH,
+        ),
+        '        """Return a handle continuing a checkpoint of this helper; it sends nothing until it polls."""',
+        "        return "
+        + layout(_call(resume, (("", "self._core"), ("", plan), ("", "state"), *forwarded)), 8, 7, WIDTH),
+    ))
+
+
+def _handle(spec: PollingSpec, prefix: str) -> str:
+    """Return the name of a polling helper's own handle class, after its dotted name's PascalCase parts."""
+    return f"{prefix}{''.join(map(pascal, spec.helper.name.split('.')))}Handle"
 
 
 def _summary(spec: OperationSpec) -> str:
@@ -2289,7 +2325,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
 
     def plans(self) -> str:
         """Return the module of every helper's accessors and plan, then each stream helper's plan."""
-        names = ("PLAN_{}", "_items_{}", "_result_{}", "_immediate_{}")
+        names = ("PLAN_{}", "CANCEL_{}", "_items_{}", "_result_{}", "_immediate_{}")
         streams = self.streams
         module = Module(
             {
@@ -2575,10 +2611,28 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         entries.append(("interval=", repr(float(interval["seconds"]))))
         if (header := interval["retry_after_header"]) is not None:
             entries.append(("retry_after_header=", repr(header)))
+        if (cancel := spec.cancel) is not None:
+            sections.append(self.cancel(module, index, spec, cancel))
+            entries.append(("cancel=", f"CANCEL_{index}"))
+        if (expires_at := tree.get("expires_at")) is not None:
+            entries.append(("expires_at=", self.selector(module, expires_at)))
         plan = module.local(_POLLING, "PollingPlan")
         head = f"PLAN_{index}: {module.name('typing', 'Final')}[{plan}[{result}, {poll}, {create}]] = "
         sections.append(head + layout(_call(plan, entries), 0, len(head), WIDTH))
         return sections
+
+    def cancel(self, module: Module, index: int, spec: PollingSpec, cancel: OperationSpec) -> str:
+        """Return the plan of a polling helper's remote cancellation, typed by its operation's response."""
+        bindings = spec.helper.tree["remote_cancel"]["bindings"]
+        entries: list[tuple[str, Doc]] = [
+            ("operation=", self.reference(module, cancel)),
+            ("call=", f"{module.root('_operations')}.OPERATION_{cancel.index}"),
+        ]
+        if bindings:
+            entries.append(("bindings=", _tuple([self.binding(module, item) for item in bindings])))
+        plan = module.local(_POLLING, "CancelPlan")
+        head = f"CANCEL_{index}: {module.name('typing', 'Final')}[{plan}[{self.response(module, cancel)}]] = "
+        return head + layout(_call(plan, entries), 0, len(head), WIDTH)
 
     def module(self, *, asynchronous: bool) -> str:  # noqa: PLR0914
         """Return the sync or asyncio module of the helper namespaces and the helpers."""
@@ -2598,9 +2652,15 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                     nodes.setdefault(parts, {})
         leaves = {named[spec.helper.name]: spec for spec in self.helpers}
         streams = {named[spec.helper.name]: spec for spec in self.streams}
+        handles = {
+            name: _handle(spec, prefix)
+            for name, spec in leaves.items()
+            if isinstance(spec, PollingSpec) and spec.cancel is not None
+        }
         names = {
             root,
             *(name for children in nodes.values() for name, _ in children.values()),
+            *handles.values(),
             *(f"{name}Mutations" for name, spec in leaves.items() if isinstance(spec, CacheSpec) and spec.mutations),
         }
         module = Module(names, self.resources.symbols, level=2)
@@ -2618,7 +2678,9 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             what = f"the {'.'.join(parts)} protocol helpers" if parts else "the protocol helpers of this API"
             sections.append(self.node(name, what, core, members))
         for index, (name, spec) in enumerate(leaves.items()):
-            sections.extend(self.leaf(module, index, name, spec, core, asynchronous=asynchronous))
+            sections.extend(
+                self.leaf(module, index, name, spec, core, handle=handles.get(name), asynchronous=asynchronous)
+            )
         sections.extend(
             self.node(
                 name,
@@ -2645,13 +2707,23 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         spec: PaginationSpec | PollingSpec | CacheSpec,
         core: str,
         *,
+        handle: str | None,
         asynchronous: bool,
     ) -> list[str]:
-        """Return a pagination, polling, or cache helper's class, and a cache helper's mutations class if it has any."""
+        """Return a helper's class, then a polling helper's own handle class or a cache helper's mutations class.
+
+        A polling helper has its own handle class when it cancels remotely, and a cache helper a mutations class when
+        it declares mutations.
+        """
         route = f"{spec.operation.contract.method.upper()} {spec.operation.contract.path}"
         what = f"the {spec.helper.name} {_HELPER_KINDS[spec.helper.kind]} of {route}"
         if isinstance(spec, PollingSpec):
-            return [self.node(name, what, core, self.start(module, index, spec, asynchronous=asynchronous), leaf=True)]
+            node = self.node(
+                name, what, core, self.start(module, index, spec, handle, asynchronous=asynchronous), leaf=True
+            )
+            if handle is None:
+                return [node]
+            return [node, self.handle(module, index, spec, handle, asynchronous=asynchronous)]
         if not isinstance(spec, CacheSpec):
             return [
                 self.node(name, what, core, self.methods(module, index, spec, asynchronous=asynchronous), leaf=True)
@@ -2768,8 +2840,10 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             )),
         ]
 
-    def start(self, module: Module, index: int, spec: PollingSpec, *, asynchronous: bool) -> list[str]:
-        """Return a polling helper's start method, which creates the operation and returns its handle."""
+    def start(
+        self, module: Module, index: int, spec: PollingSpec, handle: str | None, *, asynchronous: bool
+    ) -> list[str]:
+        """Return a polling helper's start and resume methods, which return its handle, or its own handle class."""
         operation = replace(spec.operation, fields=())
         resources = self.resources
         arguments = [resources.parameter(module, parameter) for parameter in operation.parameters]
@@ -2778,14 +2852,19 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             _Argument(name, f"{module.namespace.name(source, kind)} | None", "none")
             for name, source, kind in _POLL_OPTIONS
         ]
-        handle = module.local(_POLLING, "AsyncLroHandle" if asynchronous else "LroHandle")
-        returns = f"{handle}[{self.result(module, spec)}, {self.response(module, spec.poll)}]"
+        base = module.local(_POLLING, "AsyncLroHandle" if asynchronous else "LroHandle")
+        returns = handle or f"{base}[{self.result(module, spec)}, {self.response(module, spec.poll)}]"
+        plan = f"{module.namespace.name('.', '_plans')}.PLAN_{index}"
+        forwarded = [
+            *((("handle=", handle),) if handle is not None else ()),
+            *((f"{name}=", name) for name, _, _ in _POLL_OPTIONS),
+        ]
         passed = [
             ("", "self._core"),
-            ("", f"{module.namespace.name('.', '_plans')}.PLAN_{index}"),
+            ("", plan),
             ("", _tuple(parameter.python_name for parameter in operation.parameters)),
             *((f"{argument.name}=", argument.name) for argument in body),
-            *((f"{name}=", name) for name, _, _ in _POLL_OPTIONS),
+            *forwarded,
         ]
         start = module.local(_POLLING, "astart_operation" if asynchronous else "start_operation")
         route = f"{operation.contract.method.upper()} {operation.contract.path}"
@@ -2796,7 +2875,8 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                 _signature("start", signature, returns, asynchronous=asynchronous, stub=False),
                 f'        """Create the operation of {route} and return the handle that polls it."""',
                 f"        return {wait}{layout(_call(start, passed), 8, 7 + len(wait), WIDTH)}",
-            ))
+            )),
+            _resume_method(module, plan, returns, (options, forwarded), asynchronous=asynchronous),
         ]
 
     def fetch(self, module: Module, index: int, spec: CacheSpec, *, asynchronous: bool) -> list[str]:
@@ -2865,6 +2945,25 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                 ))
             )
         return methods
+
+    def handle(self, module: Module, index: int, spec: PollingSpec, name: str, *, asynchronous: bool) -> str:
+        """Return a polling helper's own handle class, which also cancels its operation remotely."""
+        cancel = spec.cancel
+        assert cancel is not None
+        base = module.local(_POLLING, "AsyncLroHandle" if asynchronous else "LroHandle")
+        receipt = f"{module.local('_runtime.protocols.records', 'CancelReceipt')}[{self.response(module, cancel)}]"
+        route = f"{cancel.contract.method.upper()} {cancel.contract.path}"
+        prefix, wait = ("async ", "await ") if asynchronous else ("", "")
+        return (
+            f"class {name}({base}[{self.result(module, spec)}, {self.response(module, spec.poll)}]):\n"
+            f'    """A handle of the {spec.helper.name} polling helper, which also cancels the operation with '
+            f'{route}."""'
+            "\n\n    __slots__ = ()\n\n"
+            f"    {prefix}def cancel_remote(self) -> {receipt}:\n"
+            '        """Ask the server to cancel the operation; the handle keeps its last poll until it polls again."""'
+            "\n"
+            f"        return {wait}self._cancel_remote({module.namespace.name('.', '_plans')}.CANCEL_{index})"
+        )
 
     @staticmethod
     def event_type(module: Module, spec: StreamSpec) -> str:
@@ -3115,7 +3214,9 @@ reference for their limits and checkpoints."""
             """
 A polling helper's `start` creates the operation and returns a handle: `status` polls it once and `wait` polls until
 it settles and returns its result, each poll after the wait the last response requires; `close()` or `aclose()`
-stops only local polling. See the runtime reference for their limits."""
+stops only local polling. `resume` returns a handle continuing a handle's `checkpoint()` without creating the
+operation again, and a helper that declares a remote cancellation returns a handle whose `cancel_remote` sends it. See
+the runtime reference for their limits and checkpoints."""
             if "polling" in kinds
             else ""
         )
@@ -3327,12 +3428,13 @@ wait for retained cleanup; it does not authorize another send or restore an expi
         return f"""
 ## Polling sessions
 
-A polling helper's `start` and the handle it returns are one session. The create call, every poll, and the result
-fetch are logical calls of their own, with their own retries, total timeout, and idempotency key; the session bounds
-all of them. Each limit comes from the call's options, then `ProtocolClientOptions.defaults` for the helper, then the
-default below. The session types are imported from:
+A polling helper's `start` and the handle it returns are one session. The create call, every poll, the result fetch,
+and a remote cancel are logical calls of their own, with their own retries, total timeout, and idempotency key; the
+session bounds all of them. Each limit comes from the call's options, then `ProtocolClientOptions.defaults` for the
+helper, then the default below. The session types are imported from:
 
-- `{self.config.package}.protocols`: `PollOptions`, `PollSnapshot`, `LroHandle`, and `AsyncLroHandle`
+- `{self.config.package}.protocols`: `PollOptions`, `PollSnapshot`, `CancelReceipt`, `LroHandle`, `AsyncLroHandle`,
+  and `ResumeState`
 - `{self.config.package}.options`: `SessionOptions`
 
 | Limit | Effective default |
@@ -3359,6 +3461,24 @@ the handle as it was: pending, so a later `status` or `wait` polls again without
 succeeded with its result fetch still due, which a later `wait` retries alone. `status` and `wait` at once raise
 `ProtocolStateError`, and so does every step after `close()` or `aclose()`, which stops only local polling. A call's
 options must not fix an idempotency key or patch a header or query parameter the helper writes.
+
+`checkpoint()` returns a `ResumeState` without sending, also after closing and while another thread or task polls:
+the phase, the polls so far, the wait left before the next poll or result fetch, the values the next requests write,
+and a settled operation's final poll and result bodies, never model objects, the session, or the call's options. The
+helper's `resume` is never awaited and returns a handle in a session of its own that sends nothing until `status` or
+`wait`; polls count on, while the session's timeout, deadline, and sends start afresh. Before returning, it refuses
+another helper's state, one made under other security, an expired one, and one that does not fit the helper with
+`ResumeStateError`, a saved dot segment for a path parameter with `ProtocolDataError`, and a saved body over the call's
+response size limit with `ProtocolSizeError`; a saved value the result fetch writes into its querystring or body is
+checked when the fetch request is built. `PollWaitLimitError` and a `SessionLimitError` of a created operation keep a
+checkpoint as `resume_state`. A helper that declares `expires_at` reads the server's expiry, an RFC 3339 date-time with
+an offset or an HTTP date, from the accepted create response, and its checkpoints expire then; a create response
+without a valid one fails `start` with `ProtocolDataError`, though the remote operation was created.
+
+A helper that declares `remote_cancel` returns a handle of its own class whose `cancel_remote()` sends the cancel
+request once, while the operation is pending, and returns a `CancelReceipt` of its response; it also runs while
+another thread or task waits in `status` or `wait`. It does not change the handle, which keeps its last poll until it
+polls again; closing sends nothing.
 """
 
     def pagination_runtime(self) -> str:

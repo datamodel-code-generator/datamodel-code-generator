@@ -513,6 +513,15 @@ def _coded(operation: OperationPlan[object, object], spec: ParameterSpec, code: 
         raise _encoding_error(operation, (spec.plan.location, spec.plan.name), error) from None
 
 
+def _parameter(spec: ParameterSpec, value: object, mode: RequestValidation) -> object:
+    """Return the contribution of one argument to its request, encoded as a call encodes it, adapter included."""
+    wire = spec.encode(value, mode)
+    if (adapter := spec.adapter) is None:
+        return encode_parameter(spec.plan, wire)
+    get, context = adapter
+    return get().encode(wire, context)
+
+
 def _unsaved(plan: _PagePlan, path: tuple[str, ...]) -> ProtocolConfigurationError:
     return ProtocolConfigurationError(
         field_path=path, condition="wrong_capability", helper_id=plan.helper_id, operation=plan.operation
@@ -2035,6 +2044,23 @@ class _Core(Generic[AdapterT, HandleT]):
         )[0]
         return prepared.url, prepared.headers
 
+    def checked_arguments(
+        self, operation: OperationPlan[object, object], given: Mapping[int, WireValue], options: RequestOptions | None
+    ) -> None:
+        """Encode some arguments of a helper's request, by position, as its call encodes them, sending nothing.
+
+        Arguments a later response gives are left out, even required ones; one that does not fit raises
+        RequestEncodingError.
+        """
+        mode = self._call_settings(options, operation.operation_id).validation.request
+        for position, value in given.items():
+            spec = operation.parameters[position]
+            _coded(operation, spec, partial(_parameter, spec, value, mode))
+
+    def response_limit(self, operation: OperationPlan[object, object], options: RequestOptions | None) -> int | None:
+        """Return the largest successful response body a call of the operation accepts, or None without a limit."""
+        return self._call_settings(options, operation.operation_id).max_response_bytes
+
     def saved_page(
         self,
         operation: OperationPlan[T, object],
@@ -2042,10 +2068,11 @@ class _Core(Generic[AdapterT, HandleT]):
         status_code: int,
         content_type: str | None,
         options: RequestOptions | None,
-    ) -> tuple[T, WireValue]:
-        """Decode a page a helper saved in a checkpoint as its response decoded it, without any other response metadata.
+    ) -> tuple[T, WireValue, ResponseInfo]:
+        """Decode a body a helper saved in a checkpoint as its response decoded it, without any other response metadata.
 
-        The page's response metadata is not saved, so it is decoded under its status and media type alone.
+        The response's metadata is not saved, so it is decoded under its status and media type alone, which the
+        returned metadata holds with an empty call identifier.
         """
         settings = self._call_settings(options, operation.operation_id)
         info = ResponseInfo(
@@ -2058,7 +2085,8 @@ class _Core(Generic[AdapterT, HandleT]):
             network_send_count=0,
             network_send_budget_used=0,
         )
-        return operation.responses.decode_page(info, content, native=settings.validation.response == "native")
+        data, wire = operation.responses.decode_page(info, content, native=settings.validation.response == "native")
+        return data, wire, info
 
     def _page_request(
         self,

@@ -66,6 +66,25 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Job'}
+    delete:
+      operationId: cancelJob
+      tags: [jobs]
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: {type: string}
+        - name: X-Reason
+          in: header
+          schema: {type: string}
+      responses:
+        '202':
+          description: The job is being cancelled.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Job'}
+        '204':
+          description: The job was cancelled.
   /jobs/{jobId}/report:
     get:
       operationId: getReport
@@ -116,6 +135,12 @@ paths:
           headers:
             Operation-Id:
               schema: {type: string}
+    delete:
+      operationId: cancelExports
+      tags: [exports]
+      responses:
+        '204':
+          description: The exports were cancelled.
   /exports/status:
     get:
       operationId: exportStatus
@@ -211,6 +236,7 @@ components:
         id: {type: string}
         status: {description: The job's state.}
         progress: {type: integer, minimum: 0}
+        expires: {description: The server's expiry of the job.}
         result: {$ref: '#/components/schemas/Report'}
         summary:
           anyOf:

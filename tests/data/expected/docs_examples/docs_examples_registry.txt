@@ -16,6 +16,8 @@ python-client.protocols.diagnostics: python-client.md
 python-client.pagination.helper: python-client.md
 python-client.pagination.diagnostics: python-client.md
 python-client.polling.helper: python-client.md
+python-client.polling.handle: python-client.md
+python-client.polling.tracked: python-client.md
 python-client.polling.diagnostics: python-client.md
 python-client.streams.helper: python-client.md
 python-client.streams.diagnostics: python-client.md
