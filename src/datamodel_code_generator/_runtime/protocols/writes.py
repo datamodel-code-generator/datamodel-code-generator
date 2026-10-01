@@ -209,12 +209,10 @@ class Binding(Protocol):
     @property
     def target(self) -> RequestTarget:
         """Return where the value is written."""
-        ...
 
     @property
     def selector(self) -> Selector | None:
         """Return what reads the value from a response, or None for a literal."""
-        ...
 
 
 @dataclass(frozen=True, slots=True)
