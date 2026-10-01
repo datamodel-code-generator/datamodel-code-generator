@@ -32,7 +32,7 @@ from ..client.errors import (
 )
 from ..client.operations import DATA_ERRORS
 from ..client.options import RequestOptions
-from ..client.timing import SessionOptions
+from ..client.timing import SYSTEM_CLOCK, SessionOptions
 from ..model_codecs.media import encode_json
 from ..model_codecs.unset import UNSET
 from .errors import (
@@ -58,7 +58,7 @@ if TYPE_CHECKING:
     from ..client.operations import Encoder, OperationPlan
     from ..client.options import RequestValidation
     from ..client.responses import ResponseInfo
-    from ..client.timing import Deadline
+    from ..client.timing import Clock, Deadline
     from ..model_codecs.wire import WireValue
     from .records import ProtocolProgress
     from .references import OperationRef
@@ -148,6 +148,7 @@ class _Limits:
     deadline: Deadline | None = None
     max_network_sends: int | None = 10000
     options: RequestOptions | None = None
+    clock: Clock = SYSTEM_CLOCK
 
 
 _DEFAULTS: Final = _Limits()
@@ -190,6 +191,7 @@ def _limits(
         deadline=layered(sessions, "deadline", _DEFAULTS.deadline),
         max_network_sends=layered(sessions, "max_network_sends", _DEFAULTS.max_network_sends),
         options=request,
+        clock=core.clock,
     )
 
 
@@ -1005,7 +1007,10 @@ def _session(limits: _Limits) -> OperationSession:
     from ..client.logical import OperationSession  # noqa: PLC0415 - Only an iterating helper loads the call runtime.
 
     return OperationSession(
-        total_timeout=limits.total_timeout, deadline=limits.deadline, max_network_sends=limits.max_network_sends
+        total_timeout=limits.total_timeout,
+        deadline=limits.deadline,
+        max_network_sends=limits.max_network_sends,
+        clock=limits.clock,
     )
 
 

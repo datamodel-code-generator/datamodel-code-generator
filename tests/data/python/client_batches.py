@@ -392,20 +392,42 @@ def _siblings(harness: _Batches, api: Any, server: _Server, lines: list[str]) ->
     options = harness.options.RequestOptions(cancel_token=token)
     continued(lines, "cancelled while answered", users.iterate(harness.users(6), batch_options=single, options=options))
     server.report("cancelled while answered")
-    received, release = threading.Event(), threading.Event()
-
-    def stalled(request: httpx2.Request) -> httpx2.Response:
-        received.set()
-        release.wait(30)
-        return answer(request)
-
-    server.respond(stalled)
-    session = harness.options.SessionOptions(total_timeout=3)
-    continued(lines, "deadline while answered", users.iterate(harness.users(2), session_options=session))
-    release.set()
-    lines.append(f"  request received {received.is_set()}")
+    _deadline(harness, server, lines)
     server.report("deadline while answered")
     _interruption(harness, lines)
+
+
+class _Stepped:
+    """A monotonic clock source the server steps past a session's deadline while it answers."""
+
+    def __init__(self) -> None:
+        """Start at a fixed instant."""
+        self.value = 100.0
+
+    def __call__(self) -> float:
+        """Return the current instant."""
+        return self.value
+
+
+def _deadline(harness: _Batches, server: _Server, lines: list[str]) -> None:
+    """Report a request answered after the session's deadline as unknown deliveries, then raise the deadline.
+
+    The client's clock is stepped by the server while it answers, so the outcome never depends on real time.
+    """
+    stepped = _Stepped()
+
+    def late(request: httpx2.Request) -> httpx2.Response:
+        stepped.value += 10.0
+        return answer(request)
+
+    clock = harness.options.Clock(monotonic=stepped)
+    server.respond(late)
+    with server.client() as native, harness.package.Client(
+        http_client=native, options=harness.client_options(clock=clock)
+    ) as api:
+        session = harness.options.SessionOptions(total_timeout=1)
+        users = api.protocols.users.create
+        continued(lines, "deadline while answered", users.iterate(harness.users(2), session_options=session))
 
 
 def _interruption(harness: _Batches, lines: list[str]) -> None:
