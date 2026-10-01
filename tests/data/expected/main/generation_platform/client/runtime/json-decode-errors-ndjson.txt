@@ -19,7 +19,7 @@
   encoding: DecodeError WireValidationError json.encoding context=None cause=None prefix=12 truncated=False
   > GET https://api.example.com/status
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  parser nesting: DecodeError CodecResourceLimitError  context=None cause=None prefix=4000 truncated=False
+  parser nesting: DecodeError CodecResourceLimitError  context=None cause=None prefix=200000 truncated=False
   > GET https://api.example.com/status
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   snapshot nesting: DecodeError CodecResourceLimitError  context=None cause=None prefix=1400 truncated=False
@@ -55,7 +55,7 @@
   async encoding: DecodeError WireValidationError json.encoding context=None cause=None prefix=12 truncated=False
   > GET https://api.example.com/status
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  async parser nesting: DecodeError CodecResourceLimitError  context=None cause=None prefix=4000 truncated=False
+  async parser nesting: DecodeError CodecResourceLimitError  context=None cause=None prefix=200000 truncated=False
   > GET https://api.example.com/status
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   async snapshot nesting: DecodeError CodecResourceLimitError  context=None cause=None prefix=1400 truncated=False

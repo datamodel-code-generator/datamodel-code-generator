@@ -30,9 +30,9 @@
   {
     "name": "parser nesting",
     "text": "[",
-    "repeat": 2000,
+    "repeat": 100000,
     "suffix": "]",
-    "suffix_repeat": 2000
+    "suffix_repeat": 100000
   },
   {
     "name": "snapshot nesting",
