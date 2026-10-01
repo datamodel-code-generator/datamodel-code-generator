@@ -12,21 +12,36 @@ from typing import TYPE_CHECKING, TypeAlias
 from typing_extensions import TypeVar
 
 from ..client.operations import BodyMedia, ParameterSpec
-from .records import BodyTarget, QuerystringTarget
+from ..client.paths import dot_segment, path_segments
+from ..model_codecs.errors import ParameterEncodingError
+from ..model_codecs.parameters import path_text
+from .records import BodyTarget, ParameterTarget, QuerystringTarget
 from .values import Patch
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+    from collections.abc import Callable, Iterable, Mapping, Sequence
 
     from ..client.operations import OperationPlan
     from ..client.options import RequestValidation
     from ..model_codecs.wire import WireValue
-    from .records import RequestTarget
+    from .records import RequestTarget, Selector
 
-__all__ = ("PatchedMedia", "PatchedParameter", "ReadMedia", "ReadParameter", "Writes", "targeted")
+__all__ = (
+    "PatchedMedia",
+    "PatchedParameter",
+    "ReadMedia",
+    "ReadParameter",
+    "ReadPaths",
+    "Writes",
+    "dotted_read",
+    "read_paths",
+    "targeted",
+)
 
 T = TypeVar("T")
 Writes: TypeAlias = tuple[tuple[int | None, str | None], ...]
+PathPart: TypeAlias = "tuple[str, int | None, Selector | None, int]"
+ReadPaths: TypeAlias = "tuple[tuple[str, tuple[PathPart, ...]], ...]"
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -134,3 +149,47 @@ def targeted(
         )
     called = replace(call, parameters=tuple(parameters), body=body, checks=())
     return called, tuple(writes), frozenset(headers), frozenset(queries)
+
+
+def read_paths(call: OperationPlan[T, object], sources: Sequence[tuple[RequestTarget, Selector | None]]) -> ReadPaths:
+    """Return the path segments read values are written to, each parameter by name, write, selector, and position.
+
+    A parameter the caller's argument fills has no write.
+    """
+    paths: dict[str, tuple[int | None, Selector | None]] = {
+        target.name: (index, selector)
+        for index, (target, selector) in enumerate(sources)
+        if isinstance(target, ParameterTarget) and target.location == "path"
+    }
+    reads = {name for name, (_, selector) in paths.items() if selector is not None}
+    return tuple(
+        (segment, tuple((name, *paths.get(name, (None, None)), _position(call, "path", name)) for name in names))
+        for segment, names in (path_segments(call.path) if reads else ())
+        if not reads.isdisjoint(names)
+    )
+
+
+def dotted_read(
+    parameters: Sequence[ParameterSpec],
+    segment: str,
+    parts: tuple[PathPart, ...],
+    written: tuple[WireValue, ...],
+    callers: Callable[[], Mapping[str, str]],
+) -> Selector | None:
+    """Return the selector of a read value written to a path segment that encodes to a dot segment, or None.
+
+    The caller's own path arguments in the segment keep the texts `callers` gives. The first read value whose encoded
+    text is non-empty is blamed, or else the first read value. A value its parameter cannot encode is left to the
+    request, which refuses it.
+    """
+    try:
+        texts = {
+            name: callers()[name] if index is None else path_text(parameters[position].plan, written[index])
+            for name, index, _, position in parts
+        }
+    except ParameterEncodingError:
+        return None
+    if not dot_segment(segment, texts):
+        return None
+    reads = [(name, read) for name, _, read, _ in parts if read is not None]
+    return next((read for name, read in reads if texts[name]), reads[0][1])

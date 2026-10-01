@@ -595,10 +595,13 @@ credentials. A cursor the server
 returned is sent as it came, without its target's schema checks even under `request="schema"` validation, while a
 start cursor the caller passes is checked like any other argument. The traversal ends at a page whose cursor is missing
 or null where the helper declares that end, is one of its end values, or is empty with `empty_string: end`. A missing
-or null cursor that no end covers, missing or null items, a header repeated for a single cursor, and a dot segment
-(`.` or `..`) read for a path parameter raise `ProtocolDataError`, and a cursor over its size limit raises
-`ProtocolSizeError`, each as a failure of the page's call. A continuation returned by an earlier page of the same
-pager, or an earlier page `next_page` continued from, ends it with `PaginationCycleError` after the repeating page.
+or null cursor that no end covers, missing or null items, a header repeated for a single cursor, and a value read for
+a path parameter that makes its segment, encoded in the parameters' styles with the caller's own path arguments and
+the helper's literals beside it, a dot segment (`.` or `..`, `%2E` in either case counting as `.`) raise
+`ProtocolDataError`, and a cursor over its size limit raises `ProtocolSizeError`, each as a failure of the page's call.
+The error names the first such read value whose encoded text is non-empty, or else the first one. A continuation
+returned by an earlier page of the same pager, or an earlier page `next_page` continued from, ends it with
+`PaginationCycleError` after the repeating page.
 
 ### Offsets and page numbers
 
@@ -796,8 +799,8 @@ raises `PaginationCycleError` again without sending.
 | Another helper's, or one generated differently | `ResumeStateError(condition="fingerprint")` |
 | Made under another credential partition, allowed origins, server origin, or declared security schemes, kinds, and scopes, or under another auth: the schemes it gives credentials for, an OAuth grant's audience or requested scopes, `allowed_origins`, `selection`, `send_on_anonymous`, `anonymous_schemes`, or the origins, headers, query fields, and body digest the signers declare. The classes of providers and signers are no part of it, so a synchronous client's checkpoint resumes in an asyncio client with the same settings | `ResumeStateError(condition="security")` |
 | An expiry that has passed | `ResumeStateError(condition="expired")` |
-| A state, saved argument, body, or page that does not fit the helper: a value its codec refuses, a media type the operation's select method refuses, a dot segment for a path argument, a value for a parameter that is never saved, an offset or page number other than the one the saved pages reach from the first request's start, or a saved value that cannot be encoded into the first or next request, such as one with CR, LF, or NUL in a header. A refusal of the resumed call's own options is raised as the call raises it | `ResumeStateError(condition="malformed")` |
-| A cursor over the resumed call's `max_cursor_bytes`, a URL a server could not have given, a dot segment a server value would write to a path parameter, or a saved page over the resumed call's `max_page_bytes` | `ProtocolSizeError` or `ProtocolDataError`, as for a page |
+| A state, saved argument, body, or page that does not fit the helper: a value its codec refuses, a media type the operation's select method refuses, path arguments that make their segment a dot segment once encoded, a value for a parameter that is never saved, an offset or page number other than the one the saved pages reach from the first request's start, or a saved value that cannot be encoded into the first or next request, such as one with CR, LF, or NUL in a header. A refusal of the resumed call's own options is raised as the call raises it | `ResumeStateError(condition="malformed")` |
+| A cursor over the resumed call's `max_cursor_bytes`, a URL a server could not have given, a server value that would make a path segment a dot segment once encoded, or a saved page over the resumed call's `max_page_bytes` | `ProtocolSizeError` or `ProtocolDataError`, as for a page |
 
 `ResumeState.export()` of a helper's checkpoint requires `ProtocolSecurityContext.credential_partition` when the
 operation declares security or the call configures auth, and raises `ProtocolConfigurationError` with
@@ -813,8 +816,10 @@ must read a declared property or header, and a querystring or body target's poin
 declares, through `allOf` members and nullable `anyOf` or `oneOf` ones. The JSON types a cursor reads, other than null,
 and those a binding reads or its literal has, null included, must be ones the target accepts, and a binding that can
 give null must write a JSON body or a querystring of JSON content; a cursor that can be null needs a `null` end, and
-each end value must be of a type the cursor reads. A literal `.` or `..` is no path parameter value, and a body target
-needs a required body or one media type a call without `media_type` sends. A binding that writes the continuation's
+each end value must be of a type the cursor reads. Literals that make a path segment whose every parameter they fill a
+dot segment once encoded in their parameters' styles, such as `..` in the simple style, or the empty string in the
+label style, are no path parameter values, reported at the segment's first literal binding, and a body target needs a
+required body or one media type a call without `media_type` sends. A binding that writes the continuation's
 target or another binding's, or a body or querystring member inside or around one, fails with `E_CONFIG_CONFLICT`. An
 offset's or page number's target must accept integers, a page number advances by a literal step, `has_more` must read
 booleans, and `total` must read integers from the body or a header, never the status. A next URL must read strings, or
@@ -851,7 +856,12 @@ E_CONFIG_CONFLICT config protocols.helpers['bindings.conflicts'].bindings[0].tar
 E_CONFIG_CONFLICT config protocols.helpers['bindings.conflicts'].bindings[2].target /paths/~1users/get: The binding 2 of 'bindings.conflicts' writes the same target as its binding 1
 E_CONFIG_CONFLICT config protocols.helpers['bindings.overlaps'].bindings[0].target /paths/~1bodies/post: The binding 0 of 'bindings.overlaps' writes a target overlapping that of its cursor
 E_CONFIG_CONFLICT config protocols.helpers['bindings.overlaps'].bindings[2].target /paths/~1bodies/post: The binding 2 of 'bindings.overlaps' writes a target overlapping that of its cursor
-E_CONFIG_VALUE config protocols.helpers['bindings.dots'].bindings[0].value.literal /paths/~1folders~1{folder}/get: The binding 0 of 'bindings.dots' gives the dot segment '..', which cannot be written to the path parameter 'folder' of GET /folders/{folder}
+E_CONFIG_VALUE config protocols.helpers['bindings.dots'].bindings[0].value.literal /paths/~1folders~1{folder}/get: The binding 0 of 'bindings.dots' gives '..', which makes the segment of the path parameter 'folder' of GET /folders/{folder} a dot segment
+E_CONFIG_VALUE config protocols.helpers['bindings.label_empty'].bindings[0].value.literal /paths/~1styled~1{label}~1{reserved}~1{file}.json/get: The binding 0 of 'bindings.label_empty' gives '', which makes the segment of the path parameter 'label' of GET /styled/{label}/{reserved}/{file}.json a dot segment
+E_CONFIG_VALUE config protocols.helpers['bindings.label_dot'].bindings[0].value.literal /paths/~1styled~1{label}~1{reserved}~1{file}.json/get: The binding 0 of 'bindings.label_dot' gives '.', which makes the segment of the path parameter 'label' of GET /styled/{label}/{reserved}/{file}.json a dot segment
+E_CONFIG_VALUE config protocols.helpers['bindings.reserved_dot'].bindings[0].value.literal /paths/~1styled~1{label}~1{reserved}~1{file}.json/get: The binding 0 of 'bindings.reserved_dot' gives '%2e', which makes the segment of the path parameter 'reserved' of GET /styled/{label}/{reserved}/{file}.json a dot segment
+E_CONFIG_VALUE config protocols.helpers['bindings.path_null'].bindings[0].target /paths/~1styled~1{label}~1{reserved}~1{file}.json/get: The binding 0 of 'bindings.path_null' can give null, which cannot be written to the path parameter 'reserved' of GET /styled/{label}/{reserved}/{file}.json
+E_CONFIG_VALUE config protocols.helpers['bindings.joined_dots'].bindings[0].value.literal /paths/~1joined~1{first}{second}/get: The binding 0 of 'bindings.joined_dots' gives '.', which makes the segment of the path parameter 'first' of GET /joined/{first}{second} a dot segment
 E_CONFIG_VALUE config protocols.helpers['write.optional_body'].continuation.write /paths/~1multi/post: The cursor of 'write.optional_body' writes the request body of POST /multi, which is optional and has no media type a call without one sends
 E_CONFIG_VALUE config protocols.helpers['write.body_type'].continuation.write /paths/~1bodies/post: The cursor of 'write.body_type' reads string values, which the property '/count' of the request body of POST /bodies does not accept
 E_CLIENT_UNSUPPORTED target protocols.helpers['body.form'] /paths/~1forms/post: The pagination helper 'body.form' sends a request body other than JSON, which is not supported yet
@@ -924,9 +934,9 @@ until the operation settles and returns its result. Both are coroutines on `Asyn
 of the `poll` operation, which writes each binding's value: what its selector reads from the create response for
 `source: initial`, kept for the whole operation, or from the latest response, the create response and then each poll,
 for `source: previous`, or a `literal`. A value is written as the server gave it, without its target's schema checks,
-and a missing value, a header repeated for a single value, and a dot segment (`.` or `..`) read for a path parameter
-raise `ProtocolDataError`. `progress` reports the polls sent, counting none refused before sending, and the
-session's sends.
+and a missing value, a header repeated for a single value, and read values that make a path segment `.` or `..` once
+encoded, `%2E` in either case counting as `.`, raise `ProtocolDataError`. `progress` reports the polls sent, counting
+none refused before sending, and the session's sends.
 
 ### States and results
 
@@ -1001,10 +1011,11 @@ operation, like a result `operation`, must declare exactly one success response 
 read natively. The state, each binding's selector, and an inline result must read what the responses declare: a body
 pointer a property of the response's model, through every accepted create response for `source: initial` and also the
 poll's for `source: previous`, or a declared header. Each declared state must have a JSON type the state reads. The
-JSON types a binding reads or its literal has must be ones its target accepts, a literal `.` or `..` is no path
-parameter value, and every required parameter and required body of the poll and result operations must be written by
-a binding. Two bindings writing the same target, or a body or querystring member inside or around another's, fail with
-`E_CONFIG_CONFLICT`. As for pagination, no binding of the poll or the result fetch writes a credential position: a
+JSON types a binding reads or its literal has must be ones its target accepts, literals that make a path segment `.` or
+`..` once encoded are no path parameter values, and every required parameter and required body of the poll and result
+operations must be written by a binding. Two bindings writing the same target, or a body or querystring member inside
+or around another's, fail with `E_CONFIG_CONFLICT`. As for pagination, no binding of the poll or the result fetch writes
+a credential position: a
 cookie, the `Authorization`, `Proxy-Authorization`, `Cookie`, and `Cookie2` headers, or a header, query parameter, or
 querystring property a security scheme of the package names. An inline or immediate result reads a body pointer whose
 schema is the declared `schema`; an immediate result needs a result kind other than `none`, success responses of
@@ -1029,7 +1040,7 @@ E_CONFIG_CONFLICT config protocols.helpers['checks.bindings'].bindings[2].target
 E_CLIENT_UNSUPPORTED target protocols.helpers['checks.bindings'].bindings[3].value.source /paths/~1jobs~1{jobId}/get: The binding 3 of 'checks.bindings' reads the helper's input, which is not supported yet
 E_CONFIG_VALUE config protocols.helpers['checks.bindings'].bindings[4].value.selector /paths/~1jobs/post: The binding 4 pointer '/nothing' of 'checks.bindings' names no property of the POST /jobs response
 E_CONFIG_VALUE config protocols.helpers['checks.bindings'].bindings[5].target /paths/~1jobs~1{jobId}/get: The binding 5 of 'checks.bindings' gives integer values, which the header parameter 'X-Trace' of GET /jobs/{jobId} does not accept
-E_CONFIG_VALUE config protocols.helpers['checks.dots'].bindings[0].value.literal /paths/~1jobs~1{jobId}/get: The binding 0 of 'checks.dots' gives the dot segment '..', which cannot be written to the path parameter 'jobId' of GET /jobs/{jobId}
+E_CONFIG_VALUE config protocols.helpers['checks.dots'].bindings[0].value.literal /paths/~1jobs~1{jobId}/get: The binding 0 of 'checks.dots' gives '..', which makes the segment of the path parameter 'jobId' of GET /jobs/{jobId} a dot segment
 E_CONFIG_VALUE config protocols.helpers['checks.bodyless'].bindings[0].value.selector /paths/~1exports/post: The binding 0 of 'checks.bodyless' reads the body of the 202 response of POST /exports, which is no JSON model
 E_CONFIG_VALUE config protocols.helpers['checks.required'].bindings /paths/~1exports~1find/get: GET /exports/find requires the querystring parameter 'filter', which no binding of 'checks.required' writes
 E_CONFIG_VALUE config protocols.helpers['checks.required'].result.bindings /paths/~1reports/post: POST /reports requires a request body, which no binding of 'checks.required' writes
@@ -1491,6 +1502,12 @@ What every mode still does:
   A form-data member that its direction excludes takes no part in either.
 - **Native behavior.** `none` does not undo validation a model's constructor already did, and it cannot send what the
   serializer cannot represent.
+- **Path segments.** Path arguments that make their segment `.` or `..` once encoded in their parameters' styles and
+  put into the path template, `%2E` in either case counting as `.`, such as `..` in the simple style, the empty string
+  in the label style, or `%2e` with `allowReserved`, fail with `RequestEncodingError` at the segment's first parameter
+  whose encoded text is non-empty, with a `ParameterEncodingError` cause, before anything is sent: URL normalization in
+  clients, proxies, and servers would remove the segment and send the call to another resource, and encoding the dots
+  does not prevent it. `...` and `.a` are sent as they are, and a dot segment the path template spells is not refused.
 - **Strict records.** A `ModelValue` or `ModelInput` passed as an argument, the `RequestCodecs` factories, the header
   decoders, and a response the package returns as `DecodedValue` keep their strict schema validation in every mode.
   Read a body without any model with `with_raw_response` or `with_streaming_response` instead.

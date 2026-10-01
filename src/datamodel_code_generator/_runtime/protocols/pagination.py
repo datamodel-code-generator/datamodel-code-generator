@@ -27,10 +27,12 @@ from ..client.errors import (
     SDKError,
 )
 from ..client.options import RequestOptions
+from ..client.paths import dot_segment, path_segments
 from ..client.responses import ResponseInfo
 from ..client.timing import SessionOptions
 from ..model_codecs.errors import CodecError
 from ..model_codecs.media import decode_json
+from ..model_codecs.parameters import path_text
 from ..model_codecs.unset import UNSET, Unset
 from .errors import PaginationCycleError, ProtocolDataError, ProtocolStateError, ResumeStateError, SessionLimitError
 from .options import PaginationOptions, layered
@@ -38,7 +40,6 @@ from .records import (
     BodySelector,
     Continuation,
     HeaderSelector,
-    ParameterTarget,
     ProtocolProgress,
     RequestTarget,
     Sealed,
@@ -49,7 +50,7 @@ from .records import (
     record_instance,
 )
 from .resume import ResumeState, helper_state, state_fields
-from .values import DOT_SEGMENTS, MISSING, Missing, Patch, RepeatedValueError, resolve, selected
+from .values import MISSING, Missing, Patch, RepeatedValueError, resolve, selected
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Generator, Iterator, Sequence
@@ -63,6 +64,7 @@ if TYPE_CHECKING:
     from ..model_codecs.selectors import MediaSelector
     from ..model_codecs.wire import WireValue
     from .references import OperationRef
+    from .writes import ReadPaths
 
 __all__ = (
     "AsyncPager",
@@ -218,8 +220,9 @@ class PaginationPlan(Generic[T, P]):
     is written into the caller's encoded value. They skip the schema and argument checks, since the server chose them.
     A helper that `follows` a server's URLs writes no cursor and sends each later page to the URL with GET and no body,
     unless it repeats the request body with the operation's method. `headers` and `queries` name the header and query
-    parameters it writes, which a call's options must not patch, and `dotted` the writes of read values into path
-    parameters, which must not be dot segments. Generation refuses a helper writing a cookie or a credential position.
+    parameters it writes, which a call's options must not patch, and `dotted` the path segments a read value is written
+    to, by each parameter's name, write, selector, and position, a caller's argument without a write; such a segment
+    must not encode to a dot segment. Generation refuses a helper writing a cookie or a credential position.
     """
 
     helper_id: str
@@ -234,7 +237,7 @@ class PaginationPlan(Generic[T, P]):
     writes: tuple[tuple[int | None, str | None], ...] = field(init=False)
     headers: frozenset[str] = field(init=False)
     queries: frozenset[str] = field(init=False)
-    dotted: tuple[tuple[int, Selector], ...] = field(init=False)
+    dotted: ReadPaths = field(init=False)
     continued: OperationPlan[P, object] = field(init=False)
 
     def __post_init__(self) -> None:
@@ -243,7 +246,7 @@ class PaginationPlan(Generic[T, P]):
         A write is a parameter's argument position with no pointer, a querystring's with a pointer into its value, or
         no position with a pointer into the JSON body. Every media of a body written to is JSON.
         """
-        from .writes import targeted  # noqa: PLC0415 - Only a plan loads the operation runtime.
+        from .writes import read_paths, targeted  # noqa: PLC0415 - Only a plan loads the operation runtime.
 
         rule = self.continuation
         follows = isinstance(rule, (NextUrlPlan, LinkPlan))
@@ -255,15 +258,7 @@ class PaginationPlan(Generic[T, P]):
         object.__setattr__(self, "writes", writes)
         object.__setattr__(self, "headers", headers)
         object.__setattr__(self, "queries", queries)
-        object.__setattr__(
-            self,
-            "dotted",
-            tuple(
-                (index, selector)
-                for index, (target, selector) in enumerate(sources)
-                if isinstance(target, ParameterTarget) and target.location == "path" and selector is not None
-            ),
-        )
+        object.__setattr__(self, "dotted", read_paths(self.call, sources))
         if follows and not (isinstance(rule, NextUrlPlan) and rule.repeat_request_body):
             continued = replace(continued, method="GET", body=None, retry_safety="method_default", idempotency=None)
         object.__setattr__(self, "continued", continued)
@@ -527,13 +522,6 @@ def _sized(plan: PaginationPlan[T, P], value: WireValue, info: ResponseInfo | No
         raise _size_error(plan, info, "cursor", limit, size)
 
 
-def _dotted(plan: PaginationPlan[T, P], written: tuple[WireValue, ...], info: ResponseInfo | None) -> None:
-    """Refuse a dot segment read for a path parameter among the values the next request writes."""
-    for index, read in plan.dotted:
-        if written[index] in DOT_SEGMENTS:
-            raise _data_error(plan, info, "value", read)
-
-
 def _linked(plan: PaginationPlan[T, P], rule: LinkPlan, info: ResponseInfo, limit: int) -> str | Missing:
     """Return the target of the one link of the helper's relation a page's Link header gives, or MISSING without one.
 
@@ -631,6 +619,7 @@ class _Walk(Generic[T, P]):
         "limits",
         "link",
         "origins",
+        "paths",
         "plan",
         "request",
         "saved",
@@ -659,6 +648,7 @@ class _Walk(Generic[T, P]):
         self.origins: frozenset[Origin] = frozenset()
         self.seed: bytes | None = None
         self.saved: tuple[bytes, int, str | None] | None = None
+        self.paths: dict[str, str] | None = None
 
     def progress(self) -> ProtocolProgress:
         """Return the pages fetched, the items delivered, and the session's sends so far."""
@@ -669,6 +659,32 @@ class _Walk(Generic[T, P]):
             "network_send_count": 0 if session is None else session.network_send_count,
             "network_send_budget_used": 0 if session is None else session.network_send_budget_used,
         })
+
+    def callers(self) -> dict[str, str]:
+        """Return the texts of the caller's path arguments that share a segment with a read value, once a walk.
+
+        Each argument the first page sent is encoded again by its parameter's codec, without validation.
+        """
+        if (texts := self.paths) is None:
+            plan, arguments = self.plan, self.request.arguments
+            parameters = plan.call.parameters
+            texts = self.paths = {
+                name: path_text(parameters[position].plan, parameters[position].encode(arguments[position], "none"))
+                for _, parts in plan.dotted
+                for name, index, _, position in parts
+                if index is None
+            }
+        return texts
+
+    def dotted(self, written: tuple[WireValue, ...], info: ResponseInfo | None) -> None:
+        """Refuse a read value among those the next request writes that makes a path segment a dot segment."""
+        from .writes import dotted_read  # noqa: PLC0415 - A plan loaded the operation runtime.
+
+        plan = self.plan
+        parameters = plan.call.parameters
+        for segment, parts in plan.dotted:
+            if (read := dotted_read(parameters, segment, parts, written, self.callers)) is not None:
+                raise _data_error(plan, info, "value", read)
 
     def session_id(self) -> str | None:
         """Return the identifier of the walk's session once it started."""
@@ -919,7 +935,8 @@ class _Walk(Generic[T, P]):
         The items are checked in the wire value before the page's accessor reads them from the decoded one; a value of
         another type fails its response's validation first, in every mode. What the next request writes is the cursor
         or position, or the URL it follows without the stripped query fields, MISSING after the last page.
-        The bindings are read only when a page follows, and a dot segment read for a path parameter is refused.
+        The bindings are read only when a page follows, and a read value that makes a path segment a dot segment once
+        encoded is refused.
         """
         plan = self.plan
         selector = plan.items_selector
@@ -940,7 +957,7 @@ class _Walk(Generic[T, P]):
         if isinstance(cursor, Missing):
             return Page(items=items, data=data, response=info), cursor, (), content
         bound = self.bound(wire, info)
-        _dotted(plan, bound if plan.follows else (*bound, cursor), info)
+        self.dotted(bound if plan.follows else (*bound, cursor), info)
         continuation = Continuation(kind=rule.kind, value=cursor)
         page = Page(items=items, data=data, response=info, continuation=continuation)
         return page, cursor, bound, content
@@ -1126,20 +1143,14 @@ def _resent(
 ) -> _Request:
     """Return the request a checkpoint saved, its arguments and any JSON body built as a caller builds them.
 
-    An argument a checkpoint never saves and a dot segment for a path parameter are refused, and so is a value its
-    codec refuses, a body the operation does not take, and a media type its select method refuses.
+    An argument a checkpoint never saves is refused, and so is a value its codec refuses, path arguments that make a
+    segment a dot segment once encoded, a body the operation does not take, and a media type its select method refuses.
     """
     call = plan.call
     saved = [_array(argument) for argument in _array(arguments)]
     _require(len(saved) == len(call.parameters) and all(len(argument) <= 1 for argument in saved))
     wire = tuple(argument[0] if argument else UNSET for argument in saved)
-    _require(
-        core.unsaved_argument(call, wire) is None
-        and not any(
-            spec.plan.location == "path" and value in DOT_SEGMENTS
-            for spec, value in zip(call.parameters, wire, strict=True)
-        )
-    )
+    _require(core.unsaved_argument(call, wire) is None)
     sent = _array(body)
     given: tuple[WireValue, str, str | None] | None = None
     if sent:
@@ -1151,6 +1162,14 @@ def _resent(
         restored, restored_body, media_type = core.restored_request(call, wire, given)
     except (SDKError, CodecError):
         raise _MalformedError from None
+    texts = {
+        spec.plan.name: path_text(spec.plan, value)
+        for spec, value in zip(call.parameters, wire, strict=True)
+        if spec.plan.location == "path" and not isinstance(value, Unset)
+    }
+    _require(
+        not any(texts.keys() >= {*names} and dot_segment(segment, texts) for segment, names in path_segments(call.path))
+    )
     return _Request(restored, restored_body, media_type)
 
 
@@ -1266,7 +1285,7 @@ def _continued(core: ClientCore | AsyncClientCore, walk: _Walk[T, P], start: int
         walk.origins = core.follow_origins(plan.call, limits.options)
         url = cast("str", value)
         _followed(plan, rule.read, url, url, None, limits.max_cursor_bytes, walk.origins, frozenset())
-    _dotted(plan, link.bound if plan.follows else (*link.bound, value), None)
+    walk.dotted(link.bound if plan.follows else (*link.bound, value), None)
 
 
 class _State(Enum):

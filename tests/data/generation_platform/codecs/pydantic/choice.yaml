@@ -1,0 +1,17 @@
+openapi: 3.1.0
+info:
+  title: Codec parameter without one scalar kind
+  version: "1"
+paths:
+  /pets:
+    get:
+      parameters:
+        - name: choice
+          in: query
+          schema:
+            oneOf:
+              - type: integer
+              - type: boolean
+      responses:
+        "204":
+          description: Nothing.
