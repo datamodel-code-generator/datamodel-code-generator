@@ -311,10 +311,9 @@ helper, resolves its references against the selected API, and records it in the 
 helper generates the [pagination helper](#pagination-helpers) below, an enabled polling helper the
 [polling helper](#polling-helpers), an enabled SSE helper the [SSE stream helper](#sse-stream-helpers), an enabled
 NDJSON helper the [NDJSON stream helper](#ndjson-stream-helpers), and an enabled webhook helper the
-[webhook verification helper](#webhook-verification-helpers); any other enabled helper fails with `E_CLIENT_UNSUPPORTED`.
-A disabled helper generates nothing, so the package is the same as without it. The `websocket`, `cache`,
-`resumable_upload`, `batch`, and `queue` kinds fail with `E_CLIENT_UNSUPPORTED` whether they are enabled or not, and
-their settings are not read yet.
+[webhook verification helper](#webhook-verification-helpers). A disabled helper generates nothing, so the package is
+the same as without it. The `websocket`, `cache`, `resumable_upload`, `batch`, and `queue` kinds fail with
+`E_CLIENT_UNSUPPORTED` whether they are enabled or not, and their settings are not read yet.
 
 | Setting | Values | Default | Where |
 |---|---|---|---|
