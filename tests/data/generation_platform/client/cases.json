@@ -3672,5 +3672,18 @@
         "schemas"
       ]
     }
+  },
+  "sockets-schema": {
+    "input": "sockets.yaml",
+    "references": [
+      "protocols/sockets.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/sockets.yaml",
+      "validation": {
+        "response": "schema"
+      }
+    },
+    "modules": false
   }
 }
