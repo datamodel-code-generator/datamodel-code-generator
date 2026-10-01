@@ -2177,14 +2177,33 @@ class _Registry(_Typing):
         )
 
 
+_RESUME_RUNTIME: Final = """
+A pager's `checkpoint()` returns a `ResumeState` without sending, and the helper's `resume(state)` returns a pager in a
+session of its own that sends nothing until it is iterated. A checkpoint saves the wire values of the call's arguments
+and of the JSON body later pages send, the last page's position, continuation, binding values, and cycle history, and
+the body of a page with items left, which `resume` decodes again and delivers first. It never saves the call's options,
+its session, or anything its auth adds; a call giving a cookie, a credential header, or a parameter or querystring field
+at a security scheme's position cannot be checkpointed and raises `ProtocolConfigurationError`, and no helper writes a
+cursor or binding to such a position or to any cookie, since cookies commonly carry session state. Pages and items count
+on from the checkpoint against the resumed call's limits, while its sends and timeout start afresh. `resume` builds the
+saved arguments and body as their codecs build a caller's, takes literal bindings from the helper, and prepares the
+request it sends next without sending. It raises `ResumeStateError` before sending for another helper's checkpoint, one
+made under another credential partition, allowed origins, server, declared security, or auth identity, and a malformed
+state, a value or media type its codec or selector refuses, a saved value that cannot be encoded into a request, and an
+offset or page number other than the one the pages reach included, while a refusal of the resumed call's options is
+raised as the call raises it, and checks the saved continuation and page as a server's. `SessionLimitError` and
+`PaginationCycleError` keep a checkpoint of where the pager stopped as `resume_state` when the call can be checkpointed.
+`ResumeState.export()` requires `ProtocolSecurityContext.credential_partition` when the operation declares security or
+the call configures auth; `import_state` reads the export back.
+"""
 _HELPER_OPTIONS: Final = (
     ("pagination_options", ".", "PaginationOptions"),
     ("options", "..options", "RequestOptions"),
     ("session_options", "..options", "SessionOptions"),
 )
-_HELPER_CALLS: Final[dict[bool, tuple[str, str, str]]] = {
-    False: ("first_page", "iterate_pages", "following_page"),
-    True: ("afirst_page", "aiterate_pages", "afollowing_page"),
+_HELPER_CALLS: Final[dict[bool, tuple[str, str, str, str]]] = {
+    False: ("first_page", "iterate_pages", "following_page", "resume_pages"),
+    True: ("afirst_page", "aiterate_pages", "afollowing_page", "aresume_pages"),
 }
 _POLL_OPTIONS: Final = (("poll_options", ".", "PollOptions"), *_HELPER_OPTIONS[1:])
 _POLLING: Final = "_runtime.protocols.polling"
@@ -2314,17 +2333,24 @@ class _Helpers:
         return _call(module.local("_runtime.protocols.pagination", "PageBinding"), entries)
 
     def continuation(self, module: Module, spec: PaginationSpec) -> Doc:
-        """Return the runtime record of a cursor continuation, or of an offset or page-number one."""
+        """Return the runtime record of a helper's cursor, offset, page-number, next-URL, or Link continuation."""
         runtime = "_runtime.protocols.pagination"
         continuation = spec.continuation
-        write = ("write=", self.target(module, continuation["write"]))
-        if (kind := continuation["kind"]) != "cursor":
+        kind = continuation["kind"]
+        if kind == "link":
+            rel = continuation["rel"]
+            entries: list[tuple[str, Doc]] = [
+                ("header=", repr(continuation["header"])),
+                *((("rel=", repr(rel)),) if rel != "next" else ()),
+            ]
+            return _call(module.local(runtime, "LinkPlan"), entries)
+        if kind in {"offset", "page"}:
             evidence = spec.evidence
             return _call(
                 module.local(runtime, "CountPlan"),
                 (
                     ("kind=", repr(kind)),
-                    write,
+                    ("write=", self.target(module, continuation["write"])),
                     ("first=", repr(continuation["first"])),
                     ("step=", repr(continuation["step"].get("literal"))),
                     (f"{evidence}=", self.selector(module, continuation[evidence])),
@@ -2332,15 +2358,16 @@ class _Helpers:
             )
         ends = [end["kind"] for end in continuation["end"]]
         values = [repr(end["value"]) for end in continuation["end"] if end["kind"] == "value"]
-        entries: list[tuple[str, Doc]] = [
+        entries = [
             ("read=", self.selector(module, continuation["read"])),
-            write,
+            *((("write=", self.target(module, continuation["write"])),) if kind == "cursor" else ()),
             *((("end_missing=", "True"),) if "missing" in ends else ()),
             *((("end_null=", "True"),) if "null" in ends else ()),
             *((("end_values=", _tuple(values)),) if values else ()),
-            *((("empty_string_ends=", "True"),) if continuation["empty_string"] == "end" else ()),
+            *((("empty_string_ends=", "True"),) if continuation.get("empty_string") == "end" else ()),
+            *((("repeat_request_body=", "True"),) if continuation.get("repeat_request_body") else ()),
         ]
-        return _call(module.local(runtime, "CursorPlan"), entries)
+        return _call(module.local(runtime, "CursorPlan" if kind == "cursor" else "NextUrlPlan"), entries)
 
     def plan(self, module: Module, index: int, spec: PaginationSpec) -> str:
         """Return a helper's plan: its identity, operation, items, continuation, fingerprint, and bindings."""
@@ -2512,7 +2539,7 @@ class _Helpers:
         return "\n\n".join((head, *members))
 
     def methods(self, module: Module, index: int, spec: PaginationSpec, *, asynchronous: bool) -> list[str]:  # noqa: PLR0914
-        """Return a pagination helper's page, iterate, and next_page methods."""
+        """Return a pagination helper's page, iterate, next_page, and resume methods."""
         operation = replace(spec.operation, fields=())
         resources = self.resources
         runtime = "_runtime.protocols.pagination"
@@ -2533,7 +2560,9 @@ class _Helpers:
             *((f"{argument.name}=", argument.name) for argument in body),
             *((f"{name}=", name) for name, _, _ in _HELPER_OPTIONS),
         ]
-        first, iterate, following = (module.local(runtime, name) for name in _HELPER_CALLS[asynchronous])
+        first, iterate, following, resume = (module.local(runtime, name) for name in _HELPER_CALLS[asynchronous])
+        keywords = [argument.parameter(module) for argument in options]
+        forwarded = [(f"{name}=", name) for name, _, _ in _HELPER_OPTIONS]
         route = f"{operation.contract.method.upper()} {operation.contract.path}"
         signature = tuple(argument.parameter(module) for argument in (*arguments, *body, *options))
         wait = "await " if asynchronous else ""
@@ -2552,12 +2581,7 @@ class _Helpers:
                 layout(
                     Group(
                         f"    {'async ' if asynchronous else ''}def next_page(",
-                        items((
-                            "self",
-                            f"page: {page_type}",
-                            "*",
-                            *(argument.parameter(module) for argument in options),
-                        )),
+                        items(("self", f"page: {page_type}", "*", *keywords)),
                         f") -> {page_type} | None:",
                     ),
                     4,
@@ -2567,19 +2591,31 @@ class _Helpers:
                 '        """Fetch the page after a page of this helper, or return None after the last page."""',
                 f"        return {wait}"
                 + layout(
-                    _call(
-                        following,
-                        (
-                            ("", "self._core"),
-                            ("", plan),
-                            ("", "page"),
-                            *((f"{name}=", name) for name, _, _ in _HELPER_OPTIONS),
-                        ),
-                    ),
+                    _call(following, (("", "self._core"), ("", plan), ("", "page"), *forwarded)),
                     8,
                     7 + len(wait),
                     WIDTH,
                 ),
+            )),
+            "\n".join((
+                layout(
+                    Group(
+                        "    def resume(",
+                        items((
+                            "self",
+                            f"state: {module.local('_runtime.protocols.resume', 'ResumeState')}",
+                            "*",
+                            *keywords,
+                        )),
+                        f") -> {pager}:",
+                    ),
+                    4,
+                    0,
+                    WIDTH,
+                ),
+                '        """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""',
+                "        return "
+                + layout(_call(resume, (("", "self._core"), ("", plan), ("", "state"), *forwarded)), 8, 7, WIDTH),
             )),
         ]
 
@@ -2745,7 +2781,8 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
             """
 A pagination helper's `page` fetches the first page and `next_page` the page after one it returned, each in a
 session of its own; `iterate` returns a pager, which sends nothing until it is iterated and fetches each page only
-once the previous one is consumed. See the runtime reference for their limits."""
+once the previous one is consumed, and `resume` returns one continuing a pager's `checkpoint()`. See the runtime
+reference for their limits and checkpoints."""
             if "pagination" in kinds
             else ""
         )
@@ -2990,14 +3027,15 @@ the helper writes.
     def pagination_runtime(self) -> str:
         """Describe pagination sessions and their limits, or nothing for a package without pagination helpers.
 
-        Cursors and their size limit are described only for a package with a cursor helper, and counted positions only
-        for one with an offset or page-number helper.
+        Cursors are described only for a package with a cursor helper, counted positions only for one with an offset or
+        page-number helper, and followed URLs only for one with a next-URL or Link helper; the cursor size limit
+        applies to cursors and followed URLs.
         """
         if not (pages := [spec for spec in self.helpers if not isinstance(spec, PollingSpec)]):
             return ""
         kinds = {spec.continuation["kind"] for spec in pages}
         cursors = "cursor" in kinds
-        size = "| cursor size | 64 KiB |\n" if cursors else ""
+        size = "| cursor size | 64 KiB |\n" if cursors or kinds & {"next_url", "link"} else ""
         rules = (
             """\
 A page's items must be a JSON array; an empty array does not end the traversal. A server's cursor, and each value a
@@ -3006,13 +3044,13 @@ binding reads, is sent as it came, without its target's schema checks; a dot seg
 cursor that no condition covers, or a missing binding value, raises `ProtocolDataError`. A continuation seen earlier in
 the session ends it with `PaginationCycleError` after the repeating page. A limit reached while pages remain raises
 `SessionLimitError` with the progress so far; a pager then refuses further steps. A call's options must not patch a
-header, the cookies, or a query parameter the helper writes."""
+header or a query parameter the helper writes."""
             if cursors
             else """\
 A page's items must be a JSON array. Each value a binding reads is sent as it came, without its target's schema
 checks; a dot segment for a path parameter, and a missing binding value, raise `ProtocolDataError`. A limit reached
 while pages remain raises `SessionLimitError` with the progress so far; a pager then refuses further steps. A call's
-options must not patch a header, the cookies, or a query parameter the helper writes."""
+options must not patch a header or a query parameter the helper writes."""
         )
         return f"""
 ## Pagination sessions
@@ -3022,7 +3060,8 @@ total timeout, and idempotency key; the session bounds all of them. Each limit c
 `ProtocolClientOptions.defaults` for the helper, then the default below. Defaults naming a helper the package lacks, or
 another kind's options, fail construction. The session types are imported from:
 
-- `{self.config.package}.protocols`: `PaginationOptions`, `Page`, `Pager`, and `AsyncPager`
+- `{self.config.package}.protocols`: `PaginationOptions`, `Page`, `Pager`, `AsyncPager`, `ResumeState`, and
+  `import_state`
 - `{self.config.package}.options`: `SessionOptions`
 
 | Limit | Effective default |
@@ -3034,12 +3073,31 @@ another kind's options, fail construction. The session types are imported from:
 | network sends per session | 3000; None removes it |
 
 {rules}
-{self.count_runtime(kinds)}"""
+{self.count_runtime(kinds)}{self.follow_runtime(kinds)}{_RESUME_RUNTIME}"""
+
+    @staticmethod
+    def follow_runtime(kinds: set[str]) -> str:
+        """Describe next-URL and Link helpers, or nothing for a package without them."""
+        if not kinds & {"next_url", "link"}:
+            return ""
+        return """
+A next-URL or Link helper sends the first request as the caller gives it and each later page to the URL the last page
+gave: a GET without a body, or the operation's method and the caller's body when a next URL repeats the body, with the
+call's headers and header and cookie parameters but not its query. A relative URL resolves against the URL that returned
+the page. The reference must follow RFC 3986, without a fragment, user information, or brackets outside an IPv6 host,
+and name an HTTP or HTTPS URL at the server's origin or at one `ProtocolSecurityContext.allowed_origins` lists; anything
+else raises `ProtocolDataError`, and a resolved URL over 8 KiB, or the cursor size when smaller, `ProtocolSizeError`. A
+request to another origin carries no credential or cookie header and none of the headers or query fields the package's
+security schemes name, and authenticates only at an origin `AuthConfig.allowed_origins` lists. A Link header's values
+must parse as RFC 8288 links within the cursor size and give the relation at most once; a page without the relation is
+the last, and an empty page with a URL continues. A URL seen earlier in the session, the first page's own included, ends
+it with `PaginationCycleError` after the repeating page.
+"""
 
     @staticmethod
     def count_runtime(kinds: set[str]) -> str:
         """Describe offset and page-number helpers, or nothing for a package without them."""
-        if not kinds - {"cursor"}:
+        if not kinds & {"offset", "page"}:
             return ""
         return """
 An offset or page-number helper sends the first request as the caller gives it and starts at the position the caller

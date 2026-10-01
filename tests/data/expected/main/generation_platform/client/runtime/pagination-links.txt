@@ -1,0 +1,369 @@
+# pagination-links pydantic_v2.BaseModel
+  > GET https://api.example.com/v1/users?limit=1&debug=1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t, cookie: session=s, x-client: c] b''
+  > GET https://api.example.com/v1/users?limit=2&cursor=b%2Fc
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t, cookie: session=s, x-client: c] b''
+  > GET https://api.example.com/v1/users?cursor=c
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t, cookie: session=s, x-client: c] b''
+  > GET https://api.example.com/v1/users?cursor=d
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t, cookie: session=s, x-client: c] b''
+  > GET https://api.example.com/v1/users?cursor=e
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t, cookie: session=s, x-client: c] b''
+  followed URLs ['1', '2', '3', '4']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?cursor=h
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  header URL ['1', '2']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  null URL ['1']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  empty URL ['1']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  missing URL without its end [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='missing') [operation_id='listUsers', condition='missing', location=BodySelector(pointer='/maybe_next')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  integer URL [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/loose_next')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  object URL [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='type') [operation_id='listUsers', condition='type', location=BodySelector(pointer='/loose_next')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  fragment [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  user information [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  empty user information [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  ftp scheme [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  mailto scheme [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  space [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', location=BodySelector(pointer='/next')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  non-ASCII [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', location=BodySelector(pointer='/next')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  bad escape [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', location=BodySelector(pointer='/next')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  bad port [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  bracket outside a host [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', location=BodySelector(pointer='/next')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  IPv6 host [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  other host [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  plain HTTP [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  other port [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  oversized [] ! ProtocolSizeError: ProtocolSizeError(operation_id='listUsers', call_id='<call>', kind='cursor', limit=8192, observed=8235) [operation_id='listUsers', kind='cursor', unit='bytes', limit=8192] protocol_size_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  resolved URL over the cursor size [] ! ProtocolSizeError: ProtocolSizeError(operation_id='listUsers', call_id='<call>', kind='cursor', limit=40, observed=50) [operation_id='listUsers', kind='cursor', unit='bytes', limit=40] protocol_size_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  relative path growing past 8 KiB ['0', '1', '2', '3'] ! ProtocolSizeError: ProtocolSizeError(operation_id='listUsers', call_id='<call>', kind='cursor', limit=8192, observed=10032) [operation_id='listUsers', kind='cursor', unit='bytes', limit=8192] protocol_size_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  absolute link ['1', '2']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  token relation ['1', '2']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  relative link ['1', '2']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  relation list ['1', '2']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  relation and parameter case ['1', '2']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  quoted comma and semicolon ['1', '2']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  escaped quote ['1', '2']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  separate fields ['1', '2']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  empty list elements ['1', '2']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  whitespace around parameters ['1', '2']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  first relation parameter only ['1']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  anchored link ['1', '2']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  relation without value ['1']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  no next link ['1']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  empty field ['1']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  two next links [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='inconsistent') [operation_id='listUsers', condition='inconsistent', location=HeaderSelector(name='link', occurrence='all')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  two next fields [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='inconsistent') [operation_id='listUsers', condition='inconsistent', location=HeaderSelector(name='link', occurrence='all')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  unbracketed target [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', location=HeaderSelector(name='link', occurrence='all')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  unterminated quote [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', location=HeaderSelector(name='link', occurrence='all')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  missing comma [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', location=HeaderSelector(name='link', occurrence='all')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  parameter without name [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', location=HeaderSelector(name='link', occurrence='all')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  space in target [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', location=HeaderSelector(name='link', occurrence='all')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  fragment in target [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=HeaderSelector(name='link', occurrence='all')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  other origin [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=HeaderSelector(name='link', occurrence='all')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  extension relation ['1', '2']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  Link fields over the cursor size [] ! ProtocolSizeError: ProtocolSizeError(operation_id='listUsers', call_id='<call>', kind='headers', limit=48, observed=50) [operation_id='listUsers', kind='headers', unit='bytes', limit=48] protocol_size_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: mine] b''
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: s1] b''
+  > GET https://api.example.com/v1/users?page=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: s1] b''
+  snapshot kept from the first page ['1', '2', '3']
+  > POST https://api.example.com/v1/searches
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 13] b'{"query":"a"}'
+  > POST https://api.example.com/v1/searches?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 26] b'{"query":"a","token":"t1"}'
+  > POST https://api.example.com/v1/searches?page=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 26] b'{"query":"a","token":"t2"}'
+  repeated body ['1', '2', '3']
+  > POST https://api.example.com/v1/searches
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 13] b'{"query":"a"}'
+  > GET https://api.example.com/v1/searches?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  fetched without the body ['1', '2']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?cursor=b
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  repeated URL ['1', '2', '3'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=2, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next')] pagination_cycle_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?cursor=a
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  repeated URL spelled absolutely ['1', '2'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=1, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next')] pagination_cycle_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  own URL ['1'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next')] pagination_cycle_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  empty reference ['1'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=0, first_seen_page_index=0) [condition='inconsistent', location=BodySelector(pointer='/next')] pagination_cycle_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  first followed page = [1] continuation=Continuation(kind='next_url') status=200 sends=1
+  > GET https://api.example.com/v1/users?cursor=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  next followed page = [2] continuation=None status=200 sends=1
+  after the last followed page = None
+  next followed page at another server ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='X-Next', occurrence='single')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t, cookie: session=s, authorization: Basic c2VjcmV0] b''
+  > GET https://other.example.com/v1/users?cursor=2
+    [host: other.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  > GET https://other.example.com/v1/users?cursor=3
+    [host: other.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  > GET https://api.example.com/v1/users?cursor=4
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t, cookie: session=s, authorization: Basic c2VjcmV0] b''
+  allowed origin and back ['1', '2', '3'] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-api-key: k, authorization: Basic c2VjcmV0] b''
+  > GET https://other.example.com/v1/users?cursor=2
+    [host: other.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?cursor=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-api-key: k, authorization: Basic c2VjcmV0] b''
+  scheme credentials kept from another origin ['1', '2', '3']
+  > GET https://api.example.com/v1/secure/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
+  > GET https://api.example.com/v1/secure/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
+  same origin bearer ['1', '2']
+  > GET https://api.example.com/v1/secure/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
+  bearer the auth keeps from another origin ['1'] ! AuthConfigurationError: AuthConfigurationError(operation_id='listSecureUsers', call_id='<call>', condition='origin_denied') [operation_id='listSecureUsers', field_path=('auth', 'allowed_origins'), condition='origin_denied'] auth_configuration_error
+  > GET https://api.example.com/v1/secure/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
+  > GET https://other.example.com/secure/users?page=2
+    [host: other.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
+  bearer the auth allows at another origin ['1', '2']
+  > GET https://api.example.com/v1/secure/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
+  > GET https://api.example.com/v1/secure/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
+  other scheme's query key at the same origin ['1', '2']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?cursor=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  scheme query key without auth at the same origin ['1', '2']
+  > GET https://api.example.com/v1/keyed/users?api_key=key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/keyed/users?cursor=2&api_key=key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  query key repeated by the URL ['1', '2']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v2/people
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v2/people?cursor=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  relative URL after a redirect ['1', '2']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-api-key: k, authorization: Basic c2VjcmV0] b''
+  > GET https://other.example.com/v1/users?page=1
+    [host: other.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  redirect to another origin without scheme credentials = 200
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?cursor=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?cursor=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async followed URLs ['1', '2']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async repeated link ['1', '2'] ! PaginationCycleError: PaginationCycleError(condition='inconsistent', page_index=1, first_seen_page_index=0) [condition='inconsistent', location=HeaderSelector(name='link', occurrence='all')] pagination_cycle_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async first linked page = [1] continuation=Continuation(kind='link') status=200 sends=1
+  > GET https://api.example.com/v1/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async next linked page = [2] continuation=None status=200 sends=1
+  async after the last linked page = None
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t, cookie: session=s, authorization: Basic c2VjcmV0] b''
+  > GET https://other.example.com/v1/users?cursor=2
+    [host: other.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  > GET https://other.example.com/v1/users?cursor=3
+    [host: other.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t] b''
+  > GET https://api.example.com/v1/users?cursor=4
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: t, cookie: session=s, authorization: Basic c2VjcmV0] b''
+  async allowed origin and back ['1', '2', '3'] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='value') [operation_id='listUsers', condition='value', location=BodySelector(pointer='/next')] protocol_data_error
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-api-key: k, authorization: Basic c2VjcmV0] b''
+  > GET https://other.example.com/v1/users?cursor=2
+    [host: other.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?cursor=3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-api-key: k, authorization: Basic c2VjcmV0] b''
+  async scheme credentials kept from another origin ['1', '2', '3']
+  > GET https://api.example.com/v1/secure/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
+  > GET https://api.example.com/v1/secure/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
+  async same origin bearer ['1', '2']
+  > GET https://api.example.com/v1/secure/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
+  async bearer the auth keeps from another origin ['1'] ! AuthConfigurationError: AuthConfigurationError(operation_id='listSecureUsers', call_id='<call>', condition='origin_denied') [operation_id='listSecureUsers', field_path=('auth', 'allowed_origins'), condition='origin_denied'] auth_configuration_error
+  > GET https://api.example.com/v1/secure/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
+  > GET https://other.example.com/secure/users?page=2
+    [host: other.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
+  async bearer the auth allows at another origin ['1', '2']
+  > GET https://api.example.com/v1/secure/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
+  > GET https://api.example.com/v1/secure/users?page=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
+  async other scheme's query key at the same origin ['1', '2']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/users?cursor=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async scheme query key without auth at the same origin ['1', '2']
+  > GET https://api.example.com/v1/keyed/users?api_key=key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v1/keyed/users?cursor=2&api_key=key
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async query key repeated by the URL ['1', '2']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v2/people
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  > GET https://api.example.com/v2/people?cursor=2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async relative URL after a redirect ['1', '2']
+  > GET https://api.example.com/v1/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-api-key: k, authorization: Basic c2VjcmV0] b''
+  > GET https://other.example.com/v1/users?page=1
+    [host: other.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async redirect to another origin without scheme credentials = 200

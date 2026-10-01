@@ -2348,6 +2348,67 @@
     },
     "modules": false
   },
+  "pagination-links": {
+    "input": "pagination-links.yaml",
+    "references": [
+      "protocols/pagination-links.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-links.yaml",
+      "operations": [
+        {
+          "ref": "/paths/~1searches/post",
+          "runtime": {
+            "retry_safety": "idempotent"
+          }
+        }
+      ]
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
+  "protocols-pagination-link-checks": {
+    "input": "pagination-links.yaml",
+    "references": [
+      "protocols/pagination-link-checks.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-link-checks.yaml"
+    },
+    "modules": false
+  },
+  "pagination-resume": {
+    "input": "pagination-resume.yaml",
+    "references": [
+      "protocols/pagination-resume.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-resume.yaml",
+      "validation": {
+        "request_overrides": [
+          "schema"
+        ],
+        "argument_overrides": [
+          "pydantic"
+        ]
+      }
+    }
+  },
+  "protocols-pagination-resume-checks": {
+    "input": "pagination-resume.yaml",
+    "references": [
+      "protocols/pagination-resume-checks.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/pagination-resume-checks.yaml"
+    },
+    "modules": false
+  },
   "polling": {
     "input": "polling.yaml",
     "references": [

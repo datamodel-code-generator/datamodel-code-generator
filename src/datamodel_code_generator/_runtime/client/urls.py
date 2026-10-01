@@ -6,6 +6,7 @@ import re
 from dataclasses import dataclass, field
 from functools import lru_cache
 from typing import Final
+from urllib.parse import unquote_plus, urlsplit, urlunsplit
 
 import httpx2
 
@@ -71,3 +72,11 @@ def redirect_target(current_url: str, location: str) -> URLTarget:
     url = httpx2.URL(current_url).join(location)
     origin = _origin(url)
     return URLTarget(str(url.copy_with(fragment=None)), origin)
+
+
+def strip_query(url: str, names: frozenset[str]) -> str:
+    """Remove the query fields of the given names, as forms decode them, retaining the other encoded query atoms."""
+    if not names or not (parsed := urlsplit(url)).query:
+        return url
+    kept = [part for part in parsed.query.split("&") if unquote_plus(part.partition("=")[0]) not in names]
+    return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, "&".join(kept), parsed.fragment))

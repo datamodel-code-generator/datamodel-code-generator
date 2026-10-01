@@ -893,6 +893,7 @@ class SyncRotation(SyncTokens):
         initial: TokenSet | None,
         audience: str | None,
         *,
+        scopes: tuple[str, ...],
         key: str,
         load: TokenLoad | None,
         store: TokenStore | None,
@@ -901,7 +902,7 @@ class SyncRotation(SyncTokens):
         self._family = RotationFamily(options, initial, audience, key, loads=load is not None, stores=store is not None)
         self._load = load
         self._store = store
-        super().__init__(self._family, endpoint, audience)
+        super().__init__(self._family, endpoint, audience, scopes)
 
     def obtain(self, context: object, *, force: bool, admission: CallAdmission | None = None) -> BearerCredential:
         """Return usable material or refresh it, after checking the caller's context and before serving it."""
@@ -981,6 +982,7 @@ class AsyncRotation(AsyncTokens):
         initial: TokenSet | None,
         audience: str | None,
         *,
+        scopes: tuple[str, ...],
         key: str,
         load: AsyncTokenLoad | None,
         store: AsyncTokenStore | None,
@@ -989,7 +991,7 @@ class AsyncRotation(AsyncTokens):
         self._family = RotationFamily(options, initial, audience, key, loads=load is not None, stores=store is not None)
         self._load = load
         self._store = store
-        super().__init__(self._family, endpoint, audience)
+        super().__init__(self._family, endpoint, audience, scopes)
 
     async def obtain(self, context: object, *, force: bool, admission: CallAdmission | None = None) -> BearerCredential:
         """Return usable material or refresh it, after checking the caller's context and loop, and before serving it."""

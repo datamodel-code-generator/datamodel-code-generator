@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import inspect
 import re
+from collections.abc import Mapping
 from contextlib import (
     AbstractAsyncContextManager,
     AbstractContextManager,
@@ -50,6 +51,7 @@ from .errors import (
     HTTPStatusError,
     LimiterExecutionError,
     PhaseTimeoutError,
+    ProtocolConfigurationError,
     ProtocolError,
     ProtocolSizeError,
     RedirectPolicyError,
@@ -120,7 +122,7 @@ from .transports import (
     is_async_adapter,
     response_head,
 )
-from .urls import URLValidationError, absolute_target, canonical_origin, request_origin
+from .urls import URLValidationError, absolute_target, canonical_origin, request_origin, strip_query
 
 if TYPE_CHECKING:
     from collections.abc import (
@@ -138,7 +140,7 @@ if TYPE_CHECKING:
 
     from ..model_codecs.parameters import ParameterFragment
     from ..model_codecs.wire import WireValue
-    from ..protocols.options import ProtocolClientOptions, ProtocolDefaults
+    from ..protocols.options import ProtocolClientOptions, ProtocolDefaults, ProtocolSecurityContext
     from ..protocols.references import OperationRef
     from .auth import (
         AsyncCloseableCredentialProvider,
@@ -162,7 +164,7 @@ if TYPE_CHECKING:
     from .hooks import AsyncLimiter, AsyncPermit, Limiter, Permit
     from .logical import OperationSession
     from .multipart import AsyncBodyInput, BodyInput
-    from .operations import OperationPlan, ServerPlan
+    from .operations import OperationPlan, ParameterSpec, ServerPlan
     from .options import RequestValidation, ResolvedTransportOptions
     from .retry import RetryDelay
     from .security import SecuritySchemeEntry
@@ -443,6 +445,68 @@ def _encoding_error(
     return RequestEncodingError(location=location, operation_id=operation.operation_id, cause=error)
 
 
+def _auth_identity(auth: AuthConfig) -> WireValue:
+    """Return what identifies an auth configuration without its secrets or its providers' classes.
+
+    It is the schemes it gives credentials for, with the audience and requested scopes of an OAuth grant, the
+    selection, the anonymous settings, the origins credentials may go to, and what each signer declares it manages.
+    """
+    from .auth import OwnedCredentialProvider  # noqa: PLC0415 - Only a checkpoint identifies the auth.
+    from .grants import grant_identity  # noqa: PLC0415 - Only a checkpoint identifies the auth.
+
+    capabilities = (signer.capabilities for signer in auth.signers)
+    return {
+        "credentials": tuple(
+            (name, grant_identity(provider.provider if isinstance(provider, OwnedCredentialProvider) else provider))
+            for name, provider in sorted(auth.credentials.items())
+        ),
+        "selection": None if isinstance(auth.selection, Unset) else auth.selection,
+        "anonymous": (auth.send_on_anonymous, tuple(sorted(auth.anonymous_schemes))),
+        "origins": tuple(sorted(auth.allowed_origins)),
+        "signers": tuple(
+            (
+                tuple(sorted(item.allowed_origins)),
+                tuple(sorted(item.managed_headers)),
+                tuple(sorted(item.managed_query)),
+                item.requires_body_digest,
+            )
+            for item in capabilities
+        ),
+    }
+
+
+def _secret(spec: ParameterSpec, value: WireValue, headers: frozenset[str], queries: frozenset[str]) -> bool:
+    """Return whether an argument carries credentials: a cookie, a credential header, or a scheme's query field."""
+    name = spec.plan.name
+    secret = False
+    match spec.plan.location:
+        case "cookie":
+            secret = True
+        case "header":
+            secret = name.lower() in headers
+        case "query":
+            secret = name in queries
+        case "querystring":
+            secret = isinstance(value, Mapping) and not queries.isdisjoint(value)
+        case _:
+            pass
+    return secret
+
+
+def _coded(operation: OperationPlan[object, object], spec: ParameterSpec, code: Callable[[], R]) -> R:
+    """Return what coding an argument gives, raising a codec's refusal as the argument's encoding error."""
+    try:
+        return code()
+    except (*DATA_ERRORS, ValueError, TypeError) as error:
+        raise _encoding_error(operation, (spec.plan.location, spec.plan.name), error) from None
+
+
+def _unsaved(plan: _PagePlan, path: tuple[str, ...]) -> ProtocolConfigurationError:
+    return ProtocolConfigurationError(
+        field_path=path, condition="wrong_capability", helper_id=plan.helper_id, operation=plan.operation
+    )
+
+
 def _parameters(
     operation: OperationPlan[object, object], arguments: tuple[object, ...], mode: RequestValidation
 ) -> _Request:
@@ -652,8 +716,8 @@ def _page(  # noqa: PLR0913
     plan: _PagePlan,
     *,
     page_limited: bool,
-) -> tuple[T, WireValue]:
-    """Return a page's value and wire value, or raise the error of a page or response over its size limit."""
+) -> tuple[T, WireValue, bytes]:
+    """Return a page's value, wire value, and body, or raise the error of a page or response over its size limit."""
     settings = call.settings
     if body.overflow:
         limit = settings.max_response_bytes
@@ -671,13 +735,15 @@ def _page(  # noqa: PLR0913
         raise ResponseTooLargeError(info=info, representation="decoded", limit=limit, observed_bytes=body.size)
     if (problem := body.problem) is not None and body.success:
         raise problem
-    return decoder.decode_page(
+    content = body.content
+    data, wire = decoder.decode_page(
         info,
-        body.content,
+        content,
         truncated=body.truncated or problem is not None,
         problem=problem,
         native=settings.validation.response == "native",
     )
+    return data, wire, content
 
 
 RAW_DECODER: Final[ResponseDecoder[object, object]] = ResponseDecoder((), (), HTTPStatusError)
@@ -695,7 +761,21 @@ def _draw() -> float:
 
 
 _EMPTY_ORIGINS: Final[frozenset[Origin]] = frozenset()
-_CREDENTIAL_HEADERS: Final = frozenset({"authorization", "proxy-authorization", "cookie", "cookie2"})
+
+
+def _uncredentialed(
+    headers: Iterable[tuple[str, str]], url: str, schemes: tuple[SecuritySchemeEntry, ...]
+) -> tuple[tuple[tuple[str, str], ...], str]:
+    """Return the headers and URL of a request to another origin without the credentials of the original origin's.
+
+    The credential and cookie headers and every header and query field a declared security scheme names are removed,
+    whether the auth placed them or a patch, a parameter, or the server's URL carried them.
+    """
+    from .security import secret_names  # noqa: PLC0415 - Only a request to another origin needs the schemes.
+
+    names, query = secret_names(schemes)
+    kept = tuple((name, value) for name, value in headers if name.lower() not in names)
+    return kept, strip_query(url, query)
 
 
 class _Authentication:
@@ -859,6 +939,7 @@ class _Call(LogicalCallContext):
         "response_transferred",
         "retry_headers",
         "retry_safety",
+        "server_origin",
         "stop_reason",
         "trace",
     )
@@ -889,6 +970,7 @@ class _Call(LogicalCallContext):
         self.allowed_origins = _EMPTY_ORIGINS
         self.initial_origin: Origin | None = None
         self.current_origin: Origin | None = None
+        self.server_origin: Origin | None = None
         self.attempt_index = 0
         self.body_enabled = True
         self.hop_index = 0
@@ -1117,8 +1199,12 @@ class _Call(LogicalCallContext):
         visited: frozenset[tuple[str, str]],
         *,
         replayable: bool,
+        schemes: tuple[SecuritySchemeEntry, ...],
     ) -> PreparedRequest[EncodedAttempt] | None:
-        """Resolve an allowed redirect without mutating the original retry request."""
+        """Resolve an allowed redirect without mutating the original retry request.
+
+        A hop to another origin carries none of the credentials the package's security schemes name.
+        """
         redirects = self.settings.redirects
         if not redirects.enabled or info.status_code not in {301, 302, 303, 307, 308}:
             return None
@@ -1150,11 +1236,11 @@ class _Call(LogicalCallContext):
             from .auth_policy import strip_managed_query  # noqa: PLC0415
 
             url = strip_managed_query(url, self.auth.bound)
-            if (target.method, url) in visited:
-                raise RedirectPolicyError(delivery_state=DeliveryState.RESPONSE_STARTED, info=info)
         headers = request.headers.items()
         if target.cross_origin:
-            headers = tuple((name, value) for name, value in headers if name.lower() not in _CREDENTIAL_HEADERS)
+            headers, url = _uncredentialed(headers, url, schemes)
+        if url != target.url and (target.method, url) in visited:
+            raise RedirectPolicyError(delivery_state=DeliveryState.RESPONSE_STARTED, info=info)
         if target.drop_body:
             headers = tuple(
                 (name, value)
@@ -1173,9 +1259,12 @@ class _Call(LogicalCallContext):
 
 
 class _SessionCall(_Call):
-    """A child call of a protocol helper session, which also bounds the call's deadline and send admissions."""
+    """A child call of a protocol helper session, which also bounds the call's deadline and send admissions.
 
-    __slots__ = ("parent", "session")
+    It keeps the URL of the hop it sends, credentials excluded, against which a page's relative URLs resolve.
+    """
+
+    __slots__ = ("parent", "session", "url")
 
     def __init__(
         self,
@@ -1187,9 +1276,47 @@ class _SessionCall(_Call):
         """Bind the call to its session, ending it no later than the session does."""
         super().__init__(settings, scope, operation)
         self.session = self.parent = session
+        self.url = ""
         deadline = self.deadline
         if (limit := session.deadline) is not None and (deadline is None or limit.at < deadline.at):
             self.deadline = limit
+
+    def prepared(self, request: PreparedRequest[EncodedAttempt]) -> PreparedRequest[EncodedAttempt]:
+        """Prepare the request as an ordinary call does, keeping its URL."""
+        request = super().prepared(request)
+        self.url = request.url
+        return request
+
+    def followed_query(self, schemes: tuple[SecuritySchemeEntry, ...]) -> frozenset[str]:
+        """Return the query fields a followed URL is sent and saved without, whatever its origin.
+
+        They are the positions of the package's declared security schemes and the fields the call's auth places, which
+        the auth adds again itself.
+        """
+        from .security import secret_names  # noqa: PLC0415 - Only a followed URL needs the schemes.
+
+        query = secret_names(schemes)[1]
+        return query if (auth := self.auth) is None else query | auth.bound.managed_query
+
+    def restart(self, original: PreparedRequest[EncodedAttempt]) -> frozenset[tuple[str, str]]:
+        """Begin the next resource candidate at the original URL."""
+        self.url = original.url
+        return super().restart(original)
+
+    def redirected(
+        self,
+        request: PreparedRequest[EncodedAttempt],
+        info: ResponseInfo,
+        visited: frozenset[tuple[str, str]],
+        *,
+        replayable: bool,
+        schemes: tuple[SecuritySchemeEntry, ...],
+    ) -> PreparedRequest[EncodedAttempt] | None:
+        """Resolve a redirect as an ordinary call does, keeping the URL of the hop it allows."""
+        hop = super().redirected(request, info, visited, replayable=replayable, schemes=schemes)
+        if hop is not None:
+            self.url = hop.url
+        return hop
 
     def retry(
         self,
@@ -1507,11 +1634,13 @@ class _Core(Generic[AdapterT, HandleT]):
         options: RequestOptions | None,
         accept: str | None,
         narrowed: bool,
+        url: str | None = None,
     ) -> tuple[PreparedRequest[EncodedAttempt], object]:
         """Return a call's request, and its body input when that builds its own attempts or else UNSET.
 
         Header patches apply in layers: the client's and views' over the generated headers, the parameters' over those,
-        and the call's last; the body's media type and a narrowed Accept stay as the call chose them.
+        and the call's last; the body's media type and a narrowed Accept stay as the call chose them. A `url` a server
+        gave replaces the one the operation's path and query build, without the query patches.
         """
         validation = settings.validation
         if validation.arguments == "pydantic":
@@ -1524,16 +1653,17 @@ class _Core(Generic[AdapterT, HandleT]):
                 operation.operation_id, body, media_type, operation.codecs, mode=validation.request
             )
         )
-        base = self._base(operation, settings)
-        path = request.path
-        route = _PLACEHOLDER.sub(lambda match: path[match[1]], operation.path) if path else operation.path
-        query = self._call_query(operation, request.query, options)
+        if url is None:
+            base = self._base(operation, settings)
+            path = request.path
+            route = _PLACEHOLDER.sub(lambda match: path[match[1]], operation.path) if path else operation.path
+            query = self._call_query(operation, request.query, options)
+            url = f"{base}{route}{'?' if query else ''}{query}"
         headers = [*self._shared.fixed]
         if accept is not None:
             headers.append(("Accept", accept))
         if request.cookies:
             request.headers.append(("Cookie", "; ".join(request.cookies)))
-        url = f"{base}{route}{'?' if query else ''}{query}"
         attempt: EncodedAttempt | None = None
         deferred: object = UNSET
         sent = None if encoded is None else encoded.media_type
@@ -1584,6 +1714,220 @@ class _Core(Generic[AdapterT, HandleT]):
             return HeadersView(generated)
         _unframed((*self._settings.headers, call), media_type, accept, operation_id)
         return _headers(generated, (*self._settings.headers, params, call), media_type)
+
+    def _security_context(self) -> ProtocolSecurityContext | None:
+        """Return the client's protocol security context, or None without one."""
+        if (protocols := self._shared.protocols) is None or isinstance(security := protocols.security, Unset):
+            return None
+        return security
+
+    def follow_origins(
+        self, operation: OperationPlan[object, object], options: RequestOptions | None
+    ) -> frozenset[Origin]:
+        """Return the origins a helper may follow a server's URLs to: its server's and those its security allows."""
+        origins = {request_origin(self._base(operation, self._call_settings(options, operation.operation_id)))}
+        if (context := self._security_context()) is not None:
+            origins.update((origin.scheme, origin.host, origin.port) for origin in context.allowed_origins)
+        return frozenset(origins)
+
+    def checkpoint_security(
+        self, operation: OperationPlan[object, object], options: RequestOptions | None
+    ) -> tuple[WireValue, bool]:
+        """Return what a helper's checkpoint is bound to, and whether it may leave the process.
+
+        It is the credential partition and allowed origins of the client's protocol security context, the origin of the
+        operation's server, the security schemes, kinds, and scopes the operation requires, and the identity of the
+        call's auth, never a secret. A checkpoint of a call that may authenticate leaves only under a partition.
+        """
+        settings = self._call_settings(options, operation.operation_id)
+        context = self._security_context()
+        declared, auth = operation.security, settings.auth
+        facts: WireValue = {
+            "partition": None if context is None else context.credential_partition,
+            "origins": ()
+            if context is None
+            else tuple(sorted((origin.scheme, origin.host, origin.port) for origin in context.allowed_origins)),
+            "server": request_origin(self._base(operation, settings)),
+            "requirements": None
+            if declared is None
+            else tuple(
+                tuple(
+                    (requirement.scheme.name, requirement.scheme.kind, *requirement.required_scopes)
+                    for requirement in alternative
+                )
+                for alternative in declared.alternatives
+            ),
+            "auth": None if auth is None else _auth_identity(auth),
+        }
+        return facts, context is not None or (declared is None and auth is None)
+
+    def unsaved_argument(
+        self, operation: OperationPlan[object, object], saved: Sequence[WireValue | Unset]
+    ) -> tuple[str, str] | None:
+        """Return the location and name of the first given argument a checkpoint never saves, or None.
+
+        It is a cookie, a header the client treats as a credential, a query parameter at the position of a declared
+        security scheme, or a querystring whose value has a field at such a position.
+        """
+        from .security import secret_names  # noqa: PLC0415 - Only a checkpoint needs the schemes.
+
+        headers, queries = secret_names(self._shared.security_schemes)
+        return next(
+            (
+                (spec.plan.location, spec.plan.name)
+                for spec, value in zip(operation.parameters, saved, strict=True)
+                if not isinstance(value, Unset) and _secret(spec, value, headers, queries)
+            ),
+            None,
+        )
+
+    def saved_request(  # noqa: PLR0913, PLR0917
+        self,
+        plan: _PagePlan,
+        operation: OperationPlan[object, object],
+        arguments: tuple[object, ...],
+        body: object,
+        media_type: str | MediaSelector | None,
+        options: RequestOptions | None,
+    ) -> tuple[tuple[WireValue | Unset, ...], tuple[WireValue, str, str | None] | None]:
+        """Return the wire values of a helper call's arguments, and of its JSON body with its declared media type.
+
+        They are encoded and checked as the call's first request encodes them; a body sent through a media selector
+        also gives the selector's concrete media type. An argument `unsaved_argument` names is never saved, so a call
+        giving one cannot be checkpointed.
+        """
+        validation = self._call_settings(options, operation.operation_id).validation
+        if validation.arguments == "pydantic":
+            arguments, body = operation.checked(arguments, body, media_type)
+        saved = tuple(
+            value
+            if isinstance(value, Unset)
+            else _coded(operation, spec, partial(spec.encode, value, validation.request))
+            for spec, value in zip(operation.parameters, arguments, strict=True)
+        )
+        if (unsaved := self.unsaved_argument(operation, saved)) is not None:
+            raise _unsaved(plan, ("arguments", *unsaved))
+        request = operation.body
+        if request is None or isinstance(body, Unset):
+            return saved, None
+        media = request.selected(operation.operation_id, media_type, operation.codecs)[0]
+        try:
+            wire = media.wire(body, validation.request)
+        except (*DATA_ERRORS, ValueError, TypeError) as error:
+            raise RequestEncodingError(location=("body",), operation_id=operation.operation_id, cause=error) from None
+        concrete = media_type.concrete_media if isinstance(media_type, MediaSelector) else None
+        return saved, (wire, media.media_type, concrete)
+
+    @staticmethod
+    def restored_request(
+        operation: OperationPlan[object, object],
+        arguments: tuple[WireValue | Unset, ...],
+        body: tuple[WireValue, str, str | None] | None,
+    ) -> tuple[tuple[object, ...], object, str | MediaSelector | None]:
+        """Return the arguments, body, and media type of a request a checkpoint saved, built from their wire values.
+
+        Each value is validated and built as its codec builds a caller's wire value, and a concrete media type is
+        selected as the operation's select method selects it; a value that does not fit raises RequestEncodingError.
+        """
+        restored = tuple(
+            value if isinstance(value, Unset) else _coded(operation, spec, partial(spec.restored, value))
+            for spec, value in zip(operation.parameters, arguments, strict=True)
+        )
+        if body is None or (request := operation.body) is None:
+            return restored, UNSET, None
+        from .codecs import request_media  # noqa: PLC0415 - Only a resumed request selects saved media.
+
+        wire, declared, concrete = body
+        media_type = declared if concrete is None else request_media(operation.codecs, declared, concrete)
+        media = request.selected(operation.operation_id, media_type, operation.codecs)[0]
+        try:
+            return restored, media.restored(wire), media_type
+        except (*DATA_ERRORS, ValueError, TypeError) as error:
+            raise RequestEncodingError(location=("body",), operation_id=operation.operation_id, cause=error) from None
+
+    def checked_page(
+        self,
+        operation: OperationPlan[object, object],
+        request: Callable[[], tuple[tuple[object, ...], object, str | None]],
+        media_type: str | MediaSelector | None,
+        options: RequestOptions | None,
+    ) -> None:
+        """Prepare a helper's request as its page's call prepares it, without sending, raising what that raises."""
+        arguments, body, url = request()
+        settings = self._call_settings(options, operation.operation_id)
+        self._prepare(
+            operation,
+            arguments,
+            settings,
+            body=body,
+            media_type=media_type,
+            options=options,
+            accept=None,
+            narrowed=False,
+            url=url,
+        )
+
+    def saved_page(
+        self,
+        operation: OperationPlan[T, object],
+        content: bytes,
+        status_code: int,
+        content_type: str | None,
+        options: RequestOptions | None,
+    ) -> tuple[T, WireValue]:
+        """Decode a page a helper saved in a checkpoint as its response decoded it, without any other response metadata.
+
+        The page's response metadata is not saved, so it is decoded under its status and media type alone.
+        """
+        settings = self._call_settings(options, operation.operation_id)
+        info = ResponseInfo(
+            status_code=status_code,
+            headers=HeadersView(() if content_type is None else (("Content-Type", content_type),)),
+            call_id="",
+            elapsed=0.0,
+            content_type=content_type,
+            resource_attempt_count=0,
+            network_send_count=0,
+            network_send_budget_used=0,
+        )
+        return operation.responses.decode_page(info, content, native=settings.validation.response == "native")
+
+    def _page_request(
+        self,
+        call: _SessionCall,
+        request: Callable[[], tuple[tuple[object, ...], object, str | None]],
+        media_type: str | MediaSelector | None,
+        options: RequestOptions | None,
+    ) -> tuple[PreparedRequest[EncodedAttempt], object]:
+        """Return a page's request, sent to the URL a server gave when the walk follows one.
+
+        A followed URL is sent without the query fields of the package's security schemes and the auth's own, which
+        the auth adds again, and to another origin than the server's without the credential and cookie headers, which
+        only a provider authorized for that origin adds again.
+        """
+        operation = call.operation
+        assert operation is not None
+        arguments, sent, url = request()
+        prepared, deferred = self._prepare(
+            operation,
+            arguments,
+            call.settings,
+            body=sent,
+            media_type=media_type,
+            options=options,
+            accept=call.decoder.accept,
+            narrowed=False,
+            url=url,
+        )
+        if url is None:
+            return prepared, deferred
+        server = call.server_origin = request_origin(self._base(operation, call.settings))
+        url = strip_query(url, call.followed_query(self._shared.security_schemes))
+        headers = prepared.headers
+        if request_origin(url) != server:
+            items, url = _uncredentialed(headers.items(), url, self._shared.security_schemes)
+            headers = HeadersView(items)
+        return PreparedRequest(method=prepared.method, url=url, headers=headers, body=prepared.body), deferred
 
 
 def _ownership(http_client: object, ownership: object, transport_adapter: object) -> None:
@@ -2113,8 +2457,8 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         self,
         plan: _PagePlan,
         operation: OperationPlan[T, object],
-        request: Callable[[], tuple[tuple[object, ...], object]],
-        build: Callable[[T, WireValue, ResponseInfo], R],
+        request: Callable[[], tuple[tuple[object, ...], object, str | None]],
+        build: Callable[[T, WireValue, bytes, ResponseInfo, str, frozenset[str]], R],
         *,
         body: object,
         media_type: str | MediaSelector | None,
@@ -2125,7 +2469,9 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         """Execute one page of a helper session as a child logical call, building what the page's response gives.
 
         The page reads at most `max_page_bytes` of its body, or the ordinary response limit without one, and its
-        arguments and body are taken when the call prepares; `body` is the caller's.
+        arguments, body, and any URL a server gave are taken when the call prepares; `body` is the caller's. What the
+        page gives is built from its decoded body and its bytes, with the URL of the hop that returned it and the query
+        fields a followed URL is without.
         """
         settings = self._call_settings(options, operation.operation_id)
         if page_limited := max_page_bytes is not None and (
@@ -2135,25 +2481,13 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         call = _SessionCall(settings, self._scope, operation, session)
         events = call.events = self._started(call, operation.path, options)
         decoder = call.decoder = operation.responses
-
-        def prepare() -> tuple[PreparedRequest[EncodedAttempt], object]:
-            arguments, sent = request()
-            return self._prepare(
-                operation,
-                arguments,
-                call.settings,
-                body=sent,
-                media_type=media_type,
-                options=options,
-                accept=decoder.accept,
-                narrowed=False,
-            )
+        prepare = partial(self._page_request, call, request, media_type, options)
 
         def receive(response: TransportResponse, info: ResponseInfo) -> tuple[Response[T], R]:
             received = self._read(response, info, decoder, call)
             call.check("decode")
-            data, wire = _page(decoder, info, received, call, plan, page_limited=page_limited)
-            result = build(data, wire, info)
+            data, wire, content = _page(decoder, info, received, call, plan, page_limited=page_limited)
+            result = build(data, wire, content, info, call.url, call.followed_query(self._shared.security_schemes))
             call.check("decode")
             return Response(data=data, info=info), result
 
@@ -2410,7 +2744,11 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                 if events is not None:
                     events.emit(events.responding(info))
                 redirected = call.redirected(
-                    request, info, visited, replayable=not call.body_enabled or source is None or source.replayable
+                    request,
+                    info,
+                    visited,
+                    replayable=not call.body_enabled or source is None or source.replayable,
+                    schemes=self._shared.security_schemes,
                 )
                 if redirected is not None:
                     closing, response = response, None
@@ -2563,7 +2901,12 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         bound = auth.bound
         assert isinstance(bound, BoundAuth)
         assert call.current_origin is not None
-        authorize_hop(bound, origin=call.current_origin, server_origin=call.initial_origin, raw=call.operation is None)
+        authorize_hop(
+            bound,
+            origin=call.current_origin,
+            server_origin=call.server_origin or call.initial_origin,
+            raw=call.operation is None,
+        )
         auth.rejected = None
         if not bound.credentials:
             return
@@ -2955,8 +3298,8 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         self,
         plan: _PagePlan,
         operation: OperationPlan[T, object],
-        request: Callable[[], tuple[tuple[object, ...], object]],
-        build: Callable[[T, WireValue, ResponseInfo], R],
+        request: Callable[[], tuple[tuple[object, ...], object, str | None]],
+        build: Callable[[T, WireValue, bytes, ResponseInfo, str, frozenset[str]], R],
         *,
         body: object,
         media_type: str | MediaSelector | None,
@@ -2967,7 +3310,9 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         """Execute one page of a helper session as a child logical call, building what the page's response gives.
 
         The page reads at most `max_page_bytes` of its body, or the ordinary response limit without one, and its
-        arguments and body are taken when the call prepares; `body` is the caller's.
+        arguments, body, and any URL a server gave are taken when the call prepares; `body` is the caller's. What the
+        page gives is built from its decoded body and its bytes, with the URL of the hop that returned it and the query
+        fields a followed URL is without.
         """
         settings = self._call_settings(options, operation.operation_id)
         if page_limited := max_page_bytes is not None and (
@@ -2978,25 +3323,13 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         self._running(call.operation_id, call.call_id)
         events = call.events = await self._started(call, operation.path, options)
         decoder = call.decoder = operation.responses
-
-        def prepare() -> tuple[PreparedRequest[EncodedAttempt], object]:
-            arguments, sent = request()
-            return self._prepare(
-                operation,
-                arguments,
-                call.settings,
-                body=sent,
-                media_type=media_type,
-                options=options,
-                accept=decoder.accept,
-                narrowed=False,
-            )
+        prepare = partial(self._page_request, call, request, media_type, options)
 
         async def receive(response: AsyncTransportResponse, info: ResponseInfo) -> tuple[Response[T], R]:
             received = await self._read(response, info, decoder, call)
             call.check("decode")
-            data, wire = _page(decoder, info, received, call, plan, page_limited=page_limited)
-            result = build(data, wire, info)
+            data, wire, content = _page(decoder, info, received, call, plan, page_limited=page_limited)
+            result = build(data, wire, content, info, call.url, call.followed_query(self._shared.security_schemes))
             call.check("decode")
             return Response(data=data, info=info), result
 
@@ -3259,7 +3592,11 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 if events is not None:
                     await events.aemit(events.responding(info))
                 redirected = call.redirected(
-                    request, info, visited, replayable=not call.body_enabled or source is None or source.replayable
+                    request,
+                    info,
+                    visited,
+                    replayable=not call.body_enabled or source is None or source.replayable,
+                    schemes=self._shared.security_schemes,
                 )
                 if redirected is not None:
                     closing, response = response, None
@@ -3412,7 +3749,12 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         bound = auth.bound
         assert isinstance(bound, AsyncBoundAuth)
         assert call.current_origin is not None
-        authorize_hop(bound, origin=call.current_origin, server_origin=call.initial_origin, raw=call.operation is None)
+        authorize_hop(
+            bound,
+            origin=call.current_origin,
+            server_origin=call.server_origin or call.initial_origin,
+            raw=call.operation is None,
+        )
         auth.rejected = None
         if not bound.credentials:
             return

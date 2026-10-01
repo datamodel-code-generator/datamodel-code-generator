@@ -120,9 +120,11 @@ def test_client_typing_polling(backend: DataModelType, tmp_path: Path) -> None:
     )
 
 
-@pytest.mark.parametrize("case", ["pagination-targets", "pagination-querystring", "pagination-counts"])
+@pytest.mark.parametrize(
+    "case", ["pagination-targets", "pagination-querystring", "pagination-counts", "pagination-links"]
+)
 def test_client_typing_package(case: str, tmp_path: Path) -> None:
-    """Check packages whose helpers write each kind of request target, bindings, and positions, with no samples."""
+    """Check packages whose helpers write each kind of request target, bindings, positions, and followed URLs."""
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
     assert_output(

@@ -22,6 +22,7 @@ from datamodel_code_generator._client.pagination import (
     _Pages,
     _problem,
     _target_key,
+    credential_place,
 )
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._generation_contract import AnnotatedType, NoneType, UnionType
@@ -238,16 +239,16 @@ class _Polls:
     ) -> Iterator[Diagnostic]:
         """Check each binding's value against its target, that no two writes overlap, and what the operation requires.
 
-        A cookie is never written, a body written to must be JSON only, and a literal dot segment is no path value.
+        A cookie or another credential position is never written, a body written to must be JSON only, and a literal
+        dot segment is no path value.
         """
         name, label = helper.name, _label(spec)
         written: list[tuple[tuple[str, ...], str]] = []
         for index, item in enumerate(bindings):
             where, owner, value, target = f"{at}[{index}]", f"{what} {index}", item["value"], item["target"]
-            if target["in"] == "cookie":
-                message = (
-                    f"The {owner} of {name!r} writes the cookie {target['name']!r} of {label}, which no helper writes"
-                )
+            pages = self.pages
+            if (place := credential_place(target, pages.secret_headers, pages.secret_queries)) is not None:
+                message = f"The {owner} of {name!r} writes {place}, which carries credentials no helper writes"
                 yield _problem("E_CONFIG_VALUE", "config", f"{where}.target", message, spec)
                 continue
             key = _target_key(target)
@@ -423,7 +424,7 @@ def plan_polling(
     if protocols is None:
         return (), {}
     operations = {spec.contract.id: spec for spec in plan.operations}
-    polls = _Polls(_Pages(protocols, codecs, wire, request), operations, codecs, protocols)
+    polls = _Polls(_Pages(protocols, plan, codecs, wire, request), operations, codecs, protocols)
     specs: list[PollingSpec] = []
     problems: dict[str, list[Diagnostic]] = {}
     for helper in protocols.helpers:

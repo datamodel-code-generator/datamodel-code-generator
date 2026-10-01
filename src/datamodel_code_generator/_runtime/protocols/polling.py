@@ -40,7 +40,7 @@ from .records import (
     StatusSelector,
     canonical_json,
 )
-from .values import MISSING, Missing, Patch, resolve, selected
+from .values import MISSING, Missing, Patch, RepeatedValueError, resolve, selected
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterable
@@ -505,7 +505,10 @@ class _Operation(Generic[T, P]):
         self, read: Selector, wire: WireValue, info: ResponseInfo, operation: OperationRef | None
     ) -> WireValue | Missing:
         """Return what a selector reads from a response, or MISSING, refusing a header selected once it repeats."""
-        return selected(read, wire, info, lambda: self._error(info, "malformed", read, operation))
+        try:
+            return selected(read, wire, info)
+        except RepeatedValueError:
+            raise self._error(info, "malformed", read, operation) from None
 
     def _values(
         self,
@@ -570,7 +573,9 @@ class _Operation(Generic[T, P]):
             raise self._error(info, _absence(selected), selector, operation)
         return value
 
-    def _created(self, data: object, wire: WireValue, info: ResponseInfo) -> _Step[T, P]:
+    def _created(
+        self, data: object, wire: WireValue, _content: bytes, info: ResponseInfo, _url: str, _managed: frozenset[str]
+    ) -> _Step[T, P]:
         """Settle the create response: an accepted status pends, an immediate one carries the result.
 
         Any other success status is refused, since it neither starts nor completes the operation as the helper
@@ -591,7 +596,9 @@ class _Operation(Generic[T, P]):
             return _Step(_Phase.SUCCEEDED, not_before, result=result)
         raise self._error(info, "value", StatusSelector(), plan.operation)
 
-    def _polled(self, data: P, wire: WireValue, info: ResponseInfo) -> _Step[T, P]:
+    def _polled(
+        self, data: P, wire: WireValue, _content: bytes, info: ResponseInfo, _url: str, _managed: frozenset[str]
+    ) -> _Step[T, P]:
         """Settle one poll by its state; an unknown state raises PollingStateError and success is never inferred.
 
         A pending poll reads the values of the next poll's bindings, and a success its result or what its result
@@ -666,16 +673,16 @@ class _Operation(Generic[T, P]):
             self._sendable()
         return self._result
 
-    def _fetch_request(self) -> tuple[tuple[object, ...], object]:
+    def _fetch_request(self) -> tuple[tuple[object, ...], object, None]:
         fetched = self._plan.fetched
         assert fetched is not None
-        return fetched.request(self._bound)
+        return (*fetched.request(self._bound), None)
 
-    def _poll_request(self) -> tuple[tuple[object, ...], object]:
-        return self._plan.polled.request(self._bound)
+    def _poll_request(self) -> tuple[tuple[object, ...], object, None]:
+        return (*self._plan.polled.request(self._bound), None)
 
 
-def _data(data: T, _wire: WireValue, _info: ResponseInfo) -> T:
+def _data(data: T, _wire: WireValue, _content: bytes, _info: ResponseInfo, _url: str, _managed: frozenset[str]) -> T:
     """Return a fetched result as it was decoded."""
     return data
 
@@ -704,7 +711,7 @@ class LroHandle(_Operation[T, P]):
             step = core.execute_page(
                 plan,
                 plan.create,
-                lambda: (arguments, body),
+                lambda: (arguments, body, None),
                 self._created,
                 body=body,
                 media_type=media_type,
@@ -820,7 +827,7 @@ class AsyncLroHandle(_Operation[T, P]):
             step = await core.execute_page(
                 plan,
                 plan.create,
-                lambda: (arguments, body),
+                lambda: (arguments, body, None),
                 self._created,
                 body=body,
                 media_type=media_type,

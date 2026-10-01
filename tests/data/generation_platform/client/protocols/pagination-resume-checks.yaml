@@ -1,0 +1,86 @@
+schema_version: 1
+helpers:
+  cookies.cursor:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: cookie, name: session}
+      end: [{kind: missing}, {kind: "null"}]
+      empty_string: end
+  cookies.bound:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: missing}, {kind: "null"}]
+      empty_string: end
+    bindings:
+      - {target: {in: cookie, name: session}, value: {source: previous, selector: {from: header, name: X-Snapshot}}}
+      - {target: {in: header, name: X-Trace}, value: {source: initial, selector: {from: header, name: X-Snapshot}}}
+  cookies.literal:
+    kind: pagination
+    operation: /paths/~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: missing}, {kind: "null"}]
+      empty_string: end
+    bindings:
+      - {target: {in: cookie, name: session}, value: {literal: fixed}}
+  keyed.header:
+    kind: pagination
+    operation: /paths/~1keyed~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: header, name: x-api-key}
+      end: [{kind: missing}, {kind: "null"}]
+      empty_string: end
+  keyed.proxy:
+    kind: pagination
+    operation: /paths/~1keyed~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: cursor}
+      end: [{kind: missing}, {kind: "null"}]
+      empty_string: end
+    bindings:
+      - {target: {in: header, name: Proxy-Authorization}, value: {source: previous, selector: {from: body, pointer: /next}}}
+  keyed.query:
+    kind: pagination
+    operation: /paths/~1keyed~1users/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: query, name: api_key}
+      end: [{kind: missing}, {kind: "null"}]
+      empty_string: end
+  queries.key:
+    kind: pagination
+    operation: /paths/~1queries/get
+    items: {from: body, pointer: /data}
+    item_schema: {pointer: /components/schemas/User}
+    continuation:
+      kind: cursor
+      read: {from: body, pointer: /next_cursor}
+      write: {in: querystring, name: filter, pointer: /api_key}
+      end: [{kind: missing}, {kind: "null"}]
+      empty_string: end

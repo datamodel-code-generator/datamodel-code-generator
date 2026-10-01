@@ -1,8 +1,8 @@
-"""Plan the cursor, offset, and page-number pagination helpers of a client target and the checks they must pass.
+"""Plan the pagination helpers of a client target and the checks they must pass.
 
 A helper's items are read through the page model's fields, by a typed accessor the package generates, and its cursor,
-end evidence, and binding values from the page's wire value, a response header, or the status; each is checked against
-the operation it calls and the request target it writes.
+end evidence, next URL, and binding values from the page's wire value, a response header, or the status; each is
+checked against the operation it calls and the request target it writes.
 """
 
 from __future__ import annotations
@@ -25,6 +25,8 @@ from datamodel_code_generator._generation_contract import (
     SymbolId,
     UnionType,
 )
+from datamodel_code_generator._runtime.client.retry import body_replay_safe
+from datamodel_code_generator._runtime.client.security import secret_names
 from datamodel_code_generator._runtime.model_codecs.bindings import ArrayNode, MapNode, ModelNode, UnionNode
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._runtime.protocols.records import canonical_json
@@ -50,7 +52,9 @@ _NULL: Final = frozenset({"null"})
 _SEQUENCES: Final = frozenset({"list", "tuple"})
 _POINTED: Final = frozenset({"body", "querystring"})
 _DOT_SEGMENTS: Final = (".", "..")
-_PLANNED: Final = frozenset({"cursor", "offset", "page"})
+_FOLLOWED: Final = frozenset({"next_url", "link"})
+_URL_TYPES: Final = frozenset({"string", "null"})
+_RELATION: Final = re.compile(r"[A-Za-z][A-Za-z0-9.-]*|[A-Za-z][A-Za-z0-9+.-]*:[!#-\[\]-~]+")
 _WRITES: Final = MappingProxyType({"cursor": "cursor", "offset": "offset", "page": "page number"})
 _EVIDENCE: Final = MappingProxyType({"has_more": "boolean", "total": "integer"})
 _Types: TypeAlias = frozenset[str] | None
@@ -181,11 +185,17 @@ def _unwrapped(node: TypeNode, models: Mapping[str, ModelBinding], steps: list[I
 
 
 class _Pages:
-    """Check and plan every enabled cursor, offset, and page-number pagination helper of a client target."""
+    """Check and plan every enabled pagination helper of a client target."""
 
-    def __init__(self, protocols: Protocols, codecs: CodecPlan, wire: WirePlan, request: TargetRequest) -> None:
-        """Index the use bindings, the model fields by symbol and wire name, and the documents by manifest pointer."""
+    def __init__(
+        self, protocols: Protocols, plan: ClientPlan, codecs: CodecPlan, wire: WirePlan, request: TargetRequest
+    ) -> None:
+        """Index the use bindings, the model fields by symbol and wire name, and the documents by manifest pointer.
+
+        The positions of the package's security schemes, with the credential headers, are where no helper writes.
+        """
         self.protocols = protocols
+        self.secret_headers, self.secret_queries = secret_names(plan.security_schemes)
         self.wire = wire
         self.request = request
         self.bindings: Mapping[object, UseBinding] = dict(codecs.bindings)
@@ -324,6 +334,7 @@ class _Pages:
                 message = f"The binding {index} of {name!r} reads the helper's input, which is not supported yet"
                 where = f"{at}.bindings[{index}].value.source"
                 problems.append(_problem("E_CLIENT_UNSUPPORTED", "target", where, message, spec))
+        problems.extend(_credentials(helper, spec, self.secret_headers, self.secret_queries))
         if spec.body is not None and any(media.kind != "json" for media in spec.body.media):
             message = f"The pagination helper {name!r} sends a request body other than JSON, which is not supported yet"
             problems.append(_problem("E_CLIENT_UNSUPPORTED", "target", at, message, spec))
@@ -338,7 +349,9 @@ class _Pages:
             return None, problems
         planned = self.items(helper, spec, binding, page, problems)
         headers = successes[0].headers
-        check = self.cursor if helper.tree["continuation"]["kind"] == "cursor" else self.count
+        check = {"cursor": self.cursor, "next_url": self.next_url, "link": self.link}.get(
+            helper.tree["continuation"]["kind"], self.count
+        )
         problems.extend(check(helper, spec, binding, headers))
         problems.extend(self.values(helper, spec, binding, headers))
         if planned is None or problems:
@@ -483,21 +496,74 @@ class _Pages:
         self, helper: Helper, spec: OperationSpec, binding: UseBinding, headers: tuple[HeaderSpec, ...]
     ) -> Iterator[Diagnostic]:
         """Check that the cursor reads a declared value whose types its target accepts, and that its ends are typed."""
-        at, name = f"{helper.at}.continuation", helper.name
+        at = f"{helper.at}.continuation"
         continuation = helper.tree["continuation"]
         types = self.read(helper, spec, binding, headers, continuation["read"], f"{at}.read", "cursor")
         if isinstance(types, Diagnostic):
             yield types
             return
         yield from self.fits(helper, spec, continuation["write"], types, f"{at}.write", "cursor", null=False)
-        ends = continuation["end"]
+        yield from self.ends(helper, spec, types, "cursor")
+
+    @staticmethod
+    def ends(helper: Helper, spec: OperationSpec, types: _Types, what: str) -> Iterator[Diagnostic]:
+        """Check that a null the continuation reads ends the traversal and that each end value is of a type it reads."""
+        at, name = f"{helper.at}.continuation", helper.name
+        ends = helper.tree["continuation"]["end"]
         if types is not None and "null" in types and {"kind": "null"} not in ends:
-            message = f"The cursor of {name!r} can read null, which no end condition covers"
+            message = f"The {what} of {name!r} can read null, which no end condition covers"
             yield _problem("E_CONFIG_VALUE", "config", f"{at}.end", message, spec)
         for index, end in enumerate(ends):
             if end["kind"] == "value" and types is not None and not _fits(kind := _json_type(end["value"]), types):
-                message = f"The end value {end['value']!r} of {name!r} is {kind}, which its cursor never reads"
+                message = f"The end value {end['value']!r} of {name!r} is {kind}, which its {what} never reads"
                 yield _problem("E_CONFIG_VALUE", "config", f"{at}.end[{index}].value", message, spec)
+
+    def next_url(
+        self, helper: Helper, spec: OperationSpec, binding: UseBinding, headers: tuple[HeaderSpec, ...]
+    ) -> Iterator[Diagnostic]:
+        """Check that the next URL reads strings, that its ends are typed, and that a repeated body may be sent again.
+
+        A body is sent again with its method only where a 307 or 308 redirect would send it again: the operation does
+        not refuse retries, and its method is safe or it declares itself idempotent.
+        """
+        at, name = f"{helper.at}.continuation", helper.name
+        continuation = helper.tree["continuation"]
+        if continuation["repeat_request_body"]:
+            message = None
+            if spec.body is None:
+                message = f"The next URL of {name!r} repeats the request body, which {_label(spec)} does not take"
+            elif not body_replay_safe(spec.contract.method.upper(), spec.retry_safety, None, None, now=0.0):
+                message = (
+                    f"The next URL of {name!r} repeats the request body of {_label(spec)}, which is not safe to send "
+                    "again; declare the operation's retry_safety idempotent"
+                )
+            if message is not None:
+                yield _problem("E_CONFIG_VALUE", "config", f"{at}.repeat_request_body", message, spec)
+        types = self.read(helper, spec, binding, headers, continuation["read"], f"{at}.read", "next URL")
+        if isinstance(types, Diagnostic):
+            yield types
+            return
+        if types is not None and (others := sorted(types - _URL_TYPES)):
+            message = f"The next URL of {name!r} reads {_listed(others)} values, where only string values fit"
+            yield _problem("E_CONFIG_VALUE", "config", f"{at}.read", message, spec)
+        yield from self.ends(helper, spec, types, "next URL")
+
+    @staticmethod
+    def link(
+        helper: Helper, spec: OperationSpec, binding: UseBinding, headers: tuple[HeaderSpec, ...]
+    ) -> Iterator[Diagnostic]:
+        """Check that the page response declares the Link header and that the relation is one RFC 8288 relation type."""
+        del binding
+        at, name = f"{helper.at}.continuation", helper.name
+        continuation = helper.tree["continuation"]
+        if (header := continuation["header"]).lower() not in {item.name.lower() for item in headers}:
+            message = f"The links of {name!r} come from the header {header!r}, which {_label(spec)} does not declare"
+            yield _problem("E_CONFIG_VALUE", "config", f"{at}.header", message, spec)
+        if not _RELATION.fullmatch(rel := continuation["rel"]):
+            message = (
+                f"The relation {rel!r} of {name!r} is no RFC 8288 relation type: a registered name or an absolute URI"
+            )
+            yield _problem("E_CONFIG_VALUE", "config", f"{at}.rel", message, spec)
 
     def count(
         self, helper: Helper, spec: OperationSpec, binding: UseBinding, headers: tuple[HeaderSpec, ...]
@@ -565,11 +631,13 @@ class _Pages:
     ) -> Iterator[Diagnostic]:
         """Check each binding's value against its target, and that no two writes overlap.
 
-        A binding's null is written, so its target must accept null too, and a literal dot segment is no path value.
+        A binding's null is written, so its target must accept null too, and a literal dot segment is no path value. A
+        followed URL replaces the path and query, and carries a body only when it repeats the request body.
         """
         tree = helper.tree
         continuation = tree["continuation"]
-        written = [(_target_key(continuation["write"]), f"its {_WRITES[continuation['kind']]}")]
+        kind = continuation["kind"]
+        written = [] if kind in _FOLLOWED else [(_target_key(continuation["write"]), f"its {_WRITES[kind]}")]
         for index, item in enumerate(tree["bindings"]):
             at, what, value, target = (
                 f"{helper.at}.bindings[{index}]",
@@ -577,6 +645,10 @@ class _Pages:
                 item["value"],
                 item["target"],
             )
+            if kind in _FOLLOWED and (unsent := _unsent(target, continuation)) is not None:
+                message = f"The {what} of {helper.name!r} writes {unsent}, which no request after the first sends"
+                yield _problem("E_CONFIG_VALUE", "config", f"{at}.target", message, spec)
+                continue
             key = _target_key(target)
             if (clash := next(((other, owner) for other, owner in written if _overlaps(key, other)), None)) is not None:
                 relation = "the same target as" if clash[0] == key else "a target overlapping that of"
@@ -603,6 +675,65 @@ class _Pages:
             yield from self.fits(helper, spec, target, types, f"{at}.target", what, null=True)
 
 
+def _credentials(
+    helper: Helper, spec: OperationSpec, headers: frozenset[str], queries: frozenset[str]
+) -> Iterator[Diagnostic]:
+    """Refuse a cursor, position, or binding written where a request carries credentials.
+
+    Those are cookies, the credential headers, and the header and query positions of the package's security
+    schemes, a querystring property among them; a value a server gives or a checkpoint saves is never written there.
+    """
+    tree = helper.tree
+    continuation = tree["continuation"]
+    kind = continuation["kind"]
+    targets = [] if kind in _FOLLOWED else [(f"{helper.at}.continuation.write", _WRITES[kind], continuation["write"])]
+    targets.extend(
+        (f"{helper.at}.bindings[{index}].target", f"binding {index}", entry["target"])
+        for index, entry in enumerate(tree["bindings"])
+    )
+    for at, what, target in targets:
+        if (place := credential_place(target, headers, queries)) is not None:
+            message = f"The {what} of {helper.name!r} writes {place}, which carries credentials no helper writes"
+            yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
+
+
+def credential_place(target: Mapping[str, Any], headers: frozenset[str], queries: frozenset[str]) -> str | None:
+    """Return the credential position a request target writes, or None: a cookie or a credential header or query field.
+
+    `headers` are the credential header names, folded to lower case, and `queries` the query names of the package's
+    security schemes, which a querystring property may name too.
+    """
+    name = target.get("name", "")
+    field = next(iter(_tokens(target.get("pointer", ""))), None)
+    place = None
+    match target["in"]:
+        case "cookie":
+            place = f"the cookie {name!r}"
+        case "header" if name.lower() in headers:
+            place = f"the header {name!r}"
+        case "query" if name in queries:
+            place = f"the query parameter {name!r}"
+        case "querystring" if field in queries:
+            place = f"the query field {field!r}"
+        case _:
+            pass
+    return place
+
+
+def _unsent(target: Mapping[str, Any], continuation: Mapping[str, Any]) -> str | None:
+    """Return what a binding of a helper that follows URLs writes when the followed requests never send it.
+
+    The URL replaces the path and the query, and the body is sent only when a next URL repeats it.
+    """
+    unsent = None
+    match where := target["in"]:
+        case "path" | "query" | "querystring":
+            unsent = f"the {where} parameter {target['name']!r}"
+        case "body" if not continuation.get("repeat_request_body"):
+            unsent = "the request body"
+    return unsent
+
+
 def _page_use(successes: list[ResponseSpec]) -> TypeUseBinding | None:
     """Return the use of the one JSON media with a schema of the one success response, which has a body, or None."""
     if len(successes) != 1 or successes[0].bodyless or len(media := successes[0].media) != 1:
@@ -617,18 +748,18 @@ def _child(location: SourceLocation, token: str) -> SourceLocation:
 def plan_pagination(
     protocols: Protocols | None, plan: ClientPlan, codecs: CodecPlan, wire: WirePlan, request: TargetRequest
 ) -> tuple[tuple[PaginationSpec, ...], dict[str, list[Diagnostic]]]:
-    """Plan every enabled cursor, offset, or page-number helper, returning them and each checked helper's problems.
+    """Plan every enabled pagination helper, returning the planned ones and each checked helper's problems.
 
-    Helpers of other kinds and continuations are left to the caller, which refuses them.
+    Helpers of other kinds are left to the caller, which refuses them.
     """
     if protocols is None:
         return (), {}
-    pages = _Pages(protocols, codecs, wire, request)
+    pages = _Pages(protocols, plan, codecs, wire, request)
     operations = {spec.contract.id: spec for spec in plan.operations}
     specs: list[PaginationSpec] = []
     problems: dict[str, list[Diagnostic]] = {}
     for helper in protocols.helpers:
-        if not helper.enabled or helper.kind != "pagination" or helper.tree["continuation"]["kind"] not in _PLANNED:
+        if not helper.enabled or helper.kind != "pagination":
             continue
         spec = operations[protocols.operations[helper.links[0].ref].id]
         planned, problems[helper.name] = pages.helper(helper, spec)

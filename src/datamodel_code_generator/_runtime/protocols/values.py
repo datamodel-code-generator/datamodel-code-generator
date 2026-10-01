@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from ..model_codecs.wire import WireValue
     from .records import Selector
 
-__all__ = ("MISSING", "Missing", "Patch", "resolve", "selected")
+__all__ = ("MISSING", "Missing", "Patch", "RepeatedValueError", "resolve", "selected")
 
 
 class Missing(Enum):
@@ -51,12 +51,14 @@ def resolve(value: WireValue, pointer: str) -> WireValue | Missing:
     return value
 
 
-def selected(
-    read: Selector, wire: WireValue, info: ResponseInfo, repeated: Callable[[], BaseException]
-) -> WireValue | Missing:
+class RepeatedValueError(Exception):
+    """A header a selector reads once that the response repeats; each helper raises its own data error instead."""
+
+
+def selected(read: Selector, wire: WireValue, info: ResponseInfo) -> WireValue | Missing:
     """Return what a selector reads from a response, or MISSING; every occurrence of a header is an array of them.
 
-    A header selected once that the response repeats raises the error `repeated` returns.
+    A header selected once that the response repeats raises RepeatedValueError.
     """
     if isinstance(read, BodySelector):
         return resolve(wire, read.pointer)
@@ -65,7 +67,7 @@ def selected(
         if read.occurrence == "all":
             return tuple(values) if values else MISSING
         if len(values) > 1:
-            raise repeated()
+            raise RepeatedValueError
         return values[0] if values else MISSING
     return info.status_code
 

@@ -372,8 +372,8 @@ def _wire(auth: ModuleType, options: ModuleType, lines: list[str], masks: _Masks
         lines.append(f"  query after a trailing question mark = {narrow.url.split('&', 1)[0]}")
         lines.append(f"  later request first = {token_outcome(lambda: flow.exchange_code('code', narrow.state, narrow))}")
         lines.append(f"  earlier request keeps its scopes = {token_outcome(lambda: flow.exchange_code('code', wide.state, wide))}")
-    slow = auth.OAuthProviderOptions(refresh_timeout=0.3, transport=options.TransportOptions(ssl_context=_contexts()[1]))
-    exchange.respond(delayed(0.6, json_reply(200, GRANTED)))
+    slow = auth.OAuthProviderOptions(refresh_timeout=1.0, transport=options.TransportOptions(ssl_context=_contexts()[1]))
+    exchange.respond(delayed(1.5, json_reply(200, GRANTED)))
     with auth.AuthorizationCodeFlow(_AUTHORIZE, token, client_id="c", client_auth_method="none", options=slow) as flow:
         request = masks.request(flow.authorization_request(_REDIRECT, ()))
         lines.append(f"  session expires while reading = {token_outcome(lambda: flow.exchange_code('code', request.state, request))}")
@@ -412,14 +412,14 @@ def _faults(auth: ModuleType, transports: ModuleType, responses: ModuleType, err
         ("read timeout after sending", (read_timeout,), 30.0, False),
         ("failure in an unknown phase", (unknown_phase,), 30.0, False),
         ("timeout in an unknown phase", (unknown_timeout,), 30.0, False),
-        ("timeout in an unknown phase after the session", (Late(0.2, unknown_timeout),), 0.1, False),
+        ("timeout in an unknown phase after the session", (Late(1.0, unknown_timeout),), 0.5, False),
         ("failure after the response started", (Reported(RuntimeError("adapter"), headers),), 30.0, False),
         ("adapter programming failure", (RuntimeError("adapter"),), 30.0, False),
         ("invalid response status", (Response(responses, "200", granted),), 30.0, False),
         ("body failure", (Response(responses, 200, b"{", failure=read_failure),), 30.0, False),
         ("reported body failure", (Response(responses, 200, b"{", failure=RuntimeError(), reported=True),), 30.0, False),
-        ("body arriving after the session", (Response(responses, 200, granted, pause=0.3),), 0.2, False),
-        ("body ending after the session", (Response(responses, 200, granted, tail=0.3),), 0.2, False),
+        ("body arriving after the session", (Response(responses, 200, granted, pause=1.0),), 0.5, False),
+        ("body ending after the session", (Response(responses, 200, granted, tail=1.0),), 0.5, False),
         ("close failure after a complete answer", (Response(responses, 200, granted, close_failure=RuntimeError()),), 30.0, False),
     )
     for label, replies, total, evidence in cases:
@@ -538,9 +538,9 @@ async def _async_flows(
         ("async send failure", (read_timeout,), None, 30.0),
         ("async secret failure", (), AsyncSecret(failure=RuntimeError("secret")), 30.0),
         ("async secret outlives the session", (), AsyncSecret(auth.ApiKeyCredential("s"), delay=0.15), 0.1),
-        ("async body slower than the session", (AsyncResponse(responses, 200, granted, pause=0.3),), None, 0.1),
-        ("async body arriving after the session", (_Blocking(responses, 200, granted, pause=0.3),), None, 0.1),
-        ("async body ending after the session", (_Blocking(responses, 200, granted, tail=0.3),), None, 0.1),
+        ("async body slower than the session", (AsyncResponse(responses, 200, granted, pause=1.0),), None, 0.5),
+        ("async body arriving after the session", (_Blocking(responses, 200, granted, pause=1.0),), None, 0.5),
+        ("async body ending after the session", (_Blocking(responses, 200, granted, tail=1.0),), None, 0.5),
     ):
         adapter = AsyncAdapter(transports, *replies)
         async with auth.AsyncAuthorizationCodeFlow(

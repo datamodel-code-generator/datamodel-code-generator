@@ -28,7 +28,9 @@ from .._runtime.protocols.pagination import (
     first_page,
     following_page,
     iterate_pages,
+    resume_pages,
 )
+from .._runtime.protocols.resume import ResumeState
 from ..model_codecs import ModelValue, RequestMedia
 from ..options import UNSET, RequestOptions, SessionOptions, Unset
 from ..types.archive import ListArchiveResponse
@@ -260,6 +262,24 @@ class UsersAllPagination:
             session_options=session_options,
         )
 
+    def resume(
+        self,
+        state: ResumeState,
+        *,
+        pagination_options: PaginationOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> Pager[_dcg_type_3, ListUsersResponse]:
+        """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
+        return resume_pages(
+            self._core,
+            _plans.PLAN_0,
+            state,
+            pagination_options=pagination_options,
+            options=options,
+            session_options=session_options,
+        )
+
 
 class UsersByHeaderPagination:
     """The users.by_header pagination helper of GET /users."""
@@ -321,6 +341,24 @@ class UsersByHeaderPagination:
             self._core,
             _plans.PLAN_1,
             page,
+            pagination_options=pagination_options,
+            options=options,
+            session_options=session_options,
+        )
+
+    def resume(
+        self,
+        state: ResumeState,
+        *,
+        pagination_options: PaginationOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> Pager[_dcg_type_3, ListUsersResponse]:
+        """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
+        return resume_pages(
+            self._core,
+            _plans.PLAN_1,
+            state,
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -396,6 +434,24 @@ class UsersSearchPagination:
             session_options=session_options,
         )
 
+    def resume(
+        self,
+        state: ResumeState,
+        *,
+        pagination_options: PaginationOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> Pager[_dcg_type_3, SearchUsersResponse]:
+        """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
+        return resume_pages(
+            self._core,
+            _plans.PLAN_2,
+            state,
+            pagination_options=pagination_options,
+            options=options,
+            session_options=session_options,
+        )
+
 
 class LooseAllPagination:
     """The loose.all pagination helper of GET /loose."""
@@ -453,6 +509,24 @@ class LooseAllPagination:
             self._core,
             _plans.PLAN_3,
             page,
+            pagination_options=pagination_options,
+            options=options,
+            session_options=session_options,
+        )
+
+    def resume(
+        self,
+        state: ResumeState,
+        *,
+        pagination_options: PaginationOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> Pager[_dcg_type_3, ListLooseResponse]:
+        """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
+        return resume_pages(
+            self._core,
+            _plans.PLAN_3,
+            state,
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -520,6 +594,24 @@ class LooseTokensPagination:
             session_options=session_options,
         )
 
+    def resume(
+        self,
+        state: ResumeState,
+        *,
+        pagination_options: PaginationOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> Pager[_dcg_type_3, ListLooseResponse]:
+        """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
+        return resume_pages(
+            self._core,
+            _plans.PLAN_4,
+            state,
+            pagination_options=pagination_options,
+            options=options,
+            session_options=session_options,
+        )
+
 
 class NestedAllPagination:
     """The nested.all pagination helper of GET /nested."""
@@ -577,6 +669,24 @@ class NestedAllPagination:
             self._core,
             _plans.PLAN_5,
             page,
+            pagination_options=pagination_options,
+            options=options,
+            session_options=session_options,
+        )
+
+    def resume(
+        self,
+        state: ResumeState,
+        *,
+        pagination_options: PaginationOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> Pager[_dcg_type_3, ListNestedResponse]:
+        """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
+        return resume_pages(
+            self._core,
+            _plans.PLAN_5,
+            state,
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -644,6 +754,24 @@ class LabelsAllPagination:
             session_options=session_options,
         )
 
+    def resume(
+        self,
+        state: ResumeState,
+        *,
+        pagination_options: PaginationOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> Pager[_dcg_type_9, ListLabelsResponse]:
+        """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
+        return resume_pages(
+            self._core,
+            _plans.PLAN_6,
+            state,
+            pagination_options=pagination_options,
+            options=options,
+            session_options=session_options,
+        )
+
 
 class LabelsSetsPagination:
     """The labels.sets pagination helper of GET /label-sets."""
@@ -701,6 +829,24 @@ class LabelsSetsPagination:
             self._core,
             _plans.PLAN_7,
             page,
+            pagination_options=pagination_options,
+            options=options,
+            session_options=session_options,
+        )
+
+    def resume(
+        self,
+        state: ResumeState,
+        *,
+        pagination_options: PaginationOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> Pager[_dcg_type_9, ListLabelSetsResponse]:
+        """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
+        return resume_pages(
+            self._core,
+            _plans.PLAN_7,
+            state,
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,
@@ -768,6 +914,24 @@ class ArchiveAllPagination:
             session_options=session_options,
         )
 
+    def resume(
+        self,
+        state: ResumeState,
+        *,
+        pagination_options: PaginationOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> Pager[_dcg_type_3, ListArchiveResponse]:
+        """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
+        return resume_pages(
+            self._core,
+            _plans.PLAN_8,
+            state,
+            pagination_options=pagination_options,
+            options=options,
+            session_options=session_options,
+        )
+
 
 class StatusesAllPagination:
     """The statuses.all pagination helper of GET /statuses."""
@@ -830,6 +994,24 @@ class StatusesAllPagination:
             session_options=session_options,
         )
 
+    def resume(
+        self,
+        state: ResumeState,
+        *,
+        pagination_options: PaginationOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> Pager[_dcg_type_3, ListStatusesResponse]:
+        """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
+        return resume_pages(
+            self._core,
+            _plans.PLAN_9,
+            state,
+            pagination_options=pagination_options,
+            options=options,
+            session_options=session_options,
+        )
+
 
 class SecureUsersPagination:
     """The secure.users pagination helper of GET /secure/users."""
@@ -887,6 +1069,24 @@ class SecureUsersPagination:
             self._core,
             _plans.PLAN_10,
             page,
+            pagination_options=pagination_options,
+            options=options,
+            session_options=session_options,
+        )
+
+    def resume(
+        self,
+        state: ResumeState,
+        *,
+        pagination_options: PaginationOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> Pager[_dcg_type_3, ListSecureUsersResponse]:
+        """Return a pager continuing a checkpoint; it sends nothing until it is iterated."""
+        return resume_pages(
+            self._core,
+            _plans.PLAN_10,
+            state,
             pagination_options=pagination_options,
             options=options,
             session_options=session_options,

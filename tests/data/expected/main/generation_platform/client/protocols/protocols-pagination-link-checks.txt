@@ -1,0 +1,20 @@
+# protocols-pagination-link-checks
+render pydantic_v2.BaseModel
+  APIGenerationError
+  E_CONFIG_VALUE config protocols.helpers['numbers.next'].continuation.read /paths/~1users/get: The next URL of 'numbers.next' reads integer values, where only string values fit
+  E_CONFIG_VALUE config protocols.helpers['status.next'].continuation.read /paths/~1users/get: The next URL of 'status.next' reads integer values, where only string values fit
+  E_CONFIG_VALUE config protocols.helpers['nullable.next'].continuation.end /paths/~1users/get: The next URL of 'nullable.next' can read null, which no end condition covers
+  E_CONFIG_VALUE config protocols.helpers['nullable.next'].continuation.end[1].value /paths/~1users/get: The end value 1 of 'nullable.next' is integer, which its next URL never reads
+  E_CONFIG_VALUE config protocols.helpers['undeclared.next'].continuation.read /paths/~1users/get: The next URL pointer '/after' of 'undeclared.next' names no property of the GET /users response
+  E_CONFIG_VALUE config protocols.helpers['bodiless.next'].continuation.repeat_request_body /paths/~1users/get: The next URL of 'bodiless.next' repeats the request body, which GET /users does not take
+  E_CONFIG_VALUE config protocols.helpers['undeclared.links'].continuation.header /paths/~1searches/post: The links of 'undeclared.links' come from the header 'Link', which POST /searches does not declare
+  E_CONFIG_VALUE config protocols.helpers['spaced.links'].continuation.rel /paths/~1users/get: The relation 'next page' of 'spaced.links' is no RFC 8288 relation type: a registered name or an absolute URI
+  E_CONFIG_VALUE config protocols.helpers['quoted.links'].continuation.rel /paths/~1users/get: The relation 'urn:"next"' of 'quoted.links' is no RFC 8288 relation type: a registered name or an absolute URI
+  E_CONFIG_VALUE config protocols.helpers['written.links'].bindings[2].target /paths/~1users/get: The binding 2 of 'written.links' writes the cookie 'session', which carries credentials no helper writes
+  E_CONFIG_VALUE config protocols.helpers['written.links'].bindings[0].target /paths/~1users/get: The binding 0 of 'written.links' writes the query parameter 'limit', which no request after the first sends
+  E_CONFIG_VALUE config protocols.helpers['written.links'].bindings[1].target /paths/~1users/get: The binding 1 of 'written.links' gives integer values, which the header parameter 'X-Trace' of GET /users does not accept
+  E_CONFIG_CONFLICT config protocols.helpers['written.links'].bindings[3].target /paths/~1users/get: The binding 3 of 'written.links' writes the same target as its binding 1
+  E_CONFIG_VALUE config protocols.helpers['fetched.searches'].bindings[0].target /paths/~1searches/post: The binding 0 of 'fetched.searches' writes the request body, which no request after the first sends
+  E_CONFIG_VALUE config protocols.helpers['repeated.searches'].continuation.repeat_request_body /paths/~1searches/post: The next URL of 'repeated.searches' repeats the request body of POST /searches, which is not safe to send again; declare the operation's retry_safety idempotent
+  E_CONFIG_VALUE config protocols.helpers['repeated.searches'].continuation.read /paths/~1searches/post: The next URL of 'repeated.searches' reads the header 'X-Next', which POST /searches does not declare
+  E_CONFIG_VALUE config protocols.helpers['repeated.searches'].bindings[0].target /paths/~1searches/post: The binding 0 of 'repeated.searches' gives integer values, which the property '/token' of the request body of POST /searches does not accept
