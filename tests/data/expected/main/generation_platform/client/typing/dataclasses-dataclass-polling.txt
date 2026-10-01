@@ -16,7 +16,7 @@ mypy polling_negative.py: 13/13 marked lines with one error, 0 elsewhere, 0 in o
   25 arg-type
   26 call-arg
   27 assignment
-pyright polling_negative.py: 13/13 marked lines with one error, 0 elsewhere, 0 in other files
+pyright polling_negative.py: 12/13 marked lines with one error, 0 elsewhere, 0 in other files
   15 reportAssignmentType
   16 reportCallIssue
   17 reportArgumentType
@@ -26,6 +26,7 @@ pyright polling_negative.py: 13/13 marked lines with one error, 0 elsewhere, 0 i
   21 reportAttributeAccessIssue
   22 reportCallIssue
   23 reportAttributeAccessIssue
+  23 reportUnknownMemberType
   24 reportGeneralTypeIssues
   25 reportArgumentType
   26 reportCallIssue

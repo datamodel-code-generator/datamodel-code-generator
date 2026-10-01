@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 
 _PAST: Final = datetime(2000, 1, 1, tzinfo=timezone.utc)
 _EXPIRES: Final = "2999-01-01T00:00:00Z"
+_MOST_WAIT_MS: Final = 2**53 - 1
 
 
 def _envelope(state: Any) -> dict[str, Any]:
@@ -26,11 +27,18 @@ def _envelope(state: Any) -> dict[str, Any]:
     return json.loads(state.export())
 
 
+def _wait(milliseconds: int) -> str:
+    """Return a saved wait coarsely, so the time a scenario takes never changes it: none, minutes, or the most saved."""
+    if milliseconds in {0, _MOST_WAIT_MS}:
+        return f"{milliseconds}ms"
+    return f"<={math.ceil(milliseconds / 60_000)}min"
+
+
 def _saved(lines: list[str], label: str, state: Any) -> None:
-    """Report what an exported state saved, its wait in whole seconds, its payload, and its expiry."""
+    """Report what an exported state saved, its wait coarsely, its payload, and its expiry."""
     envelope = _envelope(state)
     saved = envelope["state"]
-    saved["wait_ms"] = f"{math.ceil(saved['wait_ms'] / 1000)}s"
+    saved["wait_ms"] = _wait(saved["wait_ms"])
     payload = base64.b64decode(envelope["payload"])
     lines.append(
         f"  {label} saved {json.dumps(saved, sort_keys=True)} payload={payload!r} expires_at={envelope['expires_at']}"
@@ -116,6 +124,12 @@ def _pending(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -
     _saved(lines, "before any poll", fresh)
     exchange.respond(job("done"), report(4))
     step(lines, "resumed before any poll", helper.resume(fresh).wait)
+    reports = api.protocols.jobs.report
+    exchange.respond(job("queued", 202))
+    posted = reports.start(body=body).checkpoint()
+    _saved(lines, "fetch written from the final poll", posted)
+    exchange.respond(job("done"), report(9))
+    step(lines, "resumed fetch written from the final poll", reports.resume(posted).wait)
     exports = api.protocols.exports.run
     exchange.respond(raw_response(202, **{"Operation-Id": "e1"}))
     queried = exports.start().checkpoint()
@@ -144,6 +158,11 @@ def _settled(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -
     step(lines, "resumed wait", resumed.wait)
     step(lines, "resumed status", resumed.status)
     lines.append(f"  resumed progress {dict(resumed.progress)!r}")
+    step(
+        lines,
+        "resumed under a smaller response limit",
+        lambda: helper.resume(state, options=harness.request(max_response_bytes=20)),
+    )
     for status in ("failed", "cancelled"):
         exchange.respond(job("queued", 202), job(status))
         handle = helper.start(body=body)
@@ -192,6 +211,19 @@ def _errors(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) ->
     state = _kept(lines, "long server delay", _failure(handle.status))
     _saved(lines, "long server delay", state)
     step(lines, "resumed with the delay", helper.resume(state).status)
+    huge = "1" + "0" * 308
+    exchange.respond(json_response(202, {"id": "j1", "status": "queued"}, **{"Retry-After": huge}))
+    handle = helper.start(body=body)
+    _kept(lines, "status after a huge server delay", _failure(handle.status))
+    state = _kept(lines, "wait after a huge server delay", _failure(handle.wait))
+    _saved(lines, "huge server delay", state)
+    _saved(lines, "checkpoint after a huge server delay", handle.checkpoint())
+    step(lines, "resumed with the huge delay", helper.resume(state).status)
+    step(
+        lines,
+        "resumed with the huge delay and no wait limit",
+        helper.resume(state, poll_options=harness.polls(max_wait=None)).status,
+    )
     exchange.respond(job("queued", 202), job("queued"))
     limited = helper.start(body=body, poll_options=harness.polls(max_polls=1))
     step(lines, "first poll", limited.status)
@@ -247,6 +279,11 @@ def _malformed(harness: Polling, api: Any, exchange: Exchange, lines: list[str])
         ("unknown phase", pending, _replaced(pending, ("phase",), "closed"), {}),
         ("phase of another type", pending, _replaced(pending, ("phase",), {"name": "pending"}), {}),
         ("negative polls", pending, _replaced(pending, ("polls",), -1), {}),
+        ("wait past the most saved", pending, _replaced(pending, ("wait_ms",), _MOST_WAIT_MS + 1), {}),
+        ("wait past every float", pending, _replaced(pending, ("wait_ms",), 10**400), {}),
+        ("fetch value of another type", pending, _replaced(pending, ("seed", 0), 5), {}),
+        ("null fetch value", pending, _replaced(pending, ("seed", 0), None), {}),
+        ("object fetch value", pending, _replaced(pending, ("seed", 0), {"x": 1}), {}),
         ("short bindings", pending, _replaced(pending, ("bound",), []), {}),
         ("pending with a saved poll", settled, _replaced(settled, ("phase",), "pending"), {}),
         ("pending with a result", pending, _replaced(pending, ("result",), [200, None, 0]), {}),
@@ -283,6 +320,7 @@ def _results(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -
         ("immediate body without a result", _replaced(immediate, ("result", 2), len(empty)), empty),
         ("immediate body of an accepted status", _replaced(immediate, ("result", 0), 202), None),
         ("success without a result", _replaced(immediate, ("result",), None), b""),
+        ("immediate result with values", _replaced(immediate, ("bound",), ["j3"]), None),
     ):
         fields = {} if payload is None else {"payload": payload}
         step(
@@ -378,7 +416,9 @@ def _expiries(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) 
     for label, value in (
         ("offset date-time", "2999-01-01T09:00:00.25+09:00"),
         ("lowercase date-time", "2999-01-01t00:00:00z"),
-        ("HTTP date", "Fri, 01 Jan 2999 00:00:00 GMT"),
+        ("HTTP date", "Tue, 01 Jan 2999 00:00:00 GMT"),
+        ("leap second", "2998-12-31T23:59:60Z"),
+        ("leap second with a fraction and an offset", "2999-01-01T08:59:60.5+09:00"),
     ):
         exchange.respond(_tracked("queued", 202, expires=value))
         lines.append(f"  {label} expires_at={_envelope(helper.start(body=body).checkpoint())['expires_at']}")
@@ -430,7 +470,7 @@ def _security(harness: Polling, exchange: Exchange, lines: list[str]) -> None:
 
 
 async def _async_resume(harness: Polling, lines: list[str]) -> None:
-    """Checkpoint, resume, and cancel with asyncio; resume is not awaited and steps refuse while another runs."""
+    """Checkpoint, resume, and cancel with asyncio: resume is not awaited; checkpoints and cancels run in a wait."""
     exchange = Exchange(lines)
     async with (
         exchange.async_client() as native,
@@ -466,8 +506,10 @@ async def _async_resume(harness: Polling, lines: list[str]) -> None:
         lines.append(f"  handle class {type(handle).__name__}")
         waiting = asyncio.create_task(handle.wait())
         await asyncio.sleep(0)
-        step(lines, "checkpoint while waiting", handle.checkpoint)
+        _saved(lines, "checkpoint while waiting", handle.checkpoint())
+        exchange.respond(_tracked("cancelled", 202))
         await astep(lines, "cancel while waiting", handle.cancel_remote)
+        lines.append(f"  waiting after the cancel {not waiting.done()} {handle!r}")
         waiting.cancel()
         try:
             await waiting
