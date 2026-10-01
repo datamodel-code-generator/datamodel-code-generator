@@ -611,6 +611,12 @@ def _sources(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
         def open_range(self, offset: int, length: int) -> object:
             return protocols.AsyncBytesUploadSource.from_bytes(_CONTENT).open_range(offset, length)
 
+    class Coroutines(Ranges):
+        max_parallel_ranges = 1
+
+        async def open_range(self, offset: int, length: int) -> object:
+            return protocols.AsyncBytesUploadSource.from_bytes(_CONTENT).open_range(offset, length)
+
     class Texts(Ranges):
         max_parallel_ranges = 1
 
@@ -630,6 +636,7 @@ def _sources(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
         ("no parallel ranges", Ranges()),
         ("another identity", Unidentified()),
         ("an asyncio source", Asynchronous()),
+        ("a coroutine for each range", Coroutines()),
         ("a text reader", Texts()),
     ):
         record(lines, f"start with {label}", lambda source=source: helper.start(source, tus_resumable=harness.tus))

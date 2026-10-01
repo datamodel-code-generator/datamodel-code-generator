@@ -349,6 +349,7 @@ sources that cannot resume or are invalid
   start with no parallel ranges ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('source', 'max_parallel_ranges'), condition='invalid_value'] protocol_configuration_error
   start with another identity ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('source', 'identity'), condition='invalid_value'] protocol_configuration_error
   start with an asyncio source ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('source',), condition='wrong_capability'] protocol_configuration_error
+  start with a coroutine for each range ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('source',), condition='wrong_capability'] protocol_configuration_error
   start with a text reader ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('source',), condition='wrong_capability'] protocol_configuration_error
 content that changed after the scan
   > POST https://api.example.com/files

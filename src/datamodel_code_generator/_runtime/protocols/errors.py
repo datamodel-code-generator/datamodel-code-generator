@@ -960,7 +960,10 @@ class DeliveryUnknownError(ProtocolError):
 
 
 class UploadDeliveryUnknownError(DeliveryUnknownError):
-    """An upload append, part, or completion whose outcome stays unknown; the state is kept for an explicit resume."""
+    """An upload append, part, or completion whose outcome stays unknown; the state is kept for an explicit resume.
+
+    The `part` phase is reserved for the parts profile.
+    """
 
     def __init__(  # noqa: PLR0913
         self,

@@ -914,9 +914,14 @@ def _changed(
 
 
 def _opened(plan: UploadPlan[Any, Any], source: Any, start: int, length: int, method: str) -> Any:
-    """Open a range of a source, refusing one whose context is not of this client's kind."""
+    """Open a range of a source, refusing one whose context is not of this client's kind.
+
+    A refused coroutine, such as an asyncio `open_range` a synchronous client called, is closed unawaited.
+    """
     opened = source.open_range(start, length)
     if not hasattr(opened, method):
+        if (close := getattr(opened, "close", None)) is not None:
+            close()
         raise _invalid(plan, ("source",), "wrong_capability")
     return opened
 

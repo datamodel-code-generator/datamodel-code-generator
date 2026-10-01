@@ -310,7 +310,7 @@ Invalid field values raise `ValueError`.
 | `StreamRemoteError[E]` | `ProtocolError` | `event_type: str \| None`, `data: E`, a read-only property, `sequence: int` |
 | `NonResumableSourceError` | `ProtocolConfigurationError` | `source_kind: Literal['iterable', 'iterator', 'stream', 'reader']`; `field_path` is always `('source',)` and `condition` `wrong_capability` |
 | `DeliveryUnknownError` | `ProtocolError` | `delivery_state: DeliveryState`, `MAYBE_SENT` or `RESPONSE_STARTED`, `resume_state: ResumeState \| None = None`, `message_id: str \| None = None` |
-| `UploadDeliveryUnknownError` | `DeliveryUnknownError` | `phase: Literal['append', 'part', 'complete']`, `progress: UploadProgress`; no `message_id` |
+| `UploadDeliveryUnknownError` | `DeliveryUnknownError` | `phase: Literal['append', 'part', 'complete']`, `part` being reserved for the parts profile, `progress: UploadProgress`; no `message_id` |
 | `UploadSourceChangedError` | `ProtocolDataError` | `expected: UploadIdentity`, `actual: UploadIdentity \| None`, `offset: int \| None = None`; `condition` is always `inconsistent` |
 | `UploadOffsetError` | `ProtocolDataError` | `confirmed_offset: int`, `expected_offset: int`, `remote_offset: int`, `size: int`, `resume_state: ResumeState \| None = None`; `condition` is always `inconsistent` |
 | `UploadExpiredError` | `ResumeStateError` | `expires_at: datetime`, timezone-aware; `condition` is always `expired` |
@@ -1220,10 +1220,12 @@ anything but bytes, raises `ProtocolConfigurationError` with `condition='wrong_c
 
 ### Chunks, offsets, and recovery
 
-A chunk is `UploadOptions.chunk_bytes`, 8 MiB by default, or the helper's smaller `max_chunk_bytes`. An upload of
-more chunks than `UploadOptions.max_parts`, 10000 by default, raises `ProtocolConfigurationError` before anything is
-read, and so does a digest list whose checkpoint would exceed 16 MiB, with `ProtocolSizeError(kind='part_manifest')`.
-The offset profile sends one chunk at a time, whatever `parallelism` says.
+A chunk is `UploadOptions.chunk_bytes`, 8 MiB by default, or the helper's smaller `max_chunk_bytes`. An upload of more
+chunks than `UploadOptions.max_parts`, 10000 by default, raises `ProtocolConfigurationError` before anything is read,
+and so does a digest list whose base64 would exceed 15 MiB, with `ProtocolSizeError(kind='part_manifest')`; the
+remaining 1 MiB of a checkpoint's 16 MiB is left for its state, fingerprints, and a completion's response, and a larger
+response can still make `export()` raise `ResumeStateTooLargeError`. The offset profile sends one chunk at a time,
+whatever `parallelism` says.
 
 `start` sends the create request once, resent only as shared retries allow, with the content's size in the declared
 `size` parameter, and reads every binding's `initial` value and the server's expiry from its response. The upload
@@ -1276,9 +1278,10 @@ the saved digests. Then it probes the server's offset once, which must not be be
 handle; nothing is read or sent for a complete checkpoint, and a completion of unknown outcome raises
 `UploadDeliveryUnknownError` again.
 
-A server's expiry is read once from the create response at `create.expires_at`, an RFC 3339 date-time with an offset
-or an HTTP date; a missing, null, or unparsable value raises `ProtocolDataError` from `start`. It bounds only
-checkpoints, which `import_state` and `resume` refuse once it has passed; uploading goes on until the server refuses.
+A server's expiry is read once from the create response at `create.expires_at`, an RFC 3339 date-time with an offset or
+an HTTP date; a missing, null, or unparsable value raises `ProtocolDataError` from `start`. It bounds only checkpoints
+once it has passed: `import_state` raises `ResumeStateError(condition='expired')`, and `resume` raises
+`UploadExpiredError`, a subclass of it, with the expiry; uploading goes on until the server refuses.
 
 ### Limits and sessions
 
@@ -1297,12 +1300,14 @@ bounds all of them. Each limit comes from the call's options, then the helper's 
 | `SessionOptions.deadline` | None | No deadline |
 | `SessionOptions.max_network_sends` | 10000 sends | Removes the limit |
 
-The deadline also bounds reading the source. A call past a limit raises `SessionLimitError` with the kind
-`network_sends`, the progress so far, and `resume_state`, before sending; a create request the session has no slot
-for raises it without `resume_state`, since nothing was created. The options must not fix an idempotency key, from the
-client, a view, or the call, and must not patch a header or a query parameter the helper writes, the size included;
-`start` and `resume` raise `ProtocolConfigurationError` before reading or sending, as they do for options of another
-type.
+The session's `total_timeout` runs from `start` or `resume` for the whole life of the handle, reading the source
+included, so a long upload stepped slowly needs `SessionOptions(total_timeout=None)`, a larger value, or a `resume` from
+a checkpoint, which starts a new session. The deadline also bounds reading the source. A call past a limit raises
+`SessionLimitError` with the kind `network_sends`, the progress so far, and `resume_state`, before sending; a create
+request the session has no slot for raises it without `resume_state`, since nothing was created. The options must not
+fix an idempotency key, from the client, a view, or the call, and must not patch a header or a query parameter the
+helper writes, the size included; `start` and `resume` raise `ProtocolConfigurationError` before reading or sending, as
+they do for options of another type.
 
 ### Upload generation checks
 
