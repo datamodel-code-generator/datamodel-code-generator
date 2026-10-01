@@ -152,7 +152,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='results_basemodel_models:Thing',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Thing',
         fields=(
             FieldBinding(
                 field_id='results_basemodel_models:Thing.id',
@@ -175,7 +175,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='results_basemodel_models:FieldResultsGetResponse',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1results/get/responses/200/content/text~1csv/schema',
         root=LeafNode(),
     )
 
@@ -185,7 +185,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='results_basemodel_models:FieldResultsGetResponse200XRateHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1results/get/responses/200/headers/X-Rate/schema',
         root=LeafNode(),
     )
 
@@ -195,7 +195,7 @@ def _model_3() -> ModelBinding:
     return ModelBinding(
         symbol='results_basemodel_models:FieldResultsGetResponse201LocationHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1results/get/responses/201/headers/Location/schema',
         root=LeafNode(),
     )
 
@@ -205,7 +205,7 @@ def _model_4() -> ModelBinding:
     return ModelBinding(
         symbol='results_basemodel_models:Problem',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Problem',
         fields=(
             FieldBinding(
                 field_id='results_basemodel_models:Problem.title',
@@ -228,7 +228,7 @@ def _model_5() -> ModelBinding:
     return ModelBinding(
         symbol='results_basemodel_models:FieldPlainGetResponse',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1plain/get/responses/200/content/text~1plain/schema',
         root=LeafNode(),
     )
 
@@ -238,14 +238,18 @@ def _model_6() -> ModelBinding:
     return ModelBinding(
         symbol='results_basemodel_models:FieldLatinGetResponse',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1latin/get/responses/200/content/text~1plain;%20charset=iso-8859-1/schema',
         root=LeafNode(),
     )
 
 
 @cache
 def _model_7() -> ModelBinding:
-    return ModelBinding(symbol='results_basemodel_models:FieldNothingGetResponse', native_kind='model', schema_id=None)
+    return ModelBinding(
+        symbol='results_basemodel_models:FieldNothingGetResponse',
+        native_kind='model',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1nothing/get/responses/default/content/application~1json/schema',
+    )
 
 
 CONTEXT_0: Final = CodecContext(

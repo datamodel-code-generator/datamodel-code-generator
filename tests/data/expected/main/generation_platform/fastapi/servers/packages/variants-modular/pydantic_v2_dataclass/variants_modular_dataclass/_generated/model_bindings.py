@@ -171,7 +171,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='variants_modular_dataclass_models.owner:Owner',
         native_kind='dataclass',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/documents/0#/components/schemas/Owner',
         fields=(
             FieldBinding(
                 field_id='variants_modular_dataclass_models.owner:Owner.name',
@@ -206,7 +206,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='variants_modular_dataclass_models.pet:Pet',
         native_kind='dataclass',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Pet',
         fields=(
             FieldBinding(
                 field_id='variants_modular_dataclass_models.pet:Pet.name',

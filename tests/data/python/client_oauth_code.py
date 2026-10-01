@@ -82,7 +82,8 @@ class _Uncapable:
 
     def send(self, request: object, context: object) -> object:
         del request, context
-        raise AssertionError
+        msg = "a transport without capabilities is rejected before it sends"
+        raise RuntimeError(msg)
 
     def close(self) -> None:
         pass

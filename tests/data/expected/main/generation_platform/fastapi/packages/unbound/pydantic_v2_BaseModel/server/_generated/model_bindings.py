@@ -82,7 +82,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:Value',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Value',
         fields=(
             FieldBinding(
                 field_id='models:Value.id',

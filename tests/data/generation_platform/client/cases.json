@@ -2232,6 +2232,91 @@
       ]
     ]
   },
+  "unions": {
+    "input": "unions.yaml",
+    "config": {
+      "validation": {
+        "response_overrides": [
+          "schema"
+        ]
+      }
+    }
+  },
+  "unions-schema": {
+    "input": "unions.yaml",
+    "config": {
+      "validation": {
+        "response": "schema"
+      }
+    }
+  },
+  "unions-tagged": {
+    "input": "unions.yaml",
+    "config": {
+      "selection": {
+        "exclude_operations": [
+          "/paths/~1shapes/get",
+          "/paths/~1overlaps/get"
+        ],
+        "reason": "msgspec tells apart only tagged union members natively."
+      },
+      "validation": {
+        "response_overrides": [
+          "schema"
+        ]
+      }
+    }
+  },
+  "compatibility": {
+    "input": "compatibility.yaml",
+    "references": [
+      "compatibility-external.yaml"
+    ],
+    "model": {
+      "base_class": "app.bases.Base"
+    },
+    "config": {
+      "builtin_codec_compatibility": [
+        {
+          "name": "scoped",
+          "backend": "pydantic_v2.BaseModel",
+          "schemas": [
+            {
+              "pointer": "/components/schemas/Local"
+            },
+            {
+              "pointer": "/components/schemas/Remote",
+              "document": "compatibility-external.yaml"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "unions-legacy": {
+    "input": "unions-legacy.yaml",
+    "config": {
+      "validation": {
+        "response_overrides": [
+          "schema"
+        ]
+      }
+    }
+  },
+  "unions-legacy-schema": {
+    "input": "unions-legacy.yaml",
+    "config": {
+      "selection": {
+        "exclude_operations": [
+          "/paths/~1inline/get"
+        ],
+        "reason": "Only Pydantic tells apart union members whose schemas the legacy reference drops."
+      },
+      "validation": {
+        "response": "schema"
+      }
+    }
+  },
   "pagination-counts": {
     "input": "pagination-counts.yaml",
     "references": [

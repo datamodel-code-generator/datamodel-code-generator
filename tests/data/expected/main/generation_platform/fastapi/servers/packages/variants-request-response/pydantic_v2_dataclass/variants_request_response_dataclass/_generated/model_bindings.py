@@ -169,7 +169,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='variants_request_response_dataclass_models:Owner',
         native_kind='dataclass',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/documents/0#/components/schemas/Owner',
         fields=(
             FieldBinding(
                 field_id='variants_request_response_dataclass_models:Owner.name',

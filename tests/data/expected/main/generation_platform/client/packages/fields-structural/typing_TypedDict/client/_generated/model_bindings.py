@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from functools import cache
 from typing import Final
 
@@ -336,7 +337,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:NewPet',
         native_kind='typed_dict',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/NewPet',
         fields=(
             FieldBinding(
                 field_id='models:NewPet.name',
@@ -431,7 +432,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='models:Owner',
         native_kind='typed_dict',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Owner',
         fields=(
             FieldBinding(
                 field_id='models:Owner.email',
@@ -466,7 +467,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='models:PetForm',
         native_kind='typed_dict',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/PetForm',
         fields=(
             FieldBinding(
                 field_id='models:PetForm.name',
@@ -501,7 +502,7 @@ def _model_3() -> ModelBinding:
     return ModelBinding(
         symbol='models:Pet',
         native_kind='typed_dict',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Pet',
         fields=(
             FieldBinding(
                 field_id='models:Pet.id',
@@ -548,7 +549,7 @@ def _model_4() -> ModelBinding:
     return ModelBinding(
         symbol='models:PetPatch',
         native_kind='typed_dict',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/PetPatch',
         fields=(
             FieldBinding(
                 field_id='models:PetPatch.name',
@@ -583,7 +584,7 @@ def _model_5() -> ModelBinding:
     return ModelBinding(
         symbol='models:Visit',
         native_kind='typed_dict',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Visit',
         fields=(
             FieldBinding(
                 field_id='models:Visit.note',
@@ -618,7 +619,7 @@ def _model_6() -> ModelBinding:
     return ModelBinding(
         symbol='models:Labels',
         native_kind='typed_dict',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Labels',
         fields=(
             FieldBinding(
                 field_id='models:Labels.size',
@@ -643,7 +644,7 @@ def _model_7() -> ModelBinding:
     return ModelBinding(
         symbol='models:ByKind',
         native_kind='typed_dict',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/ByKind',
         fields=(
             FieldBinding(
                 field_id='models:ByKind.kind',
@@ -666,7 +667,7 @@ def _model_8() -> ModelBinding:
     return ModelBinding(
         symbol='models:ByName',
         native_kind='typed_dict',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/ByName',
         fields=(
             FieldBinding(
                 field_id='models:ByName.name',
@@ -682,6 +683,16 @@ def _model_8() -> ModelBinding:
             ),
         ),
     )
+
+
+@cache
+def _types_0() -> Mapping[str, type]:
+    return {'models:NewPet': models.NewPet, 'models:Owner': models.Owner}
+
+
+@cache
+def _types_1() -> Mapping[str, type]:
+    return {'models:ByKind': models.ByKind, 'models:ByName': models.ByName}
 
 
 CONTEXT_0: Final = CodecContext(
@@ -749,7 +760,7 @@ def codec_1() -> StructuralModelCodec[models.NewPet]:
             models=(_model_0(), _model_1()),
         ),
         models.NewPet,
-        {'models:NewPet': models.NewPet, 'models:Owner': models.Owner},
+        _types_0(),
         request_bundle,
     )
 
@@ -1196,7 +1207,7 @@ def codec_13() -> StructuralModelCodec[models.FieldSearchPostRequest]:
             models=(_model_7(), _model_8()),
         ),
         models.FieldSearchPostRequest,
-        {'models:ByKind': models.ByKind, 'models:ByName': models.ByName},
+        _types_1(),
         request_bundle,
     )
 

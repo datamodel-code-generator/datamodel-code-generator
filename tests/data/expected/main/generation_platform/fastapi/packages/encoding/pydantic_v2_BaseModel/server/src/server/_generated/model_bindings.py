@@ -140,7 +140,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldSearchGetCookieSessionParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -150,7 +150,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldSearchGetQueryCodeParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/1/schema',
         root=LeafNode(),
     )
 
@@ -160,7 +160,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='models:Filter',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Filter',
         fields=(
             FieldBinding(
                 field_id='models:Filter.id',
@@ -188,6 +188,7 @@ def _model_2() -> ModelBinding:
             ),
         ),
         extra='forbid',
+        open=False,
     )
 
 
@@ -196,7 +197,7 @@ def _model_3() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldSearchGetQueryIdsParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/3/schema',
         root=ArrayNode(item=LeafNode()),
     )
 
@@ -206,7 +207,7 @@ def _model_4() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldSearchGetHeaderXIdsParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1search/get/parameters/4/schema',
         root=ArrayNode(item=LeafNode()),
     )
 
@@ -216,7 +217,7 @@ def _model_5() -> ModelBinding:
     return ModelBinding(
         symbol='models:Blob',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Blob',
         fields=(
             FieldBinding(
                 field_id='models:Blob.a',
@@ -232,6 +233,7 @@ def _model_5() -> ModelBinding:
             ),
         ),
         extra='forbid',
+        open=False,
     )
 
 
@@ -240,7 +242,7 @@ def _model_6() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldRepeatIdAgainIdGetPathIdParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1repeat~1%7Bid%7D~1again~1%7Bid%7D/get/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -250,7 +252,7 @@ def _model_7() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldFilesFileNameGetPathFileNameParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1files~1%7Bfile.name%7D/get/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -260,7 +262,7 @@ def _model_8() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldMenüItemGetPathItemParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1men%C3%BC~1%7Bitem%7D/get/parameters/0/schema',
         root=LeafNode(),
     )
 
@@ -270,7 +272,7 @@ def _model_9() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldItemsLevelGetHeaderXFlagParameter',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1items~1%7Blevel%7D/get/parameters/3/schema',
         root=LeafNode(),
     )
 

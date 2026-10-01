@@ -266,7 +266,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='bodies_basemodel_models:Item',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Item',
         fields=(
             FieldBinding(
                 field_id='bodies_basemodel_models:Item.name',
@@ -282,6 +282,7 @@ def _model_0() -> ModelBinding:
             ),
         ),
         extra='forbid',
+        open=False,
     )
 
 
@@ -290,7 +291,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='bodies_basemodel_models:Account',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Account',
         fields=(
             FieldBinding(
                 field_id='bodies_basemodel_models:Account.id',
@@ -325,7 +326,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='bodies_basemodel_models:FieldProfilesPostRequest',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1profiles/post/requestBody/content/application~1json;%20profile=a/schema',
         fields=(
             FieldBinding(
                 field_id='bodies_basemodel_models:FieldProfilesPostRequest.a',
@@ -341,6 +342,7 @@ def _model_2() -> ModelBinding:
             ),
         ),
         extra='forbid',
+        open=False,
     )
 
 
@@ -349,7 +351,7 @@ def _model_3() -> ModelBinding:
     return ModelBinding(
         symbol='bodies_basemodel_models:FieldProfilesPostRequest1',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1profiles/post/requestBody/content/application~1json;%20profile=b/schema',
         fields=(
             FieldBinding(
                 field_id='bodies_basemodel_models:FieldProfilesPostRequest1.b',
@@ -365,6 +367,7 @@ def _model_3() -> ModelBinding:
             ),
         ),
         extra='forbid',
+        open=False,
     )
 
 
@@ -373,7 +376,7 @@ def _model_4() -> ModelBinding:
     return ModelBinding(
         symbol='bodies_basemodel_models:FieldVariantsPostRequest',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1variants/post/requestBody/content/application~1json;%20profile=v1/schema',
         fields=(
             FieldBinding(
                 field_id='bodies_basemodel_models:FieldVariantsPostRequest.a',
@@ -389,6 +392,7 @@ def _model_4() -> ModelBinding:
             ),
         ),
         extra='forbid',
+        open=False,
     )
 
 
@@ -397,7 +401,7 @@ def _model_5() -> ModelBinding:
     return ModelBinding(
         symbol='bodies_basemodel_models:FieldVariantsPostRequest1',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1variants/post/requestBody/content/application~1json/schema',
         fields=(
             FieldBinding(
                 field_id='bodies_basemodel_models:FieldVariantsPostRequest1.c',
@@ -413,6 +417,7 @@ def _model_5() -> ModelBinding:
             ),
         ),
         extra='forbid',
+        open=False,
     )
 
 
@@ -421,7 +426,7 @@ def _model_6() -> ModelBinding:
     return ModelBinding(
         symbol='bodies_basemodel_models:FieldDocumentsPutRequest',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1documents/put/requestBody/content/text~1*/schema',
         root=LeafNode(),
     )
 
@@ -431,7 +436,7 @@ def _model_7() -> ModelBinding:
     return ModelBinding(
         symbol='bodies_basemodel_models:FieldArchivesPutRequest',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1archives/put/requestBody/content/text~1*/schema',
         root=LeafNode(),
     )
 
@@ -441,7 +446,7 @@ def _model_8() -> ModelBinding:
     return ModelBinding(
         symbol='bodies_basemodel_models:FieldFormsPostRequest',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1forms/post/requestBody/content/application~1x-www-form-urlencoded/schema',
         fields=(
             FieldBinding(
                 field_id='bodies_basemodel_models:FieldFormsPostRequest.name',
@@ -489,7 +494,7 @@ def _model_9() -> ModelBinding:
     return ModelBinding(
         symbol='bodies_basemodel_models:Check',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Check',
         fields=(
             FieldBinding(
                 field_id='bodies_basemodel_models:Check.code',
@@ -517,6 +522,7 @@ def _model_9() -> ModelBinding:
             ),
         ),
         extra='forbid',
+        open=False,
     )
 
 

@@ -169,7 +169,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='variants_reuse_basemodel_models:Owner',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/documents/0#/components/schemas/Owner',
         fields=(
             FieldBinding(
                 field_id='variants_reuse_basemodel_models:Owner.name',
@@ -204,7 +204,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='variants_reuse_basemodel_models:Pet',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Pet',
         fields=(
             FieldBinding(
                 field_id='variants_reuse_basemodel_models:Pet.id',
@@ -263,7 +263,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='variants_reuse_basemodel_models:FieldOwnersGetResponse',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1owners/get/responses/200/content/application~1json/schema',
         root=ArrayNode(item=ModelNode(symbol='variants_reuse_basemodel_models:Owner')),
     )
 

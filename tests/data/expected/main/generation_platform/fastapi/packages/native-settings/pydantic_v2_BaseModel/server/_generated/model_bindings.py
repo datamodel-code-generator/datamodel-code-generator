@@ -168,7 +168,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:Named',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Named',
         fields=(
             FieldBinding(
                 field_id='models:Named.my_name',
@@ -191,7 +191,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='models:Titled',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Titled',
         fields=(
             FieldBinding(
                 field_id='models:Titled.title',
@@ -214,7 +214,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='models:Strict',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Strict',
         fields=(
             FieldBinding(
                 field_id='models:Strict.count',
@@ -234,7 +234,12 @@ def _model_2() -> ModelBinding:
 
 @cache
 def _model_3() -> ModelBinding:
-    return ModelBinding(symbol='models:Amount', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:Amount',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Amount',
+        root=LeafNode(),
+    )
 
 
 @cache
@@ -242,7 +247,7 @@ def _model_4() -> ModelBinding:
     return ModelBinding(
         symbol='models:Holder',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Holder',
         fields=(
             FieldBinding(
                 field_id='models:Holder.amount',
@@ -277,7 +282,7 @@ def _model_5() -> ModelBinding:
     return ModelBinding(
         symbol='models:Loose',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Loose',
         fields=(
             FieldBinding(
                 field_id='models:Loose.name',

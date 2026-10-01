@@ -175,7 +175,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:Pet',
         native_kind='dataclass',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Pet',
         fields=(
             FieldBinding(
                 field_id='models:Pet.id',
@@ -210,7 +210,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldNotesPutRequest1',
         native_kind='dataclass',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1notes/put/requestBody/content/application~1json/schema',
         fields=(
             FieldBinding(
                 field_id='models:FieldNotesPutRequest1.text',

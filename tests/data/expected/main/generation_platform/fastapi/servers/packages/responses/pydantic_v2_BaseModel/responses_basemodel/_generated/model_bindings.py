@@ -128,7 +128,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='responses_basemodel_models:FieldGreetingsGetResponse',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1greetings/get/responses/200/content/application~1json/schema',
         root=LeafNode(),
     )
 
@@ -138,7 +138,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='responses_basemodel_models:Error',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Error',
         fields=(
             FieldBinding(
                 field_id='responses_basemodel_models:Error.message',
@@ -161,7 +161,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='responses_basemodel_models:Pet',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Pet',
         fields=(
             FieldBinding(
                 field_id='responses_basemodel_models:Pet.id',

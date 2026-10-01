@@ -697,7 +697,7 @@ def _model_0() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldFormsPostRequest',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1forms/post/requestBody/content/application~1x-www-form-urlencoded/schema',
         fields=(
             FieldBinding(
                 field_id='models:FieldFormsPostRequest.name',
@@ -744,7 +744,7 @@ def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldFormsPostResponse',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1forms/post/responses/200/content/application~1x-www-form-urlencoded/schema',
         fields=(
             FieldBinding(
                 field_id='models:FieldFormsPostResponse.name',
@@ -779,7 +779,7 @@ def _model_2() -> ModelBinding:
     return ModelBinding(
         symbol='models:Address',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Address',
         fields=(
             FieldBinding(
                 field_id='models:Address.city',
@@ -814,7 +814,7 @@ def _model_3() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldProfilesPostRequest',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1profiles/post/requestBody/content/multipart~1form-data/schema',
         fields=(
             FieldBinding(
                 field_id='models:FieldProfilesPostRequest.name',
@@ -897,7 +897,7 @@ def _model_4() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldProfilesGetResponse',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1profiles/get/responses/200/content/multipart~1form-data/schema',
         fields=(
             FieldBinding(
                 field_id='models:FieldProfilesGetResponse.name',
@@ -990,7 +990,12 @@ def _model_4() -> ModelBinding:
 
 @cache
 def _model_5() -> ModelBinding:
-    return ModelBinding(symbol='models:FieldAnythingPostRequest', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:FieldAnythingPostRequest',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1anything/post/requestBody/content/multipart~1form-data/schema',
+        root=LeafNode(),
+    )
 
 
 @cache
@@ -998,7 +1003,7 @@ def _model_6() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldAttachmentsGetResponse',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1attachments/get/responses/202/content/multipart~1form-data/schema',
         fields=(
             FieldBinding(
                 field_id='models:FieldAttachmentsGetResponse.id',
@@ -1014,12 +1019,18 @@ def _model_6() -> ModelBinding:
             ),
         ),
         extra='forbid',
+        open=False,
     )
 
 
 @cache
 def _model_7() -> ModelBinding:
-    return ModelBinding(symbol='models:FieldFilesPostRequest2', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:FieldFilesPostRequest2',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1files/post/requestBody/content/text~1*/schema',
+        root=LeafNode(),
+    )
 
 
 @cache
@@ -1027,7 +1038,7 @@ def _model_8() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldSearchesPostRequest',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1searches/post/requestBody/content/application~1x-www-form-urlencoded/schema',
         fields=(
             FieldBinding(
                 field_id='models:FieldSearchesPostRequest.term',
@@ -1122,7 +1133,7 @@ def _model_9() -> ModelBinding:
     return ModelBinding(
         symbol='models:Filter',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1searches/post/requestBody/content/application~1x-www-form-urlencoded/schema/properties/filter',
         fields=(
             FieldBinding(
                 field_id='models:Filter.name',
@@ -1157,7 +1168,7 @@ def _model_10() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldCoversPostRequestNoteXTraceEncodingHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1covers/post/requestBody/content/multipart~1form-data/encoding/note/headers/X-Trace/schema',
         root=LeafNode(),
     )
 
@@ -1167,14 +1178,19 @@ def _model_11() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldCoversPostRequestMetaXMetaEncodingHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1covers/post/requestBody/content/multipart~1form-data/encoding/meta/headers/X-Meta/content/application~1json/schema',
         root=LeafNode(),
     )
 
 
 @cache
 def _model_12() -> ModelBinding:
-    return ModelBinding(symbol='models:RateLimitHeader', native_kind='root', schema_id=None, root=LeafNode())
+    return ModelBinding(
+        symbol='models:RateLimitHeader',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/components/headers/RateLimit/schema',
+        root=LeafNode(),
+    )
 
 
 @cache
@@ -1182,7 +1198,7 @@ def _model_13() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldCoversPostRequestScansContentDispositionEncodingHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1covers/post/requestBody/content/multipart~1form-data/encoding/scans/headers/Content-Disposition/schema',
         root=LeafNode(),
     )
 
@@ -1192,7 +1208,7 @@ def _model_14() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldCardsPostRequest',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1cards/post/requestBody/content/multipart~1form-data/schema',
         fields=(
             FieldBinding(
                 field_id='models:FieldCardsPostRequest.title',
@@ -1239,7 +1255,7 @@ def _model_15() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldStickersPostRequest',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1stickers/post/requestBody/content/multipart~1form-data/schema',
         fields=(
             FieldBinding(
                 field_id='models:FieldStickersPostRequest.tags',
@@ -1334,7 +1350,7 @@ def _model_16() -> ModelBinding:
     return ModelBinding(
         symbol='models:Point',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1stickers/post/requestBody/content/multipart~1form-data/schema/properties/point',
         fields=(
             FieldBinding(
                 field_id='models:Point.x',
@@ -1358,7 +1374,7 @@ def _model_17() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldAlbumsPostRequestBoundsContentDispositionEncodingHeader',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1albums/post/requestBody/content/multipart~1form-data/encoding/bounds/headers/Content-Disposition/schema',
         root=LeafNode(),
     )
 
@@ -1368,7 +1384,7 @@ def _model_18() -> ModelBinding:
     return ModelBinding(
         symbol='models:Draft',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Draft',
         fields=(
             FieldBinding(
                 field_id='models:Draft.id',
@@ -1415,7 +1431,7 @@ def _model_19() -> ModelBinding:
     return ModelBinding(
         symbol='models:FieldDocumentsIdGetPathIdParameter',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1documents~1%7Bid%7D/get/parameters/0/content/application~1json/schema',
         fields=(
             FieldBinding(
                 field_id='models:FieldDocumentsIdGetPathIdParameter.key',
@@ -1438,7 +1454,7 @@ def _model_20() -> ModelBinding:
     return ModelBinding(
         symbol='models:Bounds',
         native_kind='model',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1albums/post/requestBody/content/multipart~1form-data/schema/allOf/0/properties/bounds',
         fields=(
             FieldBinding(
                 field_id='models:Bounds.w',
