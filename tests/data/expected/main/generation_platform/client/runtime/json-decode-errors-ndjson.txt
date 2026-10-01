@@ -1,0 +1,73 @@
+# ndjson pydantic_v2.BaseModel
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  syntax: DecodeError WireValidationError json.syntax context=None cause=None prefix=10 truncated=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  large syntax: DecodeError WireValidationError json.syntax context=None cause=None prefix=200010 truncated=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  duplicate key: DecodeError WireValidationError json.duplicate_key context=None cause=None prefix=23 truncated=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  non-finite: DecodeError WireValidationError json.non_finite_number context=None cause=None prefix=5 truncated=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  integer limit: DecodeError CodecResourceLimitError  context=None cause=None prefix=5000 truncated=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  encoding: DecodeError WireValidationError json.encoding context=None cause=None prefix=12 truncated=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  parser nesting: DecodeError CodecResourceLimitError  context=None cause=None prefix=4000 truncated=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  snapshot nesting: DecodeError CodecResourceLimitError  context=None cause=None prefix=1400 truncated=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  surrogate value: DecodeError WireValidationError json.unicode context=None cause=None prefix=17 truncated=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  surrogate key: DecodeError WireValidationError json.unicode context=None cause=None prefix=14 truncated=False
+  > GET https://api.example.com/records
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-ndjson] b''
+  stream syntax: StreamDecodeError WireValidationError json.syntax context=None cause=None prefix=10 truncated=False
+  > GET https://api.example.com/records
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-ndjson] b''
+  stream large syntax: StreamDecodeError WireValidationError json.syntax context=None cause=None prefix=65536 truncated=True
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async syntax: DecodeError WireValidationError json.syntax context=None cause=None prefix=10 truncated=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async large syntax: DecodeError WireValidationError json.syntax context=None cause=None prefix=200010 truncated=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async duplicate key: DecodeError WireValidationError json.duplicate_key context=None cause=None prefix=23 truncated=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async non-finite: DecodeError WireValidationError json.non_finite_number context=None cause=None prefix=5 truncated=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async integer limit: DecodeError CodecResourceLimitError  context=None cause=None prefix=5000 truncated=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async encoding: DecodeError WireValidationError json.encoding context=None cause=None prefix=12 truncated=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async parser nesting: DecodeError CodecResourceLimitError  context=None cause=None prefix=4000 truncated=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async snapshot nesting: DecodeError CodecResourceLimitError  context=None cause=None prefix=1400 truncated=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async surrogate value: DecodeError WireValidationError json.unicode context=None cause=None prefix=17 truncated=False
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async surrogate key: DecodeError WireValidationError json.unicode context=None cause=None prefix=14 truncated=False
+  > GET https://api.example.com/records
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-ndjson] b''
+  async stream syntax: StreamDecodeError WireValidationError json.syntax context=None cause=None prefix=10 truncated=False
+  > GET https://api.example.com/records
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/x-ndjson] b''
+  async stream large syntax: StreamDecodeError WireValidationError json.syntax context=None cause=None prefix=65536 truncated=True

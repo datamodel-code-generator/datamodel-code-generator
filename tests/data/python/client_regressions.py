@@ -1,0 +1,121 @@
+"""Exercise error-only operations and JSON failure contexts through generated clients and real HTTP exchanges."""
+
+from __future__ import annotations
+
+import importlib
+import json
+from typing import TYPE_CHECKING, Any
+
+from tests.data.python.client_generation import SOURCE
+from tests.data.python.client_runtime import Exchange, arecord, json_response, raw_response, record, run
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+    from types import ModuleType
+
+
+def no_success(package: ModuleType, lines: list[str]) -> None:
+    """Keep error-only aliases returnable while declared errors and undeclared successes still raise."""
+    types = importlib.import_module(f"{package.__name__}.types.archives")
+    lines.extend(
+        f"  {name}Response = {getattr(types, f'{name}Response')!r}"
+        for name in ("CreateArchive", "ReadArchive", "CheckArchive", "EmptyArchive")
+    )
+    exchange = Exchange(lines)
+    with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
+        for label, name, response in _responses():
+            exchange.respond(response)
+            record(lines, label, getattr(api.archives, name))
+        exchange.respond(raw_response(409))
+        record(lines, "metadata error", api.archives.with_response.create_archive)
+    run(lambda: _async_no_success(package, exchange, lines))
+
+
+def _responses() -> Iterator[tuple[str, str, Any]]:
+    yield "bodyless error", "create_archive", raw_response(409)
+    yield "JSON error", "read_archive", json_response(404, {"detail": "missing"})
+    yield "range error", "check_archive", raw_response(403)
+    yield "undeclared success", "create_archive", raw_response(200)
+    yield "empty responses", "empty_archive", raw_response(204)
+
+
+async def _async_no_success(package: ModuleType, exchange: Exchange, lines: list[str]) -> None:
+    async with package.AsyncClient(http_client=exchange.async_client(), http_client_ownership="owned") as api:
+        for label, name, response in _responses():
+            exchange.respond(response)
+            await arecord(lines, f"async {label}", getattr(api.archives, name))
+        exchange.respond(raw_response(409))
+        await arecord(lines, "async metadata error", api.archives.with_response.create_archive)
+
+
+def _bodies() -> Iterator[tuple[str, bytes]]:
+    for case in json.loads((SOURCE / "json-decode-errors.json").read_text(encoding="utf-8")):
+        if "hex" in case:
+            yield case["name"], bytes.fromhex(case["hex"])
+        else:
+            text = (
+                case.get("prefix", "")
+                + case["text"] * case.get("repeat", 1)
+                + case.get("suffix", "") * case.get("suffix_repeat", 1)
+            )
+            yield case["name"], text.encode()
+
+
+def _failure(error: Any) -> str:
+    cause = error.cause
+    codes = ",".join(issue.code for issue in getattr(cause, "issues", ()))
+    prefix = error.raw_prefix if hasattr(error, "raw_prefix") else error.body_bytes
+    return (
+        f"{type(error).__name__} {type(cause).__name__} {codes} "
+        f"context={cause.__context__!r} cause={cause.__cause__!r} "
+        f"prefix={len(prefix)} truncated={error.truncated}"
+    )
+
+
+def _stream(api: Any, body: bytes) -> tuple[Any, bytes, str]:
+    if hasattr(api.protocols, "events"):
+        return api.protocols.events.messages, b"data: " + body + b"\n\n", "text/event-stream"
+    return api.protocols.records.all, body + b"\n", "application/x-ndjson"
+
+
+def json_decode_errors(package: ModuleType, lines: list[str]) -> None:
+    """Inspect every JSON parse failure and large malformed stream records without retaining their original errors."""
+    exchange = Exchange(lines)
+    errors = importlib.import_module(f"{package.__name__}.errors")
+    with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
+        for label, body in _bodies():
+            exchange.respond(raw_response(200, body, "application/json"))
+            try:
+                api.status.get_status()
+            except errors.ResponseDecodeError as error:
+                lines.append(f"  {label}: {_failure(error)}")
+        for label, body in _bodies():
+            if label in {"syntax", "large syntax"}:
+                helper, content, media = _stream(api, body)
+                exchange.respond(raw_response(200, content, media))
+                with helper.open() as stream:
+                    try:
+                        next(stream)
+                    except errors.StreamDecodeError as error:
+                        lines.append(f"  stream {label}: {_failure(error)}")
+    run(lambda: _async_json_decode_errors(package, exchange, lines))
+
+
+async def _async_json_decode_errors(package: ModuleType, exchange: Exchange, lines: list[str]) -> None:
+    errors = importlib.import_module(f"{package.__name__}.errors")
+    async with package.AsyncClient(http_client=exchange.async_client(), http_client_ownership="owned") as api:
+        for label, body in _bodies():
+            exchange.respond(raw_response(200, body, "application/json"))
+            try:
+                await api.status.get_status()
+            except errors.ResponseDecodeError as error:
+                lines.append(f"  async {label}: {_failure(error)}")
+        for label, body in _bodies():
+            if label in {"syntax", "large syntax"}:
+                helper, content, media = _stream(api, body)
+                exchange.respond(raw_response(200, content, media))
+                async with await helper.open() as stream:
+                    try:
+                        await anext(stream)
+                    except errors.StreamDecodeError as error:
+                        lines.append(f"  async stream {label}: {_failure(error)}")

@@ -111,6 +111,7 @@ def _integer(text: str) -> int:
 
 def decode_json(data: bytes) -> WireValue:
     """Parse UTF-8 JSON text into a wire snapshot, keeping exact number lexemes."""
+    error: WireValidationError | CodecResourceLimitError
     try:
         parsed: JSONValue = json.loads(
             data.decode("utf-8"),
@@ -119,25 +120,29 @@ def decode_json(data: bytes) -> WireValue:
             parse_int=_integer,
             parse_constant=_reject_constant,
         )
-    except _DuplicateKeyError:
-        raise issue(code="json.duplicate_key", message="A JSON object repeats a member name") from None
-    except _NonFiniteNumberError:
-        raise issue(code="json.non_finite_number", message="JSON numbers must be finite") from None
-    except _IntegerLimitError:
-        msg = "A JSON integer exceeds the interpreter's decimal conversion limit"
-        raise CodecResourceLimitError(msg) from None
-    except UnicodeDecodeError:
-        raise issue(code="json.encoding", message="JSON text must be UTF-8") from None
-    except RecursionError:
-        raise _nesting_limit() from None
-    except ValueError:
-        raise issue(code="json.syntax", message="The body is not valid JSON") from None
-    try:
-        return freeze_wire(parsed)
-    except RecursionError:
-        raise _nesting_limit() from None
-    except ValueError:
-        raise issue(code="json.unicode", message="JSON strings must not contain lone surrogates") from None
+    except (ValueError, RecursionError) as failure:
+        match failure:
+            case _DuplicateKeyError():
+                error = issue(code="json.duplicate_key", message="A JSON object repeats a member name")
+            case _NonFiniteNumberError():
+                error = issue(code="json.non_finite_number", message="JSON numbers must be finite")
+            case _IntegerLimitError():
+                msg = "A JSON integer exceeds the interpreter's decimal conversion limit"
+                error = CodecResourceLimitError(msg)
+            case UnicodeDecodeError():
+                error = issue(code="json.encoding", message="JSON text must be UTF-8")
+            case RecursionError():
+                error = _nesting_limit()
+            case _:
+                error = issue(code="json.syntax", message="The body is not valid JSON")
+    else:
+        try:
+            return freeze_wire(parsed)
+        except RecursionError:
+            error = _nesting_limit()
+        except ValueError:
+            error = issue(code="json.unicode", message="JSON strings must not contain lone surrogates")
+    raise error from None
 
 
 def _nesting_limit() -> CodecResourceLimitError:
