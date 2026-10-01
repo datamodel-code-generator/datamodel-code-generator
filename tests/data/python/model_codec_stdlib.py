@@ -52,6 +52,14 @@ class ListTicket:
 
 
 @dataclass
+class BytesTicket:
+    """Annotate the label as bytes, which no structural leaf converts."""
+
+    code: str = field(init=False)
+    label: bytes | int | None = None
+
+
+@dataclass
 class ChoiceTicket:
     """Widen the label to a union of three members."""
 

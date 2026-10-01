@@ -12,8 +12,8 @@ from typing import TYPE_CHECKING, Any, Final, Literal, cast
 
 from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._client.pagination import (
-    _DOT_SEGMENTS,
     ItemStep,
+    _dot_literals,
     _fits,
     _json_type,
     _label,
@@ -294,6 +294,7 @@ class _Polls:
         """
         name, label = helper.name, _label(spec)
         writes = list(written)
+        dotted = _dot_literals(spec, bindings)
         for index, item in enumerate(bindings):
             where, owner, value, target = f"{at}[{index}]", f"{what} {index}", item["value"], item["target"]
             pages = self.pages
@@ -315,10 +316,10 @@ class _Polls:
                 yield _problem("E_CLIENT_UNSUPPORTED", "target", f"{where}.value.source", message, spec)
                 continue
             if "literal" in value:
-                if target["in"] == "path" and value["literal"] in _DOT_SEGMENTS:
+                if index in dotted:
                     message = (
-                        f"The {owner} of {name!r} gives the dot segment {value['literal']!r}, which cannot be written "
-                        f"to the path parameter {target['name']!r} of {label}"
+                        f"The {owner} of {name!r} gives {value['literal']!r}, which makes the segment of the path "
+                        f"parameter {target['name']!r} of {label} a dot segment"
                     )
                     yield _problem("E_CONFIG_VALUE", "config", f"{where}.value.literal", message, spec)
                     continue

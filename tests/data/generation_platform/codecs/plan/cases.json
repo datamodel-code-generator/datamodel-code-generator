@@ -1,0 +1,31 @@
+{
+  "oas30": {"instances": "oas30-instances.json"},
+  "oas31": {"instances": "oas31-instances.json"},
+  "oas32": {
+    "refusal": {
+      "operations": [
+        {"ref": "/paths/~1raw/post", "parameter_names": [{"in_": "querystring", "name": "body", "python_name": "raw_body"}]}
+      ]
+    },
+    "config": {
+      "operations": [
+        {"ref": "/paths/~1raw/post", "parameter_names": [{"in_": "querystring", "name": "body", "python_name": "raw_body"}]}
+      ],
+      "selection": {"exclude_operations": ["/paths/~1deep/get"], "reason": "Its expanded query parameter names collide."}
+    }
+  },
+  "parameters": {},
+  "directions-accepted": {"instances": "directions-accepted-instances.json"},
+  "dialects": {},
+  "dialects32": {
+    "refusal": {},
+    "config": {
+      "selection": {
+        "exclude_operations": ["/paths/~1alternatives/post"],
+        "reason": "Its security alternatives own the same header twice."
+      }
+    }
+  },
+  "directions": {},
+  "legacy": {"model": {"openapi_scopes": ["schemas", "paths"]}}
+}

@@ -1,6 +1,7 @@
 {
   "backend": "dataclasses.dataclass",
   "package": "codec_shapes_stdlib",
+  "refusal": {"validation": {"response": "native"}},
   "cases": [
     {"name": "animal-client-cat", "use": "/paths/~1animals/post request_body", "surface": "client", "op": "from_wire",
      "value": {"id": 3, "meow": true}},
@@ -78,9 +79,7 @@
      "value": {"call": "Cat", "args": {"id": 1, "meow": true}}},
     {"name": "kin-server-encode-dog", "use": "/paths/~1kin/get response_body 200", "op": "encode",
      "value": {"call": "Dog", "args": {"id": 2, "bark": 3}}},
-    {"name": "animals-client-needs-schema", "use": "/paths/~1animals/post response_body 200", "surface": "client", "op": "needs-schema"},
     {"name": "animals-client-convert", "use": "/paths/~1animals/post response_body 200", "surface": "client", "op": "convert", "value": {"id": 1, "name": "Tom", "meow": true}},
-    {"name": "tree-client-needs-schema", "use": "/paths/~1tree/put response_body 200", "surface": "client", "op": "needs-schema"},
     {"name": "values-client-serialize-nested", "use": "/paths/~1values/post request_body", "surface": "client", "op": "serialize",
      "value": {"call": "Values", "args": {"any": {"k": {"nested": 3000}}}}},
     {"name": "values-client-convert-nested", "use": "/paths/~1values/post response_body 200", "surface": "client", "op": "convert", "value": {"nested": 3000}},

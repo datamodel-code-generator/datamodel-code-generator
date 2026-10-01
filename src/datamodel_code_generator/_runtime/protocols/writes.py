@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from ..model_codecs.wire import WireValue
     from .records import RequestTarget
 
-__all__ = ("PatchedMedia", "PatchedParameter", "ReadMedia", "ReadParameter", "Writes", "targeted")
+__all__ = ("PatchedMedia", "PatchedParameter", "ReadMedia", "ReadParameter", "Writes", "parameter_position", "targeted")
 
 T = TypeVar("T")
 Writes: TypeAlias = tuple[tuple[int | None, str | None], ...]
@@ -75,7 +75,7 @@ class ReadMedia(BodyMedia):
         return wire
 
 
-def _position(call: OperationPlan[T, object], location: str, name: str) -> int:
+def parameter_position(call: OperationPlan[T, object], location: str, name: str) -> int:
     """Return the argument position of a declared parameter, matching a header's name without regard to case."""
 
     def key(value: str) -> str:
@@ -110,9 +110,9 @@ def targeted(
             patched = True
             continue
         if isinstance(target, QuerystringTarget):
-            position, pointer = _position(call, "querystring", target.name), target.pointer
+            position, pointer = parameter_position(call, "querystring", target.name), target.pointer
         else:
-            position, pointer = _position(call, target.location, target.name), None
+            position, pointer = parameter_position(call, target.location, target.name), None
             if (location := target.location) == "header":
                 headers.add(target.name.lower())
             elif location == "query":

@@ -1,0 +1,2 @@
+APIGenerationError
+diagnostic MC_PARAMETER_ENCODING /paths/~1pets/get/parameters/0/schema: A parameter value needs one unambiguous scalar kind

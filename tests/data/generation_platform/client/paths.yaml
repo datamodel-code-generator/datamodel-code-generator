@@ -1,0 +1,119 @@
+openapi: 3.2.0
+info:
+  title: Paths
+  version: 1.0.0
+servers:
+  - url: https://api.example.com/v1
+paths:
+  /archive/{name}:
+    get:
+      operationId: getArchive
+      parameters:
+        - {name: name, in: path, required: true, schema: {type: string}}
+      responses:
+        '204':
+          description: Found.
+  /files/{name}.json:
+    get:
+      operationId: getFile
+      parameters:
+        - {name: name, in: path, required: true, schema: {type: string}}
+      responses:
+        '204':
+          description: Found.
+  /pairs/{first}{second}:
+    get:
+      operationId: getPair
+      parameters:
+        - {name: first, in: path, required: true, schema: {type: string}}
+        - {name: second, in: path, required: true, schema: {type: string}}
+      responses:
+        '204':
+          description: Found.
+  /reserved/{name}:
+    get:
+      operationId: getReserved
+      parameters:
+        - {name: name, in: path, required: true, allowReserved: true, schema: {type: string}}
+      responses:
+        '204':
+          description: Found.
+  /lists/{names}:
+    get:
+      operationId: getList
+      parameters:
+        - {name: names, in: path, required: true, schema: {type: array, items: {type: string}}}
+      responses:
+        '204':
+          description: Found.
+  /labels/{name}:
+    get:
+      operationId: getLabel
+      parameters:
+        - {name: name, in: path, required: true, style: label, schema: {type: string}}
+      responses:
+        '204':
+          description: Found.
+  /label-lists/{names}:
+    get:
+      operationId: getLabelList
+      parameters:
+        - {name: names, in: path, required: true, style: label, explode: true, schema: {type: array, items: {type: string}}}
+      responses:
+        '204':
+          description: Found.
+  /matrix/{name}:
+    get:
+      operationId: getMatrix
+      parameters:
+        - {name: name, in: path, required: true, style: matrix, schema: {type: string}}
+      responses:
+        '204':
+          description: Found.
+  /matrix-lists/{names}:
+    get:
+      operationId: getMatrixList
+      parameters:
+        - {name: names, in: path, required: true, style: matrix, explode: true, schema: {type: array, items: {type: string}}}
+      responses:
+        '204':
+          description: Found.
+  /reserved-labels/{name}:
+    get:
+      operationId: getReservedLabel
+      parameters:
+        - {name: name, in: path, required: true, style: label, allowReserved: true, schema: {type: string}}
+      responses:
+        '204':
+          description: Found.
+  /reserved-label-lists/{names}:
+    get:
+      operationId: getReservedLabelList
+      parameters:
+        - name: names
+          in: path
+          required: true
+          style: label
+          explode: true
+          allowReserved: true
+          schema: {type: array, items: {type: string}}
+      responses:
+        '204':
+          description: Found.
+  /dotted/{first}.{second}:
+    get:
+      operationId: getDotted
+      parameters:
+        - {name: first, in: path, required: true, schema: {type: string}}
+        - {name: second, in: path, required: true, schema: {type: string}}
+      responses:
+        '204':
+          description: Found.
+  /static/./{name}:
+    get:
+      operationId: getStatic
+      parameters:
+        - {name: name, in: path, required: true, schema: {type: string}}
+      responses:
+        '204':
+          description: Found.
