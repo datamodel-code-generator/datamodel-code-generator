@@ -86,6 +86,7 @@ _PUBLIC_MODULE_EXPORTS: dict[str, frozenset[str]] = {
         "FieldTypeCollisionStrategy",
         "GenerateConfig",
         "GeneratedModules",
+        "load_pyproject_config",
         "GraphQLScope",
         "HTTPBackend",
         "InputFileType",

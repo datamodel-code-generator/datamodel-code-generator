@@ -394,8 +394,9 @@ class _Operation(Generic[T, P]):
     """What the synchronous and asyncio handles share: the plan, limits, session, phase, and the last poll.
 
     Only a settled child call changes the phase, so a failure that settles none, such as a transport error, a
-    deadline, a cancellation, or a limit, leaves the handle as it was, and a later step polls again. A settled handle
-    keeps the bodies its checkpoint saves: the terminal poll's and that of a result read from another response.
+    deadline, a cancellation, or a limit, leaves the handle as it was, and a later step polls again unless a session
+    limit it hit stays spent. A settled handle keeps the bodies its checkpoint saves: the terminal poll's and that of a
+    result read from another response.
 
     `_lock` is held by the one step that polls or fetches, across its waits and sends; `_guard` only while what a
     step settles is written or read together, so a checkpoint or a remote cancel never waits for a step.
