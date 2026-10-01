@@ -160,7 +160,7 @@ def helper_problems(
     """Refuse enabled helpers whose entry operation takes a reserved argument or whose name gives a taken class name.
 
     Webhook helpers send nothing, so neither applies to them. Then report each enabled helper's own problems in
-    declaration order: those of a checked helper, or else that its kind is not supported yet.
+    declaration order; every kind an enabled helper can have is checked, since validation refuses the later kinds.
     """
     if protocols is None:
         return
@@ -180,11 +180,7 @@ def helper_problems(
             yield _problem("E_NAME_COLLISION", "target", helper.at, message, entry)
     yield from _class_problems(sending, protocols)
     for helper in enabled:
-        if (problems := checked.get(helper.name)) is not None:
-            yield from problems
-            continue
-        message = f"The {helper.kind} helper {helper.name!r} is not supported yet"
-        yield _problem("E_CLIENT_UNSUPPORTED", "target", helper.at, message)
+        yield from checked[helper.name]
 
 
 def _class_problems(helpers: tuple[Helper, ...], protocols: Protocols) -> Iterator[Diagnostic]:
