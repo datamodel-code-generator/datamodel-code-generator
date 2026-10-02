@@ -1029,6 +1029,33 @@ async def _async_submission_source(items: list[Any], transport: Any) -> AsyncIte
         yield item
 
 
+class _PresendClock:
+    """Raise an unrelated SDK error from a public clock after the source has been entered."""
+
+    def __init__(self, error: Exception) -> None:
+        self.error = error
+        self.failing = False
+
+    def __call__(self) -> float:
+        if self.failing:
+            raise self.error
+        return 100.0
+
+
+def _presend_source(items: list[Any], clock: _PresendClock) -> Iterator[Any]:
+    clock.failing = True
+    yield from items
+
+
+def _presend_error(harness: _Batches, transport: Any) -> tuple[_PresendClock, Any]:
+    responses = importlib.import_module(f"{harness.package.__name__}.responses")
+    info = responses.ResponseInfo(
+        status_code=200, headers=transport.headers(()), call_id="earlier-call", elapsed=0, content_type=None
+    )
+    clock = _PresendClock(harness.errors.ResponseDecodeError(info=info))
+    return clock, harness.options.Clock(monotonic=clock)
+
+
 def _boundary_controls(harness: _Batches, lines: list[str]) -> None:
     cases = _boundary_cases()
     lines.append("sync boundary controls")
@@ -1062,6 +1089,22 @@ def _boundary_controls(harness: _Batches, lines: list[str]) -> None:
                 continued(lines, "retained after interruption", iterator, failure_description=_boundary_failure)
                 iterator.close()
             _boundary_report(lines, transport)
+    for raising in cases["presend_sdk"]:
+        transport = _BoundaryTransport(harness, {})
+        clock, option = _presend_error(harness, transport)
+        with harness.package.Client(transport_adapter=transport, options=harness.client_options(clock=option)) as api:
+            iterator = api.protocols.users.create.iterate(
+                _presend_source(harness.users(2), clock),
+                batch_options=harness.batch(parallelism=1, raise_on_error=raising),
+            )
+            continued(
+                lines,
+                f"pre-send SDK with old response info raising={raising}",
+                iterator,
+                failure_description=_boundary_failure,
+            )
+            iterator.close()
+        _boundary_report(lines, transport)
     for active in (False, True):
         for raising in (False, True):
             transport = _BoundaryTransport(harness, {"gate": active})
@@ -1147,6 +1190,24 @@ async def _async_boundary_controls(harness: _Batches, lines: list[str]) -> None:
                 await acontinued(lines, "retained after interruption", iterator, failure_description=_boundary_failure)
                 await iterator.aclose()
             _boundary_report(lines, transport)
+    for raising in cases["presend_sdk"]:
+        transport = _AsyncBoundaryTransport(harness, {}, asynchronous=True)
+        clock, option = _presend_error(harness, transport)
+        async with harness.package.AsyncClient(
+            transport_adapter=transport, options=harness.client_options(clock=option)
+        ) as api:
+            iterator = api.protocols.users.create.iterate(
+                _presend_source(harness.users(2), clock),
+                batch_options=harness.batch(parallelism=1, raise_on_error=raising),
+            )
+            await acontinued(
+                lines,
+                f"pre-send SDK with old response info raising={raising}",
+                iterator,
+                failure_description=_boundary_failure,
+            )
+            await iterator.aclose()
+        _boundary_report(lines, transport)
     for active in (False, True):
         for raising in (False, True):
             transport = _AsyncBoundaryTransport(harness, {"gate": active}, asynchronous=True)
@@ -1169,24 +1230,7 @@ async def _async_boundary_controls(harness: _Batches, lines: list[str]) -> None:
             lines.extend(records)
             await iterator.aclose()
             _boundary_report(lines, transport)
-    for raising in cases["caller_cancellation"]:
-        transport = _AsyncBoundaryTransport(harness, {"gate": True}, asynchronous=True)
-        async with harness.package.AsyncClient(transport_adapter=transport) as api:
-            iterator = api.protocols.users.create.iterate(
-                harness.users(6), batch_options=harness.batch(batch_size=2, parallelism=1, raise_on_error=raising)
-            )
-            step = asyncio.create_task(anext(iterator))
-            await transport.started.wait()
-            step.cancel("caller interruption")
-            try:
-                await step
-            except asyncio.CancelledError as error:
-                lines.append(f"  caller cancelled raising={raising}: {type(error).__name__} args={error.args}")
-            await acontinued(
-                lines, "retained after caller cancellation", iterator, failure_description=_boundary_failure
-            )
-            await iterator.aclose()
-        _boundary_report(lines, transport)
+    await _caller_controls(harness, lines, cases["caller_cancellation"])
     transport = _AsyncBoundaryTransport(harness, {"gate": True}, asynchronous=True)
     async with harness.package.AsyncClient(transport_adapter=transport) as api:
         source = _Counted(harness.users(2, name="x" * 7))
@@ -1204,6 +1248,28 @@ async def _async_boundary_controls(harness: _Batches, lines: list[str]) -> None:
         await iterator.aclose()
     _boundary_report(lines, transport)
     await _source_controls(harness, lines, cases["source_controls"])
+
+
+async def _caller_controls(harness: _Batches, lines: list[str], controls: list[bool]) -> None:
+    """Cancel a caller's step after transmission, then drain the retained outcomes without sending more."""
+    for raising in controls:
+        transport = _AsyncBoundaryTransport(harness, {"gate": True}, asynchronous=True)
+        async with harness.package.AsyncClient(transport_adapter=transport) as api:
+            iterator = api.protocols.users.create.iterate(
+                harness.users(6), batch_options=harness.batch(batch_size=2, parallelism=1, raise_on_error=raising)
+            )
+            step = asyncio.create_task(anext(iterator))
+            await transport.started.wait()
+            step.cancel("caller interruption")
+            try:
+                await step
+            except asyncio.CancelledError as error:
+                lines.append(f"  caller cancelled raising={raising}: {type(error).__name__} args={error.args}")
+            await acontinued(
+                lines, "retained after caller cancellation", iterator, failure_description=_boundary_failure
+            )
+            await iterator.aclose()
+        _boundary_report(lines, transport)
 
 
 class _BlockedSource:

@@ -542,7 +542,7 @@ class _Batches(Generic[R]):
             raise self._refused(error) from None
         if isinstance(error, SDKError) and (state := getattr(error, "delivery_state", None)) in _UNKNOWN:
             return self._unknown_records(batch, error, state, terminal=not isinstance(error, TransportError))
-        if _applied(error):
+        if batch.delivery == DeliveryState.RESPONSE_STARTED and _applied(error):
             return self._unknown_records(batch, error, DeliveryState.RESPONSE_STARTED, terminal=False)
         raise error
 
