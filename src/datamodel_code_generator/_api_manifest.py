@@ -109,16 +109,40 @@ def json_object() -> JSONObject:
     return {}
 
 
-def json_projection(value: YamlValue) -> JSONValue:
-    """Project a loaded document into JSON values: keys become strings and non-finite numbers null."""
-    match value:
-        case dict():
-            return {str(key): json_projection(item) for key, item in value.items()}
-        case list():
-            return [json_projection(item) for item in value]
-        case float() if not isfinite(value):
-            return None
-    return value
+def json_projection(value: YamlValue, *, source_uri: str) -> JSONValue:
+    """Project a document into JSON, refusing cycles while allowing repeated acyclic aliases."""
+    ancestors: set[int] = set()
+
+    def project(item: YamlValue, pointer: str) -> JSONValue:
+        match item:
+            case dict() | list():
+                identity = id(item)
+                if identity in ancestors:
+                    raise APIGenerationError((
+                        Diagnostic(
+                            code="E_INPUT_CYCLE",
+                            severity="error",
+                            stage="input",
+                            message="The input document contains a cyclic mapping or sequence",
+                            source_uri=source_uri,
+                            source_pointer=pointer,
+                        ),
+                    ))
+                ancestors.add(identity)
+                if isinstance(item, dict):
+                    result: JSONValue = {
+                        (name := str(key)): project(value, f"{pointer}/{name.replace('~', '~0').replace('/', '~1')}")
+                        for key, value in item.items()
+                    }
+                else:
+                    result = [project(value, f"{pointer}/{index}") for index, value in enumerate(item)]
+                ancestors.remove(identity)
+                return result
+            case float() if not isfinite(item):
+                return None
+        return item
+
+    return project(value, "")
 
 
 def config_error(*, code: str, option_path: str | None, message: str) -> APIGenerationError:
@@ -175,10 +199,12 @@ def persistent_uri(identity: str, root: Path, option_path: str) -> str:
     return identity
 
 
-def _digest(lease: SourceLease, document: SourceDocumentId) -> str:
+def _digest(lease: SourceLease, document: SourceDocumentId, uri: str) -> str:
     from datamodel_code_generator._generation_contract import SourceLocation  # noqa: PLC0415
 
-    return sha256(canonical_bytes(json_projection(lease.borrow(SourceLocation(document, "", "schema")))))
+    return sha256(
+        canonical_bytes(json_projection(lease.borrow(SourceLocation(document, "", "schema")), source_uri=uri))
+    )
 
 
 class DocumentTable:
@@ -190,12 +216,16 @@ class DocumentTable:
         """Digest each borrowed document once and order the non-root ones by URI, then digest."""
         first, *others = batch.documents
         self.root_uri = persistent_uri(source.identity, root, "input")
-        self.root: JSONObject = {"kind": source.kind, "uri": self.root_uri, "digest": _digest(lease, first.id)}
+        self.root: JSONObject = {
+            "kind": source.kind,
+            "uri": self.root_uri,
+            "digest": _digest(lease, first.id, self.root_uri),
+        }
         located = [(document, document_identity(document.uri, source.base)) for document in others]
         entries = sorted(
             (
-                persistent_uri(identity, root, "input"),
-                _digest(lease, document.id),
+                uri := persistent_uri(identity, root, "input"),
+                _digest(lease, document.id, uri),
                 document.id,
                 identity,
                 document.uri,

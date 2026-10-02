@@ -40,6 +40,8 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/t
         "verify",
         "selection",
         "inputs",
+        "input-cycles",
+        "input-aliases",
         "validation",
         "empty",
         "modular",
