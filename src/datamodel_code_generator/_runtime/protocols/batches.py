@@ -199,7 +199,6 @@ class _Item:
     index: int
     wire: WireValue
     size: int
-    native: object
     item_id: WireValue | None = None
     key: bytes | None = None
 
@@ -393,7 +392,7 @@ class _Batches(Generic[R]):
         """
         plan = self._plan
         try:
-            item, native = plan.item_encoder.prepare(value, self._mode)
+            item = plan.item_encoder.prepare(value, self._mode)
         except (*DATA_ERRORS, ValueError, TypeError) as error:
             raise RequestEncodingError(
                 location=("items", index), operation_id=plan.call.operation_id, cause=error
@@ -408,7 +407,7 @@ class _Batches(Generic[R]):
                 parent_session_id=self._session.session_id,
             )
         if (pointer := plan.input_id) is None:
-            return _Item(index, item, size, native)
+            return _Item(index, item, size)
         if (found := resolve(item, pointer)) is MISSING or found is None:
             raise BatchProtocolError(
                 indices=(index,),
@@ -416,7 +415,7 @@ class _Batches(Generic[R]):
                 operation=plan.operation,
                 parent_session_id=self._session.session_id,
             )
-        return _Item(index, item, size, native, found, canonical_json(found))
+        return _Item(index, item, size, found, canonical_json(found))
 
     def _accepted(self, value: object) -> _Item | None:
         """Take one item read from the source, or stop reading at the item limit or a failure to prepare it.
@@ -499,6 +498,18 @@ class _Batches(Generic[R]):
             self._admitted = True
         if not items or (not complete and not self._exhausted and self._slots):
             return None
+        plan = self._plan
+        values = tuple(item.wire for item in items)
+        wire = values if plan.items_member is None else MappingProxyType({plan.items_member: values})
+        try:
+            self._encoder.validate(wire, self._mode)
+        except (*DATA_ERRORS, ValueError, TypeError) as error:
+            self._pending.clear()
+            self._stop_reading(
+                self._failure
+                or RequestEncodingError(location=("body",), operation_id=plan.call.operation_id, cause=error)
+            )
+            return None
         for _ in items:
             self._pending.popleft()
         return _Batch(tuple(items), size, sum(item.size for item in items))
@@ -507,14 +518,6 @@ class _Batches(Generic[R]):
         """Return how a request is built: the shared arguments and a body holding the items' wire values."""
         plan = self._plan
         values = tuple(item.wire for item in batch.items)
-        wire = values if plan.items_member is None else MappingProxyType({plan.items_member: values})
-        native = [item.native for item in batch.items]
-        try:
-            self._encoder.validate(
-                wire, native if plan.items_member is None else {plan.items_member: native}, self._mode
-            )
-        except (*DATA_ERRORS, ValueError, TypeError) as error:
-            raise RequestEncodingError(location=("body",), operation_id=plan.call.operation_id, cause=error) from None
         body = Patch(UNSET, ((plan.pointer, values),))
         arguments = self._arguments
         return lambda: (arguments, body, None)

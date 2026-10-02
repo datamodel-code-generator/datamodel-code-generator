@@ -34,7 +34,7 @@
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['users.create', 'tags.put', 'tags.colors'] bindings 5
+  namespace client helpers ['users.create', 'tags.put', 'tags.colors'] bindings 8
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   helper users.create batch enabled True /inputs/target_config/protocol_metadata/helpers/users.create 7517d4b0805c342154f296f1f6b8e86afdcf10c3ff4ca1e2303fca8586e31fd4
   helper tags.put batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.put 0cf87757d778a7e442bdb26f3b5624af154a2d65ae42ee6c6412de873ce42ede
@@ -479,7 +479,8 @@ unknown delivery record per item, never resent, or raises `BatchDeliveryUnknownE
 `BatchOptions(raise_on_error=True)`; a deadline, a cancellation, or a closed client is raised after those records.
 Any other failure, and a failure of the caller's items, is raised after the results before it; nothing is read or
 sent after it, and the requests in flight still return their records in order. A cancelled asyncio step cancels the
-requests in flight, whose items become unknown deliveries, and the iteration then ends with `ProtocolStateError`.
+requests in flight; only requests with evidence of possible resource delivery retain unknown delivery records.
+Children stopped before resource delivery produce no unknown records, and iteration ends with `ProtocolStateError`.
 Iterate in a `with` or `async with` block: `close()` or `aclose()` stops sending and drops the results not yet
 returned; it never closes the client. A call's options must not fix an idempotency key.
 

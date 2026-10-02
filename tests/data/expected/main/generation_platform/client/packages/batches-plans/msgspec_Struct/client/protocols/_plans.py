@@ -15,6 +15,8 @@ from models import UserResult as _dcg_type_0
 from msgspec import UnsetType
 
 from .. import _operations
+from .._generated import model_bindings
+from .._runtime.client.operations import PreparedEncoder
 from .._runtime.protocols.batches import BatchPlan
 from .._runtime.protocols.records import BodySelector
 from .._runtime.protocols.references import OperationRef
@@ -59,6 +61,8 @@ PLAN_0: Final[BatchPlan[_dcg_type_3, UsersCreateResult]] = BatchPlan(
     helper_id='users.create',
     operation=OperationRef(pointer='/paths/~1users~1batch/post'),
     call=_operations.OPERATION_0,
+    item_encoder=PreparedEncoder(model_bindings.codec_5, model_bindings.CONTEXT_5),
+    body_encoder=PreparedEncoder(model_bindings.codec_1, model_bindings.CONTEXT_1),
     results=_results_0,
     results_selector=BodySelector(pointer='/results'),
     success=_success_0,
@@ -102,6 +106,8 @@ PLAN_1: Final[BatchPlan[_dcg_type_5, TagsPutResult]] = BatchPlan(
     helper_id='tags.put',
     operation=OperationRef(pointer='/paths/~1tags~1batch/put'),
     call=_operations.OPERATION_1,
+    item_encoder=PreparedEncoder(model_bindings.codec_6, model_bindings.CONTEXT_6),
+    body_encoder=PreparedEncoder(model_bindings.codec_3, model_bindings.CONTEXT_3),
     results=_results_1,
     results_selector=BodySelector(pointer='/items'),
     success=_success_1,
@@ -142,6 +148,8 @@ PLAN_2: Final[BatchPlan[_dcg_type_5, TagsColorsResult]] = BatchPlan(
     helper_id='tags.colors',
     operation=OperationRef(pointer='/paths/~1tags~1batch/put'),
     call=_operations.OPERATION_1,
+    item_encoder=PreparedEncoder(model_bindings.codec_7, model_bindings.CONTEXT_7),
+    body_encoder=PreparedEncoder(model_bindings.codec_3, model_bindings.CONTEXT_3),
     results=_results_2,
     results_selector=BodySelector(pointer='/items'),
     success=_success_2,

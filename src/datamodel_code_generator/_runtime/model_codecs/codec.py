@@ -415,23 +415,25 @@ class BuiltinModelCodec(ABC, Generic[T]):
 
     def prepare(
         self, value: object, context: CodecContext, *, validate: bool = False, strict: bool = False
-    ) -> tuple[WireValue, object]:
-        """Construct a helper's item through its backend, retaining its native value beside its once-read wire value."""
-        native = self._validated(value) if validate or self._binding.backend.startswith("pydantic_v2.") else value
-        wire = self.encode(native, context) if strict else self.serialize(native, context)
-        return wire, native
+    ) -> WireValue:
+        """Construct and encode a helper's item through its captured native binding."""
+        node = self._binding.type
+        construct = (
+            self._binding.backend.startswith("pydantic_v2.")
+            and isinstance(node, ModelNode)
+            and not isinstance(value, self._types[node.symbol])
+            and not _captured(value)
+        )
+        native = self._validated(value) if validate or construct else value
+        return self.encode(native, context) if strict else self.serialize(native, context)
 
-    def validate_prepared(
-        self, wire: WireValue, native: object, context: CodecContext, *, strict: bool = False
-    ) -> None:
+    def validate_prepared(self, wire: WireValue, context: CodecContext, *, strict: bool = False) -> None:
         """Check an assembled helper request without serializing its original items again."""
         self._require(context, inbound=False)
         if strict:
             self._outbound(wire, MatchBudget(), context)
-        elif isinstance(native, Mapping):
-            self._constructed(self._object(), native, validate=True)
         else:
-            self._validated(native)
+            self._converted(wire, MatchBudget())
 
     def _object(self) -> ModelBinding:
         """Return the model of an object use: alone, with null, or as the root of a root model."""

@@ -1,0 +1,261 @@
+{
+  "schema_version": 1,
+  "helpers": {
+    "schema.property_min": {
+      "kind": "batch",
+      "operation": "/paths/~1property-min/post",
+      "request_items": {
+        "in": "body",
+        "pointer": "/item-list"
+      },
+      "item_schema": {
+        "pointer": "/components/schemas/Item"
+      },
+      "max_items": 10,
+      "max_request_bytes": 4096,
+      "results": {
+        "from": "body",
+        "pointer": "/results"
+      },
+      "success": {
+        "pointer": "/value",
+        "schema": {
+          "pointer": "/components/schemas/Success"
+        }
+      },
+      "error": {
+        "pointer": "/error",
+        "schema": {
+          "pointer": "/components/schemas/ItemError"
+        }
+      },
+      "correlation": {
+        "kind": "position"
+      }
+    },
+    "schema.root_min": {
+      "kind": "batch",
+      "operation": "/paths/~1root-min/post",
+      "request_items": {
+        "in": "body",
+        "pointer": ""
+      },
+      "item_schema": {
+        "pointer": "/components/schemas/Item"
+      },
+      "max_items": 10,
+      "max_request_bytes": 4096,
+      "results": {
+        "from": "body",
+        "pointer": "/results"
+      },
+      "success": {
+        "pointer": "/value",
+        "schema": {
+          "pointer": "/components/schemas/Success"
+        }
+      },
+      "error": {
+        "pointer": "/error",
+        "schema": {
+          "pointer": "/components/schemas/ItemError"
+        }
+      },
+      "correlation": {
+        "kind": "position"
+      }
+    },
+    "schema.property_max": {
+      "kind": "batch",
+      "operation": "/paths/~1property-max/post",
+      "request_items": {
+        "in": "body",
+        "pointer": "/item-list"
+      },
+      "item_schema": {
+        "pointer": "/components/schemas/Item"
+      },
+      "max_items": 10,
+      "max_request_bytes": 4096,
+      "results": {
+        "from": "body",
+        "pointer": "/results"
+      },
+      "success": {
+        "pointer": "/value",
+        "schema": {
+          "pointer": "/components/schemas/Success"
+        }
+      },
+      "error": {
+        "pointer": "/error",
+        "schema": {
+          "pointer": "/components/schemas/ItemError"
+        }
+      },
+      "correlation": {
+        "kind": "position"
+      }
+    },
+    "schema.root_max": {
+      "kind": "batch",
+      "operation": "/paths/~1root-max/post",
+      "request_items": {
+        "in": "body",
+        "pointer": ""
+      },
+      "item_schema": {
+        "pointer": "/components/schemas/Item"
+      },
+      "max_items": 10,
+      "max_request_bytes": 4096,
+      "results": {
+        "from": "body",
+        "pointer": "/results"
+      },
+      "success": {
+        "pointer": "/value",
+        "schema": {
+          "pointer": "/components/schemas/Success"
+        }
+      },
+      "error": {
+        "pointer": "/error",
+        "schema": {
+          "pointer": "/components/schemas/ItemError"
+        }
+      },
+      "correlation": {
+        "kind": "position"
+      }
+    },
+    "schema.property_unique": {
+      "kind": "batch",
+      "operation": "/paths/~1property-unique/post",
+      "request_items": {
+        "in": "body",
+        "pointer": "/item-list"
+      },
+      "item_schema": {
+        "pointer": "/components/schemas/Item"
+      },
+      "max_items": 10,
+      "max_request_bytes": 4096,
+      "results": {
+        "from": "body",
+        "pointer": "/results"
+      },
+      "success": {
+        "pointer": "/value",
+        "schema": {
+          "pointer": "/components/schemas/Success"
+        }
+      },
+      "error": {
+        "pointer": "/error",
+        "schema": {
+          "pointer": "/components/schemas/ItemError"
+        }
+      },
+      "correlation": {
+        "kind": "position"
+      }
+    },
+    "schema.root_unique": {
+      "kind": "batch",
+      "operation": "/paths/~1root-unique/post",
+      "request_items": {
+        "in": "body",
+        "pointer": ""
+      },
+      "item_schema": {
+        "pointer": "/components/schemas/Item"
+      },
+      "max_items": 10,
+      "max_request_bytes": 4096,
+      "results": {
+        "from": "body",
+        "pointer": "/results"
+      },
+      "success": {
+        "pointer": "/value",
+        "schema": {
+          "pointer": "/components/schemas/Success"
+        }
+      },
+      "error": {
+        "pointer": "/error",
+        "schema": {
+          "pointer": "/components/schemas/ItemError"
+        }
+      },
+      "correlation": {
+        "kind": "position"
+      }
+    },
+    "schema.root_contains": {
+      "kind": "batch",
+      "operation": "/paths/~1root-contains/post",
+      "request_items": {
+        "in": "body",
+        "pointer": ""
+      },
+      "item_schema": {
+        "pointer": "/components/schemas/Item"
+      },
+      "max_items": 10,
+      "max_request_bytes": 4096,
+      "results": {
+        "from": "body",
+        "pointer": "/results"
+      },
+      "success": {
+        "pointer": "/value",
+        "schema": {
+          "pointer": "/components/schemas/Success"
+        }
+      },
+      "error": {
+        "pointer": "/error",
+        "schema": {
+          "pointer": "/components/schemas/ItemError"
+        }
+      },
+      "correlation": {
+        "kind": "position"
+      }
+    },
+    "schema.body_bound": {
+      "kind": "batch",
+      "operation": "/paths/~1body-bound/post",
+      "request_items": {
+        "in": "body",
+        "pointer": "/item-list"
+      },
+      "item_schema": {
+        "pointer": "/components/schemas/Item"
+      },
+      "max_items": 10,
+      "max_request_bytes": 4096,
+      "results": {
+        "from": "body",
+        "pointer": "/results"
+      },
+      "success": {
+        "pointer": "/value",
+        "schema": {
+          "pointer": "/components/schemas/Success"
+        }
+      },
+      "error": {
+        "pointer": "/error",
+        "schema": {
+          "pointer": "/components/schemas/ItemError"
+        }
+      },
+      "correlation": {
+        "kind": "position"
+      }
+    }
+  }
+}

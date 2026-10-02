@@ -175,13 +175,11 @@ class PreparationCodec(OutboundModelCodec, Protocol):
 
     def prepare(
         self, value: object, context: CodecContext, *, validate: bool = False, strict: bool = False
-    ) -> tuple[WireValue, object]:
+    ) -> WireValue:
         """Construct and read one native item."""
         ...
 
-    def validate_prepared(
-        self, wire: WireValue, native: object, context: CodecContext, *, strict: bool = False
-    ) -> None:
+    def validate_prepared(self, wire: WireValue, context: CodecContext, *, strict: bool = False) -> None:
         """Validate the assembled request without encoding its items again."""
         ...
 
@@ -193,14 +191,14 @@ class PreparedEncoder:
     codec: Callable[[], PreparationCodec]
     context: CodecContext
 
-    def prepare(self, value: object, mode: RequestValidation) -> tuple[WireValue, object]:
+    def prepare(self, value: object, mode: RequestValidation) -> WireValue:
         """Read one item under the request's validation contract."""
         return self.codec().prepare(value, self.context, validate=mode == "native", strict=mode == "schema")
 
-    def validate(self, wire: WireValue, native: object, mode: RequestValidation) -> None:
+    def validate(self, wire: WireValue, mode: RequestValidation) -> None:
         """Check the assembled request before provider and resource admission."""
         if mode != "none":
-            self.codec().validate_prepared(wire, native, self.context, strict=mode == "schema")
+            self.codec().validate_prepared(wire, self.context, strict=mode == "schema")
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

@@ -1,0 +1,419 @@
+{
+  "openapi": "3.2.0",
+  "info": {
+    "title": "Constrained batches",
+    "version": "1"
+  },
+  "servers": [
+    {
+      "url": "https://api.example.com"
+    }
+  ],
+  "paths": {
+    "/property-min": {
+      "post": {
+        "operationId": "property_min",
+        "tags": [
+          "schema"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "item-list"
+                ],
+                "properties": {
+                  "item-list": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Item"
+                    },
+                    "minItems": 2
+                  },
+                  "notify": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "One result per input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/root-min": {
+      "post": {
+        "operationId": "root_min",
+        "tags": [
+          "schema"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Item"
+                },
+                "minItems": 2
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "One result per input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/property-max": {
+      "post": {
+        "operationId": "property_max",
+        "tags": [
+          "schema"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "item-list"
+                ],
+                "properties": {
+                  "item-list": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Item"
+                    },
+                    "maxItems": 1
+                  },
+                  "notify": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "One result per input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/root-max": {
+      "post": {
+        "operationId": "root_max",
+        "tags": [
+          "schema"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Item"
+                },
+                "maxItems": 1
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "One result per input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/property-unique": {
+      "post": {
+        "operationId": "property_unique",
+        "tags": [
+          "schema"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "item-list"
+                ],
+                "properties": {
+                  "item-list": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Item"
+                    },
+                    "uniqueItems": true
+                  },
+                  "notify": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "One result per input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/root-unique": {
+      "post": {
+        "operationId": "root_unique",
+        "tags": [
+          "schema"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Item"
+                },
+                "uniqueItems": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "One result per input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/root-contains": {
+      "post": {
+        "operationId": "root_contains",
+        "tags": [
+          "schema"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Item"
+                },
+                "contains": {
+                  "type": "object",
+                  "required": [
+                    "wire-label"
+                  ],
+                  "properties": {
+                    "wire-label": {
+                      "const": "two"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "One result per input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/body-bound": {
+      "post": {
+        "operationId": "body_bound",
+        "tags": [
+          "schema"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "item-list"
+                ],
+                "properties": {
+                  "item-list": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Item"
+                    }
+                  },
+                  "notify": {
+                    "type": "boolean"
+                  }
+                },
+                "minProperties": 2
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "One result per input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Item": {
+        "type": "object",
+        "required": [
+          "id",
+          "wire-label"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "wire-label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tier": {
+            "type": "string",
+            "default": "basic"
+          },
+          "secret": {
+            "type": "string",
+            "writeOnly": true
+          },
+          "server-note": {
+            "type": "string",
+            "readOnly": true
+          }
+        }
+      },
+      "Success": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        }
+      },
+      "ItemError": {
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          }
+        }
+      },
+      "Result": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "$ref": "#/components/schemas/Success"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ItemError"
+          }
+        }
+      },
+      "Response": {
+        "type": "object",
+        "required": [
+          "results"
+        ],
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Result"
+            }
+          }
+        }
+      }
+    }
+  }
+}
