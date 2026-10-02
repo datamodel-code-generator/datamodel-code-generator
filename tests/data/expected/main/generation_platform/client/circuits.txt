@@ -44,7 +44,10 @@ render pydantic_v2.BaseModel
   /selection/selected_operations/2 search.search()
     exports client.types.search.SearchResponse client.types.search.SearchErrorData client.types.search.SearchHTTPError
     exports client.types.search.SearchRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/3 backend.get_health()
+  /selection/selected_operations/3 backend.upload()
+    exports client.types.backend.UploadResponse client.types.backend.UploadErrorData client.types.backend.UploadHTTPError
+    exports client.types.backend.UploadRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/4 backend.get_health()
     exports client.types.backend.GetHealthResponse client.types.backend.GetHealthErrorData client.types.backend.GetHealthHTTPError
     exports client.types.backend.GetHealthRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

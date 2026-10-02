@@ -42,7 +42,10 @@
   /selection/selected_operations/2 search.search()
     exports client.types.search.SearchResponse client.types.search.SearchErrorData client.types.search.SearchHTTPError
     exports client.types.search.SearchRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/3 backend.get_health()
+  /selection/selected_operations/3 backend.upload()
+    exports client.types.backend.UploadResponse client.types.backend.UploadErrorData client.types.backend.UploadHTTPError
+    exports client.types.backend.UploadRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/4 backend.get_health()
     exports client.types.backend.GetHealthResponse client.types.backend.GetHealthErrorData client.types.backend.GetHealthHTTPError
     exports client.types.backend.GetHealthRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
@@ -120,6 +123,17 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
     "auth_challenge_less_401": false
   },
   {
+    "operation": "backend.upload",
+    "method": "POST",
+    "path": "/uploads",
+    "retry_safety": "method_default",
+    "idempotency": null,
+    "retry_after_ms_header": null,
+    "should_retry_header": null,
+    "security": null,
+    "auth_challenge_less_401": false
+  },
+  {
     "operation": "backend.get_health",
     "method": "GET",
     "path": "/health",
@@ -142,7 +156,8 @@ enabled=True))` enables the breaker; `Client.reset_circuit(group, origin=...)` c
 {
   "backend": [
     "backend.get_status",
-    "backend.get_account"
+    "backend.get_account",
+    "backend.upload"
   ],
   "search": [
     "search.search"
@@ -344,17 +359,17 @@ enabled=True))` is passed in `ClientOptions(protocols=...)`; otherwise calls tak
 
 Each call of a grouped operation passes the circuit of its group, the origin of its URL, and the client's
 `ProtocolSecurityContext.credential_partition` (`anonymous` without a context) once its request is encoded and before
-any credential, limiter permit, or send. An authenticated call needs a security context, or it raises
-`ProtocolConfigurationError` before sending. An open circuit raises `CircuitOpenError` with its `key` and the monotonic
-`retry_at` of its next admission; the call consumes no send, attempt, or token exchange, and is never retried.
+any credential, limiter permit, or send. An authenticated call needs a security context, and a view or call with
+other auth than the client's is refused, each with `ProtocolConfigurationError` before sending. An open circuit
+raises `CircuitOpenError` with its `key` and the monotonic `retry_at` of its next admission; the call consumes no
+send, attempt, or token exchange, and is never retried.
 
 A call's outcome is recorded once, after its redirects and retries. Connect, read, and write transport failures and a
 final 500, 502, 503, or 504 response are failures; any other response is a success, which resets the count. Pool
 timeouts, 429, cancellation, deadlines, auth and token failures, and configuration, encoding, decoding, and validation
 errors leave the circuit unchanged. A streaming call completes when its response is handed over. The threshold of
 consecutive failures opens the circuit for the cooldown; then one call probes it, closing it on success and reopening
-it on failure, while other calls raise `CircuitOpenError`; a cancelled or neutral probe frees the slot, as does a
-probe that records no outcome within another cooldown.
+it on failure, while other calls raise `CircuitOpenError`; a cancelled or neutral probe frees the slot.
 
 `circuit_store` borrows a `CircuitStore` (an `AsyncCircuitStore` for `AsyncClient`) and never closes it; clients
 sharing one store share circuits with the same key. Its methods receive `now` from the monotonic source of the

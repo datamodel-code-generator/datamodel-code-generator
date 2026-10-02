@@ -3059,7 +3059,10 @@ Each circuit is keyed by `CircuitKey(origin, credential_partition, group)`: the 
 redirect, the client's `ProtocolSecurityContext.credential_partition` (`"anonymous"` without a context), and the
 operation's group. A call that authenticates needs a security context, or it raises
 `ProtocolConfigurationError(field_path=('protocols', 'security'), condition='security_partition')` before any
-credential or send. `request_raw` has no operation, so it never passes a circuit.
+credential or send. A view or call that authenticates with other auth than the client's would share the client's
+partition, so it raises `ProtocolConfigurationError(field_path=('options', 'auth'), condition='security_partition')`
+before admission; use a client of its own, with its own partition, for other credentials. `request_raw` has no
+operation, so it never passes a circuit.
 
 A call passes its circuit once its request is encoded, before credentials, limiter permits, and sends. Its outcome is
 recorded once, after its redirects and retries, so a call that retried three times counts once:
@@ -3076,10 +3079,10 @@ A streaming call completes when its response is handed over; a later read failur
 |---|---|---|
 | Closed | Every call | A success resets the consecutive failures to 0; reaching `failure_threshold` opens the circuit for `cooldown` seconds |
 | Open | `CircuitOpenError` until the cooldown ends, then one probe | The first call after the cooldown becomes the probe and the circuit half-open |
-| Half-open | `CircuitOpenError` while the probe runs, for at most one more cooldown | A successful probe closes the circuit; a failed probe reopens it for another cooldown; a neutral or cancelled probe frees the slot for the next call, and so does a probe that records nothing within the cooldown |
+| Half-open | `CircuitOpenError` while the probe runs | A successful probe closes the circuit; a failed probe reopens it for another cooldown; a neutral or cancelled probe frees the slot for the next call |
 
 `CircuitOpenError` keeps the circuit's `key` and `retry_at`, the monotonic time of its next admission; while a probe
-runs, `retry_at` is the end of that probe's cooldown. The refused call consumes no send, attempt, token exchange, or limiter
+runs, `retry_at` is the time of the refusal. The refused call consumes no send, attempt, token exchange, or limiter
 permit, and is never retried. Every transition and reset advances the circuit's generation, and an outcome of a call
 admitted in an earlier generation is ignored, so a call admitted before the circuit opened cannot close it.
 
@@ -3101,11 +3104,14 @@ with synchronous methods for `Client`, or `AsyncCircuitStore` with coroutine met
 generation)` are immutable records; a wrong field type raises `TypeError` and an invalid value `ValueError`. `now` is
 read from the monotonic source of the client's clock, `ClientOptions(clock=Clock(...))`, so the cooldown and the
 half-open admission follow an injected clock; that time is local to the process, and a store shared across processes
-must map its callers into one clock domain. A store is borrowed and never closed. A store missing a method, or whose methods do not match the
-client's mode, raises `ProtocolConfigurationError(field_path=('protocols', 'circuit_store'),
+must map its callers into one clock domain. A store is borrowed and never closed. A store missing a method, or whose
+methods do not match the client's mode, raises `ProtocolConfigurationError(field_path=('protocols', 'circuit_store'),
 condition='wrong_capability')` when the client is constructed. A store failure raises `CircuitStoreError` with the
 failure as its cause, or becomes a secondary error of a call that already failed; an admission that is not a permit
-for the key is also a `CircuitStoreError`. No request is resent because of a store failure.
+for the key, and a `CircuitOpenError` from any method but `admit`, are also a `CircuitStoreError`. No request is resent
+because of a store failure. The client records the outcome of every call it admits, even when the call is cancelled,
+after releasing its body; the builtin stores keep one probe until it is recorded. A custom store shared beyond one
+process must itself recover a probe whose outcome never arrives, such as after that process stops.
 
 `client.reset_circuit(group, origin=Origin(...))`, awaited on `AsyncClient`, closes one circuit of this client's
 partition without sending anything. A group the package does not declare raises

@@ -7,9 +7,12 @@ from typing import Final
 
 from ._generated import model_bindings, security
 from ._runtime.client.operations import (
+    BodyMedia,
     OperationPlan,
+    RequestBody,
     ResponseDecoder,
     ServerPlan,
+    empty_branch,
     model_branch,
 )
 from .types.backend import (
@@ -25,6 +28,10 @@ from .types.backend import (
     GetStatusHTTPError,
     GetStatusRequestCodecs,
     GetStatusResponse,
+    UploadErrorData,
+    UploadHTTPError,
+    UploadRequestCodecs,
+    UploadResponse,
 )
 from .types.search import (
     SearchErrorData,
@@ -112,7 +119,22 @@ OPERATION_2: Final[OperationPlan[SearchResponse, SearchErrorData]] = OperationPl
     codecs=SearchRequestCodecs,
 )
 
-OPERATION_3: Final[OperationPlan[GetHealthResponse, GetHealthErrorData]] = OperationPlan(
+OPERATION_3: Final[OperationPlan[UploadResponse, UploadErrorData]] = OperationPlan(
+    operation_id='upload',
+    method='POST',
+    path='/uploads',
+    servers=_SERVERS_0,
+    responses=ResponseDecoder((empty_branch('204'),), (), UploadHTTPError),
+    body=RequestBody(
+        media=(BodyMedia(media_type='application/octet-stream', kind='binary'),),
+        default='application/octet-stream',
+        required=True,
+    ),
+    circuit_group='backend',
+    codecs=UploadRequestCodecs,
+)
+
+OPERATION_4: Final[OperationPlan[GetHealthResponse, GetHealthErrorData]] = OperationPlan(
     operation_id='getHealth',
     method='GET',
     path='/health',

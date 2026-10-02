@@ -58,6 +58,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Status'
+  /uploads:
+    post:
+      operationId: upload
+      tags: [backend]
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '204':
+          description: Stored
   /health:
     get:
       operationId: getHealth

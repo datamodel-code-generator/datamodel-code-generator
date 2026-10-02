@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import importlib
+import io
 import math
 from collections import Counter
 from typing import TYPE_CHECKING, Any
@@ -169,6 +170,31 @@ class _OnAttempt:
             self.action()
 
 
+class _Blocking:
+    """An asynchronous memory store whose record waits for the scenario, so a call can be cancelled while it records."""
+
+    def __init__(self, store: Any) -> None:
+        self.store = store
+        self.entered = asyncio.Event()
+        self.gate = asyncio.Event()
+        self.recorded = asyncio.Event()
+
+    async def admit(self, key: Any, *, now: float, options: Any) -> Any:
+        return await self.store.admit(key, now=now, options=options)
+
+    async def record(self, permit: Any, outcome: str, *, now: float) -> None:
+        self.entered.set()
+        await self.gate.wait()
+        await self.store.record(permit, outcome, now=now)
+        self.recorded.set()
+
+    async def reset(self, key: Any) -> None:
+        await self.store.reset(key)
+
+    async def snapshot(self, key: Any) -> Any:
+        return await self.store.snapshot(key)
+
+
 class _Partial:
     """A circuit store without a snapshot method."""
 
@@ -282,13 +308,10 @@ def _values(harness: _Harness, lines: list[str]) -> None:
     probed.record(probe, "neutral", now=1.0)
     probed.record(probe, "success", now=1.0)
     lines.append(f"  store repeated probe {_snapshot(probed.snapshot(harness.key()))}")
-    abandoned = probed.admit(harness.key(), now=2.0, options=once)
-    record(lines, "store probe running", lambda: probed.admit(harness.key(), now=2.5, options=once))
-    replaced = probed.admit(harness.key(), now=3.0, options=once)
-    probed.record(abandoned, "failure", now=3.0)
-    lines.append(f"  store probe replaced {replaced.generation} {_snapshot(probed.snapshot(harness.key()))}")
-    probed.record(replaced, "success", now=3.0)
-    lines.append(f"  store replaced probe closed {_snapshot(probed.snapshot(harness.key()))}")
+    running = probed.admit(harness.key(), now=2.0, options=once)
+    record(lines, "store probe running", lambda: probed.admit(harness.key(), now=60.0, options=once).probe)
+    probed.record(running, "success", now=60.0)
+    lines.append(f"  store probe closed {_snapshot(probed.snapshot(harness.key()))}")
     for label, build in (
         ("store admit key", lambda: store.admit("k", now=0.0, options=breaker().resolved())),
         ("store record permit", lambda: store.record("p", "failure", now=0.0)),
@@ -447,6 +470,11 @@ def _partitions(harness: _Harness, lines: list[str]) -> None:
     with harness.client(store, auth=token, partition="tenant-a") as partitioned:
         exchange.respond(json_response(200, _UP))
         record(lines, "auth with partition", lambda: partitioned.backend.get_account())
+        other = auth.AuthConfig({"bearer": auth.StaticTokenProvider(auth.AccessToken("tenant-b", scopes=None))})
+        foreign = partitioned.with_options(harness.options.RequestOptions(auth=other))
+        record(lines, "other auth in a view", lambda: foreign.backend.get_account())
+        exchange.respond(json_response(200, _UP))
+        record(lines, "other auth ungrouped", lambda: foreign.backend.get_health())
 
 
 def _store_failures(harness: _Harness, lines: list[str]) -> None:
@@ -457,6 +485,7 @@ def _store_failures(harness: _Harness, lines: list[str]) -> None:
         ("admit wrong type", {"admit": "permit"}, None),
         ("record after success", {"record": RuntimeError("store down")}, json_response(200, _UP)),
         ("record after failure", {"record": RuntimeError("store down")}, _down()),
+        ("record open", {"record": errors.CircuitOpenError(key=harness.key(), retry_at=1.0)}, json_response(200, _UP)),
     ):
         store = _Failing(protocols.MemoryCircuitStore(), failures)
         with harness.client(store) as api:
@@ -475,6 +504,25 @@ def _store_failures(harness: _Harness, lines: list[str]) -> None:
     store = _Failing(protocols.MemoryCircuitStore(), {"reset": RuntimeError("store down")})
     with harness.client(store) as api:
         record(lines, "reset failure", lambda: api.reset_circuit("backend", origin=harness.origin))
+
+
+async def _cancelled_record(harness: _Harness, lines: list[str]) -> None:
+    exchange = harness.exchange
+    bodies = importlib.import_module(f"{harness.package.__name__}.bodies")
+    store = _Blocking(harness.protocols.AsyncMemoryCircuitStore())
+    file = io.BytesIO(b"upload")
+    async with harness.async_client(store) as api:
+        exchange.respond(_down())
+        task = asyncio.create_task(api.backend.upload(body=bodies.AsyncFileBody(file, ownership="owned")))
+        await store.entered.wait()
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            lines.append(f"  cancelled while recording, file closed {file.closed}")
+        store.gate.set()
+        await store.recorded.wait()
+        lines.append(f"  recorded after the cancel {_snapshot(await store.snapshot(harness.key()))}")
 
 
 async def _async_circuits(harness: _Harness, lines: list[str]) -> None:
@@ -563,3 +611,4 @@ def circuits(package: ModuleType, lines: list[str]) -> None:
         step(harness, lines)
     lines.append("# async")
     run(lambda: _async_circuits(harness, lines))
+    run(lambda: _cancelled_record(harness, lines))
