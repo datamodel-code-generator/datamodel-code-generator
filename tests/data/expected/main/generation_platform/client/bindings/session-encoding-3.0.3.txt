@@ -1,0 +1,61 @@
+# session-encoding-3.0.3
+render pydantic_v2.BaseModel schemas
+  diagnostic APIGenerationError
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content requires an explicit parameter adapter
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content requires an explicit parameter adapter
+render pydantic_v2.BaseModel paths
+  diagnostic APIGenerationError
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content requires an explicit parameter adapter
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content requires an explicit parameter adapter
+render pydantic_v2.BaseModel api
+  diagnostic APIGenerationError
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content requires an explicit parameter adapter
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content requires an explicit parameter adapter
+render pydantic_v2.dataclass schemas
+  diagnostic APIGenerationError
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content requires an explicit parameter adapter
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content requires an explicit parameter adapter
+render pydantic_v2.dataclass paths
+  diagnostic APIGenerationError
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content requires an explicit parameter adapter
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content requires an explicit parameter adapter
+render pydantic_v2.dataclass api
+  diagnostic APIGenerationError
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content requires an explicit parameter adapter
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content requires an explicit parameter adapter
+render dataclasses.dataclass schemas
+  diagnostic APIGenerationError
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content requires an explicit parameter adapter
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content requires an explicit parameter adapter
+render dataclasses.dataclass paths
+  diagnostic APIGenerationError
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content requires an explicit parameter adapter
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content requires an explicit parameter adapter
+render dataclasses.dataclass api
+  diagnostic APIGenerationError
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content requires an explicit parameter adapter
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content requires an explicit parameter adapter
+render typing.TypedDict schemas
+  diagnostic APIGenerationError
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content requires an explicit parameter adapter
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content requires an explicit parameter adapter
+render typing.TypedDict paths
+  diagnostic APIGenerationError
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content requires an explicit parameter adapter
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content requires an explicit parameter adapter
+render typing.TypedDict api
+  diagnostic APIGenerationError
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content requires an explicit parameter adapter
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content requires an explicit parameter adapter
+render msgspec.Struct schemas
+  diagnostic APIGenerationError
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content requires an explicit parameter adapter
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content requires an explicit parameter adapter
+render msgspec.Struct paths
+  diagnostic APIGenerationError
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content requires an explicit parameter adapter
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content requires an explicit parameter adapter
+render msgspec.Struct api
+  diagnostic APIGenerationError
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/parameters/0: The parameter content requires an explicit parameter adapter
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1values/post/responses/200/headers/X-Content: The parameter content requires an explicit parameter adapter

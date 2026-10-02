@@ -1,0 +1,235 @@
+openapi: 3.1.0
+info:
+  title: Resumed streams
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /events:
+    get:
+      operationId: streamEvents
+      tags: [events]
+      parameters:
+        - name: topic
+          in: query
+          schema: {type: string}
+        - name: Last-Event-ID
+          in: header
+          schema: {type: string}
+        - name: session
+          in: cookie
+          schema: {type: string}
+      responses:
+        '200':
+          description: The events of a topic.
+          headers:
+            X-Stream-Id:
+              schema: {type: string}
+            X-Resume-Token:
+              schema: {type: string}
+            X-Stream-Expires:
+              schema: {type: string}
+          content:
+            text/event-stream:
+              schema: {type: string}
+        '404':
+          description: The topic does not exist.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Problem'}
+  /streams/{streamId}:
+    get:
+      operationId: reopenStream
+      tags: [streams]
+      parameters:
+        - name: streamId
+          in: path
+          required: true
+          schema: {type: string}
+        - name: Last-Event-ID
+          in: header
+          schema: {type: string}
+        - name: token
+          in: query
+          schema: {type: string}
+        - name: mode
+          in: query
+          schema: {type: string}
+      responses:
+        '200':
+          description: The events of a stream after a cursor.
+          headers:
+            X-Resume-Token:
+              schema: {type: string}
+          content:
+            text/event-stream; charset=utf-8:
+              schema: {type: string}
+        '404':
+          description: The stream expired.
+  /rooms/{room}{shard}:
+    get:
+      operationId: streamRoom
+      tags: [rooms]
+      parameters:
+        - name: room
+          in: path
+          required: true
+          schema: {type: string}
+        - name: shard
+          in: path
+          required: true
+          schema: {type: string}
+        - name: Last-Event-ID
+          in: header
+          schema: {type: string}
+      responses:
+        '200':
+          description: The events of a room's shard.
+          headers:
+            X-Shard:
+              schema: {type: string}
+          content:
+            text/event-stream:
+              schema: {type: string}
+  /replay:
+    get:
+      operationId: replayEvents
+      tags: [replay]
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: The events from a position.
+          content:
+            text/event-stream:
+              schema: {type: string}
+  /records:
+    get:
+      operationId: streamRecords
+      tags: [records]
+      parameters:
+        - name: after
+          in: query
+          schema: {type: string}
+      responses:
+        '200':
+          description: The records after a cursor, one JSON value a line.
+          content:
+            application/x-ndjson:
+              schema: {$ref: '#/components/schemas/Record'}
+  /feed:
+    post:
+      operationId: streamFeed
+      tags: [feed]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/FeedQuery'}
+      responses:
+        '200':
+          description: The feed's ticks.
+          content:
+            text/event-stream:
+              schema: {type: string}
+  /marks:
+    get:
+      operationId: streamMarks
+      tags: [marks]
+      parameters:
+        - name: scope
+          in: query
+          style: form
+          explode: true
+          schema:
+            type: object
+            properties:
+              after: {type: string}
+            additionalProperties: {type: string}
+      responses:
+        '200':
+          description: The marks of a scope.
+          content:
+            text/event-stream:
+              schema: {type: string}
+  /keyed-marks:
+    get:
+      operationId: streamKeyedMarks
+      tags: [marks]
+      parameters:
+        - name: keyed
+          in: query
+          style: form
+          explode: true
+          schema:
+            type: object
+            properties:
+              api_key: {type: string}
+      responses:
+        '200':
+          description: The marks of a key.
+          content:
+            text/event-stream:
+              schema: {type: string}
+  /status:
+    get:
+      operationId: getStatus
+      tags: [status]
+      security:
+        - query_key: []
+      responses:
+        '200':
+          description: The service's status.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Message'}
+components:
+  securitySchemes:
+    query_key:
+      type: apiKey
+      in: query
+      name: api_key
+  schemas:
+    Mark:
+      type: object
+      properties:
+        scope:
+          type: [object, 'null']
+          additionalProperties: {type: string}
+    Message:
+      type: object
+      required: [text]
+      properties:
+        text: {type: string}
+    Created:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string}
+    StreamError:
+      type: object
+      required: [message]
+      properties:
+        message: {type: string}
+    Record:
+      type: object
+      required: [text]
+      properties:
+        id: {type: [string, 'null']}
+        text: {type: string}
+    Tick:
+      type: object
+      properties:
+        seq: {type: [integer, 'null']}
+    FeedQuery:
+      type: object
+      properties:
+        topic: {type: string}
+        after: {type: integer}
+    Problem:
+      type: object
+      properties:
+        detail: {type: string}

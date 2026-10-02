@@ -1,0 +1,5 @@
+# dangling-sibling
+render pydantic_v2.BaseModel default
+  warning DanglingRefWarning: Unresolved local $ref '#/components/schemas/Error' in dangling-sibling.yaml: JSON pointer was not found. Generated a fallback Any model; use --strict-refs to fail instead.
+  diagnostic APIGenerationError
+  diagnostic BND_UNRESOLVED_REFERENCE binding /paths/~1pets/get/responses/default/content/application~1json/schema/$ref: A schema reference pointer does not exist

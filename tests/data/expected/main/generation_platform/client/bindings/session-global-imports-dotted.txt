@@ -1,0 +1,21 @@
+# session-global-imports-dotted
+render pydantic_v2.BaseModel plain
+  diagnostic Error: Modular references require an output directory, not a file
+render pydantic_v2.BaseModel remapped
+  diagnostic Error: Modular references require an output directory, not a file
+render pydantic_v2.dataclass plain
+  diagnostic Error: Modular references require an output directory, not a file
+render pydantic_v2.dataclass remapped
+  diagnostic Error: Modular references require an output directory, not a file
+render dataclasses.dataclass plain
+  diagnostic Error: Modular references require an output directory, not a file
+render dataclasses.dataclass remapped
+  diagnostic Error: Modular references require an output directory, not a file
+render typing.TypedDict plain
+  diagnostic Error: Modular references require an output directory, not a file
+render typing.TypedDict remapped
+  diagnostic Error: Modular references require an output directory, not a file
+render msgspec.Struct plain
+  diagnostic Error: Modular references require an output directory, not a file
+render msgspec.Struct remapped
+  diagnostic Error: Modular references require an output directory, not a file

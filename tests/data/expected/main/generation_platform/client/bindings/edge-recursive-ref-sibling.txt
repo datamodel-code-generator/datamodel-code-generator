@@ -1,0 +1,4 @@
+# edge-recursive-ref-sibling
+render pydantic_v2.BaseModel default
+  diagnostic APIGenerationError
+  diagnostic BND_SYMBOL_NOT_EMITTED binding /paths/~1comments/post/requestBody: The use has no generated native type

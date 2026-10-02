@@ -7,7 +7,7 @@ helper's plan loads them, since they need the operation runtime every generated 
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from typing import TYPE_CHECKING, Any, Generic, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, Generic, TypeAlias
 
 from typing_extensions import TypeVar
 
@@ -16,7 +16,7 @@ from ..client.paths import dot_segment, path_segments
 from ..model_codecs.errors import CodecAdapterError, ParameterEncodingError
 from ..model_codecs.unset import UNSET
 from .records import BodyTarget, ParameterTarget, QuerystringTarget
-from .values import Patch
+from .values import Patch, written
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -224,20 +224,7 @@ class Targeted(Generic[T]):
         A parameter's value replaces its argument, and the values for a querystring or the body are patched into an
         empty object.
         """
-        arguments: list[object] = [UNSET] * len(self.call.parameters)
-        patches: dict[int | None, list[tuple[str, WireValue]]] = {}
-        for (written, pointer), value in zip(self.writes, values, strict=True):
-            if pointer is None:
-                arguments[cast("int", written)] = value
-            else:
-                patches.setdefault(written, []).append((pointer, value))
-        body: object = UNSET
-        for written, writes in patches.items():
-            if written is None:
-                body = Patch(UNSET, tuple(writes))
-            else:
-                arguments[written] = Patch(UNSET, tuple(writes))
-        return tuple(arguments), body
+        return written(self.writes, (UNSET,) * len(self.call.parameters), UNSET, values)
 
 
 def targeted_writes(

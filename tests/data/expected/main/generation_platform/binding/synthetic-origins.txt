@@ -1,5 +1,0 @@
-{
-  "normal": [
-    "/components/schemas/Payload/properties/normal"
-  ]
-}

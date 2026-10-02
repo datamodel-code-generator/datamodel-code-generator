@@ -4,13 +4,6 @@ helpers:
     {kind: sse, operation: /paths/~1events/get, media: text/plain, event_schema: {pointer: /components/schemas/Message}, completion: {kind: eof}}
   checks.response:
     {kind: sse, operation: /paths/~1status/get, media: text/event-stream, event_schema: {pointer: /components/schemas/Message}, completion: {kind: eof}}
-  checks.resume:
-    kind: sse
-    operation: /paths/~1events/get
-    media: text/event-stream
-    event_schema: {pointer: /components/schemas/Message}
-    completion: {kind: eof}
-    resume: {enabled: true, cursor: event_id, write: {in: header, name: Last-Event-ID}, reopen_operation: /paths/~1events/get, delivery: at_least_once}
   checks.schema:
     {kind: sse, operation: /paths/~1events/get, media: text/event-stream, event_schema: {pointer: /components/schemas/Nobody}, completion: {kind: eof}}
   checks.terminal_event:
