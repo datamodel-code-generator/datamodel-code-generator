@@ -1,0 +1,3 @@
+# session-metadata-loaded
+render pydantic_v2.BaseModel default
+  diagnostic Error: $ref file not found: <root>/inputs/session-metadata-library.json

@@ -6,7 +6,7 @@ edit changes in the shipped models and bindings. A rewrite instead changes the s
 as another process writing to the staging directory would.
 
 A render the generator refuses reports the error instead of a package, and the generator's own warnings are reported
-before what the render ships.
+before what the render ships. A case that pins a known bug names the internal exception it lets escape in "raises".
 """
 
 from __future__ import annotations
@@ -142,6 +142,7 @@ def _renders(case: dict[str, Any], root: Path) -> Iterator[tuple[str, Callable[.
     source = _document(DATA / case["source"], root, case)
     config = {**CLIENT, **case.get("config", {})}
     models = case.get("models", "models.py")
+    raises = case.get("raises")
     for count, (backend, (variant, options)) in enumerate(
         product(case.get("backends", ["pydantic_v2.BaseModel"]), case.get("variants", {"default": {}}).items())
     ):
@@ -172,7 +173,9 @@ def _renders(case: dict[str, Any], root: Path) -> Iterator[tuple[str, Callable[.
                         models=models,
                         binding_diagnostics=binding_diagnostics,
                     )
-                except datamodel_code_generator.Error as error:
+                except Exception as error:
+                    if not isinstance(error, datamodel_code_generator.Error) and type(error).__name__ != raises:
+                        raise
                     diagnostics, modules = [f"{type(error).__name__}: {error}"], {}
             return [*_warnings(caught), *_shipped(diagnostics, modules)]
 

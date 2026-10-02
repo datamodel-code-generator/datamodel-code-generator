@@ -1,0 +1,46 @@
+# session-encoding-3.2.0
+render pydantic_v2.BaseModel schemas
+  diagnostic APIGenerationError
+  diagnostic E_CLIENT_UNSUPPORTED target /paths/~1values/post/responses/200/content/multipart~1form-data/encoding/value: The value encoding of the multipart/form-data media of POST /values is not supported yet
+render pydantic_v2.BaseModel paths
+  diagnostic APIGenerationError
+  diagnostic E_CLIENT_UNSUPPORTED target /paths/~1values/post/responses/200/content/multipart~1form-data/encoding/value: The value encoding of the multipart/form-data media of POST /values is not supported yet
+render pydantic_v2.BaseModel api
+  diagnostic APIGenerationError
+  diagnostic E_CLIENT_UNSUPPORTED target /paths/~1values/post/responses/200/content/multipart~1form-data/encoding/value: The value encoding of the multipart/form-data media of POST /values is not supported yet
+render pydantic_v2.dataclass schemas
+  diagnostic APIGenerationError
+  diagnostic E_CLIENT_UNSUPPORTED target /paths/~1values/post/responses/200/content/multipart~1form-data/encoding/value: The value encoding of the multipart/form-data media of POST /values is not supported yet
+render pydantic_v2.dataclass paths
+  diagnostic APIGenerationError
+  diagnostic E_CLIENT_UNSUPPORTED target /paths/~1values/post/responses/200/content/multipart~1form-data/encoding/value: The value encoding of the multipart/form-data media of POST /values is not supported yet
+render pydantic_v2.dataclass api
+  diagnostic APIGenerationError
+  diagnostic E_CLIENT_UNSUPPORTED target /paths/~1values/post/responses/200/content/multipart~1form-data/encoding/value: The value encoding of the multipart/form-data media of POST /values is not supported yet
+render dataclasses.dataclass schemas
+  diagnostic APIGenerationError
+  diagnostic E_CLIENT_UNSUPPORTED target /paths/~1values/post/responses/200/content/multipart~1form-data/encoding/value: The value encoding of the multipart/form-data media of POST /values is not supported yet
+render dataclasses.dataclass paths
+  diagnostic APIGenerationError
+  diagnostic E_CLIENT_UNSUPPORTED target /paths/~1values/post/responses/200/content/multipart~1form-data/encoding/value: The value encoding of the multipart/form-data media of POST /values is not supported yet
+render dataclasses.dataclass api
+  diagnostic APIGenerationError
+  diagnostic E_CLIENT_UNSUPPORTED target /paths/~1values/post/responses/200/content/multipart~1form-data/encoding/value: The value encoding of the multipart/form-data media of POST /values is not supported yet
+render typing.TypedDict schemas
+  diagnostic APIGenerationError
+  diagnostic E_CLIENT_UNSUPPORTED target /paths/~1values/post/responses/200/content/multipart~1form-data/encoding/value: The value encoding of the multipart/form-data media of POST /values is not supported yet
+render typing.TypedDict paths
+  diagnostic APIGenerationError
+  diagnostic E_CLIENT_UNSUPPORTED target /paths/~1values/post/responses/200/content/multipart~1form-data/encoding/value: The value encoding of the multipart/form-data media of POST /values is not supported yet
+render typing.TypedDict api
+  diagnostic APIGenerationError
+  diagnostic E_CLIENT_UNSUPPORTED target /paths/~1values/post/responses/200/content/multipart~1form-data/encoding/value: The value encoding of the multipart/form-data media of POST /values is not supported yet
+render msgspec.Struct schemas
+  diagnostic APIGenerationError
+  diagnostic E_CLIENT_UNSUPPORTED target /paths/~1values/post/responses/200/content/multipart~1form-data/encoding/value: The value encoding of the multipart/form-data media of POST /values is not supported yet
+render msgspec.Struct paths
+  diagnostic APIGenerationError
+  diagnostic E_CLIENT_UNSUPPORTED target /paths/~1values/post/responses/200/content/multipart~1form-data/encoding/value: The value encoding of the multipart/form-data media of POST /values is not supported yet
+render msgspec.Struct api
+  diagnostic APIGenerationError
+  diagnostic E_CLIENT_UNSUPPORTED target /paths/~1values/post/responses/200/content/multipart~1form-data/encoding/value: The value encoding of the multipart/form-data media of POST /values is not supported yet

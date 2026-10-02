@@ -1,8 +1,0 @@
-{
-  "PayloadItem.item": [
-    "/components/schemas/Parent/properties/payload/items/properties/item"
-  ],
-  "Payload1.code": [
-    "/components/schemas/Parent/properties/payload/properties/code"
-  ]
-}

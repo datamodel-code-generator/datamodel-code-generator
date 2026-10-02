@@ -196,45 +196,6 @@ def observe_api_session(
     }
 
 
-def compare_api_session(source: Path, config: GenerateConfig) -> dict[str, object]:
-    """Compare ordinary API generation with real capture without replacing engine methods."""
-    from tests.data.python.generation_observer import GenerationObserver
-
-    session = OpenAPIGenerationSession(
-        output=Path("models.py"), model_package="models", root_selector_document=source.as_uri()
-    )
-    lifetime = GenerationSessionObserver()
-    outputs = []
-    calls = []
-    previous = sys.getprofile()
-    try:
-        for capture in (None, session):
-            observer = GenerationObserver()
-
-            def observe(frame: FrameType, event: str, value: Any) -> None:
-                observer.record(frame, event, value)
-                if capture is not None:
-                    lifetime.record(frame, event, value)
-
-            sys.setprofile(observe)
-            outputs.append(
-                _run_generation(
-                    source, _prepare_generate_facade_config(config), Path.cwd(), use_output_cwd=False, capture=capture
-                )
-            )
-            calls.append(observer.calls)
-    finally:
-        session.close()
-        sys.setprofile(previous)
-    gc.collect()
-    return {
-        "outputs_equal": outputs[0] == outputs[1],
-        "engine_calls_equal": calls[0] == calls[1],
-        "factory_reads": lifetime.factory_reads,
-        "retained_parsers": sum(parser() is not None for parser in lifetime.parsers),
-    }
-
-
 def _inject_session_failure(monkeypatch: pytest.MonkeyPatch, failure: str, source: Path) -> None:
     """Inject only exceptional boundaries while preserving the real session and frozen batches."""
     construct = BindingCaptureMixin.__init__

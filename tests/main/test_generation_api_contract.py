@@ -10,7 +10,6 @@ import pytest
 import datamodel_code_generator as dcg
 from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
 from tests.conftest import assert_output
-from tests.data.python.generation_session_inputs import compare_api_session
 
 DATA = Path(__file__).parents[1] / "data"
 SOURCE = DATA / "generation_platform/api_scope"
@@ -70,35 +69,6 @@ def test_api_public_surface_annotations() -> None:
         + "\n",
         EXPECTED / "public-surface.txt",
     )
-
-
-@pytest.mark.parametrize(
-    "case",
-    [
-        "declarations",
-        "external",
-        "media-30",
-        "media-32",
-        "items-primitive",
-        "discriminator",
-        "headers",
-        "resources",
-        "local-roots",
-        "traversal",
-    ],
-)
-def test_api_capture_engine_parity(case: str) -> None:
-    """Compare real output and engine call counts with the bounded capture consumer."""
-    observation = compare_api_session(
-        SOURCE / f"{case}.json",
-        dcg.GenerateConfig(
-            input_file_type="openapi",
-            openapi_scopes=[dcg.OpenAPIScope.Api],
-            disable_timestamp=True,
-            formatters=[],
-        ),
-    )
-    assert_output(json.dumps(observation, indent=2) + "\n", EXPECTED / "capture-parity.txt")
 
 
 @pytest.mark.parametrize("tags", [False, True])

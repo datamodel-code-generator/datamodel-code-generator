@@ -16,7 +16,6 @@ JUSTIFIED_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "private-import:tests/data/python/client_protocol_records.py",
         "private-import:tests/data/python/client_typing.py",
     ),
-    "comparison-reports": ("assertion-helper:tests/data/python/generation_session_inputs.py::compare_api_session",),
     "fixture-inputs": (
         "assertion-helper:tests/data/python/input_model/same_schema_a.py",
         "assertion-helper:tests/data/python/input_model/same_schema_b.py",
@@ -98,14 +97,10 @@ FROZEN_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "private-import:tests/data/python/binding_type_corruptions.py::datamodel_code_generator._python_type_annotation",
         "private-import:tests/data/python/binding_type_corruptions.py::datamodel_code_generator._python_type_binding",
         "private-import:tests/data/python/binding_type_snapshot.py::datamodel_code_generator._generation_contract",
-        "private-import:tests/data/python/binding_type_snapshot.py::datamodel_code_generator._python_type_annotation",
         "private-import:tests/data/python/binding_type_snapshot.py::datamodel_code_generator.model.binding_fields",
         "private-import:tests/data/python/field_ownership_inputs.py::datamodel_code_generator._generation_contract",
         "private-import:tests/data/python/field_ownership_inputs.py::datamodel_code_generator.model.binding_fields",
         "private-import:tests/data/python/field_ownership_inputs.py::datamodel_code_generator.parser.openapi_contract",
-        "private-import:tests/data/python/generation_contract_consumers.py::datamodel_code_generator._generation_contract",
-        "private-import:tests/data/python/generation_contract_consumers.py::datamodel_code_generator._openapi_generation",
-        "private-import:tests/data/python/generation_contract_consumers.py::datamodel_code_generator._openapi_type_binding",
         "private-import:tests/data/python/generation_session_inputs.py::datamodel_code_generator._CollapseRootModelsRecursionError",
         "private-import:tests/data/python/generation_session_inputs.py::datamodel_code_generator._generation_contract",
         "private-import:tests/data/python/generation_session_inputs.py::datamodel_code_generator._openapi_artifacts",
@@ -116,28 +111,13 @@ FROZEN_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "private-import:tests/data/python/generation_session_inputs.py::datamodel_code_generator.parser.openapi_contract_freeze",
         "private-import:tests/data/python/generation_session_inputs.py::datamodel_code_generator.parser.openapi_contract_store",
         "private-import:tests/main/test_generation_api_contract.py::datamodel_code_generator.parser.openapi_scope",
-        "private-import:tests/main/test_generation_api_http.py::datamodel_code_generator.parser.openapi_scope",
         "private-import:tests/main/test_generation_api_scope.py::datamodel_code_generator._openapi_generation",
-        "private-import:tests/main/test_generation_api_scope.py::datamodel_code_generator._prepare_generate_facade_config",
-        "private-import:tests/main/test_generation_api_scope.py::datamodel_code_generator._run_generation",
-        "private-import:tests/main/test_generation_bare_containers.py::datamodel_code_generator._openapi_type_binding",
-        "private-import:tests/main/test_generation_common_composition.py::datamodel_code_generator._openapi_type_binding",
-        "private-import:tests/main/test_generation_constrained_unions.py::datamodel_code_generator._openapi_type_binding",
-        "private-import:tests/main/test_generation_default_policies.py::datamodel_code_generator._openapi_type_binding",
-        "private-import:tests/main/test_generation_extra_items.py::datamodel_code_generator._openapi_type_binding",
-        "private-import:tests/main/test_generation_inherited_contract.py::datamodel_code_generator._openapi_type_binding",
-        "private-import:tests/main/test_generation_module_bindings.py::datamodel_code_generator._openapi_type_binding",
-        "private-import:tests/main/test_generation_nullable_aliases.py::datamodel_code_generator._openapi_generation",
-        "private-import:tests/main/test_generation_nullable_aliases.py::datamodel_code_generator._openapi_type_binding",
-        "private-import:tests/main/test_generation_serialize_imports.py::datamodel_code_generator._openapi_type_binding",
-        "private-import:tests/main/test_generation_session.py::datamodel_code_generator._generation_contract",
         "private-import:tests/main/test_generation_session.py::datamodel_code_generator._openapi_generation",
         "private-import:tests/main/test_generation_session.py::datamodel_code_generator._openapi_type_binding",
         "private-import:tests/main/test_generation_session.py::datamodel_code_generator._prepare_generate_facade_config",
         "private-import:tests/main/test_generation_session.py::datamodel_code_generator._run_generation",
         "private-import:tests/main/test_generation_session.py::datamodel_code_generator.parser.openapi_contract",
         "private-import:tests/main/test_generation_session.py::datamodel_code_generator.parser.openapi_contract_store",
-        "private-import:tests/main/test_generation_split_discriminators.py::datamodel_code_generator._openapi_type_binding",
         "private-import:tests/model/test_binding_backend_failures.py::datamodel_code_generator.model.binding_policies",
         "private-import:tests/model/test_binding_fields.py::datamodel_code_generator._generation_contract",
         "private-import:tests/model/test_binding_fields.py::datamodel_code_generator.model.binding_fields",
@@ -153,7 +133,6 @@ FROZEN_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "normal-path-mock:tests/data/python/client_retry_ownership.py::_async",
         "normal-path-mock:tests/data/python/client_retry_ownership.py::retry_ownership",
         "normal-path-mock:tests/data/python/generation_session_inputs.py::_exercise_session_protocol",
-        "normal-path-mock:tests/data/python/generation_session_inputs.py::compare_api_session",
         "normal-path-mock:tests/data/python/generation_session_inputs.py::generate_product",
         "normal-path-mock:tests/data/python/generation_session_inputs.py::observe_api_session",
         "normal-path-mock:tests/data/python/generation_session_inputs.py::run_generation_session",
@@ -1127,10 +1106,6 @@ ALLOWLIST_GROUP_REASONS = {
     "client-coordinator": (
         "The client target has no public entry point yet, so its report helpers reach the coordinator directly, and "
         "client_protocol_records builds the protocol configuration records that the coordinator consumes."
-    ),
-    "comparison-reports": (
-        "These helpers return ordinary and captured run facts that tests compare with assert_output; they compare "
-        "nothing themselves."
     ),
     "fixture-inputs": (
         "Modules that stand in for source, plugin, or user model code inside a fixture, which the code under test "

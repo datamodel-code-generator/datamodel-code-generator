@@ -1,0 +1,11 @@
+# session-legacy-external
+render pydantic_v2.BaseModel default
+  diagnostic Error: $ref file not found: <root>/inputs/session-legacy-media.json
+render pydantic_v2.dataclass default
+  diagnostic Error: $ref file not found: <root>/inputs/session-legacy-media.json
+render dataclasses.dataclass default
+  diagnostic Error: $ref file not found: <root>/inputs/session-legacy-media.json
+render typing.TypedDict default
+  diagnostic Error: $ref file not found: <root>/inputs/session-legacy-media.json
+render msgspec.Struct default
+  diagnostic Error: $ref file not found: <root>/inputs/session-legacy-media.json

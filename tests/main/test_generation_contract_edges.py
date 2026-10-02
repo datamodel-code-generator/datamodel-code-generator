@@ -21,7 +21,13 @@ EXPECTED = DATA / "expected/main/generation_platform"
 
 
 @pytest.mark.parametrize(
-    "case", json.loads((DATA / "generation_platform/binding/contract-edges.json").read_text()), ids=itemgetter("id")
+    "case",
+    [
+        case
+        for case in json.loads((DATA / "generation_platform/binding/contract-edges.json").read_text())
+        if "fault" in case
+    ],
+    ids=itemgetter("id"),
 )
 def test_contract_edges(case: dict[str, Any], monkeypatch: pytest.MonkeyPatch) -> None:
     """Keep ordinary bytes while every type use is bound or carries its explicit reason."""

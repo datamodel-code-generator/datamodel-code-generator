@@ -1,0 +1,4 @@
+# session-legacy-source
+render pydantic_v2.BaseModel default
+  diagnostic APIGenerationError
+  diagnostic BND_MODEL_SCOPE_REQUIRED binding /paths/parameters/0: The use has no generated native type
