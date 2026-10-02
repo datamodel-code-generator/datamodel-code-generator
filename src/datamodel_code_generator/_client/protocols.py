@@ -18,7 +18,6 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias
 
 from datamodel_code_generator._api_manifest import canonical_bytes
-from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._client.naming import folded, helper_name_problem, token
 from datamodel_code_generator._codec_declarations import OperationRef, SchemaRef
 from datamodel_code_generator._runtime.model_codecs.media import normalize_media_type
@@ -29,7 +28,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
     from pathlib import Path
 
-    from datamodel_code_generator._api_types import OperationSelector
+    from datamodel_code_generator._api_types import Diagnostic, OperationSelector
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
     from datamodel_code_generator._runtime.protocols.records import RequestTarget, Selector
 
@@ -2177,10 +2176,6 @@ def _unsigned(signature: Tree, names: list[str | None], at: str) -> tuple[str, s
         if signed and fact not in constraints:
             return here, f"{here} needs one constraint of {fact!r}, which {where} signs before 'raw-body'"
     return None
-
-
-def _unsupported(at: str, message: str) -> Diagnostic:
-    return Diagnostic(code="E_CLIENT_UNSUPPORTED", severity="error", stage="target", message=message, option_path=at)
 
 
 def _targets(bindings: list[Tree], at: str) -> tuple[tuple[str, Tree], ...]:
