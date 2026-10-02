@@ -281,7 +281,7 @@ def step(lines: list[str], label: str, call: Callable[[], object]) -> object:
     """Report a step's result or failure."""
     try:
         result = call()
-    except Exception as error:  # ruff: ignore[blind-except] - Report failures from public calls.
+    except Exception as error:  # noqa: BLE001 - Report failures from public calls.
         lines.append(f"  {label} ! {_progress(error)}")
         return None
     lines.append(f"  {label} = {_progress(result)}")
@@ -292,7 +292,7 @@ async def astep(lines: list[str], label: str, call: Callable[[], Any]) -> object
     """Report an asyncio step's result or failure."""
     try:
         result = await call()
-    except Exception as error:  # ruff: ignore[blind-except] - Report failures from public calls.
+    except Exception as error:  # noqa: BLE001 - Report failures from public calls.
         lines.append(f"  {label} ! {_progress(error)}")
         return None
     lines.append(f"  {label} = {_progress(result)}")
@@ -603,14 +603,14 @@ def _sources(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
     """Refuse one-shot inputs and invalid sources before sending, and stop at content that changed."""
     helper, protocols = api.protocols.files.upload, harness.protocols
 
-    async def stream() -> AsyncIterator[bytes]:  # ruff: ignore[unused-async] - The public adapter requires an async callback.
+    async def stream() -> AsyncIterator[bytes]:  # noqa: RUF029 - The public adapter requires an async callback.
         yield _CONTENT
 
     class Ranges:
         identity = harness.source().identity
         max_parallel_ranges = 0
 
-        def open_range(self, offset: int, length: int) -> object:  # ruff: ignore[unused-method-argument] - Keep the public range-source method signature.
+        def open_range(self, offset: int, length: int) -> object:  # noqa: ARG002 - Keep the public range-source method signature.
             return self
 
     class Unidentified(Ranges):
@@ -632,7 +632,7 @@ def _sources(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
     class Texts(Ranges):
         max_parallel_ranges = 1
 
-        def open_range(self, offset: int, length: int) -> Any:  # ruff: ignore[unused-method-argument] - Keep the public range-source method signature.
+        def open_range(self, offset: int, length: int) -> Any:  # noqa: ARG002 - Keep the public range-source method signature.
             from contextlib import nullcontext
 
             return nullcontext(io.StringIO(_CONTENT.decode()))
@@ -680,17 +680,17 @@ def _ranges(source: Any) -> str:
     """Describe what out-of-range and invalid reads of a builtin source raise."""
     found = []
     for label, call in (
-        ("past the end", lambda: source.open_range(5, 10).__enter__()),  # ruff: ignore[unnecessary-dunder-call] - Exercise errors raised on context entry.
-        ("a negative offset", lambda: source.open_range(-1, 1).__enter__()),  # ruff: ignore[unnecessary-dunder-call] - Exercise errors raised on context entry.
+        ("past the end", lambda: source.open_range(5, 10).__enter__()),  # noqa: PLC2801 - Exercise errors raised on context entry.
+        ("a negative offset", lambda: source.open_range(-1, 1).__enter__()),  # noqa: PLC2801 - Exercise errors raised on context entry.
     ):
         try:
             call()
-        except ValueError:  # ruff: ignore[try-except-in-loop] - Each step must report failures and continue to sibling outcomes.
+        except ValueError:  # noqa: PERF203 - Each step must report failures and continue to sibling outcomes.
             found.append(f"{label} refused")
     return ", ".join(found)
 
 
-def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lines: list[str]) -> None:  # ruff: ignore[too-many-locals] - Exercise the upload lifecycle in one scenario.
+def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lines: list[str]) -> None:  # noqa: PLR0914 - Exercise the upload lifecycle in one scenario.
     """Resume a checkpoint with zero creates after checking its source, and refuse checkpoints of another kind."""
     helper, finish, protocols = api.protocols.files.upload, api.protocols.files.finish, harness.protocols
     lines.append("checkpoint, export, import, and resume")
@@ -949,7 +949,7 @@ def _steps(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lin
     lines.append(f"  handle {handle!r}")
 
 
-async def _async_uploads(harness: _Uploads, server: _Server, lines: list[str]) -> None:  # ruff: ignore[too-many-locals] - Exercise the upload lifecycle in one scenario.
+async def _async_uploads(harness: _Uploads, server: _Server, lines: list[str]) -> None:  # noqa: PLR0914 - Exercise the upload lifecycle in one scenario.
     """Upload, recover, and resume with asyncio, from bytes and from a file read on its own worker."""
     package, protocols = harness.package, harness.protocols
     exchange = Exchange(lines)

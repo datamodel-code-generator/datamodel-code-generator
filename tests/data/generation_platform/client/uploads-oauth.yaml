@@ -27,3 +27,7 @@ components:
       type: oauth2
       flows:
         clientCredentials: {tokenUrl: 'https://auth.example.com/token', scopes: {}}
+  schemas:
+    Upload: {$ref: uploads.yaml#/components/schemas/Upload}
+    Status: {$ref: uploads.yaml#/components/schemas/Status}
+    Stored: {$ref: uploads.yaml#/components/schemas/Stored}
