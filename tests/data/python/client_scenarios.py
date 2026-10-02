@@ -94,7 +94,7 @@ from tests.data.python.client_streams import ndjson, ndjson_backends, ndjson_spl
 from tests.data.python.client_streams import stream_lifetimes as event_stream_lifetimes
 from tests.data.python.client_transports import lifecycle, transports
 from tests.data.python.client_unions import schema_unions, split_unions, unions
-from tests.data.python.client_uploads import parts_uploads, uploads
+from tests.data.python.client_uploads import parts_source_recovery, parts_uploads, uploads
 from tests.data.python.client_validation import arguments, validation
 from tests.data.python.client_webhook_adapters import (
     webhook_adapter_imports,
@@ -826,6 +826,8 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "pagination-resume": ("pagination-resume", ("pydantic_v2.BaseModel",), pagination_resume),
     "polling": ("polling", ("pydantic_v2.BaseModel",), polling),
     "uploads": ("uploads", ("pydantic_v2.BaseModel",), uploads),
+    "upload-parts-composite": ("uploads-composite", ("pydantic_v2.BaseModel",), parts_source_recovery),
+    "upload-parts-source-recovery": ("uploads", ("pydantic_v2.BaseModel",), parts_source_recovery),
     "upload-parts-backends": (
         "uploads",
         ("typing.TypedDict", "dataclasses.dataclass", "msgspec.Struct", "pydantic_v2.dataclass"),

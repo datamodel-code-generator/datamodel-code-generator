@@ -1,0 +1,11 @@
+# uploads-completion-required
+render pydantic_v2.BaseModel
+  APIGenerationError
+  E_CONFIG_VALUE config protocols.helpers['files.parts'].complete.parts /paths/~1files~1{fileId}~1assemble/post: The completion item requires properties the helper cannot fill: size
+  E_CONFIG_VALUE config protocols.helpers['files.parts_abort'].complete.parts /paths/~1files~1{fileId}~1assemble/post: The completion item requires properties the helper cannot fill: size
+  E_CONFIG_VALUE config protocols.helpers['files.parts_probe'].complete.parts /paths/~1files~1{fileId}~1assemble/post: The completion item requires properties the helper cannot fill: size
+  E_CONFIG_VALUE config protocols.helpers['files.parts_base64'].complete.parts /paths/~1files~1{fileId}~1assemble/post: The completion item requires properties the helper cannot fill: size
+  E_CONFIG_VALUE config protocols.helpers['files.parts_bare'].complete.parts /paths/~1files~1{fileId}~1assemble/post: The completion item requires properties the helper cannot fill: size
+  E_CONFIG_VALUE config protocols.helpers['files.parts_strict'].complete.parts /paths/~1files~1{fileId}~1assemble/post: The completion item requires properties the helper cannot fill: size
+  E_CONFIG_VALUE config protocols.helpers['files.parts_unlimited'].complete.parts /paths/~1files~1{fileId}~1assemble/post: The completion item requires properties the helper cannot fill: size
+  E_CONFIG_VALUE config protocols.helpers['files.parts_url'].complete.parts /paths/~1files~1{fileId}~1assemble/post: The completion item requires properties the helper cannot fill: size

@@ -3967,5 +3967,47 @@
         "_plans.py"
       ]
     ]
+  },
+  "uploads-composite": {
+    "input": "uploads-composite.yaml",
+    "references": [
+      "protocols/uploads-composite.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/uploads-composite.yaml"
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ]
+    ]
+  },
+  "uploads-completion-required": {
+    "input": "uploads-completion-required.yaml",
+    "references": [
+      "protocols/uploads.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/uploads.yaml"
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": false
   }
 }

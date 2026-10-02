@@ -761,14 +761,20 @@ class _Upload(Generic[T]):
         return value
 
     def _values(
-        self, targeted: Targeted[Any], bindings: tuple[PageBinding, ...], wire: WireValue, info: ResponseInfo
+        self,
+        targeted: Targeted[Any],
+        bindings: tuple[PageBinding, ...],
+        wire: WireValue,
+        info: ResponseInfo,
+        *,
+        extra: tuple[WireValue, ...] = (),
     ) -> tuple[WireValue, ...]:
         """Return what bindings write: their literals and what the create response gives, refusing dot segments."""
         written = tuple(
             binding.literal if binding.selector is None else self._read(binding.selector, wire, info)
             for binding in bindings
         )
-        _dotted(self._plan, targeted, written, info)
+        _dotted(self._plan, targeted, (*written, *extra), info)
         return written
 
     def _created(
@@ -787,7 +793,13 @@ class _Upload(Generic[T]):
             self._url = self._follow(value, _url, info, _managed)
         bound = (
             self._values(plan.probed, plan.probe_bindings, wire, info),
-            self._values(plan.appended, plan.append_bindings, wire, info),
+            self._values(
+                plan.appended,
+                plan.append_bindings,
+                wire,
+                info,
+                extra=() if plan.parts is None else (1, *(("0",) if plan.parts.digest_target is not None else ())),
+            ),
             () if plan.completed is None else self._values(plan.completed, plan.completion_bindings, wire, info),
         )
         expires_at = None
@@ -1877,8 +1889,10 @@ class PartsUploadHandle(_Parts[T], UploadHandle[T]):
             self._complete()
 
     def _recover_completion(self) -> None:
+        """Verify the original content before querying an unknown completion."""
         probe = self._plan.completion_probe
         if probe is not None and self._phase is _Phase.UNKNOWN:
+            self._scan(self._digests)
             with self._mapped():
                 self._core.execute_page(
                     self._plan,
@@ -2000,8 +2014,10 @@ class AsyncPartsUploadHandle(_Parts[T], AsyncUploadHandle[T]):
             await self._complete()
 
     async def _recover_completion(self) -> None:
+        """Verify the original content before querying an unknown completion with asyncio."""
         probe = self._plan.completion_probe
         if probe is not None and self._phase is _Phase.UNKNOWN:
+            await self._scan(self._digests)
             with self._mapped():
                 await self._core.execute_page(
                     self._plan,
@@ -2438,7 +2454,7 @@ def resume_upload(  # noqa: PLR0913
 ) -> UploadHandle[Any]:
     """Continue a checkpoint in a new session: check the source against it, then probe the server's offset once.
 
-    A complete upload resumes with its result and an unknown completion raises again, both without reading or sending.
+    A completed upload returns its saved result without sending; a declared completion probe first verifies the source.
     """
     limits = _limits(core, plan, upload_options, options, session_options)
     kind: type[UploadHandle[Any]] = handle or (PartsUploadHandle[Any] if plan.parts is not None else UploadHandle[Any])
@@ -2500,7 +2516,7 @@ async def aresume_upload(  # noqa: PLR0913
 ) -> AsyncUploadHandle[Any]:
     """Continue a checkpoint with asyncio in a new session: check the source against it, then probe once.
 
-    A complete upload resumes with its result and an unknown completion raises again, both without reading or sending.
+    A completed upload returns its saved result without sending; a declared completion probe first verifies the source.
     """
     limits = _limits(core, plan, upload_options, options, session_options)
     kind: type[AsyncUploadHandle[Any]] = handle or (

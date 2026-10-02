@@ -1172,7 +1172,11 @@ class _PartsServer:
                 return json_response(201, {"id": "parts", "expires": self.expiry, "url": self.url}, **headers)(request)
             if request.method == "PUT":
                 index = int(
-                    request.headers["X-Part-Index"] if "X-Part-Index" in request.headers else path.rsplit("/", 1)[1]
+                    request.headers["X-Part-Index"]
+                    if "X-Part-Index" in request.headers
+                    else path.rsplit("/", 1)[1]
+                    if not path.endswith("/part")
+                    else path.rsplit("/", 2)[1].rsplit("-", 1)[1]
                 )
                 self.sent.append(index)
                 mode = self.failure if index == 2 else None
@@ -1951,3 +1955,48 @@ def _parts_variants(harness: _Uploads, api: Any, exchange: Exchange, lines: list
         step(lines, "run resumed", resumed.run)
     server.report(lines, "server")
     exchange.responders.clear()
+
+
+def parts_source_recovery(package: ModuleType, lines: list[str]) -> None:
+    """Refuse changed files before an unknown parts completion is queried, on live handles and new resumes."""
+    harness = _Uploads(package)
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory, "original.bin")
+        path.write_bytes(_PART_CONTENT)
+        source = harness.protocols.FileUploadSource.from_path(path)
+        server, exchange = _PartsServer(), Exchange(lines)
+        _respond(exchange, server)
+        with exchange.client() as native, package.Client(http_client=native) as api:
+            helper = api.protocols.files.parts_probe
+            with helper.start(source, tus_resumable=harness.tus) as handle:
+                step(lines, "original wave", handle.advance)
+                server.failure = "complete"
+                step(lines, "unknown completion", handle.run)
+                state = handle.checkpoint()
+                path.write_bytes(_PART_CONTENT + b"!")
+                step(lines, "live changed source", handle.run)
+            step(lines, "resume changed source", lambda: helper.resume(source, state))
+            server.report(lines, "unchanged remote completion")
+        run(lambda: _async_parts_source_recovery(harness, path, lines))
+
+
+async def _async_parts_source_recovery(harness: _Uploads, path: Path, lines: list[str]) -> None:
+    """Keep asyncio completion probes behind the same original-content validation."""
+    await asyncio.to_thread(path.write_bytes, _PART_CONTENT)
+    server, exchange = _PartsServer(), Exchange(lines)
+    _respond(exchange, server)
+    async with (
+        await harness.protocols.AsyncFileUploadSource.from_path(path) as source,
+        exchange.async_client() as native,
+        harness.package.AsyncClient(http_client=native) as api,
+    ):
+        helper = api.protocols.files.parts_probe
+        async with await helper.start(source, tus_resumable=harness.tus) as handle:
+            await astep(lines, "async original wave", handle.advance)
+            server.failure = "complete"
+            await astep(lines, "async unknown completion", handle.run)
+            state = handle.checkpoint()
+            await asyncio.to_thread(path.write_bytes, _PART_CONTENT + b"!")
+            await astep(lines, "async live changed source", handle.run)
+        await astep(lines, "async resume changed source", lambda: helper.resume(source, state))
+        server.report(lines, "async unchanged remote completion")

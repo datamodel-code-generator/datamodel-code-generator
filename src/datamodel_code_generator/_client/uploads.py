@@ -439,6 +439,21 @@ class _Uploads:
                 )
                 continue
             item = _child(resolved, "items")
+            filled = {completion["index_field"], completion["receipt_field"]}
+            pending = [self.pages.nonnull(item)]
+            while pending:
+                location, item_shape, members = self.pages.members(pending.pop())
+                pending.extend(members)
+                if isinstance(parts := item_shape.get("allOf"), tuple):
+                    pending.extend(_child(location, f"allOf/{index}") for index in range(len(parts)))
+                if isinstance(required := item_shape.get("required"), tuple) and (missing := set(required) - filled):
+                    yield _problem(
+                        "E_CONFIG_VALUE",
+                        "config",
+                        f"{at}.parts",
+                        f"The completion item requires properties the helper cannot fill: {', '.join(sorted(missing))}",
+                        spec,
+                    )
             for field, wanted in (("index_field", "integer"), ("receipt_field", "string")):
                 member = self.pages.properties(item).get(completion[field])
                 if member is None or ((types := self.pages.types(member)) is not None and not types <= {wanted}):

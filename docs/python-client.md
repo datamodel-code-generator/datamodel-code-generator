@@ -351,14 +351,13 @@ Pagination, polling, SSE or NDJSON stream, WebSocket, webhook, cache, and resuma
 in a helper configuration, which the client target reads through its `protocols` setting. The helpers are still being
 implemented: generation validates every helper, resolves its references against the selected API, and records it in the
 target manifest. An enabled pagination helper generates the [pagination helper](#pagination-helpers) below, an enabled
-polling helper the [polling helper](#polling-helpers), an enabled `offset` upload helper the
+polling helper the [polling helper](#polling-helpers), an enabled `offset` or `parts` upload helper the
 [upload helper](#upload-helpers), an enabled SSE helper the [SSE stream helper](#sse-stream-helpers), an enabled NDJSON
 helper the [NDJSON stream helper](#ndjson-stream-helpers), an enabled WebSocket helper the
 [WebSocket helper](#websocket-helpers), an enabled cache helper the [cache helper](#cache-helpers), and an enabled
 webhook helper the [webhook verification helper](#webhook-verification-helpers). A disabled helper generates nothing,
-so the package is the same as without it. The `batch` and `queue` kinds, and the `parts` profile of `resumable_upload`,
-fail with `E_CLIENT_UNSUPPORTED` whether they are enabled or not, and their settings are not read yet; an enabled
-upload helper declaring `abort` or `create.session_url` fails with `E_CLIENT_UNSUPPORTED` too.
+so the package is the same as without it. The `batch` and `queue` kinds fail with `E_CLIENT_UNSUPPORTED` whether they are enabled or not, and their settings
+are not read yet. Upload helpers support remote abort and session URLs when declared.
 
 | Setting | Values | Default | Where |
 |---|---|---|---|
@@ -507,7 +506,7 @@ querystring, or its request body. An operation that owns a querystring takes no 
 | `websocket` | `operation` (a GET without a body), `send`, `receive` (each `{codec: json\|utf8\|bytes, frame?, schema?}`) | `subprotocols` (`[]`), `compression` (`false`) |
 | `webhook` | `event_schema`, `signature` (see [webhook verification helpers](#webhook-verification-helpers)) | `duplicates` (`report`, the default, or `reject`, which needs a signature) |
 | `cache` | `operation`, `validator` (`etag`, `last_modified`, or `both`), `authenticated` (a boolean) | `statuses` (`[200]`), `vary_allowlist` (`[]`), `tags` (`[]`), `mutations` (`{}`); see [cache helpers](#cache-helpers) |
-| `resumable_upload` | `profile` (`offset`), `create` (`{operation, size?, expires_at?}`), `probe` (`{operation, remote_offset, bindings?}`), `append` (`{operation, offset, length?, bindings?}`), `max_chunk_bytes` (a positive integer), `partial_commit` (`allowed` or `forbidden`), `completion` | `abort` (`{operation, bindings?}`) and `create.session_url`, both refused as not supported yet |
+| `resumable_upload` | `profile` (`offset` or `parts`), `create` (`{operation, size?, expires_at?, session_url?}`), `probe` (`{operation, remote_offset, bindings?}`), `append` (`{operation, offset, length?, bindings?}`), `max_chunk_bytes` (a positive integer), `partial_commit` (`allowed` or `forbidden`), `completion` | `abort` (`{operation, bindings?}`); the parts profile uses `list_parts`, `upload_part`, `complete`, and `limits` |
 
 A pagination `continuation` is one of these:
 
@@ -524,7 +523,7 @@ share fails with `E_CONFIG_CONFLICT`. `result` is `{kind: inline, selector, sche
 `{kind: operation, operation, bindings?}`, or `{kind: none}`, and `interval.seconds` is positive.
 
 An upload's `completion` is `{kind: length}` or `{kind: operation, operation, result_schema, bindings?}`. The `parts`
-profile is refused with `E_CLIENT_UNSUPPORTED` without reading its other settings.
+profile declares the operations and limits described in [Parts, parallelism, and remote abort](#parts-parallelism-and-remote-abort).
 
 A stream's `event_schema` is one schema reference, or `{discriminator, mapping}` where `discriminator` is
 `{from: event_type}` (SSE only) or `{from: body, pointer}` and `mapping` names the schema of each event type.

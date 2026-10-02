@@ -1,0 +1,39 @@
+# uploads-composite pydantic_v2.BaseModel
+  > POST https://api.example.com/files
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 16, tus-resumable: 1.0.0] b''
+  > PUT https://api.example.com/files/parts-1/part
+    [host: api.example.com, accept-encoding: gzip, deflate, digest: 63c1dd951ffedf6f7fd968ad4efa39b8ed584f162f46e715114ee184f8de9201, content-type: application/octet-stream, content-length: 4] b'AAAA'
+  > PUT https://api.example.com/files/parts-2/part
+    [host: api.example.com, accept-encoding: gzip, deflate, digest: 4a8d8134f29b0b7b60c126f5532bc9f5d9bb73037373cf6fb872d81f1dcefdfd, content-type: application/octet-stream, content-length: 4] b'BBBB'
+  > PUT https://api.example.com/files/parts-3/part
+    [host: api.example.com, accept-encoding: gzip, deflate, digest: 90b4853e06e722c63b4270463cf558684d7a1e77605d3ad36489d6146e42ab87, content-type: application/octet-stream, content-length: 4] b'CCCC'
+  > PUT https://api.example.com/files/parts-4/part
+    [host: api.example.com, accept-encoding: gzip, deflate, digest: 3989c4e0b53b03fa44fba6af89eeaa5f4347e8496e934ce81364e132cfca25ed, content-type: application/octet-stream, content-length: 4] b'DDDD'
+  > GET https://api.example.com/files/parts/parts
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  original wave = progress 16/16 complete=False
+  > POST https://api.example.com/files/parts/assemble
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 135] b'{"parts":[{"index":1,"receipt":"part-1"},{"index":2,"receipt":"part-2"},{"index":3,"receipt":"part-3"},{"index":4,"receipt":"part-4"}]}'
+  unknown completion ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete', cause=TransportError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  live changed source ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume changed source ! IndexError: tuple index out of range []
+  unchanged remote completion: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+  > POST https://api.example.com/files
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 16, tus-resumable: 1.0.0] b''
+  > PUT https://api.example.com/files/parts-1/part
+    [host: api.example.com, accept-encoding: gzip, deflate, digest: 63c1dd951ffedf6f7fd968ad4efa39b8ed584f162f46e715114ee184f8de9201, content-type: application/octet-stream, content-length: 4] b'AAAA'
+  > PUT https://api.example.com/files/parts-2/part
+    [host: api.example.com, accept-encoding: gzip, deflate, digest: 4a8d8134f29b0b7b60c126f5532bc9f5d9bb73037373cf6fb872d81f1dcefdfd, content-type: application/octet-stream, content-length: 4] b'BBBB'
+  > PUT https://api.example.com/files/parts-3/part
+    [host: api.example.com, accept-encoding: gzip, deflate, digest: 90b4853e06e722c63b4270463cf558684d7a1e77605d3ad36489d6146e42ab87, content-type: application/octet-stream, content-length: 4] b'CCCC'
+  > PUT https://api.example.com/files/parts-4/part
+    [host: api.example.com, accept-encoding: gzip, deflate, digest: 3989c4e0b53b03fa44fba6af89eeaa5f4347e8496e934ce81364e132cfca25ed, content-type: application/octet-stream, content-length: 4] b'DDDD'
+  > GET https://api.example.com/files/parts/parts
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async original wave = progress 16/16 complete=False
+  > POST https://api.example.com/files/parts/assemble
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 135] b'{"parts":[{"index":1,"receipt":"part-1"},{"index":2,"receipt":"part-2"},{"index":3,"receipt":"part-3"},{"index":4,"receipt":"part-4"}]}'
+  async unknown completion ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete', cause=TransportError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  async live changed source ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  async resume changed source ! IndexError: tuple index out of range []
+  async unchanged remote completion: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
