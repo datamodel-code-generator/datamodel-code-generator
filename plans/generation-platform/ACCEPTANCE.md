@@ -52,6 +52,8 @@ These are unimplemented acceptance requirements for Pydantic v2 BaseModel/datacl
 
 ## 3. Client combination acceptance
 
+> Superseded by [SIMPLIFICATION.md §4](SIMPLIFICATION.md#4-implementation-stacks): targeted matrices (R8) replace the full cross product.
+
 | ID | Combination | Required observation or expectation |
 | --- | --- | --- |
 | X01 | POST + 503/disconnection + no idempotency contract | No automatic resend without explicit safety evidence. Observe server arrivals. |
@@ -79,6 +81,8 @@ X05 includes cancellation/expiry of only the initiating refresh caller, continue
 Expected wire values, decoded values, and failure conditions must be literal fixtures tied to OAS/RFC/protocol clauses. Do not compute them through dcg parsers/codecs/shared implementation helpers. Validate clients against handwritten fixture servers and servers with handwritten raw requests; generated server/client round trips alone cannot pass acceptance. Derive expectations from normative text and original input before reading the implementation, and record a normative reason for changes. The same rule applies when LLMs help. For each issue, introduce a deliberately wrong behavior—such as inverted explode, unknown enums converted to None, or unlimited 401 retries—and verify the oracle rejects it. Separate these procedures within the current maintenance arrangement without requiring additional staff. Differences from another SDK are investigative clues, not an oracle by themselves.
 
 ## 4. Performance acceptance
+
+> Superseded by [SIMPLIFICATION.md P6](SIMPLIFICATION.md#p6-speed-is-measured-not-decreed): CodSpeed thresholds replace the statistical zero-tolerance protocol.
 
 Prefer existing benchmarks. Record baseline/candidate Python/dependencies, input/configuration, CPU/OS, formatter, warm/cold conditions, repetition count, order, variation, CPU/wall time, peak memory, and retained memory. Existing paths must not suffer reproducible regressions. Explain measurement noise; do not introduce a 1% or millisecond acceptance allowance.
 

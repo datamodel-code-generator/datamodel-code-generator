@@ -4,7 +4,7 @@ This guide identifies the design contracts and acceptance requirements for imple
 
 ## 1. Authority and reading order
 
-Read [PLAN](PLAN.md) and [ARCHITECTURE](ARCHITECTURE.md) first. Then identify the boundaries of all eight contracts below, regardless of the assigned stack. Read the complete contracts relevant to that stack and any sections they depend on. [COVERAGE](COVERAGE.md) maps requirement IDs; [FASTAPI-REQUIREMENTS](FASTAPI-REQUIREMENTS.md) inventories legacy workflows; [CLIENT-REQUIREMENTS](CLIENT-REQUIREMENTS.md) records client capabilities.
+Read [SIMPLIFICATION](SIMPLIFICATION.md) first; it overrides any conflicting text in the other documents. Then read [PLAN](PLAN.md) and [ARCHITECTURE](ARCHITECTURE.md). Then identify the boundaries of all eight contracts below, regardless of the assigned stack. Read the complete contracts relevant to that stack and any sections they depend on. [COVERAGE](COVERAGE.md) maps requirement IDs; [FASTAPI-REQUIREMENTS](FASTAPI-REQUIREMENTS.md) inventories legacy workflows; [CLIENT-REQUIREMENTS](CLIENT-REQUIREMENTS.md) records client capabilities.
 
 | Contract | Authoritative responsibility |
 | --- | --- |

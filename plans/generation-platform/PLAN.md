@@ -1,6 +1,6 @@
 # FastAPI and Python client generation plan
 
-This is the design for new optional generation features. Product implementation, migration, and release have not started. This directory is the authoritative public plan. The implementation baseline is dcg `4f96e22ea403a66faae96f3949d41dd61fc1186f`; the legacy FastAPI baseline is `b3b9bd66e0b0c4d8c686fda700258104615a1332`.
+This is the design for new optional generation features. S01–S13 are implemented on main and unreleased; migration and release have not started. This directory is the authoritative public plan, and [SIMPLIFICATION](SIMPLIFICATION.md) overrides any conflicting text in it. The implementation baseline is dcg `4f96e22ea403a66faae96f3949d41dd61fc1186f`; the legacy FastAPI baseline is `b3b9bd66e0b0c4d8c686fda700258104615a1332`.
 
 **The new FastAPI target supports Pydantic v2 BaseModel and Pydantic v2 dataclass. The client supports all five current dcg model backends.** Existing dcg model generation retains its full backend coverage.
 
@@ -60,6 +60,8 @@ Add an explicitly selected `api` value to the existing `--openapi-scopes` option
 
 ## 4. Initial production client scope
 
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): queues, batches and circuit breakers are removed, and the core client is published first (P7).
+
 [CLIENT-REQUIREMENTS](CLIENT-REQUIREMENTS.md) is the feature and acceptance register. Each row maps requirements to owners, configuration semantics, failures, and independent tests. [COVERAGE](COVERAGE.md) connects C01–C33 to authoritative dcg contracts, independent acceptance cases, and maintenance responsibilities.
 
 Common requirements include sync/async, per-request settings, timeouts, total deadlines, cancellation, safe retries, HTTP client injection and ownership, connection pools/TLS/proxies, request/response codecs, typed exceptions, raw responses, authentication, upload/download, observation hooks, extension/regeneration/package support, documentation, and tests. Implement idempotency, pagination, polling, SSE/NDJSON, and similar conditional capabilities initially, enabling them only for APIs that provide the required explicit contracts.
@@ -83,6 +85,8 @@ Use LLM assistance for implementation, fixtures, documentation, and change inves
 Do not declare the replacement complete while required features or compatibility and performance checks remain incomplete.
 
 ## 6. Authoritative contracts and implementation acceptance
+
+> [SIMPLIFICATION.md](SIMPLIFICATION.md) overrides any conflicting text in these contracts.
 
 The eight `DECISIONS-*` documents fix entry points, scope, binding, five-backend codecs, FastAPI, client, runtime, and protocol contracts. Implementers are not expected to invent missing APIs or defaults. [IMPLEMENTER](IMPLEMENTER.md) explains authority and reading order. [ACCEPTANCE](ACCEPTANCE.md) connects specifications, configuration, generated/runtime behavior, and independent oracles. Diagnosing a required but unimplemented feature as unsupported does not count as implementing it.
 

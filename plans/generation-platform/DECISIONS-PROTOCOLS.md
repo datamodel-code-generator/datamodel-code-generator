@@ -99,6 +99,8 @@ All fields of `ContentCodingRegistration(token:str, public_import:str, direction
 
 ### 1.2 Borrowed adapter signatures, records, and ownership
 
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): queue, blob, circuit and replay stores are removed; the cache store is get/set/delete.
+
 Expose the following Protocols. Sync methods in the table are ordinary functions; `AsyncX` uses coroutines with the same names, except that source `open_range()` and BlobStore.open() are ordinary functions returning sync/async context managers. RangeReader/AsyncRangeReader expose only the read entry point below; do not require an undeclared iter_bytes. Release uses sync `close()` and async `aclose()`. Generated clients do not call close on injected connectors/stores/sources/factories themselves, but always close the connections/readers/decoders obtained from open/new. Only client-owned fallbacks close with the client. Store atomicity, leases, and CAS belong to the adapter; the SDK must not replace them with read-modify-write. Store I/O exceptions retain their causes through the corresponding store exceptions in section 1.3 and do not resend successful HTTP requests. External async adapters must be native async; builtin disk-worker exceptions are limited to sections 9/11.
 
 | Public Protocol | Required signatures / returns |
@@ -214,6 +216,8 @@ Only **lazy context manager wrappers** (RUNTIME's with_streaming_response, Uploa
 
 ## 2. Integration with LogicalCall and OperationSession
 
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): no default session caps or send budgets.
+
 Use the shared runtime's `LogicalCallContext` / `AttemptContext` / `OperationSession` and public `RequestOptions` / `ClientOptions` / `TimeoutOptions` / `RetryOptions`. Do not create an independent HTTP retry loop inside protocols. A child's deadline is `min(parent absolute deadline, child total deadline)`; the default child total timeout is 60 seconds. Default resource retries are 2, for at most 3 resource sends within the same child; `max_retries=0` also prohibits a resource resend following reauthentication after 401. OAuth token exchanges have a separate counter from resource attempts. Only the shared runtime's shared refresh is provider-owned with an independent 30-second/1-send budget; once, it reserves and consumes a send slot from the triggering call/parent that approved its start. Do not charge waiters again; an approved refresh may finish after the triggering caller's cancellation/deadline. Do not admit new resources/refreshes after the parent deadline.
 
 The complete `SessionOptions` field set is only `total_timeout:float|None|Unset=UNSET`, `deadline:Deadline|None|Unset=UNSET`, and `max_network_sends:int|None|Unset=UNSET`. The effective deadline default is None; the other two values are in the table below. total_timeout is nonnegative (0 means immediate expiration), max_network_sends is nonnegative (0 prohibits new admissions with SessionLimitError), and None removes that local cap. bool/NaN/Infinity/negative values raise ConfigurationError. Reject max_reconnects/idle/parallelism and similar fields as unknown fields. Only the types in section 1.1 own kind-specific values. When both `deadline` and `total_timeout` are present, the earlier wins. The deadline runs from session creation and includes waiting for user consumption.
@@ -241,6 +245,8 @@ Retries use the same logical request; resume/pagination/poll/chunk operations cr
 Automatic reconnect continues the current OperationSession without resetting budgets. An explicit user `.resume(..., session_options=...)` creates a new OperationSession and applies that invocation's budget. State saves cumulative progress, retrieval/consumption positions, cycle-check history, and unconfirmed deliveries; do not replace the same remote operation with another create. Observe old and new session IDs/counters distinctly. Do not serialize monotonic deadlines across processes; wait the saved not-before remaining seconds again starting at resume (a conservative wait that does not deduct time in storage). Only server-declared UTC expiry is checked against current UTC.
 
 ## 3. C19 pagination
+
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): no default caps; resume from a small token.
 
 | Metadata | Required fields and meaning |
 | --- | --- |
@@ -292,6 +298,8 @@ Independent tests P21: one-byte UTF-8/BOM/CRLF chunks, multiline data/comments/e
 
 ## 6. C22 WebSocket
 
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): no resume, acknowledgements, reauthentication or SOCKS.
+
 WS uses `WebSocketConnector` and `WebSocketSession[Send,Recv]`, separate from HTTPX2's HTTP streams. The standard implementation uses `websockets>=17.1` sync `sync.client` and async `asyncio.client`. Add `python-socks[asyncio]>=3.1.1` only to SDKs selecting WS so the same connector also supports SOCKS4/4a/5/5h proxies. HTTP/HTTPS/SOCKS selection and DNS resolution location follow the explicit proxy URI scheme; environment selection passes the same validation only with trust_env=True. The evidence is the pinned 17.1 docs/topics/proxies.rst and sync/async client sources, plus official PyPI metadata for python-socks 3.1.1 (checked 2026-09-17). Only generated packages selecting WS require Python>=3.11 and these dependencies; retain Python>=3.10 for non-WS SDKs and unchanged dependencies for existing D. Do not use `websockets`' infinite reconnect iterator. Connector injection is `ClientOptions.protocols.websocket_connector`; connection settings are `websocket_transport` at the same location. Do not call close on borrowed connectors; the handle always closes each connection returned by their open.
 
 Even one native connect may not redirect internally. In the handshake of the ClientConnection wrapper passed to `create_connection`, convert native `InvalidStatus` into the SDK's `HandshakeResponse` exception (not a subclass of native InvalidStatus). Handle status/auth/redirect in the SDK without returning to native redirect decisions. Each hop consumes the parent budget as one connector open, closing the previous hop before proceeding. Do not modify native-library global/environment variables. All WebSocketTransportOptions fields are defined in section 1.1; explicitly supply a verifying SSLContext, proxy/trust_env, and all timeouts/limits instead of relying on native defaults. Use environment proxies only with explicit True. Auth origin comparisons map wss to https and ws to http; token use requires both metadata channel auth declarations and provider origin permission. This adapter policy addresses internal redirects in both 17.1 implementations, as checked in [sync source](https://github.com/python-websockets/websockets/blob/e87ea9be0373edd5065b5e94dfa714cfde23023b/src/websockets/sync/client.py#L418-L515) and [async source](https://github.com/python-websockets/websockets/blob/e87ea9be0373edd5065b5e94dfa714cfde23023b/src/websockets/asyncio/client.py#L448-L559) (2026-09-17; 17.1 tag -> commit `e87ea9be0373edd5065b5e94dfa714cfde23023b` verified with git ls-remote; executable conformance tests have not been run).
@@ -332,6 +340,8 @@ Independent tests P22: an independent WS server covers handshake rejection/401/d
 
 ## 7. C23 webhook / callback
 
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): no replay store.
+
 Signed receiver helpers do not create HTTP clients. Place metadata-selected helpers at public `webhooks.<api_name>` in the generated package. Require event SchemaRef/mapping, discriminator, and signature profile. Treat OpenAPI callbacks only as information about send/receive schemas; do not infer signatures. APIs not requiring signatures explicitly declare `signature:{kind:none}` and expose only `.decode_unverified()`. Missing signature metadata does not mean `none`.
 
 Builtin profiles are `hmac-sha256` / `hmac-sha512` / `ed25519` / `rsa-pss-sha256`. HMAC uses the standard library; public-key methods use optional `cryptography`. Metadata requires the signature header, encoding (hex/base64/base64url), prefix, multiple-signature separator, key-ID location, timestamp header/unit, and signed-parts order. signed-parts elements are only raw-body, the timestamp's **original byte representation**, delivery-id header bytes, and literal ASCII bytes. Header strings prohibit obs-text and are encoded once as ASCII/declared UTF-8. Do not reserialize JSON or normalize newlines. RSA-PSS is fixed to SHA256/MGF1-SHA256/salt_length=32; Ed25519 uses raw signatures. Other methods require `kind:adapter` and the explicit verifier argument below; do not leave them as candidates to select during implementation.
@@ -343,6 +353,8 @@ The order is size/syntax checks -> timestamp-window checks -> signature verifica
 `ReplayStore` only claims and retains entries until expiry; do not put a global store in the SDK. namespace is the helper fingerprint + explicit caller namespace. Claim expiry is `timestamp+past_window+future_window`, or `now+replay_ttl` (default 300 seconds) without a timestamp. Guarantee duplicate detection only until expiry. Builtin `MemoryReplayStore(max_entries=10000)` is explicitly constructed independently of clients; when full, raise `ReplayStoreFullError` without discarding live entries. Injected external stores can provide multiprocess atomicity. Adapter verifiers must meet the same limits/cancellation/secret rules and known-answer tests of `Verifier[K]` immediately below; internal networking is prohibited.
 
 ### 7.1 KeySet and verified signature facts
+
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): signature presets replace the framing language.
 
 Key inputs are limited to the following finite public types. Do not create new PEM/DER loaders, key acquisition, rotation registries, or network discovery. Records are keyword-only/frozen; do not repr/serialize/deepcopy key material or opaque elements.
 
@@ -379,6 +391,8 @@ Independent tests P23: known signature vectors from the API operator or an indep
 
 ## 8. C25 conditional request / private cache
 
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): a simple get/set/delete cache.
+
 A 304 from an ordinary typed method follows the shared runtime's status contract; do not disguise a missing body as T. Raw paths expose 304/status/headers. This helper provides explicit `.fetch(<operation arguments>, cache_options, options)->CacheResult[T]`. CacheResult has `data:T`, `source:network|fresh_cache|revalidated`, `response:ResponseInfo`, and `network_status:int|None`. Do not add cache allocations/hooks to ordinary methods that do not use the cache.
 
 CacheResult.response is the same class as shared ResponseInfo. For network results, use that call's info. For fresh_cache, use a new call_id; all attempt/redirect/auth/send/admission counts=0; auth_refresh_ids=(); auth_refresh_pending=0; elapsed is this invocation's lookup + decode time; status_code/header/request_id/content_type come from the saved representation. For revalidated, retain the current 304 call's ID/counters/elapsed/auth fields, replacing only status_code/header/request_id/content_type with values after merging the saved representation and 304. network_status=304 identifies the actual 304; fresh_cache uses None. Close internal raw responses and permits before returning from fetch regardless of decode/merge/storage success.
@@ -398,6 +412,8 @@ If metadata contains `mutations: {<name>: {operation:OperationRef, invalidate_ta
 Independent tests P25: inject a custom CacheStore implemented solely from public signatures in section 1.2; spies compare exact arguments and record fields for fingerprint_vary -> lookup -> compare_exchange/delete. Reject objects missing required authoritative methods before network access. An independent HTTP server covers ETag/Last-Modified/304, Vary case/multiple values/*, Age/Date, no-cache/no-store, tenant isolation, cold 304, caller-validator conflicts, 200 updates, decode failures, two concurrent CAS operations, Set-Cookie, limits, one mutation send on invalidation failure, and zero allocations with cache disabled. [RFC9111](https://www.rfc-editor.org/rfc/rfc9111.html) (checked 2026-09-17).
 
 ## 9. C33 resumable upload
+
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): a sequential upload, resumed from the server offset.
 
 `kind:resumable_upload` selects `profile:offset|parts`. Public APIs are `.start(source:UploadSource, <create arguments>, options, session_options)->UploadHandle[T]` and `.resume(source,state)->UploadHandle[T]`. With remote abort declared, both return the concrete helper handle type from section 1.4; async closes to AsyncUploadSource and the corresponding AsyncUploadHandle/concrete type. Handles provide `.advance()->UploadProgress`, `.run()->T`, `.checkpoint()`, `.close()`, and explicit `.abort_remote()` only when metadata declares it. Local close/cancellation does not delete remote uploads.
 
@@ -421,6 +437,8 @@ Independent tests P33-U: compare bytes stored by an independent server with the 
 
 ## 10. C33 batch / chunk
 
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): removed.
+
 Metadata requires the batch operation, request-items RequestTarget, item SchemaRef, server `max_items`/`max_request_bytes`, result-items Selector, success/error item SchemaRefs, and `correlation:id|position`. id explicitly declares input and response ID fields; position explicitly declares the API contract that response count always equals input count. Missing/duplicate/unknown IDs or count mismatches raise `BatchProtocolError`. Distinguish mixed item success from overall HTTP success.
 
 `.iterate(items:Iterable[InputT] | BatchSource[InputT], <shared arguments>, options, session_options, batch_options)->BatchIterator[<Helper>Result]`; async is an ordinary def accepting `Iterable[InputT] | AsyncIterable[InputT] | AsyncBatchSource[InputT]` and returning `AsyncBatchIterator[<Helper>Result]`. InputT is statically bound to that helper's existing input type. Result is the helper-specific tagged union immediately below, retaining index/item_id/response info and a typed payload corresponding to outcome. Return in input order. Batch size is min(100,servermax), parallelism 4; chunk to satisfy the 8MiB per-item limit and server request cap. Prefetch subsequent input only up to in-flight batch count x batch size and within a total prepared-input buffer of 32MiB. Each request is bounded by min(server max_request_bytes,32MiB); when buffer space is insufficient, wait for completion/consumption before advancing input. Each batch response has the shared 16MiB cap; do not reuse a batch slot while it has unreturned Results. Do not send a single item exceeding the exact limit; raise `BatchItemTooLargeError` retaining its index.
@@ -439,6 +457,8 @@ Independent tests P33-B: 1000 items with servermax 37, server byte cap, out-of-o
 
 ## 11. C33 offline / replay queue
 
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): removed.
+
 Implement builtin `MemoryQueueStore` and `SQLiteQueueStore(path)` constructed with an explicit path. Do not create global queues, resident threads, or automatic drains when connectivity returns. Use the standard sqlite3 dependency with atomic transactions/claims, schema version, WAL, and expiring leases. Injected stores are borrowed; the SDK closes only stores it creates itself. Persist operation fingerprint, prepared non-auth URL/parameters/body, credential partition, stable idempotency key, creation/expiry, delivery count, not-before, and state. Do not persist credentials/tokens; resolve them through the provider at drain time.
 
 Async builtins are `AsyncMemoryQueueStore` and explicit `AsyncSQLiteQueueStore(path)`. Each AsyncSQLiteQueueStore/AsyncSQLiteBlobStore instance owns one worker, a job queue of 64, and a 5-second SQLite busy timeout, solely for database processing. Even cancellation during a transaction completes commit/rollback and delivers completion notification to the caller's asyncio loop. Discard cancelled jobs that have not started; do not pretend to undo an already-started mutation, whose result remains inspectable. aclose rejects new jobs, finishes the in-flight transaction, and closes connection/worker. Threads are resources of explicit store adapters and perform neither HTTP sends nor resident drains. The initial database schema supports only version 1; refuse to open unknown versions.
@@ -454,6 +474,8 @@ If store acknowledgement fails before response success is confirmed, leave the l
 Independent tests P33-Q: RangeReader/AsyncRangeReader + BlobStore fixtures using no private imports verify explicitly allowed bodies over 8MiB, short reads/EOF in 1..64KiB, matching size/SHA256/key, put never closing a borrowed reader, finally close exactly once for readers opened by the queue, zero partial refs/zero repeated puts on read/cancel/storage failure, and independent open-context readers/one close. Two enqueues of identical 10MiB content through an explicit custom BlobStore and raised body limit must have matching size/digest and distinct keys; after A succeeds/is purged/is deleted twice, B's open and delivery bytes must still match the original. Verify the same lease isolation with physical deduplication, concurrent puts, and a third put after deletion. Test builtin SQLite with a separate vector of at most 8MiB, including reopen. Also cover zero deletes of borrowed refs; releasing only the new ref acquired when QueueStore.put fails; continued reading after deletion for an already-open reader; rejection of new opens on the same key; and zero changes after ref size/digest tampering. Cover zero network operations during enqueue, concurrent claims by two processes, crashes after claim/after response but before acknowledgement, identical idempotency keys, five deliveries/TTL, redelivery not-before for Retry-After 120 seconds against a 60-second child cap, server waits exceeding drain deadline/entry TTL, clock injection, capacity, blob-digest corruption, tokens not persisted, unchanged partition after refresh, drain cancellation, database transaction failures, restarts, and schema versions. Automatic communication with real APIs and scheduler creation are outside this feature.
 
 ## 12. C33 circuit breaker / compression
+
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): circuit breakers are removed; gzip for declared operations only.
 
 Circuit breaking defaults to disabled. Enable it with both `ClientGenerationConfig.operations[].runtime.circuit_group` (channel.runtime for WS) and `ClientOptions(protocols=ProtocolClientOptions(circuit=CircuitBreakerOptions(enabled=True)))`. Apply the same execution path to ordinary endpoints and helper children. State is per client instance + origin + credential partition + group, shared only through explicitly injected stores. Five consecutive failures of **completed child resource LogicalCalls** open the circuit, with a 30-second cooldown and only one concurrent HALF_OPEN call. Count Connect/Read/Write/RemoteProtocol transport failures and HTTP500/502/503/504. Pool timeout, cancellation, auth/validation/programming errors, 429, and cache hits do not count as failures. Success resets the consecutive count to zero; half-open success becomes CLOSED; failure becomes OPEN for 30 seconds. Half-open cancellation releases the probe permit without increasing failures.
 
@@ -471,6 +493,8 @@ Shared RUNTIME ResolvedCompression is authoritative for request-compression valu
 UNSET optional body means absent body; explicit b'' and JSON null encoded under a nullable schema count as bodies. Gzip from generated defaults/client/view is also off for an undeclared operation with a body. After initial strict validation, an allowed 303 or similar redirect hop that removes the body turns the effective token off and removes body headers such as Content-Encoding. Do not reject body removal within the same call as a new call-configuration error.
 
 ### 12.1 Helper compression admission and application unit
+
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): removed.
 
 The application unit is the **workflow originating from one public helper execution entry point**. Create private `HelperCompressionAdmission(helper_fingerprint, token, child_slots)` exactly once. child_slots is a finite mapping of `(role, OperationRef)` that the generated helper can invoke from this entry point/state, not URL strings or arbitrary caller-added requests. Retain value and origin as RUNTIME ResolvedCompression; do not rewrite origin=call to client/view. Distinguish only helper children carrying admission from strict ordinary-endpoint validation. Do not add public options/metadata fields or create a bypass that weakens explicit compression on ordinary endpoints.
 
@@ -498,6 +522,8 @@ Admission is private live-handle state, never serialized into ResumeState or Que
 Independent P33-Z-H (also connected to P19/P20/P21/P33-U/B/Q and RT01/CG07): independent servers verify Content-Encoding/expanded bytes/arrival counts for successful wait from gzip-declared create POST -> bodyless poll GET -> result GET; compressed POST -> next_url GET versus repeat_request_body; POST stream -> GET reopen; and upload with undeclared create/HEAD probe -> gzip only for declared append/part -> uncompressed complete. Verify that resume does not reuse a create-only compression declaration as an applicable candidate; helpers without gzip-applicable children/empty input/zero limits/new resumes on completed state cause zero provider calls/token/resource sends; existing handles still return completed values; the first batch preparation has bounded prefetch; and queues handle matching/nonmatching entries, empty claims, lease returns/CAS conflicts/cancellation, zero blob opens, and unchanged delivery counts for unprocessed entries. Separate fixtures cover ordinary successful empty processing with inherited tokens and call None off. Confirm that strict direct-endpoint rejection, retry/body replay, and 303 body-removal rules remain unchanged.
 
 ### 12.2 Content-coding execution and resource limits
+
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): removed.
 
 Builtin gzip uses level 6/mtime 0/no filename and is incremental, subdividing input into chunks of at most 64KiB. Keep Content-Encoding consistent; conflicts with an existing caller header are errors before sending. Resends of compressed bodies also follow shared BodySource's same-payload/replay contract. Compression does not turn a one-shot body into a replayable body.
 

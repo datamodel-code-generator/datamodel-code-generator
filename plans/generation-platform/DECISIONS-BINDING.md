@@ -4,6 +4,8 @@
 
 ## 1. Decision
 
+> Superseded by [SIMPLIFICATION.md P4](SIMPLIFICATION.md#p4-binding-records-replacements-it-does-not-reverse-engineer): a recorded replacement map and a post-pass replace capture.
+
 **Run the existing model engine once, and retain the types and fields it actually creates, the replacements it actually adopts, and its final module output only at the new entry points.** Do not parse the same input with another parser and match names, copy the entire model graph, evaluate annotation getters again, or repair generated models.
 
 To keep preprocessing and acceptance decisions under one owner, move the existing `_generate` body exactly once into `_run_generation(input_, config, caller_cwd, *, use_output_cwd, capture=None)`. Keep legacy `_generate` as a thin wrapper with its existing signature and return value. The new entry points use this same core for preparation, existing `_parse_generation` retry/acceptance, and ordinary emission. Only the new path passes the parser factory and `GenerationCaptureSession`. Do not create capture sessions, store ledgers, type snapshots, or source catalogs on the ordinary path. Internal changes that organize existing parser/store/copy calls into integration points owned by those components are in scope for implementation. This design does not call an unconditional observer when the new feature is unused.
@@ -36,6 +38,8 @@ All source references below use the SHA above. Cite each link together with its 
 The five current builtin backends are Pydantic v2 BaseModel, Pydantic v2 dataclass, stdlib dataclass, TypedDict, and msgspec Struct. [enums.py:53](https://github.com/datamodel-code-generator/datamodel-code-generator/blob/4f96e22ea403a66faae96f3949d41dd61fc1186f/src/datamodel_code_generator/enums.py#L53), [model/__init__.py:38](https://github.com/datamodel-code-generator/datamodel-code-generator/blob/4f96e22ea403a66faae96f3949d41dd61fc1186f/src/datamodel_code_generator/model/__init__.py#L38) Include all five in initial binding and codec acceptance. Alias/enum/root model are type shapes independent of these five backend choices.
 
 ## 3. Placement and internal API
+
+> Superseded by [SIMPLIFICATION.md P4](SIMPLIFICATION.md#p4-binding-records-replacements-it-does-not-reverse-engineer): no capture session or ledgers.
 
 Lazily import new feature modules from the new entry points.
 
@@ -110,6 +114,8 @@ Accept explicit `OperationRef.document` only when it matches this `root_selector
 ## 5. Capturing sources, operations, and type uses
 
 ### 5.1 Capture locations
+
+> Superseded by [SIMPLIFICATION.md P4](SIMPLIFICATION.md#p4-binding-records-replacements-it-does-not-reverse-engineer): no parser-method capture wrappers.
 
 1. At entry to the capture mixin's `_parse_specification`, borrow the root mapping and source frame already created by the existing loader. Do not YAML/JSON-load again. Capture itself reserves no model names and calls the selected ordinary OpenAPI/Api engine's `super` once. The Api model engine itself owns its actual declaration frames.
 2. For legacy scopes, capture the effective mappings and order actually passed by `_process_path_items`. For Api, read §5.4's traversal frames with declaration context and effective sequences. In both cases, do not reverse-engineer literal paths/original declaration IDs from internal naming paths. Record declaration mappings separately from inherited/effective mappings. Use the finite rules below for legacy-scope limitations.
@@ -235,6 +241,8 @@ Apply `openapi_include_paths` to Api root paths and callbacks reachable from the
 
 #### Names and resolver paths
 
+> Superseded by [SIMPLIFICATION.md P4](SIMPLIFICATION.md#p4-binding-records-replacements-it-does-not-reverse-engineer): targets always enable the `api` scope; `BND_MODEL_SCOPE_REQUIRED` does not apply to targets.
+
 Assemble candidate names uniquely according to this table; leave final title/class-name/prefix/suffix/conflict/module decisions to existing ModelResolver. Reserve at actual schema-use processing positions, without reserving all names in advance. Names are not binding keys.
 
 |Schema use|Candidate-name rule|
@@ -256,6 +264,8 @@ Build actual schema resolver paths by passing declaration-frame document + raw p
 Legacy-scope capture observes only references, loaded sources, and actual component identities already processed by actual parse/loader calls. Do not resolve uncaptured refs for capture or introduce new network access, ref registration, or discriminator state during parse/retry. If required external operation/callback declarations are unavailable, diagnose insufficient Api scope for the requested use. Ordinary D's own ref acquisition with explicit Api is the comparison baseline for that new model setting.
 
 ## 6. Rules connecting replacements to final types
+
+> Superseded by [SIMPLIFICATION.md P4](SIMPLIFICATION.md#p4-binding-records-replacements-it-does-not-reverse-engineer): replacements are recorded at the generation store's mutation methods.
 
 `BindingLedger` is per attempt. Retain object-identity numbering and live anchors, type uses, field origins, variants, and necessary replacement edges/recipes before deletion. Do not add lineage fields to every field or retain a generic history of all mutations. Existing graph state and actual replacement arguments are authoritative; do not write ledger data back into the graph.
 
@@ -295,6 +305,8 @@ Do not look up variant caches after disposal or parse_raw finally, or invoke the
 
 ## 7. Property-to-final-field correspondence
 
+> Superseded by [SIMPLIFICATION.md P4](SIMPLIFICATION.md#p4-binding-records-replacements-it-does-not-reverse-engineer): field bindings come from the final model fields.
+
 This section is a codec input contract, not optional debug metadata.
 
 1. Record correspondence between property declaration order in `parse_object_fields(obj, path, ...)` and returned fields using actual original wire names. Do not reverse-engineer original properties from Python names after snake_case conversion, reserved-word avoidance, aliases, or prefix removal. Include fields created directly for boolean schemas.
@@ -311,6 +323,8 @@ This section is a codec input contract, not optional debug metadata.
 Do not invent alias-generator results, backend runtime fields-set, or unset state of user instances from the generation graph. Pass existing configuration and declared alias facts to codec plans; obtain needed runtime results through official backend APIs. Do not execute callbacks or alias generators again for observation.
 
 ### 7.1 Backend-specific model / field facts
+
+> Superseded by [SIMPLIFICATION.md P4](SIMPLIFICATION.md#p4-binding-records-replacements-it-does-not-reverse-engineer): no frozen backend facts.
 
 `BackendModelFacts` and `BackendFieldFacts` are finite records per builtin backend. Every value has state `known(value)` / `runtime(reason)` / `opaque(reason)`, distinguishing unspecified from explicit None/False. Here, known means generator-side facts actually adopted in the output by the existing engine; it does not imply knowledge of execution effects from arbitrary custom templates/base classes.
 
@@ -352,6 +366,8 @@ Pass generation-time known differences, such as `init=False` or required fields 
 
 ### 7.2 Provenance of None defaults and nullable annotations
 
+> Superseded by [SIMPLIFICATION.md P1](SIMPLIFICATION.md#p1-models-are-the-runtime-contract): omission follows the backend.
+
 Fix `NoneDefaultProvenance` to the frozen record below. These input facts prevent treating “generated default is None” as equivalent to “wire null may be omitted.” [CODECS §5](DECISIONS-MODEL-CODECS.md) owns codec wire optional/nonnullable decisions and runtime presence.
 
 |Field|Finite values and meaning|
@@ -376,6 +392,8 @@ Classification priority for `origin` is `runtime_or_opaque` when unknown/custom/
 Actual Pydantic BaseModel `model_fields_set`, actual TypedDict keys, and explicit PresenceTree are codec runtime facts this record does not override. Do not omit present Pydantic None or present TypedDict key=None; check them as nonnullable violations. For dataclass plain T without presence, apply static omission only in the proven case above; do not claim to distinguish the history of explicit constructor None. Explicit presence/from_wire gives ordinary wire-null validation precedence.
 
 ### 7.3 Source origins of nested / synthetic schemas (B2-08)
+
+> Superseded by [SIMPLIFICATION.md P4](SIMPLIFICATION.md#p4-binding-records-replacements-it-does-not-reverse-engineer): no origin index.
 
 `ValidatedSchemaOriginIndex` is an identity→ordered-origin-edge index owned only by capture attempts, not another schema IR or constraint evaluator. `SchemaOriginEdge` retains actual input-node ID, actual returned-node ID, actual source occurrence, relation=`validated_child / ref_sibling / allof_merge / inherited_constraint / inherited_materialization / ref_union_materialization / deferred_shape / conditional_merge / combined_materialization / allof_root_materialization / synthetic_value`, original keyword raw key/index, and actual model merge mode. Do not collapse schema allOf intersection and model-engine choices such as NoMerge into one meaning. Do not write raw/source values from this index back into the graph.
 
@@ -452,6 +470,8 @@ Custom backends/DataTypes with nonbuiltin type operations or opaque constructor 
 
 ## 9. Final modules, symbols, and artifacts
 
+> Superseded by [SIMPLIFICATION.md P4](SIMPLIFICATION.md#p4-binding-records-replacements-it-does-not-reverse-engineer): modules come from dcg's module grouping; no tokenizing of generated source.
+
 `_generate_module_output` calls ordinary `super` once, associating current `ctx.module` / `ctx.models` with the returned `Result` object. Do not provisionally finalize names before ordinary render. After all parsing succeeds, match the returned dictionary's **actual keys, Result identities, and original module contexts**. For a single body, match the ordinary single-result branch.
 
 Do not infer one file solely from Result identity. Existing `__postprocess_result_modules(empty_init=False)` reuses the same init Result for missing parent `__init__.py` files. Ordinary output such as Foo from `a.b/__init__.yaml` appearing in both `a/b/__init__.py` and `a/__init__.py` is not a binding error. [base.py:4799](https://github.com/datamodel-code-generator/datamodel-code-generator/blob/4f96e22ea403a66faae96f3949d41dd61fc1186f/src/datamodel_code_generator/parser/base.py#L4799), [Existing test:1385](https://github.com/datamodel-code-generator/datamodel-code-generator/blob/4f96e22ea403a66faae96f3949d41dd61fc1186f/tests/parser/test_base.py#L1385)
@@ -476,6 +496,8 @@ The generator computes selected final module/symbol/field identities and actual 
 
 ## 10. Unique attempt / retry / disposal order
 
+> Superseded by [SIMPLIFICATION.md P4](SIMPLIFICATION.md#p4-binding-records-replacements-it-does-not-reverse-engineer): one map per attempt; only the accepted attempt's map is used.
+
 1. After facade preparation, the new entry point establishes remote policy/logical staging under ENTRY §5.2 ownership, creates one `GenerationCaptureSession`, and calls the single `_run_generation`. Model-only generation creates no session. Assign monotonically increasing AttemptIds to parser creations; separate store/ledger/source lease by attempt.
 2. Construct the initial parser before chdir as existing behavior requires. Parse and compatibility retries run in the existing output-CWD context. Preserve current-driver propagation of warnings/caches/base_path/prefetched source/run context.
 3. After successful parse, call `freeze_attempt(parser, results)` before disposal using ordinary final-render results and the live graph. Type failures become diagnostic values in the candidate and do not change model-attempt acceptance.
@@ -490,6 +512,8 @@ The generator computes selected final module/symbol/field identities and actual 
 Existing `_parse_with_disposal` suppresses disposal exceptions differently only for collapse sentinels. [__init__.py:2247](https://github.com/datamodel-code-generator/datamodel-code-generator/blob/4f96e22ea403a66faae96f3949d41dd61fc1186f/src/datamodel_code_generator/__init__.py#L2247) Do not incidentally unify this behavior. New sidecar cleanup releases resources while preserving the primary exception, without masking it. Existing successful-path parser.dispose failures propagate as before. New-owner release failures propagate when no primary exception exists; with a primary exception, release failure does not replace it.
 
 ## 11. Finite failure rules
+
+> Superseded by [SIMPLIFICATION.md P4](SIMPLIFICATION.md#p4-binding-records-replacements-it-does-not-reverse-engineer): an unresolvable type use fails target generation.
 
 BindingDiagnostic is `(code, operation_id, type_use_id, source_locations, details)`. Details contain only immutable scalars/tuples. Do not call `repr()` on uncaptured live objects to construct diagnostics. Fix order to operation → parameter/body/response/header source order → property declaration order → final artifact order. Entry points convert these to new-target public errors.
 
@@ -511,6 +535,8 @@ BindingDiagnostic is `(code, operation_id, type_use_id, source_locations, detail
 Do not automatically fall back from unsupported cases to Any, dict, str, first response, legacy F generation, or another parser. Target contracts govern operations explicitly excluded by users. Do not convert implementation failure for builtin backends/reuse/collapse/multiple modules into a product limitation declaring those settings permanently unsupported.
 
 ## 12. Cost when unused and acceptance
+
+> Superseded by [SIMPLIFICATION.md P6](SIMPLIFICATION.md#p6-speed-is-measured-not-decreed): CodSpeed thresholds; no call-count spies.
 
 ### Structurally excluded work
 

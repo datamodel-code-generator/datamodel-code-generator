@@ -8,6 +8,8 @@
 
 ## 1. Capabilities, responsibilities, and independent acceptance examples
 
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): C33 queues, batches and circuit breakers, the C17 scope preflight and the C24 send budget are removed; C06 idempotency is simplified.
+
 | ID / Area | Applicability | Design contract and owning layer | Required acceptance examples |
 |---|---|---|---|
 | C01 sync/async | Common requirement | Provide both natively. Share semantic decisions, encoding/decoding, and retry decisions; each execution mode owns I/O, waits, close, and cancellation. Do not implement synchronous execution through a hidden background event loop by default | Matching wire bytes/results/exceptions for identical fixtures; nonblocking event-loop behavior; release on cancellation; no implicit async startup from synchronous calls |
@@ -46,6 +48,8 @@
 
 ## 2. Retry as the state machine of one logical request
 
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): send budgets and per-result counters are removed.
+
 The following defaults are dcg design decisions. RFC 9110 conditions automatic replay of non-idempotent requests. Retry-After is a number of seconds or an HTTP date; waiting time and method safety are distinct information. [RFC 9110 §9.2.2/§10.2.3](https://www.rfc-editor.org/rfc/rfc9110.html) (checked 2026-09-17).
 
 1. Resolve the operation and effective request settings once. Own the logical request ID, optional idempotency key, overall deadline, and body-replay policy separately from each attempt's temporary request object.
@@ -62,6 +66,8 @@ The following defaults are dcg design decisions. RFC 9110 conditions automatic r
 HTTPX2 transport-level retries cover connection errors/timeouts, not general HTTP-status retry behavior. [HTTPX2 transports](https://pydantic.dev/docs/httpx2/advanced/transports/) (checked 2026-09-17). This is not a reason to divide retry ownership across two layers.
 
 ## 3. Serialization and validation while preserving existing models
+
+> Superseded by [SIMPLIFICATION.md P1](SIMPLIFICATION.md#p1-models-are-the-runtime-contract): the targets use the backend's own validation only.
 
 Do not embed SDK-specific base classes, Parsable, additional fields, NOT_GIVEN types, credentials, or caches into dcg models. Preserve existing model configuration, custom serializers, aliases, and field order. Client method omissions use a client-owned sentinel to distinguish unpassed arguments from explicit null. Typed models use their backend's supported presence/serialization APIs. Do not infer unavailable presence information from value equality alone.
 

@@ -178,6 +178,8 @@ Use FASTAPI's fixed signature for `install_openapi` OperationKey Literals/empty-
 
 ### 5.1 The closed FastAPIOptions set
 
+> Superseded by [SIMPLIFICATION.md P3](SIMPLIFICATION.md#p3-the-server-is-plain-fastapi): `create_app` forwards its keyword arguments to `FastAPI`.
+
 Adopt `create_app(..., fastapi_options: FastAPIOptions | None = None)`. FastAPIOptions is a total=False TypedDict with only the keys below. None in a listed type is an explicit value, distinct from omission. Omitted keys use generated info defaults and the pinned FastAPI constructor's defaults; when default_response_class is omitted, omit the argument itself. Do not replace the source Default placeholder with an explicit JSONResponse value.
 
 |Key|Permitted type|Basis when omitted|
@@ -267,6 +269,8 @@ Static checking covers new targets/private runtimes/public extensions and typed 
 CODECS' RuntimeModelBindingView.native_type and native_field_types are **reflection entry points for type expressions**, registered in this exception ledger. Because they carry generics/unions/aliases as well as classes, do not narrow them to `type[T]` or disguise heterogeneous fields as one T. Preserve existing `object` / `Mapping[str, object]` and make validated resolution sources and field_id traceable. TypeForm[object] expresses this use at the language level but is outside the selected initial contract. Any future adoption requires positive union/TypeAliasType cases and negative invalid-expression cases on both supported checkers before changing this boundary. Do not merely change annotations or call arbitrary values as type expressions. Existing ModelCodec[T] separately preserves model-value input/output T. [Type forms specification](https://typing.python.org/en/latest/spec/type-forms.html).
 
 ## 9. Acceptance and performance
+
+> Superseded by [SIMPLIFICATION.md P6](SIMPLIFICATION.md#p6-speed-is-measured-not-decreed): for performance acceptance only.
 
 Check the new scope with both mypy strict and Pyright strict. Save exact versions/settings/target files/hashes for each run. Use a dedicated checking environment pinned to mypy 2.3.1 for the adopted type features, and Pyright 1.1.411 as the initial baseline; bundle neither into product runtimes. Type-checker update differences must not justify legacy D golden changes. Positive cases require zero diagnostics; for negative cases, verify expected codes/counts on each affected line, rather than treating a nonzero exit alone as proof that every negative case passed.
 

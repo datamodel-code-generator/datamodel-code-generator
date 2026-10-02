@@ -87,6 +87,8 @@ Register new APIs/scopes as additions in the appropriate baselines. Do not delet
 
 ## 6. Diagnostics and publication
 
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): output locks are removed; staged publication with rollback remains.
+
 Common result categories are fixed: **E** rejects the entire selected target with no public output changes; **S** records an explicitly requested operation exclusion and its reason in manifests/docs; **W** is information that does not change wire, type, or generation contracts. Do not approximate unsupported semantics or emit success-looking stubs. Generated service Protocols declare the business methods users implement; they are not stubs standing in for unsupported generator behavior.
 
 Pass specification strings through one Python literal encoder. Escape identifiers, docstrings, README/HTML, and other output contexts according to their own rules. Never inject raw template values directly into code. Expected values must not reuse the implementation's encoder; provide independent AST/value negative oracles.

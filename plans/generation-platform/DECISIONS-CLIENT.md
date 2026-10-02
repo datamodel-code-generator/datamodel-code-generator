@@ -68,6 +68,8 @@ If an enabled protocol helper requires an excluded operation, raise `E_SELECTOR_
 
 ## 3. Resource, Method, and Parameter Names
 
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): no public-name drift tracking.
+
 By default create exactly one resource from the first tag; use `default` when there are no tags. Do not duplicate an operation because it has multiple tags. `resource_names` maps original tags to namespaces, with an explicit operation resource taking precedence. A namespace is a `.`-separated sequence of ASCII Python identifiers such as `pets` / `admin.users`. Each component matches `[a-z][a-z0-9_]*`; Python keywords and reserved names are prohibited.
 
 Automatic snake conversion is fixed. Normalize the original string to Unicode NFKC, insert underscores at ASCII `([A-Z]+)([A-Z][a-z])` and `([a-z0-9])([A-Z])` boundaries, and lowercase ASCII alphanumerics. Convert each non-ASCII character code point to a token of `u` plus lowercase hexadecimal; treat other symbols and whitespace as separators. Collapse consecutive separators to one underscore and strip them at both ends. Prefix `n_` if the name starts with a digit, and append `_` for a keyword. An empty result is an error. Apply this operation only to Python names, leaving wire names, paths, operationIds, and original tags unchanged.
@@ -156,6 +158,8 @@ If unchanged native construction requires unavailable readOnly-only values, cann
 
 ### 4.5 Validation is a project choice
 
+> Superseded by [SIMPLIFICATION.md P1](SIMPLIFICATION.md#p1-models-are-the-runtime-contract): the backend's own validation only.
+
 Separate serialization, native model behavior, OpenAPI wire-schema validation, and function-argument validation. Serialization is necessary to produce an HTTP request; alias/direction/presence handling and date/Decimal/Enum/media conversion remain shared across policies. Additional validation is selectable. The client defaults are **request none, response native, arguments none**. This revises the earlier plan's unconditional strict client codec path and its rejection of a validate_call option. These are planned defaults, not a claim about already shipped behavior or measured speed.
 
 | Axis / value | Contract |
@@ -173,6 +177,8 @@ Do not offer an unchecked typed response that constructs T with model_construct,
 Explicit RequestCodecs/ResponseCodecs.from_wire/snapshot/decode factories and the encoding of their explicit envelope inputs keep their strict MODEL-CODECS contract regardless of client options. Static envelope response uses also keep that strict contract, even with response='native', because DecodedValue/ModelValue/ModelInput retain validated wire snapshots. The request-none fast path applies to bare native values, not an implicit weakening of an explicitly chosen envelope. Document this per-use exception in generated references; use an explicit raw response to avoid it. A bare native response need not allocate an envelope snapshot that is immediately discarded. Never weaken server input validation through these client-only settings.
 
 ### 4.6 Generation defaults and runtime overrides
+
+> Superseded by [SIMPLIFICATION.md P1](SIMPLIFICATION.md#p1-models-are-the-runtime-contract): no validation overrides.
 
 `ClientValidationConfig` is a keyword-only frozen generation record with exactly the following fields. Defaults are owned here and referenced by RUNTIME rather than duplicated with different values in runtime_defaults.
 
@@ -227,6 +233,8 @@ The example also requires body_arguments='both'. To require wire-schema validati
 
 ### 4.7 Pydantic argument validation
 
+> Superseded by [SIMPLIFICATION.md P1](SIMPLIFICATION.md#p1-models-are-the-runtime-contract): removed.
+
 Generate/cache a private branch-specific validate_call entry for supplied native operation parameters and the selected body or field branch. It checks the final Python argument types, including stdlib dataclass and TypedDict inputs where Pydantic supports the final graph. Keep the selected §4.9 signature style, public overload correlations, and logical keyword-only arguments unchanged. The optional validation helper is private and must not wrap or replace the public def merely to change its apparent inspect signature. Do not decorate the permissive superset and mistake it for enforcing overload exclusivity. Run §4.3 binding/branch checks first; do not pass Client/RequestOptions, runtime providers, streams, or codec envelope internals through an incidental Pydantic model. Prevalidated explicit envelope inputs retain their factory checks while other supplied operation arguments still receive function checking. A final input graph without builtin Pydantic support is a generation error when this alternative is selected; existing V1 codec adapters do not provide that support under §4.6. An arbitrary_types_allowed isinstance check is not a substitute for advertised structural validation. The support check uses finalized builtin/compatibility metadata without executing user code during generation; runtime contract mismatches fail during initialization before I/O.
 
 The generated wrapper uses ConfigDict(strict=pydantic_strict, revalidate_instances='always', extra='allow') for types to which function configuration applies. This checks existing stdlib dataclass instances without mutating their classes. Pydantic BaseModel/Pydantic dataclass/explicitly configured types own their configuration boundaries: preserve those settings and document that they may trust existing instances. Do not add __pydantic_config__, replace classes, or change model bytes to make an option appear stronger. In particular, strict=True alone does not guarantee existing-instance revalidation. A project needing original wire-schema checks chooses request='schema'; it must not infer that guarantee from arguments='pydantic'. TypeAdapter may support internal bound-type preparation, but do not supply a forbidden config override to TypeAdapter for BaseModel/dataclass/TypedDict types or add a second equivalent body validation after validate_call.
@@ -238,6 +246,8 @@ Pydantic validation failures at this optional argument boundary become RequestEn
 The generated distribution adds pydantic>=2.13.5 when the Pydantic argument alternative is included, even if its default is none. Without that alternative, stdlib dataclass/TypedDict/msgspec clients keep their existing Pydantic-free dependency closure. Pydantic backends already require Pydantic. This changes target dependencies only. Bind and cache callable schemas/TypeAdapters once per final type/branch; no per-request annotation reflection, decorator construction, or schema compilation. See the official [validation decorator](https://docs.pydantic.dev/latest/concepts/validation_decorator/), [TypeAdapter](https://docs.pydantic.dev/latest/concepts/type_adapter/), and [revalidate_instances](https://docs.pydantic.dev/latest/api/config/#pydantic.config.ConfigDict.revalidate_instances) contracts.
 
 ### 4.8 Shared conversion and performance boundaries
+
+> Superseded by [SIMPLIFICATION.md P1](SIMPLIFICATION.md#p1-models-are-the-runtime-contract): the backend encode/decode table applies.
 
 Reuse one implementation of naming, direction, native construction, serialization, and media conversion across policies. Factor validation and immutable snapshot construction into explicit steps; do not fork a second wire encoder for the fast mode. The strict public ModelCodec factories call all required steps. Ordinary native client calls invoke only the steps their selected policy needs. Request none must not call a strict factory just to encode a bare T. Response native must not create and then discard ModelValue solely to extract T. Retain snapshots/copies when required for envelopes, explicit factories, presence retention, body ownership/replay, or a native API's behavior; disabling extra validation does not remove those requirements.
 
@@ -288,6 +298,8 @@ Construct Content-Type/framing from explicit media; a conflicting RequestOptions
 
 ## 6. All Response Types, Errors, and Headers
 
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): no per-operation exception classes or codec facades.
+
 For each operation preserve every exact status, hundreds range, default, media, header, and bodyless branch. Dispatch priority is exact → matching range → default. The actual successful-status set follows RuntimeOperationMetadata.success_statuses; a schema alone does not make 4xx/5xx successful. Do not expose 1xx as final responses; HEAD/204/205/304 use RUNTIME's bodyless rules.
 
 Generate `<PascalMethod>Response`, `<PascalMethod>ErrorData`, `<PascalMethod>HTTPError`, and `<PascalMethod>RequestCodecs` in `pkg.types.<resource>`. The first two are type aliases, not classes duplicating existing D schema models. Response is the union of public types for every reachable successful branch (schema InboundType or the media surface finalized under §5), deduplicated in original status/media order; include None for bodyless branches. With no successful branch use NoReturn. ErrorData is the analogous union of failure branches, or None if there are no payload branches. Construct PascalMethod by joining nonempty tokens of the finalized snake name with initial capitals; diagnose collisions among public names defined by the target.
@@ -315,6 +327,8 @@ Typed access to declared response headers is provided by `pkg.types.<resource>.d
 ## 7. Runtime Metadata and Retry Safety
 
 ### 7.1 Operation Metadata and Configuration Ownership
+
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): idempotency metadata is the header name only.
 
 `operations[].runtime` has type RuntimeOperationMetadata and accepts only the input fields below. security is not an input field. Preserve OpenAPI's effective AND/OR/flow from shared facts in generated `RuntimeOperationPlan.security`; runtime configuration must neither make it anonymous nor invent security schemes. Supplying `operations[].runtime.security` raises TypeError in a Python constructor and E_CONFIG_UNKNOWN in TOML.
 
@@ -346,6 +360,8 @@ Reject CR/LF/NUL in effective header names and compare case-insensitively. Confl
 Use PROTOCOLS' schema table unchanged for generation-configuration validation of kind-specific helper records, required operation/schema/binding, and injected Protocol signatures. Do not treat the names above as arbitrary extensions; case differences, wrong locations, unknown fields, and unknown kinds are generation-time E errors. Ordinary-endpoint circuits/compression remain available with zero helpers. Mere metadata presence does not automatically enable runtime features; explicitly supply required runtime objects through public options.
 
 ### 7.2 RuntimeDefaultsConfig and TOML
+
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): no send budgets or compression origins.
 
 Generation-side `RuntimeDefaultsConfig` and nested `RuntimeTimeoutDefaults` / `RuntimeRetryDefaults` / `RuntimeRedirectDefaults` are keyword-only frozen records; every constructor field defaults to UNSET. Define numeric effective defaults once in RUNTIME §2, recording omission distinctly from explicit specification of the same numeric value during generation. The following are all fields that may be saved as generated defaults.
 
@@ -395,6 +411,8 @@ Enabled helpers appear at `client.protocols.<name>`; independent webhook helpers
 
 ## 8. Codec Adapter Registration
 
+> Superseded by [SIMPLIFICATION.md P1](SIMPLIFICATION.md#p1-models-are-the-runtime-contract): removed.
+
 Use the single public schema in MODEL-CODECS §12 for all constructors and applicability precedence of `BuiltinCodecCompatibility`, `ModelExportBinding`, and adapter registrations/capabilities/views. The generator re-exports the same records from `datamodel_code_generator.client` and `.fastapi`; the generated SDK normalizes them into version 1 runtime records in `pkg.model_codecs`. Add no fields to D GenerateConfig and do not infer custom model-code semantics from source strings. Resolve compatibility declarations/export bindings against the same batch actually adopted. Unknown/duplicate/conflicting declarations or false exports produce shared MC_/BND_ diagnostics with zero publication.
 
 The shared `datamodel_code_generator.api_types` owns the three records. `SchemaRef(*, pointer: str, document: str | None=None)` identifies a schema occurrence already recorded in the adopted attempt's SourceLease/document table, selecting external documents only within that scope. Do not fetch/parse/register new sources because of adapter/export declarations. Ungenerated models produce BND_MODEL_SCOPE_REQUIRED; do not infer ambiguous variants from names. Empty schemas in `BuiltinCodecCompatibility(*, name: str, backend: DataModelType, schemas: tuple[SchemaRef,...]=(), contract: Literal['builtin-v1']='builtin-v1', dependencies: tuple[str,...]=(), python_requires: str='>=3.10')` means all adopted models for that backend. `ModelExportBinding(*, schema: SchemaRef, module: str, symbol: str, direction: Literal['neutral','request','response']='neutral')` explicitly identifies only actual exports. All are keyword-only frozen records; artifact digests and field IDs are not user inputs.
@@ -434,6 +452,8 @@ The builtin registry implements wire plans for JSON/+json, text, binary, form-ur
 Callback `binding` uses MODEL-CODECS' data-only `CodecBindingView`; parameter callback `plan` uses `ParameterPlanView`; schema/registry use that document's `SchemaView` / `SchemaPlanView` / `OfflineSchemaRegistry`. Only model callbacks receive `RuntimeModelBindingView` containing native runtime type objects; do not pass those objects to generator hooks/templates. Client CodecContext has surface='client', direction=request or response, operation_id as the root-use RFC6901 pointer (not an arbitrary OAS operationId), and schema_id as SchemaView's stable ID (None only for schema-absent media callbacks). Ordinary schema/style parameters and schema-style response headers use media_type=None; content-style parameters/headers and bodies/parts use the normalized actual selected media. Only startup conformance unbound to an operation permits operation_id=None; model/schema callback schema_id must be str. Do not insert empty strings or provisional application/json. Bound RequestCodecs and ordinary methods construct the same context.
 
 ## 9. Generated Layout, Packaging, Documentation, and Tests
+
+> Superseded by [SIMPLIFICATION.md P5](SIMPLIFICATION.md#p5-the-runtime-is-proportional): runtime copies follow the declared capabilities.
 
 Fix the following roles beneath the Python package root determined by ENTRY. The single table in RUNTIME §1 is authoritative for public import paths and symbol names; this layout maps to those paths. Do not change the Python import surface between standalone and embedded modes. `resources/<namespace>/` and `types/<namespace>/` make every namespace component a package directory, preventing accidental module/file collisions between `a` and `a.b`.
 
@@ -482,6 +502,8 @@ The generated suite alone does not complete product acceptance. Generator-side C
 
 ### 9.1 ClientManifestData v1
 
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): slim manifest.
+
 In ENTRY's target manifest, `target_data` is exactly `{client: ClientManifestData}`. ClientManifestData accepts only the keys below, with no separate version field or duplicated codec/hook/selection records. A ManifestPointer is a plain RFC6901 pointer within the same manifest (no `#`); it must resolve to an existing node of the specified type or produce E_STATE_CORRUPT. Reject inconsistencies in newly constructed manifests before publication as well. Persistent URIs and target identity use manifest-location config.output under ENTRY §4/§4.1 as the base, with target.root_uri='.'. Preserve SourceRef/ManifestPointer/PersistentTypeUseId/model-inventory record shapes; do not reinterpret old references relative to a new model output's parent.
 
 |Required key|Type and content|
@@ -506,6 +528,8 @@ Every record rejects unknown/missing keys, duplicate operations/helpers, invalid
 
 ### 9.2 api-diff.json v1 Lifecycle
 
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): removed.
+
 api-diff.json is the target-owned **record of the last successful public-contract change**. Do not replace it with an empty diff each time the same public contract is regenerated. Place it at the distribution root for standalone mode and in _generated_docs for embedded mode; include it in ENTRY owned-file hashing/rollback/check. Unknown versions/keys, invalid hashes, and consistency violations produce E_STATE_VERSION/E_STATE_CORRUPT; a missing or manually edited api-diff.json is rewritten from the recorded change like other owned files, never by treating the target as an initial generation.
 
 `ClientPublicContract` has exactly `schema_version:1, namespace, public_api, protocol_helpers, runtime_defaults`. namespace is as in §9.1. public_api contains all the same ClientPublicOperation fields in shared order, except operation_ref maps to a resolved root-use pointer string (all operations share the root, so neither absolute URI nor manifest array index is a key). protocol_helpers is an array of `{name, kind, enabled, metadata_sha256, contract_sha256}` in declaration order. metadata_sha256 is SHA256 of referenced protocol metadata's canonical JSON, first expanding typed SourceRefs to ENTRY logical document URIs and pointers so changes to document array indexes are not semantic differences. runtime_defaults is the normalized data-only object. Use the same typed serializer without duplicating secret/opaque values. The public-contract digest is SHA256 of the entire record using sorted keys/UTF-8/compact separators, excluding descriptions, times, absolute checkout paths, run diagnostics, and private aliases.
@@ -527,6 +551,8 @@ When reading existing state, verify the diff file's manifest hash, all record ty
 The body/field interface, signature rendering, and validation choices in §4.1–4.9 are incomplete until users can configure and compare them from CLI help, the dcg user guide/configuration reference, and the generated SDK documentation. Document them in the implementation PRs introducing each choice; S14 verifies the combined result before publication. This planning revision specifies future documentation and tests, not already released flags or passing implementation coverage. Keep §4 and ENTRY authoritative for behavior; the checklist here adds documentation and acceptance requirements without introducing additional modes or flags.
 
 #### 9.3.1 CLI options and configuration reference
+
+> Superseded by [SIMPLIFICATION.md P1](SIMPLIFICATION.md#p1-models-are-the-runtime-contract): no validation options.
 
 Every row below needs a visible `datamodel-codegen --help` entry and a full CLI-reference entry. Defaults in this table apply when neither the CLI nor target configuration supplies the setting; they must not overwrite an explicit TOML value when a flag is omitted. Help must state the choices, default, client-only scope, affected configuration field, and a concise purpose; link the full reference for limitations and examples. `argparse.SUPPRESS` suppresses an omitted Namespace value, not the option's help. Display defaults through help/metadata without constructing client configuration or importing its runtime during help/version/model-only execution. Do not render %(default)s as the argparse.SUPPRESS sentinel; all generated help references must display the documented fallback value.
 
@@ -574,6 +600,8 @@ The implementation tests must execute the documented CLI and Python configuratio
 Keep the two test purposes distinct. User-supplied ClientContractExample snippets and generated regression tests retain §9/CG11's network-free MockTransport harness. Its arguments describe wire parameters/body, not runtime options or binding-error expectations; do not extend that schema for this documentation work. Put configuration/validation/TypeError examples in dedicated executable documentation tests using actual generated APIs. Product acceptance for CG13–CG16 uses real local fixture HTTP servers, independent expected values, existing assert_output/assert_generated_modules_output, and shared assertion helpers; successful core generation/binding/validation/HTTP paths must execute real code. Mocks remain limited to abnormal paths or external services in that acceptance suite. Connect examples to the applicable backend, sync/async, view, signature, validation, and minimum/latest-dependency matrices rather than treating one happy-path sample as full coverage. CG13–CG15's 100% new/changed generator/runtime/assertion-helper line-and-branch requirements still apply; rendered documentation, static probes, or generated example counts alone do not establish them.
 
 ## 10. Template Context and Rendering Specification Strings
+
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): no template taint tracking.
 
 A template bundle is a UTF-8 directory with `client-template.json`. The manifest has exactly `schema_version:1`, `context_version:1`, and `files:[{template, output, role, scope?, format?}]`. Each file uses the same schema as public keyword-only frozen `ClientTemplateFile(template: str, output: str, role: ClientTemplateRole, scope: Literal['project','resource','operation'] | None=None, format: ClientArtifactFormat | None=None)` and rejects unknown keys. template is a relative POSIX path inside the bundle. output is a relative POSIX path from the roots below; reject absolute paths, `..`, symlinks, and collisions. role is one of root-client, resource-sync, resource-async, types, documentation, example, test, extra. format is the closed set python/markdown/json/toml/yaml/html/xml/text. When omitted, use only fixed mappings `.py/.pyi→python`, `.md→markdown`, `.json→json`, `.toml→toml`, `.yaml/.yml→yaml`, `.html/.htm→html`, `.xml→xml`, `.txt→text`; other extensions require explicit format. A format conflicting with a known extension, or treating Python as text, produces E_TEMPLATE_CONTRACT. Templates cannot replace private runtime, schema/binding metadata, ownership manifests, or api-diff.json.
 
@@ -650,6 +678,8 @@ Rendering records each encoder's source token and output position in artifacts. 
 Shared formatter execution, CodeFormatter construction, exceptions, and settings discovery follow ENTRY's target formatting contract. Client Python version is `max(PY_310, effective_model_config.target_python_version)`; provide no independent target_python override and do not change model settings. After every template renders and passes safety checks, use one client-specific CodeFormatter to format each Python/.pyi artifact once in artifact-plan order, then add headers, any required encoding cookie, LF, and exactly one terminal newline. After encoding, repeat the same AST/compile and signature/literal checks. Do not pass existing model artifacts through this formatter. Formatter construction/execution exceptions propagate with their original types, without fallback or partial publication.
 
 ## 11. Generation Hooks and Custom Code
+
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): no generation plan hooks; custom code is unchanged.
 
 `ClientPlanHook` is a Protocol with synchronous `apply(self, plan: ClientProjectPlan, context: ClientHookContext) -> ClientPlanPatch`. Configuration string references identify an **already constructed object** implementing this Protocol at a single attribute name (a Python identifier) in an absolute module. Reject arbitrary-expression eval, automatic class construction, and async hooks. Load each reference once per generation call; if the same object is specified at multiple positions, call apply once at each position. Without configured hooks, import no hook modules. Do not claim to sandbox external side effects of user hooks themselves.
 

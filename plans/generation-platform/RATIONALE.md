@@ -4,6 +4,8 @@ Status: planned; product implementation has not started. This document explains 
 
 ## 1. Model reuse and separate generation targets
 
+> Superseded by [SIMPLIFICATION.md P7](SIMPLIFICATION.md#p7-publish-the-core-first): publication no longer waits for every C01–C33 capability.
+
 The selected order is shared generation infrastructure, FastAPI server generation, then Python OpenAPI client generation. The server supports Pydantic v2 BaseModel and Pydantic v2 dataclass; the client supports all five existing model backends. Each run selects one target and one root OpenAPI document, with normal external-reference resolution. Existing dcg directory and multiple-file model generation remains unchanged.
 
 The new targets belong in dcg and have no dependency on fastapi-code-generator. The legacy tool retains its existing implementation and normal maintenance against current dcg APIs. Migration guidance follows an available replacement. New server output may differ from legacy output while preserving the useful workflows in [FASTAPI-REQUIREMENTS](FASTAPI-REQUIREMENTS.md).
@@ -15,6 +17,8 @@ Legacy fastapi-code-generator already uses dcg model generation. That model engi
 Do not first build a universal compiler, protocol runtime, or public plugin framework. Establish the boundaries used by these two targets and the G10 client consumer before server publication. The client remains part of the agreed scope: initial publication requires all five backends and C01–C33, with API-conditional features enabled only from explicit contracts.
 
 ## 2. Shared and target-specific maintenance
+
+> Superseded by [SIMPLIFICATION.md P1](SIMPLIFICATION.md#p1-models-are-the-runtime-contract): generated packages do not depend on JSON Schema validators or RE2.
 
 Measure cost by **rules changed, combinations checked for impact, and distribution units that receive fixes**, not source lines or template counts. The following allocates implementation responsibilities; it is not an unmeasured effort estimate.
 

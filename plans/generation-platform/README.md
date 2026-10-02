@@ -1,6 +1,6 @@
 # Generation platform plan
 
-Status: **planned; product implementation has not started**. Published 2026-09-19.
+Status: S01–S13 are implemented on main, unreleased and experimental. **[SIMPLIFICATION](SIMPLIFICATION.md) (2026-10-02) overrides any conflicting text in the other documents.** Published 2026-09-19.
 
 Tracking issue: [#4097 — FastAPI server and OpenAPI client generation](https://github.com/datamodel-code-generator/datamodel-code-generator/issues/4097).
 
@@ -16,6 +16,7 @@ The existing fastapi-code-generator keeps its implementation during the transiti
 
 | Document | Purpose |
 | --- | --- |
+| [SIMPLIFICATION](SIMPLIFICATION.md) | The 2026-10-02 simplification; overrides conflicting text in every other document |
 | [PLAN](PLAN.md) | Scope, sequence, compatibility and product choices |
 | [ARCHITECTURE](ARCHITECTURE.md) | Responsibilities, ownership and lifetime |
 | [IMPLEMENTER](IMPLEMENTER.md) | How to implement one bounded portion of the plan |
@@ -39,10 +40,10 @@ The eight detailed contracts are authoritative within their responsibilities:
 | [PROTOCOLS](DECISIONS-PROTOCOLS.md) | Explicit API-specific pagination, streaming and other protocol helpers |
 | [TYPING](DECISIONS-TYPING.md) | Concrete public and internal types and static acceptance cases |
 
-Read the map for every stack, then the complete contracts relevant to that stack and their stated dependencies. Do not ask an implementation agent to infer defaults or substitute a smaller feature set. If implementation reveals a counterexample, update the affected contract and independent acceptance case in the same reviewed change.
+Read the map for every stack, then the complete contracts relevant to that stack and their stated dependencies. Do not ask an implementation agent to infer defaults or to substitute a smaller feature set than SIMPLIFICATION defines. If implementation reveals a counterexample, update the affected contract and independent acceptance case in the same reviewed change.
 
 Implementation baseline: dcg `4f96e22ea403a66faae96f3949d41dd61fc1186f`; legacy fastapi-code-generator `b3b9bd66e0b0c4d8c686fda700258104615a1332`. Recheck the current main and applicable repository instructions when implementation begins. Historical source links retain their original commits.
 
 The public plan contains dcg requirements, design contracts, and acceptance criteria, with links to relevant source, dependency documentation, and standards. Product acceptance requires implementation tests; source inspection alone does not establish compatibility or performance.
 
-All implementation stacks are currently **not started**. The documentation PR is not S01 or product implementation. Update stack status and link PRs as work completes; passing CI on a documentation change is not an implementation result.
+Stacks S01–S13 are implemented on main; [PR-STACKS](PR-STACKS.md) tracks the simplification stacks R0–R8 and the replanned S14. The documentation PR is not product implementation. Update stack status and link PRs as work completes; passing CI on a documentation change is not an implementation result.

@@ -8,6 +8,8 @@ Public and private annotations use the same shapes as the [typing contract](DECI
 
 ## 1. Public surface and model independence
 
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): no transport-adapter layer; runtime copies follow the declared capabilities.
+
 For a generated package named `pkg`, the public entry points are fixed as follows. Generation naming rules diagnose name collisions instead of generating different runtime shapes for users.
 
 ```python
@@ -81,6 +83,8 @@ Untyped upstream trace information is checked at the adapter's object boundary a
 
 ## 2. Option values, defaults, and merging
 
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): `trust_env` defaults to true, there is no default response cap and no compression origin.
+
 All options are frozen; input mappings/lists are copied into immutable values at entry. External provider/client identities are not copied. `UNSET` is one public singleton meaning inheritance; `None` has the explicit meaning defined for each field. Only `options=None` is equivalent to an empty override. Do not accept bool as seconds or counts. Durations are finite nonnegative floats; count/byte limits are finite integers except where explicit `None` is allowed. NaN, Infinity, and negative values raise `ConfigurationError`.
 
 Omitted constructor fields in ClientOptions/RequestOptions and nested TimeoutOptions/RetryOptions/RedirectOptions/ValidationOptions remain UNSET; the table gives effective defaults after merging. A caller explicitly passing the same number as a default still supplies an explicit value. This resolves stream read-default differences, clearing through None, and generated runtime_defaults overrides without inferring provenance from value equality. UNSET itself is never sent in wire JSON or headers.
@@ -153,6 +157,8 @@ HTTPX2 redirect following is disabled; the SDK processes each hop. Even when ena
 
 ## 4. Call state, time, cancellation, and counters
 
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): no cancellation token, guard, budgets or counters.
+
 Private execution state is `LogicalCallContext`, per-send preparation is `AttemptContext`, and whole-protocol state is `OperationSession`. Generated models must not contain this state.
 
 | State | Binding content |
@@ -187,6 +193,8 @@ The guard follows the public `asyncio.timeout` contract, whose `Task.cancelling(
 `CancelToken.cancel()` is thread-safe and idempotent, and readonly `CancelToken.cancelled` records whether it was called. Sync sleep can stop through Event.wait; async waits with a token combine native cancellation with checks at intervals of at most 50ms. Without a token, add no polling allocations/wakeups. Sync KeyboardInterrupt/SystemExit and async CancelledError are neither wrapped in SDKError nor retried. Explicit CancelToken interruption raises `RequestCancelledError`. Once cancellation has been observed, perform cleanup and prioritize cancellation over deadline errors.
 
 ## 5. Retry, 401, and redirect state machine
+
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): delivery state is classified by exception type.
 
 ```text
 RESOLVE → CALL_START → ENCODE_BODY → AUTH_READY → LIMITER_ACQUIRE
@@ -277,6 +285,8 @@ The public BodyAttempt Protocol has readonly properties `content_length:int | No
 Concurrent user modification of a file or a factory returning different payloads violates the caller contract; the SDK does not guarantee exactly-once execution or identical bytes. The runtime performs available length/fingerprint/stat checks, maps detected mismatches to BodyChangedError, and does not succeed by generating a new key.
 
 ## 7. Auth, OAuth, and signature contracts
+
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): inline refresh with a callback; no persistence CAS, interactive flows or scope preflight.
 
 `TokenVersion` is public in pkg.auth with exactly this type. This is the contract shape, not an implementation addition.
 
@@ -392,6 +402,8 @@ Token-endpoint response scopes across all grants use one syntax validator, retai
 
 ### Closed TokenSet and persistence contract
 
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): removed.
+
 `TokenSet(access_token: AccessToken, refresh_token: str | None, revision: int=0)` is frozen and excludes secrets from repr. revision is a nonnegative integer, monotonically increasing with each replacement in the same family. Here usable/READY denotes validity of token material itself, independent of scope containment for a particular operation. Builtins require **one provider owner per token family**; multiple Clients borrow that same provider. Concurrent refresh of one family by separate providers, separate sync/async instances, or multiple processes is outside the builtin load/store callback contract. Distributed ownership requires an explicit injected RefreshableTokenProvider with an external coordinator. CAS below detects persistence conflicts; it does not guarantee distributed exclusion of token-endpoint sends.
 
 AccessToken/TokenSet equality compares canonical fields. Inputs differing only in scope order/duplicates normalize to the same constructor tuple and do not cause load/CAS conflicts at the same revision solely for that reason. None and () are different; changing between them at the same revision follows existing conflict rules. TokenLoad/TokenStore must preserve that distinction round-trip. In callback JSON AccessToken representations, `"scopes": null` means unknown, `"scopes": []` means known empty, and known nonempty uses canonical string arrays. Never omit scopes and restore an empty grant; adapters reading legacy missing fields must explicitly migrate only to None. This differs from the token endpoint's singular `scope` member; token response `scope:null` is not accepted as unknown. Also distinguish outer load result None, meaning no stored record, and expected_revision=None, meaning create-only. reload/replace uses the received TokenSet's own None/tuple, without filling from earlier cache/configured scopes. PERSIST_PENDING/retry_store persists the same resolved None/tuple/revision with no token HTTP.
@@ -467,6 +479,8 @@ Existing SigningInput observations are readonly `method:str, url:str, origin:str
 
 ## 8. Limiters, pools, ownership, and close
 
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): `close()` closes only what the SDK created.
+
 Dedicated Protocols are `Limiter.acquire(context:LimiterContext) -> Permit` and `async def AsyncLimiter.acquire(context:LimiterContext) -> AsyncPermit`. Permit exposes idempotent `def release() -> None`; AsyncPermit exposes idempotent `async def release() -> None`. Frozen/readonly LimiterContext contains only `operation_id:str | None, origin:str, call_id:str, parent_session_id:str | None, remaining_timeout:float | None, cancel_token:CancelToken | None`. remaining_timeout snapshots remaining seconds at entry; existing executors own common deadline/cancellation enforcement. No credentials/headers/bodies. Default is no limiter; do not create a global token bucket. Users or protocol adapters explicitly configure scope/tenant rate limits. Holding a resource permit while awaiting token exchange could deadlock on the same limiter, so the order is fixed:
 
 1. Obtain a token before acquiring a resource permit.
@@ -494,6 +508,8 @@ After successful stream-handle handoff, the caller must release early when appro
 Cleanup failure before normal return raises CleanupError. With a primary exception/cancellation, preserve it; record cleanup failures in SDKError.secondary_errors or, for foreign exceptions, available add_note() and sanitized CALL_END cleanup information. Never overwrite the original failure with cleanup exceptions. GC/__del__ is not a guaranteed normal release path.
 
 ## 9. Responses, status/media, and errors
+
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): about 12–15 exception classes, without counters.
 
 `Response[T_co]` is a frozen value with readonly `data:T_co` and `info:ResponseInfo`; T_co is covariant. It does not change native-model mutability. ResponseInfo contains status_code, ordered duplicate-preserving HeadersView, request_id from a generated-metadata-declared header, call_id, resource_attempt_count, redirect_count, auth_exchange_count, network_send_count, network_send_budget_used, auth_exchange_budget_used, auth_refresh_ids, auth_refresh_pending, wire_send_count, elapsed, and content_type. wire_send_count is an int only when the adapter declares `delivery_evidence=True` and `internal_retry_limit == 0`, as the SDK-owned native adapter does, counting the adapter invocations whose trace reported that request-header writing started; otherwise it is None. Do not mutate original models to add metadata. No native response/socket is included.
 
@@ -657,6 +673,8 @@ Generation configuration maps to `ClientGenerationConfig.runtime_defaults: Runti
 Security is a **derived RuntimeOperationPlan field** containing AND/OR/flow resolved from OpenAPI, not an input in operations[].runtime. Overrides never make required security anonymous. Unknown fields fail during generation. Generated README identifies configuration locations for vendor headers/401 exceptions. DECISIONS-CLIENT is authoritative for detailed configuration schema, naming, and selectors.
 
 ## 13. Required implementation acceptance
+
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): acceptance follows the simplified runtime.
 
 Design choices are binding. The following implementation results have not been measured; see [evidence status](REFERENCES.md#evidence-status).
 

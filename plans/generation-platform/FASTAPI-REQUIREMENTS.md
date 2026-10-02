@@ -20,6 +20,8 @@ Legacy F's [dependency constraint `>=0.61,<0.66`:31](https://github.com/koxudaxi
 
 ## 2. Coverage plan for thirteen capabilities
 
+> Superseded by [SIMPLIFICATION.md P3](SIMPLIFICATION.md#p3-the-server-is-plain-fastapi): native boundaries and FastAPI's own OpenAPI document.
+
 “Shared” means semantic information and binding to finalized models used by server/client inside D. “FastAPI-specific” means framework projection, generated files, extensions, and update rules. Separating them does not establish that safe shared-fact collection or final symbol binding is implemented. Every acceptance case is a future test, not a passing result. Positive model-type cases for F01–F13 cover both server backends separately, distinguishing native conformance from required codec integration. Primitive/container/RootModel cases are type uses within the same two backend selections, not additional backend choices.
 
 | ID / Existing use and evidence | New FastAPI requirements and design improvements | Shared/FastAPI-specific responsibilities | Concrete acceptance conditions |
@@ -41,6 +43,8 @@ Legacy F's [dependency constraint `>=0.61,<0.66`:31](https://github.com/koxudaxi
 “Diagnose unsupported cases” is not a loophole for rejecting unmet capabilities and declaring all thirteen F requirements complete. Map practical existing uses, and claim support only when implementation, tests, and migration paths exist. A narrow technical profile chosen to avoid implementation does not replace successor-feature acceptance. The two server backends are the explicitly selected product scope; implement and verify all thirteen capabilities within it.
 
 ## 3. Regeneration and handwritten code: explicit new rules grounded in legacy behavior
+
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): no partial group updates.
 
 Legacy FCG tag selection has three branches. Its `app.include_router` check is a text search in existing main, not an AST or actual-route-registration inspection. [CLI:350](https://github.com/koxudaxi/fastapi-code-generator/blob/b3b9bd66e0b0c4d8c686fda700258104615a1332/fastapi_code_generator/cli.py#L350).
 

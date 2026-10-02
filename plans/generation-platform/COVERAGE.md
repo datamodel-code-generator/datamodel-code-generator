@@ -22,6 +22,8 @@ The authoritative documents fix choices, defaults, types, metadata, and diagnost
 
 ## 1. Production client coverage
 
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): the removed capabilities (C33 queues, batches and circuit breakers, among others) are out of scope.
+
 | Capability | Contract required in the initial design | Main requirement IDs | Independent oracles/combinations | Additional maintenance owned |
 |---|---|---|---|---|
 | Retry and replay safety | Evaluate operation safety and body replay separately; distinguish logical requests from attempts. Supply the API's idempotency contract through metadata | C05/C06/C13 | X01–04/X15. Observe arrival counts, payloads, and keys at an independent server | Failure classification, body lifecycle, clock/RNG/sleep, and interaction with transport retries |
@@ -45,6 +47,8 @@ The authoritative documents fix choices, defaults, types, metadata, and diagnost
 The table references every requirement from C01–C33. Rows with dedicated acceptance cases, including C23–26/C33, still need implementation fixtures and results. X01–X17 alone do not verify every capability.
 
 ## 2. Explicit OAuth and additional-protocol boundaries
+
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): the device and authorization-code flows and the removed helpers are out of scope.
 
 A single statement of OAuth support is insufficient. Initial requirements include caller-provided tokens/providers and client-credentials acquisition, with explicit refresh contracts for APIs that issue refresh tokens, expiry/skew, scope/audience, concurrent refresh, and resending after 401. Authorization-code/PKCE, device authorization, browser interaction, code verifiers, state, and token storage are separate flow capabilities. Design provider integration even for flows without automation; a generic client must not open a browser or store secrets on its own. A token-acquisition endpoint alone does not implement the entire interactive flow.
 

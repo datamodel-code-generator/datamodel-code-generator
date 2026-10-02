@@ -162,6 +162,8 @@ Compare initial generation → check → regeneration with the same selected for
 
 ## 4. Model generation/reuse and artifact ownership
 
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): the manifest keeps only the format, versions, target, model hash and owned-file hashes.
+
 `generate` mode produces ordinary D results from the user's explicit model_config and publishes them together with the new target artifacts. `verify` mode generates the same ordinary D results in staging and publishes the target only when all bytes/locations match the corresponding existing model files. Do not rewrite model files, model metadata, or model-side manifests in verify mode. Do not adopt/delete additional handwritten files as model-owned files. Every model-module file referenced by a binding must match. If the selected target has an existing inventory, compare it including removed/added models. In verify, differing candidate and actual model bytes/locations produce E_MODEL_MISMATCH (stage=verify, the affected artifact_path, APIGenerationError in the API, exit 2 in the CLI), with no target publication. Do not convert valid candidate differences in generate mode into this error; --check treats them as difference=1 under §4.2.
 
 When the explicitly selected new `api` scope contains only operations without bodies/schemas and the parser result itself is empty, this is a valid empty model-artifact sequence. Both ordinary D generation with the new scope and target generation handle this result under the same conditions. Do not create model-code files or empty packages/placeholders, or arbitrarily delete old model files. Even with zero model symbols, if a Result containing constants actually exists because of an explicit setting such as `openapi_include_info_version=True`, emit that Result in normal order. Do not discard files based only on symbol count. Treat explicit model metadata as an empty inventory in the existing format, retaining ordinary reference/remote-lock processing. The target's model fingerprint is defined for an empty artifact sequence; generated output that uses no model types does not import model_package at runtime. Preserve the `Models not found` exception, ordering, and output state for existing scopes. Verify records that zero model-code files are expected; remaining files do not establish ownership/use rights for the new target.
@@ -187,6 +189,8 @@ For URLs, store a display URI stripped of credentials/secrets and a content dige
 Keep the selected target manifest and model-inventory JSON under VCS, without secrets. No record plus an existing planned owned path produces E_OUTPUT_CONFLICT; broken JSON/inconsistent related records produce E_STATE_CORRUPT; unknown schema versions produce E_STATE_VERSION. If one management file exists while the other has disappeared, produce E_STATE_MISSING. Do not automatically adopt an existing code tree lacking both files into initial ownership; stop on collisions with planned owned paths. Do not restore ownership by reading unselected targets or old registries. Preserve existing user code as create-only; do not implement automatic adoption/overwrite of old F-generated trees. Migration docs direct users to a separate new destination and explicit relocation of business code.
 
 ### 4.1 Persistent JSON v1 shape
+
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): the manifest keeps only the format, versions, target, model hash and owned-file hashes.
 
 All JSON uses UTF-8, sorted keys, compact separators, rejects non-finite numbers, and has exactly one trailing LF. Lists preserve declaration/generation order. Version mismatch produces E_STATE_VERSION; unknown/missing keys or invalid types in a known version produce E_STATE_CORRUPT. Only positions designated in the tables are nullable; use opaque to represent omitted secret configuration values.
 
@@ -250,6 +254,8 @@ Fix the following in G11/F13/CG10: unrelated pyproject dependency/comment edits 
 
 ## 5. Staging and publication contract
 
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): publication takes no OS locks; staging, rollback and the state recheck remain.
+
 Pinned D already has staging that preserves logical output, batch publication of models/metadata/remote locks, and backup/rollback: [generation transaction](https://github.com/datamodel-code-generator/datamodel-code-generator/blob/3452dfbb428c4384f40cb16faf61aadfda58a3a8/src/datamodel_code_generator/__init__.py#L1735), [publication journal](https://github.com/datamodel-code-generator/datamodel-code-generator/blob/3452dfbb428c4384f40cb16faf61aadfda58a3a8/src/datamodel_code_generator/_publication.py#L631). New targets share these ownership principles and low-level checked filesystem operations; do not create a separate unsafe writer for each target.
 
 The new `TargetPublicationBatch` is an internal journal accepting WRITE / DELETE for multiple artifacts, including models, for one selected target. It does not represent a public targets array. Fix commit order to: (1) model code in ordinary emit order, (2) selected-target files in plan order, (3) explicit model metadata, (4) remote-lock artifact, (5) selected-target model inventory, and (6) target manifest last. In verify mode, do not plan model-code/metadata WRITEs. DELETE applies only to files that target previously owned and whose hashes are unchanged. Model-file deletion belongs to the model-side plan; a new target must not arbitrarily delete files that ordinary D would not delete. Rollback follows the exact reverse order of successful journal entries. Never make the manifest point to new state before generated files do.
@@ -265,6 +271,8 @@ Fix processing order as follows.
 7. After all commits, mark the remote lock committed and release backups/staging/descriptors/locks. On failure, preserve the original exception; if rollback is impossible, return PublicationRollbackError with its cause, paths that could not be restored, and backup paths, leaving recoverable backups in place. Do not claim successful restoration.
 
 ### 5.1 Shared-lock implementation
+
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): OS advisory locks are removed.
 
 Use standard-library nonblocking OS advisory locks only for new publication. On POSIX, use `fcntl.flock(fd, LOCK_EX | LOCK_NB)`; on Windows, lock the first byte with `msvcrt.locking(fd, LK_NBLCK, 1)`. For each canonical resource (model output, selected-target root, remote lockfile being updated), put a one-byte lockfile under the resolved resource's parent at `.dcg-api-state/locks/<SHA256 of the UTF-8 NFC-normalized and casefolded basename>.lock`. Do not acquire duplicate keys for the same resource. Do not place these files in the model-artifact tree; create them only under parents that pass symlink/identity checks. Also exclude same-resource concurrency within one process using a nonblocking thread lock for the same key. Acquire all keys in canonical-path order; on failure, release acquired locks in reverse order and return E_OUTPUT_BUSY. Do not wait/retry or infer stale PIDs.
 
@@ -306,6 +314,8 @@ CLI connection-point checks separately cover old traces/imports/config fields/de
 
 ## 6. Generated-runtime distribution and dependencies
 
+> Superseded by [SIMPLIFICATION.md P5](SIMPLIFICATION.md#p5-the-runtime-is-proportional): runtime copies follow the declared capabilities; there are no JSON Schema or RE2 dependencies.
+
 Bundle the generated runtime as private code in each SDK/server package. Own its source, templates, and conformance tests once in the D repository. Running generated output must not require D/F generator packages. Distribute bug/security fixes through D update → regeneration → ordinary release of the consuming SDK/server. Do not implement a separate runtime package for the first release.
 
 Do not change ordinary D dependencies/extras/the all extra. New generation itself uses existing jinja/Pydantic and similar dependencies; generated-SDK HTTP/FastAPI/msgspec libraries must not become D requirements. Install necessary dependencies only in dedicated isolated environments for tests that import generated target runtimes. Do not execute user modules at generation time to inspect models.
@@ -337,6 +347,8 @@ When bundling D models in standalone mode, the user explicitly specifies model_c
 Do not infer PyPI distribution names/versions from module names. Generation guarantees only actual model-source bindings/addresses, the wheel-inclusion plan for bundled files, and consistency of external dependency declarations. A requirement string alone cannot prove that an arbitrary external distribution actually packages those models. Distribution acceptance must include an oracle installing the user's model wheel and generated wheel in an isolated environment without editable installs, then validating imports/codecs/wire behavior. A standalone plan that neither bundles models nor declares an external dependency is a generation-time error. Do not add server/client runtime dependencies to existing model-only usage.
 
 ## 7. Completion criteria
+
+> Superseded by [SIMPLIFICATION.md §4](SIMPLIFICATION.md#4-implementation-stacks): the R8 targeted matrices apply.
 
 This document's APIs, settings, ownership, dependencies, and guarantee boundaries are implementation specifications. Authoritative target/binding/codec/runtime/protocol documents refer to the same contract and must not redefine the same field's default elsewhere. If empirical findings require design changes, explicitly revise the contract and independent oracles; do not hide mismatches by updating existing goldens.
 

@@ -1,5 +1,7 @@
 # Functional PR stacks
 
+> S01–S13 are implemented on main. [SIMPLIFICATION](SIMPLIFICATION.md) (2026-10-02) adds stacks R0–R8 and replans S14.
+
 All implementation stacks are **not started** at publication. The planning-document PR is not an implementation stack. Begin with one assigned stack, initially S01. PR counts represent review boundaries, not effort or delivery predictions.
 
 Register multiple implementation PRs using GitHub native stacks (`gh stack`). Complete implementation, verification, and independent review for a stack; start the next stack from main after its prerequisites have merged. Leave the handoff record below when work stops.
@@ -45,8 +47,10 @@ S04 and S05 must not depend on each other's unmerged code. Cross-layer APIs beyo
 | S10 Retry/authentication/send budgets (4) | 1. Deadline/cancellation/concurrency and LogicalCall → 2. Retry/idempotency/body replay/redirects → 3. Security providers/credential isolation → 4. OAuth grants and concurrent refresh | C03–06/C09/C17–18/C24, RUNTIME, X01–05/X12–15. Separate auth/retry counters must not allow unlimited resends. |
 | S11 Streaming and repeated retrieval (4) | 1. Bounded HTTP streams and upload/download lifetimes → 2. Pagination → 3. Polling/LRO → 4. SSE/NDJSON and reconnection | C13–14/C19–21, PROTOCOLS, X06–08/X12/X15–16. Integrate total budgets, cancellation, and early termination in each PR. |
 | S12 Events and conditional retrieval (3) | 1. WebSockets → 2. Webhook/callback signature verification → 3. Conditional requests/cache | C22–23/C25, PROTOCOLS, X09/X13/X16. Independent signature vectors, authority/credentials, cache ownership/invalidation. |
-| S13 API-conditional operations (4) | 1. Resumable uploads → 2. Batches/chunks → 3. Explicit offline/replay queues → 4. Circuit breakers/compression | C33 and PROTOCOLS. Explicit metadata, send budgets, safety, persistence/resource ownership. Unsupported diagnostics alone do not complete required capabilities. |
-| S14 Client completion/publication (3) | 1. Full generation, metadata/overrides/custom-code integration → 2. Five backends × sync/async, X01–17, typing, actual wheel/sdist → 3. Public Python APIs/CLI, docs/examples/runtime updates | Close C01–33, ENTRY/TYPING, all CG/RT/P/MC. Include performance, dependencies/OS, regeneration, and model-byte identity before publication. CLIENT CG16 is a publication gate: complete the five client-option help/reference entries, Python/TOML-only settings and selection guide, installed executable examples, generated SDK profile documentation, and existing documentation-builder/navigation checks. |
+| S13 API-conditional operations (4) | Implemented: resumable uploads, offline/replay queues, circuit breakers, compression (batches were not merged) | Superseded by [SIMPLIFICATION §2](SIMPLIFICATION.md#2-keep-simplify-remove): queues and circuit breakers are removed in R2, compression is simplified in R2, uploads in R7. |
+| S14 Client completion/publication (3) | Replanned by R8 | See [SIMPLIFICATION §4](SIMPLIFICATION.md#4-implementation-stacks): the core client is published first, with targeted matrices. |
+
+The simplification stacks R0–R8 in [SIMPLIFICATION §4](SIMPLIFICATION.md#4-implementation-stacks) run after S13, in that order. R8 replaces the S14 plan, and every R stack keeps model output unchanged against release 0.83.0.
 
 This allocates 46 dcg PRs across 14 stacks plus one legacy-project PR. It does not require 47 independent repetitions of every review and test. Run affected acceptance checks in each PR, assess cumulative differences at stack completion, and run the full matrix before publication. Never omit required existing CI checks or postpone all communication/type tests to S14.
 

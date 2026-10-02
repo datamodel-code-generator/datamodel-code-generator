@@ -8,6 +8,8 @@ Source references retain dcg SHA `3452dfbb428c4384f40cb16faf61aadfda58a3a8` wher
 
 ## 1. Required backends, dependencies, and Python matrix
 
+> Superseded by [SIMPLIFICATION.md P1](SIMPLIFICATION.md#p1-models-are-the-runtime-contract): no jsonschema, referencing or google-re2 dependencies; the backends are unchanged.
+
 The pinned [`DataModelType`](https://github.com/datamodel-code-generator/datamodel-code-generator/blob/3452dfbb428c4384f40cb16faf61aadfda58a3a8/src/datamodel_code_generator/enums.py#L53) contains **only these five types**. The historical Pydantic v1 backend of the old fastapi-code-generator is not part of this enum. Adding Pydantic v1 as a new builtin is outside the initial scope.
 
 | enum / CLI value | Client / common codec | FastAPI server | Runtime dependencies when shipping the common codec/factories | Official codec construction/read APIs |
@@ -53,6 +55,8 @@ The public location is `pkg.model_codecs`, private implementation is `pkg._runti
 `pkg.model_codecs` exports this document's public WireValue/JSONValue/PresenceTree, ModelValue/ModelInput/DecodedValue, OutboundCodec and its two subclasses, RequestMedia/ResponseMedia, freeze_wire/thaw_wire/presence_of, CodecContext, the adapter V1 protocols / capability records for the applicable surfaces, and common codec errors. Expose generation-time CodecAdapterRegistration / SchemaDirectionalUse and manifest input records through the generator's target configuration API; do not add them to generated model modules. Normalize the generator and generated runtime's capability records to the same version 1 data schema for comparison; do not require matching Python class identity or imports of the generator from the generated runtime. ModelValue/ModelInput are frozen records constructed by the codec; the user-facing value construction contract is the bound factory in §3.
 
 ## 3. Public types and entry points
+
+> Superseded by [SIMPLIFICATION.md P1](SIMPLIFICATION.md#p1-models-are-the-runtime-contract): no envelopes or per-operation codec facades.
 
 The following defines interfaces; this document does not create an implementation.
 
@@ -123,6 +127,8 @@ Each package's private runtime contains one `UNSET/Unset` instance for HTTP omis
 
 ## 4. Static selection of native values and envelopes
 
+> Superseded by [SIMPLIFICATION.md P1](SIMPLIFICATION.md#p1-models-are-the-runtime-contract): no envelopes.
+
 Finalize `projection_mode='native'|'envelope'` for each type use at generation time. The receiving `InboundType` (client responses / server codec-adapter handler arguments) is `T` for native uses and `DecodedValue[T]` for envelope uses. The sending `OutboundType` (client arguments / server codec-adapter or explicit-wrapper handler return values) is fixed as `T | ModelValue[T]` for native uses and `T | DecodedValue[T]` for envelope uses. Typed parameters / non-file parts in the client and server codec adapters use the same directional table; media surfaces such as binary retain separate contracts. A method must not return an undeclared `dict` or envelope in response to arbitrary validation failures.
 
 The native in projection_mode and `NativeOutboundCodec` means **whether the wire value can be represented as T**; it is separate from the choice to delegate processing to FastAPI. Without changing the type/factory contracts above, §11 / the FastAPI decisions own the existing T annotations for server native bodies / primary responses and the handling of bare primary T return values. Native parameters pass handlers the `SurfaceType` determined by the structural rules in that document's §5.1. For example, even if a purely structural primitive `RootModel[int]` remains in the model artifact, the parameter surface may be `int`, without changing the existing model, the binding's T, or the bound factory's T. Do not flatten body/response T using this parameter rule. Even on native routes, use the strict codec's snapshot/presence for explicit envelopes rather than unwrapping `.value` into the framework.
@@ -134,6 +140,8 @@ For example, if the schema includes `id: {type: integer, readOnly: true}` in req
 Do not convert unknown Enum/Literal values, native constraint/validator rejection, default-factory / `__post_init__` exceptions, or invalid schema values to `ModelInput`. An unexpected projection failure on a native use is also an exception; do not automatically add an envelope. Create `ModelInput` only for structural differences enumerated in the binding and recognized in advance.
 
 ## 5. ModelCodec decode / encode order
+
+> Superseded by [SIMPLIFICATION.md P1](SIMPLIFICATION.md#p1-models-are-the-runtime-contract): the backend encode/decode table applies.
 
 The validation order, presence, converter, and scalar/schema rules in this section through §9 are the strict ModelCodec contract. Client request/response schema policies and envelope/factory paths use it; native/none ordinary calls use its shared conversion and presence components with the validation boundaries fixed in CLIENT §4.5–4.8. These options never weaken an explicit factory's result invariant. Ordinary FastAPI-native defaults/coercion/validation/serialization follow the framework path; do not claim that they execute this section's procedure. Do not replace native validators/serializers/regex engines with the common codec implementation. Record supported scope and known differences in the target's static selection and capability information.
 
@@ -157,6 +165,8 @@ Envelope encode uses the snapshot's wire, retaining explicit null, explicitly su
 Client request encode failures are `RequestEncodingError` before sending. Client response JSON syntax failures are `DecodeError(ResponseDecodeError)`; schema/native/Enum/serializer conformance failures are `ResponseValidationError(ResponseDecodeError)`. Neither path retries, tries alternative unions, or falls back to nullable. The runtime decision sets the default retained response-info/body limit to 64 KiB and the total buffered-response limit to 16 MiB. The entry point for inspecting unknown values is `with_raw_response`; do not create an additional ResponseEnvelope API.
 
 ## 6. Backend implementation contracts
+
+> Superseded by [SIMPLIFICATION.md P1](SIMPLIFICATION.md#p1-models-are-the-runtime-contract): the backend encode/decode table applies.
 
 `ConverterStrategy` has six Literal values: `pydantic_type_adapter / dataclass_structural / typeddict_structural / msgspec_convert / msgspec_structural / registered_adapter`. Select the conversion plan for the entire final use through the following table. Recursive leaf/container conversion must not introduce fallbacks inconsistent with this declaration.
 
@@ -218,6 +228,8 @@ First evaluate unknown properties against schema additionalProperties/patternPro
 
 ## 8. readOnly / writeOnly, enums, unions, and roots/containers
 
+> Superseded by [SIMPLIFICATION.md P1](SIMPLIFICATION.md#p1-models-are-the-runtime-contract): decoding follows the model.
+
 Direction control is an explicit policy of the new targets. ModelCodec excludes readOnly from outbound client requests and writeOnly from outbound server responses. It strictly rejects readOnly in inbound server requests and writeOnly in inbound client responses. The corresponding fields are not required in those directions. A field with both readOnly and writeOnly true causes a generation diagnostic. This policy gives concrete behavior to OpenAPI annotations; do not claim that OAS 3.1 annotations alone always mandate rejection. A known inability of native server handling to preserve these directional semantics is a reason to select a codec adapter at generation time.
 
 Build normalized request/response schema views separately from the model graph, applying the same rules to fields/required across `allOf`, references, and nested objects. Retain evaluation information for the applicable branches of conditional annotations and apply direction rules to those branches. A custom dialect whose directional information cannot be planned uniquely requires a custom schema adapter through `MC_SCHEMA_DIALECT`; do not proceed by indiscriminately removing required constraints.
@@ -231,6 +243,8 @@ Encode Enum values using final enum-class member values; decode by constructing 
 Construct list/tuple/set/frozenset/Sequence/Mapping according to final container and item/key types. Preserve wire-array order in list/tuple. Explicit model settings selecting set types produce native projections that lose duplicates/order; retain the original array in the snapshot. Make plain set encoding deterministic by sorting items by the byte order of their JSON representations; snapshots preserve original order. JSON object keys are normally strings. If the final model requires int/Enum or other keys, use a declared reversible key converter. If distinct wire keys collapse to the same native key, raise `ModelProjectionError`. Do not use undeclared `str(key)` conversion.
 
 ## 9. Schemas, constraints, and scalar representations
+
+> Superseded by [SIMPLIFICATION.md P1](SIMPLIFICATION.md#p1-models-are-the-runtime-contract): no schema validation or pattern engine.
 
 ModelCodec uses `jsonschema.Draft202012Validator` and an offline `referencing.Registry` as its common wire oracle. Normalize OpenAPI 3.1/3.2 dialects/resources and 3.0 nullable, exclusive bounds, and supported annotations into a separate 2020-12 schema sidecar. Do not substitute model_json_schema / native serializer output for the raw wire contract. Bundle external `$ref` resources fetched and digest-pinned at generation time; runtime validation must not initiate network retrieval. Unknown custom dialects / required vocabularies cause generation errors unless a plugin is available. Pass local dict/list trees to the validator; do not expect it to recognize immutable snapshot tuples/mappings as JSON Schema arrays/objects. Finite Decimal number/integer/multipleOf checks and the pattern checks below are shared TypeChecker/keyword extensions; bool is not a number.
 
@@ -255,6 +269,8 @@ Preserve source formats for date/time/date-time. date-time requires an RFC3339 t
 Include Pydantic SecretStr emitted by the pinned D for password, or explicitly selected SecretBytes, in dedicated leaf converters. For permitted outbound fields, use official `get_secret_value()` to obtain the wire value; do not send the masked display `**********` as a password. Apply writeOnly/Field exclusions first, and never use extracted values in logs/repr/diagnostics. Record representations equivalent to `round_trip=True` required by explicit native wrapper types such as Json[T] in type bindings. Do not confuse native display serialization with API wire representation by indiscriminately using model_dump_json. The basis is the public accessor/round-trip APIs in [Pydantic Types](https://docs.pydantic.dev/latest/api/types/).
 
 ## 10. Parameter / form / media boundaries
+
+> Superseded by [SIMPLIFICATION.md §2](SIMPLIFICATION.md#2-keep-simplify-remove): empty containers are omitted; the rest of this section stays.
 
 Fix the common wire-parameter entry points as `encode_parameters(ParameterPlan, values, context)` / `decode_parameters(ParameterPlan, RawParameters, context) -> WireValues`. Preserve the input's OAS 3.0/3.1/3.2 version; do not silently apply 3.2-only syntax to older versions. `RawParameters` is a multimap retaining raw path fragments, the whole query's raw bytes, and query/header/cookie order and duplicates. Do not treat queries already converted to dict by a native framework as authoritative. After parameter schema/default/required processing, pass each typed value to this document's model codec.
 
@@ -297,6 +313,8 @@ For schema-less URLencoded ordered FormData, multipart responses with files or w
 
 ## 11. FastAPI integration
 
+> Superseded by [SIMPLIFICATION.md P3](SIMPLIFICATION.md#p3-the-server-is-plain-fastapi): FastAPI handles the models natively.
+
 The only server builtin backends are Pydantic v2 BaseModel / Pydantic v2 dataclass from §1. Within them, choose FastAPI native handling or a codec adapter at generation time for each parameter / body / primary response. Native bodies / primary responses pass final T to public FastAPI annotations / `response_model`; native parameters pass §4's `SurfaceType`, using framework parsing/coercion/validation/filtering/serialization. Codec adapters use `Request` / `Response` and the common codec, passing `ModelValue.value` to handlers for request codec-native uses and `DecodedValue[T]` for envelope uses. The [FastAPI decisions](DECISIONS-FASTAPI.md) own how both paths connect to one FastAPI route, and the finite selection conditions and reasons. Even for Pydantic v2, known differences in shape/required/nullable/alias/directional/projection assertions or input validation mode, and styles/media unsupported natively, require adapters. Do not add new guards, BeforeValidator, Body markers, or schema-location searches to force native handling.
 
 A typical Pydantic v2 model in which D's standard output turns a source optional nonnullable property into `Optional[T] = None` uses adapters for both requests and primary responses because of the known nullability difference. Do not change model options implicitly; document this limitation in capability information. A required nullable whole body, or an optional whole-body use that must distinguish absence from null, also uses an adapter. Native integration points such as required-only models, nullable optional models with matching semantics, and scalar parameters can be selected independently within the two supported backends. Native exclude_unset cannot compensate for Pydantic dataclasses' lack of presence or required fallback-None omission; connect these to static selection or the codec contract for explicit envelopes. Opaque/custom field types use the existing explicit adapter contract; this does not extend server support to stdlib dataclass / TypedDict / msgspec backends. Retain those three backends' converters for the client / common codec.
@@ -308,6 +326,8 @@ Invalid requests on codec adapters become the server's `RequestValidationError` 
 Retain the common 2020-12 registry's stable schema_id and request/response views as records preserving source-schema and directional semantics. FastAPI integration owns native FastAPI schema connections and codec-adapter projection of components.schemas names/refs and documentation metadata. Do not relax known source nonnullable constraints to nullable to make native handling fit; explicitly record the adopted framework coercion/presence/validation profile in capability information. Serve input 3.2 as 3.2.1 and input 3.0/3.1 as 3.1.0; do not misrepresent querystring/style:cookie as 3.1 features. Separate standard documentation UI display capability from specification expressiveness; do not cut recursive schemas through inline expansion. The FastAPI decisions own multipart/file, auth, custom routes, and Request passthrough details.
 
 ## 12. Adapter contracts for custom models / bases / templates / scalars
+
+> Superseded by [SIMPLIFICATION.md P1](SIMPLIFICATION.md#p1-models-are-the-runtime-contract): no adapter plugin system.
 
 ### 12.1 Generator settings and explicit compatibility/exports
 
