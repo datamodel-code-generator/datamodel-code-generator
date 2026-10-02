@@ -414,6 +414,28 @@ class BuiltinModelCodec(ABC, Generic[T]):
         except RecursionError:
             raise self._nesting() from None
 
+    def prepare(
+        self, value: object, context: CodecContext, *, validate: bool = False, strict: bool = False
+    ) -> WireValue:
+        """Construct and encode a helper's item through its captured native binding."""
+        node = self._binding.type
+        construct = (
+            self._binding.backend.startswith("pydantic_v2.")
+            and isinstance(node, ModelNode)
+            and not isinstance(value, self._types[node.symbol])
+            and not _captured(value)
+        )
+        native = self._validated(value) if validate or construct else value
+        return self.encode(native, context) if strict else self.serialize(native, context)
+
+    def validate_prepared(self, wire: WireValue, context: CodecContext, *, strict: bool = False) -> None:
+        """Check an assembled helper request without serializing its original items again."""
+        self._require(context, inbound=False)
+        if strict:
+            self._outbound(wire, MatchBudget(), context)
+        else:
+            self._converted(wire, MatchBudget())
+
     def _object(self) -> ModelBinding:
         """Return the model of an object use: alone, with null, or as the root of a root model."""
         node = self._binding.type
