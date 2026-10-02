@@ -1019,7 +1019,8 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
         try:
             return self._message(frame)
         except StreamDecodeError as error:
-            raise self._failed(error) from None
+            del frame
+            raise self._failed(error.with_traceback(None)) from None
 
     def _frame(self, deadline: Deadline | None) -> WSFrame:
         """Wait for a frame until the deadline, checking the call first and, with a cancel token, at its interval.
@@ -1212,7 +1213,8 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
         try:
             return self._message(frame)
         except StreamDecodeError as error:
-            raise await self._failed(error) from None
+            del frame
+            raise await self._failed(error.with_traceback(None)) from None
 
     async def ping(self, payload: bytes = b"") -> PingReceipt:
         """Send a ping, beside any send, and wait at most the pong timeout for its pong."""

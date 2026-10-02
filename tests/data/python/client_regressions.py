@@ -4,14 +4,18 @@ from __future__ import annotations
 
 import importlib
 import json
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from datamodel_code_generator import _runtime
 from tests.data.python.client_generation import SOURCE
 from tests.data.python.client_runtime import Exchange, arecord, json_response, raw_response, record, run
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
     from types import ModuleType
+
+_RUNTIME_SOURCE = str(Path(_runtime.__file__).parent)
 
 
 def no_success(package: ModuleType, lines: list[str]) -> None:
@@ -72,8 +76,27 @@ def _failure(error: Any) -> str:
     return (
         f"{type(error).__name__} {type(cause).__name__} {codes} "
         f"context={cause.__context__!r} cause={cause.__cause__!r} traceback={cause.__traceback__ is not None} "
-        f"prefix={len(prefix)} truncated={error.truncated}"
+        f"prefix={len(prefix)} truncated={error.truncated} retained={retained_body(error, len(prefix))}"
     )
+
+
+def json_error_body(name: str) -> bytes:
+    """Return one malformed JSON body from the external regression cases."""
+    return next(body for label, body in _bodies() if label == name)
+
+
+def retained_body(error: BaseException, limit: int) -> bool:
+    """Report whether an SDK traceback owns a payload larger than the publicly retained bytes."""
+    trace = error.__traceback__
+    while trace is not None:
+        frame = trace.tb_frame
+        if frame.f_code.co_filename.startswith(_RUNTIME_SOURCE):
+            for value in frame.f_locals.values():
+                payload = value if isinstance(value, bytes) else getattr(value, "body", getattr(value, "data", None))
+                if isinstance(payload, bytes) and len(payload) > limit:
+                    return True
+        trace = trace.tb_next
+    return False
 
 
 def _stream(api: Any, body: bytes) -> tuple[Any, bytes, str]:
