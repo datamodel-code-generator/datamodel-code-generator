@@ -388,7 +388,12 @@ def _restored(
         saved = decode_json(entry.payload)
     except CodecError:
         raise _MalformedError from None
-    _require(isinstance(saved, Mapping) and frozenset(saved) == _PAYLOAD and saved["version"] == _VERSION)
+    _require(
+        isinstance(saved, Mapping)
+        and frozenset(saved) == _PAYLOAD
+        and type(saved["version"]) is int
+        and saved["version"] == _VERSION
+    )
     fields = cast("Mapping[str, WireValue]", saved)
     _require(fields["key"] == entry.idempotency_key and fields["created_at"] == entry.created_at.isoformat())
     _require(isinstance(fields["request"], Mapping))
