@@ -806,7 +806,7 @@ def _resume_method(
     ))
 
 
-def _handle(spec: PollingSpec, prefix: str) -> str:
+def _handle(spec: PollingSpec | UploadSpec, prefix: str) -> str:
     """Return the name of a polling helper's own handle class, after its dotted name's PascalCase parts."""
     return f"{prefix}{''.join(map(pascal, spec.helper.name.split('.')))}Handle"
 
@@ -2763,7 +2763,8 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         handles = {
             name: _handle(spec, prefix)
             for name, spec in leaves.items()
-            if isinstance(spec, PollingSpec) and spec.cancel is not None
+            if (isinstance(spec, PollingSpec) and spec.cancel is not None)
+            or (isinstance(spec, UploadSpec) and spec.abort is not None)
         }
         names = {
             root,
@@ -2844,11 +2845,14 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                 return [node]
             return [node, self.handle(module, index, spec, handle, asynchronous=asynchronous)]
         if isinstance(spec, UploadSpec):
-            return [
-                self.node(
-                    name, what, core, self.upload_methods(module, index, spec, asynchronous=asynchronous), leaf=True
-                )
-            ]
+            node = self.node(
+                name, what, core, self.upload_methods(module, index, spec, handle, asynchronous=asynchronous), leaf=True
+            )
+            return (
+                [node]
+                if handle is None
+                else [node, self.upload_handle(module, index, spec, handle, asynchronous=asynchronous)]
+            )
         if not isinstance(spec, CacheSpec):
             return [
                 self.node(name, what, core, self.methods(module, index, spec, asynchronous=asynchronous), leaf=True)
@@ -3095,32 +3099,42 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         """Return the type of an upload helper's result: the completion operation's response, or None."""
         return "None" if spec.completion is None else _Helpers.response(module, spec.completion)
 
-    def upload(self, module: Module, index: int, spec: UploadSpec) -> str:
+    def upload(self, module: Module, index: int, spec: UploadSpec) -> str:  # noqa: PLR0914
         """Return an upload helper's plan: its operations, selectors, targets, bindings, chunk limit, and completion.
 
         Each optional entry appears only when the helper declares it.
         """
         helper, operations = spec.helper, module.root("_operations")
         tree, name = helper.tree, helper.name
-        create, probe, append = tree["create"], tree["probe"], tree["append"]
+        parts = tree["profile"] == "parts"
+        create, probe, append = (
+            tree["create"],
+            tree["list_parts" if parts else "probe"],
+            tree["upload_part" if parts else "append"],
+        )
         entries: list[tuple[str, Doc]] = [
             ("helper_id=", repr(name)),
             ("operation=", self.reference(module, spec.operation)),
             ("create=", f"{operations}.OPERATION_{spec.operation.index}"),
             ("probe_operation=", self.reference(module, spec.probe)),
             ("probe=", f"{operations}.OPERATION_{spec.probe.index}"),
-            ("remote_offset=", self.selector(module, probe["remote_offset"])),
+            ("remote_offset=", self.selector(module, probe["items" if parts else "remote_offset"])),
             ("append_operation=", self.reference(module, spec.append)),
             ("append=", f"{operations}.OPERATION_{spec.append.index}"),
-            ("offset=", self.target(module, append["offset"])),
-            ("max_chunk_bytes=", repr(tree["max_chunk_bytes"])),
-            ("partial_commit=", repr(tree["partial_commit"] == "allowed")),
+            ("offset=", self.target(module, append["index" if parts else "offset"])),
+            (
+                "max_chunk_bytes=",
+                repr(tree["limits"].get("max_part_bytes", 2**63 - 1) if parts else tree["max_chunk_bytes"]),
+            ),
+            ("partial_commit=", repr(not parts and tree["partial_commit"] == "allowed")),
             ("fingerprint=", repr(self.fingerprints[name])),
         ]
         if (size := create.get("size")) is not None:
             entries.append(("size=", self.target(module, size)))
         if (expires_at := create.get("expires_at")) is not None:
             entries.append(("expires_at=", self.selector(module, expires_at)))
+        if (session_url := create.get("session_url")) is not None:
+            entries.append(("session_url=", self.selector(module, session_url)))
         entries.extend(
             (key, _tuple([self.binding(module, item) for item in bindings]))
             for key, bindings in (("probe_bindings=", probe["bindings"]), ("append_bindings=", append["bindings"]))
@@ -3134,16 +3148,67 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                 ("completion=", f"{operations}.OPERATION_{completion.index}"),
                 *(
                     ("completion_bindings=", _tuple([self.binding(module, item) for item in bindings]))
-                    for bindings in (tree["completion"]["bindings"],)
+                    for bindings in (tree["complete" if parts else "completion"]["bindings"],)
                     if bindings
                 ),
+            ))
+        sections: list[str] = []
+        if parts:
+            complete, limits = tree["complete"], tree["limits"]
+            part_entries: list[tuple[str, Doc]] = [
+                *(
+                    (f"{field}=", self.selector(module, probe[field]))
+                    for field in ("items", "index", "receipt", "digest")
+                    if field in probe
+                ),
+                ("parts=", self.target(module, complete["parts"])),
+                ("index_field=", repr(complete["index_field"])),
+                ("receipt_field=", repr(complete["receipt_field"])),
+                *((f"{field}=", repr(value)) for field, value in limits.items() if field != "max_part_bytes"),
+            ]
+            if (digest := append.get("digest")) is not None:
+                part_entries.extend((
+                    ("digest_target=", self.target(module, digest["target"])),
+                    ("digest_encoding=", repr(digest["encoding"])),
+                ))
+            entries.append(("parts=", _call(module.local(_UPLOADS, "UploadPartsPlan"), part_entries)))
+        if (abort := spec.abort) is not None:
+            plan = module.local(_UPLOADS, "UploadAbortPlan")
+            abort_entries = [
+                ("operation=", self.reference(module, abort)),
+                ("call=", f"{operations}.OPERATION_{abort.index}"),
+                ("bindings=", _tuple([self.binding(module, item) for item in tree["abort"]["bindings"]])),
+            ]
+            head = f"ABORT_{index}: {module.name('typing', 'Final')}[{plan}[{self.response(module, abort)}]] = "
+            sections.append(head + layout(_call(plan, abort_entries), 0, len(head), WIDTH))
+            entries.append(("abort=", f"ABORT_{index}"))
+        if (probe_spec := spec.completion_probe) is not None:
+            probe_tree = tree["completion_probe"]
+            completion = spec.completion
+            assert completion is not None
+            response = next(item for item in completion.responses if item.success)
+            probe_entries = [
+                ("call=", f"{operations}.OPERATION_{probe_spec.index}"),
+                ("state=", self.selector(module, probe_tree["state"])),
+                ("completed_values=", _tuple(repr(_wire(value)) for value in probe_tree["completed_values"])),
+                ("result=", self.selector(module, probe_tree["result"])),
+                ("result_status=", repr(200 if response.status == "2XX" else int(response.status))),
+                ("result_media=", repr(response.media[0].media_type)),
+                ("bindings=", _tuple([self.binding(module, item) for item in probe_tree["bindings"]])),
+            ]
+            entries.append((
+                "completion_probe=",
+                _call(module.local(_UPLOADS, "UploadCompletionProbePlan"), probe_entries),
             ))
         plan = module.local(_UPLOADS, "UploadPlan")
         result = self.upload_result(module, spec)
         head = f"PLAN_{index}: {module.name('typing', 'Final')}[{plan}[{result}, {self.page(module, spec)}]] = "
-        return head + layout(_call(plan, entries), 0, len(head), WIDTH)
+        sections.append(head + layout(_call(plan, entries), 0, len(head), WIDTH))
+        return "\n\n\n".join(sections)
 
-    def upload_methods(self, module: Module, index: int, spec: UploadSpec, *, asynchronous: bool) -> list[str]:  # noqa: PLR0914
+    def upload_methods(  # noqa: PLR0914
+        self, module: Module, index: int, spec: UploadSpec, concrete: str | None, *, asynchronous: bool
+    ) -> list[str]:
         """Return an upload helper's start and resume methods, which return the handle that appends its chunks."""
         operation = replace(spec.operation, fields=())
         resources = self.resources
@@ -3156,11 +3221,13 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             for name, source, kind in _UPLOAD_OPTIONS
         ]
         prefix = "Async" if asynchronous else ""
-        handle = f"{module.local(_UPLOADS, f'{prefix}UploadHandle')}[{self.upload_result(module, spec)}]"
+        handle = concrete or f"{module.local(_UPLOADS, f'{prefix}UploadHandle')}[{self.upload_result(module, spec)}]"
         source = f"source: {module.namespace.name('.', f'{prefix}UploadSource')}"
         state = f"state: {module.local('_runtime.protocols.resume', 'ResumeState')}"
         plan = ("", f"{module.namespace.name('.', '_plans')}.PLAN_{index}")
         forwarded = [(f"{name}=", name) for name, _, _ in _UPLOAD_OPTIONS]
+        if concrete is not None:
+            forwarded.append(("handle=", concrete))
         start = module.local(_UPLOADS, "astart_upload" if asynchronous else "start_upload")
         resume = module.local(_UPLOADS, "aresume_upload" if asynchronous else "resume_upload")
         route = f"{operation.contract.method.upper()} {operation.contract.path}"
@@ -3193,6 +3260,23 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                 f"        return {wait}{layout(_call(resume, resumed), 8, 7 + len(wait), WIDTH)}",
             )),
         ]
+
+    def upload_handle(self, module: Module, index: int, spec: UploadSpec, name: str, *, asynchronous: bool) -> str:
+        """Return a concrete upload handle exposing only its declared remote abort."""
+        abort = spec.abort
+        assert abort is not None
+        base_name = "PartsUploadHandle" if spec.helper.tree["profile"] == "parts" else "UploadHandle"
+        base = module.local(_UPLOADS, ("Async" if asynchronous else "") + base_name)
+        result, receipt = self.upload_result(module, spec), self.response(module, abort)
+        prefix, wait = ("async ", "await ") if asynchronous else ("", "")
+        return (
+            f"class {name}({base}[{result}]):\n"
+            f'    """The {spec.helper.name} upload handle with remote abort."""\n\n'
+            "    __slots__ = ()\n\n"
+            f"    {prefix}def abort_remote(self) -> {receipt}:\n"
+            '        """Ask the server to abort and retain the aborted checkpoint."""\n'
+            f"        return {wait}self._abort_remote({module.namespace.name('.', '_plans')}.ABORT_{index})"
+        )
 
     @staticmethod
     def event_type(module: Module, spec: StreamSpec) -> str:
@@ -3541,9 +3625,10 @@ the runtime reference for their limits and checkpoints."""
         )
         uploads = (
             """
-An upload helper's `start` reads its source once and creates the upload; the handle's `advance` appends one chunk and
-`run` appends the rest and completes it, and `resume` continues a handle's `checkpoint()` from the offset the server
-holds. `close()` or `aclose()` stops only local uploading. See the runtime reference for their limits."""
+An upload helper's `start` reads its source once and creates the upload; the handle's `advance` sends one offset
+chunk or one parts wave, and `run` sends the rest and completes it. `resume` continues its `checkpoint()` after
+checking the server's confirmed offset or part receipts. A declared abort adds the typed `abort_remote()` method;
+`close()` or `aclose()` stops local uploading. See the runtime reference for their limits."""
             if "resumable_upload" in kinds
             else ""
         )
@@ -3831,7 +3916,8 @@ and idempotency key; the session bounds all of them. Each limit comes from the c
 | Limit | Effective default |
 |---|---|
 | chunk size | 8 MiB, or the helper's smaller `max_chunk_bytes` |
-| chunks per upload | 10000; None removes it |
+| chunks per upload | 10000; None removes the caller cap; parts also obey the API cap |
+| part parallelism | min(4, source.max_parallel_ranges); offset uses 1 |
 | probes after an append of unknown outcome | 3; 0 probes none |
 | session total timeout | 600 seconds from `start` or `resume`, the reading of the source included; None removes it |
 | network sends per session | 10000; None removes it |
@@ -3850,6 +3936,20 @@ resent blindly: the server's offset is probed instead, and an unchanged offset s
 confirms it, and an offset inside it confirms its bytes only when partial commits are allowed. An offset that regresses,
 passes the content, or commits part of a chunk that may not be raises `UploadOffsetError`, and probes that never answer
 raise `UploadDeliveryUnknownError`; so does a completion whose outcome is unknown, which is never sent again.
+A 2xx whose body fails decoding and cancellation after transmission also make completion unknown.
+
+The parts profile sends one wave per `advance`, using a private bounded thread pool for sync or native asyncio tasks.
+Each part has an independently checked buffer no larger than the chunk size. A failure stops scheduling and cancels
+in-flight work; `list_parts` reconciles unknown indices before another send. Its digests must match the original at
+each index, and confirmed receipts appear in `UploadProgress.confirmed_parts` as ordered `PartReceipt` values.
+Complete sends one ordered receipt array. Only a declared `completion_probe` lets resume query a confirmed result
+after unknown completion. Layouts below the server minimum, prohibited small last parts, or too many parts fail
+before create. The checkpoint fixes the chunk size.
+
+A helper declaring `abort` returns a concrete handle exposing `abort_remote`, with the abort operation's response
+type. Completed or closed uploads refuse it; an aborted checkpoint cannot resume. Local close never aborts remotely.
+A declared `create.session_url` follows the shared pagination URL policy, including origin restrictions, userinfo and
+fragment refusal, and credential stripping for other permitted origins. The saved URL is checked again on resume.
 
 `checkpoint()` saves the confirmed offset, the chunk layout and digests, and the values later calls write, sending
 nothing. `resume` checks it, then the source, then probes the server's offset once; it never creates the upload again.

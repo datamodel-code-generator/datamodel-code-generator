@@ -392,7 +392,7 @@ class _TargetData:
         """
         operation, helper = spec.operation, spec.helper
         body = operation.body
-        uses = (*spec.create_uses, *(() if spec.completion_use is None else (spec.completion_use,)))
+        uses = (*spec.create_uses, *spec.child_uses, *(() if spec.completion_use is None else (spec.completion_use,)))
         signature = {
             "name": helper.name,
             "parameters": [(item.python_name, item.required, self.type(item.use)) for item in operation.parameters],
@@ -405,7 +405,12 @@ class _TargetData:
             "settings": settings,
         }
         documents = self.request.documents
-        operations = (operation, spec.probe, spec.append, *(() if spec.completion is None else (spec.completion,)))
+        operations = (
+            operation,
+            spec.probe,
+            spec.append,
+            *(item for item in (spec.completion, spec.abort, spec.completion_probe) if item is not None),
+        )
         return _digest({
             "kind": helper.kind,
             "signatures": [signature],

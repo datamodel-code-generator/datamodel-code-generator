@@ -2,7 +2,7 @@
 
 An upload helper of the offset profile creates an upload, probes the server's offset, appends chunks as binary bodies,
 and completes by length or with an operation. Each selector is checked against the responses it reads, and each target
-against the operation it writes to; the parts profile, remote abort, and session URLs are not supported yet.
+against the operation it writes to. Parts use indexed receipts and explicit layout limits.
 """
 
 from __future__ import annotations
@@ -12,6 +12,9 @@ from typing import TYPE_CHECKING, Any, Final
 
 from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._client.pagination import (
+    _child,
+    _fits,
+    _json_type,
     _label,
     _overlaps,
     _page_use,
@@ -56,6 +59,9 @@ class UploadSpec:
     completion: OperationSpec | None = None
     completion_use: TypeUseBinding | None = None
     schemas: tuple[Mapping[str, str], ...] = ()
+    abort: OperationSpec | None = None
+    completion_probe: OperationSpec | None = None
+    child_uses: tuple[TypeUseBinding, ...] = ()
 
 
 class _Checks(_Polls):
@@ -82,11 +88,15 @@ class _Uploads:
         self.checks = checks
         self.pages = checks.pages
 
-    def helper(self, helper: Helper) -> tuple[UploadSpec | None, list[Diagnostic]]:
+    def helper(self, helper: Helper) -> tuple[UploadSpec | None, list[Diagnostic]]:  # noqa: PLR0914
         """Check one enabled helper against its operations, and plan it when every check passes."""
         tree = helper.tree
-        create, probe, append = (self.checks.spec(tree[name]["operation"]) for name in ("create", "probe", "append"))
-        problems = list(self.unsupported(helper, create))
+        parts = tree["profile"] == "parts"
+        probe_name, append_name = ("list_parts", "upload_part") if parts else ("probe", "append")
+        create, probe, append = (
+            self.checks.spec(tree[name]["operation"]) for name in ("create", probe_name, append_name)
+        )
+        problems: list[Diagnostic] = []
         created = self.created(helper, create, problems)
         sources = {"initial": created, "previous": []}
         size = self.size(helper, create, problems)
@@ -94,6 +104,46 @@ class _Uploads:
         problems.extend(self.probe(helper, probe, sources))
         problems.extend(self.append(helper, append, sources))
         completion = self.completion(helper, sources, problems)
+        abort = self.child(helper, "abort", sources, problems)
+        completion_probe = self.child(helper, "completion_probe", sources, problems)
+        if completion_probe is not None:
+            offered = self.created(helper, completion_probe, problems, "completion_probe")
+            read = tree["completion_probe"]["state"]
+            if isinstance(
+                found := self.checks.read(
+                    helper, offered, read, f"{helper.at}.completion_probe.state", "completion state"
+                ),
+                Diagnostic,
+            ):
+                problems.append(found)
+            else:
+                for index, value in enumerate(tree["completion_probe"]["completed_values"]):
+                    if not _fits(kind := _json_type(value), found):
+                        problems.append(
+                            _problem(
+                                "E_CONFIG_VALUE",
+                                "config",
+                                f"{helper.at}.completion_probe.completed_values[{index}]",
+                                f"The completion state {value!r} is {kind}, which its state never reads",
+                                completion_probe,
+                            )
+                        )
+            problems.extend(
+                found
+                for response in offered
+                if response.binding is not None
+                and isinstance(
+                    found := self.checks.reached(
+                        helper,
+                        response,
+                        tree["completion_probe"]["result"],
+                        tree["complete"]["result_schema"],
+                        f"{helper.at}.completion_probe.result",
+                        "completion result",
+                    ),
+                    Diagnostic,
+                )
+            )
         if problems:
             return None, problems
         completed, use, schema = completion or (None, None, None)
@@ -106,31 +156,46 @@ class _Uploads:
                 media.use for response in create.responses if response.success for media in response.media if media.use
             ),
             size=size,
+            child_uses=tuple(
+                media.use
+                for child in (
+                    *((probe, append) if parts else ()),
+                    *(item for item in (abort, completion_probe) if item is not None),
+                )
+                for response in child.responses
+                if response.success
+                for media in response.media
+                if media.use
+            ),
+            abort=abort,
+            completion_probe=completion_probe,
             completion=completed,
             completion_use=use,
             schemas=() if schema is None else (schema,),
         ), problems
 
-    @staticmethod
-    def unsupported(helper: Helper, create: OperationSpec) -> Iterator[Diagnostic]:
-        """Refuse remote abort and a session URL, which later upload helpers add."""
-        tree = helper.tree
-        for where, present, what in (
-            (f"{helper.at}.abort", "abort" in tree, "remote abort"),
-            (f"{helper.at}.create.session_url", "session_url" in tree["create"], "a session URL"),
-        ):
-            if present:
-                message = f"The resumable_upload helper {helper.name!r} declares {what}, which is not supported yet"
-                yield _problem("E_CLIENT_UNSUPPORTED", "target", where, message, create)
+    def child(
+        self, helper: Helper, part: str, sources: Mapping[str, list[_Source]], problems: list[Diagnostic]
+    ) -> OperationSpec | None:
+        """Check optional child operations and the values their bindings require."""
+        if (tree := helper.tree.get(part)) is None:
+            return None
+        spec = self.checks.spec(tree["operation"])
+        self.created(helper, spec, problems, part)
+        problems.extend(self.bindings(helper, spec, part, sources))
+        problems.extend(self.required(helper, spec, part, self.keys(tree["bindings"])))
+        return spec
 
-    def created(self, helper: Helper, create: OperationSpec, problems: list[Diagnostic]) -> list[_Source]:
+    def created(
+        self, helper: Helper, create: OperationSpec, problems: list[Diagnostic], part: str = "create"
+    ) -> list[_Source]:
         """Return the create operation's success responses, refusing an operation without one."""
         sources = [
             _Source(create, response, self.checks.model(response)) for response in create.responses if response.success
         ]
         if not sources:
             message = f"{_label(create)} must declare a success response for the upload helper {helper.name!r}"
-            problems.append(_problem("E_CONFIG_VALUE", "config", f"{helper.at}.create.operation", message, create))
+            problems.append(_problem("E_CONFIG_VALUE", "config", f"{helper.at}.{part}.operation", message, create))
         return sources
 
     def count(
@@ -180,6 +245,8 @@ class _Uploads:
 
     def expiry(self, helper: Helper, created: list[_Source]) -> Iterator[Diagnostic]:
         """Check that a server expiry reads strings from every create response."""
+        if (read := helper.tree["create"].get("session_url")) is not None:
+            yield from self.typed(helper, created, read, f"{helper.at}.create.session_url", "session URL", "string")
         if (read := helper.tree["create"].get("expires_at")) is not None:
             yield from self.typed(helper, created, read, f"{helper.at}.create.expires_at", "server expiry", "string")
 
@@ -201,7 +268,7 @@ class _Uploads:
                     "supported yet"
                 )
                 yield _problem("E_CLIENT_UNSUPPORTED", "target", f"{where}.value.source", message, spec)
-            if part == "append" and item["target"]["in"] == "body":
+            if part in {"append", "upload_part"} and item["target"]["in"] == "body":
                 refused = True
                 message = f"The append binding {index} of {helper.name!r} writes the request body, which is the chunk"
                 yield _problem("E_CONFIG_VALUE", "config", f"{where}.target", message, spec)
@@ -252,15 +319,19 @@ class _Uploads:
 
     def probe(self, helper: Helper, probe: OperationSpec, sources: Mapping[str, list[_Source]]) -> Iterator[Diagnostic]:
         """Check the probe: its bindings, what it requires, and a success response giving the remote offset."""
-        at = f"{helper.at}.probe"
-        yield from self.bindings(helper, probe, "probe", sources)
-        yield from self.required(helper, probe, "probe", self.keys(helper.tree["probe"]["bindings"]))
+        part = "list_parts" if helper.tree["profile"] == "parts" else "probe"
+        at = f"{helper.at}.{part}"
+        yield from self.bindings(helper, probe, part, sources)
+        yield from self.required(helper, probe, part, self.keys(helper.tree[part]["bindings"]))
         offered = [
             _Source(probe, response, self.checks.model(response)) for response in probe.responses if response.success
         ]
         if not offered:
             message = f"{_label(probe)} must declare a success response for the probe of {helper.name!r}"
             yield _problem("E_CONFIG_VALUE", "config", f"{at}.operation", message, probe)
+            return
+        if part == "list_parts":
+            yield from self.list_parts(helper, offered)
             return
         read = helper.tree["probe"]["remote_offset"]
         yield from self.typed(helper, offered, read, f"{at}.remote_offset", "remote offset", "integer")
@@ -274,7 +345,8 @@ class _Uploads:
         self, helper: Helper, append: OperationSpec, sources: Mapping[str, list[_Source]]
     ) -> Iterator[Diagnostic]:
         """Check the append: one binary request media, its offset and length counts, and its bindings."""
-        tree, at, name = helper.tree["append"], f"{helper.at}.append", helper.name
+        part = "upload_part" if helper.tree["profile"] == "parts" else "append"
+        tree, at, name = helper.tree[part], f"{helper.at}.{part}", helper.name
         body = append.body
         if body is None or len(body.media) != 1 or body.media[0].kind != "binary":
             message = f"{_label(append)} must take exactly one binary request media for the chunks of {name!r}"
@@ -283,9 +355,10 @@ class _Uploads:
             message = f"{_label(append)} must declare a success response for the appends of {name!r}"
             yield _problem("E_CONFIG_VALUE", "config", f"{at}.operation", message, append)
         written = self.keys(tree["bindings"])
-        for what in ("offset", "length"):
+        for what in ("index", "offset", "length", "digest"):
             if (target := tree.get(what)) is None:
                 continue
+            target = target["target"] if what == "digest" else target
             key, where = _target_key(target), f"{at}.{what}"
             if (
                 clash := next((index for index, other in enumerate(written) if _overlaps(key, other)), None)
@@ -295,16 +368,94 @@ class _Uploads:
                 yield _problem("E_CONFIG_CONFLICT", "config", where, message, append)
                 continue
             written.append(key)
-            yield from self.count(helper, append, target, where, f"chunk {what}")
-        yield from self.bindings(helper, append, "append", sources)
-        yield from self.required(helper, append, "append", written, body=False)
+            if what == "digest":
+                if (
+                    credential_place(target, self.pages.secret_headers, self.pages.secret_queries)
+                ) is not None or target["in"] not in _PARAMETERS:
+                    yield _problem(
+                        "E_CONFIG_VALUE",
+                        "config",
+                        where,
+                        f"The digest of {name!r} must write a noncredential parameter",
+                        append,
+                    )
+                else:
+                    yield from self.pages.fits(
+                        helper, append, target, frozenset({"string"}), where, "part digest", null=False
+                    )
+            else:
+                yield from self.count(helper, append, target, where, f"chunk {what}")
+        yield from self.bindings(helper, append, part, sources)
+        yield from self.required(helper, append, part, written, body=False)
+
+    def list_parts(self, helper: Helper, offered: list[_Source]) -> Iterator[Diagnostic]:
+        """Check each response's parts array and selectors within its item schema."""
+        tree, at = helper.tree["list_parts"], f"{helper.at}.list_parts"
+        yield from self.typed(helper, offered, tree["items"], f"{at}.items", "parts array", "array")
+        for source in offered:
+            if (use := _page_use([source.response])) is None or use.schema is None:
+                continue
+            array = self.pages.declared(use.schema, tree["items"]["pointer"])
+            if array is None:
+                continue
+            resolved, shape = self.pages.wire.schema(array)
+            if "items" not in shape:
+                yield _problem(
+                    "E_CONFIG_VALUE",
+                    "config",
+                    f"{at}.items",
+                    "The parts array must declare its item schema",
+                    source.spec,
+                )
+                continue
+            for field, wanted in (("index", "integer"), ("receipt", "string"), ("digest", "string")):
+                if (read := tree.get(field)) is None:
+                    continue
+                member = self.pages.declared(_child(resolved, "items"), read["pointer"])
+                if member is None or ((types := self.pages.types(member)) is not None and not types <= {wanted}):
+                    yield _problem(
+                        "E_CONFIG_VALUE",
+                        "config",
+                        f"{at}.{field}",
+                        f"The part {field} must select a declared {wanted} property",
+                        source.spec,
+                    )
+
+    def completion_fields(
+        self, helper: Helper, spec: OperationSpec, completion: Mapping[str, Any]
+    ) -> Iterator[Diagnostic]:
+        """Check the ordered completion array's index and receipt properties."""
+        at, target = f"{helper.at}.complete", completion["parts"]
+        for media in () if spec.body is None else spec.body.media:
+            if media.use is None or media.use.schema is None:
+                continue
+            if (array := self.pages.declared(media.use.schema, target["pointer"])) is None:
+                continue
+            resolved, shape = self.pages.wire.schema(array)
+            if "items" not in shape:
+                yield _problem(
+                    "E_CONFIG_VALUE", "config", f"{at}.parts", "The completion array must declare its item schema", spec
+                )
+                continue
+            item = _child(resolved, "items")
+            for field, wanted in (("index_field", "integer"), ("receipt_field", "string")):
+                member = self.pages.properties(item).get(completion[field])
+                if member is None or ((types := self.pages.types(member)) is not None and not types <= {wanted}):
+                    yield _problem(
+                        "E_CONFIG_VALUE",
+                        "config",
+                        f"{at}.{field}",
+                        f"The completion {field} must name a declared {wanted} property",
+                        spec,
+                    )
 
     def completion(
         self, helper: Helper, sources: Mapping[str, list[_Source]], problems: list[Diagnostic]
     ) -> tuple[OperationSpec, TypeUseBinding, Mapping[str, str]] | None:
         """Check a completion operation: one JSON success response of the result schema, and its bindings."""
-        completion, at, name = helper.tree["completion"], f"{helper.at}.completion", helper.name
-        if completion["kind"] != "operation":
+        part = "complete" if helper.tree["profile"] == "parts" else "completion"
+        completion, at, name = helper.tree[part], f"{helper.at}.{part}", helper.name
+        if completion.get("kind", "operation") != "operation":
             return None
         spec = self.checks.spec(completion["operation"])
         successes = [response for response in spec.responses if response.success]
@@ -324,8 +475,37 @@ class _Uploads:
             )
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.result_schema", message, spec))
             return None
-        problems.extend(self.bindings(helper, spec, "completion", sources))
-        problems.extend(self.required(helper, spec, "completion", self.keys(completion["bindings"])))
+        written = self.keys(completion["bindings"])
+        if part == "complete":
+            target = completion["parts"]
+            key = _target_key(target)
+            if any(_overlaps(key, other) for other in written):
+                problems.append(
+                    _problem(
+                        "E_CONFIG_CONFLICT",
+                        "config",
+                        f"{at}.parts",
+                        "The parts array overlaps a completion binding",
+                        spec,
+                    )
+                )
+            written.append(key)
+            problems.extend(
+                self.pages.fits(helper, spec, target, frozenset({"array"}), f"{at}.parts", "parts array", null=False)
+            )
+            if completion["index_field"] == completion["receipt_field"]:
+                problems.append(
+                    _problem(
+                        "E_CONFIG_CONFLICT",
+                        "config",
+                        f"{at}.receipt_field",
+                        "The index and receipt fields must differ",
+                        spec,
+                    )
+                )
+            problems.extend(self.completion_fields(helper, spec, completion))
+        problems.extend(self.bindings(helper, spec, part, sources))
+        problems.extend(self.required(helper, spec, part, written))
         schema = {"document": self.checks.protocols.documents[reference], "pointer": reference.pointer}
         return spec, use, schema
 

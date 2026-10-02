@@ -1,4 +1,4 @@
-"""Resumable uploads of the offset profile: their creation, the handles that append chunks, checkpoints, and resume.
+"""Resumable upload creation, offset and parts handles, checkpoints, and resume.
 
 A helper's `start` scans the source, creates the upload in one child call, and returns a handle. Each `advance`
 appends the chunk holding the confirmed offset, read again and checked against the digest the scan recorded, and an
@@ -9,14 +9,14 @@ from __future__ import annotations
 
 import threading
 from contextlib import contextmanager
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import Enum
 from functools import partial
 from hashlib import sha256
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, Generic, Literal, cast, final
 
-from typing_extensions import Self, TypeVar
+from typing_extensions import Self, TypeVar, overload
 
 from ..client.bodies import AsyncBodyFactory, BodyFactory
 from ..client.errors import (
@@ -30,7 +30,7 @@ from ..client.errors import (
     UnexpectedStatusError,
 )
 from ..client.options import RequestOptions
-from ..client.timing import SYSTEM_CLOCK, Clock, SessionOptions
+from ..client.timing import SYSTEM_CLOCK, CancelToken, Clock, SessionOptions
 from ..model_codecs.errors import CodecError
 from ..model_codecs.media import decode_json
 from ..model_codecs.unset import UNSET
@@ -58,11 +58,13 @@ from .resume import (
     state_fields,
     state_text,
 )
-from .sources import UploadIdentity, UploadProgress
+from .sources import PartReceipt, UploadIdentity, UploadProgress
 from .values import MISSING, RepeatedValueError, selected, server_expiry
 
 if TYPE_CHECKING:
+    import asyncio
     from collections.abc import AsyncIterator, Callable, Generator, Iterator
+    from concurrent.futures import Future, ThreadPoolExecutor
     from datetime import datetime
     from types import TracebackType
 
@@ -74,14 +76,19 @@ if TYPE_CHECKING:
     from ..model_codecs.selectors import MediaSelector
     from ..model_codecs.wire import WireValue
     from .pagination import PageBinding
-    from .records import ParameterTarget, ProtocolProgress, Selector
+    from .records import ParameterTarget, ProtocolProgress, RequestTarget, Selector
     from .references import OperationRef
     from .sources import AsyncRangeReader, AsyncUploadSource, RangeReader, UploadSource
     from .writes import Targeted
 
 __all__ = (
+    "AsyncPartsUploadHandle",
     "AsyncUploadHandle",
+    "PartsUploadHandle",
+    "UploadAbortPlan",
+    "UploadCompletionProbePlan",
     "UploadHandle",
+    "UploadPartsPlan",
     "UploadPlan",
     "aresume_upload",
     "astart_upload",
@@ -91,6 +98,9 @@ __all__ = (
 
 T = TypeVar("T")
 C = TypeVar("C")
+H = TypeVar("H", bound="UploadHandle[Any]")
+A = TypeVar("A", bound="AsyncUploadHandle[Any]")
+K = TypeVar("K")
 
 _READ: Final = 65536
 _DIGEST: Final = 32
@@ -107,6 +117,7 @@ class _Phase(Enum):
     UPLOADING = "uploading"
     UNKNOWN = "unknown"
     COMPLETE = "complete"
+    ABORTED = "aborted"
 
 
 _PHASES: Final = MappingProxyType({phase.value: phase for phase in _Phase})
@@ -127,10 +138,64 @@ def _unreplayed(call: OperationPlan[T, object]) -> OperationPlan[T, object]:
     return replace(call, retry_safety="never")
 
 
+@dataclass(frozen=True, slots=True, kw_only=True)
+class UploadAbortPlan(Generic[K]):
+    """The typed remote abort operation and its create-response bindings."""
+
+    operation: OperationRef
+    call: OperationPlan[K, object]
+    bindings: tuple[PageBinding, ...] = ()
+    targeted: Targeted[K] = field(init=False)
+
+    def __post_init__(self) -> None:
+        """Prepare the abort's bound request."""
+        from .writes import targeted_writes  # ruff: ignore[import-outside-top-level]
+
+        object.__setattr__(self, "targeted", targeted_writes(self.call, (item.written for item in self.bindings)))
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class UploadCompletionProbePlan:
+    """A read operation confirming a completed upload's result."""
+
+    call: OperationPlan[object, object]
+    state: Selector
+    completed_values: tuple[WireValue, ...]
+    result: Selector
+    result_status: int
+    result_media: str
+    bindings: tuple[PageBinding, ...] = ()
+    targeted: Targeted[object] = field(init=False)
+
+    def __post_init__(self) -> None:
+        """Prepare the probe's bound request."""
+        from .writes import targeted_writes  # ruff: ignore[import-outside-top-level]
+
+        object.__setattr__(self, "targeted", targeted_writes(self.call, (item.written for item in self.bindings)))
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class UploadPartsPlan:
+    """Indexed parts, their receipts, explicit digests, and the server's layout limits."""
+
+    items: Selector
+    index: Selector
+    receipt: Selector
+    parts: RequestTarget
+    index_field: str
+    receipt_field: str
+    digest: Selector | None = None
+    digest_target: ParameterTarget | None = None
+    digest_encoding: Literal["hex", "base64"] = "hex"
+    max_parts: int | None = None
+    min_part_bytes: int = 1
+    last_part_may_be_smaller: bool = False
+
+
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class UploadPlan(Generic[T, C]):
-    """Everything fixed about one generated upload helper of the offset profile.
+    """Everything fixed about one generated upload helper.
 
     `create` starts the upload, writing the content's size into `size` when declared, and its response gives the
     `initial` values of every binding and the server's expiry at `expires_at`. `probe` reads the server's offset at
@@ -153,6 +218,10 @@ class UploadPlan(Generic[T, C]):
     fingerprint: str
     size: ParameterTarget | None = None
     expires_at: Selector | None = None
+    session_url: Selector | None = None
+    abort: UploadAbortPlan[Any] | None = None
+    parts: UploadPartsPlan | None = None
+    completion_probe: UploadCompletionProbePlan | None = None
     probe_bindings: tuple[PageBinding, ...] = ()
     append_bindings: tuple[PageBinding, ...] = ()
     length: ParameterTarget | None = None
@@ -174,15 +243,28 @@ class UploadPlan(Generic[T, C]):
 
         probed = targeted_writes(self.probe, (binding.written for binding in self.probe_bindings))
         extra = (self.offset,) if self.length is None else (self.offset, self.length)
+        if self.parts is not None and self.parts.digest_target is not None:
+            extra = (*extra, self.parts.digest_target)
         appended = targeted_writes(self.append, (binding.written for binding in self.append_bindings), extra)
         appended = replace(appended, call=_unreplayed(appended.call))
         completion = self.completion
         completed = (
             None
             if completion is None
-            else targeted_writes(completion, (binding.written for binding in self.completion_bindings))
+            else targeted_writes(
+                completion,
+                (binding.written for binding in self.completion_bindings),
+                () if self.parts is None else (self.parts.parts,),
+            )
         )
-        children = (probed, appended, *(() if completed is None else (completed,)))
+        if completed is not None:
+            completed = replace(completed, call=_unreplayed(completed.call))
+        children = (
+            probed,
+            appended,
+            *(() if completed is None else (completed,)),
+            *(item.targeted for item in (self.abort, self.completion_probe) if item is not None),
+        )
         headers, queries = set[str](), set[str]()
         if (size := self.size) is not None:
             (headers if size.location == "header" else queries).add(
@@ -307,6 +389,13 @@ def _layout(plan: UploadPlan[T, C], limits: _Limits, size: int, chunk: int) -> i
     if chunk > limits.chunk_bytes:
         raise _invalid(plan, ("upload_options", "chunk_bytes"))
     count = -(-size // chunk)
+    if (parts := plan.parts) is not None:
+        if chunk < parts.min_part_bytes:
+            raise _invalid(plan, ("upload_options", "chunk_bytes"))
+        if size and not parts.last_part_may_be_smaller and (size - (count - 1) * chunk) < parts.min_part_bytes:
+            raise _invalid(plan, ("source", "size"))
+        if parts.max_parts is not None and count > parts.max_parts:
+            raise _invalid(plan, ("limits", "max_parts"))
     if (limit := limits.max_parts) is not None and count > limit:
         raise _invalid(plan, ("upload_options", "max_parts"))
     if (encoded := 4 * -(-_DIGEST * count // 3)) > _MANIFEST_BYTES:
@@ -327,14 +416,16 @@ class _Chunk:
     __slots__ = ("digest", "read", "view")
 
     def __init__(self, size: int) -> None:
-        self.view = memoryview(bytearray(size + 1))
+        self.view = memoryview(bytearray(size))
         self.digest = sha256()
         self.read = 0
 
     def add(self, data: bytes) -> None:
         """Copy bytes read after those before into the buffer and hash them."""
         end = self.read + len(data)
-        self.view[self.read : end] = data
+        available = min(len(data), len(self.view) - self.read)
+        if available > 0:
+            self.view[self.read : self.read + available] = data[:available]
         self.digest.update(data)
         self.read = end
 
@@ -452,6 +543,8 @@ class _Upload(Generic[T]):
         "_chunk",
         "_closed",
         "_confirmed",
+        "_controls",
+        "_core",
         "_delivery",
         "_digests",
         "_expires_at",
@@ -465,6 +558,8 @@ class _Upload(Generic[T]):
         "_result",
         "_saved",
         "_session",
+        "_source",
+        "_url",
         "_verify",
     )
 
@@ -493,6 +588,8 @@ class _Upload(Generic[T]):
         self._high: int | None = 0
         self._closed = False
         self._changed = False
+        self._controls: tuple[tuple[WireValue, ...], ...] = ((), ())
+        self._url: str | None = None
         self._bound: tuple[tuple[WireValue, ...], tuple[WireValue, ...], tuple[WireValue, ...]] = ((), (), ())
         self._expires_at: datetime | None = None
         self._result: T | None = None
@@ -566,9 +663,11 @@ class _Upload(Generic[T]):
         """Take the handle for one step, refusing a concurrent step, a closed handle, and a changed source."""
         if not self._lock.acquire(blocking=False):
             raise self._state_error(action, "uploading")
-        if self._closed or self._changed:
+        if self._closed or self._changed or self._phase is _Phase.ABORTED:
             self._lock.release()
-            raise self._state_error(action, "closed" if self._closed else "source_changed")
+            raise self._state_error(
+                action, "closed" if self._closed else "source_changed" if self._changed else "aborted"
+            )
 
     def _close(self, action: str, *, quiet: bool = False) -> None:
         """Close the handle, refusing while a step runs, or leaving it open then when `quiet`."""
@@ -598,7 +697,7 @@ class _Upload(Generic[T]):
     def _unknown(
         self,
         *,
-        phase: Literal["append", "complete"],
+        phase: Literal["append", "part", "complete"],
         delivery: DeliveryState,
         error: BaseException | None = None,
         failures: tuple[BaseException, ...] = (),
@@ -676,6 +775,15 @@ class _Upload(Generic[T]):
     ) -> tuple[tuple[tuple[WireValue, ...], tuple[WireValue, ...], tuple[WireValue, ...]], datetime | None]:
         """Read what each later call writes from the create response, and the server's expiry."""
         plan = self._plan
+        self._controls = tuple(
+            () if item is None else self._values(item.targeted, item.bindings, wire, info)
+            for item in (plan.abort, plan.completion_probe)
+        )
+        if (read := plan.session_url) is not None:
+            value = self._read(read, wire, info)
+            if not isinstance(value, str):
+                raise self._data_error(info, "type", read)
+            self._url = self._follow(value, _url, info, _managed)
         bound = (
             self._values(plan.probed, plan.probe_bindings, wire, info),
             self._values(plan.appended, plan.append_bindings, wire, info),
@@ -688,6 +796,38 @@ class _Upload(Generic[T]):
             if (expires_at := server_expiry(value, self._limits.clock.time())) is None:
                 raise self._data_error(info, "value", read)
         return bound, expires_at
+
+    @property
+    def _client(self) -> ClientCore | AsyncClientCore:
+        """The client core shared URL and result checks use."""
+        raise NotImplementedError
+
+    def _follow(self, value: str, url: str, info: ResponseInfo | None, stripped: frozenset[str] = frozenset()) -> str:
+        """Apply the shared next-URL origin and credential policy to a session URL."""
+        from .pagination import _followed  # pyright: ignore[reportPrivateUsage]  # noqa: PLC0415
+
+        plan = self._plan
+        read = plan.session_url
+        assert read is not None
+        origins = self._client.follow_origins(plan.create, self._limits.options)
+        return _followed(plan, read, value, url, info, 8192, origins, stripped)
+
+    def _abort_request(self, abort: UploadAbortPlan[K]) -> tuple[tuple[object, ...], object, str | None]:
+        return (*abort.targeted.request(self._controls[0]), self._url)
+
+    def _aborted(
+        self, data: K, _wire: WireValue, _content: bytes, _info: ResponseInfo, _url: str, _managed: frozenset[str]
+    ) -> K:
+        with self._guard:
+            self._phase, self._delivery = _Phase.ABORTED, None
+        return data
+
+    def _abort_enter(self) -> None:
+        self._enter("abort_remote")
+        if self._phase is _Phase.COMPLETE:
+            self._lock.release()
+            error = self._state_error("abort_remote", "complete")
+            raise error
 
     def _offered(
         self, _data: object, wire: WireValue, _content: bytes, info: ResponseInfo, _url: str, _managed: frozenset[str]
@@ -761,19 +901,21 @@ class _Upload(Generic[T]):
         start = index * self._chunk
         return index, start, min(start + self._chunk, self._identity.size)
 
-    def _append_request(self, payload: object, size: int) -> Callable[[], tuple[tuple[object, ...], object, None]]:
+    def _append_request(
+        self, payload: object, size: int
+    ) -> Callable[[], tuple[tuple[object, ...], object, str | None]]:
         plan, offset = self._plan, self._confirmed
         values = (offset,) if plan.length is None else (offset, size)
         arguments = plan.appended.request((*self._bound[1], *values))[0]
-        return lambda: (arguments, payload, None)
+        return lambda: (arguments, payload, self._url)
 
-    def _probe_request(self) -> tuple[tuple[object, ...], object, None]:
-        return (*self._plan.probed.request(self._bound[0]), None)
+    def _probe_request(self) -> tuple[tuple[object, ...], object, str | None]:
+        return (*self._plan.probed.request(self._bound[0]), self._url)
 
-    def _completion_request(self) -> tuple[tuple[object, ...], object, None]:
+    def _completion_request(self) -> tuple[tuple[object, ...], object, str | None]:
         completed = self._plan.completed
         assert completed is not None
-        return (*completed.request(self._bound[2]), None)
+        return (*completed.request(self._bound[2]), self._url)
 
     def _completed(
         self, data: T, _wire: WireValue, content: bytes, info: ResponseInfo, _url: str, _managed: frozenset[str]
@@ -801,13 +943,17 @@ class _Upload(Generic[T]):
         unknown with RESPONSE_STARTED.
         """
         delivery = _delivery_of(error)
-        unapplied = _refused(error) or delivery is DeliveryState.NOT_SENT or self._session.network_send_count == sends
+        unapplied = delivery not in _UNKNOWN and (
+            _refused(error) or delivery is DeliveryState.NOT_SENT or self._session.network_send_count == sends
+        )
         started = (isinstance(error, SDKError) and error.info is not None) or delivery is DeliveryState.RESPONSE_STARTED
         with self._guard:
             if unapplied:
                 self._phase, self._delivery = _Phase.UPLOADING, None
-            elif started and self._phase is _Phase.UNKNOWN:
-                self._delivery = DeliveryState.RESPONSE_STARTED
+            else:
+                self._phase = _Phase.UNKNOWN
+                self._delivery = DeliveryState.RESPONSE_STARTED if started else DeliveryState.MAYBE_SENT
+                self._result, self._saved = None, None
 
     def _completion_error(self, error: Exception) -> Exception:
         """Return the error of a failed completion: its own once it may be sent again, or else an unknown outcome."""
@@ -835,7 +981,7 @@ class _Upload(Generic[T]):
             exportable = exportable and allowed
         saved = self._saved
         delivery = self._delivery
-        state: WireValue = {
+        state: dict[str, WireValue] = {
             "size": identity.size,
             "sha256": identity.sha256.hex(),
             "chunk": self._chunk,
@@ -845,6 +991,11 @@ class _Upload(Generic[T]):
             "bound": self._bound,
             "result": None if saved is None else (saved[1], saved[2]),
         }
+        if plan.abort is not None or plan.completion_probe is not None:
+            state["controls"] = self._controls
+        if plan.session_url is not None:
+            state["url"] = self._url
+        self._checkpoint_extra(state)
         return helper_state(
             helper_fingerprint=plan.fingerprint,
             security_fingerprint=sha256(canonical_json(tuple(facts))).hexdigest(),
@@ -853,6 +1004,10 @@ class _Upload(Generic[T]):
             exportable=exportable,
             expires_at=self._expires_at,
         )
+
+    def _checkpoint_extra(self, state: WireValue) -> None:  # noqa: PLR6301
+        """Keep no additional offset-profile state."""
+        del state
 
     def _core_security(
         self, call: OperationPlan[Any, object], options: RequestOptions | None
@@ -877,6 +1032,7 @@ def _refused(error: BaseException) -> bool:
     return (
         isinstance(error, (HTTPStatusError, UnexpectedStatusError))
         and not _MIN_SUCCESS <= error.info.status_code <= _MAX_SUCCESS
+        and error.info.status_code not in {502, 504}
     )
 
 
@@ -893,7 +1049,19 @@ def _probed_again(error: Exception) -> bool:
 
 def _children(plan: UploadPlan[Any, Any]) -> tuple[OperationPlan[Any, object], ...]:
     """Return the operations a resumed upload may send: the probe, the append, and any completion."""
-    return (plan.probe, plan.append, *(() if plan.completion is None else (plan.completion,)))
+    return (
+        plan.probe,
+        plan.append,
+        *(
+            item
+            for item in (
+                plan.completion,
+                None if plan.abort is None else plan.abort.call,
+                None if plan.completion_probe is None else plan.completion_probe.call,
+            )
+            if item is not None
+        ),
+    )
 
 
 def _session(limits: _Limits) -> OperationSession:
@@ -954,7 +1122,6 @@ def _scanned(plan: UploadPlan[Any, Any], identity: UploadIdentity, scan: _Scan, 
     return found
 
 
-@final
 class UploadHandle(_Upload[T]):
     """A resumable upload a helper created or resumed: `advance` appends one chunk, and `run` uploads the rest.
 
@@ -962,7 +1129,9 @@ class UploadHandle(_Upload[T]):
     ProtocolStateError.
     """
 
-    __slots__ = ("_core", "_source")
+    _core: ClientCore
+
+    __slots__ = ()
 
     def __init__(  # noqa: PLR0913, PLR0917
         self,
@@ -979,6 +1148,11 @@ class UploadHandle(_Upload[T]):
         super().__init__(plan, limits, session, identity, chunk, digests)
         self._core = core
         self._source = source
+
+    @property
+    def _client(self) -> ClientCore:
+        """The client core that sends this handle's child calls."""
+        return self._core
 
     def _core_security(
         self, call: OperationPlan[Any, object], options: RequestOptions | None
@@ -1122,6 +1296,25 @@ class UploadHandle(_Upload[T]):
                 raise
             raise failure from None
 
+    def _abort_remote(self, abort: UploadAbortPlan[K]) -> K:
+        """Abort remotely when declared, retaining the aborted checkpoint."""
+        self._abort_enter()
+        try:
+            with self._mapped():
+                return self._core.execute_page(
+                    self._plan,
+                    abort.targeted.call,
+                    partial(self._abort_request, abort),
+                    self._aborted,
+                    body=UNSET,
+                    media_type=None,
+                    options=self._limits.options,
+                    session=self._session,
+                    max_page_bytes=None,
+                )
+        finally:
+            self._lock.release()
+
     def _step(self) -> None:
         """Probe when due, then append one chunk, or complete once every byte is confirmed."""
         if self._verify:
@@ -1172,7 +1365,6 @@ class UploadHandle(_Upload[T]):
         self._close("close", quiet=exc is not None)
 
 
-@final
 class AsyncUploadHandle(_Upload[T]):
     """A resumable upload an asyncio helper created or resumed: `advance` appends one chunk, `run` uploads the rest.
 
@@ -1180,7 +1372,9 @@ class AsyncUploadHandle(_Upload[T]):
     ProtocolStateError.
     """
 
-    __slots__ = ("_core", "_source")
+    _core: AsyncClientCore
+
+    __slots__ = ()
 
     def __init__(  # noqa: PLR0913, PLR0917
         self,
@@ -1197,6 +1391,11 @@ class AsyncUploadHandle(_Upload[T]):
         super().__init__(plan, limits, session, identity, chunk, digests)
         self._core = core
         self._source = source
+
+    @property
+    def _client(self) -> AsyncClientCore:
+        """The client core that sends this handle's child calls."""
+        return self._core
 
     def _core_security(
         self, call: OperationPlan[Any, object], options: RequestOptions | None
@@ -1342,6 +1541,25 @@ class AsyncUploadHandle(_Upload[T]):
                 raise
             raise failure from None
 
+    async def _abort_remote(self, abort: UploadAbortPlan[K]) -> K:
+        """Abort remotely when declared, retaining the aborted checkpoint."""
+        self._abort_enter()
+        try:
+            with self._mapped():
+                return await self._core.execute_page(
+                    self._plan,
+                    abort.targeted.call,
+                    partial(self._abort_request, abort),
+                    self._aborted,
+                    body=UNSET,
+                    media_type=None,
+                    options=self._limits.options,
+                    session=self._session,
+                    max_page_bytes=None,
+                )
+        finally:
+            self._lock.release()
+
     async def _step(self) -> None:
         """Probe when due, then append one chunk, or complete once every byte is confirmed."""
         if self._verify:
@@ -1398,6 +1616,412 @@ def _ignored(
     """Confirm an append by its success response alone."""
 
 
+class _WaveCancel(CancelToken):
+    """Cancel siblings while retaining the caller's effective cancellation signal."""
+
+    __slots__ = ("_parent",)
+
+    def __init__(self, parent: CancelToken | None) -> None:
+        super().__init__()
+        self._parent = parent
+
+    @property
+    def cancelled(self) -> bool:
+        return super().cancelled or (self._parent is not None and self._parent.cancelled)
+
+
+class _Parts(_Upload[T]):
+    """Shared parts layout, progress, receipt checks, and completion request."""
+
+    __slots__ = ("_parallelism", "_receipts", "_uncertain_parts")
+
+    _receipts: dict[int, str]
+    _uncertain_parts: set[int]
+    _parallelism: int
+
+    def _parts_init(self, capacity: int) -> None:
+        self._receipts = {}
+        self._uncertain_parts = set()
+        self._parallelism = min(self._limits.parallelism, capacity)
+
+    def _parts(self) -> UploadPartsPlan:
+        parts = self._plan.parts
+        assert parts is not None
+        return parts
+
+    def _progress(self) -> UploadProgress:
+        return UploadProgress(
+            confirmed_bytes=self._confirmed,
+            total_bytes=self._identity.size,
+            confirmed_parts=tuple(
+                PartReceipt(index=index, receipt=receipt) for index, receipt in sorted(self._receipts.items())
+            ),
+            complete=self._phase is _Phase.COMPLETE,
+        )
+
+    def _checkpoint_extra(self, state: WireValue) -> None:
+        assert isinstance(state, dict)
+        state["parts"] = tuple(sorted(self._receipts.items()))
+        state["uncertain"] = tuple(sorted(self._uncertain_parts))
+
+    def _digest_text(self, index: int) -> str:
+        digest = self._digests[(index - 1) * _DIGEST : index * _DIGEST]
+        if self._parts().digest_encoding == "hex":
+            return digest.hex()
+        from base64 import b64encode  # ruff: ignore[import-outside-top-level]
+
+        return b64encode(digest).decode("ascii")
+
+    def _listed(
+        self, _data: object, wire: WireValue, _content: bytes, info: ResponseInfo, _url: str, _managed: frozenset[str]
+    ) -> None:
+        """Check indexed digests and receipts before confirming the remote parts."""
+        parts = self._parts()
+        values = cast("tuple[WireValue, ...]", self._read(parts.items, wire, info))
+        found: dict[int, str] = {}
+        count = len(self._digests) // _DIGEST
+        for value in values:
+            index = self._read(parts.index, value, info)
+            receipt = self._read(parts.receipt, value, info)
+            if type(index) is not int or not 0 < index <= count or index in found:
+                raise self._data_error(info, "value", parts.index)
+            if not isinstance(receipt, str):
+                raise self._data_error(info, "type", parts.receipt)
+            if parts.digest is not None and self._read(parts.digest, value, info) != self._digest_text(index):
+                raise self._data_error(info, "value", parts.digest)
+            if index in self._receipts and self._receipts[index] != receipt:
+                raise self._data_error(info, "value", parts.receipt)
+            found[index] = receipt
+        if not self._receipts.keys() <= found.keys():
+            raise self._data_error(info, "value", parts.items)
+        with self._guard:
+            self._receipts = found
+            self._confirmed = sum(min(self._chunk, self._identity.size - (index - 1) * self._chunk) for index in found)
+            self._uncertain_parts.clear()
+            self._verify = False
+
+    def _wave(self) -> tuple[int, ...]:
+        count = len(self._digests) // _DIGEST
+        indices: list[int] = []
+        for index in range(1, count + 1):
+            if index not in self._receipts:
+                indices.append(index)
+                if len(indices) == self._parallelism:
+                    break
+        with self._guard:
+            self._uncertain_parts.update(indices)
+            self._verify = bool(indices)
+        return tuple(indices)
+
+    def _part_request(self, index: int, payload: object) -> Callable[[], tuple[tuple[object, ...], object, str | None]]:
+        parts = self._parts()
+        written: tuple[WireValue, ...] = (
+            *self._bound[1],
+            index,
+            *((self._digest_text(index),) if parts.digest_target is not None else ()),
+        )
+        arguments = self._plan.appended.request(written)[0]
+        return lambda: (arguments, payload, self._url)
+
+    def _completion_request(self) -> tuple[tuple[object, ...], object, str | None]:
+        parts, completed = self._parts(), self._plan.completed
+        assert completed is not None
+        values: WireValue = tuple(
+            {parts.index_field: index, parts.receipt_field: receipt}
+            for index, receipt in sorted(self._receipts.items())
+        )
+        return (*completed.request((*self._bound[2], values)), self._url)
+
+    def _completion_probe_request(self) -> tuple[tuple[object, ...], object, str | None]:
+        probe = self._plan.completion_probe
+        assert probe is not None
+        return (*probe.targeted.request(self._controls[1]), self._url)
+
+    def _completion_probed(
+        self, _data: object, wire: WireValue, _content: bytes, info: ResponseInfo, _url: str, _managed: frozenset[str]
+    ) -> None:
+        """Retain only a result the declared completion state confirms."""
+        probe, completion = self._plan.completion_probe, self._plan.completion
+        assert probe is not None
+        assert completion is not None
+        state = self._read(probe.state, wire, info)
+        if not any(canonical_json(state) == canonical_json(value) for value in probe.completed_values):
+            return
+        content = canonical_json(self._read(probe.result, wire, info))
+        data, _, result_info = self._client.saved_page(
+            completion, content, probe.result_status, probe.result_media, self._limits.options
+        )
+        self._completed(data, wire, content, result_info, _url, _managed)
+
+
+class PartsUploadHandle(_Parts[T], UploadHandle[T]):
+    """A sync parts upload using a private executor bounded by source capability."""
+
+    __slots__ = ("_executor", "_wave_cancel")
+
+    def __init__(self, *args: Any) -> None:
+        super().__init__(*args)
+        self._parts_init(self._source.max_parallel_ranges)
+        self._executor: ThreadPoolExecutor | None = None
+        self._wave_cancel: _WaveCancel | None = None
+
+    def _options(self) -> RequestOptions | None:
+        if self._wave_cancel is None:
+            return self._limits.options
+        return replace(self._limits.options or RequestOptions(), cancel_token=self._wave_cancel)
+
+    def _waiter(self) -> LogicalCallContext:
+        return self._core.waiting(self._options(), self._session, self._plan.append.operation_id)
+
+    def _list_parts(self) -> None:
+        with self._mapped():
+            self._core.execute_page(
+                self._plan,
+                self._plan.probed.call,
+                self._probe_request,
+                self._listed,
+                body=UNSET,
+                media_type=None,
+                options=self._limits.options,
+                session=self._session,
+                max_page_bytes=None,
+            )
+
+    def _reconcile_parts(self, error: BaseException | None = None, *, acknowledged: bool = False) -> None:
+        failures: list[BaseException] = []
+        for _ in range(max(int(acknowledged), self._limits.max_uncertain_probes)):
+            try:
+                self._list_parts()
+            except Exception as failure:
+                if not _probed_again(failure):
+                    raise
+                failures.append(failure)
+                continue
+            return
+        raise self._unknown(phase="part", delivery=DeliveryState.MAYBE_SENT, error=error, failures=tuple(failures))
+
+    def _part_buffer(self, index: int) -> memoryview:
+        start = (index - 1) * self._chunk
+        return self._buffer(index - 1, start, min(self._chunk, self._identity.size - start))
+
+    def _part(self, index: int, buffer: memoryview) -> None:
+        waiter = self._waiter()
+        try:
+            waiter.check()
+            payload = BodyFactory(_Factory(buffer), content_length=len(buffer))
+            with self._mapped():
+                self._core.execute_page(
+                    self._plan,
+                    self._plan.appended.call,
+                    self._part_request(index, payload),
+                    _ignored,
+                    body=payload,
+                    media_type=None,
+                    options=self._options(),
+                    session=self._session,
+                    max_page_bytes=None,
+                )
+        finally:
+            waiter.finish()
+
+    def _upload_wave(self) -> None:
+        from concurrent.futures import ThreadPoolExecutor, as_completed, wait  # ruff: ignore[import-outside-top-level]
+
+        if self._executor is None:
+            self._executor = ThreadPoolExecutor(max_workers=self._parallelism, thread_name_prefix="dcg-upload")
+        waiter = super()._waiter()
+        self._wave_cancel = _WaveCancel(waiter.settings.cancel_token)
+        waiter.finish()
+        indices = self._wave()
+        readers = [self._executor.submit(self._part_buffer, index) for index in indices]
+        futures: list[Future[Any]] = list(readers)
+        failure: BaseException | None = None
+        try:
+            for reader in as_completed(readers):
+                reader.result()
+            sends = [
+                self._executor.submit(self._part, index, reader.result())
+                for index, reader in zip(indices, readers, strict=True)
+            ]
+            futures.extend(sends)
+            for sent in as_completed(sends):
+                sent.result()
+        except BaseException as error:
+            failure = error
+            self._wave_cancel.cancel()
+            for pending in futures:
+                pending.cancel()
+            raise
+        finally:
+            wait(futures)
+            self._wave_cancel = None
+            if failure is not None:
+                self._verify = True
+
+    def _step(self) -> None:
+        if self._verify:
+            self._reconcile_parts()
+        if self._confirmed < self._identity.size:
+            try:
+                self._upload_wave()
+            except SDKError as error:
+                if getattr(error, "delivery_state", None) in {DeliveryState.MAYBE_SENT, DeliveryState.RESPONSE_STARTED}:
+                    self._reconcile_parts(error)
+                    return
+                raise
+            self._reconcile_parts(acknowledged=True)
+        else:
+            self._complete()
+
+    def _recover_completion(self) -> None:
+        probe = self._plan.completion_probe
+        if probe is not None and self._phase is _Phase.UNKNOWN:
+            with self._mapped():
+                self._core.execute_page(
+                    self._plan,
+                    probe.targeted.call,
+                    self._completion_probe_request,
+                    self._completion_probed,
+                    body=UNSET,
+                    media_type=None,
+                    options=self._limits.options,
+                    session=self._session,
+                    max_page_bytes=None,
+                )
+        self._settled()
+
+    def close(self) -> None:
+        super().close()
+        if self._executor is not None:
+            self._executor.shutdown(wait=True, cancel_futures=True)
+            self._executor = None
+
+    def __exit__(
+        self, exc_type: type[BaseException] | None, exc: BaseException | None, traceback: TracebackType | None
+    ) -> None:
+        super().__exit__(exc_type, exc, traceback)
+        if self._closed and self._executor is not None:
+            self._executor.shutdown(wait=True, cancel_futures=True)
+            self._executor = None
+
+
+class AsyncPartsUploadHandle(_Parts[T], AsyncUploadHandle[T]):
+    """An asyncio parts upload with bounded native tasks and observed exceptions."""
+
+    __slots__ = ()
+
+    def __init__(self, *args: Any) -> None:
+        super().__init__(*args)
+        self._parts_init(self._source.max_parallel_ranges)
+
+    async def _list_parts(self) -> None:
+        with self._mapped():
+            await self._core.execute_page(
+                self._plan,
+                self._plan.probed.call,
+                self._probe_request,
+                self._listed,
+                body=UNSET,
+                media_type=None,
+                options=self._limits.options,
+                session=self._session,
+                max_page_bytes=None,
+            )
+
+    async def _reconcile_parts(self, error: BaseException | None = None, *, acknowledged: bool = False) -> None:
+        failures: list[BaseException] = []
+        for _ in range(max(int(acknowledged), self._limits.max_uncertain_probes)):
+            try:
+                await self._list_parts()
+            except Exception as failure:
+                if not _probed_again(failure):
+                    raise
+                failures.append(failure)
+                continue
+            return
+        raise self._unknown(phase="part", delivery=DeliveryState.MAYBE_SENT, error=error, failures=tuple(failures))
+
+    async def _part_buffer(self, index: int) -> memoryview:
+        start = (index - 1) * self._chunk
+        return await self._buffer(index - 1, start, min(self._chunk, self._identity.size - start))
+
+    async def _part(self, index: int, buffer: memoryview) -> None:
+        payload = AsyncBodyFactory(_AsyncFactory(buffer), content_length=len(buffer))
+        with self._mapped():
+            await self._core.execute_page(
+                self._plan,
+                self._plan.appended.call,
+                self._part_request(index, payload),
+                _ignored,
+                body=payload,
+                media_type=None,
+                options=self._limits.options,
+                session=self._session,
+                max_page_bytes=None,
+            )
+
+    async def _upload_wave(self) -> None:
+        import asyncio  # ruff: ignore[import-outside-top-level]
+
+        indices = self._wave()
+        readers = [asyncio.create_task(self._part_buffer(index)) for index in indices]
+        tasks: list[asyncio.Task[Any]] = list(readers)
+        for task in tasks:
+            task.add_done_callback(_observed)
+        try:
+            buffers = await asyncio.gather(*readers)
+            sends = [
+                asyncio.create_task(self._part(index, buffer)) for index, buffer in zip(indices, buffers, strict=True)
+            ]
+            for task in sends:
+                task.add_done_callback(_observed)
+            tasks.extend(sends)
+            await asyncio.gather(*sends)
+        except BaseException:
+            for task in tasks:
+                task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
+            raise
+
+    async def _step(self) -> None:
+        if self._verify:
+            await self._reconcile_parts()
+        if self._confirmed < self._identity.size:
+            try:
+                await self._upload_wave()
+            except SDKError as error:
+                if getattr(error, "delivery_state", None) in {DeliveryState.MAYBE_SENT, DeliveryState.RESPONSE_STARTED}:
+                    await self._reconcile_parts(error)
+                    return
+                raise
+            await self._reconcile_parts(acknowledged=True)
+        else:
+            await self._complete()
+
+    async def _recover_completion(self) -> None:
+        probe = self._plan.completion_probe
+        if probe is not None and self._phase is _Phase.UNKNOWN:
+            with self._mapped():
+                await self._core.execute_page(
+                    self._plan,
+                    probe.targeted.call,
+                    self._completion_probe_request,
+                    self._completion_probed,
+                    body=UNSET,
+                    media_type=None,
+                    options=self._limits.options,
+                    session=self._session,
+                    max_page_bytes=None,
+                )
+        self._settled()
+
+
+def _observed(task: asyncio.Task[Any]) -> None:
+    """Retrieve failures even when the wave's caller was cancelled."""
+    if not task.cancelled():
+        task.exception()
+
+
 def _sized(
     core: ClientCore | AsyncClientCore, plan: UploadPlan[T, C], arguments: tuple[object, ...], size: int
 ) -> tuple[object, ...]:
@@ -1410,7 +2034,8 @@ def _sized(
     return (*arguments[:position], value, *arguments[position:])
 
 
-def start_upload(  # noqa: PLR0913
+@overload
+def start_upload(  # ruff: ignore[overload-with-docstring]
     core: ClientCore,
     plan: UploadPlan[T, C],
     source: object,
@@ -1422,17 +2047,52 @@ def start_upload(  # noqa: PLR0913
     options: object = None,
     session_options: object = None,
 ) -> UploadHandle[T]:
+    """Return the profile's base upload handle."""
+
+
+@overload
+def start_upload(  # ruff: ignore[overload-with-docstring]
+    core: ClientCore,
+    plan: UploadPlan[T, C],
+    source: object,
+    arguments: tuple[object, ...],
+    *,
+    handle: type[H],
+    body: object = UNSET,
+    media_type: str | MediaSelector | None = None,
+    upload_options: object = None,
+    options: object = None,
+    session_options: object = None,
+) -> H:
+    """Return the generated concrete upload handle."""
+
+
+def start_upload(  # noqa: PLR0913
+    core: ClientCore,
+    plan: UploadPlan[T, C],
+    source: object,
+    arguments: tuple[object, ...],
+    *,
+    handle: type[UploadHandle[Any]] | None = None,
+    body: object = UNSET,
+    media_type: str | MediaSelector | None = None,
+    upload_options: object = None,
+    options: object = None,
+    session_options: object = None,
+) -> UploadHandle[Any]:
     """Scan the source, create the helper's upload in a session of its own, and return the handle that appends to it."""
     limits = _limits(core, plan, upload_options, options, session_options)
+    kind: type[UploadHandle[Any]] = handle or (PartsUploadHandle[Any] if plan.parts is not None else UploadHandle[Any])
     identity = _identity(plan, source)
     chunk = _layout(plan, limits, identity.size, min(limits.chunk_bytes, plan.max_chunk_bytes))
-    handle = UploadHandle(core, plan, limits, _session(limits), cast("UploadSource", source), identity, chunk, b"")
-    handle._digests = handle._scan()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    handle._create(_sized(core, plan, arguments, identity.size), body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    return handle
+    created = kind(core, plan, limits, _session(limits), cast("UploadSource", source), identity, chunk, b"")
+    created._digests = created._scan()  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+    created._create(_sized(core, plan, arguments, identity.size), body, media_type)  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+    return created
 
 
-async def astart_upload(  # noqa: PLR0913
+@overload
+async def astart_upload(  # ruff: ignore[overload-with-docstring]
     core: AsyncClientCore,
     plan: UploadPlan[T, C],
     source: object,
@@ -1444,16 +2104,50 @@ async def astart_upload(  # noqa: PLR0913
     options: object = None,
     session_options: object = None,
 ) -> AsyncUploadHandle[T]:
+    """Return the profile's base upload handle."""
+
+
+@overload
+async def astart_upload(  # ruff: ignore[overload-with-docstring]
+    core: AsyncClientCore,
+    plan: UploadPlan[T, C],
+    source: object,
+    arguments: tuple[object, ...],
+    *,
+    handle: type[A],
+    body: object = UNSET,
+    media_type: str | MediaSelector | None = None,
+    upload_options: object = None,
+    options: object = None,
+    session_options: object = None,
+) -> A:
+    """Return the generated concrete upload handle."""
+
+
+async def astart_upload(  # noqa: PLR0913
+    core: AsyncClientCore,
+    plan: UploadPlan[T, C],
+    source: object,
+    arguments: tuple[object, ...],
+    *,
+    handle: type[AsyncUploadHandle[Any]] | None = None,
+    body: object = UNSET,
+    media_type: str | MediaSelector | None = None,
+    upload_options: object = None,
+    options: object = None,
+    session_options: object = None,
+) -> AsyncUploadHandle[Any]:
     """Scan the source, create the helper's upload with asyncio in a session of its own, and return its handle."""
     limits = _limits(core, plan, upload_options, options, session_options)
+    kind: type[AsyncUploadHandle[Any]] = handle or (
+        AsyncPartsUploadHandle[Any] if plan.parts is not None else AsyncUploadHandle[Any]
+    )
     identity = _identity(plan, source)
     chunk = _layout(plan, limits, identity.size, min(limits.chunk_bytes, plan.max_chunk_bytes))
-    handle = AsyncUploadHandle(
-        core, plan, limits, _session(limits), cast("AsyncUploadSource", source), identity, chunk, b""
-    )
-    handle._digests = await handle._scan()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    await handle._create(_sized(core, plan, arguments, identity.size), body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    return handle
+    created = kind(core, plan, limits, _session(limits), cast("AsyncUploadSource", source), identity, chunk, b"")
+    created._digests = await created._scan()  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+    await created._create(_sized(core, plan, arguments, identity.size), body, media_type)  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+    return created
 
 
 @dataclass(frozen=True, slots=True)
@@ -1469,6 +2163,10 @@ class _Saved:
     digests: bytes
     result: tuple[bytes, int, str | None] | None
     expires_at: datetime | None
+    controls: tuple[tuple[WireValue, ...], ...] = ((), ())
+    url: str | None = None
+    parts: tuple[tuple[int, str], ...] = ()
+    uncertain: tuple[int, ...] = ()
 
 
 def _resume_error(
@@ -1492,11 +2190,18 @@ def _bound(plan: UploadPlan[Any, Any], saved: WireValue) -> tuple[tuple[WireValu
     )
 
 
-def _decoded(plan: UploadPlan[Any, Any], state: WireValue, payload: bytes, expires_at: datetime | None) -> _Saved:
+def _decoded(plan: UploadPlan[Any, Any], state: WireValue, payload: bytes, expires_at: datetime | None) -> _Saved:  # noqa: PLR0914
     """Return a checkpoint's state, refusing one whose form does not fit the helper."""
     from collections.abc import Mapping  # noqa: PLC0415
 
-    require_state(isinstance(state, Mapping) and frozenset(state) == _STATE)
+    extra = set[str]()
+    if plan.abort is not None or plan.completion_probe is not None:
+        extra.add("controls")
+    if plan.session_url is not None:
+        extra.add("url")
+    if plan.parts is not None:
+        extra.update(("parts", "uncertain"))
+    require_state(isinstance(state, Mapping) and frozenset(state) == _STATE | extra)
     fields = cast("Mapping[str, WireValue]", state)
     size, chunk, confirmed = (state_count(fields[name]) for name in ("size", "chunk", "confirmed"))
     digest, phase, delivery = (state_text(fields[name]) for name in ("sha256", "phase", "delivery"))
@@ -1513,7 +2218,7 @@ def _decoded(plan: UploadPlan[Any, Any], state: WireValue, payload: bytes, expir
     require_state(
         (delivery is None) == (resolved is not _Phase.UNKNOWN)
         and (delivery is None or delivery in {state.value for state in _UNKNOWN})
-        and (resolved is _Phase.UPLOADING or confirmed == size)
+        and (resolved in {_Phase.UPLOADING, _Phase.ABORTED} or confirmed == size)
         and (resolved is not _Phase.UNKNOWN or plan.completion is not None)
     )
     count = -(-size // chunk) * _DIGEST
@@ -1524,13 +2229,52 @@ def _decoded(plan: UploadPlan[Any, Any], state: WireValue, payload: bytes, expir
     if saved_result is None:
         require_state(len(payload) == count and not complete_by_operation)
     else:
-        parts = state_array(saved_result)
-        require_state(complete_by_operation and len(parts) == _RESULT_FIELDS)
-        result = payload[count:], state_count(parts[0]), state_text(parts[1])
+        result_fields = state_array(saved_result)
+        require_state(complete_by_operation and len(result_fields) == _RESULT_FIELDS)
+        result = payload[count:], state_count(result_fields[0]), state_text(result_fields[1])
     bound = cast(
         "tuple[tuple[WireValue, ...], tuple[WireValue, ...], tuple[WireValue, ...]]", _bound(plan, fields["bound"])
     )
+    controls: tuple[tuple[WireValue, ...], ...] = ((), ())
+    if "controls" in extra:
+        groups = tuple(map(state_array, state_array(fields["controls"])))
+        children = (plan.abort, plan.completion_probe)
+        require_state(
+            len(groups) == len(children)
+            and all(
+                len(group) == (0 if item is None else len(item.bindings))
+                for group, item in zip(groups, children, strict=True)
+            )
+        )
+        controls = tuple(
+            tuple(
+                value if binding.selector is not None else binding.literal
+                for value, binding in zip(group, () if item is None else item.bindings, strict=True)
+            )
+            for group, item in zip(groups, children, strict=True)
+        )
+    url = None if "url" not in extra else state_text(fields["url"])
+    require_state("url" not in extra or isinstance(url, str))
+    parts: list[tuple[int, str]] = []
+    uncertain: tuple[int, ...] = ()
+    if plan.parts is not None:
+        for value in state_array(fields["parts"]):
+            pair = state_array(value)
+            require_state(len(pair) == _RESULT_FIELDS)
+            index, receipt = state_count(pair[0]), state_text(pair[1])
+            require_state(0 < index <= count // _DIGEST and isinstance(receipt, str))
+            parts.append((index, cast("str", receipt)))
+        require_state([index for index, _ in parts] == sorted({index for index, _ in parts}))
+        require_state(confirmed == sum(min(chunk, size - (index - 1) * chunk) for index, _ in parts))
+        uncertain = tuple(state_count(value) for value in state_array(fields["uncertain"]))
+        require_state(
+            list(uncertain) == sorted(set(uncertain)) and all(0 < index <= count // _DIGEST for index in uncertain)
+        )
     return _Saved(
+        controls=controls,
+        url=url,
+        parts=tuple(parts),
+        uncertain=uncertain,
         identity=UploadIdentity(size=size, sha256=bytes.fromhex(cast("str", digest))),
         chunk=chunk,
         confirmed=confirmed,
@@ -1572,13 +2316,20 @@ def _checked(
     from ..client.errors import RequestEncodingError  # noqa: PLC0415 - Only a resume checks saved values.
 
     probe, append, completion = saved.bound
-    offsets = (0,) if plan.length is None else (0, 0)
+    offsets: tuple[WireValue, ...] = (0,) if plan.length is None else (0, 0)
+    if plan.parts is not None:
+        offsets = (1, *(("0" * 64,) if plan.parts.digest_target is not None else ()))
     requests: list[tuple[Targeted[Any], tuple[WireValue, ...], tuple[WireValue, ...], object]] = [
         (plan.probed, probe, (), None),
         (plan.appended, append, offsets, b""),
     ]
     if (completed := plan.completed) is not None:
-        requests.append((completed, completion, (), None))
+        requests.append((completed, completion, () if plan.parts is None else ((),), None))
+    requests.extend(
+        (item.targeted, group, (), None)
+        for item, group in zip((plan.abort, plan.completion_probe), saved.controls, strict=True)
+        if item is not None
+    )
     for targeted, values, extra, payload in requests:
         _dotted(plan, targeted, values, None)
         arguments, body = targeted.request((*values, *extra))
@@ -1588,7 +2339,7 @@ def _checked(
             raise _resume_error(plan, "malformed") from None
 
 
-def _fixed(arguments: tuple[object, ...], body: object) -> Callable[[], tuple[tuple[object, ...], object, None]]:
+def _fixed(arguments: tuple[object, ...], body: object) -> Callable[[], tuple[tuple[object, ...], object, str | None]]:
     """Return the request of a check, built once."""
     return lambda: (arguments, body, None)
 
@@ -1596,6 +2347,16 @@ def _fixed(arguments: tuple[object, ...], body: object) -> Callable[[], tuple[tu
 def _resumed(handle: _Upload[T], saved: _Saved, core: ClientCore | AsyncClientCore) -> None:
     """Restore a handle to a checkpoint's phase, offset, values, expiry, and any completion's result."""
     plan = handle._plan  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    handle._url = saved.url  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+    handle._controls = saved.controls  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+    if saved.url is not None:
+        handle._follow(saved.url, saved.url, None)  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+    if saved.phase is _Phase.ABORTED:
+        error = handle._state_error("resume", "aborted")  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+        raise error
+    if isinstance(handle, (PartsUploadHandle, AsyncPartsUploadHandle)):
+        handle._receipts = dict(saved.parts)  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+        handle._uncertain_parts = set(saved.uncertain)  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
     handle._bound = saved.bound  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     handle._confirmed = saved.confirmed  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     handle._verify = True  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
@@ -1634,7 +2395,8 @@ def _resume_start(
     return saved, identity
 
 
-def resume_upload(  # noqa: PLR0913
+@overload
+def resume_upload(  # ruff: ignore[overload-with-docstring]
     core: ClientCore,
     plan: UploadPlan[T, C],
     source: object,
@@ -1644,25 +2406,59 @@ def resume_upload(  # noqa: PLR0913
     options: object = None,
     session_options: object = None,
 ) -> UploadHandle[T]:
+    """Return the profile's base upload handle."""
+
+
+@overload
+def resume_upload(  # ruff: ignore[overload-with-docstring]
+    core: ClientCore,
+    plan: UploadPlan[T, C],
+    source: object,
+    state: object,
+    *,
+    handle: type[H],
+    upload_options: object = None,
+    options: object = None,
+    session_options: object = None,
+) -> H:
+    """Return the generated concrete upload handle."""
+
+
+def resume_upload(  # noqa: PLR0913
+    core: ClientCore,
+    plan: UploadPlan[T, C],
+    source: object,
+    state: object,
+    *,
+    handle: type[UploadHandle[Any]] | None = None,
+    upload_options: object = None,
+    options: object = None,
+    session_options: object = None,
+) -> UploadHandle[Any]:
     """Continue a checkpoint in a new session: check the source against it, then probe the server's offset once.
 
     A complete upload resumes with its result and an unknown completion raises again, both without reading or sending.
     """
     limits = _limits(core, plan, upload_options, options, session_options)
+    kind: type[UploadHandle[Any]] = handle or (PartsUploadHandle[Any] if plan.parts is not None else UploadHandle[Any])
     saved, identity = _resume_start(core, plan, source, state, limits)
-    handle = UploadHandle(
+    created = kind(
         core, plan, limits, _session(limits), cast("UploadSource", source), identity, saved.chunk, saved.digests
     )
-    _resumed(handle, saved, core)
-    if handle._phase is not _Phase.UPLOADING:  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-        handle._settled()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-        return handle
-    handle._scan(saved.digests)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    handle._verified(*handle._probe())  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    return handle
+    _resumed(created, saved, core)
+    if created._phase is not _Phase.UPLOADING:  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+        created._recover_completion() if isinstance(created, PartsUploadHandle) else created._settled()  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+        return created
+    created._scan(saved.digests)  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+    if isinstance(created, PartsUploadHandle):
+        created._list_parts()  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+    else:
+        created._verified(*created._probe())  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+    return created
 
 
-async def aresume_upload(  # noqa: PLR0913
+@overload
+async def aresume_upload(  # ruff: ignore[overload-with-docstring]
     core: AsyncClientCore,
     plan: UploadPlan[T, C],
     source: object,
@@ -1672,19 +2468,54 @@ async def aresume_upload(  # noqa: PLR0913
     options: object = None,
     session_options: object = None,
 ) -> AsyncUploadHandle[T]:
+    """Return the profile's base upload handle."""
+
+
+@overload
+async def aresume_upload(  # ruff: ignore[overload-with-docstring]
+    core: AsyncClientCore,
+    plan: UploadPlan[T, C],
+    source: object,
+    state: object,
+    *,
+    handle: type[A],
+    upload_options: object = None,
+    options: object = None,
+    session_options: object = None,
+) -> A:
+    """Return the generated concrete upload handle."""
+
+
+async def aresume_upload(  # noqa: PLR0913
+    core: AsyncClientCore,
+    plan: UploadPlan[T, C],
+    source: object,
+    state: object,
+    *,
+    handle: type[AsyncUploadHandle[Any]] | None = None,
+    upload_options: object = None,
+    options: object = None,
+    session_options: object = None,
+) -> AsyncUploadHandle[Any]:
     """Continue a checkpoint with asyncio in a new session: check the source against it, then probe once.
 
     A complete upload resumes with its result and an unknown completion raises again, both without reading or sending.
     """
     limits = _limits(core, plan, upload_options, options, session_options)
+    kind: type[AsyncUploadHandle[Any]] = handle or (
+        AsyncPartsUploadHandle[Any] if plan.parts is not None else AsyncUploadHandle[Any]
+    )
     saved, identity = _resume_start(core, plan, source, state, limits)
-    handle = AsyncUploadHandle(
+    created = kind(
         core, plan, limits, _session(limits), cast("AsyncUploadSource", source), identity, saved.chunk, saved.digests
     )
-    _resumed(handle, saved, core)
-    if handle._phase is not _Phase.UPLOADING:  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-        handle._settled()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-        return handle
-    await handle._scan(saved.digests)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    handle._verified(*await handle._probe())  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    return handle
+    _resumed(created, saved, core)
+    if created._phase is not _Phase.UPLOADING:  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+        await created._recover_completion() if isinstance(created, AsyncPartsUploadHandle) else created._settled()  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+        return created
+    await created._scan(saved.digests)  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+    if isinstance(created, AsyncPartsUploadHandle):
+        await created._list_parts()  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+    else:
+        created._verified(*await created._probe())  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+    return created

@@ -17,7 +17,7 @@ from hashlib import sha256
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, Generic, Literal, cast, final
 
-from typing_extensions import Self, TypeVar
+from typing_extensions import Protocol, Self, TypeVar
 
 from ..client.errors import (
     BudgetExceededError,
@@ -455,8 +455,18 @@ def _limits(
     )
 
 
+class _URLPlan(Protocol):
+    """The helper identity shared by pagination and upload URL validation."""
+
+    @property
+    def helper_id(self) -> str: ...
+
+    @property
+    def operation(self) -> OperationRef: ...
+
+
 def _data_error(
-    plan: PaginationPlan[T, P],
+    plan: _URLPlan,
     info: ResponseInfo | None,
     condition: Literal["missing", "null", "type", "value", "malformed", "inconsistent"],
     location: Selector,
@@ -486,7 +496,7 @@ def _selected(plan: PaginationPlan[T, P], read: Selector, wire: WireValue, info:
 
 
 def _size_error(
-    plan: PaginationPlan[T, P], info: ResponseInfo | None, kind: Literal["cursor", "headers"], limit: int, size: int
+    plan: _URLPlan, info: ResponseInfo | None, kind: Literal["cursor", "headers"], limit: int, size: int
 ) -> ProtocolSizeError:
     return ProtocolSizeError(
         kind=kind,
@@ -554,7 +564,7 @@ def _linked(plan: PaginationPlan[T, P], rule: LinkPlan, info: ResponseInfo, limi
 
 
 def _followed(  # noqa: PLR0913, PLR0917
-    plan: PaginationPlan[T, P],
+    plan: _URLPlan,
     read: Selector,
     reference: str,
     url: str,

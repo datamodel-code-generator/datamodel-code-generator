@@ -64,6 +64,7 @@ __all__ = (
     "OperationCompletion",
     "OperationResult",
     "PaginationHelper",
+    "PartsUploadHelper",
     "PollInterval",
     "PollingHelper",
     "ProtocolConfiguration",
@@ -81,7 +82,13 @@ __all__ = (
     "Tree",
     "UploadAbort",
     "UploadAppend",
+    "UploadComplete",
+    "UploadCompletionProbe",
     "UploadCreate",
+    "UploadDigest",
+    "UploadLimits",
+    "UploadListParts",
+    "UploadPart",
     "UploadProbe",
     "WebSocketHelper",
     "WebSocketMessage",
@@ -605,12 +612,93 @@ class UploadAbort:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class UploadListParts:
+    """Read the server's indexed receipts and optional digests."""
+
+    operation: OperationSelector
+    items: Selector
+    index: Selector
+    receipt: Selector
+    digest: Selector | None = None
+    bindings: tuple[Binding, ...] = ()
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class UploadDigest:
+    """Write a SHA-256 digest with the API's declared encoding."""
+
+    target: RequestTarget
+    algorithm: Literal["sha256"]
+    encoding: Literal["base64", "hex"]
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class UploadPart:
+    """Send a binary part with its one-based index and optional digest."""
+
+    operation: OperationSelector
+    index: RequestTarget
+    digest: UploadDigest | None = None
+    bindings: tuple[Binding, ...] = ()
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class UploadComplete:
+    """Complete an upload with an ordered array of indexed receipts."""
+
+    operation: OperationSelector
+    parts: RequestTarget
+    index_field: str
+    receipt_field: str
+    result_schema: SchemaRef
+    bindings: tuple[Binding, ...] = ()
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class UploadLimits:
+    """The server's part layout limits."""
+
+    last_part_may_be_smaller: bool
+    max_parts: int | None = None
+    max_part_bytes: int | None = None
+    min_part_bytes: int | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class UploadCompletionProbe:
+    """Query a confirmed completion result without sending complete again."""
+
+    operation: OperationSelector
+    state: Selector
+    completed_values: tuple[JSONValue, ...]
+    result: Selector
+    bindings: tuple[Binding, ...] = ()
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class PartsUploadHelper:
+    """Upload independent indexed parts and complete with their receipts."""
+
+    kind: ClassVar[Literal["resumable_upload"]] = "resumable_upload"
+
+    profile: Literal["parts"]
+    create: UploadCreate
+    list_parts: UploadListParts
+    upload_part: UploadPart
+    complete: UploadComplete
+    limits: UploadLimits
+    completion_probe: UploadCompletionProbe | None = None
+    abort: UploadAbort | None = None
+    enabled: bool = True
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class ResumableUploadHelper:
     """Upload content in chunks the server confirms, resuming from its confirmed offset."""
 
     kind: ClassVar[Literal["resumable_upload"]] = "resumable_upload"
 
-    profile: Literal["offset", "parts"]
+    profile: Literal["offset"]
     create: UploadCreate
     probe: UploadProbe
     append: UploadAppend
@@ -629,6 +717,7 @@ HelperDefinition: TypeAlias = (
     | WebSocketHelper
     | CacheHelper
     | ResumableUploadHelper
+    | PartsUploadHelper
 )
 
 
@@ -684,6 +773,13 @@ _RECORDS: Final = frozenset({
     LengthCompletion,
     OperationCompletion,
     UploadAbort,
+    UploadListParts,
+    UploadDigest,
+    UploadPart,
+    UploadComplete,
+    UploadLimits,
+    UploadCompletionProbe,
+    PartsUploadHelper,
     ResumableUploadHelper,
     ProtocolConfiguration,
 })
@@ -694,6 +790,7 @@ _ROLES: Final[Mapping[tuple[type, str], str]] = {
     (PollingHelper, "succeeded"): "json",
     (PollingHelper, "failed"): "json",
     (PollingHelper, "cancelled"): "json",
+    (UploadCompletionProbe, "completed_values"): "json",
     (EventMapping, "mapping"): "mapping",
     (StreamHelper, "error_events"): "mapping",
     (HmacSignature, "field_constraints"): "mapping",
@@ -1410,28 +1507,103 @@ class _Validator:  # noqa: PLR0904
         return self.record(value, at, spec, "an immediate result")
 
     def upload(self, value: Mapping[object, object], at: str, name: str) -> Tree | _Invalid:
-        """Convert a resumable upload helper of the offset profile; the parts profile is not supported yet."""
+        """Convert either upload profile with its explicit operations and layout."""
+        del name
+        profile: Spec = {
+            "probe": (self.upload_probe, REQUIRED),
+            "append": (self.upload_append, REQUIRED),
+            "max_chunk_bytes": (self.positive, REQUIRED),
+            "partial_commit": (self.choice("allowed", "forbidden"), REQUIRED),
+            "completion": (self.upload_completion, REQUIRED),
+        }
         if value.get("profile") == "parts":
-            message = f"The parts profile of the resumable_upload helper {name!r} is not supported yet"
-            self.problems.append(_unsupported(f"{at}.profile", message))
-            return INVALID
+            profile = {
+                "list_parts": (self.upload_list_parts, REQUIRED),
+                "upload_part": (self.upload_part, REQUIRED),
+                "complete": (self.upload_complete, REQUIRED),
+                "limits": (self.upload_limits, REQUIRED),
+                "completion_probe": (self.upload_completion_probe, OMITTED),
+            }
         return self.record(
             value,
             at,
             {
                 "kind": (_keep, REQUIRED),
                 "enabled": (self.boolean, True),
-                "profile": (self.choice("offset"), REQUIRED),
+                "profile": (self.choice("offset", "parts"), REQUIRED),
                 "create": (self.upload_create, REQUIRED),
-                "probe": (self.upload_probe, REQUIRED),
-                "append": (self.upload_append, REQUIRED),
-                "max_chunk_bytes": (self.positive, REQUIRED),
-                "partial_commit": (self.choice("allowed", "forbidden"), REQUIRED),
-                "completion": (self.upload_completion, REQUIRED),
+                **profile,
                 "abort": (self.remote_cancel, OMITTED),
             },
             "a helper definition",
         )
+
+    def upload_list_parts(self, value: object, at: str) -> object:
+        spec: Spec = {
+            "operation": (self.operation, REQUIRED),
+            "bindings": (self.bindings, ()),
+            "items": (partial(self.selector, body=True), REQUIRED),
+            "index": (partial(self.selector, body=True), REQUIRED),
+            "receipt": (partial(self.selector, body=True), REQUIRED),
+            "digest": (partial(self.selector, body=True), OMITTED),
+        }
+        return self.record(value, at, spec, "an upload parts listing")
+
+    def upload_digest(self, value: object, at: str) -> object:
+        spec: Spec = {
+            "target": (self.target, REQUIRED),
+            "algorithm": (self.choice("sha256"), REQUIRED),
+            "encoding": (self.choice("base64", "hex"), REQUIRED),
+        }
+        return self.record(value, at, spec, "an upload digest")
+
+    def upload_part(self, value: object, at: str) -> object:
+        spec: Spec = {
+            "operation": (self.operation, REQUIRED),
+            "bindings": (self.bindings, ()),
+            "index": (self.target, REQUIRED),
+            "digest": (self.upload_digest, OMITTED),
+        }
+        return self.record(value, at, spec, "an upload part")
+
+    def upload_parts_target(self, value: object, at: str) -> object:
+        target = self.target(value, at)
+        if isinstance(target, dict) and target["in"] != "body":
+            return self.value(at, f"{at} must write the JSON body")
+        return target
+
+    def upload_complete(self, value: object, at: str) -> object:
+        spec: Spec = {
+            "operation": (self.operation, REQUIRED),
+            "bindings": (self.bindings, ()),
+            "parts": (self.upload_parts_target, REQUIRED),
+            "index_field": (self.text, REQUIRED),
+            "receipt_field": (self.text, REQUIRED),
+            "result_schema": (self.schema, REQUIRED),
+        }
+        return self.record(value, at, spec, "an upload completion")
+
+    def upload_limits(self, value: object, at: str) -> object:
+        spec: Spec = {
+            "max_parts": (self.positive, OMITTED),
+            "max_part_bytes": (self.positive, OMITTED),
+            "min_part_bytes": (self.positive, OMITTED),
+            "last_part_may_be_smaller": (self.boolean, REQUIRED),
+        }
+        result = self.record(value, at, spec, "upload layout limits")
+        if isinstance(result, dict) and result.get("min_part_bytes", 1) > result.get("max_part_bytes", float("inf")):
+            return self.value(f"{at}.min_part_bytes", f"{at}.min_part_bytes must not exceed max_part_bytes")
+        return result
+
+    def upload_completion_probe(self, value: object, at: str) -> object:
+        spec: Spec = {
+            "operation": (self.operation, REQUIRED),
+            "bindings": (self.bindings, ()),
+            "state": (self.selector, REQUIRED),
+            "completed_values": (partial(self.items, convert=self.literal, nonempty=True), REQUIRED),
+            "result": (partial(self.selector, body=True), REQUIRED),
+        }
+        return self.record(value, at, spec, "an upload completion probe")
 
     def upload_create(self, value: object, at: str) -> object:
         spec: Spec = {
@@ -1878,20 +2050,33 @@ def _upload_links(tree: Tree, at: str) -> Iterator[Link]:
     create = tree["create"]
     sized = ((f"{at}.create.size", create["size"]),) if "size" in create else ()
     yield Link(at=f"{at}.create.operation", ref=create["operation"], targets=sized)
-    probe = tree["probe"]
+    parts = tree["profile"] == "parts"
+    probe_name, append_name = ("list_parts", "upload_part") if parts else ("probe", "append")
+    probe = tree[probe_name]
     yield Link(
-        at=f"{at}.probe.operation", ref=probe["operation"], targets=_targets(probe["bindings"], f"{at}.probe.bindings")
+        at=f"{at}.{probe_name}.operation",
+        ref=probe["operation"],
+        targets=_targets(probe["bindings"], f"{at}.{probe_name}.bindings"),
     )
-    append = tree["append"]
-    written = tuple((f"{at}.append.{name}", append[name]) for name in ("offset", "length") if name in append)
+    append = tree[append_name]
+    written = tuple(
+        (f"{at}.{append_name}.{name}", append[name]) for name in ("index", "offset", "length") if name in append
+    )
+    if (digest := append.get("digest")) is not None:
+        written = (*written, (f"{at}.{append_name}.digest.target", digest["target"]))
     yield Link(
-        at=f"{at}.append.operation",
+        at=f"{at}.{append_name}.operation",
         ref=append["operation"],
-        targets=(*written, *_targets(append["bindings"], f"{at}.append.bindings")),
+        targets=(*written, *_targets(append["bindings"], f"{at}.{append_name}.bindings")),
     )
-    for name in ("completion", "abort"):
+    for name in ("complete", "completion", "completion_probe", "abort"):
         if (part := tree.get(name)) is not None and "operation" in part:
             where = f"{at}.{name}"
             yield Link(
-                at=f"{where}.operation", ref=part["operation"], targets=_targets(part["bindings"], f"{where}.bindings")
+                at=f"{where}.operation",
+                ref=part["operation"],
+                targets=(
+                    *_targets(part["bindings"], f"{where}.bindings"),
+                    *(((f"{where}.parts", part["parts"]),) if name == "complete" else ()),
+                ),
             )
