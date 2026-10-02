@@ -1,5 +1,0 @@
-{
-  "foo_name": "Foo",
-  "frames": 0,
-  "discriminator_documents": 1
-}

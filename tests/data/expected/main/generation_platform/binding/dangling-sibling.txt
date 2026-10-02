@@ -1,4 +1,0 @@
-{
-  "identical_model_bytes": true,
-  "capture_failed": false
-}

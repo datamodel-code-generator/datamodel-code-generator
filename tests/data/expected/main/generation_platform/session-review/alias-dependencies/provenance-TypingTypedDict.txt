@@ -1,3 +1,0 @@
-bound: absent / not_applicable / opaque
-either: absent / not_applicable / preexisting_type
-mixed: absent / not_applicable / opaque

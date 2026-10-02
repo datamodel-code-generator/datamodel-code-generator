@@ -1,0 +1,6 @@
+# legacy-operations
+render pydantic_v2.BaseModel default
+  diagnostic APIGenerationError
+  diagnostic E_METADATA_REQUIRED target /paths/~1pets/get: The security of GET /pets requires the unavailable scheme 'bearer'
+  diagnostic E_METADATA_REQUIRED target /paths/~1bindings~10/post: The security of POST /bindings/0 requires the unavailable scheme 'bearer'
+  diagnostic E_METADATA_REQUIRED target /paths/~1bindings~11/post: The security of POST /bindings/1 requires the unavailable scheme 'bearer'

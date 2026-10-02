@@ -1,0 +1,21 @@
+# materialized-null-property-names
+render pydantic_v2.BaseModel default
+  diagnostic APIGenerationError
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Choice/anyOf/0/propertyNames: A schema must be an object or a boolean
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Array/allOf/0/items/propertyNames: A schema must be an object or a boolean
+render pydantic_v2.dataclass default
+  diagnostic APIGenerationError
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Choice/anyOf/0/propertyNames: A schema must be an object or a boolean
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Array/allOf/0/items/propertyNames: A schema must be an object or a boolean
+render dataclasses.dataclass default
+  diagnostic APIGenerationError
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Choice/anyOf/0/propertyNames: A schema must be an object or a boolean
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Array/allOf/0/items/propertyNames: A schema must be an object or a boolean
+render typing.TypedDict default
+  diagnostic APIGenerationError
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Choice/anyOf/0/propertyNames: A schema must be an object or a boolean
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Array/allOf/0/items/propertyNames: A schema must be an object or a boolean
+render msgspec.Struct default
+  diagnostic APIGenerationError
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Choice/anyOf/0/propertyNames: A schema must be an object or a boolean
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Array/allOf/0/items/propertyNames: A schema must be an object or a boolean

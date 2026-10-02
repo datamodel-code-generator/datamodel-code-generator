@@ -74,7 +74,7 @@ def record_failure(source: Path, case: dict[str, Any], monkeypatch: pytest.Monke
 
     with monkeypatch.context() as fault:
         fault.setattr(OpenAPIGenerationSession, "freeze_attempt", corrupt)
-        product, retained = generate_product(
+        product = generate_product(
             source,
             GenerateConfig(
                 input_file_type="openapi",
@@ -89,5 +89,4 @@ def record_failure(source: Path, case: dict[str, Any], monkeypatch: pytest.Monke
     return {
         "diagnostics": sorted({diagnostic.code for diagnostic in product.batch.diagnostics}),
         "demands": sorted({error.code for error in errors}),
-        "retained_graph": retained,
     }

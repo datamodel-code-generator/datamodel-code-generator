@@ -1,0 +1,4 @@
+# edge-legacy-parameter-content
+render pydantic_v2.BaseModel default
+  diagnostic APIGenerationError
+  diagnostic MC_PARAMETER_ENCODING binding /paths/~1items/get/parameters/1: Parameter content must declare exactly one media type

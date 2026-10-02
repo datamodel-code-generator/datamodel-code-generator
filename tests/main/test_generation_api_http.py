@@ -6,7 +6,6 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from datamodel_code_generator import InputFileType, OpenAPIScope, generate
-from datamodel_code_generator.parser.openapi_scope import ApiOpenAPIParser
 from tests.conftest import assert_output
 from tests.test_http import _SchemaHandler, local_http_server  # noqa: F401 - Register the existing fixture.
 
@@ -24,17 +23,19 @@ def test_api_url_path_item(local_http_server: str) -> None:  # noqa: F811 - Requ
             (SOURCE / filename).read_bytes(),
         )
     try:
-        parser = ApiOpenAPIParser(
+        result = generate(
             urlparse(f"{local_http_server}/external.json"),
+            input_file_type=InputFileType.OpenAPI,
             openapi_scopes=[OpenAPIScope.Api],
             allow_private_network=True,
             allow_remote_refs=True,
+            input_filename="external.json",
+            use_union_operator=False,
+            use_standard_collections=False,
+            disable_timestamp=True,
             formatters=[],
         )
-        try:
-            assert_output(parser.parse(), EXPECTED / "external.py")
-        finally:
-            parser.dispose()
+        assert_output(result, EXPECTED / "external-generate.py")
     finally:
         for filename in ("external.json", "library.json"):
             del _SchemaHandler.routes[f"/{filename}"]
