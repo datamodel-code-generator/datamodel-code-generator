@@ -518,6 +518,12 @@ credential reconnect bound authenticated=True
 credential checkpoint
   refused ProtocolConfigurationError condition='wrong_capability' path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
   new sends=0
+safe authenticated reconnect
+  > GET https://api.example.com/marks?api_key=CLIENT_KEY last-event-id=None
+  < closed
+  > GET https://api.example.com/marks?after=5&api_key=CLIENT_KEY last-event-id=None
+  delivered sequence=2
+  < closed
 active auth collision on open
   refused AuthConfigurationError condition='name_collision' path=('auth',) operation=None operation_id='streamMarks' cause=NoneType context=NoneType
   new sends=0
@@ -547,6 +553,15 @@ query patch scoped page view
   new sends=0
 query patch scoped page call
   refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'page') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch scoped tag client
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'tag') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch scoped tag view
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'tag') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch scoped tag call
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'tag') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch named after client
   refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'after') operation='/paths/~1named-marks/get' operation_id=None cause=NoneType context=NoneType
@@ -682,6 +697,12 @@ credential reconnect bound authenticated=True
 credential checkpoint
   refused ProtocolConfigurationError condition='wrong_capability' path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
   new sends=0
+safe authenticated reconnect
+  > GET https://api.example.com/marks?api_key=CLIENT_KEY last-event-id=None
+  < closed
+  > GET https://api.example.com/marks?after=5&api_key=CLIENT_KEY last-event-id=None
+  delivered sequence=2
+  < closed
 active auth collision on open
   refused AuthConfigurationError condition='name_collision' path=('auth',) operation=None operation_id='streamMarks' cause=NoneType context=NoneType
   new sends=0
@@ -711,6 +732,15 @@ query patch scoped page view
   new sends=0
 query patch scoped page call
   refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'page') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch scoped tag client
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'tag') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch scoped tag view
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'tag') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch scoped tag call
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'tag') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
   new sends=0
 query patch named after client
   refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'after') operation='/paths/~1named-marks/get' operation_id=None cause=NoneType context=NoneType

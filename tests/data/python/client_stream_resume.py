@@ -816,7 +816,7 @@ def _query_patches(resumes: _Resumes) -> Iterable[tuple[str, str, str, Any]]:
     """Give collisions at each options origin and both known and dynamic expanded property names."""
     options = resumes.harness.options
     for helper, names in (
-        ("scoped", ("scope", "after", "page")),
+        ("scoped", ("scope", "after", "page", "tag")),
         ("named", ("after",)),
         ("deep", ("scope[after]", "scope[page]", "scope[tag]")),
     ):
@@ -860,6 +860,12 @@ def _write_guards(package: ModuleType, lines: list[str]) -> None:
                 _guarded(lines, "credential checkpoint", stream.checkpoint)
                 stream.close()
             if authenticated:
+                lines.append("safe authenticated reconnect")
+                resumes.reply(b'data: {"scope": {"after": "5"}}\n\n', resumes.harness.interrupted())
+                resumes.reply(b'data: {"scope": {"after": "6"}}\n\n')
+                with api.protocols.marks.scoped.open(stream_options=resumes.reconnect) as stream:
+                    next(stream)
+                    lines.append(f"  delivered sequence={next(stream).sequence}")
                 scope = resumes.argument("query", "scope", {"api_key": "SERVER_KEY"}, "marks.StreamMarks")
                 _guarded(lines, "active auth collision on open", partial(api.protocols.marks.scoped.open, scope=scope))
     for name, field, origin, patch in _query_patches(resumes):
@@ -913,10 +919,12 @@ def _cleared_guards(resumes: _Resumes, api: Any) -> None:
     """Clear known and dynamic cursor fields on explicit and automatic reopens while keeping another parameter."""
     lines, options = resumes.lines, resumes.harness.options
     for name in ("scoped", "named", "deep"):
-        helper = getattr(api.with_options(options.RequestOptions(query=(("tag", "kept"),))).protocols.marks, name)
+        owner = api if name == "scoped" else api.with_options(options.RequestOptions(query=(("tag", "kept"),)))
+        helper = getattr(owner.protocols.marks, name)
         cursor = {"after": "5"} if name == "named" else {"after": "5", "page": "dynamic"}
         resumes.reply(f"data: {json.dumps({'scope': cursor})}\n\n".encode())
-        stream = helper.open()
+        given = {"tag": resumes.argument("query", "tag", "kept", "marks.StreamMarks")} if name == "scoped" else {}
+        stream = helper.open(**given)
         next(stream)
         state = stream.checkpoint()
         stream.close()
@@ -975,6 +983,12 @@ async def _awrite_guards(package: ModuleType, lines: list[str]) -> None:
                 _guarded(lines, "credential checkpoint", stream.checkpoint)
                 await stream.aclose()
             if authenticated:
+                lines.append("safe authenticated reconnect")
+                resumes.reply(b'data: {"scope": {"after": "5"}}\n\n', resumes.harness.interrupted())
+                resumes.reply(b'data: {"scope": {"after": "6"}}\n\n')
+                async with await api.protocols.marks.scoped.open(stream_options=resumes.reconnect) as stream:
+                    await anext(stream)
+                    lines.append(f"  delivered sequence={(await anext(stream)).sequence}")
                 scope = resumes.argument("query", "scope", {"api_key": "SERVER_KEY"}, "marks.StreamMarks")
                 await _aguarded(
                     lines, "active auth collision on open", partial(api.protocols.marks.scoped.open, scope=scope)
@@ -991,10 +1005,12 @@ async def _awrite_guards(package: ModuleType, lines: list[str]) -> None:
             )
     async with package.AsyncClient(transport_adapter=resumes.adapter, options=resumes.client_options()) as api:
         for name in ("scoped", "named", "deep"):
-            helper = getattr(api.with_options(options.RequestOptions(query=(("tag", "kept"),))).protocols.marks, name)
+            owner = api if name == "scoped" else api.with_options(options.RequestOptions(query=(("tag", "kept"),)))
+            helper = getattr(owner.protocols.marks, name)
             cursor = {"after": "5"} if name == "named" else {"after": "5", "page": "dynamic"}
             resumes.reply(f"data: {json.dumps({'scope': cursor})}\n\n".encode())
-            stream = await helper.open()
+            given = {"tag": resumes.argument("query", "tag", "kept", "marks.StreamMarks")} if name == "scoped" else {}
+            stream = await helper.open(**given)
             await anext(stream)
             state = stream.checkpoint()
             await stream.aclose()

@@ -157,7 +157,7 @@ def query_written(call: OperationPlan[T, object], writes: Writes, name: str) -> 
     """Return whether a query patch can replace a field written by a helper, including object properties.
 
     Exploded form objects own their declared properties and any additional name their parameter accepts. Deep
-    objects own those properties within the parameter's brackets. Other declared parameters remain independent.
+    objects own those properties within the parameter's brackets. Decoder reservations do not limit wire writes.
     """
     for position, _ in writes:
         if position is None or (plan := call.parameters[position].plan).location != "query":
@@ -172,9 +172,7 @@ def query_written(call: OperationPlan[T, object], writes: Writes, name: str) -> 
             if not name.startswith(prefix) or not name.endswith("]"):
                 continue
             member = name[len(prefix) : -1]
-        if any(item.name == member for item in plan.fields) or (
-            plan.additional is not None and (plan.style == "deepObject" or member not in plan.reserved_names)
-        ):
+        if any(item.name == member for item in plan.fields) or plan.additional is not None:
             return True
     return False
 
