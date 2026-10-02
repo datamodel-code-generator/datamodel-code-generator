@@ -866,7 +866,7 @@ def _compressed(
         return request, False
     if request.headers.get_all("content-encoding"):
         raise ConfigurationError(field_path=("headers", "Content-Encoding"), condition="managed")
-    body = None if request.body is None else gzipped_attempt(request.body)
+    body = None if request.body is None else gzipped_attempt(request.body, partial(call.check, "encode"))
     headers = HeadersView((*request.headers.items(), ("Content-Encoding", coding.token)))
     return PreparedRequest(method=request.method, url=request.url, headers=headers, body=body), True
 

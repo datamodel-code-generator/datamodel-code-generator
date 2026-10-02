@@ -15,7 +15,7 @@ from .coding import CHUNK
 from .errors import ConfigurationError
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Iterable, Iterator
+    from collections.abc import AsyncIterator, Callable, Iterable, Iterator
 
     from .bodies import AsyncBodyAttempt, BodyAttempt, BodyAttemptContext
     from .body_sources import AsyncBodySource, BodySource
@@ -40,9 +40,18 @@ def _gzipped(chunks: Iterable[bytes]) -> Iterator[bytes]:
     yield compressor.flush()
 
 
-def gzipped_attempt(attempt: EncodedAttempt) -> EncodedAttempt:
-    """Return the compressed attempt of a body encoded once, compressed once for every attempt."""
-    return EncodedAttempt(b"".join(_gzipped((attempt.content,))), attempt.content_type)
+def gzipped_attempt(attempt: EncodedAttempt, check: Callable[[], None]) -> EncodedAttempt:
+    """Return the compressed attempt of a body encoded once, compressed once for every attempt.
+
+    `check` runs before each step, so a cancelled or expired call stops compressing a large body.
+    """
+    content, output = attempt.content, []
+    compressor = _compressor()
+    for offset in range(0, len(content), CHUNK):
+        check()
+        output.append(compressor.compress(content[offset : offset + CHUNK]))
+    output.append(compressor.flush())
+    return EncodedAttempt(b"".join(output), attempt.content_type)
 
 
 def applies(resolved: ResolvedCompression, operation: OperationPlan[object, object] | None, *, body: bool) -> bool:

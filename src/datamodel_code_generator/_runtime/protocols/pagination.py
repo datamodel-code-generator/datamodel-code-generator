@@ -37,6 +37,7 @@ from .errors import PaginationCycleError, ProtocolDataError, ProtocolStateError,
 from .options import PaginationOptions, layered
 from .records import (
     BodySelector,
+    BodyTarget,
     Continuation,
     HeaderSelector,
     ParameterTarget,
@@ -1131,8 +1132,9 @@ def _line(link: _Link | None) -> _History:
 def _coded(walk: _Walk[T, P]) -> _Walk[T, P]:
     """Refuse a coding the helper call selects that no request the walk may still send can apply, sending nothing.
 
-    The first request sends the caller's body with the helper's operation, and each continuation sends it again only
-    with an operation that keeps a body; a walk past its last page or limited to no items sends nothing.
+    The first request sends the caller's body with the helper's operation, and each continuation sends it again, or
+    the body its bindings or cursor write, only with an operation that keeps a body; a walk past its last page or
+    limited to no items sends nothing.
     """
     if (options := walk.limits.options) is None or not isinstance(selected := options.compression, str):
         return walk
@@ -1140,7 +1142,13 @@ def _coded(walk: _Walk[T, P]) -> _Walk[T, P]:
 
     plan, link = walk.plan, walk.link
     body = not isinstance(walk.request.body, Unset)
-    continued = (plan.continued, body and plan.continued.body is not None)
+    rule = plan.continuation
+    written = (
+        *(binding.target for binding in plan.bindings),
+        *(() if isinstance(rule, (NextUrlPlan, LinkPlan)) else (rule.write,)),
+    )
+    writes = any(isinstance(target, BodyTarget) for target in written)
+    continued = (plan.continued, (body or writes) and plan.continued.body is not None)
     children: tuple[tuple[OperationPlan[P, object], bool], ...]
     if link is None:
         children = () if walk.limits.max_items == 0 else ((plan.call, body), continued)

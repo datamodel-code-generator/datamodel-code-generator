@@ -48,6 +48,7 @@ from .errors import (
 from .options import PollOptions, layered
 from .records import (
     BodySelector,
+    BodyTarget,
     CancelReceipt,
     PollSnapshot,
     StatusSelector,
@@ -1445,15 +1446,21 @@ class AsyncLroHandle(_Operation[T, P]):
 
 
 def _coded(plan: PollingPlan[T, P, C], limits: _Limits, body: object) -> None:
-    """Refuse a coding the helper call selects unless the create request sends a body its operation accepts.
+    """Refuse a coding the helper call selects unless one of its requests sends a body its operation accepts.
 
-    Polls and the result fetch send no body of the caller's, so they never make a coding applicable here, and a
-    resumed handle, which never creates the operation again, has no request a coding can apply to.
+    The create request sends the caller's body, which a resumed handle never sends again; a poll or the result fetch
+    sends a body only where one of its bindings writes into it.
     """
     if (options := limits.options) is not None and isinstance(selected := options.compression, str):
         from ..client.compression import helper_children  # noqa: PLC0415 - Only a selected coding loads the encoder.
 
-        helper_children(selected, ((plan.create, not isinstance(body, Unset)),))
+        polls = (plan.poll, any(isinstance(binding.target, BodyTarget) for binding in plan.bindings))
+        fetches = (
+            ()
+            if plan.fetch is None
+            else ((plan.fetch, any(isinstance(binding.target, BodyTarget) for binding in plan.fetch_bindings)),)
+        )
+        helper_children(selected, ((plan.create, not isinstance(body, Unset)), polls, *fetches))
 
 
 def _session(limits: _Limits) -> OperationSession:
