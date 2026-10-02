@@ -37,17 +37,17 @@ render pydantic_v2.BaseModel
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   /selection/selected_operations/0 backend.get_status()
     exports client.types.backend.GetStatusResponse client.types.backend.GetStatusErrorData client.types.backend.GetStatusHTTPError
-    exports client.types.backend.GetStatusRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.backend.GetStatusRequestCodecs None
   /selection/selected_operations/1 backend.get_account()
     exports client.types.backend.GetAccountResponse client.types.backend.GetAccountErrorData client.types.backend.GetAccountHTTPError
-    exports client.types.backend.GetAccountRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.backend.GetAccountRequestCodecs None
   /selection/selected_operations/2 search.search()
     exports client.types.search.SearchResponse client.types.search.SearchErrorData client.types.search.SearchHTTPError
-    exports client.types.search.SearchRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.search.SearchRequestCodecs None
   /selection/selected_operations/3 backend.upload()
     exports client.types.backend.UploadResponse client.types.backend.UploadErrorData client.types.backend.UploadHTTPError
-    exports client.types.backend.UploadRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.backend.UploadRequestCodecs None
   /selection/selected_operations/4 backend.get_health()
     exports client.types.backend.GetHealthResponse client.types.backend.GetHealthErrorData client.types.backend.GetHealthHTTPError
-    exports client.types.backend.GetHealthRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+    exports client.types.backend.GetHealthRequestCodecs None
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

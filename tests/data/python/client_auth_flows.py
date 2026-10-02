@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import asyncio
 import importlib
+import json
 import os
 import time
 from datetime import datetime, timedelta, timezone, tzinfo
+from pathlib import Path
 from time import monotonic
 from typing import TYPE_CHECKING, Any, Final
 
@@ -386,12 +388,18 @@ def _placement(package: ModuleType, auth: ModuleType, options: ModuleType, lines
         ("cookie key separator", {"cookie_key": static(auth.ApiKeyCredential("a;b"))}, "api_key_cookie", {}),
         ("header key CRLF", {"header_key": static(auth.ApiKeyCredential("k\r\nX-Evil: 1"))}, "api_key_header", {}),
         ("header key inner space", {"header_key": static(auth.ApiKeyCredential("in ner"))}, "api_key_header", {}),
-        ("bearer token trailing space", {"bearer": auth.StaticTokenProvider(auth.AccessToken("secret "))}, "bearer",
-         {}),
+        (
+            "bearer token trailing space",
+            {"bearer": auth.StaticTokenProvider(auth.AccessToken("secret "))},
+            "bearer",
+            {},
+        ),
         (
             "and alternative",
-            {"header_key": static(auth.ApiKeyCredential("and-key")), "bearer": auth.StaticTokenProvider(
-                auth.AccessToken("and-token"))},
+            {
+                "header_key": static(auth.ApiKeyCredential("and-key")),
+                "bearer": auth.StaticTokenProvider(auth.AccessToken("and-token")),
+            },
             "and_auth",
             {},
         ),
@@ -405,30 +413,39 @@ def _placement(package: ModuleType, auth: ModuleType, options: ModuleType, lines
         ("api key material for bearer", {"bearer": static(auth.ApiKeyCredential("k"))}, "bearer", {}),
         (
             "past expiry",
-            {"bearer": auth.StaticTokenProvider(
-                auth.AccessToken("t", expires_at=datetime.now(timezone.utc) - timedelta(seconds=1)))},
+            {
+                "bearer": auth.StaticTokenProvider(
+                    auth.AccessToken("t", expires_at=datetime.now(timezone.utc) - timedelta(seconds=1))
+                )
+            },
             "bearer",
             {},
         ),
-        ("naive expiry", {"bearer": auth.StaticTokenProvider(auth.AccessToken("t", expires_at=datetime(2026, 1, 1)))},
-         "bearer", {}),
+        (
+            "naive expiry",
+            {"bearer": auth.StaticTokenProvider(auth.AccessToken("t", expires_at=datetime(2026, 1, 1)))},
+            "bearer",
+            {},
+        ),
         (
             "failing offset expiry",
-            {"bearer": auth.StaticTokenProvider(auth.AccessToken("t", expires_at=datetime(2026, 1, 1, tzinfo=_Offset())))},
+            {
+                "bearer": auth.StaticTokenProvider(
+                    auth.AccessToken("t", expires_at=datetime(2026, 1, 1, tzinfo=_Offset()))
+                )
+            },
             "bearer",
             {},
         ),
         ("future expiry", {"bearer": auth.StaticTokenProvider(auth.AccessToken("t", expires_at=future))}, "bearer", {}),
-        ("known read scope", {"oauth": auth.StaticTokenProvider(auth.AccessToken("t", scopes=("read",)))},
-         "oauth_read", {}),
-        ("known empty scopes", {"oauth": auth.StaticTokenProvider(auth.AccessToken("t", scopes=()))}, "oauth_read", {}),
-        ("known write scope", {"oauth": auth.StaticTokenProvider(auth.AccessToken("t", scopes=("write",)))},
-         "oauth_read", {}),
-        ("unknown scopes", {"oauth": auth.StaticTokenProvider(auth.AccessToken("t"))}, "oauth_read", {}),
         ("provider get raises", {"bearer": _Provider(None, failures={"get": ValueError("get failed")})}, "bearer", {}),
         ("provider returns a coroutine", {"bearer": _Deferring()}, "bearer", {}),
-        ("environment missing", {"bearer": auth.EnvironmentCredentialProvider("DCG_AUTH_FLOWS_MISSING", kind="bearer")},
-         "bearer", {}),
+        (
+            "environment missing",
+            {"bearer": auth.EnvironmentCredentialProvider("DCG_AUTH_FLOWS_MISSING", kind="bearer")},
+            "bearer",
+            {},
+        ),
     )
     for label, credentials, method, arguments in cases:
         exchange = Exchange(lines)
@@ -439,6 +456,40 @@ def _placement(package: ModuleType, auth: ModuleType, options: ModuleType, lines
         ):
             call = getattr(api.auth.with_response, method)
             record(lines, label, lambda call=call, arguments=arguments: _outcome(lambda: call(**arguments)))
+
+    for case in json.loads((Path(__file__).parents[1] / "generation_platform/client/scope-grants.json").read_text()):
+        for status in (200, 403):
+            grants = None if case["grants"] is None else tuple(case["grants"])
+            provider = _Provider(_bearer(auth, scopes=grants))
+            exchange = Exchange([])
+            exchange.respond(
+                raw_response(
+                    status,
+                    b"result",
+                    "application/octet-stream",
+                    **{"WWW-Authenticate": 'Bearer error="insufficient_scope"'},
+                )
+            )
+            with (
+                exchange.client() as native,
+                package.Client(
+                    http_client=native,
+                    options=options.ClientOptions(
+                        auth=auth.AuthConfig({"oauth": provider}),
+                        clock=options.Clock(monotonic=lambda: 100.0, time=lambda: 1800000000.0),
+                    ),
+                ) as api,
+            ):
+                try:
+                    result = api.auth.with_response.oauth_scopes()
+                    actual = result.info.status_code
+                except Exception as error:  # noqa: BLE001
+                    actual = error.status_code
+            arrivals = sum(line.startswith("  > GET https://api.example.com/oauth/scopes") for line in exchange.lines)
+            lines.append(
+                f"  {case['label']} grants={grants} status={actual}"
+                f" callbacks={provider.calls} provider_calls={len(provider.calls)} resource_arrivals={arrivals}"
+            )
 
 
 def _environment(package: ModuleType, auth: ModuleType, options: ModuleType, lines: list[str]) -> None:
@@ -485,46 +536,99 @@ def _configuration(package: ModuleType, auth: ModuleType, options: ModuleType, l
         @capabilities.setter
         def capabilities(self, value: object) -> None:
             del value
+
     cases: tuple[tuple[str, Callable[[], object], str], ...] = (
-        ("async provider on sync client", lambda: auth.AuthConfig({"bearer": auth.AsyncStaticTokenProvider(
-            auth.AccessToken("t"))}), "bearer"),
+        (
+            "async provider on sync client",
+            lambda: auth.AuthConfig({"bearer": auth.AsyncStaticTokenProvider(auth.AccessToken("t"))}),
+            "bearer",
+        ),
         ("partial refresh capability", lambda: auth.AuthConfig({"bearer": _Partial()}), "bearer"),
-        ("async signer on sync client", lambda: auth.AuthConfig({}, send_on_anonymous=True,
-                                                                  signers=(_AsyncSigner(auth),)), "anonymous"),
+        (
+            "async signer on sync client",
+            lambda: auth.AuthConfig({}, send_on_anonymous=True, signers=(_AsyncSigner(auth),)),
+            "anonymous",
+        ),
         ("origin with path", lambda: auth.AuthConfig({"bearer": token}, allowed_origins=(f"{_ORIGIN}/",)), "bearer"),
-        ("origin with user", lambda: auth.AuthConfig({"bearer": token}, allowed_origins=("https://user@a.example.com",)),
-         "bearer"),
-        ("origin port overflow", lambda: auth.AuthConfig({"bearer": token}, allowed_origins=("https://a.example.com:99999",)),
-         "bearer"),
+        (
+            "origin with user",
+            lambda: auth.AuthConfig({"bearer": token}, allowed_origins=("https://user@a.example.com",)),
+            "bearer",
+        ),
+        (
+            "origin port overflow",
+            lambda: auth.AuthConfig({"bearer": token}, allowed_origins=("https://a.example.com:99999",)),
+            "bearer",
+        ),
         ("unknown scheme", lambda: auth.AuthConfig({"nope": token}), "bearer"),
         ("unavailable scheme", lambda: auth.AuthConfig({"unused_digest": token}), "bearer"),
-        ("selection out of range", lambda: auth.AuthConfig({"bearer": token, "header_key": key}, selection=5), "or_auth"),
+        (
+            "selection out of range",
+            lambda: auth.AuthConfig({"bearer": token, "header_key": key}, selection=5),
+            "or_auth",
+        ),
         ("selected alternative incomplete", lambda: auth.AuthConfig({"header_key": key}, selection=1), "or_auth"),
         ("selection on anonymous operation", lambda: auth.AuthConfig({"bearer": token}, selection=1), "anonymous"),
         ("selection on single alternative", lambda: auth.AuthConfig({"bearer": token}, selection=1), "bearer"),
         ("anonymous without opt-in", lambda: auth.AuthConfig({"bearer": token}), "empty_security"),
-        ("anonymous scheme without credential", lambda: auth.AuthConfig({"header_key": key}, send_on_anonymous=True,
-                                                                         anonymous_schemes=("bearer",)), "anonymous"),
+        (
+            "anonymous scheme without credential",
+            lambda: auth.AuthConfig({"header_key": key}, send_on_anonymous=True, anonymous_schemes=("bearer",)),
+            "anonymous",
+        ),
         ("anonymous without schemes or signers", lambda: auth.AuthConfig({}, send_on_anonymous=True), "anonymous"),
-        ("signer capabilities mapping", lambda: auth.AuthConfig({}, send_on_anonymous=True, signers=(mapped,)),
-         "anonymous"),
-        ("signer capabilities raising", lambda: auth.AuthConfig({}, send_on_anonymous=True,
-                                                                  signers=(_Unknowable(auth),)), "anonymous"),
-        ("two credentials one header", lambda: auth.AuthConfig(
-            {"bearer": token, "basic": auth.StaticCredentialProvider(auth.BasicCredential("u", "p"))},
-            send_on_anonymous=True, anonymous_schemes=("bearer", "basic")), "anonymous"),
-        ("signer header beside credential header", lambda: auth.AuthConfig(
-            {"bearer": token}, signers=(_ManagingSigner(auth, ("Authorization",), ()),)), "bearer"),
-        ("two signers one query name", lambda: auth.AuthConfig(
-            {}, send_on_anonymous=True,
-            signers=(_ManagingSigner(auth, (), ("sig",)), _ManagingSigner(auth, (), ("sig",)))), "anonymous"),
-        ("signer managing cookie beside cookie key", lambda: auth.AuthConfig(
-            {"cookie_key": key}, signers=(_ManagingSigner(auth, ("Cookie",), ()),)), "api_key_cookie"),
-        ("invalid managed header", lambda: auth.AuthConfig(
-            {}, send_on_anonymous=True, signers=(_ManagingSigner(auth, ("Bad Name",), ()),)), "anonymous"),
-        ("header credential named Cookie beside cookie key", lambda: auth.AuthConfig(
-            {"cookie_key": key, "cookie_header": key}, send_on_anonymous=True,
-            anonymous_schemes=("cookie_key", "cookie_header")), "anonymous"),
+        (
+            "signer capabilities mapping",
+            lambda: auth.AuthConfig({}, send_on_anonymous=True, signers=(mapped,)),
+            "anonymous",
+        ),
+        (
+            "signer capabilities raising",
+            lambda: auth.AuthConfig({}, send_on_anonymous=True, signers=(_Unknowable(auth),)),
+            "anonymous",
+        ),
+        (
+            "two credentials one header",
+            lambda: auth.AuthConfig(
+                {"bearer": token, "basic": auth.StaticCredentialProvider(auth.BasicCredential("u", "p"))},
+                send_on_anonymous=True,
+                anonymous_schemes=("bearer", "basic"),
+            ),
+            "anonymous",
+        ),
+        (
+            "signer header beside credential header",
+            lambda: auth.AuthConfig({"bearer": token}, signers=(_ManagingSigner(auth, ("Authorization",), ()),)),
+            "bearer",
+        ),
+        (
+            "two signers one query name",
+            lambda: auth.AuthConfig(
+                {},
+                send_on_anonymous=True,
+                signers=(_ManagingSigner(auth, (), ("sig",)), _ManagingSigner(auth, (), ("sig",))),
+            ),
+            "anonymous",
+        ),
+        (
+            "signer managing cookie beside cookie key",
+            lambda: auth.AuthConfig({"cookie_key": key}, signers=(_ManagingSigner(auth, ("Cookie",), ()),)),
+            "api_key_cookie",
+        ),
+        (
+            "invalid managed header",
+            lambda: auth.AuthConfig({}, send_on_anonymous=True, signers=(_ManagingSigner(auth, ("Bad Name",), ()),)),
+            "anonymous",
+        ),
+        (
+            "header credential named Cookie beside cookie key",
+            lambda: auth.AuthConfig(
+                {"cookie_key": key, "cookie_header": key},
+                send_on_anonymous=True,
+                anonymous_schemes=("cookie_key", "cookie_header"),
+            ),
+            "anonymous",
+        ),
     )
     for label, config, method in cases:
         exchange = Exchange(lines)
@@ -541,39 +645,63 @@ def _configuration(package: ModuleType, auth: ModuleType, options: ModuleType, l
     exchange.respond(_ok(), _ok(), _ok(), _ok())
     with (
         exchange.client() as native,
-        package.Client(http_client=native, options=options.ClientOptions(auth=auth.AuthConfig({"bearer": token}))) as api,
+        package.Client(
+            http_client=native, options=options.ClientOptions(auth=auth.AuthConfig({"bearer": token}))
+        ) as api,
     ):
         patch = options.RequestOptions(headers=(("Authorization", "generic"),))
-        record(lines, "generic managed header patch", lambda: _outcome(lambda: api.auth.with_response.bearer(options=patch)))
+        record(
+            lines,
+            "generic managed header patch",
+            lambda: _outcome(lambda: api.auth.with_response.bearer(options=patch)),
+        )
     exchange = Exchange(lines)
     exchange.respond(_ok(), _ok())
     with (
         exchange.client() as native,
         package.Client(
-            http_client=native, options=options.ClientOptions(auth=auth.AuthConfig({"query_key": key, "cookie_key": key}))
+            http_client=native,
+            options=options.ClientOptions(auth=auth.AuthConfig({"query_key": key, "cookie_key": key})),
         ) as api,
     ):
         query = options.RequestOptions(query=(("api_key", "generic"),))
-        record(lines, "generic managed query patch", lambda: _outcome(lambda: api.auth.with_response.api_key_query(
-            options=query)))
+        record(
+            lines,
+            "generic managed query patch",
+            lambda: _outcome(lambda: api.auth.with_response.api_key_query(options=query)),
+        )
         cookie = options.RequestOptions(headers=(("Cookie", "theme=light; session_key=generic"),))
-        record(lines, "generic managed cookie patch", lambda: _outcome(lambda: api.auth.with_response.api_key_cookie(
-            options=cookie)))
+        record(
+            lines,
+            "generic managed cookie patch",
+            lambda: _outcome(lambda: api.auth.with_response.api_key_cookie(options=cookie)),
+        )
         plain = options.RequestOptions(headers=(("Cookie", "theme=light"),))
-        record(lines, "generic ordinary cookie patch", lambda: _outcome(lambda: api.auth.with_response.api_key_cookie(
-            options=plain)))
+        record(
+            lines,
+            "generic ordinary cookie patch",
+            lambda: _outcome(lambda: api.auth.with_response.api_key_cookie(options=plain)),
+        )
         padded = options.RequestOptions(headers=(("Cookie", " theme=light\t"),))
         exchange.respond(_ok())
-        record(lines, "padded ordinary cookie patch", lambda: _outcome(lambda: api.auth.with_response.api_key_cookie(
-            options=padded)))
+        record(
+            lines,
+            "padded ordinary cookie patch",
+            lambda: _outcome(lambda: api.auth.with_response.api_key_cookie(options=padded)),
+        )
         arguments = _cookie_arguments(package)
         for label, signer in (
             ("signer claiming a parameter header", _ManagingSigner(auth, ("X-Trace",), ())),
             ("signer claiming an exploded query field", _ManagingSigner(auth, (), ("kind",))),
         ):
             signing = options.RequestOptions(auth=auth.AuthConfig({"cookie_key": key}, signers=(signer,)))
-            record(lines, label, lambda signing=signing: _outcome(lambda: api.auth.with_response.cookie_parameters(
-                **arguments, options=signing)))
+            record(
+                lines,
+                label,
+                lambda signing=signing: _outcome(
+                    lambda: api.auth.with_response.cookie_parameters(**arguments, options=signing)
+                ),
+            )
 
 
 class _Publishing(_Provider):
@@ -596,27 +724,57 @@ def _gate_cases(
     once = options.RetryOptions(max_retries=0)
     return (
         ("static token rejected", "bearer", lambda: static(auth.AccessToken("static")), retry, (_rejected(),)),
-        ("refreshable recovered", "bearer", lambda: provider(_bearer(auth, "old"), refreshed=_bearer(auth, "new")), retry,
-         (_rejected(), _ok())),
-        ("refreshable rejected twice", "bearer", lambda: provider(_bearer(auth, "old"), refreshed=_bearer(auth, "new")),
-         retry, (_rejected(), _rejected())),
-        ("newer publication skips refresh", "bearer",
-         lambda: publishing(_bearer(auth, "old"), refreshed=_bearer(auth, "published")), retry, (_rejected(), _ok())),
-        ("invalidate fails while recovering", "bearer",
-         lambda: provider(_bearer(auth), failures={"invalidate": RuntimeError("invalidate failed")}), retry,
-         (_rejected(),)),
-        ("invalidate fails locally", "bearer",
-         lambda: provider(_bearer(auth), failures={"invalidate": RuntimeError("invalidate failed")}), once,
-         (_rejected(),)),
-        ("refresh fails", "bearer", lambda: provider(_bearer(auth), failures={"refresh": RuntimeError("refresh failed")}),
-         retry, (_rejected(),)),
+        (
+            "refreshable recovered",
+            "bearer",
+            lambda: provider(_bearer(auth, "old"), refreshed=_bearer(auth, "new")),
+            retry,
+            (_rejected(), _ok()),
+        ),
+        (
+            "refreshable rejected twice",
+            "bearer",
+            lambda: provider(_bearer(auth, "old"), refreshed=_bearer(auth, "new")),
+            retry,
+            (_rejected(), _rejected()),
+        ),
+        (
+            "newer publication skips refresh",
+            "bearer",
+            lambda: publishing(_bearer(auth, "old"), refreshed=_bearer(auth, "published")),
+            retry,
+            (_rejected(), _ok()),
+        ),
+        (
+            "invalidate fails while recovering",
+            "bearer",
+            lambda: provider(_bearer(auth), failures={"invalidate": RuntimeError("invalidate failed")}),
+            retry,
+            (_rejected(),),
+        ),
+        (
+            "invalidate fails locally",
+            "bearer",
+            lambda: provider(_bearer(auth), failures={"invalidate": RuntimeError("invalidate failed")}),
+            once,
+            (_rejected(),),
+        ),
+        (
+            "refresh fails",
+            "bearer",
+            lambda: provider(_bearer(auth), failures={"refresh": RuntimeError("refresh failed")}),
+            retry,
+            (_rejected(),),
+        ),
         ("unsafe operation rejected", "unsafe_auth", lambda: provider(_bearer(auth)), retry, (_rejected(),)),
         ("never operation rejected", "never_auth", lambda: provider(_bearer(auth)), retry, (_rejected(),)),
     )
 
 
 def _gates(package: ModuleType, auth: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    for label, method, provider, retry, replies in _gate_cases(auth, options, auth.StaticTokenProvider, _Provider, _Publishing):
+    for label, method, provider, retry, replies in _gate_cases(
+        auth, options, auth.StaticTokenProvider, _Provider, _Publishing
+    ):
         exchange = Exchange(lines)
         exchange.respond(*replies)
         credentials = provider()
@@ -650,8 +808,13 @@ def _gates(package: ModuleType, auth: ModuleType, options: ModuleType, lines: li
         exchange.respond(_rejected())
         record(lines, "streamed invalidate failure", lambda: _outcome(streamed))
         exchange.respond(_rejected())
-        record(lines, "request_raw invalidate failure", lambda: _outcome(lambda: api.request_raw(
-            "GET", f"{_ORIGIN}/bearer", options=_raw_auth(auth, options, failing))))
+        record(
+            lines,
+            "request_raw invalidate failure",
+            lambda: _outcome(
+                lambda: api.request_raw("GET", f"{_ORIGIN}/bearer", options=_raw_auth(auth, options, failing))
+            ),
+        )
     exchange = Exchange(lines)
     exchange.respond(_rejected())
     refreshable, hook = _Provider(_bearer(auth)), _Hook("auth_start", spared=1)
@@ -660,7 +823,9 @@ def _gates(package: ModuleType, auth: ModuleType, options: ModuleType, lines: li
         package.Client(
             http_client=native,
             options=options.ClientOptions(
-                auth=auth.AuthConfig({"bearer": refreshable}), retry=options.RetryOptions(initial_delay=0), hooks=(hook,)
+                auth=auth.AuthConfig({"bearer": refreshable}),
+                retry=options.RetryOptions(initial_delay=0),
+                hooks=(hook,),
             ),
         ) as api,
     ):
@@ -707,7 +872,9 @@ def _in_flight(package: ModuleType, auth: ModuleType, options: ModuleType, lines
         provider = _Provider(auth.BearerCredential(token, auth.TokenVersion()), refreshed=_bearer(auth, "lasting"))
         exchange.respond(_rejected_after(until), _ok())
         expiring = options.RequestOptions(auth=auth.AuthConfig({"bearer": provider}))
-        record(lines, "token expired in flight", lambda: _outcome(lambda: api.auth.with_response.bearer(options=expiring)))
+        record(
+            lines, "token expired in flight", lambda: _outcome(lambda: api.auth.with_response.bearer(options=expiring))
+        )
     lines.append(f"    callbacks={provider.calls}")
 
 
@@ -733,15 +900,44 @@ def _after_send(package: ModuleType, auth: ModuleType, options: ModuleType, line
     lapsed = _bearer(auth, "lapsed", expires_at=datetime.now(timezone.utc) - timedelta(seconds=1))
     retry = options.RetryOptions(initial_delay=0)
     for label, scheme, method, provider, reply, redirects in (
-        ("retry token already expired", "bearer", "bearer", _Renewing(_bearer(auth), refreshed=lapsed),
-         raw_response(503, b"busy", "application/octet-stream"), options.RedirectOptions()),
-        ("redirect hop token already expired", "bearer", "bearer", _Renewing(_bearer(auth), refreshed=lapsed),
-         _moved(f"{_ORIGIN}/bearer?hop=1"), options.RedirectOptions(enabled=True)),
-        ("refresh grants known empty scopes", "oauth", "oauth_read",
-         _Provider(_bearer(auth), refreshed=_bearer(auth, "narrowed", scopes=())), _rejected(), options.RedirectOptions()),
+        (
+            "retry token already expired",
+            "bearer",
+            "bearer",
+            _Renewing(_bearer(auth), refreshed=lapsed),
+            raw_response(503, b"busy", "application/octet-stream"),
+            options.RedirectOptions(),
+        ),
+        (
+            "redirect hop token already expired",
+            "bearer",
+            "bearer",
+            _Renewing(_bearer(auth), refreshed=lapsed),
+            _moved(f"{_ORIGIN}/bearer?hop=1"),
+            options.RedirectOptions(enabled=True),
+        ),
+        (
+            "refresh grants known empty scopes",
+            "oauth",
+            "oauth_read",
+            _Provider(_bearer(auth), refreshed=_bearer(auth, "narrowed", scopes=())),
+            _rejected(),
+            options.RedirectOptions(),
+        ),
     ):
+        first_line = len(lines)
         exchange = Exchange(lines)
-        exchange.respond(reply, _ok())
+        exchange.respond(
+            reply,
+            raw_response(
+                403,
+                b"forbidden",
+                "application/octet-stream",
+                **{"WWW-Authenticate": 'Bearer error="insufficient_scope"'},
+            )
+            if scheme == "oauth"
+            else _ok(),
+        )
         with (
             exchange.client() as native,
             package.Client(
@@ -752,9 +948,46 @@ def _after_send(package: ModuleType, auth: ModuleType, options: ModuleType, line
             ) as api,
         ):
             record(lines, label, lambda api=api, method=method: _outcome(getattr(api.auth.with_response, method)))
+        lines.append(
+            f"    callbacks={provider.calls}"
+            f" resource_arrivals={sum(line.startswith('  > GET') for line in exchange.lines[first_line:])}"
+        )
 
 
 async def _agates(package: ModuleType, auth: ModuleType, options: ModuleType, lines: list[str]) -> None:
+    for case in json.loads((Path(__file__).parents[1] / "generation_platform/client/scope-grants.json").read_text()):
+        for status in (200, 403):
+            grants = None if case["grants"] is None else tuple(case["grants"])
+            provider = _AsyncProvider(_bearer(auth, scopes=grants))
+            exchange = Exchange([])
+            exchange.respond(
+                raw_response(
+                    status,
+                    b"result",
+                    "application/octet-stream",
+                    **{"WWW-Authenticate": 'Bearer error="insufficient_scope"'},
+                )
+            )
+            async with (
+                exchange.async_client() as native,
+                package.AsyncClient(
+                    http_client=native,
+                    options=options.ClientOptions(
+                        auth=auth.AuthConfig({"oauth": provider}),
+                        clock=options.Clock(monotonic=lambda: 100.0, time=lambda: 1800000000.0),
+                    ),
+                ) as api,
+            ):
+                try:
+                    result = await api.auth.with_response.oauth_scopes()
+                    actual = result.info.status_code
+                except Exception as error:  # noqa: BLE001
+                    actual = error.status_code
+            arrivals = sum(line.startswith("  > GET https://api.example.com/oauth/scopes") for line in exchange.lines)
+            lines.append(
+                f"  async {case['label']} grants={grants} status={actual}"
+                f" callbacks={provider.calls} provider_calls={len(provider.calls)} resource_arrivals={arrivals}"
+            )
     for label, method, provider, retry, replies in _gate_cases(
         auth, options, auth.AsyncStaticTokenProvider, _AsyncProvider, _AsyncPublishing
     ):
@@ -795,7 +1028,9 @@ async def _agates(package: ModuleType, auth: ModuleType, options: ModuleType, li
         exchange.respond(_rejected())
         lines.append(f"  async streamed invalidate failure = {await _aoutcome(streamed)}")
         exchange.respond(_rejected())
-        raw = await _aoutcome(lambda: api.request_raw("GET", f"{_ORIGIN}/bearer", options=_raw_auth(auth, options, failing)))
+        raw = await _aoutcome(
+            lambda: api.request_raw("GET", f"{_ORIGIN}/bearer", options=_raw_auth(auth, options, failing))
+        )
         lines.append(f"  async request_raw invalidate failure = {raw}")
         exchange.respond(_ok())
         lines.append(f"  async anonymous without opt-in = {await _aoutcome(api.auth.with_response.empty_security)}")
@@ -858,8 +1093,11 @@ def _permits(package: ModuleType, auth: ModuleType, options: ModuleType, lines: 
             expiring = options.RequestOptions(
                 auth=auth.AuthConfig({"bearer": credentials}, signers=signers), limiter=limiter
             )
-            record(lines, label, lambda api=api, expiring=expiring: _outcome(
-                lambda: api.auth.with_response.bearer(options=expiring)))
+            record(
+                lines,
+                label,
+                lambda api=api, expiring=expiring: _outcome(lambda: api.auth.with_response.bearer(options=expiring)),
+            )
         lines.append(f"    limiter={limiter.log} callbacks={getattr(credentials, 'calls', ())} events={hook.names}")
 
 
@@ -876,15 +1114,20 @@ async def _apermits(package: ModuleType, auth: ModuleType, options: ModuleType, 
             expiring = options.RequestOptions(
                 auth=auth.AuthConfig({"bearer": credentials}, signers=signers), limiter=limiter
             )
-            outcome = await _aoutcome(lambda api=api, expiring=expiring: api.auth.with_response.bearer(options=expiring))
+            outcome = await _aoutcome(
+                lambda api=api, expiring=expiring: api.auth.with_response.bearer(options=expiring)
+            )
         lines.append(f"  async {label} = {outcome}")
         lines.append(f"    limiter={limiter.log} callbacks={getattr(credentials, 'calls', ())} events={hook.names}")
 
 
 def _hooks(package: ModuleType, auth: ModuleType, options: ModuleType, lines: list[str]) -> None:
     for label, credentials, hook in (
-        ("provider and auth_end hook fail", _Provider(None, failures={"get": ValueError("get failed")}),
-         _Hook("auth_end")),
+        (
+            "provider and auth_end hook fail",
+            _Provider(None, failures={"get": ValueError("get failed")}),
+            _Hook("auth_end"),
+        ),
         ("auth_start hook fails", _Provider(_bearer(auth)), _Hook("auth_start")),
     ):
         exchange = Exchange(lines)
@@ -902,8 +1145,11 @@ def _hooks(package: ModuleType, auth: ModuleType, options: ModuleType, lines: li
 
 async def _ahooks(package: ModuleType, auth: ModuleType, options: ModuleType, lines: list[str]) -> None:
     for label, credentials, hook in (
-        ("provider and auth_end hook fail", _AsyncProvider(None, failures={"get": ValueError("get failed")}),
-         _AsyncHook("auth_end")),
+        (
+            "provider and auth_end hook fail",
+            _AsyncProvider(None, failures={"get": ValueError("get failed")}),
+            _AsyncHook("auth_end"),
+        ),
         ("auth_start hook fails", _AsyncProvider(_bearer(auth)), _AsyncHook("auth_start")),
     ):
         exchange = Exchange(lines)
@@ -927,7 +1173,9 @@ def _ownership(package: ModuleType, auth: ModuleType, options: ModuleType, lines
     with exchange.client() as native:
         api = package.Client(
             http_client=native,
-            options=options.ClientOptions(auth=auth.AuthConfig({"bearer": owned(failing), "bearer_alias": owned(closing)})),
+            options=options.ClientOptions(
+                auth=auth.AuthConfig({"bearer": owned(failing), "bearer_alias": owned(closing)})
+            ),
         )
         lines.append(f"  close with a failing owned provider = {_closed(api.close)}")
         adopting = options.RequestOptions(auth=auth.AuthConfig({"bearer": owned(late)}))
@@ -1037,7 +1285,10 @@ def _signatures(package: ModuleType, auth: ModuleType, options: ModuleType, line
         ("signature header undeclared", _Signer(auth, fields((("X-Other", "v"),), ()))),
         ("signature header CRLF", _Signer(auth, fields((("X-Sig", "a\r\nInjected: 1"),), ()))),
         ("signature header leading space", _Signer(auth, fields((("X-Sig", " signed"),), ()))),
-        ("signature header name folding to a token", _Signer(auth, fields((("\u212a-Sig", "v"),), ()), managed=("K-Sig",))),
+        (
+            "signature header name folding to a token",
+            _Signer(auth, fields((("\u212a-Sig", "v"),), ()), managed=("K-Sig",)),
+        ),
         ("signature query undeclared", _Signer(auth, fields((), (("other", "v"),)))),
         ("signature query lone surrogate", _Signer(auth, fields((), (("sig", "\ud800"),)))),
         ("signer returns a mapping", _Signer(auth, {"X-Sig": "v"})),

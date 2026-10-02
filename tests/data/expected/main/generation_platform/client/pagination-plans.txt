@@ -474,32 +474,32 @@ render pydantic_v2.dataclass
   }
   /selection/selected_operations/0 users.list_users(query:cursor=cursor, query:limit=limit, header:X-Snapshot=x_snapshot)
     exports client.types.users.ListUsersResponse client.types.users.ListUsersErrorData client.types.users.ListUsersHTTPError
-    exports client.types.users.ListUsersRequestCodecs client.types.users.decode_list_users_header digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.users.ListUsersRequestCodecs client.types.users.decode_list_users_header
   /selection/selected_operations/1 users.search_users(query:cursor=cursor)
     exports client.types.users.SearchUsersResponse client.types.users.SearchUsersErrorData client.types.users.SearchUsersHTTPError
-    exports client.types.users.SearchUsersRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.users.SearchUsersRequestCodecs None
   /selection/selected_operations/2 loose.list_loose(query:cursor=cursor)
     exports client.types.loose.ListLooseResponse client.types.loose.ListLooseErrorData client.types.loose.ListLooseHTTPError
-    exports client.types.loose.ListLooseRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.loose.ListLooseRequestCodecs None
   /selection/selected_operations/3 nested.list_nested(query:cursor=cursor)
     exports client.types.nested.ListNestedResponse client.types.nested.ListNestedErrorData client.types.nested.ListNestedHTTPError
-    exports client.types.nested.ListNestedRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.nested.ListNestedRequestCodecs None
   /selection/selected_operations/4 labels.list_labels(query:after=after)
     exports client.types.labels.ListLabelsResponse client.types.labels.ListLabelsErrorData client.types.labels.ListLabelsHTTPError
-    exports client.types.labels.ListLabelsRequestCodecs client.types.labels.decode_list_labels_header digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.labels.ListLabelsRequestCodecs client.types.labels.decode_list_labels_header
   /selection/selected_operations/5 labels.list_label_sets(query:after=after)
     exports client.types.labels.ListLabelSetsResponse client.types.labels.ListLabelSetsErrorData client.types.labels.ListLabelSetsHTTPError
-    exports client.types.labels.ListLabelSetsRequestCodecs client.types.labels.decode_list_label_sets_header digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.labels.ListLabelSetsRequestCodecs client.types.labels.decode_list_label_sets_header
   /selection/selected_operations/6 archive.list_archive(path:cursor=cursor)
     exports client.types.archive.ListArchiveResponse client.types.archive.ListArchiveErrorData client.types.archive.ListArchiveHTTPError
-    exports client.types.archive.ListArchiveRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.archive.ListArchiveRequestCodecs None
   /selection/selected_operations/7 statuses.list_statuses(query:code=code)
     exports client.types.statuses.ListStatusesResponse client.types.statuses.ListStatusesErrorData client.types.statuses.ListStatusesHTTPError
-    exports client.types.statuses.ListStatusesRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.statuses.ListStatusesRequestCodecs None
   /selection/selected_operations/8 secure.list_secure_users(query:cursor=cursor)
     exports client.types.secure.ListSecureUsersResponse client.types.secure.ListSecureUsersErrorData client.types.secure.ListSecureUsersHTTPError
-    exports client.types.secure.ListSecureUsersRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+    exports client.types.secure.ListSecureUsersRequestCodecs None
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
 render dataclasses.dataclass
   write models.py
   write client/__init__.py
@@ -975,32 +975,32 @@ render dataclasses.dataclass
   }
   /selection/selected_operations/0 users.list_users(query:cursor=cursor, query:limit=limit, header:X-Snapshot=x_snapshot)
     exports client.types.users.ListUsersResponse client.types.users.ListUsersErrorData client.types.users.ListUsersHTTPError
-    exports client.types.users.ListUsersRequestCodecs client.types.users.decode_list_users_header digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.users.ListUsersRequestCodecs client.types.users.decode_list_users_header
   /selection/selected_operations/1 users.search_users(query:cursor=cursor)
     exports client.types.users.SearchUsersResponse client.types.users.SearchUsersErrorData client.types.users.SearchUsersHTTPError
-    exports client.types.users.SearchUsersRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.users.SearchUsersRequestCodecs None
   /selection/selected_operations/2 loose.list_loose(query:cursor=cursor)
     exports client.types.loose.ListLooseResponse client.types.loose.ListLooseErrorData client.types.loose.ListLooseHTTPError
-    exports client.types.loose.ListLooseRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.loose.ListLooseRequestCodecs None
   /selection/selected_operations/3 nested.list_nested(query:cursor=cursor)
     exports client.types.nested.ListNestedResponse client.types.nested.ListNestedErrorData client.types.nested.ListNestedHTTPError
-    exports client.types.nested.ListNestedRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.nested.ListNestedRequestCodecs None
   /selection/selected_operations/4 labels.list_labels(query:after=after)
     exports client.types.labels.ListLabelsResponse client.types.labels.ListLabelsErrorData client.types.labels.ListLabelsHTTPError
-    exports client.types.labels.ListLabelsRequestCodecs client.types.labels.decode_list_labels_header digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.labels.ListLabelsRequestCodecs client.types.labels.decode_list_labels_header
   /selection/selected_operations/5 labels.list_label_sets(query:after=after)
     exports client.types.labels.ListLabelSetsResponse client.types.labels.ListLabelSetsErrorData client.types.labels.ListLabelSetsHTTPError
-    exports client.types.labels.ListLabelSetsRequestCodecs client.types.labels.decode_list_label_sets_header digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.labels.ListLabelSetsRequestCodecs client.types.labels.decode_list_label_sets_header
   /selection/selected_operations/6 archive.list_archive(path:cursor=cursor)
     exports client.types.archive.ListArchiveResponse client.types.archive.ListArchiveErrorData client.types.archive.ListArchiveHTTPError
-    exports client.types.archive.ListArchiveRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.archive.ListArchiveRequestCodecs None
   /selection/selected_operations/7 statuses.list_statuses(query:code=code)
     exports client.types.statuses.ListStatusesResponse client.types.statuses.ListStatusesErrorData client.types.statuses.ListStatusesHTTPError
-    exports client.types.statuses.ListStatusesRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.statuses.ListStatusesRequestCodecs None
   /selection/selected_operations/8 secure.list_secure_users(query:cursor=cursor)
     exports client.types.secure.ListSecureUsersResponse client.types.secure.ListSecureUsersErrorData client.types.secure.ListSecureUsersHTTPError
-    exports client.types.secure.ListSecureUsersRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
+    exports client.types.secure.ListSecureUsersRequestCodecs None
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
 render typing.TypedDict
   write models.py
   write client/__init__.py
@@ -1476,32 +1476,32 @@ render typing.TypedDict
   }
   /selection/selected_operations/0 users.list_users(query:cursor=cursor, query:limit=limit, header:X-Snapshot=x_snapshot)
     exports client.types.users.ListUsersResponse client.types.users.ListUsersErrorData client.types.users.ListUsersHTTPError
-    exports client.types.users.ListUsersRequestCodecs client.types.users.decode_list_users_header digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.users.ListUsersRequestCodecs client.types.users.decode_list_users_header
   /selection/selected_operations/1 users.search_users(query:cursor=cursor)
     exports client.types.users.SearchUsersResponse client.types.users.SearchUsersErrorData client.types.users.SearchUsersHTTPError
-    exports client.types.users.SearchUsersRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.users.SearchUsersRequestCodecs None
   /selection/selected_operations/2 loose.list_loose(query:cursor=cursor)
     exports client.types.loose.ListLooseResponse client.types.loose.ListLooseErrorData client.types.loose.ListLooseHTTPError
-    exports client.types.loose.ListLooseRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.loose.ListLooseRequestCodecs None
   /selection/selected_operations/3 nested.list_nested(query:cursor=cursor)
     exports client.types.nested.ListNestedResponse client.types.nested.ListNestedErrorData client.types.nested.ListNestedHTTPError
-    exports client.types.nested.ListNestedRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.nested.ListNestedRequestCodecs None
   /selection/selected_operations/4 labels.list_labels(query:after=after)
     exports client.types.labels.ListLabelsResponse client.types.labels.ListLabelsErrorData client.types.labels.ListLabelsHTTPError
-    exports client.types.labels.ListLabelsRequestCodecs client.types.labels.decode_list_labels_header digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.labels.ListLabelsRequestCodecs client.types.labels.decode_list_labels_header
   /selection/selected_operations/5 labels.list_label_sets(query:after=after)
     exports client.types.labels.ListLabelSetsResponse client.types.labels.ListLabelSetsErrorData client.types.labels.ListLabelSetsHTTPError
-    exports client.types.labels.ListLabelSetsRequestCodecs client.types.labels.decode_list_label_sets_header digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.labels.ListLabelSetsRequestCodecs client.types.labels.decode_list_label_sets_header
   /selection/selected_operations/6 archive.list_archive(path:cursor=cursor)
     exports client.types.archive.ListArchiveResponse client.types.archive.ListArchiveErrorData client.types.archive.ListArchiveHTTPError
-    exports client.types.archive.ListArchiveRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.archive.ListArchiveRequestCodecs None
   /selection/selected_operations/7 statuses.list_statuses(query:code=code)
     exports client.types.statuses.ListStatusesResponse client.types.statuses.ListStatusesErrorData client.types.statuses.ListStatusesHTTPError
-    exports client.types.statuses.ListStatusesRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.statuses.ListStatusesRequestCodecs None
   /selection/selected_operations/8 secure.list_secure_users(query:cursor=cursor)
     exports client.types.secure.ListSecureUsersResponse client.types.secure.ListSecureUsersErrorData client.types.secure.ListSecureUsersHTTPError
-    exports client.types.secure.ListSecureUsersRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
+    exports client.types.secure.ListSecureUsersRequestCodecs None
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
 render msgspec.Struct
   write models.py
   write client/__init__.py
@@ -1977,29 +1977,29 @@ render msgspec.Struct
   }
   /selection/selected_operations/0 users.list_users(query:cursor=cursor, query:limit=limit, header:X-Snapshot=x_snapshot)
     exports client.types.users.ListUsersResponse client.types.users.ListUsersErrorData client.types.users.ListUsersHTTPError
-    exports client.types.users.ListUsersRequestCodecs client.types.users.decode_list_users_header digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.users.ListUsersRequestCodecs client.types.users.decode_list_users_header
   /selection/selected_operations/1 users.search_users(query:cursor=cursor)
     exports client.types.users.SearchUsersResponse client.types.users.SearchUsersErrorData client.types.users.SearchUsersHTTPError
-    exports client.types.users.SearchUsersRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.users.SearchUsersRequestCodecs None
   /selection/selected_operations/2 loose.list_loose(query:cursor=cursor)
     exports client.types.loose.ListLooseResponse client.types.loose.ListLooseErrorData client.types.loose.ListLooseHTTPError
-    exports client.types.loose.ListLooseRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.loose.ListLooseRequestCodecs None
   /selection/selected_operations/3 nested.list_nested(query:cursor=cursor)
     exports client.types.nested.ListNestedResponse client.types.nested.ListNestedErrorData client.types.nested.ListNestedHTTPError
-    exports client.types.nested.ListNestedRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.nested.ListNestedRequestCodecs None
   /selection/selected_operations/4 labels.list_labels(query:after=after)
     exports client.types.labels.ListLabelsResponse client.types.labels.ListLabelsErrorData client.types.labels.ListLabelsHTTPError
-    exports client.types.labels.ListLabelsRequestCodecs client.types.labels.decode_list_labels_header digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.labels.ListLabelsRequestCodecs client.types.labels.decode_list_labels_header
   /selection/selected_operations/5 labels.list_label_sets(query:after=after)
     exports client.types.labels.ListLabelSetsResponse client.types.labels.ListLabelSetsErrorData client.types.labels.ListLabelSetsHTTPError
-    exports client.types.labels.ListLabelSetsRequestCodecs client.types.labels.decode_list_label_sets_header digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.labels.ListLabelSetsRequestCodecs client.types.labels.decode_list_label_sets_header
   /selection/selected_operations/6 archive.list_archive(path:cursor=cursor)
     exports client.types.archive.ListArchiveResponse client.types.archive.ListArchiveErrorData client.types.archive.ListArchiveHTTPError
-    exports client.types.archive.ListArchiveRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.archive.ListArchiveRequestCodecs None
   /selection/selected_operations/7 statuses.list_statuses(query:code=code)
     exports client.types.statuses.ListStatusesResponse client.types.statuses.ListStatusesErrorData client.types.statuses.ListStatusesHTTPError
-    exports client.types.statuses.ListStatusesRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.statuses.ListStatusesRequestCodecs None
   /selection/selected_operations/8 secure.list_secure_users(query:cursor=cursor)
     exports client.types.secure.ListSecureUsersResponse client.types.secure.ListSecureUsersErrorData client.types.secure.ListSecureUsersHTTPError
-    exports client.types.secure.ListSecureUsersRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'msgspec>=0.18']
+    exports client.types.secure.ListSecureUsersRequestCodecs None
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'msgspec>=0.18']

@@ -51,17 +51,17 @@ render pydantic_v2.BaseModel
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   /selection/selected_operations/0 default.get_root()
     exports client.types.default.GetRootResponse client.types.default.GetRootErrorData client.types.default.GetRootHTTPError
-    exports client.types.default.GetRootRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.default.GetRootRequestCodecs None
   /selection/selected_operations/1 store.get_files_by_file_name_by_ext(path:fileName=file_name, path:ext=ext, query:class=class_, header:2fa=two_factor)
     exports client.types.store.GetFilesByFileNameByExtResponse client.types.store.GetFilesByFileNameByExtErrorData client.types.store.GetFilesByFileNameByExtHTTPError
-    exports client.types.store.GetFilesByFileNameByExtRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.store.GetFilesByFileNameByExtRequestCodecs None
   /selection/selected_operations/2 u30e6_u30fc_u30b6_u30fc.http_get_users()
     exports client.types.u30e6_u30fc_u30b6_u30fc.HttpGetUsersResponse client.types.u30e6_u30fc_u30b6_u30fc.HttpGetUsersErrorData client.types.u30e6_u30fc_u30b6_u30fc.HttpGetUsersHTTPError
-    exports client.types.u30e6_u30fc_u30b6_u30fc.HttpGetUsersRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.u30e6_u30fc_u30b6_u30fc.HttpGetUsersRequestCodecs None
   /selection/selected_operations/3 admin.users.list_admin_users()
     exports client.types.admin.users.ListAdminUsersResponse client.types.admin.users.ListAdminUsersErrorData client.types.admin.users.ListAdminUsersHTTPError
-    exports client.types.admin.users.ListAdminUsersRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.admin.users.ListAdminUsersRequestCodecs None
   /selection/selected_operations/4 admin.create_admin_user()
     exports client.types.admin.CreateAdminUserResponse client.types.admin.CreateAdminUserErrorData client.types.admin.CreateAdminUserHTTPError
-    exports client.types.admin.CreateAdminUserRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+    exports client.types.admin.CreateAdminUserRequestCodecs None
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

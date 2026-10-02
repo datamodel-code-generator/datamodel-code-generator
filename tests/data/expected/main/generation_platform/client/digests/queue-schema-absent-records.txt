@@ -1,0 +1,3 @@
+# queues-schema-absent and queues-schema-absent-python
+  orders.outbox same True
+  account.offline same True

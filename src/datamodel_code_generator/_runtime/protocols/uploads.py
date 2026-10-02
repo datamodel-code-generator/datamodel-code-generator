@@ -206,7 +206,7 @@ class _Limits:
     max_parts: int | None = 10000
     parallelism: int = 4
     max_uncertain_probes: int = 3
-    total_timeout: float | None = 600.0
+    total_timeout: float | None = None
     deadline: Deadline | None = None
     max_network_sends: int | None = 10000
     options: RequestOptions | None = None
