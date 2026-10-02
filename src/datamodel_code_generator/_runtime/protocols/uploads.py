@@ -2068,6 +2068,11 @@ def _coded(
             children.append((plan.append, True))
         if (saved is None or saved.phase is _Phase.UPLOADING) and (completed := plan.completed) is not None:
             children.append((completed.call, any(position is None for position, _ in completed.writes)))
+        if saved is not None:
+            if saved.phase is _Phase.UPLOADING:
+                children.append((plan.probed.call, any(position is None for position, _ in plan.probed.writes)))
+            elif saved.phase is _Phase.UNKNOWN and (probe := plan.completion_probe) is not None:
+                children.append((probe.targeted.call, any(position is None for position, _ in probe.targeted.writes)))
         helper_children(selected, children)
 
 
