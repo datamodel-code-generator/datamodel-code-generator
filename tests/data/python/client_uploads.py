@@ -1256,6 +1256,7 @@ def uploads_oauth(package: ModuleType, lines: list[str]) -> None:
         result = resumed.run()
         resumed.run()
         lines.append(f"  resumed size={result.size} token={len(token.methods)} resource={resource.methods}")
+        _completion_end_control(harness, fresh, resource, lines)
     lines.append(f"  responses closed={all(reply.closed for reply in token.responses + resource.responses)}")
     handle.close()
     api.close()
@@ -1286,7 +1287,50 @@ async def _async_completion_oauth(harness: _Uploads, lines: list[str]) -> None:
         result = await resumed.run()
         await resumed.run()
         lines.append(f"  resumed size={result.size} token={len(token.methods)} resource={resource.methods}")
+        await _async_completion_end_control(harness, fresh, resource, lines)
     lines.append(f"  responses closed={all(reply.closed for reply in token.responses + resource.responses)}")
     await handle.aclose()
     await api.aclose()
     await provider.aclose()
+
+
+class _CancelCompletionEnd:
+    """Cancel after the completion response has been decoded, retaining its already acquired result."""
+
+    def __init__(self, token: Any) -> None:
+        self.token = token
+
+    def on_event(self, event: Any) -> None:
+        if event.name == "call_end" and event.operation_id == "completeFile":
+            self.token.cancel()
+
+
+def _completion_end_control(harness: _Uploads, api: Any, resource: Any, lines: list[str]) -> None:
+    token = harness.options.CancelToken()
+    source = harness.protocols.BytesUploadSource.from_bytes(b"")
+    handle = api.protocols.files.finish.start(
+        source,
+        tus_resumable=harness.tus,
+        options=harness.options.RequestOptions(cancel_token=token, hooks=(_CancelCompletionEnd(token),)),
+    )
+    try:
+        handle.run()
+    except harness.errors.RequestCancelledError:
+        lines.append(f"  cancelled after decoded completion: retained={handle.run().size} resource={resource.methods}")
+    handle.close()
+
+
+async def _async_completion_end_control(harness: _Uploads, api: Any, resource: Any, lines: list[str]) -> None:
+    token = harness.options.CancelToken()
+    source = harness.protocols.AsyncBytesUploadSource.from_bytes(b"")
+    handle = await api.protocols.files.finish.start(
+        source,
+        tus_resumable=harness.tus,
+        options=harness.options.RequestOptions(cancel_token=token, hooks=(_CancelCompletionEnd(token),)),
+    )
+    try:
+        await handle.run()
+    except harness.errors.RequestCancelledError:
+        result = await handle.run()
+        lines.append(f"  cancelled after decoded completion: retained={result.size} resource={resource.methods}")
+    await handle.aclose()
