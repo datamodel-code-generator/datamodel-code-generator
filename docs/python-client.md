@@ -113,9 +113,10 @@ delivery IDs, namespaces, operation references, entry IDs, and causes; callers m
 
 ## Protocol contracts
 
-Generated packages also expose the shared contracts of pagination, polling, stream, cache, and queue helpers. Records,
-options, cache and queue stores, and resume state come from `pkg.protocols`; `ProtocolClientOptions` comes from `pkg.options`; exceptions
-come from `pkg.errors`. These imports need no HTTP library and start no threads. A client that uses no protocol settings
+Generated packages also expose the shared contracts of pagination, polling, stream, cache, upload, and queue helpers.
+Records, options, cache and queue stores, and resume state come from `pkg.protocols`; `ProtocolClientOptions` comes from `pkg.options`;
+exceptions come from `pkg.errors`. These imports need no HTTP library and start no threads. A client that uses no
+protocol settings
 loads none of these definitions: `pkg.options` and `pkg.errors` load them the first time one of their names is used. The
 helpers that use these contracts are still being implemented; constructing a record or option sends nothing.
 
@@ -173,6 +174,16 @@ least -6, and otherwise one digit before the point and an `E` exponent with a si
 integer, so `Decimal("-0")` becomes `0`. Decoding the result and encoding it again gives the same bytes. A value
 nested beyond the interpreter recursion limit, and an integer beyond the interpreter's decimal conversion limit,
 raise `ValueError`.
+
+### Upload records and sources
+
+`UploadIdentity(*, size: int, sha256: bytes)` names upload content, or one checked range of it: a nonnegative size and
+a 32-byte SHA-256 digest, which the representation leaves out. `PartReceipt(*, index: int, receipt: str)` is a part
+a server confirmed, from index 1. `UploadProgress(*, confirmed_bytes: int, total_bytes: int, confirmed_parts:
+tuple[PartReceipt, ...] = (), complete: bool = False)` is how far an upload is; the confirmed bytes never exceed the
+total. `UploadSource` and `AsyncUploadSource` are the protocols a source implements, and `RangeReader` and
+`AsyncRangeReader` those of the readers it opens; see [upload helpers](#upload-helpers). The builtin sources and the
+handles are loaded only when first requested.
 
 ### Resume state
 
@@ -232,6 +243,10 @@ booleans. Durations are finite numbers of seconds, excluding booleans; integers 
 | | `reconnect` | `False` | `bool` |
 | | `max_reconnects` | `5` | Nonnegative integer or `None` |
 | | `max_reconnect_wait` | `60` seconds | Positive duration or `None` |
+| `UploadOptions` | `chunk_bytes` | `8388608`, at most the helper's `max_chunk_bytes` | Positive integer |
+| | `max_parts` | `10000` | Positive integer or `None` |
+| | `parallelism` | `4` | Positive integer |
+| | `max_uncertain_probes` | `3` | Nonnegative integer |
 | `CacheOptions` | `max_entry_bytes` | `2097152` | Positive integer: the largest body a fetch stores |
 | | `max_ttl` | `300` seconds | Positive duration: the cap on any entry's freshness |
 | `WSOptions` | `open_timeout`, `idle_timeout`, `send_timeout`, `ping_interval`, `pong_timeout` | See [WebSocket limits](#websocket-limits) | Positive duration or `None` |
@@ -278,7 +293,7 @@ client = Client(options=options)
 | `ProtocolClientOptions.security` | `ProtocolSecurityContext \| None`, default `UNSET` | `None` means anonymous use. Its `allowed_origins` are the origins beyond the server's that a next-URL or Link pagination helper may follow a URL to |
 | `ProtocolClientOptions.defaults` | `Mapping[str, ProtocolDefaults]`, default `UNSET` | Keys are helper names: Python identifiers separated by dots, without keywords or empty parts. The mapping is copied into a read-only mapping, and its values keep their identity |
 | `ProtocolDefaults.session` | `SessionOptions`, default `UNSET` | Session limits of that helper |
-| `ProtocolDefaults.options` | `PaginationOptions \| PollOptions \| StreamOptions \| CacheOptions \| WSOptions \| QueueOptions`, default `UNSET` | Kind-specific options of that helper |
+| `ProtocolDefaults.options` | `PaginationOptions \| PollOptions \| StreamOptions \| CacheOptions \| WSOptions \| UploadOptions \| QueueOptions`, default `UNSET` | Kind-specific options of that helper |
 | `ProtocolClientOptions.cache_stores` | `Mapping[str, CacheStore \| AsyncCacheStore]`, default `UNSET` | The store each [cache helper](#cache-helpers) keeps its entries in, by helper name. The mapping is copied into a read-only mapping that keeps each store's identity; the client borrows the stores and never closes them |
 | `ProtocolClientOptions.websocket_connector` | `WebSocketConnector \| AsyncWebSocketConnector \| None`, default `UNSET` | A borrowed connector that opens WebSocket connections; see [connectors and transports](#connectors-and-transports) |
 | `ProtocolClientOptions.websocket_transport` | `WebSocketTransportOptions`, default `UNSET` | TLS contexts, proxy, and `trust_env` of WebSocket connections |
@@ -320,6 +335,11 @@ Invalid field values raise `ValueError`.
 | `WebSocketProxyError` | `TransportError` | `proxy_status_code: int \| None = None`, `retry_stop_reason = None`; `phase` is always `connect` and `delivery_state` `NOT_SENT` |
 | `HandshakeResponse` | `ProtocolError` | `status_code: int`, `headers: HeadersView`, `body_prefix: bytes` of at most 65536 bytes, `truncated: bool`; raised only by connectors |
 | `DeliveryUnknownError` | `ProtocolError` | `delivery_state`, `MAYBE_SENT` or `RESPONSE_STARTED`, `resume_state: ResumeState \| None = None`, `message_id: str \| None = None` |
+| `NonResumableSourceError` | `ProtocolConfigurationError` | `source_kind: Literal['iterable', 'iterator', 'stream', 'reader']`; `field_path` is always `('source',)` and `condition` `wrong_capability` |
+| `UploadDeliveryUnknownError` | `DeliveryUnknownError` | `phase: Literal['append', 'part', 'complete']`, `part` being reserved for the parts profile, `progress: UploadProgress`; no `message_id` |
+| `UploadSourceChangedError` | `ProtocolDataError` | `expected: UploadIdentity`, `actual: UploadIdentity \| None`, `offset: int \| None = None`; `condition` is always `inconsistent` |
+| `UploadOffsetError` | `ProtocolDataError` | `confirmed_offset: int`, `expected_offset: int`, `remote_offset: int`, `size: int`, `resume_state: ResumeState \| None = None`; `condition` is always `inconsistent` |
+| `UploadExpiredError` | `ResumeStateError` | `expires_at: datetime`, timezone-aware; `condition` is always `expired` |
 | `QueueStoreError` | `ProtocolStoreError` | `action`, `entry_id: str \| None = None` |
 | `QueueFullError` | `QueueStoreError` | `kind: Literal['entries', 'bytes']`, `limit: int`, `observed: int` |
 | `QueueBindingError` | `ProtocolConfigurationError` | `entry_id: str`; `condition` is always `binding_mismatch` |
@@ -333,17 +353,19 @@ using it as a model.
 
 ## Protocol helper configuration
 
-Pagination, polling, SSE or NDJSON stream, WebSocket, webhook, cache, and queue helpers of an API are declared in a helper
-configuration, which the client target reads through its `protocols` setting. The helpers are still being implemented:
-generation validates every helper, resolves its references against the selected API, and records it in the target
-manifest. An enabled pagination helper generates the [pagination helper](#pagination-helpers) below, an enabled polling
-helper the [polling helper](#polling-helpers), an enabled SSE helper the [SSE stream helper](#sse-stream-helpers), an
-enabled NDJSON helper the [NDJSON stream helper](#ndjson-stream-helpers), an enabled WebSocket helper the
+Pagination, polling, SSE or NDJSON stream, WebSocket, webhook, cache, resumable upload, and queue helpers of an API are declared
+in a helper configuration, which the client target reads through its `protocols` setting. The helpers are still being
+implemented: generation validates every helper, resolves its references against the selected API, and records it in the
+target manifest. An enabled pagination helper generates the [pagination helper](#pagination-helpers) below, an enabled
+polling helper the [polling helper](#polling-helpers), an enabled `offset` upload helper the
+[upload helper](#upload-helpers), an enabled SSE helper the [SSE stream helper](#sse-stream-helpers), an enabled NDJSON
+helper the [NDJSON stream helper](#ndjson-stream-helpers), an enabled WebSocket helper the
 [WebSocket helper](#websocket-helpers), an enabled cache helper the [cache helper](#cache-helpers), an enabled queue
 helper the [queue helper](#queue-helpers), and an enabled webhook helper the
 [webhook verification helper](#webhook-verification-helpers). A disabled helper generates nothing, so the package is the
-same as without it. The `resumable_upload` and `batch` kinds fail with `E_CLIENT_UNSUPPORTED` whether they are enabled
-or not, and their settings are not read yet.
+same as without it. The `batch` kind, and the `parts` profile of `resumable_upload`,
+fail with `E_CLIENT_UNSUPPORTED` whether they are enabled or not, and their settings are not read yet; an enabled
+upload helper declaring `abort` or `create.session_url` fails with `E_CLIENT_UNSUPPORTED` too.
 
 | Setting | Values | Default | Where |
 |---|---|---|---|
@@ -492,6 +514,7 @@ querystring, or its request body. An operation that owns a querystring takes no 
 | `websocket` | `operation` (a GET without a body), `send`, `receive` (each `{codec: json\|utf8\|bytes, frame?, schema?}`) | `subprotocols` (`[]`), `compression` (`false`) |
 | `webhook` | `event_schema`, `signature` (see [webhook verification helpers](#webhook-verification-helpers)) | `duplicates` (`report`, the default, or `reject`, which needs a signature) |
 | `cache` | `operation`, `validator` (`etag`, `last_modified`, or `both`), `authenticated` (a boolean) | `statuses` (`[200]`), `vary_allowlist` (`[]`), `tags` (`[]`), `mutations` (`{}`); see [cache helpers](#cache-helpers) |
+| `resumable_upload` | `profile` (`offset`), `create` (`{operation, size?, expires_at?}`), `probe` (`{operation, remote_offset, bindings?}`), `append` (`{operation, offset, length?, bindings?}`), `max_chunk_bytes` (a positive integer), `partial_commit` (`allowed` or `forbidden`), `completion` | `abort` (`{operation, bindings?}`) and `create.session_url`, both refused as not supported yet |
 | `queue` | `operations`, a nonempty mapping of aliases to `{operation, side_effects}` (see [queue helpers](#queue-helpers)) | Per operation, `key_binding` and `dedupe_ttl`, given together and required with side effects |
 
 A pagination `continuation` is one of these:
@@ -508,6 +531,9 @@ four state lists hold JSON values: a list that repeats a value fails with `E_CON
 share fails with `E_CONFIG_CONFLICT`. `result` is `{kind: inline, selector, schema}`,
 `{kind: operation, operation, bindings?}`, or `{kind: none}`, and `interval.seconds` is positive.
 
+An upload's `completion` is `{kind: length}` or `{kind: operation, operation, result_schema, bindings?}`. The `parts`
+profile is refused with `E_CLIENT_UNSUPPORTED` without reading its other settings.
+
 A stream's `event_schema` is one schema reference, or `{discriminator, mapping}` where `discriminator` is
 `{from: event_type}` (SSE only) or `{from: body, pointer}` and `mapping` names the schema of each event type.
 `unknown: raw` and `error_events` need a discriminator, and an error event cannot also be a mapped event. `completion`
@@ -519,8 +545,8 @@ is `{kind: eof}`, `{kind: sentinel, value}`, or `{kind: event_type, value}` (SSE
 
 Helpers reserve the arguments `session_options`, `pagination_options`, `poll_options`, `stream_options`,
 `ws_options`, `cache_options`, `upload_options`, `batch_options`, `queue_options`, `source`, `items`, and `state`. When
-an enabled helper's operation, or its `create` operation for polling, has a parameter or field argument with one of
-these names, generation fails with `E_NAME_COLLISION` instead of renaming it; name the argument with
+an enabled helper's operation, or its `create` operation for polling and uploads, has a parameter or field argument
+with one of these names, generation fails with `E_NAME_COLLISION` instead of renaming it; name the argument with
 `parameter_names` or `body_field_names`:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.protocols.diagnostics -->
@@ -538,17 +564,19 @@ E_SELECTOR_DEPENDENCY selection protocols.helpers['audit.all'].operation /paths/
 ### Python records and the manifest
 
 `ProtocolConfiguration(schema_version=1, helpers={...})` takes `PaginationHelper`, `PollingHelper`, `StreamHelper`,
-`WebSocketHelper`, whose `send` and `receive` are `WebSocketMessage` records, `WebhookHelper`, and `CacheHelper`
-records, which mirror the file: their fields have the file's names, with `from_` for `from`, and they take the client's
-`Selector` and `RequestTarget` records, `OperationRef` or a pointer string, and `SchemaRef`. A webhook's
-`HmacSignature` (`hmac-sha256` or `hmac-sha512`) or `PublicKeySignature` (`ed25519` or `rsa-pss-sha256`) has the same
-fields and takes `HeaderName`, `TimestampHeader`, `SignedLiteral`, `FixedBytes`, and `AsciiBytes` records, or
-`"none"`, and `signed_parts` entries `"raw-body"`, `"timestamp"`, and `"delivery-id"`; `AdapterSignature(timestamp=...,
-delivery_id=...)` takes `"required"` or `"none"` for each fact, and `NoSignature()` declares an unsigned webhook. An
-event mapping is an `EventMapping` with an `EventDiscriminator(from_="body", pointer=...)`, and a cache mutation a
-`CacheMutation(operation=..., invalidate_tags=(...))`. A queue is a `QueueHelper` whose `operations` map aliases to
-`QueuedOperation(operation=..., side_effects=..., key_binding=..., dedupe_ttl=...)`. They are validated as the file is,
-with the same diagnostics, when the client configuration is constructed. The later kinds have no records yet.
+`WebSocketHelper`, whose `send` and `receive` are `WebSocketMessage` records, `WebhookHelper`, `CacheHelper`, and
+`ResumableUploadHelper` records, which mirror the file: their fields have the file's names, with `from_` for `from`,
+and they take the client's `Selector` and `RequestTarget` records, `OperationRef` or a pointer string, and `SchemaRef`.
+A webhook's `HmacSignature` (`hmac-sha256` or `hmac-sha512`) or `PublicKeySignature` (`ed25519` or `rsa-pss-sha256`)
+has the same fields and takes `HeaderName`, `TimestampHeader`, `SignedLiteral`, `FixedBytes`, and `AsciiBytes` records,
+or `"none"`, and `signed_parts` entries `"raw-body"`, `"timestamp"`, and `"delivery-id"`;
+`AdapterSignature(timestamp=..., delivery_id=...)` takes `"required"` or `"none"` for each fact, and `NoSignature()`
+declares an unsigned webhook. An event mapping is an `EventMapping` with an `EventDiscriminator(from_="body",
+pointer=...)`, a cache mutation a `CacheMutation(operation=..., invalidate_tags=(...))`, and an upload takes
+`UploadCreate`, `UploadProbe`, `UploadAppend`, `LengthCompletion()` or `OperationCompletion`, and `UploadAbort`
+records. A queue is a `QueueHelper` whose `operations` map aliases to `QueuedOperation(operation=..., side_effects=...,
+key_binding=..., dedupe_ttl=...)`. They are validated as the file is, with the same diagnostics, when the client configuration is constructed.
+The later kinds have no records yet.
 
 ```python
 ClientGenerationConfig(
@@ -1266,6 +1294,263 @@ E_CONFIG_VALUE config protocols.helpers['checks.cancel'].remote_cancel.bindings 
 
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.polling.diagnostics -->
+
+## Upload helpers
+
+An enabled `resumable_upload` helper of the `offset` profile is generated at `client.protocols.<name>` on `Client`
+and `AsyncClient` alike. Its `start` takes the upload source, then the `create` operation's parameters and its body as
+keywords, never field arguments, without the parameter the helper writes the content's size to, then
+`upload_options`, `options`, and `session_options`; `resume` takes the source and a checkpoint. Both are coroutines on
+`AsyncClient`:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.uploads.helper -->
+<!-- fmt: off -->
+
+```python
+    def start(
+        self,
+        source: UploadSource,
+        *,
+        tus_resumable: _dcg_type_0 | ModelValue[_dcg_type_0],
+        x_name: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        upload_options: UploadOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> UploadHandle[None]:
+        """Read the source, create the upload of POST /files, and return its handle."""
+        return start_upload(
+            self._core,
+            _plans.PLAN_0,
+            source,
+            (tus_resumable, x_name),
+            upload_options=upload_options,
+            options=options,
+            session_options=session_options,
+        )
+
+    def resume(
+        self,
+        source: UploadSource,
+        state: ResumeState,
+        *,
+        upload_options: UploadOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> UploadHandle[None]:
+        """Check the source against a checkpoint and continue from the offset the server holds."""
+        return resume_upload(
+            self._core,
+            _plans.PLAN_0,
+            source,
+            state,
+            upload_options=upload_options,
+            options=options,
+            session_options=session_options,
+        )
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.uploads.helper -->
+
+```python
+from pkg.protocols import FileUploadSource
+
+with Client() as client:
+    upload = client.protocols.files.upload
+    handle = upload.start(FileUploadSource.from_path("video.mp4"), tus_resumable=version)
+    progress = handle.advance()
+    state = handle.checkpoint()
+    handle.run()
+```
+
+`UploadHandle[T]` and `AsyncUploadHandle[T]`, imported from `pkg.protocols`, hold one upload: `T` is `None` for an
+upload completed by length and the completion operation's response type otherwise. `advance()` appends one chunk, or
+completes the upload once the server holds every byte, and returns an `UploadProgress`; `run()` appends every
+remaining chunk, completes the upload, and returns its result. Both are coroutines on `AsyncUploadHandle`. Once
+complete, `advance` returns the progress and `run` the kept result without sending. `checkpoint()` returns a
+`ResumeState` at any time, even while another thread or task steps the handle, and sends nothing.
+
+### Sources
+
+A source has an immutable `identity`, an `UploadIdentity(size, sha256)` of its whole content, a
+`max_parallel_ranges` of at least 1, and `open_range(offset, length)`, which returns a context manager, an async one
+for `AsyncUploadSource`, opening a reader of that range. A reader's `read(max_bytes)` returns 0 to `max_bytes` bytes,
+`b''` being its permanent end, and `close()` or `aclose()` releases it; each reader has its own position. The builtin
+sources open independent readers and allow 4 ranges at once:
+
+| Source | Content |
+|---|---|
+| `BytesUploadSource.from_bytes(data)` | A copy of bytes, a bytearray, or a memoryview |
+| `FileUploadSource.from_path(path)` | A file, hashed once in 64 KiB reads; each range opens its own descriptor |
+| `AsyncBytesUploadSource.from_bytes(data)` | A copy of bytes, read by native asyncio readers |
+| `await AsyncFileUploadSource.from_path(path)` | A file, hashed once in one 64 KiB read per worker job, so a cancellation stops between reads; one worker thread of its own opens, reads, and closes it, and `aclose()` or leaving `async with` stops it once its readers close and waits for the work interrupted callers left |
+
+A path must name a regular file: a FIFO, a device, or a directory raises `NonResumableSourceError` with
+`source_kind='stream'` before it is opened. A path source hashes at most the size the file had when it was opened and
+records the file's device, inode, size, and modification time, and each range it opens later raises
+`UploadSourceChangedError` when any of them changed. It is not a snapshot: keep the file unchanged while it is uploaded.
+Sources a call is given are borrowed and never closed by the client; every reader the client opens is closed. A one-shot
+input has no identity to resume from: bytes, an iterable, an iterator, an asyncio stream, or a reader raise
+`NonResumableSourceError` with its `source_kind` before anything is read; send it as an ordinary upload. Nothing is ever
+spooled to disk.
+
+Before anything is sent, `start` and `resume` read the whole source once through one reader and record the SHA-256 of
+each chunk; content that does not match the identity, by its length or its digest, raises `UploadSourceChangedError`.
+Each append reads its chunk again into a buffer of its own, one byte longer than the chunk, hashing it as it reads, and
+sends it only when its length and digest match what the scan recorded; otherwise it raises `UploadSourceChangedError`
+with the chunk's offset, and the handle sends nothing more: every later step raises `ProtocolStateError` with
+`state='source_changed'`, though `checkpoint()` still works. The body is sent from that buffer in 64 KiB slices, so an
+upload holds one chunk at a time besides fixed read buffers. A reader returning more bytes than it was asked for, or
+anything but bytes, raises `ProtocolConfigurationError` with `condition='wrong_capability'`.
+
+### Chunks, offsets, and recovery
+
+A chunk is `UploadOptions.chunk_bytes`, 8 MiB by default, or the helper's smaller `max_chunk_bytes`. An upload of more
+chunks than `UploadOptions.max_parts`, 10000 by default, raises `ProtocolConfigurationError` before anything is read,
+and so does a digest list whose base64 would exceed 15 MiB, with `ProtocolSizeError(kind='part_manifest')`; the
+remaining 1 MiB of a checkpoint's 16 MiB is left for its state, fingerprints, and a completion's response, and a larger
+response can still make `export()` raise `ResumeStateTooLargeError`. The offset profile sends one chunk at a time,
+whatever `parallelism` says.
+
+`start` sends the create request once, resent only as shared retries allow, with the content's size in the declared
+`size` parameter, and reads every binding's `initial` value and the server's expiry from its response. The upload
+starts at offset 0. Each append writes the confirmed offset into `offset`, and the chunk's length into `length` when
+declared, and sends the rest of the chunk as the body; a success response confirms the chunk. An append is never sent
+again by shared retries once it may have reached the server, even for an operation that is otherwise safe to retry:
+
+| Append outcome | What follows |
+|---|---|
+| A success response | The chunk is confirmed |
+| A transport error after it may have been sent | Up to `UploadOptions.max_uncertain_probes` probes, 3 by default: an unchanged offset sends the range again as a new call, the chunk's end confirms it, and an offset inside it confirms its bytes before it only with `partial_commit: allowed`, the rest being sent next |
+| Probes that never answer | `UploadDeliveryUnknownError(phase='append')` with the delivery state, the progress, and `resume_state` |
+| Any other failure, a cancellation included | Raised; the next step probes the server's offset before it appends |
+
+A probe's offset is a JSON integer, or a header of ASCII digits; a missing one raises `ProtocolDataError` with the
+condition `missing`, a header repeated with `malformed`, and anything else with `type`, `null`, or `value`. An offset
+below the confirmed one, past the content, past the chunk sent, or inside a chunk with `partial_commit: forbidden`
+raises `UploadOffsetError` with the confirmed, expected, and remote offsets, the size, and `resume_state`. A handle
+`start` returned also refuses an offset past every byte it has sent; a handle `resume` returned cannot know what an
+earlier session sent, so it accepts any offset up to the size.
+
+An upload completed by `length` completes when the server holds every byte. A completion `operation` is sent once with
+its bindings; its response is the result. A completion whose outcome is unknown is never sent again: it raises
+`UploadDeliveryUnknownError(phase='complete')`, and so does every later step and every resume of its checkpoint,
+without sending. That includes a completion answered with 502 or 504, which a gateway gives even when the server behind
+it may have applied the completion. A completion answered with any other error status, such as a 503 with
+`Retry-After`, did not apply, so the next step may send it again.
+
+`close()` or `aclose()`, or leaving a `with` or `async with` block, stops only local uploading; the remote upload
+stays, and every later step raises `ProtocolStateError` with `state='closed'`. Calling `advance`, `run`, `close`, or
+`aclose` while another step runs raises `ProtocolStateError` with `state='uploading'`.
+
+### Checkpoints and resume
+
+`checkpoint()` saves the content's identity, the chunk size and each chunk's digest, the confirmed offset, the values
+the probe, the append, and the completion write, the completion's result once complete, and the server's expiry. It is
+bound to the helper and to the security the call runs under, as pagination checkpoints are, and exports only when the
+call cannot authenticate or the client has a credential partition. Model values are never saved; a saved result is
+decoded again.
+
+`resume(source, state)` starts a new session and never creates the upload again. It checks the call's options, then the
+checkpoint: not a `ResumeState` raises `ProtocolConfigurationError`; another helper's raises
+`ResumeStateError(condition='fingerprint')`, another security's `ResumeStateError(condition='security')`, one past the
+server's expiry `UploadExpiredError`, and one whose state does not fit the helper
+`ResumeStateError(condition='malformed')`. A checkpoint keeps its chunk size, which must not exceed the call's
+`UploadOptions.chunk_bytes`, since an append holds one chunk in memory, and its chunk count must not exceed `max_parts`;
+either raises `ProtocolConfigurationError` with the option's `field_path`. Then the saved values each call writes: a
+value that makes a path segment `.` or `..` raises `ProtocolDataError`, as if a server gave it, and one that cannot be
+sent `ResumeStateError(condition='malformed')`. Then the source: a one-shot input raises `NonResumableSourceError`, and
+an identity other than the checkpoint's raises `UploadSourceChangedError`, and the source is read once and compared with
+the saved digests. Then it probes the server's offset once, which must not be below the saved one, and returns the
+handle; nothing is read or sent for a complete checkpoint, and a completion of unknown outcome raises
+`UploadDeliveryUnknownError` again.
+
+A server's expiry is read once from the create response at `create.expires_at`, an RFC 3339 date-time with an offset or
+an HTTP date; a missing, null, or unparsable value raises `ProtocolDataError` from `start`. It bounds only checkpoints
+once it has passed: `import_state` raises `ResumeStateError(condition='expired')`, and `resume` raises
+`UploadExpiredError`, a subclass of it, with the expiry; uploading goes on until the server refuses.
+
+### Limits and sessions
+
+`start` and its handle are one session, and so are `resume` and its handle. The create call, every probe, every append,
+and the completion are calls of their own, with their own retries, total timeout, and idempotency key, and the session
+bounds all of them. Each limit comes from the call's options, then the helper's `ProtocolDefaults` in
+`ProtocolClientOptions.defaults`, then the default below:
+
+| Limit | Default | None |
+|---|---|---|
+| `UploadOptions.chunk_bytes` | 8 MiB, at most the helper's `max_chunk_bytes` | Not allowed |
+| `UploadOptions.max_parts` | 10000 chunks | Removes the limit |
+| `UploadOptions.parallelism` | 4, unused by the offset profile | Not allowed |
+| `UploadOptions.max_uncertain_probes` | 3 probes; 0 probes none | Not allowed |
+| `SessionOptions.total_timeout` | 600 seconds | Removes the limit |
+| `SessionOptions.deadline` | None | No deadline |
+| `SessionOptions.max_network_sends` | 10000 sends | Removes the limit |
+
+The session's `total_timeout` runs from `start` or `resume` for the whole life of the handle, reading the source
+included, so a long upload stepped slowly needs `SessionOptions(total_timeout=None)`, a larger value, or a `resume` from
+a checkpoint, which starts a new session. The deadline also bounds reading the source. A call past a limit raises
+`SessionLimitError` with the kind `network_sends`, the progress so far, and `resume_state`, before sending; a create
+request the session has no slot for raises it without `resume_state`, since nothing was created. The options must not
+fix an idempotency key, from the client, a view, or the call, and must not patch a header or a query parameter the
+helper writes, the size included; `start` and `resume` raise `ProtocolConfigurationError` before reading or sending, as
+they do for options of another type.
+
+### Upload generation checks
+
+The `create` operation must declare a success response, and each selector must read what every success response
+declares: a server expiry reads strings and a remote offset integers, from a body pointer of the response's model or
+a declared header, never the status. The `size`, `offset`, and `length` targets are path, query, or header parameters
+that accept integers, never a credential position, and no two writes of the append share a target. The `append`
+operation takes exactly one binary request media and declares a success response; no binding writes its body. The
+`probe` declares a success response. Bindings read the create response with `source: initial`, or give a literal, and
+fit their targets as polling bindings do; every required parameter of the probe, the append, and the completion must
+be written. A completion operation declares exactly one JSON success response whose schema is its `result_schema`, and
+a body its bindings write is JSON with a default media type. The `parts` profile, `abort`, `create.session_url`, and
+bindings that read the previous response or the helper's input are not supported yet:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.uploads.diagnostics -->
+<!-- fmt: off -->
+
+```text
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.later'].abort /paths/~1files/post: The resumable_upload helper 'checks.later' declares remote abort, which is not supported yet
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.later'].create.session_url /paths/~1files/post: The resumable_upload helper 'checks.later' declares a session URL, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['checks.created'].create.operation /paths/~1drafts/post: POST /drafts must declare a success response for the upload helper 'checks.created'
+E_CONFIG_VALUE config protocols.helpers['checks.size'].create.size /paths/~1files/post: The size of 'checks.size' writes the cookie 'session', which carries credentials no helper writes
+E_CONFIG_VALUE config protocols.helpers['checks.size_body'].create.size /paths/~1files~1{fileId}~1status/post: The size of 'checks.size_body' writes 'body', where only a path, query, or header parameter takes it
+E_CONFIG_VALUE config protocols.helpers['checks.size_body'].probe.bindings[0].value.selector /paths/~1files~1{fileId}~1status/post: The probe binding 0 pointer '/id' of 'checks.size_body' names no property of the POST /files/{fileId}/status response
+E_CONFIG_VALUE config protocols.helpers['checks.size_body'].append.bindings[0].value.selector /paths/~1files~1{fileId}~1status/post: The append binding 0 pointer '/id' of 'checks.size_body' names no property of the POST /files/{fileId}/status response
+E_CONFIG_VALUE config protocols.helpers['checks.size_type'].create.size /paths/~1files/post: The size of 'checks.size_type' gives integer values, which the header parameter 'X-Name' of POST /files does not accept
+E_CONFIG_VALUE config protocols.helpers['checks.expiry_status'].create.expires_at /paths/~1files/post: The server expiry of 'checks.expiry_status' reads the status, which gives no server expiry
+E_CONFIG_VALUE config protocols.helpers['checks.expiry_type'].create.expires_at /paths/~1files/post: The server expiry of 'checks.expiry_type' reads integer values, where only string values fit
+E_CONFIG_VALUE config protocols.helpers['checks.expiry_header'].create.expires_at /paths/~1files/post: The server expiry of 'checks.expiry_header' reads the header 'X-Expires', which POST /files does not declare
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.probe_sources'].probe.bindings[0].value.source /paths/~1files~1{fileId}/head: The probe binding 0 of 'checks.probe_sources' reads the previous response, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['checks.probe_required'].probe.bindings /paths/~1files~1{fileId}/head: HEAD /files/{fileId} requires the path parameter 'fileId', which no binding of 'checks.probe_required' writes
+E_CONFIG_VALUE config protocols.helpers['checks.probe_body'].probe.bindings /paths/~1files~1{fileId}~1status/post: POST /files/{fileId}/status requires a request body, which no binding of 'checks.probe_body' writes
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.probe_form'].probe.bindings /paths/~1files~1{fileId}~1form/post: The upload helper 'checks.probe_form' writes a request body of POST /files/{fileId}/form other than JSON, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['checks.probe_media'].probe.bindings /paths/~1files~1{fileId}~1search/post: The upload helper 'checks.probe_media' writes a request body of POST /files/{fileId}/search, which has no default media type; set the operation's request_media_type
+E_CONFIG_VALUE config protocols.helpers['checks.probe_none'].probe.operation /paths/~1files~1{fileId}~1gone/delete: DELETE /files/{fileId}/gone must declare a success response for the probe of 'checks.probe_none'
+E_CONFIG_VALUE config protocols.helpers['checks.offset_type'].probe.remote_offset /paths/~1files~1{fileId}~1status/get: The remote offset of 'checks.offset_type' reads string values, where only integer values fit
+E_CONFIG_VALUE config protocols.helpers['checks.offset_status'].probe.remote_offset /paths/~1files~1{fileId}/head: The remote offset of 'checks.offset_status' reads the status, which gives no remote offset
+E_CONFIG_VALUE config protocols.helpers['checks.append_media'].append.operation /paths/~1files~1{fileId}/put: PUT /files/{fileId} must take exactly one binary request media for the chunks of 'checks.append_media'
+E_CONFIG_VALUE config protocols.helpers['checks.append_none'].append.operation /paths/~1files~1{fileId}~1gone/delete: DELETE /files/{fileId}/gone must take exactly one binary request media for the chunks of 'checks.append_none'
+E_CONFIG_VALUE config protocols.helpers['checks.append_none'].append.operation /paths/~1files~1{fileId}~1gone/delete: DELETE /files/{fileId}/gone must declare a success response for the appends of 'checks.append_none'
+E_CONFIG_CONFLICT config protocols.helpers['checks.append_none'].append.offset /paths/~1files~1{fileId}~1gone/delete: The chunk offset of 'checks.append_none' writes the same target as its append binding 0
+E_CONFIG_CONFLICT config protocols.helpers['checks.append_overlap'].append.offset /paths/~1files~1{fileId}/patch: The chunk offset of 'checks.append_overlap' writes the same target as its append binding 1
+E_CONFIG_CONFLICT config protocols.helpers['checks.append_length'].append.length /paths/~1files~1{fileId}/patch: The chunk length of 'checks.append_length' writes the same target as its chunk offset
+E_CONFIG_VALUE config protocols.helpers['checks.append_places'].append.offset /paths/~1files~1{fileId}/patch: The chunk offset of 'checks.append_places' writes the cookie 'session', which carries credentials no helper writes
+E_CONFIG_VALUE config protocols.helpers['checks.append_places'].append.length /paths/~1files~1{fileId}/patch: The chunk length of 'checks.append_places' writes 'body', where only a path, query, or header parameter takes it
+E_CONFIG_VALUE config protocols.helpers['checks.append_places'].append.bindings /paths/~1files~1{fileId}/patch: PATCH /files/{fileId} requires the header parameter 'Upload-Offset', which no binding of 'checks.append_places' writes
+E_CONFIG_VALUE config protocols.helpers['checks.append_types'].append.offset /paths/~1files~1{fileId}/patch: The chunk offset of 'checks.append_types' gives integer values, which the header parameter 'X-Note' of PATCH /files/{fileId} does not accept
+E_CONFIG_VALUE config protocols.helpers['checks.append_body'].append.bindings[1].target /paths/~1files~1{fileId}/patch: The append binding 1 of 'checks.append_body' writes the request body, which is the chunk
+E_CONFIG_VALUE config protocols.helpers['checks.completion_media'].completion.operation /paths/~1files~1{fileId}~1finish/post: POST /files/{fileId}/finish must declare exactly one JSON success response for the completion of 'checks.completion_media'
+E_CONFIG_VALUE config protocols.helpers['checks.completion_missing'].completion.result_schema /paths/~1files~1{fileId}~1complete/post: The result schema '/components/schemas/Missing' of 'checks.completion_missing' does not exist in its document
+E_CONFIG_VALUE config protocols.helpers['checks.completion_other'].completion.result_schema /paths/~1files~1{fileId}~1complete/post: The result schema '/components/schemas/Note' of 'checks.completion_other' is not the schema of the POST /files/{fileId}/complete response
+E_CONFIG_VALUE config protocols.helpers['checks.completion_body'].completion.bindings /paths/~1files~1{fileId}~1complete/post: POST /files/{fileId}/complete requires a request body, which no binding of 'checks.completion_body' writes
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.uploads.diagnostics -->
 
 ## SSE stream helpers
 

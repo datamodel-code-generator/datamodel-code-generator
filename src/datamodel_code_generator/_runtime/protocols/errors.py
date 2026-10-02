@@ -6,6 +6,7 @@ The generated `errors` module exports them beside every other exception; their m
 from __future__ import annotations
 
 from collections.abc import Mapping
+from datetime import datetime
 from types import MappingProxyType
 from typing import Final, Generic, Literal, TypeAlias, get_args
 
@@ -40,6 +41,7 @@ from .records import (
 )
 from .references import OperationRef
 from .resume import ResumeState, ResumeStateError, ResumeStateTooLargeError
+from .sources import UploadIdentity, UploadProgress
 
 __all__ = (
     "CacheInvalidationError",
@@ -50,6 +52,7 @@ __all__ = (
     "DeliveryUnknownError",
     "HandshakeResponse",
     "IncompleteFrameError",
+    "NonResumableSourceError",
     "OperationCancelledError",
     "OperationFailedError",
     "PaginationCycleError",
@@ -68,6 +71,10 @@ __all__ = (
     "StreamInterruptedError",
     "StreamRemoteError",
     "StreamResumeExhaustedError",
+    "UploadDeliveryUnknownError",
+    "UploadExpiredError",
+    "UploadOffsetError",
+    "UploadSourceChangedError",
     "WebSocketClosedError",
     "WebSocketHandshakeError",
     "WebSocketProxyError",
@@ -153,6 +160,24 @@ def _context(helper_id: object, operation: object) -> None:
     error_string(helper_id, "helper_id", optional=True)
     if operation is not None and not isinstance(operation, OperationRef):
         msg = "operation must be an OperationRef or None"
+        raise ValueError(msg)
+
+
+def _upload_progress(value: object) -> None:
+    if not isinstance(value, UploadProgress):
+        msg = "progress must be an UploadProgress"
+        raise ValueError(msg)  # noqa: TRY004 - Exception constructors reject invalid fields with ValueError.
+
+
+def _aware(value: object) -> None:
+    if not isinstance(value, datetime) or value.utcoffset() is None:
+        msg = "expires_at must be a timezone-aware datetime"
+        raise ValueError(msg)
+
+
+def _identity(value: object, *, optional: bool) -> None:
+    if not isinstance(value, UploadIdentity) and not (optional and value is None):
+        msg = "an identity must be an UploadIdentity"
         raise ValueError(msg)
 
 
@@ -1420,6 +1445,295 @@ class DeliveryUnknownError(ProtocolError):
 
     def _details(self) -> tuple[tuple[str, object], ...]:
         return (*super()._details(), ("delivery_state", self.delivery_state.value))
+
+
+class UploadDeliveryUnknownError(DeliveryUnknownError):
+    """An upload append, part, or completion whose outcome stays unknown; the state is kept for an explicit resume.
+
+    The `part` phase is reserved for the parts profile.
+    """
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        phase: Literal["append", "part", "complete"],
+        progress: UploadProgress,
+        delivery_state: DeliveryState,
+        resume_state: ResumeState | None = None,
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep the phase whose outcome is unknown and the progress the server confirmed before it."""
+        error_choice(phase, ("append", "part", "complete"), "phase")
+        _upload_progress(progress)
+        super().__init__(
+            delivery_state=delivery_state,
+            resume_state=resume_state,
+            helper_id=helper_id,
+            operation=operation,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self.phase = phase
+        self.progress = progress
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("phase", self.phase))
+
+
+class UploadSourceChangedError(ProtocolDataError):
+    """Upload content whose identity, a range's length or digest, or a file's status changed; nothing more is sent.
+
+    `expected` and `actual` are the identities of the whole content, or of the checked range at `offset`.
+    """
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        expected: UploadIdentity,
+        actual: UploadIdentity | None,
+        offset: int | None = None,
+        location: Selector | RequestTarget | None = None,
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep the expected and observed identities and the offset of the checked range."""
+        _identity(expected, optional=False)
+        _identity(actual, optional=True)
+        if offset is not None:
+            error_count(offset, "offset")
+        super().__init__(
+            condition="inconsistent",
+            location=location,
+            helper_id=helper_id,
+            operation=operation,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self.expected = expected
+        self.actual = actual
+        self.offset = offset
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("offset", self.offset))
+
+
+class UploadOffsetError(ProtocolDataError):
+    """A remote upload offset that regressed, passed the content, or committed part of a chunk where none may be."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        confirmed_offset: int,
+        expected_offset: int,
+        remote_offset: int,
+        size: int,
+        resume_state: ResumeState | None = None,
+        location: Selector | RequestTarget | None = None,
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep the confirmed, expected, and remote offsets and the size of the content."""
+        for name, value in (
+            ("confirmed_offset", confirmed_offset),
+            ("expected_offset", expected_offset),
+            ("remote_offset", remote_offset),
+            ("size", size),
+        ):
+            error_count(value, name)
+        _resume_state(resume_state)
+        super().__init__(
+            condition="inconsistent",
+            location=location,
+            helper_id=helper_id,
+            operation=operation,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self.confirmed_offset = confirmed_offset
+        self.expected_offset = expected_offset
+        self.remote_offset = remote_offset
+        self.size = size
+        self.resume_state = resume_state
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (
+            *super()._details(),
+            ("confirmed_offset", self.confirmed_offset),
+            ("expected_offset", self.expected_offset),
+            ("remote_offset", self.remote_offset),
+            ("size", self.size),
+        )
+
+
+class UploadExpiredError(ResumeStateError):
+    """An upload checkpoint past the expiry its server declared; its condition is always expired."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        expires_at: datetime,
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep the server's UTC expiry."""
+        _aware(expires_at)
+        super().__init__(
+            condition="expired",
+            helper_id=helper_id,
+            operation=operation,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self.expires_at = expires_at
+
+
+class NonResumableSourceError(ProtocolConfigurationError):
+    """An upload source without a resumable identity, such as a one-shot stream; use an ordinary upload instead."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        source_kind: Literal["iterable", "iterator", "stream", "reader"],
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+    ) -> None:
+        """Keep the kind of source given; the condition is wrong_capability at the source argument."""
+        error_choice(source_kind, ("iterable", "iterator", "stream", "reader"), "source_kind")
+        super().__init__(
+            field_path=("source",),
+            condition="wrong_capability",
+            helper_id=helper_id,
+            operation=operation,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+        )
+        self.source_kind = source_kind
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("source_kind", self.source_kind))
 
 
 class QueueStoreError(ProtocolStoreError):

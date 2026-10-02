@@ -1,0 +1,1361 @@
+# uploads-plans
+render pydantic_v2.dataclass
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/files/__init__.py
+  write client/resources/files/_sync.py
+  write client/resources/files/_async.py
+  write client/types/__init__.py
+  write client/types/files/__init__.py
+  write client/types/files/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/protocols/_plans.py
+  write client/protocols/_helpers.py
+  write client/protocols/_async_helpers.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['files.upload', 'files.finish', 'files.put'] bindings 19
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper files.upload resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.upload 124b9ec5eabb15994ebfc65ee1ddabbbff2a87df94db360255c9f913da981a55
+  helper files.finish resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.finish 8fe2950f21284689cd6f005ea23a886e8c2a72e508f9bbc384af5950f2fab4c0
+  helper files.put resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.put 7186c0578e3ba5e5009242b1b30b049ab85b52aa1cf7499772d9f9701fde756c
+  {
+    "helpers": {
+      "files.finish": {
+        "append": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "Tus-Resumable"
+              },
+              "value": {
+                "literal": "1.0.0"
+              }
+            }
+          ],
+          "offset": {
+            "in": "header",
+            "name": "Upload-Offset"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/patch"
+          }
+        },
+        "completion": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "kind": "operation",
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1complete/post"
+          },
+          "result_schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Stored"
+          }
+        },
+        "create": {
+          "expires_at": {
+            "from": "body",
+            "pointer": "/expires"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files/post"
+          },
+          "size": {
+            "in": "header",
+            "name": "Upload-Length"
+          }
+        },
+        "enabled": true,
+        "kind": "resumable_upload",
+        "max_chunk_bytes": 8,
+        "partial_commit": "forbidden",
+        "probe": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1status/get"
+          },
+          "remote_offset": {
+            "from": "body",
+            "pointer": "/offset"
+          }
+        },
+        "profile": "offset"
+      },
+      "files.put": {
+        "append": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "offset": {
+            "in": "query",
+            "name": "offset"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/put"
+          }
+        },
+        "completion": {
+          "kind": "length"
+        },
+        "create": {
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files/post"
+          }
+        },
+        "enabled": true,
+        "kind": "resumable_upload",
+        "max_chunk_bytes": 4,
+        "partial_commit": "forbidden",
+        "probe": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "Tus-Resumable"
+              },
+              "value": {
+                "literal": "1.0.0"
+              }
+            }
+          ],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/head"
+          },
+          "remote_offset": {
+            "from": "header",
+            "name": "Upload-Offset",
+            "occurrence": "single"
+          }
+        },
+        "profile": "offset"
+      },
+      "files.upload": {
+        "append": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "Tus-Resumable"
+              },
+              "value": {
+                "literal": "1.0.0"
+              }
+            }
+          ],
+          "length": {
+            "in": "header",
+            "name": "X-Chunk-Length"
+          },
+          "offset": {
+            "in": "header",
+            "name": "Upload-Offset"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/patch"
+          }
+        },
+        "completion": {
+          "kind": "length"
+        },
+        "create": {
+          "expires_at": {
+            "from": "header",
+            "name": "Upload-Expires",
+            "occurrence": "single"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files/post"
+          },
+          "size": {
+            "in": "header",
+            "name": "Upload-Length"
+          }
+        },
+        "enabled": true,
+        "kind": "resumable_upload",
+        "max_chunk_bytes": 4,
+        "partial_commit": "allowed",
+        "probe": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "Tus-Resumable"
+              },
+              "value": {
+                "literal": "1.0.0"
+              }
+            }
+          ],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/head"
+          },
+          "remote_offset": {
+            "from": "header",
+            "name": "Upload-Offset",
+            "occurrence": "single"
+          }
+        },
+        "profile": "offset"
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 files.create_file(header:Upload-Length=upload_length, header:Tus-Resumable=tus_resumable, header:X-Name=x_name)
+    exports client.types.files.CreateFileResponse client.types.files.CreateFileErrorData client.types.files.CreateFileHTTPError
+    exports client.types.files.CreateFileRequestCodecs client.types.files.decode_create_file_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 files.probe_file(path:fileId=file_id, header:Tus-Resumable=tus_resumable)
+    exports client.types.files.ProbeFileResponse client.types.files.ProbeFileErrorData client.types.files.ProbeFileHTTPError
+    exports client.types.files.ProbeFileRequestCodecs client.types.files.decode_probe_file_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/2 files.append_file(path:fileId=file_id, header:Upload-Offset=upload_offset, header:Tus-Resumable=tus_resumable, header:X-Chunk-Length=x_chunk_length)
+    exports client.types.files.AppendFileResponse client.types.files.AppendFileErrorData client.types.files.AppendFileHTTPError
+    exports client.types.files.AppendFileRequestCodecs client.types.files.decode_append_file_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/3 files.put_file_chunk(path:fileId=file_id, query:offset=offset)
+    exports client.types.files.PutFileChunkResponse client.types.files.PutFileChunkErrorData client.types.files.PutFileChunkHTTPError
+    exports client.types.files.PutFileChunkRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/4 files.get_file_status(path:fileId=file_id)
+    exports client.types.files.GetFileStatusResponse client.types.files.GetFileStatusErrorData client.types.files.GetFileStatusHTTPError
+    exports client.types.files.GetFileStatusRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/5 files.complete_file(path:fileId=file_id)
+    exports client.types.files.CompleteFileResponse client.types.files.CompleteFileErrorData client.types.files.CompleteFileHTTPError
+    exports client.types.files.CompleteFileRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+render dataclasses.dataclass
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/files/__init__.py
+  write client/resources/files/_sync.py
+  write client/resources/files/_async.py
+  write client/types/__init__.py
+  write client/types/files/__init__.py
+  write client/types/files/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/protocols/_plans.py
+  write client/protocols/_helpers.py
+  write client/protocols/_async_helpers.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['files.upload', 'files.finish', 'files.put'] bindings 19
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper files.upload resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.upload 25e9a44a60ce2e292cdbf4aa467e04fd3fc2071272f3558d3acc693351a71dca
+  helper files.finish resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.finish c57d41ee45abfe749d2458b5cad5751095bcd5ca2f1ce0e70b77a67c937804d1
+  helper files.put resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.put 645d2ec104a2da5651c2905174857fb1b45059550ef8c32a220f5747ebd2d1b1
+  {
+    "helpers": {
+      "files.finish": {
+        "append": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "Tus-Resumable"
+              },
+              "value": {
+                "literal": "1.0.0"
+              }
+            }
+          ],
+          "offset": {
+            "in": "header",
+            "name": "Upload-Offset"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/patch"
+          }
+        },
+        "completion": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "kind": "operation",
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1complete/post"
+          },
+          "result_schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Stored"
+          }
+        },
+        "create": {
+          "expires_at": {
+            "from": "body",
+            "pointer": "/expires"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files/post"
+          },
+          "size": {
+            "in": "header",
+            "name": "Upload-Length"
+          }
+        },
+        "enabled": true,
+        "kind": "resumable_upload",
+        "max_chunk_bytes": 8,
+        "partial_commit": "forbidden",
+        "probe": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1status/get"
+          },
+          "remote_offset": {
+            "from": "body",
+            "pointer": "/offset"
+          }
+        },
+        "profile": "offset"
+      },
+      "files.put": {
+        "append": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "offset": {
+            "in": "query",
+            "name": "offset"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/put"
+          }
+        },
+        "completion": {
+          "kind": "length"
+        },
+        "create": {
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files/post"
+          }
+        },
+        "enabled": true,
+        "kind": "resumable_upload",
+        "max_chunk_bytes": 4,
+        "partial_commit": "forbidden",
+        "probe": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "Tus-Resumable"
+              },
+              "value": {
+                "literal": "1.0.0"
+              }
+            }
+          ],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/head"
+          },
+          "remote_offset": {
+            "from": "header",
+            "name": "Upload-Offset",
+            "occurrence": "single"
+          }
+        },
+        "profile": "offset"
+      },
+      "files.upload": {
+        "append": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "Tus-Resumable"
+              },
+              "value": {
+                "literal": "1.0.0"
+              }
+            }
+          ],
+          "length": {
+            "in": "header",
+            "name": "X-Chunk-Length"
+          },
+          "offset": {
+            "in": "header",
+            "name": "Upload-Offset"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/patch"
+          }
+        },
+        "completion": {
+          "kind": "length"
+        },
+        "create": {
+          "expires_at": {
+            "from": "header",
+            "name": "Upload-Expires",
+            "occurrence": "single"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files/post"
+          },
+          "size": {
+            "in": "header",
+            "name": "Upload-Length"
+          }
+        },
+        "enabled": true,
+        "kind": "resumable_upload",
+        "max_chunk_bytes": 4,
+        "partial_commit": "allowed",
+        "probe": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "Tus-Resumable"
+              },
+              "value": {
+                "literal": "1.0.0"
+              }
+            }
+          ],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/head"
+          },
+          "remote_offset": {
+            "from": "header",
+            "name": "Upload-Offset",
+            "occurrence": "single"
+          }
+        },
+        "profile": "offset"
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 files.create_file(header:Upload-Length=upload_length, header:Tus-Resumable=tus_resumable, header:X-Name=x_name)
+    exports client.types.files.CreateFileResponse client.types.files.CreateFileErrorData client.types.files.CreateFileHTTPError
+    exports client.types.files.CreateFileRequestCodecs client.types.files.decode_create_file_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 files.probe_file(path:fileId=file_id, header:Tus-Resumable=tus_resumable)
+    exports client.types.files.ProbeFileResponse client.types.files.ProbeFileErrorData client.types.files.ProbeFileHTTPError
+    exports client.types.files.ProbeFileRequestCodecs client.types.files.decode_probe_file_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/2 files.append_file(path:fileId=file_id, header:Upload-Offset=upload_offset, header:Tus-Resumable=tus_resumable, header:X-Chunk-Length=x_chunk_length)
+    exports client.types.files.AppendFileResponse client.types.files.AppendFileErrorData client.types.files.AppendFileHTTPError
+    exports client.types.files.AppendFileRequestCodecs client.types.files.decode_append_file_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/3 files.put_file_chunk(path:fileId=file_id, query:offset=offset)
+    exports client.types.files.PutFileChunkResponse client.types.files.PutFileChunkErrorData client.types.files.PutFileChunkHTTPError
+    exports client.types.files.PutFileChunkRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/4 files.get_file_status(path:fileId=file_id)
+    exports client.types.files.GetFileStatusResponse client.types.files.GetFileStatusErrorData client.types.files.GetFileStatusHTTPError
+    exports client.types.files.GetFileStatusRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/5 files.complete_file(path:fileId=file_id)
+    exports client.types.files.CompleteFileResponse client.types.files.CompleteFileErrorData client.types.files.CompleteFileHTTPError
+    exports client.types.files.CompleteFileRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
+render typing.TypedDict
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/files/__init__.py
+  write client/resources/files/_sync.py
+  write client/resources/files/_async.py
+  write client/types/__init__.py
+  write client/types/files/__init__.py
+  write client/types/files/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/protocols/_plans.py
+  write client/protocols/_helpers.py
+  write client/protocols/_async_helpers.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['files.upload', 'files.finish', 'files.put'] bindings 19
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper files.upload resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.upload 2cc3fbd8b11688c42cb5dea21062e284d9f40cfc7562793712501e41443d359d
+  helper files.finish resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.finish f58857c5557b797ff352ae56dc9f8a805af6896096e4dd53a8236e94b8c4b4ae
+  helper files.put resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.put 3601e387536cf9d36061f67540ead013c108d1cc8d2f5890c1501316f9e16caf
+  {
+    "helpers": {
+      "files.finish": {
+        "append": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "Tus-Resumable"
+              },
+              "value": {
+                "literal": "1.0.0"
+              }
+            }
+          ],
+          "offset": {
+            "in": "header",
+            "name": "Upload-Offset"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/patch"
+          }
+        },
+        "completion": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "kind": "operation",
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1complete/post"
+          },
+          "result_schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Stored"
+          }
+        },
+        "create": {
+          "expires_at": {
+            "from": "body",
+            "pointer": "/expires"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files/post"
+          },
+          "size": {
+            "in": "header",
+            "name": "Upload-Length"
+          }
+        },
+        "enabled": true,
+        "kind": "resumable_upload",
+        "max_chunk_bytes": 8,
+        "partial_commit": "forbidden",
+        "probe": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1status/get"
+          },
+          "remote_offset": {
+            "from": "body",
+            "pointer": "/offset"
+          }
+        },
+        "profile": "offset"
+      },
+      "files.put": {
+        "append": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "offset": {
+            "in": "query",
+            "name": "offset"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/put"
+          }
+        },
+        "completion": {
+          "kind": "length"
+        },
+        "create": {
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files/post"
+          }
+        },
+        "enabled": true,
+        "kind": "resumable_upload",
+        "max_chunk_bytes": 4,
+        "partial_commit": "forbidden",
+        "probe": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "Tus-Resumable"
+              },
+              "value": {
+                "literal": "1.0.0"
+              }
+            }
+          ],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/head"
+          },
+          "remote_offset": {
+            "from": "header",
+            "name": "Upload-Offset",
+            "occurrence": "single"
+          }
+        },
+        "profile": "offset"
+      },
+      "files.upload": {
+        "append": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "Tus-Resumable"
+              },
+              "value": {
+                "literal": "1.0.0"
+              }
+            }
+          ],
+          "length": {
+            "in": "header",
+            "name": "X-Chunk-Length"
+          },
+          "offset": {
+            "in": "header",
+            "name": "Upload-Offset"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/patch"
+          }
+        },
+        "completion": {
+          "kind": "length"
+        },
+        "create": {
+          "expires_at": {
+            "from": "header",
+            "name": "Upload-Expires",
+            "occurrence": "single"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files/post"
+          },
+          "size": {
+            "in": "header",
+            "name": "Upload-Length"
+          }
+        },
+        "enabled": true,
+        "kind": "resumable_upload",
+        "max_chunk_bytes": 4,
+        "partial_commit": "allowed",
+        "probe": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "Tus-Resumable"
+              },
+              "value": {
+                "literal": "1.0.0"
+              }
+            }
+          ],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/head"
+          },
+          "remote_offset": {
+            "from": "header",
+            "name": "Upload-Offset",
+            "occurrence": "single"
+          }
+        },
+        "profile": "offset"
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 files.create_file(header:Upload-Length=upload_length, header:Tus-Resumable=tus_resumable, header:X-Name=x_name)
+    exports client.types.files.CreateFileResponse client.types.files.CreateFileErrorData client.types.files.CreateFileHTTPError
+    exports client.types.files.CreateFileRequestCodecs client.types.files.decode_create_file_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 files.probe_file(path:fileId=file_id, header:Tus-Resumable=tus_resumable)
+    exports client.types.files.ProbeFileResponse client.types.files.ProbeFileErrorData client.types.files.ProbeFileHTTPError
+    exports client.types.files.ProbeFileRequestCodecs client.types.files.decode_probe_file_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/2 files.append_file(path:fileId=file_id, header:Upload-Offset=upload_offset, header:Tus-Resumable=tus_resumable, header:X-Chunk-Length=x_chunk_length)
+    exports client.types.files.AppendFileResponse client.types.files.AppendFileErrorData client.types.files.AppendFileHTTPError
+    exports client.types.files.AppendFileRequestCodecs client.types.files.decode_append_file_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/3 files.put_file_chunk(path:fileId=file_id, query:offset=offset)
+    exports client.types.files.PutFileChunkResponse client.types.files.PutFileChunkErrorData client.types.files.PutFileChunkHTTPError
+    exports client.types.files.PutFileChunkRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/4 files.get_file_status(path:fileId=file_id)
+    exports client.types.files.GetFileStatusResponse client.types.files.GetFileStatusErrorData client.types.files.GetFileStatusHTTPError
+    exports client.types.files.GetFileStatusRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/5 files.complete_file(path:fileId=file_id)
+    exports client.types.files.CompleteFileResponse client.types.files.CompleteFileErrorData client.types.files.CompleteFileHTTPError
+    exports client.types.files.CompleteFileRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
+render msgspec.Struct
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/files/__init__.py
+  write client/resources/files/_sync.py
+  write client/resources/files/_async.py
+  write client/types/__init__.py
+  write client/types/files/__init__.py
+  write client/types/files/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/protocols/_plans.py
+  write client/protocols/_helpers.py
+  write client/protocols/_async_helpers.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['files.upload', 'files.finish', 'files.put'] bindings 19
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper files.upload resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.upload c96e972b1d1cff57cfba7fe32a4570bd1cc9775d6a18968214fe76d11e9a89bc
+  helper files.finish resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.finish 072939a245e04c99c8171655b1c0ef58ab1788941271cd7d2041a585c7659536
+  helper files.put resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.put 586a7c05d10271526adc830b78a0a597520422a48db551c2efe553173683eca1
+  {
+    "helpers": {
+      "files.finish": {
+        "append": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "Tus-Resumable"
+              },
+              "value": {
+                "literal": "1.0.0"
+              }
+            }
+          ],
+          "offset": {
+            "in": "header",
+            "name": "Upload-Offset"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/patch"
+          }
+        },
+        "completion": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "kind": "operation",
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1complete/post"
+          },
+          "result_schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Stored"
+          }
+        },
+        "create": {
+          "expires_at": {
+            "from": "body",
+            "pointer": "/expires"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files/post"
+          },
+          "size": {
+            "in": "header",
+            "name": "Upload-Length"
+          }
+        },
+        "enabled": true,
+        "kind": "resumable_upload",
+        "max_chunk_bytes": 8,
+        "partial_commit": "forbidden",
+        "probe": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1status/get"
+          },
+          "remote_offset": {
+            "from": "body",
+            "pointer": "/offset"
+          }
+        },
+        "profile": "offset"
+      },
+      "files.put": {
+        "append": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "offset": {
+            "in": "query",
+            "name": "offset"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/put"
+          }
+        },
+        "completion": {
+          "kind": "length"
+        },
+        "create": {
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files/post"
+          }
+        },
+        "enabled": true,
+        "kind": "resumable_upload",
+        "max_chunk_bytes": 4,
+        "partial_commit": "forbidden",
+        "probe": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "Tus-Resumable"
+              },
+              "value": {
+                "literal": "1.0.0"
+              }
+            }
+          ],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/head"
+          },
+          "remote_offset": {
+            "from": "header",
+            "name": "Upload-Offset",
+            "occurrence": "single"
+          }
+        },
+        "profile": "offset"
+      },
+      "files.upload": {
+        "append": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "Tus-Resumable"
+              },
+              "value": {
+                "literal": "1.0.0"
+              }
+            }
+          ],
+          "length": {
+            "in": "header",
+            "name": "X-Chunk-Length"
+          },
+          "offset": {
+            "in": "header",
+            "name": "Upload-Offset"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/patch"
+          }
+        },
+        "completion": {
+          "kind": "length"
+        },
+        "create": {
+          "expires_at": {
+            "from": "header",
+            "name": "Upload-Expires",
+            "occurrence": "single"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files/post"
+          },
+          "size": {
+            "in": "header",
+            "name": "Upload-Length"
+          }
+        },
+        "enabled": true,
+        "kind": "resumable_upload",
+        "max_chunk_bytes": 4,
+        "partial_commit": "allowed",
+        "probe": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "Tus-Resumable"
+              },
+              "value": {
+                "literal": "1.0.0"
+              }
+            }
+          ],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/head"
+          },
+          "remote_offset": {
+            "from": "header",
+            "name": "Upload-Offset",
+            "occurrence": "single"
+          }
+        },
+        "profile": "offset"
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 files.create_file(header:Upload-Length=upload_length, header:Tus-Resumable=tus_resumable, header:X-Name=x_name)
+    exports client.types.files.CreateFileResponse client.types.files.CreateFileErrorData client.types.files.CreateFileHTTPError
+    exports client.types.files.CreateFileRequestCodecs client.types.files.decode_create_file_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 files.probe_file(path:fileId=file_id, header:Tus-Resumable=tus_resumable)
+    exports client.types.files.ProbeFileResponse client.types.files.ProbeFileErrorData client.types.files.ProbeFileHTTPError
+    exports client.types.files.ProbeFileRequestCodecs client.types.files.decode_probe_file_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/2 files.append_file(path:fileId=file_id, header:Upload-Offset=upload_offset, header:Tus-Resumable=tus_resumable, header:X-Chunk-Length=x_chunk_length)
+    exports client.types.files.AppendFileResponse client.types.files.AppendFileErrorData client.types.files.AppendFileHTTPError
+    exports client.types.files.AppendFileRequestCodecs client.types.files.decode_append_file_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/3 files.put_file_chunk(path:fileId=file_id, query:offset=offset)
+    exports client.types.files.PutFileChunkResponse client.types.files.PutFileChunkErrorData client.types.files.PutFileChunkHTTPError
+    exports client.types.files.PutFileChunkRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/4 files.get_file_status(path:fileId=file_id)
+    exports client.types.files.GetFileStatusResponse client.types.files.GetFileStatusErrorData client.types.files.GetFileStatusHTTPError
+    exports client.types.files.GetFileStatusRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/5 files.complete_file(path:fileId=file_id)
+    exports client.types.files.CompleteFileResponse client.types.files.CompleteFileErrorData client.types.files.CompleteFileHTTPError
+    exports client.types.files.CompleteFileRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'msgspec>=0.18']

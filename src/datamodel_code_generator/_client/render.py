@@ -17,6 +17,7 @@ from datamodel_code_generator._client.naming import helper_classes, pascal
 from datamodel_code_generator._client.plan import media_range, member_parts, reachable, success_media
 from datamodel_code_generator._client.polling import STATES, PollingSpec
 from datamodel_code_generator._client.queues import QueueSpec
+from datamodel_code_generator._client.uploads import UploadSpec
 from datamodel_code_generator._client.validation import allowed
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._generation_contract import UnionType
@@ -304,6 +305,7 @@ _PROTOCOL_ERROR_NAMES: Final = (
     "DeliveryUnknownError",
     "HandshakeResponse",
     "IncompleteFrameError",
+    "NonResumableSourceError",
     "OperationCancelledError",
     "OperationFailedError",
     "PaginationCycleError",
@@ -322,6 +324,10 @@ _PROTOCOL_ERROR_NAMES: Final = (
     "StreamInterruptedError",
     "StreamRemoteError",
     "StreamResumeExhaustedError",
+    "UploadDeliveryUnknownError",
+    "UploadExpiredError",
+    "UploadOffsetError",
+    "UploadSourceChangedError",
     "WebSocketClosedError",
     "WebSocketHandshakeError",
     "WebSocketProxyError",
@@ -374,6 +380,7 @@ from .._runtime.protocols.options import (
     ProtocolSecurityContext,
     QueueOptions,
     StreamOptions,
+    UploadOptions,
     WebSocketTransportOptions,
     WSOptions,
 )
@@ -405,6 +412,15 @@ from .._runtime.protocols.records import (
 )
 from .._runtime.protocols.references import OperationRef
 from .._runtime.protocols.resume import ResumeState, import_state
+from .._runtime.protocols.sources import (
+    AsyncRangeReader,
+    AsyncUploadSource,
+    PartReceipt,
+    RangeReader,
+    UploadIdentity,
+    UploadProgress,
+    UploadSource,
+)
 from .._runtime.protocols.webhooks import (
     AsyncReplayStore,
     KeySet,
@@ -435,24 +451,37 @@ if TYPE_CHECKING:
     from .._runtime.protocols.queue_stores import AsyncMemoryQueueStore, MemoryQueueStore
     from .._runtime.protocols.replay import AsyncMemoryReplayStore, MemoryReplayStore
     from .._runtime.protocols.streams import AsyncEventStream, EventStream, StreamEvent, UnknownEvent
+    from .._runtime.protocols.upload_sources import (
+        AsyncBytesUploadSource,
+        AsyncFileUploadSource,
+        BytesUploadSource,
+        FileUploadSource,
+    )
+    from .._runtime.protocols.uploads import AsyncUploadHandle, UploadHandle
     from .._runtime.protocols.websocket import AsyncWebSocketSession, WebSocketSession
 
 __all__ = [
+    "AsyncBytesUploadSource",
     "AsyncCacheStore",
     "AsyncEventStream",
+    "AsyncFileUploadSource",
     "AsyncLroHandle",
     "AsyncMemoryCacheStore",
     "AsyncMemoryQueueStore",
     "AsyncMemoryReplayStore",
     "AsyncPager",
     "AsyncQueueStore",
+    "AsyncRangeReader",
     "AsyncReplayStore",
+    "AsyncUploadHandle",
+    "AsyncUploadSource",
     "AsyncWebSocketConnection",
     "AsyncWebSocketConnector",
     "AsyncWebSocketSession",
     "BlobRef",
     "BodySelector",
     "BodyTarget",
+    "BytesUploadSource",
     "CacheEntry",
     "CacheOptions",
     "CacheResult",
@@ -461,6 +490,7 @@ __all__ = [
     "Continuation",
     "DrainReport",
     "EventStream",
+    "FileUploadSource",
     "HeaderSelector",
     "KeySet",
     "LroHandle",
@@ -474,6 +504,7 @@ __all__ = [
     "Pager",
     "PaginationOptions",
     "ParameterTarget",
+    "PartReceipt",
     "PingReceipt",
     "PollOptions",
     "PollSnapshot",
@@ -488,6 +519,7 @@ __all__ = [
     "QueueOutcome",
     "QueueReceipt",
     "QueueStore",
+    "RangeReader",
     "ReplayStore",
     "RequestTarget",
     "ResolvedQueueOptions",
@@ -500,6 +532,11 @@ __all__ = [
     "StreamEvent",
     "StreamOptions",
     "UnknownEvent",
+    "UploadHandle",
+    "UploadIdentity",
+    "UploadOptions",
+    "UploadProgress",
+    "UploadSource",
     "VerifiedSignature",
     "VerifiedWebhook",
     "Verifier",
@@ -516,7 +553,7 @@ __all__ = [
 
 
 def __getattr__(name: str) -> object:
-    """Load a memory store, a pagination, polling, or stream type, or a WebSocket session only when requested."""
+    """Load a memory store, a builtin upload source, or a pagination, polling, stream, upload, or session type."""
     if name in {"AsyncPager", "Page", "Pager"}:
         from .._runtime.protocols import pagination
 
@@ -533,6 +570,14 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import streams
 
         return getattr(streams, name)
+    if name in {"AsyncUploadHandle", "UploadHandle"}:
+        from .._runtime.protocols import uploads
+
+        return getattr(uploads, name)
+    if name in {"AsyncBytesUploadSource", "AsyncFileUploadSource", "BytesUploadSource", "FileUploadSource"}:
+        from .._runtime.protocols import upload_sources
+
+        return getattr(upload_sources, name)
     if name in {"AsyncWebSocketSession", "WebSocketSession"}:
         from .._runtime.protocols import websocket
 
@@ -1113,7 +1158,7 @@ class _Resources(_Typing):
         validation: ClientValidationConfig,
         *,
         unpacked: bool = False,
-        helpers: tuple[PaginationSpec | PollingSpec | CacheSpec | QueueSpec, ...] = (),
+        helpers: tuple[PaginationSpec | PollingSpec | CacheSpec | UploadSpec | QueueSpec, ...] = (),
         streams: tuple[StreamSpec, ...] = (),
         sockets: tuple[SocketSpec, ...] = (),
     ) -> None:
@@ -2362,6 +2407,7 @@ _SOCKET_OPTIONS: Final = (
 _HELPER_KINDS: Final = {
     "pagination": "pagination helper",
     "polling": "polling helper",
+    "resumable_upload": "upload helper",
     "queue": "queue helper",
     "sse": "SSE helper",
     "ndjson": "NDJSON helper",
@@ -2376,6 +2422,8 @@ _HELPER_CALLS: Final[dict[bool, tuple[str, str, str, str]]] = {
 }
 _POLL_OPTIONS: Final = (("poll_options", ".", "PollOptions"), *_HELPER_OPTIONS[1:])
 _POLLING: Final = "_runtime.protocols.polling"
+_UPLOADS: Final = "_runtime.protocols.uploads"
+_UPLOAD_OPTIONS: Final = (("upload_options", ".", "UploadOptions"), *_HELPER_OPTIONS[1:])
 _CACHE: Final = "_runtime.protocols.cache"
 _CACHE_OPTIONS: Final = (("cache_options", ".", "CacheOptions"), _HELPER_OPTIONS[1])
 _DEFAULT_STATUSES: Final = [200]
@@ -2399,7 +2447,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         self.fingerprints = fingerprints
 
     @staticmethod
-    def page(module: Module, spec: PaginationSpec | PollingSpec) -> str:
+    def page(module: Module, spec: PaginationSpec | PollingSpec | UploadSpec) -> str:
         """Return the type of a helper's page or create response: its operation's response alias."""
         return _Helpers.response(module, spec.operation)
 
@@ -2438,6 +2486,8 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         for index, spec in enumerate(self.helpers):
             if isinstance(spec, PollingSpec):
                 sections.extend(self.polling(module, index, spec))
+            elif isinstance(spec, UploadSpec):
+                sections.append(self.upload(module, index, spec))
             elif isinstance(spec, CacheSpec):
                 sections.extend(self.cache(module, index, spec))
             elif isinstance(spec, QueueSpec):
@@ -2825,7 +2875,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         module: Module,
         index: int,
         name: str,
-        spec: PaginationSpec | PollingSpec | CacheSpec,
+        spec: PaginationSpec | PollingSpec | CacheSpec | UploadSpec,
         core: str,
         *,
         handle: str | None,
@@ -2845,6 +2895,12 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             if handle is None:
                 return [node]
             return [node, self.handle(module, index, spec, handle, asynchronous=asynchronous)]
+        if isinstance(spec, UploadSpec):
+            return [
+                self.node(
+                    name, what, core, self.upload_methods(module, index, spec, asynchronous=asynchronous), leaf=True
+                )
+            ]
         if not isinstance(spec, CacheSpec):
             return [
                 self.node(name, what, core, self.methods(module, index, spec, asynchronous=asynchronous), leaf=True)
@@ -3223,6 +3279,110 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         return sections
 
     @staticmethod
+    def upload_result(module: Module, spec: UploadSpec) -> str:
+        """Return the type of an upload helper's result: the completion operation's response, or None."""
+        return "None" if spec.completion is None else _Helpers.response(module, spec.completion)
+
+    def upload(self, module: Module, index: int, spec: UploadSpec) -> str:
+        """Return an upload helper's plan: its operations, selectors, targets, bindings, chunk limit, and completion.
+
+        Each optional entry appears only when the helper declares it.
+        """
+        helper, operations = spec.helper, module.root("_operations")
+        tree, name = helper.tree, helper.name
+        create, probe, append = tree["create"], tree["probe"], tree["append"]
+        entries: list[tuple[str, Doc]] = [
+            ("helper_id=", repr(name)),
+            ("operation=", self.reference(module, spec.operation)),
+            ("create=", f"{operations}.OPERATION_{spec.operation.index}"),
+            ("probe_operation=", self.reference(module, spec.probe)),
+            ("probe=", f"{operations}.OPERATION_{spec.probe.index}"),
+            ("remote_offset=", self.selector(module, probe["remote_offset"])),
+            ("append_operation=", self.reference(module, spec.append)),
+            ("append=", f"{operations}.OPERATION_{spec.append.index}"),
+            ("offset=", self.target(module, append["offset"])),
+            ("max_chunk_bytes=", repr(tree["max_chunk_bytes"])),
+            ("partial_commit=", repr(tree["partial_commit"] == "allowed")),
+            ("fingerprint=", repr(self.fingerprints[name])),
+        ]
+        if (size := create.get("size")) is not None:
+            entries.append(("size=", self.target(module, size)))
+        if (expires_at := create.get("expires_at")) is not None:
+            entries.append(("expires_at=", self.selector(module, expires_at)))
+        entries.extend(
+            (key, _tuple([self.binding(module, item) for item in bindings]))
+            for key, bindings in (("probe_bindings=", probe["bindings"]), ("append_bindings=", append["bindings"]))
+            if bindings
+        )
+        if (length := append.get("length")) is not None:
+            entries.append(("length=", self.target(module, length)))
+        if (completion := spec.completion) is not None:
+            entries.extend((
+                ("completion_operation=", self.reference(module, completion)),
+                ("completion=", f"{operations}.OPERATION_{completion.index}"),
+                *(
+                    ("completion_bindings=", _tuple([self.binding(module, item) for item in bindings]))
+                    for bindings in (tree["completion"]["bindings"],)
+                    if bindings
+                ),
+            ))
+        plan = module.local(_UPLOADS, "UploadPlan")
+        result = self.upload_result(module, spec)
+        head = f"PLAN_{index}: {module.name('typing', 'Final')}[{plan}[{result}, {self.page(module, spec)}]] = "
+        return head + layout(_call(plan, entries), 0, len(head), WIDTH)
+
+    def upload_methods(self, module: Module, index: int, spec: UploadSpec, *, asynchronous: bool) -> list[str]:  # noqa: PLR0914
+        """Return an upload helper's start and resume methods, which return the handle that appends its chunks."""
+        operation = replace(spec.operation, fields=())
+        resources = self.resources
+        size = None if spec.size is None else spec.size.python_name
+        parameters = [parameter for parameter in operation.parameters if parameter.python_name != size]
+        arguments = [resources.parameter(module, parameter) for parameter in parameters]
+        body = resources.requests(module, operation, asynchronous=asynchronous)[1]
+        options = [
+            _Argument(name, f"{module.namespace.name(source, kind)} | None", "none")
+            for name, source, kind in _UPLOAD_OPTIONS
+        ]
+        prefix = "Async" if asynchronous else ""
+        handle = f"{module.local(_UPLOADS, f'{prefix}UploadHandle')}[{self.upload_result(module, spec)}]"
+        source = f"source: {module.namespace.name('.', f'{prefix}UploadSource')}"
+        state = f"state: {module.local('_runtime.protocols.resume', 'ResumeState')}"
+        plan = ("", f"{module.namespace.name('.', '_plans')}.PLAN_{index}")
+        forwarded = [(f"{name}=", name) for name, _, _ in _UPLOAD_OPTIONS]
+        start = module.local(_UPLOADS, "astart_upload" if asynchronous else "start_upload")
+        resume = module.local(_UPLOADS, "aresume_upload" if asynchronous else "resume_upload")
+        route = f"{operation.contract.method.upper()} {operation.contract.path}"
+        keywords = tuple(argument.parameter(module) for argument in (*arguments, *body, *options))
+        wait, head = ("await ", "    async def ") if asynchronous else ("", "    def ")
+        started = (
+            ("", "self._core"),
+            plan,
+            ("", "source"),
+            ("", _tuple(parameter.python_name for parameter in parameters)),
+            *((f"{argument.name}=", argument.name) for argument in body),
+            *forwarded,
+        )
+        resumed = (("", "self._core"), plan, ("", "source"), ("", "state"), *forwarded)
+        option_keywords = tuple(argument.parameter(module) for argument in options)
+        return [
+            "\n".join((
+                layout(Group(f"{head}start(", items(("self", source, "*", *keywords)), f") -> {handle}:"), 4, 0, WIDTH),
+                f'        """Read the source, create the upload of {route}, and return its handle."""',
+                f"        return {wait}{layout(_call(start, started), 8, 7 + len(wait), WIDTH)}",
+            )),
+            "\n".join((
+                layout(
+                    Group(f"{head}resume(", items(("self", source, state, "*", *option_keywords)), f") -> {handle}:"),
+                    4,
+                    0,
+                    WIDTH,
+                ),
+                '        """Check the source against a checkpoint and continue from the offset the server holds."""',
+                f"        return {wait}{layout(_call(resume, resumed), 8, 7 + len(wait), WIDTH)}",
+            )),
+        ]
+
+    @staticmethod
     def event_type(module: Module, spec: StreamSpec) -> str:
         """Return the type of a stream's event data: its event types, with UnknownEvent when it keeps unknown events."""
         types = [use.type for _, use in spec.events if use.type is not None]
@@ -3415,7 +3575,7 @@ class ClientRenderer:
         batch: GeneratedTypeContractBatch,
         wire: WirePlan,
         codecs: CodecPlan,
-        helpers: tuple[PaginationSpec | PollingSpec | CacheSpec | QueueSpec, ...] = (),
+        helpers: tuple[PaginationSpec | PollingSpec | CacheSpec | UploadSpec | QueueSpec, ...] = (),
         streams: tuple[StreamSpec, ...] = (),
         sockets: tuple[SocketSpec, ...] = (),
         fingerprints: Mapping[str, str] | None = None,
@@ -3580,6 +3740,14 @@ the runtime reference for their limits and checkpoints."""
             if "polling" in kinds
             else ""
         )
+        uploads = (
+            """
+An upload helper's `start` reads its source once and creates the upload; the handle's `advance` appends one chunk and
+`run` appends the rest and completes it, and `resume` continues a handle's `checkpoint()` from the offset the server
+holds. `close()` or `aclose()` stops only local uploading. See the runtime reference for their limits."""
+            if "resumable_upload" in kinds
+            else ""
+        )
         caching = (
             """
 A cache helper's `fetch` answers from a fresh entry of the store `ProtocolClientOptions.cache_stores` lends it, or
@@ -3603,7 +3771,7 @@ their limits."""
 
 `client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.{
             streams
-        }{sockets}{pagination}{polling}{caching}{queues}{closing}
+        }{sockets}{pagination}{polling}{caching}{uploads}{queues}{closing}
 
 ```json
 {json.dumps(helpers, indent=2, ensure_ascii=True)}
@@ -3790,8 +3958,14 @@ wait for retained cleanup; it does not authorize another send or restore an expi
 {self.helper_runtime()}{self.stream_runtime()}{self.socket_runtime()}"""  # noqa: S608
 
     def helper_runtime(self) -> str:
-        """Describe the package's pagination and polling sessions and cache and queue helpers, or nothing otherwise."""
-        return self.pagination_runtime() + self.polling_runtime() + self.cache_runtime() + self.queue_runtime()
+        """Describe the package's pagination, polling, and upload sessions and cache and queue helpers, if any."""
+        return (
+            self.pagination_runtime()
+            + self.polling_runtime()
+            + self.cache_runtime()
+            + self.upload_runtime()
+            + self.queue_runtime()
+        )
 
     def polling_runtime(self) -> str:
         """Describe polling sessions and their limits, or nothing for a package without polling helpers."""
@@ -3851,6 +4025,53 @@ A helper that declares `remote_cancel` returns a handle of its own class whose `
 request once, while the operation is pending, and returns a `CancelReceipt` of its response; it also runs while
 another thread or task waits in `status` or `wait`. It does not change the handle, which keeps its last poll until it
 polls again; closing sends nothing.
+"""
+
+    def upload_runtime(self) -> str:
+        """Describe upload sessions, sources, and their limits, or nothing for a package without upload helpers."""
+        if not any(isinstance(spec, UploadSpec) for spec in self.helpers):
+            return ""
+        return f"""
+## Upload sessions
+
+An upload helper's `start` and the handle it returns are one session, and so are `resume` and its handle. The create
+call, every probe, append, and the completion are logical calls of their own, with their own retries, total timeout,
+and idempotency key; the session bounds all of them. Each limit comes from the call's options, then
+`ProtocolClientOptions.defaults` for the helper, then the default below. The session types are imported from:
+
+- `{self.config.package}.protocols`: `UploadOptions`, `UploadSource`, `AsyncUploadSource`, `UploadIdentity`,
+  `UploadProgress`, `UploadHandle`, `AsyncUploadHandle`, and the builtin `BytesUploadSource`, `FileUploadSource`,
+  `AsyncBytesUploadSource`, and `AsyncFileUploadSource`
+- `{self.config.package}.options`: `SessionOptions`
+
+| Limit | Effective default |
+|---|---|
+| chunk size | 8 MiB, or the helper's smaller `max_chunk_bytes` |
+| chunks per upload | 10000; None removes it |
+| probes after an append of unknown outcome | 3; 0 probes none |
+| session total timeout | 600 seconds from `start` or `resume`, the reading of the source included; None removes it |
+| network sends per session | 10000; None removes it |
+
+A source has an immutable identity, its size and SHA-256 digest, and opens an independent reader for each range. Before
+anything is sent, `start` and `resume` read the whole source once and record each chunk's digest; each append reads
+its chunk again into one buffer and sends it only when it matches, so a source whose content changed raises
+`UploadSourceChangedError` and the handle sends nothing more. A one-shot stream or iterator is no source and raises
+`NonResumableSourceError`; send it as an ordinary upload. Sources a call is given are borrowed and never closed, and
+every reader the client opens is closed.
+
+`start` sends the create request once, resent only as shared retries allow. `advance` appends the chunk holding the
+confirmed offset, and `run` appends every remaining chunk and completes the upload: by length, returning None, or with
+the declared completion operation, sent once and returning its response. An append whose outcome is unknown is never
+resent blindly: the server's offset is probed instead, and an unchanged offset sends the range again, the chunk's end
+confirms it, and an offset inside it confirms its bytes only when partial commits are allowed. An offset that regresses,
+passes the content, or commits part of a chunk that may not be raises `UploadOffsetError`, and probes that never answer
+raise `UploadDeliveryUnknownError`; so does a completion whose outcome is unknown, which is never sent again.
+
+`checkpoint()` saves the confirmed offset, the chunk layout and digests, and the values later calls write, sending
+nothing. `resume` checks it, then the source, then probes the server's offset once; it never creates the upload again.
+A checkpoint past the server's declared expiry raises `UploadExpiredError`. `advance` and `run` at once raise
+`ProtocolStateError`, and so does every step after `close()` or `aclose()`, which stops only local uploading. A call's
+options must not fix an idempotency key or patch a header or query parameter the helper writes.
 """
 
     def queue_runtime(self) -> str:
@@ -3922,7 +4143,11 @@ removes the ended entries created before an instant and returns them.
         page-number helper, and followed URLs only for one with a next-URL or Link helper; the cursor size limit
         applies to cursors and followed URLs.
         """
-        if not (pages := [spec for spec in self.helpers if not isinstance(spec, PollingSpec | CacheSpec | QueueSpec)]):
+        if not (
+            pages := [
+                spec for spec in self.helpers if not isinstance(spec, PollingSpec | CacheSpec | UploadSpec | QueueSpec)
+            ]
+        ):
             return ""
         kinds = {spec.continuation["kind"] for spec in pages}
         cursors = "cursor" in kinds
