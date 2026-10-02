@@ -220,7 +220,7 @@ inputs
     ! ValueError: source failed []
   item of another type: 1 results in order True {'success': 0, 'error': 1, 'delivery_unknown': 0}
     error #0 id='u0000' status=200 error=taken
-    ! RequestEncodingError: RequestEncodingError(operation_id='createUsers', location='items.1') [operation_id='createUsers', location=('items', 1), cause=NativeValidationError('The native type rejected the value (native.model_type) at /users/0')] request_encoding_error
+    ! RequestEncodingError: RequestEncodingError(operation_id='createUsers', location='items.1') [operation_id='createUsers', location=('items', 1), cause=NativeValidationError('The native type rejected the value (native.model_type) at /')] request_encoding_error
   inputs: 2 requests
     > u0000 POST /users/batch items=1 last=u0000 bytes=42
     > u0000 POST /users/batch items=3 last=u0002 bytes=104

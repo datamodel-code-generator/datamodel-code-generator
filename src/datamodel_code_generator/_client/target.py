@@ -155,6 +155,38 @@ class ClientTarget:
         caches, cached = plan_caches(protocols, plan, codecs, wire, request)
         uploads, uploaded = plan_uploads(protocols, plan, codecs, wire, request)
         batches, batched = plan_batches(protocols, plan, codecs, wire, request)
+        if batches:
+            items = tuple(spec.item_use for spec in batches)
+            batch = replace(batch, type_uses=(*batch.type_uses, *items))
+            wire = _wire(request, batch, (*parts, *items), received)
+            selection = select_adapters(batch, wire, declarations, "client")
+            chosen = dict(selection.chosen)
+            for spec in batches:
+                body = spec.operation.body
+                assert body is not None
+                assert body.media[0].use is not None
+                parent = body.media[0].use.id
+                if (adapter := chosen.get(("schema", parent))) is not None:
+                    chosen.setdefault(("schema", spec.item_use.id), adapter)
+            codecs = plan_model_codecs(
+                batch,
+                replace(
+                    wire,
+                    schema_ids=tuple(
+                        entry
+                        for entry in wire.schema_ids
+                        if entry[0] in uses or entry[0] in {item.id for item in items}
+                    ),
+                ),
+                backend,
+                declarations=declarations,
+                surface="client",
+                lease=request.lease,
+                sources=_sources(request),
+                selection=replace(selection, chosen=chosen),
+            )
+            if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
+                raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
         queues, queued = plan_queues(protocols, plan)
         order = {} if protocols is None else {helper.name: index for index, helper in enumerate(protocols.helpers)}
         helpers = tuple(

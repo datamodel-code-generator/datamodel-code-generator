@@ -170,6 +170,37 @@ class Encoder:
         return self.codec().from_wire(wire, self.context)
 
 
+class PreparationCodec(OutboundModelCodec, Protocol):
+    """The shared native codec seam used by helpers that prepare items before a complete request exists."""
+
+    def prepare(
+        self, value: object, context: CodecContext, *, validate: bool = False, strict: bool = False
+    ) -> WireValue:
+        """Construct and read one native item."""
+        ...
+
+    def validate_prepared(self, wire: WireValue, context: CodecContext, *, strict: bool = False) -> None:
+        """Validate the assembled request without encoding its items again."""
+        ...
+
+
+@dataclass(frozen=True, slots=True)
+class PreparedEncoder:
+    """A captured native codec and context for bounded item and whole-request preparation."""
+
+    codec: Callable[[], PreparationCodec]
+    context: CodecContext
+
+    def prepare(self, value: object, mode: RequestValidation) -> WireValue:
+        """Read one item under the request's validation contract."""
+        return self.codec().prepare(value, self.context, validate=mode == "native", strict=mode == "schema")
+
+    def validate(self, wire: WireValue, mode: RequestValidation) -> None:
+        """Check the assembled request before provider and resource admission."""
+        if mode != "none":
+            self.codec().validate_prepared(wire, self.context, strict=mode == "schema")
+
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ServerVariable:
     """One server variable with its default and, when declared, its allowed values."""

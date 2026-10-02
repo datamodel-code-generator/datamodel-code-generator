@@ -33,7 +33,7 @@ from ..client.errors import (
     TransportError,
     UnsupportedContentCodingError,
 )
-from ..client.operations import DATA_ERRORS
+from ..client.operations import DATA_ERRORS, PreparedEncoder
 from ..client.options import RequestOptions
 from ..client.timing import SYSTEM_CLOCK, SessionOptions
 from ..model_codecs.media import encode_json
@@ -59,7 +59,7 @@ if TYPE_CHECKING:
 
     from ..client.client import AsyncClientCore, ClientCore
     from ..client.logical import OperationSession
-    from ..client.operations import Encoder, OperationPlan
+    from ..client.operations import OperationPlan
     from ..client.options import RequestValidation
     from ..client.responses import ResponseInfo
     from ..client.timing import Clock, Deadline
@@ -87,8 +87,8 @@ def _escaped(name: str) -> str:
 class BatchPlan(Generic[InputT, R]):
     """Everything fixed about one generated batch helper: its operation, how it reads results, and its limits.
 
-    Items are written into the request body's property `items_member`, or are the body itself without one, wrapped in
-    the root model `items_root` when the body is one. `results` reads the decoded response's result items, whose wire
+    Items are written into the request body's property `items_member`, or are the body itself without one.
+    `results` reads the decoded response's result items, whose wire
     values `results_selector` selects; `success` and `error` read the members of one result item that
     `success_pointer` and `error_pointer` name. `succeeded`, `failed`, and `unknown` build the helper's records. An
     item's ID is read at `input_id` of its wire value and a result's at `result_id`; without them results answer the
@@ -98,6 +98,8 @@ class BatchPlan(Generic[InputT, R]):
     helper_id: str
     operation: OperationRef
     call: OperationPlan[Any, object]
+    item_encoder: PreparedEncoder
+    body_encoder: PreparedEncoder
     results: Callable[[Any], Sequence[Any] | None]
     results_selector: BodySelector
     success: Callable[[Any], object]
@@ -111,7 +113,6 @@ class BatchPlan(Generic[InputT, R]):
     max_request_bytes: int
     fingerprint: str
     items_member: str | None = None
-    items_root: Callable[[list[Any]], object] | None = None
     input_id: str | None = None
     result_id: str | None = None
     sent: OperationPlan[Any, object] = field(init=False, repr=False)
@@ -128,14 +129,6 @@ class BatchPlan(Generic[InputT, R]):
         object.__setattr__(self, "sent", targeted(self.call, (BodyTarget(pointer=pointer),))[0])
         object.__setattr__(self, "pointer", pointer)
         object.__setattr__(self, "overhead", len(encode_json(empty)))
-
-    def encoder(self) -> Encoder:
-        """Return the encoder of the request body, which encodes each item once."""
-        body = self.call.body
-        assert body is not None
-        encoder = body.media[0].encoder
-        assert encoder is not None
-        return encoder
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -333,7 +326,7 @@ class _Batches(Generic[R]):
         self._limits = limits
         self._session = session
         self._mode: RequestValidation = mode
-        self._encoder = plan.encoder()
+        self._encoder = plan.body_encoder
         self._lock = threading.Lock()
         self._count = min(limits.batch_size, plan.max_items)
         self._request_bytes = min(plan.max_request_bytes, MAX_REQUEST_BYTES, limits.max_buffer_bytes)
@@ -397,21 +390,13 @@ class _Batches(Generic[R]):
 
         An item over the byte limit raises BatchItemTooLargeError, and one without a declared ID BatchProtocolError.
         """
-        plan, encoder = self._plan, self._encoder
+        plan = self._plan
         try:
-            if (name := plan.items_member) is None:
-                wrap = plan.items_root
-                wire = encoder.encode([value] if wrap is None else wrap([value]), self._mode)
-            else:
-                encoded = encoder.assemble({name: [value]}, self._mode)
-                assert isinstance(encoded, Mapping)
-                wire = encoded[name]
+            item = plan.item_encoder.prepare(value, self._mode)
         except (*DATA_ERRORS, ValueError, TypeError) as error:
             raise RequestEncodingError(
                 location=("items", index), operation_id=plan.call.operation_id, cause=error
             ) from None
-        assert isinstance(wire, Sequence)
-        item = wire[0]
         if (size := len(encode_json(item))) > self._item_bytes:
             raise BatchItemTooLargeError(
                 index=index,
@@ -513,13 +498,27 @@ class _Batches(Generic[R]):
             self._admitted = True
         if not items or (not complete and not self._exhausted and self._slots):
             return None
+        plan = self._plan
+        values = tuple(item.wire for item in items)
+        wire = values if plan.items_member is None else MappingProxyType({plan.items_member: values})
+        try:
+            self._encoder.validate(wire, self._mode)
+        except (*DATA_ERRORS, ValueError, TypeError) as error:
+            self._pending.clear()
+            self._stop_reading(
+                self._failure
+                or RequestEncodingError(location=("body",), operation_id=plan.call.operation_id, cause=error)
+            )
+            return None
         for _ in items:
             self._pending.popleft()
         return _Batch(tuple(items), size, sum(item.size for item in items))
 
     def _request(self, batch: _Batch[R]) -> Callable[[], tuple[tuple[object, ...], object, None]]:
         """Return how a request is built: the shared arguments and a body holding the items' wire values."""
-        body = Patch(UNSET, ((self._plan.pointer, tuple(item.wire for item in batch.items)),))
+        plan = self._plan
+        values = tuple(item.wire for item in batch.items)
+        body = Patch(UNSET, ((plan.pointer, values),))
         arguments = self._arguments
         return lambda: (arguments, body, None)
 

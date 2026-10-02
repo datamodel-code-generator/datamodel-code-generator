@@ -75,6 +75,8 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
         "batches",
         "batches-compression",
         "batches-admission",
+        "batch-schema",
+        "batch-schema-native",
         "batches-plans",
         "uploads",
         "uploads-composite",

@@ -1,0 +1,108 @@
+[
+  {
+    "name": "property_min",
+    "labels": [
+      "one",
+      "two"
+    ],
+    "valid": true
+  },
+  {
+    "name": "root_min",
+    "labels": [
+      "one",
+      "two"
+    ],
+    "valid": true
+  },
+  {
+    "name": "property_min",
+    "labels": [
+      "one"
+    ],
+    "valid": false
+  },
+  {
+    "name": "root_min",
+    "labels": [
+      "one"
+    ],
+    "valid": false
+  },
+  {
+    "name": "property_max",
+    "labels": [
+      "one",
+      "two"
+    ],
+    "valid": false
+  },
+  {
+    "name": "root_max",
+    "labels": [
+      "one",
+      "two"
+    ],
+    "valid": false
+  },
+  {
+    "name": "property_unique",
+    "labels": [
+      "one",
+      "one"
+    ],
+    "same_id": true,
+    "valid": false
+  },
+  {
+    "name": "root_unique",
+    "labels": [
+      "one",
+      "one"
+    ],
+    "same_id": true,
+    "valid": false
+  },
+  {
+    "name": "root_contains",
+    "labels": [
+      "one",
+      "one"
+    ],
+    "valid": false
+  },
+  {
+    "name": "root_contains",
+    "labels": [
+      "one",
+      "two"
+    ],
+    "valid": true
+  },
+  {
+    "name": "body_bound",
+    "labels": [
+      "one",
+      "two"
+    ],
+    "valid": false
+  },
+  {
+    "name": "root_min",
+    "labels": [
+      "",
+      "two"
+    ],
+    "valid": false,
+    "index": 0
+  },
+  {
+    "name": "property_min",
+    "labels": [
+      "one",
+      ""
+    ],
+    "valid": false,
+    "index": 1
+  }
+]

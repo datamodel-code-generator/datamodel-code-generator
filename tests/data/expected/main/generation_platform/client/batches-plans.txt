@@ -36,7 +36,7 @@ render pydantic_v2.dataclass
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['users.create', 'tags.put', 'tags.colors'] bindings 5
+  namespace client helpers ['users.create', 'tags.put', 'tags.colors'] bindings 8
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   helper users.create batch enabled True /inputs/target_config/protocol_metadata/helpers/users.create 2e64b9fa0e5af2205e4b43f3e3945a23d76315d74780d555adaafa5a58bb33b9
   helper tags.put batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.put a9cc74d31c30acc25537e4db0d65d9973c815a2045073972a355917575307f91
@@ -214,7 +214,7 @@ render dataclasses.dataclass
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['users.create', 'tags.put', 'tags.colors'] bindings 5
+  namespace client helpers ['users.create', 'tags.put', 'tags.colors'] bindings 8
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   helper users.create batch enabled True /inputs/target_config/protocol_metadata/helpers/users.create 859de176b7cad98dc13183ba44858353fb0e5a3d82eaef6218eb889bf26a8aaa
   helper tags.put batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.put fb5e97871ee488757bc4125ed8edfd19f32030f5285962eb48311f585fbf5799
@@ -392,7 +392,7 @@ render typing.TypedDict
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['users.create', 'tags.put', 'tags.colors'] bindings 5
+  namespace client helpers ['users.create', 'tags.put', 'tags.colors'] bindings 8
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   helper users.create batch enabled True /inputs/target_config/protocol_metadata/helpers/users.create af1e5b5d14611370efa7707999b332371bbb013e9ae3cbc5e13585ff32daeadf
   helper tags.put batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.put 77eeeb831bbca74dbdb6592dc0227fd33dd04170fc9f2bd0f9c1de91aa66f107
@@ -570,7 +570,7 @@ render msgspec.Struct
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['users.create', 'tags.put', 'tags.colors'] bindings 5
+  namespace client helpers ['users.create', 'tags.put', 'tags.colors'] bindings 8
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   helper users.create batch enabled True /inputs/target_config/protocol_metadata/helpers/users.create 910dfb15aaec36667471e83acbf4bdac9a941190f7f09c8c0cf728be2fbb80e1
   helper tags.put batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.put cfc2a75dcb6b3e31e994c747846c7b35bb9bff20e184fa5f1e5ed876f0bb345b

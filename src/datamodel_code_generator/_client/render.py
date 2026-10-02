@@ -3623,10 +3623,21 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         ]
         succeeded, failed, unknown, alias = self.records(module, spec)
         records = "_runtime.protocols.records"
+        body = spec.operation.body
+        assert body is not None
+        assert body.media[0].use is not None
         entries: list[tuple[str, Doc]] = [
             ("helper_id=", repr(name)),
             ("operation=", self.reference(module, spec.operation)),
             ("call=", f"{module.root('_operations')}.OPERATION_{spec.operation.index}"),
+            (
+                "item_encoder=",
+                f"{module.local(_RUNTIME, 'PreparedEncoder')}({self.resources.codec(module, spec.item_use)})",
+            ),
+            (
+                "body_encoder=",
+                f"{module.local(_RUNTIME, 'PreparedEncoder')}({self.resources.codec(module, body.media[0].use)})",
+            ),
             ("results=", f"_results_{index}"),
             ("results_selector=", f"{module.local(records, 'BodySelector')}(pointer={tree['results']['pointer']!r})"),
             ("success=", f"_success_{index}"),
@@ -3642,8 +3653,6 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         ]
         if spec.items_member is not None:
             entries.append(("items_member=", repr(spec.items_member)))
-        if spec.items_root is not None:
-            entries.append(("items_root=", module.types.static(spec.items_root)))
         if (correlation := tree["correlation"])["kind"] == "id":
             entries.extend((("input_id=", repr(correlation["input"])), ("result_id=", repr(correlation["result"]))))
         plan = module.local(_BATCHES, "BatchPlan")
@@ -4542,7 +4551,8 @@ unknown delivery record per item, never resent, or raises `BatchDeliveryUnknownE
 `BatchOptions(raise_on_error=True)`; a deadline, a cancellation, or a closed client is raised after those records.
 Any other failure, and a failure of the caller's items, is raised after the results before it; nothing is read or
 sent after it, and the requests in flight still return their records in order. A cancelled asyncio step cancels the
-requests in flight, whose items become unknown deliveries, and the iteration then ends with `ProtocolStateError`.
+requests in flight; only requests with evidence of possible resource delivery retain unknown delivery records.
+Children stopped before resource delivery produce no unknown records, and iteration ends with `ProtocolStateError`.
 Iterate in a `with` or `async with` block: `close()` or `aclose()` stops sending and drops the results not yet
 returned; it never closes the client. A call's options must not fix an idempotency key.
 """

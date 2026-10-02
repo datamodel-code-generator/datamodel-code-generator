@@ -4775,5 +4775,100 @@
       "pydantic_v2.BaseModel"
     ],
     "modules": []
+  },
+  "batch-schema": {
+    "input": "batch-schema.json",
+    "references": [
+      "protocols/batch-schema.json"
+    ],
+    "config": {
+      "protocols": "protocols/batch-schema.json",
+      "validation": {
+        "request": "schema",
+        "response": "schema",
+        "request_overrides": [
+          "none"
+        ]
+      },
+      "operations": [
+        {
+          "ref": "/paths/~1property-min/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "Idempotency-Key",
+              "replay_safe_with_key": true,
+              "retention_seconds": 86400,
+              "scope": "schema-batch"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1root-min/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "Idempotency-Key",
+              "replay_safe_with_key": true,
+              "retention_seconds": 86400,
+              "scope": "schema-batch"
+            }
+          }
+        }
+      ]
+    },
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "modules": false
+  },
+  "batch-schema-native": {
+    "input": "batch-schema.json",
+    "references": [
+      "protocols/batch-schema.json"
+    ],
+    "config": {
+      "protocols": "protocols/batch-schema.json",
+      "validation": {
+        "request": "schema",
+        "response": "schema",
+        "request_overrides": [
+          "native",
+          "none"
+        ]
+      },
+      "operations": [
+        {
+          "ref": "/paths/~1property-min/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "Idempotency-Key",
+              "replay_safe_with_key": true,
+              "retention_seconds": 86400,
+              "scope": "schema-batch"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1root-min/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "Idempotency-Key",
+              "replay_safe_with_key": true,
+              "retention_seconds": 86400,
+              "scope": "schema-batch"
+            }
+          }
+        }
+      ]
+    },
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "msgspec.Struct"
+    ],
+    "modules": false
   }
 }

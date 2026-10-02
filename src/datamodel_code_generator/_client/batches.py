@@ -8,7 +8,7 @@ by position or by a declared ID.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Any, Final, Literal
 
 from datamodel_code_generator._client.pagination import (
@@ -23,6 +23,7 @@ from datamodel_code_generator._client.pagination import (
     _unwrapped,
 )
 from datamodel_code_generator._client.polling import _nonnull, _Polls
+from datamodel_code_generator._generation_contract import TypeUseBinding
 from datamodel_code_generator._runtime.model_codecs.bindings import ArrayNode, ModelNode
 
 if TYPE_CHECKING:
@@ -33,7 +34,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._generation_contract import FinalPythonType, SourceLocation, TypeUseBinding
+    from datamodel_code_generator._generation_contract import FinalPythonType, SourceLocation
     from datamodel_code_generator._openapi_codec_plan import CodecPlan
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.bindings import TypeNode, UseBinding
@@ -57,7 +58,7 @@ class BatchSpec:
     """A batch helper ready to render: its operation, input item and result types, and result accessors.
 
     `items_member` is the wire name of the request body property the items are written to, or None when the body is
-    the array itself, or the root model `items_root` wraps it in; `results` reads the result array of a decoded
+    the array itself; `results` reads the result array of a decoded
     response, and `success` and `error` read the members of one result item. `item_id` is the Python type of a
     declared correlation ID, or None for positions.
     """
@@ -65,8 +66,8 @@ class BatchSpec:
     helper: Helper
     operation: OperationSpec
     item: FinalPythonType
+    item_use: TypeUseBinding
     items_member: str | None
-    items_root: FinalPythonType | None
     page: TypeUseBinding
     result: FinalPythonType
     results: tuple[ItemStep, ...]
@@ -100,7 +101,7 @@ class _Batches:
         results = self.results(helper, spec, problems)
         if items is None or results is None:
             return None, problems
-        item, member, item_schema, root = items
+        item, member, item_schema, item_use = items
         page, result, steps, node, binding = results
         success = self.member(helper, spec, binding, node, "success", problems)
         error = self.member(helper, spec, binding, node, "error", problems)
@@ -111,8 +112,8 @@ class _Batches:
             helper=helper,
             operation=spec,
             item=item,
+            item_use=item_use,
             items_member=member,
-            items_root=root,
             page=page,
             result=result,
             results=steps,
@@ -128,7 +129,7 @@ class _Batches:
 
     def items(  # noqa: PLR0911
         self, helper: Helper, spec: OperationSpec, problems: list[Diagnostic]
-    ) -> tuple[FinalPythonType, str | None, SourceLocation, FinalPythonType | None] | None:
+    ) -> tuple[FinalPythonType, str | None, SourceLocation, TypeUseBinding] | None:
         """Check the request body the items are written to: return the item type, property, schema, and root model.
 
         A body that is a root model of the array, rather than the array, is built from the items by its type.
@@ -201,7 +202,19 @@ class _Batches:
             return None
         facts = None if member is None else member.model_facts
         item = self.pages.element(use.type if facts is None else facts.type)
-        return item, tokens[0] if tokens else None, expected, use.type if not tokens and reached.steps else None
+        item_use = TypeUseBinding(
+            id=replace(use.id, use_site=_child(array, "items"), schema_site=expected, name=helper.name),
+            state="bound",
+            type=item,
+            reason=None,
+            schema=expected,
+        )
+        return (
+            item,
+            tokens[0] if tokens else None,
+            expected,
+            item_use,
+        )
 
     def results(
         self, helper: Helper, spec: OperationSpec, problems: list[Diagnostic]

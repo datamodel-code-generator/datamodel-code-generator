@@ -38,7 +38,7 @@ render pydantic_v2.BaseModel
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['users.create', 'tags.put', 'tags.colors'] bindings 5
+  namespace client helpers ['users.create', 'tags.put', 'tags.colors'] bindings 8
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   helper users.create batch enabled True /inputs/target_config/protocol_metadata/helpers/users.create 7517d4b0805c342154f296f1f6b8e86afdcf10c3ff4ca1e2303fca8586e31fd4
   helper tags.put batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.put 0cf87757d778a7e442bdb26f3b5624af154a2d65ae42ee6c6412de873ce42ede

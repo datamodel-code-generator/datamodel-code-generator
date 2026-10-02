@@ -6,7 +6,6 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Final
 
-from models import FieldTagsBatchPutRequest as _dcg_type_6
 from models import ItemError as _dcg_type_2
 from models import NewUser as _dcg_type_3
 from models import Tag as _dcg_type_5
@@ -15,6 +14,8 @@ from models import User as _dcg_type_1
 from models import UserResult as _dcg_type_0
 
 from .. import _operations
+from .._generated import model_bindings
+from .._runtime.client.operations import PreparedEncoder
 from .._runtime.protocols.batches import BatchPlan
 from .._runtime.protocols.records import BodySelector
 from .._runtime.protocols.references import OperationRef
@@ -55,6 +56,8 @@ PLAN_0: Final[BatchPlan[_dcg_type_3, UsersCreateResult]] = BatchPlan(
     helper_id='users.create',
     operation=OperationRef(pointer='/paths/~1users~1batch/post'),
     call=_operations.OPERATION_0,
+    item_encoder=PreparedEncoder(model_bindings.codec_5, model_bindings.CONTEXT_5),
+    body_encoder=PreparedEncoder(model_bindings.codec_1, model_bindings.CONTEXT_1),
     results=_results_0,
     results_selector=BodySelector(pointer='/results'),
     success=_success_0,
@@ -92,6 +95,8 @@ PLAN_1: Final[BatchPlan[_dcg_type_5, TagsPutResult]] = BatchPlan(
     helper_id='tags.put',
     operation=OperationRef(pointer='/paths/~1tags~1batch/put'),
     call=_operations.OPERATION_1,
+    item_encoder=PreparedEncoder(model_bindings.codec_6, model_bindings.CONTEXT_6),
+    body_encoder=PreparedEncoder(model_bindings.codec_3, model_bindings.CONTEXT_3),
     results=_results_1,
     results_selector=BodySelector(pointer='/items'),
     success=_success_1,
@@ -104,7 +109,6 @@ PLAN_1: Final[BatchPlan[_dcg_type_5, TagsPutResult]] = BatchPlan(
     max_items=3,
     max_request_bytes=1048576,
     fingerprint='0cf87757d778a7e442bdb26f3b5624af154a2d65ae42ee6c6412de873ce42ede',
-    items_root=_dcg_type_6,
 )
 
 
@@ -127,6 +131,8 @@ PLAN_2: Final[BatchPlan[_dcg_type_5, TagsColorsResult]] = BatchPlan(
     helper_id='tags.colors',
     operation=OperationRef(pointer='/paths/~1tags~1batch/put'),
     call=_operations.OPERATION_1,
+    item_encoder=PreparedEncoder(model_bindings.codec_7, model_bindings.CONTEXT_7),
+    body_encoder=PreparedEncoder(model_bindings.codec_3, model_bindings.CONTEXT_3),
     results=_results_2,
     results_selector=BodySelector(pointer='/items'),
     success=_success_2,
@@ -139,7 +145,6 @@ PLAN_2: Final[BatchPlan[_dcg_type_5, TagsColorsResult]] = BatchPlan(
     max_items=100,
     max_request_bytes=1048576,
     fingerprint='db6acf7343ec57ec3c415f96f00271384182018415ea04ef2dba9e3196d91865',
-    items_root=_dcg_type_6,
     input_id='/color',
     result_id='/color',
 )
