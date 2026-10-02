@@ -4,18 +4,14 @@ from __future__ import annotations
 
 import importlib
 import json
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from datamodel_code_generator import _runtime
 from tests.data.python.client_generation import SOURCE
 from tests.data.python.client_runtime import Exchange, arecord, json_response, raw_response, record, run
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
     from types import ModuleType
-
-_RUNTIME_SOURCE = str(Path(_runtime.__file__).parent)
 
 
 def no_success(package: ModuleType, lines: list[str]) -> None:
@@ -87,10 +83,11 @@ def json_error_body(name: str) -> bytes:
 
 def retained_body(error: BaseException, limit: int) -> bool:
     """Report whether an SDK traceback owns a payload larger than the publicly retained bytes."""
+    runtime = type(error).__module__.rsplit(".", 2)[0] + "."
     trace = error.__traceback__
     while trace is not None:
         frame = trace.tb_frame
-        if frame.f_code.co_filename.startswith(_RUNTIME_SOURCE):
+        if frame.f_globals.get("__name__", "").startswith(runtime):
             for value in frame.f_locals.values():
                 payload = value if isinstance(value, bytes) else getattr(value, "body", getattr(value, "data", None))
                 if isinstance(payload, bytes) and len(payload) > limit:
