@@ -12,19 +12,19 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Final, cast
 
 from ..model_codecs.unset import Unset
 from .records import BodySelector, HeaderSelector
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterable
 
     from ..client.responses import ResponseInfo
     from ..model_codecs.wire import WireValue
     from .records import Selector
 
-__all__ = ("MISSING", "Missing", "Patch", "RepeatedValueError", "resolve", "selected", "server_expiry")
+__all__ = ("MISSING", "Missing", "Patch", "RepeatedValueError", "resolve", "selected", "server_expiry", "written")
 
 _RFC3339: Final = re.compile(
     r"([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:)([0-9]{2})(?:\.([0-9]+))?(Z|[+-][0-9]{2}:[0-9]{2})"
@@ -127,3 +127,29 @@ def server_expiry(value: str, now: float) -> datetime | None:
         return http_date(value, now)
     except (ValueError, OverflowError):
         return None
+
+
+def written(
+    writes: tuple[tuple[int | None, str | None], ...],
+    arguments: tuple[object, ...],
+    body: object,
+    values: Iterable[WireValue],
+) -> tuple[tuple[object, ...], object]:
+    """Return a request's arguments and body with each value written where its write goes, in order.
+
+    A write without a pointer replaces the argument at its position, and one with a pointer patches the argument at its
+    position, or the body without one, so the value is written into its encoded value.
+    """
+    given = list(arguments)
+    patches: dict[int | None, list[tuple[str, WireValue]]] = {}
+    for (position, pointer), value in zip(writes, values, strict=True):
+        if pointer is None:
+            given[cast("int", position)] = value
+        else:
+            patches.setdefault(position, []).append((pointer, value))
+    for position, patched in patches.items():
+        if position is None:
+            body = Patch(body, tuple(patched))
+        else:
+            given[position] = Patch(given[position], tuple(patched))
+    return tuple(given), body

@@ -1,0 +1,3 @@
+# session-contentless
+render pydantic_v2.BaseModel default
+  model_bindings.py

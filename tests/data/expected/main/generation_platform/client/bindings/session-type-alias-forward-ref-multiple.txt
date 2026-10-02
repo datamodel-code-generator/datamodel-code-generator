@@ -1,0 +1,7 @@
+# session-type-alias-forward-ref-multiple
+render pydantic_v2.BaseModel default
+  diagnostic APIGenerationError
+  diagnostic BND_SYMBOL_NOT_EMITTED binding /paths/~1bindings~12/post/requestBody: The use has no generated native type
+  diagnostic BND_SYMBOL_NOT_EMITTED binding /paths/~1bindings~12/post/responses/200: The use has no generated native type
+  diagnostic BND_SYMBOL_NOT_EMITTED binding /paths/~1bindings~13/post/requestBody: The use has no generated native type
+  diagnostic BND_SYMBOL_NOT_EMITTED binding /paths/~1bindings~13/post/responses/200: The use has no generated native type

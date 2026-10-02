@@ -43,6 +43,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._runtime.model_codecs.bindings import UseBinding
 
 STATES: Final = ("pending", "succeeded", "failed", "cancelled")
+_KINDS: Final = {"polling": "polling", "sse": "SSE", "ndjson": "NDJSON"}
 _MIN_SUCCESS: Final = 200
 _MAX_SUCCESS: Final = 299
 
@@ -281,31 +282,36 @@ class _Polls:
         at: str,
         sources: Mapping[str, list[_Source]],
         what: str,
+        *,
+        written: tuple[tuple[tuple[str, ...], str], ...] = (),
+        complete: bool = True,
     ) -> Iterator[Diagnostic]:
         """Check each binding's value against its target, that no two writes overlap, and what the operation requires.
 
         A cookie or another credential position is never written, a body written to must be JSON only, and literals
-        that make a path segment a dot segment are no path values.
+        that make a path segment a dot segment are no path values. `written` are the targets the helper writes
+        besides, which no binding overlaps, and only a `complete` request, one the bindings and those writes alone
+        make, must write every required one.
         """
         name, label = helper.name, _label(spec)
-        written: list[tuple[tuple[str, ...], str]] = []
+        writes = list(written)
         dotted = _dot_literals(spec, bindings)
         for index, item in enumerate(bindings):
             where, owner, value, target = f"{at}[{index}]", f"{what} {index}", item["value"], item["target"]
             pages = self.pages
-            if (place := credential_place(target, pages.secret_headers, pages.secret_queries)) is not None:
+            if (place := credential_place(target, pages.secret_headers, pages.secret_queries, spec)) is not None:
                 message = f"The {owner} of {name!r} writes {place}, which carries credentials no helper writes"
                 yield _problem("E_CONFIG_VALUE", "config", f"{where}.target", message, spec)
                 continue
             key = _target_key(target)
             if (
-                clash := next(((other, holder) for other, holder in written if _overlaps(key, other)), None)
+                clash := next(((other, holder) for other, holder in writes if _overlaps(key, other)), None)
             ) is not None:
                 relation = "the same target as" if clash[0] == key else "a target overlapping that of"
                 message = f"The {owner} of {name!r} writes {relation} its {clash[1]}"
                 yield _problem("E_CONFIG_CONFLICT", "config", f"{where}.target", message, spec)
                 continue
-            written.append((key, owner))
+            writes.append((key, owner))
             if value.get("source") == "input":
                 message = f"The {owner} of {name!r} reads the helper's input, which is not supported yet"
                 yield _problem("E_CLIENT_UNSUPPORTED", "target", f"{where}.value.source", message, spec)
@@ -325,17 +331,19 @@ class _Polls:
                 yield types
                 continue
             yield from self.pages.fits(helper, spec, target, types, f"{where}.target", owner, null=True)
-        yield from self.required(helper, spec, [key for key, _ in written], at)
+        yield from self.required(helper, spec, [key for key, _ in writes], at, complete=complete)
 
     @staticmethod
-    def required(helper: Helper, spec: OperationSpec, written: list[tuple[str, ...]], at: str) -> Iterator[Diagnostic]:
-        """Refuse a required parameter or body of an operation no binding writes, and a written body other than JSON.
+    def required(
+        helper: Helper, spec: OperationSpec, written: list[tuple[str, ...]], at: str, *, complete: bool = True
+    ) -> Iterator[Diagnostic]:
+        """Refuse a required parameter or body of a complete request no binding writes, and a body other than JSON.
 
         A written body must have a default media type, since a poll, a result fetch, or a remote cancel names none.
         """
         label = _label(spec)
         locations = {key[0] for key in written}
-        for parameter in spec.parameters:
+        for parameter in spec.parameters if complete else ():
             location = parameter.location
             unwritten = (
                 location not in locations
@@ -352,17 +360,17 @@ class _Polls:
             return
         if "body" in locations and any(media.kind != "json" for media in body.media):
             message = (
-                f"The polling helper {helper.name!r} writes a request body of {label} other than JSON, which is not "
-                "supported yet"
+                f"The {_KINDS[helper.kind]} helper {helper.name!r} writes a request body of {label} other than JSON, "
+                "which is not supported yet"
             )
             yield _problem("E_CLIENT_UNSUPPORTED", "target", at, message, spec)
         elif "body" in locations and body.default is None:
             message = (
-                f"The polling helper {helper.name!r} writes a request body of {label}, which has no default media "
-                "type; set the operation's request_media_type"
+                f"The {_KINDS[helper.kind]} helper {helper.name!r} writes a request body of {label}, which has no "
+                "default media type; set the operation's request_media_type"
             )
             yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
-        elif body.required and "body" not in locations:
+        elif complete and body.required and "body" not in locations:
             message = f"{label} requires a request body, which no binding of {helper.name!r} writes"
             yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
 

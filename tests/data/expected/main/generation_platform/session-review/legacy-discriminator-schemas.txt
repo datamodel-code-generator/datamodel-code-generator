@@ -1,6 +1,0 @@
-{
-  "type": null,
-  "diagnostics": [
-    "BND_MODEL_SCOPE_REQUIRED"
-  ]
-}

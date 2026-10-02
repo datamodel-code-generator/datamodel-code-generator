@@ -1,0 +1,4 @@
+# session-metadata-missing
+render pydantic_v2.BaseModel default
+  diagnostic APIGenerationError
+  diagnostic E_METADATA_REQUIRED target /paths/~1items/get: The security of GET /items requires the unavailable scheme 'Key'

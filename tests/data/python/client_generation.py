@@ -268,17 +268,19 @@ def render_client(
     model: Mapping[str, Any],
     config: Mapping[str, Any],
     *,
+    models: str = "models.py",
     binding_diagnostics: bool = False,
 ) -> tuple[list[str], Modules]:
     """Render a document's client package under a root, returning the refusal or diagnostics and the Python modules.
 
-    With binding_diagnostics, the diagnostics also hold those of the model binding batch, which no package shows.
+    The models go to the module or package path models names under the root. With binding_diagnostics, the
+    diagnostics also hold those of the model binding batch, which no package shows.
     """
     target = _BindingDiagnosticsTarget()
     try:
         project = render_target(
             source,
-            model_config=model_config(root / "models.py", backend, model),
+            model_config=model_config(root / models, backend, model),
             config=client_config(dict(config), root),
             generator=target,
         )
@@ -334,9 +336,10 @@ def client_helper_digest_report(first: str, second: str, root: Path) -> str:
         {item["name"]: item["contract_sha256"] for item in _manifest(cases[name], root / name)[0]["protocol_helpers"]}
         for name in (first, second)
     )
-    return "".join(
-        [f"# {first} and {second}\n", *(f"  {name} same {left[name] == digest}\n" for name, digest in right.items())]
-    )
+    return "".join([
+        f"# {first} and {second}\n",
+        *(f"  {name} same {left[name] == digest}\n" for name, digest in right.items()),
+    ])
 
 
 def client_render(case_name: str, root: Path) -> tuple[str, dict[str, Modules]]:

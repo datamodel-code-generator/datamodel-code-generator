@@ -62,9 +62,11 @@ class _Checks(_Polls):
     """The polling checks of reads, bindings, and targets, leaving required arguments to the upload checks."""
 
     @staticmethod
-    def required(helper: Helper, spec: OperationSpec, written: list[tuple[str, ...]], at: str) -> Iterator[Diagnostic]:
+    def required(
+        helper: Helper, spec: OperationSpec, written: list[tuple[str, ...]], at: str, *, complete: bool = True
+    ) -> Iterator[Diagnostic]:
         """Check nothing here; an upload's required arguments count its offset, length, and size writes too."""
-        del helper, spec, written, at
+        del helper, spec, written, at, complete
         return iter(())
 
 
@@ -138,7 +140,7 @@ class _Uploads:
     ) -> Iterator[Diagnostic]:
         """Check that a count goes to a path, query, or header parameter accepting integers, never to credentials."""
         name, pages = helper.name, self.pages
-        if (place := credential_place(target, pages.secret_headers, pages.secret_queries)) is not None:
+        if (place := credential_place(target, pages.secret_headers, pages.secret_queries, spec)) is not None:
             message = f"The {what} of {name!r} writes {place}, which carries credentials no helper writes"
             yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
         elif target["in"] not in _PARAMETERS:

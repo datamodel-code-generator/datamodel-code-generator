@@ -6,6 +6,5 @@
     "BND_ARTIFACT_AMBIGUOUS",
     "BND_FIELD_UNRESOLVED",
     "BND_SYMBOL_NOT_EMITTED"
-  ],
-  "retained_graph": 0
+  ]
 }

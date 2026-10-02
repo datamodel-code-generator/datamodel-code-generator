@@ -1,7 +1,0 @@
-{
-  "subtypes": [
-    "discriminator.json#/components/schemas/Cat"
-  ],
-  "literal_percent_declaration": true,
-  "use_types": 1
-}

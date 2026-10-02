@@ -1,0 +1,4 @@
+# edge-scope-edges-paths
+render pydantic_v2.BaseModel default
+  diagnostic APIGenerationError
+  diagnostic BND_MODEL_SCOPE_REQUIRED binding /paths/~1events~1{eventId}/get/parameters/0: The use has no generated native type

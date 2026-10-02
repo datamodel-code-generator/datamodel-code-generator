@@ -1,1 +1,0 @@
-{"FieldCopy": 12, "TypeCopy": 3}

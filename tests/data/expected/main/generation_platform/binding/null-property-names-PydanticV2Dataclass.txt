@@ -1,9 +1,0 @@
-{
-  "a": [
-    "/components/schemas/Choice/anyOf/0/properties/a",
-    "/components/schemas/BaseArray/items/properties/a"
-  ],
-  "b": [
-    "/components/schemas/Choice/anyOf/1/properties/b"
-  ]
-}
