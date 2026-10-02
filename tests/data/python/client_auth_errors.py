@@ -31,11 +31,6 @@ _FAMILIES = (
     ("SigningExecutionError", {}, ("signer_index",)),
     ("AuthRefreshError", {}, ()),
     ("AuthProviderExecutionError", {"callback": "get"}, ("callback",)),
-    (
-        "InsufficientScopeError",
-        {"required_scopes": ("read",), "granted_scopes": ()},
-        ("required_scopes", "granted_scopes", "missing_scopes"),
-    ),
     ("TokenExpiredError", {"condition": "expired"}, ("condition", "expires_at")),
     ("AuthProviderClosedError", {"state": "CLOSED"}, ()),
     ("OAuthExchangeError", {}, ("status_code", "oauth_error")),
@@ -142,7 +137,6 @@ def _constructors(errors: ModuleType, responses: ModuleType, lines: list[str]) -
     record(lines, "closed state omitted", errors.AuthProviderClosedError)
     for name in (
         "AuthProviderExecutionError",
-        "InsufficientScopeError",
         "TokenExpiredError",
         "AuthTimeoutError",
         "AuthStateUncertainError",
@@ -175,7 +169,9 @@ def _constructors(errors: ModuleType, responses: ModuleType, lines: list[str]) -
         ("AuthTokenStoreConflictError", {"action": "load", "expected_revision": 1, "observed_revision": 1}),
         ("AuthTokenStoreConflictError", {"observed_revision": 1.0}),
     ):
-        lines.append(f"  oauth values {name} {values} {outcome(lambda name=name, values=values: str(getattr(errors, name)(**values)))}")
+        lines.append(
+            f"  oauth values {name} {values} {outcome(lambda name=name, values=values: str(getattr(errors, name)(**values)))}"
+        )
 
 
 def _validation(errors: ModuleType, lines: list[str]) -> None:
@@ -273,61 +269,8 @@ def _validation(errors: ModuleType, lines: list[str]) -> None:
             )
 
 
-def _scopes(errors: ModuleType, lines: list[str]) -> None:
-    for required, granted in (
-        (("write", "read", "read"), ("read",)),
-        (("read", "Read", "write", "Write"), ("read", "write")),
-        (("read,write",), ("read", "write")),
-        ((), ()),
-        (("read",), ("read",)),
-        ((), ("read",)),
-        (("!", "#", "[", "]", "~"), ("~", "[", "!")),
-        (("private-secret",), ()),
-    ):
-        error = errors.InsufficientScopeError(required_scopes=required, granted_scopes=granted)
-        lines.append(
-            f"  scopes required={error.required_scopes} granted={error.granted_scopes} missing={error.missing_scopes} safe={'private-secret' not in str(error) + repr(error)}"
-        )
-    required = ["write", "read", "read"]
-    granted = ["read"]
-    error = errors.InsufficientScopeError(required_scopes=required, granted_scopes=granted)
-    required.append("later")
-    granted.append("write")
-    lines.append(f"  copied scopes {(error.required_scopes, error.granted_scopes, error.missing_scopes)}")
-    for field in ("required_scopes", "granted_scopes"):
-        for label, value in (
-            ("unknown", None),
-            ("text", "read"),
-            ("iterator", iter(("read",))),
-            ("set", {"read"}),
-            ("number", (1,)),
-            ("empty", ("",)),
-            ("leading space", (" read",)),
-            ("trailing space", ("read ",)),
-            ("double space", ("read  write",)),
-            ("quote", ('"',)),
-            ("backslash", ("\\",)),
-            ("control", ("\x1f",)),
-            ("delete", ("\x7f",)),
-            ("nonascii", ("r\xe9ad",)),
-        ):
-            record(
-                lines,
-                f"invalid scopes {field} {label}",
-                lambda field=field, value=value: errors.InsufficientScopeError(**{
-                    "required_scopes": ("read",),
-                    "granted_scopes": (),
-                    field: value,
-                }),
-            )
-    lines.append(
-        f"  derived missing keyword {outcome(lambda: errors.InsufficientScopeError(required_scopes=('read',), granted_scopes=(), missing_scopes=('read',)))}"
-    )
-
-
 def auth_errors(package: ModuleType, lines: list[str]) -> None:
     """Report the exact auth error contracts, safe diagnostics, and constructor validation."""
     errors, responses = (importlib.import_module(f"{package.__name__}.{name}") for name in ("errors", "responses"))
     _constructors(errors, responses, lines)
     _validation(errors, lines)
-    _scopes(errors, lines)

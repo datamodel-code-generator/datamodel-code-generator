@@ -476,7 +476,7 @@ def _swap_models(path: Path, case: dict[str, Any]) -> None:
 def _startup(generated: Path, root: Path, package: str, case: dict[str, Any], values: dict[str, Any]) -> str:
     """Copy a generated package, edit it as one startup case says, then build and call its generated codec."""
     directory = root / case["name"]
-    shutil.copytree(generated, directory, ignore=shutil.ignore_patterns("_runtime", ".dcg-api-state", "__pycache__"))
+    shutil.copytree(generated, directory, ignore=shutil.ignore_patterns("_runtime", "__pycache__"))
     index = _uses(directory, package).index(case["use"])
     _edit_bindings(directory / package / "_generated" / "model_bindings.py", package, index, case)
     _swap_models(directory / f"{package}_models.py", case)

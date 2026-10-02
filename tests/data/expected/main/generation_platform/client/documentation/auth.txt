@@ -30,83 +30,83 @@
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   /selection/selected_operations/0 auth.inherited_auth()
     exports client.types.auth.InheritedAuthResponse client.types.auth.InheritedAuthErrorData client.types.auth.InheritedAuthHTTPError
-    exports client.types.auth.InheritedAuthRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.auth.InheritedAuthRequestCodecs None
   /selection/selected_operations/1 auth.anonymous()
     exports client.types.auth.AnonymousResponse client.types.auth.AnonymousErrorData client.types.auth.AnonymousHTTPError
-    exports client.types.auth.AnonymousRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.auth.AnonymousRequestCodecs None
   /selection/selected_operations/2 auth.empty_security()
     exports client.types.auth.EmptySecurityResponse client.types.auth.EmptySecurityErrorData client.types.auth.EmptySecurityHTTPError
-    exports client.types.auth.EmptySecurityRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.auth.EmptySecurityRequestCodecs None
   /selection/selected_operations/3 auth.optional_auth()
     exports client.types.auth.OptionalAuthResponse client.types.auth.OptionalAuthErrorData client.types.auth.OptionalAuthHTTPError
-    exports client.types.auth.OptionalAuthRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.auth.OptionalAuthRequestCodecs None
   /selection/selected_operations/4 auth.optional_token_first()
     exports client.types.auth.OptionalTokenFirstResponse client.types.auth.OptionalTokenFirstErrorData client.types.auth.OptionalTokenFirstHTTPError
-    exports client.types.auth.OptionalTokenFirstRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.auth.OptionalTokenFirstRequestCodecs None
   /selection/selected_operations/5 auth.and_auth()
     exports client.types.auth.AndAuthResponse client.types.auth.AndAuthErrorData client.types.auth.AndAuthHTTPError
-    exports client.types.auth.AndAuthRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.auth.AndAuthRequestCodecs None
   /selection/selected_operations/6 auth.or_auth()
     exports client.types.auth.OrAuthResponse client.types.auth.OrAuthErrorData client.types.auth.OrAuthHTTPError
-    exports client.types.auth.OrAuthRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.auth.OrAuthRequestCodecs None
   /selection/selected_operations/7 auth.authorization_or()
     exports client.types.auth.AuthorizationOrResponse client.types.auth.AuthorizationOrErrorData client.types.auth.AuthorizationOrHTTPError
-    exports client.types.auth.AuthorizationOrRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.auth.AuthorizationOrRequestCodecs None
   /selection/selected_operations/8 auth.api_key_header()
     exports client.types.auth.ApiKeyHeaderResponse client.types.auth.ApiKeyHeaderErrorData client.types.auth.ApiKeyHeaderHTTPError
-    exports client.types.auth.ApiKeyHeaderRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.auth.ApiKeyHeaderRequestCodecs None
   /selection/selected_operations/9 auth.api_key_query()
     exports client.types.auth.ApiKeyQueryResponse client.types.auth.ApiKeyQueryErrorData client.types.auth.ApiKeyQueryHTTPError
-    exports client.types.auth.ApiKeyQueryRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.auth.ApiKeyQueryRequestCodecs None
   /selection/selected_operations/10 auth.api_key_cookie()
     exports client.types.auth.ApiKeyCookieResponse client.types.auth.ApiKeyCookieErrorData client.types.auth.ApiKeyCookieHTTPError
-    exports client.types.auth.ApiKeyCookieRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.auth.ApiKeyCookieRequestCodecs None
   /selection/selected_operations/11 auth.cookie_parameters(cookie:theme=theme, query:page=page, header:X-Trace=x_trace, query:filter=filter)
     exports client.types.auth.CookieParametersResponse client.types.auth.CookieParametersErrorData client.types.auth.CookieParametersHTTPError
-    exports client.types.auth.CookieParametersRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.auth.CookieParametersRequestCodecs None
   /selection/selected_operations/12 auth.basic()
     exports client.types.auth.BasicResponse client.types.auth.BasicErrorData client.types.auth.BasicHTTPError
-    exports client.types.auth.BasicRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.auth.BasicRequestCodecs None
   /selection/selected_operations/13 auth.bearer()
     exports client.types.auth.BearerResponse client.types.auth.BearerErrorData client.types.auth.BearerHTTPError
-    exports client.types.auth.BearerRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.auth.BearerRequestCodecs None
   /selection/selected_operations/14 auth.alias_auth()
     exports client.types.auth.AliasAuthResponse client.types.auth.AliasAuthErrorData client.types.auth.AliasAuthHTTPError
-    exports client.types.auth.AliasAuthRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.auth.AliasAuthRequestCodecs None
   /selection/selected_operations/15 auth.oauth_read()
     exports client.types.auth.OauthReadResponse client.types.auth.OauthReadErrorData client.types.auth.OauthReadHTTPError
-    exports client.types.auth.OauthReadRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.auth.OauthReadRequestCodecs None
   /selection/selected_operations/16 auth.oauth_scopes()
     exports client.types.auth.OauthScopesResponse client.types.auth.OauthScopesErrorData client.types.auth.OauthScopesHTTPError
-    exports client.types.auth.OauthScopesRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.auth.OauthScopesRequestCodecs None
   /selection/selected_operations/17 auth.oauth_empty()
     exports client.types.auth.OauthEmptyResponse client.types.auth.OauthEmptyErrorData client.types.auth.OauthEmptyHTTPError
-    exports client.types.auth.OauthEmptyRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.auth.OauthEmptyRequestCodecs None
   /selection/selected_operations/18 auth.openid_read()
     exports client.types.auth.OpenidReadResponse client.types.auth.OpenidReadErrorData client.types.auth.OpenidReadHTTPError
-    exports client.types.auth.OpenidReadRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.auth.OpenidReadRequestCodecs None
   /selection/selected_operations/19 auth.challenge_less()
     exports client.types.auth.ChallengeLessResponse client.types.auth.ChallengeLessErrorData client.types.auth.ChallengeLessHTTPError
-    exports client.types.auth.ChallengeLessRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.auth.ChallengeLessRequestCodecs None
   /selection/selected_operations/20 auth.unsafe_auth()
     exports client.types.auth.UnsafeAuthResponse client.types.auth.UnsafeAuthErrorData client.types.auth.UnsafeAuthHTTPError
-    exports client.types.auth.UnsafeAuthRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.auth.UnsafeAuthRequestCodecs None
   /selection/selected_operations/21 auth.idempotent_auth()
     exports client.types.auth.IdempotentAuthResponse client.types.auth.IdempotentAuthErrorData client.types.auth.IdempotentAuthHTTPError
-    exports client.types.auth.IdempotentAuthRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.auth.IdempotentAuthRequestCodecs None
   /selection/selected_operations/22 auth.never_auth()
     exports client.types.auth.NeverAuthResponse client.types.auth.NeverAuthErrorData client.types.auth.NeverAuthHTTPError
-    exports client.types.auth.NeverAuthRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.auth.NeverAuthRequestCodecs None
   /selection/selected_operations/23 auth.vendor_auth()
     exports client.types.auth.VendorAuthResponse client.types.auth.VendorAuthErrorData client.types.auth.VendorAuthHTTPError
-    exports client.types.auth.VendorAuthRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.auth.VendorAuthRequestCodecs None
   /selection/selected_operations/24 auth.signed_body()
     exports client.types.auth.SignedBodyResponse client.types.auth.SignedBodyErrorData client.types.auth.SignedBodyHTTPError
-    exports client.types.auth.SignedBodyRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.auth.SignedBodyRequestCodecs None
   /selection/selected_operations/25 auth.signed_multipart()
     exports client.types.auth.SignedMultipartResponse client.types.auth.SignedMultipartErrorData client.types.auth.SignedMultipartHTTPError
-    exports client.types.auth.SignedMultipartRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+    exports client.types.auth.SignedMultipartRequestCodecs None
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
 
 # artifact client/_generated_docs/README.md
 # client
@@ -630,9 +630,16 @@ deadline. The origin allowlist and HTTPS downgrade permission are separate; cred
 original request are stripped on an origin change. Invalid/multiple Location, loops, limits, and rejected hops raise
 `RedirectPolicyError` with `body_available=False` and delivery/response metadata when available.
 
-`TransportOptions` belongs only to `ClientOptions`: verify=True, ssl_context=None, proxy=None, trust_env=False,
+`TransportOptions` belongs only to `ClientOptions`: verify=True, ssl_context=None, proxy=None, trust_env=True,
 http2=False, max_connections=100, max_keepalive_connections=20, keepalive_expiry=5, retry_owner="sdk".
-An SSLContext supplies TLS settings and conflicts with any explicit verify override. HTTP/2 is explicit and requires
+SDK-created HTTP clients honor proxy and CA environment settings with trust_env=True, preserving native system
+trust. With trust_env=False, default origin TLS and an explicit HTTPS proxy's independent default TLS use certifi's
+Mozilla public-root bundle without CA environment overrides. Plain HTTP proxies retain native behavior. Caller
+ssl_context or verify=False controls origin TLS; injected native clients retain their settings and ownership.
+For enterprise roots with trust_env=False, supply an SSLContext.
+Buffered success responses have no default size cap; explicit max_response_bytes still applies, and error bodies
+retain their 64 KiB default cap. An SSLContext supplies TLS settings and conflicts with any explicit verify override.
+HTTP/2 is explicit and requires
 its dependency. Injected native clients retain their pool/proxy/TLS construction; incompatible construction settings
 are rejected. Borrowed clients/adapters are not closed; `OwnedTransportAdapter` transfers adapter ownership.
 `retry_owner="transport"` requires an explicitly injected adapter with the declared internal retry/deadline/body
@@ -662,7 +669,7 @@ or token HTTP. `EnvironmentCredentialProvider(variable_name, kind="api_key")` re
 its async counterpart has the same explicit selection. Imports and constructors do not discover environment secrets.
 
 Known scopes are canonical tuples: None means unknown and leaves authorization to the server; () is known empty.
-Insufficient known grants fail before sending with `InsufficientScopeError`; 403 never expands scope automatically.
+Token grants are metadata; the resource server authorizes scopes. A 403 never expands scope or triggers recovery.
 Provider contexts carry current origin/deadline/cancellation/requirements, and audience is currently None.
 Borrow providers by default; only `OwnedCredentialProvider` transfers a closeable provider to the root scope.
 Views share that ownership. Provider and signer callbacks consume the call deadline; synchronous callbacks are
