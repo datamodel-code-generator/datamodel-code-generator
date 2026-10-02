@@ -31,7 +31,6 @@ from .errors import (
     DeadlineExceededError,
     DeliveryState,
     HookExecutionError,
-    InsufficientScopeError,
     RequestCancelledError,
     SigningConfigurationError,
     SigningExecutionError,
@@ -507,7 +506,7 @@ def _expiry(token: AccessToken, delivery: DeliveryState, clock: Clock) -> float 
 
 
 def _material(
-    value: object, scheme: SecurityScheme, context: CredentialContext, delivery: DeliveryState, clock: Clock
+    value: object, scheme: SecurityScheme, _context: CredentialContext, delivery: DeliveryState, clock: Clock
 ) -> AcquiredCredential:
     if isinstance(value, ApiKeyCredential) and scheme.kind == "api_key":
         return AcquiredCredential(value, None)
@@ -517,10 +516,6 @@ def _material(
         token = value.token
         if token.token_type.lower() != "bearer":
             raise AuthConfigurationError(field_path=("auth", "token_type"), condition="unsupported_token_type")
-        if token.scopes is not None and not set(context.required_scopes).issubset(token.scopes):
-            raise InsufficientScopeError(
-                required_scopes=context.required_scopes, granted_scopes=token.scopes, delivery_state=delivery
-            )
         return AcquiredCredential(value, _expiry(token, delivery, clock))
     if inspect.iscoroutine(value):
         value.close()
@@ -614,7 +609,7 @@ def accept_credential(
     delivery: DeliveryState,
     clock: Clock,
 ) -> AcquiredCredential:
-    """Validate the material that will be sent: its kind, token type, known scopes, and expiry on the call's clock."""
+    """Validate the material that will be sent: its kind, token type, and expiry on the call's clock."""
     return _material(value, binding.scheme, context, delivery, clock)
 
 

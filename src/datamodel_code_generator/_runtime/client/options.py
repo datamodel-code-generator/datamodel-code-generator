@@ -509,7 +509,7 @@ class TransportOptions:
     verify: bool | Unset = UNSET
     ssl_context: SSLContext | None = None
     proxy: str | None = None
-    trust_env: bool = False
+    trust_env: bool = True
     http2: bool = False
     max_connections: int = 100
     max_keepalive_connections: int = 20
@@ -569,7 +569,7 @@ class ResolvedTransportOptions:
     verify: bool = True
     ssl_context: SSLContext | None = None
     proxy: str | None = None
-    trust_env: bool = False
+    trust_env: bool = True
     http2: bool = False
     max_connections: int = 100
     max_keepalive_connections: int = 20

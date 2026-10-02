@@ -446,4 +446,4 @@ render pydantic_v2.BaseModel
   /selection/selected_operations/11 events.watch(query:cursor=cursor)
     exports client.types.events.WatchResponse client.types.events.WatchErrorData client.types.events.WatchHTTPError
     exports client.types.events.WatchRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

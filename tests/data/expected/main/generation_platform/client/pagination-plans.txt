@@ -499,7 +499,7 @@ render pydantic_v2.dataclass
   /selection/selected_operations/8 secure.list_secure_users(query:cursor=cursor)
     exports client.types.secure.ListSecureUsersResponse client.types.secure.ListSecureUsersErrorData client.types.secure.ListSecureUsersHTTPError
     exports client.types.secure.ListSecureUsersRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
 render dataclasses.dataclass
   write models.py
   write client/__init__.py
@@ -1000,7 +1000,7 @@ render dataclasses.dataclass
   /selection/selected_operations/8 secure.list_secure_users(query:cursor=cursor)
     exports client.types.secure.ListSecureUsersResponse client.types.secure.ListSecureUsersErrorData client.types.secure.ListSecureUsersHTTPError
     exports client.types.secure.ListSecureUsersRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
 render typing.TypedDict
   write models.py
   write client/__init__.py
@@ -1501,7 +1501,7 @@ render typing.TypedDict
   /selection/selected_operations/8 secure.list_secure_users(query:cursor=cursor)
     exports client.types.secure.ListSecureUsersResponse client.types.secure.ListSecureUsersErrorData client.types.secure.ListSecureUsersHTTPError
     exports client.types.secure.ListSecureUsersRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
 render msgspec.Struct
   write models.py
   write client/__init__.py
@@ -2002,4 +2002,4 @@ render msgspec.Struct
   /selection/selected_operations/8 secure.list_secure_users(query:cursor=cursor)
     exports client.types.secure.ListSecureUsersResponse client.types.secure.ListSecureUsersErrorData client.types.secure.ListSecureUsersHTTPError
     exports client.types.secure.ListSecureUsersRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'msgspec>=0.18']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'msgspec>=0.18']

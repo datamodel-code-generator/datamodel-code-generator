@@ -32,7 +32,7 @@
   > POST https://localhost:<port>/token
     [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-2'
     refresh keeping the refresh token = access-3 scopes=('read',) expires_in_minutes=60
-    write caller = InsufficientScopeError state=READY delivery_state=NOT_SENT phase=admission
+    write caller = access-3 scopes=('read',) expires_in_minutes=60
     stale invalidation keeps the token = True
     replace at the current revision = AuthConfigurationError condition=stale_revision field_path=('token_set', 'revision')
     replace with a spent refresh token = AuthConfigurationError condition=spent_token field_path=('token_set', 'refresh_token')
@@ -131,7 +131,21 @@
   > GET https://api.example.com/oauth/read
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
   rejected token refreshed = Response(b'ok', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '2')])
-  write operation beyond the known grants ! InsufficientScopeError: InsufficientScopeError(operation_id='oauth_scopes', call_id='<call>', state='READY', delivery_state='NOT_SENT', phase='admission') [operation_id='oauth_scopes', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='admission'] insufficient_scope_error
+  > GET https://api.example.com/oauth/scopes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
+  refreshed narrow grant refused by resource ! OauthScopesHTTPError: OauthScopesHTTPError(status_code=403, operation_id='oauth_scopes', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='oauth_scopes', status_code=403, error_decoded=True, error_data=b'forbidden', body_bytes=b'forbidden', truncated=False] oauth_scopes_http_error
+  > GET https://api.example.com/oauth/scopes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
+  403 leaves the refreshed grant unchanged ! OauthScopesHTTPError: OauthScopesHTTPError(status_code=403, operation_id='oauth_scopes', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='oauth_scopes', status_code=403, error_decoded=True, error_data=b'forbidden', body_bytes=b'forbidden', truncated=False] oauth_scopes_http_error
+  > POST https://localhost:<port>/token
+    [host: localhost:<port>, accept: application/json, accept-encoding: identity, content-type: application/x-www-form-urlencoded, authorization: Basic Y2xpZW50K2lkOnNlJTNBY3IrZXQ=, content-length: 48] b'grant_type=refresh_token&refresh_token=refresh-1'
+  > GET https://api.example.com/oauth/read
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
+  expired narrow grant refreshed and accepted = Response(b'ok', 200, 'application/octet-stream', None, [('content-type', 'application/octet-stream'), ('content-length', '2')])
+  > GET https://api.example.com/oauth/scopes
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer access-2] b''
+  write operation refused by resource ! OauthScopesHTTPError: OauthScopesHTTPError(status_code=403, operation_id='oauth_scopes', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='oauth_scopes', status_code=403, error_decoded=True, error_data=b'forbidden', body_bytes=b'forbidden', truncated=False] oauth_scopes_http_error
+    token_requests=2 resource_arrivals=7 refreshed_grants=('read',)
   lifetime 100s with refresh token refresh-1 after 95s = access-1 scopes=None expires_in_minutes=2 same=None
     after 101s = access-2 scopes=None expires_in_minutes=60 sent=['refresh-1']
   lifetime 100s with refresh token None after 95s = access-1 scopes=None expires_in_minutes=2 same=True
@@ -182,10 +196,6 @@
     get once invalidated = AuthReauthorizationRequiredError state=REAUTH_REQUIRED delivery_state=NOT_SENT phase=admission condition=no_refresh_token
     later refresh = AuthReauthorizationRequiredError state=REAUTH_REQUIRED delivery_state=NOT_SENT phase=admission condition=no_refresh_token sends=0
   forced refresh without a refresh token = AuthReauthorizationRequiredError state=REAUTH_REQUIRED delivery_state=NOT_SENT phase=admission condition=no_refresh_token
-  expired token without a scope = InsufficientScopeError state=READY delivery_state=NOT_SENT phase=admission sends=0
-    caller within its grants = access-2 scopes=('read',) expires_in_minutes=60
-  refresh narrowing the grants = InsufficientScopeError state=READY delivery_state=NOT_SENT phase=admission
-    caller within the new grants = access-2 scopes=('read',) expires_in_minutes=60 sends=1
   token for audience other with audience api = AuthConfigurationError condition=audience_mismatch field_path=('audience',)
   token for audience other with audience other = access-1 scopes=None expires_in_minutes=60
   expired token for audience other with audience api = AuthConfigurationError condition=audience_mismatch field_path=('audience',)
