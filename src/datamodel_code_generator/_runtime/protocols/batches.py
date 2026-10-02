@@ -923,7 +923,10 @@ class AsyncBatchIterator(_Batches[R]):
         if self._iterator is None and self._aiterator is None:
             source = self._source
             if isinstance(source, AsyncIterable):
+                from asyncio import get_running_loop  # noqa: PLC0415 - Only an asynchronous source needs a wakeup.
+
                 self._aiterator = aiter(source)
+                self._interruption = get_running_loop().create_future()
             else:
                 self._iterator = iter(source)
         if (iterator := self._iterator) is not None:
@@ -937,10 +940,6 @@ class AsyncBatchIterator(_Batches[R]):
     async def _take(self) -> _Item | None:
         """Read the next item, or return None once reading stopped."""
         try:
-            if self._interruption is None:
-                from asyncio import get_running_loop  # ruff: ignore[import-outside-top-level] - Only input acquisition needs a wakeup.
-
-                self._interruption = get_running_loop().create_future()
             value = await self._source_call.bounded(
                 self._value, delivery_state=DeliveryState.NOT_SENT, interruption=self._interruption
             )
