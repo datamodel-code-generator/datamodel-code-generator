@@ -19,7 +19,6 @@ from .._runtime.protocols.options import (
     ProtocolDefaults,
     ProtocolSecurityContext,
     StreamOptions,
-    UploadOptions,
     WebSocketTransportOptions,
     WSOptions,
 )
@@ -40,15 +39,6 @@ from .._runtime.protocols.records import (
 )
 from .._runtime.protocols.references import OperationRef
 from .._runtime.protocols.resume import ResumeState, import_state
-from .._runtime.protocols.sources import (
-    AsyncRangeReader,
-    AsyncUploadSource,
-    PartReceipt,
-    RangeReader,
-    UploadIdentity,
-    UploadProgress,
-    UploadSource,
-)
 from .._runtime.protocols.webhooks import (
     AsyncReplayStore,
     KeySet,
@@ -83,34 +73,21 @@ if TYPE_CHECKING:
         StreamEvent,
         UnknownEvent,
     )
-    from .._runtime.protocols.upload_sources import (
-        AsyncBytesUploadSource,
-        AsyncFileUploadSource,
-        BytesUploadSource,
-        FileUploadSource,
-    )
-    from .._runtime.protocols.uploads import AsyncUploadHandle, UploadHandle
     from .._runtime.protocols.websocket import AsyncWebSocketSession, WebSocketSession
 
 __all__ = [
-    "AsyncBytesUploadSource",
     "AsyncCacheStore",
     "AsyncEventStream",
-    "AsyncFileUploadSource",
     "AsyncLroHandle",
     "AsyncMemoryCacheStore",
     "AsyncMemoryReplayStore",
     "AsyncPager",
-    "AsyncRangeReader",
     "AsyncReplayStore",
-    "AsyncUploadHandle",
-    "AsyncUploadSource",
     "AsyncWebSocketConnection",
     "AsyncWebSocketConnector",
     "AsyncWebSocketSession",
     "BodySelector",
     "BodyTarget",
-    "BytesUploadSource",
     "CacheEntry",
     "CacheOptions",
     "CacheResult",
@@ -118,7 +95,6 @@ __all__ = [
     "CancelReceipt",
     "Continuation",
     "EventStream",
-    "FileUploadSource",
     "HeaderSelector",
     "KeySet",
     "LroHandle",
@@ -131,7 +107,6 @@ __all__ = [
     "Pager",
     "PaginationOptions",
     "ParameterTarget",
-    "PartReceipt",
     "PingReceipt",
     "PollOptions",
     "PollSnapshot",
@@ -140,7 +115,6 @@ __all__ = [
     "ProtocolProgress",
     "ProtocolSecurityContext",
     "QuerystringTarget",
-    "RangeReader",
     "ReplayStore",
     "RequestTarget",
     "ResolvedWSOptions",
@@ -152,11 +126,6 @@ __all__ = [
     "StreamEvent",
     "StreamOptions",
     "UnknownEvent",
-    "UploadHandle",
-    "UploadIdentity",
-    "UploadOptions",
-    "UploadProgress",
-    "UploadSource",
     "VerifiedSignature",
     "VerifiedWebhook",
     "Verifier",
@@ -173,7 +142,7 @@ __all__ = [
 
 
 def __getattr__(name: str) -> object:
-    """Load a memory store, a builtin upload source, or a pagination, polling, stream, upload, or session type."""
+    """Load a memory store, a pagination, polling, or stream type, or a WebSocket session only when requested."""
     if name in {"AsyncPager", "Page", "Pager"}:
         from .._runtime.protocols import pagination
 
@@ -190,14 +159,6 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import streams
 
         return getattr(streams, name)
-    if name in {"AsyncUploadHandle", "UploadHandle"}:
-        from .._runtime.protocols import uploads
-
-        return getattr(uploads, name)
-    if name in {"AsyncBytesUploadSource", "AsyncFileUploadSource", "BytesUploadSource", "FileUploadSource"}:
-        from .._runtime.protocols import upload_sources
-
-        return getattr(upload_sources, name)
     if name in {"AsyncWebSocketSession", "WebSocketSession"}:
         from .._runtime.protocols import websocket
 

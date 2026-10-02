@@ -15,6 +15,15 @@ EXPECTED = Path(__file__).parents[1] / "data" / "expected" / "main" / "generatio
 ENABLED = "DATAMODEL_CODE_GENERATOR_CLIENT_TYPING_E2E"
 
 
+@pytest.mark.parametrize("case", ["no-success", "no-success-unpack"])
+@pytest.mark.parametrize("backend", list(DataModelType))
+def test_client_typing_no_success(backend: DataModelType, case: str, tmp_path: Path) -> None:
+    """Type-check error-only resource methods and all their views in both signature styles."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(client_typing_report(tmp_path, backend, case, ()), EXPECTED / "no-success.txt")
+
+
 @pytest.mark.parametrize("case", ["pets", "pets-unpack"])
 @pytest.mark.parametrize(
     "backend",

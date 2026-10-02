@@ -1,6 +1,6 @@
 # protocols-unsupported-kinds
 render pydantic_v2.BaseModel
   APIGenerationError
-  E_CLIENT_UNSUPPORTED target protocols.helpers['files.upload'].profile: The parts profile of the resumable_upload helper 'files.upload' is not supported yet
+  E_CLIENT_UNSUPPORTED target protocols.helpers['files.upload']: The resumable_upload helper 'files.upload' is not supported yet
   E_CLIENT_UNSUPPORTED target protocols.helpers['users.bulk']: The batch helper 'users.bulk' is not supported yet
   E_CLIENT_UNSUPPORTED target protocols.helpers['users.queue']: The queue helper 'users.queue' is not supported yet

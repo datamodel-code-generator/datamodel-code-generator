@@ -1711,7 +1711,7 @@ class _Types(_Typing):
         """Return the definitions of one operation's types."""
         alias = module.name("typing", "TypeAlias")
         name = spec.pascal
-        successes = self.union(module, self.successes(spec), module.name("typing_extensions", "Never"))
+        successes = self.union(module, self.successes(spec), "None")
         errors = dict.fromkeys(key for response in spec.responses if response.error for key in self.payloads(response))
         sections = [
             f"{name}Response: {alias} = {successes}\n{name}ErrorData: {alias} = {self.union(module, errors, 'None')}",

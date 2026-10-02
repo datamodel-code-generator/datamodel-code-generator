@@ -676,6 +676,8 @@ class _Events(Generic[T]):
 
     def _broken(self, error: BaseException) -> BaseException:
         """Return how a failure ends the stream: a transport failure reading it, but no phase timeout, interrupts it."""
+        if isinstance(error, StreamDecodeError):
+            return error.with_traceback(None)
         if isinstance(error, TransportError) and not isinstance(error, PhaseTimeoutError):
             return self._stamped(StreamInterruptedError(condition="transport", sequence=self._delivered, cause=error))
         return error
