@@ -608,8 +608,11 @@ trust. With trust_env=False, default origin TLS and an explicit HTTPS proxy's in
 Mozilla public-root bundle without CA environment overrides. Plain HTTP proxies retain native behavior. Caller
 ssl_context or verify=False controls origin TLS; injected native clients retain their settings and ownership.
 For enterprise roots with trust_env=False, supply an SSLContext.
-Buffered success responses have no default size cap; explicit max_response_bytes still applies, and error bodies
-retain their 64 KiB default cap. An SSLContext supplies TLS settings and conflicts with any explicit verify override.
+Typed error handling and exception body prefixes use `max_error_body_bytes`, which defaults to 64 KiB.
+Buffered raw responses of every status use `max_response_bytes`, which defaults to `None` (no cap). Set it on client,
+view, or request options to bound them; `None` removes an inherited cap. For buffered raw responses, only
+`raise_for_status()` applies the error-prefix cap.
+An SSLContext supplies TLS settings and conflicts with any explicit verify override.
 HTTP/2 is explicit and requires
 its dependency. Injected native clients retain their pool/proxy/TLS construction; incompatible construction settings
 are rejected. Borrowed clients/adapters are not closed; `OwnedTransportAdapter` transfers adapter ownership.

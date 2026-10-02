@@ -1491,9 +1491,10 @@ bounds all of them. Each limit comes from the call's options, then the helper's 
 | `SessionOptions.deadline` | None | No deadline |
 | `SessionOptions.max_network_sends` | 10000 sends | Removes the limit |
 
-The session's `total_timeout` runs from `start` or `resume` for the whole life of the handle, reading the source
-included, so a long upload stepped slowly needs `SessionOptions(total_timeout=None)`, a larger value, or a `resume` from
-a checkpoint, which starts a new session. The deadline also bounds reading the source. A call past a limit raises
+By default, an upload session has no total lifetime limit. If a finite `total_timeout` is configured, it runs from
+`start` or `resume` for the whole life of the handle, including reading the source. A long upload stepped slowly may
+then need a larger timeout, `SessionOptions(total_timeout=None)`, or a `resume` from a checkpoint, which starts a new
+session. The deadline also bounds reading the source. A call past a limit raises
 `SessionLimitError` with the kind `network_sends`, the progress so far, and `resume_state`, before sending; a create
 request the session has no slot for raises it without `resume_state`, since nothing was created. The options must not
 fix an idempotency key, from the client, a view, or the call, and must not patch a header or a query parameter the
@@ -4019,8 +4020,10 @@ default origin TLS and an explicit HTTPS proxy's independent default TLS use cer
 without CA environment overrides. Plain HTTP proxies retain native behavior. Caller `ssl_context` or `verify=False`
 controls origin TLS; injected native clients retain their settings and ownership. For enterprise roots with
 `trust_env=False`, supply an `SSLContext`.
-Buffered success responses have no default size cap. Set `max_response_bytes` on client, view, or request options
-to bound them; `None` removes an inherited cap. Error bodies retain their 64 KiB default cap. HTTP/2 is opt-in and requires its optional dependency.
+Typed error handling and exception body prefixes use `max_error_body_bytes`, which defaults to 64 KiB.
+Buffered raw responses of every status use `max_response_bytes`, which defaults to `None` (no cap). Set it on client,
+view, or request options to bound them; `None` removes an inherited cap. For buffered raw responses, only
+`raise_for_status()` applies the error-prefix cap. HTTP/2 is opt-in and requires its optional dependency.
 
 ```python
 from ssl import create_default_context
@@ -4519,8 +4522,10 @@ stops for reauthorization when the newer token set can never serve. It returns t
 family stopped, and its own failures are raised to its caller alone, leaving the family as it was.
 
 A provider with a `store` needs a `load` too. A refresh that receives a token set stores it once before it becomes
-current, expecting the stored revision the last load or store confirmed, or None while none did, so callers are served,
-and their scopes checked, only once it is stored. A store that fails, conflicts, outlives the refresh's session, or is
+current, expecting the stored revision the last load or store confirmed, or None while none did, so callers are served
+only once storage succeeds. Credentials are still selected for the request's origin, audience, and partition; requested
+OAuth scopes and token grant metadata do not authorize a request. Scope authorization is the resource server's
+responsibility. A store that fails, conflicts, outlives the refresh's session, or is
 interrupted keeps the token set pending in the `PERSIST_PENDING` state: the refresh raises `AuthTokenStoreError`, or
 `AuthTokenStoreConflictError` with the revision the store observed, and later calls raise a new instance of the latest
 store failure without a request, while callers arriving during a store wait for it. `retry_store()` stores the same
