@@ -1,5 +1,7 @@
 mypy pets and clients.py and signatures.py and webhooks.py and protocols.py: clean
-pyright pets and clients.py and signatures.py and webhooks.py and protocols.py: clean
+pyright pets and clients.py and signatures.py and webhooks.py and protocols.py:
+  pets/_runtime/client/client.py:28 reportUnusedImport
+  pets/_runtime/protocols/errors.py:30 reportUnusedImport
 ty pets and clients.py and signatures.py and webhooks.py and protocols.py: clean
 clients_negative.py 94 marked lines
 mypy clients_negative.py: 94/94 marked lines with one error, 0 elsewhere, 0 in other files

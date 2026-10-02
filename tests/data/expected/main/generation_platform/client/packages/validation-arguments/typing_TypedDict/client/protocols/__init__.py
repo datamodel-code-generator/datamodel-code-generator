@@ -25,7 +25,6 @@ from .._runtime.protocols.options import (
     PollOptions,
     ProtocolDefaults,
     ProtocolSecurityContext,
-    QueueOptions,
     ResolvedCircuitBreakerOptions,
     StreamOptions,
     UploadOptions,
@@ -33,17 +32,6 @@ from .._runtime.protocols.options import (
     WSOptions,
 )
 from .._runtime.protocols.origins import Origin
-from .._runtime.protocols.queues import (
-    AsyncQueueStore,
-    BlobRef,
-    DrainReport,
-    QueueEntry,
-    QueueLease,
-    QueueOutcome,
-    QueueReceipt,
-    QueueStore,
-    ResolvedQueueOptions,
-)
 from .._runtime.protocols.records import (
     BodySelector,
     BodyTarget,
@@ -98,7 +86,6 @@ if TYPE_CHECKING:
     from .._runtime.protocols.circuits import AsyncMemoryCircuitStore, MemoryCircuitStore
     from .._runtime.protocols.pagination import AsyncPager, Page, Pager
     from .._runtime.protocols.polling import AsyncLroHandle, LroHandle
-    from .._runtime.protocols.queue_stores import AsyncMemoryQueueStore, MemoryQueueStore
     from .._runtime.protocols.replay import AsyncMemoryReplayStore, MemoryReplayStore
     from .._runtime.protocols.streams import (
         AsyncEventStream,
@@ -124,10 +111,8 @@ __all__ = [
     "AsyncLroHandle",
     "AsyncMemoryCacheStore",
     "AsyncMemoryCircuitStore",
-    "AsyncMemoryQueueStore",
     "AsyncMemoryReplayStore",
     "AsyncPager",
-    "AsyncQueueStore",
     "AsyncRangeReader",
     "AsyncReplayStore",
     "AsyncUploadHandle",
@@ -135,7 +120,6 @@ __all__ = [
     "AsyncWebSocketConnection",
     "AsyncWebSocketConnector",
     "AsyncWebSocketSession",
-    "BlobRef",
     "BodySelector",
     "BodyTarget",
     "BytesUploadSource",
@@ -150,7 +134,6 @@ __all__ = [
     "CircuitSnapshot",
     "CircuitStore",
     "Continuation",
-    "DrainReport",
     "EventStream",
     "FileUploadSource",
     "HeaderSelector",
@@ -158,7 +141,6 @@ __all__ = [
     "LroHandle",
     "MemoryCacheStore",
     "MemoryCircuitStore",
-    "MemoryQueueStore",
     "MemoryReplayStore",
     "Message",
     "OperationRef",
@@ -176,17 +158,10 @@ __all__ = [
     "ProtocolProgress",
     "ProtocolSecurityContext",
     "QuerystringTarget",
-    "QueueEntry",
-    "QueueLease",
-    "QueueOptions",
-    "QueueOutcome",
-    "QueueReceipt",
-    "QueueStore",
     "RangeReader",
     "ReplayStore",
     "RequestTarget",
     "ResolvedCircuitBreakerOptions",
-    "ResolvedQueueOptions",
     "ResolvedWSOptions",
     "ResolvedWebSocketTransportOptions",
     "ResolvedWebhookOptions",
@@ -250,10 +225,6 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import websocket
 
         return getattr(websocket, name)
-    if name in {"AsyncMemoryQueueStore", "MemoryQueueStore"}:
-        from .._runtime.protocols import queue_stores
-
-        return getattr(queue_stores, name)
     if name == "MemoryReplayStore":
         from .._runtime.protocols.replay import MemoryReplayStore
 

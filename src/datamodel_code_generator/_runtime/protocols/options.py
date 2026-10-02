@@ -25,7 +25,6 @@ from .circuit_records import (  # noqa: TC001 - Public annotations support get_t
     CircuitSnapshot,
 )
 from .origins import Origin
-from .queues import AsyncQueueStore, QueueStore, ResolvedQueueOptions
 from .websocket_types import (
     AsyncWebSocketConnector,
     ResolvedWebSocketTransportOptions,
@@ -80,33 +79,6 @@ _WS: Final = (
 _PROXY_SCHEMES: Final = ("http", "https")
 _CACHE: Final = (("max_entry_bytes", False, False, False), ("max_ttl", True, False, False))
 _CACHE_METHODS: Final = ("lookup", "fingerprint_vary", "compare_exchange", "delete", "invalidate")
-QUEUE_FIELDS: Final = (
-    ("max_entries", False, False, False),
-    ("parallelism", False, False, False),
-    ("max_entry_body_bytes", False, False, False),
-    ("max_deliveries", False, False, False),
-    ("entry_ttl", True, False, False),
-    ("retry_initial_delay", True, False, False),
-    ("retry_max_delay", True, False, False),
-    ("lease_min", True, False, False),
-    ("lease_grace", True, False, False),
-    ("max_delivery_timeout", True, False, False),
-)
-QUEUE_DEFAULTS: Final = ResolvedQueueOptions(
-    max_entries=100,
-    parallelism=1,
-    max_entry_body_bytes=8388608,
-    max_deliveries=5,
-    entry_ttl=86400.0,
-    retry_initial_delay=5.0,
-    retry_max_delay=600.0,
-    lease_min=90.0,
-    lease_grace=30.0,
-    max_delivery_timeout=300.0,
-)
-_QUEUE_METHODS: Final = ("put", "get", "claim", "compare_exchange", "purge_terminal")
-_STORE_METHODS: Final = {"cache": _CACHE_METHODS, "queue": _QUEUE_METHODS}
-_MAX_DELIVERY_TIMEOUT: Final = 300.0
 WEBHOOK_LIMITS: Final = (
     ("max_body_bytes", False, False, False),
     ("max_header_bytes", False, False, False),
@@ -368,31 +340,6 @@ class CacheOptions:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class QueueOptions:
-    """Queue settings: `max_entries` and `parallelism` bound one drain, every other field an entry's fixed policy.
-
-    Durations are finite positive seconds and counts positive integers; `max_delivery_timeout` is at most 300.
-    """
-
-    max_entries: int | Unset = UNSET
-    parallelism: int | Unset = UNSET
-    max_entry_body_bytes: int | Unset = UNSET
-    max_deliveries: int | Unset = UNSET
-    entry_ttl: float | Unset = UNSET
-    retry_initial_delay: float | Unset = UNSET
-    retry_max_delay: float | Unset = UNSET
-    lease_min: float | Unset = UNSET
-    lease_grace: float | Unset = UNSET
-    max_delivery_timeout: float | Unset = UNSET
-
-    def __post_init__(self) -> None:
-        """Reject booleans, other types, zero, nonfinite durations, and a delivery timeout over 300 seconds."""
-        check_limits(self, QUEUE_FIELDS)
-        if not isinstance(timeout := self.max_delivery_timeout, Unset) and timeout > _MAX_DELIVERY_TIMEOUT:
-            raise ProtocolConfigurationError(field_path=("max_delivery_timeout",), condition="invalid_value")
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
 class ProtocolSecurityContext:
     """The nonsecret credential partition of helper state and the origins permitted beyond the same origin."""
 
@@ -501,16 +448,7 @@ class ProtocolDefaults:
     """Defaults of one helper, below its call arguments and above the kind's effective defaults."""
 
     session: SessionOptions | Unset = UNSET
-    options: (
-        PaginationOptions
-        | PollOptions
-        | StreamOptions
-        | CacheOptions
-        | WSOptions
-        | UploadOptions
-        | QueueOptions
-        | Unset
-    ) = UNSET
+    options: PaginationOptions | PollOptions | StreamOptions | CacheOptions | WSOptions | UploadOptions | Unset = UNSET
 
     def __post_init__(self) -> None:
         """Refuse values other than session options and one kind's options."""
@@ -524,7 +462,6 @@ class ProtocolDefaults:
                 CacheOptions,
                 WSOptions,
                 UploadOptions,
-                QueueOptions,
                 Unset,
             ),
             "options",
@@ -535,7 +472,7 @@ class ProtocolDefaults:
 class ProtocolClientOptions:
     """Protocol helper settings of one client: its security context, helper defaults, stores, and WebSockets.
 
-    None as the security context means anonymous use. The defaults and the borrowed cache and queue stores are keyed by
+    None as the security context means anonymous use. The defaults and the borrowed cache stores are keyed by
     dotted helper names; each mapping is copied into a read-only one that keeps each value's identity. A WebSocket
     connector is borrowed and never closed; without one, the client opens its WebSocket connections itself.
     """
@@ -547,7 +484,6 @@ class ProtocolClientOptions:
     websocket_transport: WebSocketTransportOptions | Unset = UNSET
     circuit: CircuitBreakerOptions | Unset = UNSET
     circuit_store: CircuitStore | AsyncCircuitStore | Unset | None = field(default=UNSET, repr=False)
-    queue_stores: Mapping[str, QueueStore | AsyncQueueStore] | Unset = UNSET
 
     def __post_init__(self) -> None:
         """Refuse another security value, helper names that are not dotted identifiers, and other default values.
@@ -561,8 +497,6 @@ class ProtocolClientOptions:
         _instance(self.circuit, (CircuitBreakerOptions, Unset), "circuit")
         if not isinstance(self.cache_stores, Unset):
             object.__setattr__(self, "cache_stores", _stores(self.cache_stores, "cache_stores"))
-        if not isinstance(self.queue_stores, Unset):
-            object.__setattr__(self, "queue_stores", _stores(self.queue_stores, "queue_stores"))
         connector = self.websocket_connector
         if (
             connector is not None
@@ -587,7 +521,6 @@ _KIND_OPTIONS: Final[Mapping[str, type]] = MappingProxyType({
     "resumable_upload": UploadOptions,
     "cache": CacheOptions,
     "websocket": WSOptions,
-    "queue": QueueOptions,
 })
 
 
@@ -615,28 +548,18 @@ def checked_stores(
     helpers: tuple[tuple[str, str], ...],
     *,
     asynchronous: bool,
-    kind: Literal["cache", "queue"] = "cache",
 ) -> None:
-    """Refuse a cache or queue store under a name that is no helper of its kind, or one the client cannot call.
+    """Refuse a cache store under a name that is no cache helper, or one the client cannot call.
 
-    A store must have every method of its kind's store contract, coroutine functions for an asyncio client and plain
+    A store must have every method of the cache store contract, coroutine functions for an asyncio client and plain
     functions for a synchronous one.
     """
-    kinds, field = dict(helpers), f"{kind}_stores"
+    kinds = dict(helpers)
     for name, store in stores.items():
-        if kinds.get(name) != kind:
-            raise ProtocolConfigurationError(field_path=("protocols", field, name), condition="unknown_field")
-        methods = [getattr(store, method, None) for method in _STORE_METHODS[kind]]
+        if kinds.get(name) != "cache":
+            raise ProtocolConfigurationError(field_path=("protocols", "cache_stores", name), condition="unknown_field")
+        methods = [getattr(store, method, None) for method in _CACHE_METHODS]
         if not all(callable(method) and iscoroutinefunction(method) == asynchronous for method in methods):
-            raise ProtocolConfigurationError(field_path=("protocols", field, name), condition="wrong_capability")
-
-
-def resolved_queue(layers: tuple[object, ...]) -> ResolvedQueueOptions:
-    """Return queue options with each field from the first layer that sets it, or the kind's default.
-
-    Retry delays out of order are refused as the maximum delay.
-    """
-    values = {name: layered(layers, name, getattr(QUEUE_DEFAULTS, name)) for name, *_ in QUEUE_FIELDS}
-    if values["retry_max_delay"] < values["retry_initial_delay"]:
-        raise ProtocolConfigurationError(field_path=("queue_options", "retry_max_delay"), condition="invalid_value")
-    return ResolvedQueueOptions(**values)
+            raise ProtocolConfigurationError(
+                field_path=("protocols", "cache_stores", name), condition="wrong_capability"
+            )

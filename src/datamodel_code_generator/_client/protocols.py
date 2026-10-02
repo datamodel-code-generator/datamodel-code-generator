@@ -68,8 +68,6 @@ __all__ = (
     "PollingHelper",
     "ProtocolConfiguration",
     "PublicKeySignature",
-    "QueueHelper",
-    "QueuedOperation",
     "RemoteCancel",
     "ResumableUploadHelper",
     "SignedLiteral",
@@ -95,7 +93,7 @@ __all__ = (
 )
 
 HelperKind: TypeAlias = Literal[
-    "pagination", "polling", "sse", "ndjson", "websocket", "webhook", "cache", "resumable_upload", "batch", "queue"
+    "pagination", "polling", "sse", "ndjson", "websocket", "webhook", "cache", "resumable_upload"
 ]
 Source: TypeAlias = Literal["input", "initial", "previous", "state", "item"]
 Converter: TypeAlias = "Callable[[object, str], object]"
@@ -111,10 +109,7 @@ KINDS: Final = (
     "webhook",
     "cache",
     "resumable_upload",
-    "batch",
-    "queue",
 )
-_LATER: Final = frozenset({"batch"})
 _HMAC_SIGNATURES: Final = ("hmac-sha256", "hmac-sha512")
 _PUBLIC_KEY_SIGNATURES: Final = ("ed25519", "rsa-pss-sha256")
 _SIGNATURES: Final = (*_HMAC_SIGNATURES, *_PUBLIC_KEY_SIGNATURES)
@@ -126,7 +121,7 @@ _ENCODINGS: Final = {
 }
 _FACTS: Final = ("timestamp", "delivery-id")
 _SOURCES: Final = ("input", "initial", "previous")
-_BRACKETED: Final = frozenset({"helpers", "mapping", "error_events", "mutations", "operations"})
+_BRACKETED: Final = frozenset({"helpers", "mapping", "error_events", "mutations"})
 _KEYS: Final = {"from_": "from"}
 _ROOT: Final = "protocols"
 _MERGE: Final = "tag:yaml.org,2002:merge"
@@ -623,34 +618,6 @@ class ResumableUploadHelper:
     enabled: bool = True
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
-class QueuedOperation:
-    """An operation a queue may save and send later: side-effect free, or keyed for the server's deduplication.
-
-    `key_binding` names the operation's idempotency header, which carries the entry's stable key for `dedupe_ttl`
-    seconds; an operation with side effects needs both.
-    """
-
-    operation: OperationSelector
-    side_effects: bool
-    key_binding: RequestTarget | None = None
-    dedupe_ttl: float | None = None
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class QueueHelper:
-    """Save calls of the declared operations in a store and send them only when the caller drains the queue."""
-
-    kind: ClassVar[Literal["queue"]] = "queue"
-
-    operations: Mapping[str, QueuedOperation]
-    enabled: bool = True
-
-    def __post_init__(self) -> None:
-        """Keep a read-only copy of the operations."""
-        object.__setattr__(self, "operations", _frozen(self.operations))
-
-
 HelperDefinition: TypeAlias = (
     PaginationHelper
     | PollingHelper
@@ -659,7 +626,6 @@ HelperDefinition: TypeAlias = (
     | WebSocketHelper
     | CacheHelper
     | ResumableUploadHelper
-    | QueueHelper
 )
 
 
@@ -716,8 +682,6 @@ _RECORDS: Final = frozenset({
     OperationCompletion,
     UploadAbort,
     ResumableUploadHelper,
-    QueuedOperation,
-    QueueHelper,
     ProtocolConfiguration,
 })
 _ROLES: Final[Mapping[tuple[type, str], str]] = {
@@ -732,7 +696,6 @@ _ROLES: Final[Mapping[tuple[type, str], str]] = {
     (HmacSignature, "field_constraints"): "mapping",
     (PublicKeySignature, "field_constraints"): "mapping",
     (CacheHelper, "mutations"): "mapping",
-    (QueueHelper, "operations"): "mapping",
     (ProtocolConfiguration, "helpers"): "mapping",
 }
 
@@ -1274,8 +1237,8 @@ class _Validator:  # noqa: PLR0904
                 helpers.append(helper)
         return tuple(helpers)
 
-    def helper(self, name: str, value: object, at: str) -> Helper | None:  # noqa: PLR0912
-        """Validate one helper; kinds of later stages are refused without reading their settings."""
+    def helper(self, name: str, value: object, at: str) -> Helper | None:
+        """Validate one helper and its kind-specific settings."""
         if not isinstance(value, Mapping):
             self.value(at, f"{at} must be a helper definition")
             return None
@@ -1284,10 +1247,6 @@ class _Validator:  # noqa: PLR0904
             return None
         if not isinstance(kind := value["kind"], str) or kind not in KINDS:
             self.value(f"{at}.kind", f"{at}.kind must be {_choices(KINDS)}")
-            return None
-        if kind in _LATER:
-            message = f"The {kind} helper {name!r} is not supported yet"
-            self.problems.append(_unsupported(at, message))
             return None
         self.schemas = []
         match kind:
@@ -1303,8 +1262,6 @@ class _Validator:  # noqa: PLR0904
                 tree = self.cache(value, at)
             case "resumable_upload":
                 tree = self.upload(value, at, name)
-            case "queue":
-                tree = self.queue(value, at)
             case _:
                 tree = self.stream(value, at, sse=kind == "sse")
         if tree is INVALID:
@@ -1710,50 +1667,6 @@ class _Validator:  # noqa: PLR0904
                 mutations[""] = self.value(at, f"{at} has the key {name!r}, which is not a public method name")
         return INVALID if any(item is INVALID for item in mutations.values()) else mutations
 
-    def queue(self, value: object, at: str) -> Tree | _Invalid:
-        spec: Spec = {
-            "kind": (_keep, REQUIRED),
-            "enabled": (self.boolean, True),
-            "operations": (self.queued_operations, REQUIRED),
-        }
-        return self.record(value, at, spec, "a helper definition")
-
-    def queued_operations(self, value: object, at: str) -> object:
-        """Convert the operations of a queue by their aliases, Python identifiers that are not keywords or private."""
-        if not isinstance(value, Mapping) or not value:
-            return self.value(at, f"{at} must be a nonempty mapping")
-        operations: dict[object, object] = {}
-        for alias, item in value.items():
-            here = f"{at}[{alias!r}]"
-            if (
-                not isinstance(alias, str)
-                or not alias.isidentifier()
-                or keyword.iskeyword(alias)
-                or alias.startswith("_")
-            ):
-                message = f"{at} has the alias {alias!r}, which must be a Python identifier, not a keyword or private"
-                operations[alias] = self.value(here, message)
-            else:
-                operations[alias] = self.queued(item, here)
-        return INVALID if any(item is INVALID for item in operations.values()) else operations
-
-    def queued(self, value: object, at: str) -> object:
-        """Convert a queued operation: with side effects it needs a key binding and a deduplication period."""
-        spec: Spec = {
-            "operation": (self.operation, REQUIRED),
-            "side_effects": (self.boolean, REQUIRED),
-            "key_binding": (self.target, OMITTED),
-            "dedupe_ttl": (self.seconds, OMITTED),
-        }
-        if (queued := self.record(value, at, spec, "a queued operation")) is INVALID:
-            return INVALID
-        if ("key_binding" in queued) != ("dedupe_ttl" in queued):
-            given, needed = ("key_binding", "dedupe_ttl") if "key_binding" in queued else ("dedupe_ttl", "key_binding")
-            return self.value(f"{at}.{needed}", f"{at}.{given} needs {needed!r}")
-        if queued["side_effects"] and "key_binding" not in queued:
-            return self.value(f"{at}.key_binding", f"{at} has side effects, so it needs 'key_binding' and 'dedupe_ttl'")
-        return queued
-
     def webhook(self, value: object, at: str) -> Tree | _Invalid:
         """Convert a webhook helper, refusing to reject duplicates of deliveries that are unsigned."""
         webhook = self.record(
@@ -1913,7 +1826,7 @@ def _targets(bindings: list[Tree], at: str) -> tuple[tuple[str, Tree], ...]:
     return tuple((f"{at}[{index}].target", binding["target"]) for index, binding in enumerate(bindings))
 
 
-def _links(kind: str, tree: Tree, at: str) -> Iterator[Link]:  # noqa: PLR0912
+def _links(kind: str, tree: Tree, at: str) -> Iterator[Link]:
     """Yield the operations a valid helper sends, its entry operation first, with the targets each one takes."""
     match kind:
         case "pagination":
@@ -1934,9 +1847,6 @@ def _links(kind: str, tree: Tree, at: str) -> Iterator[Link]:  # noqa: PLR0912
                 yield Link(at=f"{at}.mutations[{name!r}].operation", ref=mutation["operation"])
         case "resumable_upload":
             yield from _upload_links(tree, at)
-        case "queue":
-            for alias, queued in tree["operations"].items():
-                yield Link(at=f"{at}.operations[{alias!r}].operation", ref=queued["operation"])
         case "polling":
             yield Link(at=f"{at}.create", ref=tree["create"])
             yield Link(at=f"{at}.poll", ref=tree["poll"], targets=_targets(tree["bindings"], f"{at}.bindings"))
