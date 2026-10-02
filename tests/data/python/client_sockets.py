@@ -18,6 +18,7 @@ from dataclasses import asdict, is_dataclass
 from typing import TYPE_CHECKING, Any, Final
 
 from tests.data.python.client_runtime import describe, run
+from tests.data.python.client_regressions import json_error_body, retained_body
 from tests.data.python.fixture_websocket import Play, RawPeer, SocketServer, TunnelProxy, client_context
 
 if TYPE_CHECKING:
@@ -226,6 +227,16 @@ def _conversation(harness: _Harness, api: Any) -> None:
     harness.report(play)
 
 
+def _decode_failure(label: str, failure: Any) -> str:
+    """Report a message failure's public prefix and whether its SDK traceback still holds a larger payload."""
+    prefix = len(failure.raw_prefix)
+    return (
+        f"  {label} ! {_described(failure)} sequence={failure.sequence} prefix={prefix} "
+        f"truncated={failure.truncated} cause={type(failure.cause).__name__} "
+        f"retained={retained_body(failure, prefix)}"
+    )
+
+
 def _large(connection: ServerConnection) -> None:
     """Echo the size of one message and close normally."""
     connection.send(str(len(connection.recv())))
@@ -357,7 +368,7 @@ def _decoding(harness: _Harness, api: Any) -> None:
         ("refused by its schema", _sending('{"kind": "said"}'), "chat"),
         ("binary frame for text", _sending(_JOINED.encode()), "chat"),
         ("text frame for bytes", _sending("text"), "feed"),
-        ("large undecodable", _sending('"' + "x" * 70000), "chat"),
+        ("large undecodable", _sending(json_error_body("large syntax").decode()), "chat"),
     ):
         (play,) = server.play(Play(talk=talk))
         session = (
@@ -368,10 +379,7 @@ def _decoding(harness: _Harness, api: Any) -> None:
         try:
             session.receive()
         except harness.errors.StreamDecodeError as failure:
-            lines.append(
-                f"  {label} ! {_described(failure)} sequence={failure.sequence} prefix={len(failure.raw_prefix)} "
-                f"truncated={failure.truncated} cause={type(failure.cause).__name__}"
-            )
+            lines.append(_decode_failure(label, failure))
         record(lines, "after the decode failure", session.receive)
         session.close()
         harness.report(play)
@@ -849,7 +857,8 @@ async def _async_sockets(harness: _Harness) -> None:
         harness.report(play)
         for label, play, arguments in (
             ("async refusal", Play(refuse=(404, _PROBLEM, b'{"detail":"no room"}')), {}),
-            ("async decode failure", Play(talk=_sending("{broken")), {}),
+            ("async decode failure", Play(talk=_sending(json_error_body("syntax").decode())), {}),
+            ("async large decode failure", Play(talk=_sending(json_error_body("large syntax").decode())), {}),
             ("async idle", Play(), {"ws_options": harness.ws(idle_timeout=0.05)}),
             ("async session deadline", Play(), {"session_options": options.SessionOptions(total_timeout=1.0), "ws_options": harness.ws(idle_timeout=None)}),
             ("async abnormal closure", Play(talk=_sending(code=1011, reason="boom")), {}),
@@ -858,7 +867,13 @@ async def _async_sockets(harness: _Harness) -> None:
             server.play(play)
             session = await arecord(lines, f"{label} connect", lambda arguments=arguments: chat.connect(room=harness.room(), **arguments))
             if session is not None:
-                await arecord(lines, label, session.receive)
+                if "decode failure" in label:
+                    try:
+                        await session.receive()
+                    except harness.errors.StreamDecodeError as failure:
+                        lines.append(_decode_failure(label, failure))
+                else:
+                    await arecord(lines, label, session.receive)
                 await session.aclose()
             harness.report(play)
         for label, step in (

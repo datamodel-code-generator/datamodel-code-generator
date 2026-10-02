@@ -3619,6 +3619,16 @@
       ]
     }
   },
+  "no-success": {
+    "input": "no-success.yaml",
+    "config": {}
+  },
+  "no-success-unpack": {
+    "input": "no-success.yaml",
+    "config": {
+      "signature_style": "unpack"
+    }
+  },
   "caching": {
     "input": "caching.yaml",
     "references": [

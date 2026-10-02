@@ -1,0 +1,40 @@
+openapi: 3.1.0
+info:
+  title: Archives
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /archives:
+    post:
+      operationId: createArchive
+      tags: [archives]
+      responses:
+        '409':
+          description: Conflict
+    get:
+      operationId: readArchive
+      tags: [archives]
+      responses:
+        '404':
+          description: Missing
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Problem'}
+    patch:
+      operationId: checkArchive
+      tags: [archives]
+      responses:
+        '4XX':
+          description: Refused
+    delete:
+      operationId: emptyArchive
+      tags: [archives]
+      responses: {}
+components:
+  schemas:
+    Problem:
+      type: object
+      required: [detail]
+      properties:
+        detail: {type: string}

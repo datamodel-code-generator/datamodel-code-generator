@@ -63,6 +63,7 @@ from tests.data.python.client_protocol_errors import protocol_errors
 from tests.data.python.client_query import query
 from tests.data.python.client_raw import raw
 from tests.data.python.client_redirects import head_redirects, redirects
+from tests.data.python.client_regressions import json_decode_errors, no_success
 from tests.data.python.client_retry_boundaries import retry_boundaries
 from tests.data.python.client_retry_calls import retry_calls
 from tests.data.python.client_retry_errors import retry_errors
@@ -741,6 +742,10 @@ BACKENDS: Final = (
 ALL_BUT_MSGSPEC: Final = BACKENDS[:-1]
 STRUCTURAL: Final = BACKENDS[2:]
 SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, list[str]], None]]]] = {
+    "no-success": ("no-success", BACKENDS, no_success),
+    "no-success-unpack": ("no-success-unpack", BACKENDS, no_success),
+    "json-decode-errors-sse": ("streams", ("pydantic_v2.BaseModel",), json_decode_errors),
+    "json-decode-errors-ndjson": ("ndjson", ("pydantic_v2.BaseModel",), json_decode_errors),
     "pets": ("pets", ("pydantic_v2.BaseModel", "typing.TypedDict"), pets),
     "auth-errors": ("pets", ("pydantic_v2.BaseModel",), auth_errors),
     "auth-values": ("auth", BACKENDS, auth_values),
