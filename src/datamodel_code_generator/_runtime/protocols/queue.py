@@ -815,7 +815,7 @@ class _Drain:
         if deadline.remaining() <= 0:
             return (yield from self.settle(lease, entry, _dead("expired", prior=prior), prior=prior))
         now = _now(clock)
-        until = _now(clock) + timedelta(seconds=max(policy.lease_min, deadline.remaining() + policy.lease_grace))
+        until = now + timedelta(seconds=max(policy.lease_min, deadline.remaining() + policy.lease_grace))
         current: QueueEntry | None = entry
         for _ in range(_ROUNDS):
             if current is None or not _ours(current, lease):
