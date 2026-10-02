@@ -140,4 +140,4 @@ render pydantic_v2.BaseModel
   /selection/selected_operations/0 subscriptions.subscribe(query:dry_run=dry_run)
     exports client.types.subscriptions.SubscribeResponse client.types.subscriptions.SubscribeErrorData client.types.subscriptions.SubscribeHTTPError
     exports client.types.subscriptions.SubscribeRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

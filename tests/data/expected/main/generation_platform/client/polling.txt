@@ -529,6 +529,6 @@ render pydantic_v2.BaseModel
   /selection/selected_operations/10 reports.add_note()
     exports client.types.reports.AddNoteResponse client.types.reports.AddNoteErrorData client.types.reports.AddNoteHTTPError
     exports client.types.reports.AddNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
   S_OPERATION_EXCLUDED selection /paths/~1archives/post: POST /archives is excluded by exclude_tags 'archives': Archives have no success response
   S_OPERATION_EXCLUDED selection /paths/~1archives~1search/post: POST /archives/search is excluded by exclude_tags 'archives': Archives have no success response
