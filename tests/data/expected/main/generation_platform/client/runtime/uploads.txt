@@ -89,7 +89,7 @@ upload a file
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, x-chunk-length: 2, content-type: application/offset+octet-stream, content-length: 2] b'89'
   run = None
   readers opened 4, closed 4, most at once 1
-  stored u4: 0 bytes, original=False
+  stored u5: 10 bytes, original=True
 an append stored before the connection was lost
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
@@ -103,7 +103,7 @@ an append stored before the connection was lost
   > PATCH https://api.example.com/files/u6
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, x-chunk-length: 2, content-type: application/offset+octet-stream, content-length: 2] b'89'
   run = None
-  stored u5: 10 bytes, original=True
+  stored u6: 10 bytes, original=True
 an append lost before it was stored, then part of one stored
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
@@ -124,7 +124,7 @@ an append lost before it was stored, then part of one stored
   > PATCH https://api.example.com/files/u7
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, x-chunk-length: 2, content-type: application/offset+octet-stream, content-length: 2] b'89'
   run = None
-  stored u6: 10 bytes, original=True
+  stored u7: 10 bytes, original=True
 an append refused while connecting
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
@@ -140,7 +140,7 @@ an append refused while connecting
   > PATCH https://api.example.com/files/u8
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, x-chunk-length: 2, content-type: application/offset+octet-stream, content-length: 2] b'89'
   run = None
-  stored u7: 10 bytes, original=True
+  stored u8: 10 bytes, original=True
 probes that never answer
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
@@ -158,7 +158,7 @@ probes that never answer
   > PATCH https://api.example.com/files/u9
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, x-chunk-length: 2, content-type: application/offset+octet-stream, content-length: 2] b'89'
   run probes first = None
-  stored u8: 10 bytes, original=True
+  stored u9: 10 bytes, original=True
 the last append stored but answered with an error
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
