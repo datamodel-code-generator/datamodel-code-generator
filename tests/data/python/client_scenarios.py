@@ -98,7 +98,7 @@ from tests.data.python.client_streams import ndjson, ndjson_backends, ndjson_spl
 from tests.data.python.client_streams import stream_lifetimes as event_stream_lifetimes
 from tests.data.python.client_transports import lifecycle, transports
 from tests.data.python.client_unions import schema_unions, split_unions, unions
-from tests.data.python.client_uploads import upload_compression, uploads
+from tests.data.python.client_uploads import upload_compression, uploads, uploads_oauth
 from tests.data.python.client_validation import arguments, validation
 from tests.data.python.client_webhook_adapters import (
     webhook_adapter_imports,
@@ -832,6 +832,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "uploads": ("uploads", ("pydantic_v2.BaseModel",), uploads),
     "upload-compression-off": ("uploads", ("pydantic_v2.BaseModel",), upload_compression),
     "upload-compression": ("uploads-compression", ("pydantic_v2.BaseModel",), upload_compression),
+    "uploads-oauth": ("uploads-oauth", ("pydantic_v2.BaseModel",), uploads_oauth),
     "polling-resume": ("polling", ("pydantic_v2.BaseModel",), polling_resume),
     "circuits": ("circuits", ("pydantic_v2.BaseModel",), circuits),
     "compression": ("compression", ("pydantic_v2.BaseModel",), compression),
