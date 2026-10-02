@@ -1019,23 +1019,19 @@ class AsyncBatchIterator(_Batches[R]):
         from asyncio import CancelledError  # noqa: PLC0415 - Only an asyncio iterator cancels tasks.
 
         task: Task[_Done[R]] = batch.work
-        if task.cancelled():
-            error = batch.interruption or CancelledError()
+        failure = (batch.interruption or CancelledError()) if task.cancelled() else task.exception()
+        if failure is not None and not isinstance(failure, Exception):
             if not self._cancelled:
                 self._abort()
-                self._interrupted_batch(batch, error)
-                raise error
+                self._interrupted_batch(batch, failure)
+                raise failure
             return (
-                self._unknown_records(batch, error, batch.delivery, terminal=False)
+                self._unknown_records(batch, failure, batch.delivery, terminal=False)
                 if batch.delivery in _UNKNOWN
                 else _Done([])
             )
-        if (failure := task.exception()) is not None:
-            if not isinstance(failure, Exception):
-                self._abort()
-                self._interrupted_batch(batch, failure)
-            else:
-                self._halt()
+        if failure is not None:
+            self._halt()
             raise failure
         return task.result()
 

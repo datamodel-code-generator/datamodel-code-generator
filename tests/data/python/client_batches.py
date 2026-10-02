@@ -1394,8 +1394,10 @@ async def _worker_stop_async_source(
 
 
 async def _async_worker_source_stops(harness: _Batches, lines: list[str], controls: list[bool]) -> None:
-    for pending, raising in product(controls, (False, True)):
-        transport = _AsyncBoundaryTransport(harness, {"native": True, "source_gate": True}, asynchronous=True)
+    for pending, raising, other in product(controls, (False, True), (False, True)):
+        transport = _AsyncBoundaryTransport(
+            harness, {"native": True, "source_gate": True, "native_other": other}, asynchronous=True
+        )
         read: list[int] = []
         gate, exited = asyncio.Event(), asyncio.Event()
         async with harness.package.AsyncClient(transport_adapter=transport) as api:
@@ -1407,9 +1409,9 @@ async def _async_worker_source_stops(harness: _Batches, lines: list[str], contro
             )
             try:
                 await asyncio.wait_for(anext(iterator), timeout=30)
-            except asyncio.CancelledError as error:
+            except (asyncio.CancelledError, _Interrupt) as error:
                 lines.append(
-                    f"  worker source stop pending={pending} raising={raising}: "
+                    f"  worker source stop pending={pending} raising={raising} other={other}: "
                     f"original={error is transport.native} read={read} "
                     f"cleanup={exited.is_set()} gate={gate.is_set()}"
                 )
