@@ -2801,6 +2801,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         session: OperationSession,
         max_page_bytes: int | None,
         read_request: Callable[[str, HeadersView], None] | None = None,
+        failed: Callable[[BaseException, DeliveryState], None] | None = None,
     ) -> R:
         """Execute one page of a helper session as a child logical call, building what the page's response gives.
 
@@ -2835,6 +2836,8 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             call.check("decode")
         except BaseException as error:  # noqa: BLE001
             failure = call.stopped(error)
+            if failed is not None:
+                failed(failure, _delivery(call))
             if events is not None:
                 events.ended(failure)
             raise failure from None
@@ -3772,6 +3775,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         session: OperationSession,
         max_page_bytes: int | None,
         read_request: Callable[[str, HeadersView], None] | None = None,
+        failed: Callable[[BaseException, DeliveryState], None] | None = None,
     ) -> R:
         """Execute one page of a helper session as a child logical call, building what the page's response gives.
 
@@ -3807,6 +3811,8 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             call.check("decode")
         except BaseException as error:  # noqa: BLE001
             failure = call.stopped(error)
+            if failed is not None:
+                failed(failure, _delivery(call))
             if events is not None:
                 await events.aended(failure)
             raise failure from None
