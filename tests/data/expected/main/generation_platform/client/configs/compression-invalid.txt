@@ -1,0 +1,6 @@
+APIGenerationError
+  E_CONFIG_VALUE config operations[0].runtime.accepted_content_encodings: accepted_content_encodings may name only gzip, the builtin encoder
+  E_CONFIG_VALUE config operations[1].runtime.accepted_content_encodings: accepted_content_encodings may name only gzip, the builtin encoder
+  E_CONFIG_CONFLICT config operations[2].runtime.accepted_content_encodings: accepted_content_encodings names a coding twice
+  E_CONFIG_VALUE config operations[3].runtime.accepted_content_encodings: accepted_content_encodings must be a tuple of HTTP tokens
+  E_CONFIG_VALUE config operations[4].runtime.accepted_content_encodings: accepted_content_encodings must be a tuple of HTTP tokens

@@ -10,7 +10,7 @@ from inspect import iscoroutinefunction
 from keyword import iskeyword
 from sys import float_info
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Final, Literal, cast
+from typing import TYPE_CHECKING, Final, Literal, Protocol, cast
 
 from typing_extensions import TypeIs, TypeVar
 
@@ -18,7 +18,14 @@ from ..client.errors import ProtocolConfigurationError, is_sequence
 from ..client.timing import SessionOptions
 from ..model_codecs.unset import UNSET, Unset
 from .caches import AsyncCacheStore, CacheStore  # noqa: TC001 - Public annotations support get_type_hints().
-from .records import record_string
+from .circuit_records import (  # noqa: TC001 - Public annotations support get_type_hints().
+    CircuitKey,
+    CircuitOutcome,
+    CircuitPermit,
+    CircuitSnapshot,
+)
+from .origins import Origin
+from .queues import AsyncQueueStore, QueueStore, ResolvedQueueOptions
 from .websocket_types import (
     AsyncWebSocketConnector,
     ResolvedWebSocketTransportOptions,
@@ -49,6 +56,12 @@ _STREAM: Final = (
     ("max_reconnects", False, True, True),
     ("max_reconnect_wait", True, True, False),
 )
+_UPLOAD: Final = (
+    ("chunk_bytes", False, False, False),
+    ("max_parts", False, True, False),
+    ("parallelism", False, False, False),
+    ("max_uncertain_probes", False, False, True),
+)
 _WS: Final = (
     ("open_timeout", True, True, False),
     ("idle_timeout", True, True, False),
@@ -67,6 +80,33 @@ _WS: Final = (
 _PROXY_SCHEMES: Final = ("http", "https")
 _CACHE: Final = (("max_entry_bytes", False, False, False), ("max_ttl", True, False, False))
 _CACHE_METHODS: Final = ("lookup", "fingerprint_vary", "compare_exchange", "delete", "invalidate")
+QUEUE_FIELDS: Final = (
+    ("max_entries", False, False, False),
+    ("parallelism", False, False, False),
+    ("max_entry_body_bytes", False, False, False),
+    ("max_deliveries", False, False, False),
+    ("entry_ttl", True, False, False),
+    ("retry_initial_delay", True, False, False),
+    ("retry_max_delay", True, False, False),
+    ("lease_min", True, False, False),
+    ("lease_grace", True, False, False),
+    ("max_delivery_timeout", True, False, False),
+)
+QUEUE_DEFAULTS: Final = ResolvedQueueOptions(
+    max_entries=100,
+    parallelism=1,
+    max_entry_body_bytes=8388608,
+    max_deliveries=5,
+    entry_ttl=86400.0,
+    retry_initial_delay=5.0,
+    retry_max_delay=600.0,
+    lease_min=90.0,
+    lease_grace=30.0,
+    max_delivery_timeout=300.0,
+)
+_QUEUE_METHODS: Final = ("put", "get", "claim", "compare_exchange", "purge_terminal")
+_STORE_METHODS: Final = {"cache": _CACHE_METHODS, "queue": _QUEUE_METHODS}
+_MAX_DELIVERY_TIMEOUT: Final = 300.0
 WEBHOOK_LIMITS: Final = (
     ("max_body_bytes", False, False, False),
     ("max_header_bytes", False, False, False),
@@ -115,39 +155,6 @@ def check_limits(options: object, rules: tuple[tuple[str, bool, bool, bool], ...
 def _instance(value: object, kinds: tuple[type, ...], name: str) -> None:
     if not isinstance(value, kinds):
         raise ProtocolConfigurationError(field_path=(name,), condition="invalid_value")
-
-
-def _origin(scheme: object, host: object, port: object) -> None:
-    from ..client.urls import URLValidationError, canonical_origin, origin_text  # noqa: PLC0415 - Parse URLs only here.
-
-    names = (record_string(scheme, "scheme"), record_string(host, "host"))
-    if type(port) is not int:
-        msg = "port must be an integer"
-        raise TypeError(msg)
-    origin = (*names, port)
-    try:
-        valid = canonical_origin.__wrapped__(origin_text.__wrapped__(origin)) == origin
-    except URLValidationError:
-        valid = False
-    if not valid:
-        msg = "origin must be the scheme, host, and port that the client's URL rules produce"
-        raise ValueError(msg)
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class Origin:
-    """An effective HTTP origin exactly as the client's URL rules produce it; other spellings are rejected.
-
-    The host is lowercase ASCII, with IDNA labels already encoded, and an IPv6 address has no brackets.
-    """
-
-    scheme: str
-    host: str
-    port: int
-
-    def __post_init__(self) -> None:
-        """Require the scheme, host, and effective port that interpreting this origin's URL gives back unchanged."""
-        _origin(self.scheme, self.host, self.port)
 
 
 def _partition(value: object) -> None:
@@ -213,6 +220,23 @@ class StreamOptions:
         """Reject booleans as limits, a nonboolean reconnect switch, and every forbidden None or zero."""
         check_limits(self, _STREAM)
         _instance(self.reconnect, (bool, Unset), "reconnect")
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class UploadOptions:
+    """Upload limits; only max_parts takes None, and only max_uncertain_probes takes 0.
+
+    The offset profile always sends one chunk at a time, whatever the parallelism.
+    """
+
+    chunk_bytes: int | Unset = UNSET
+    max_parts: int | Unset | None = UNSET
+    parallelism: int | Unset = UNSET
+    max_uncertain_probes: int | Unset = UNSET
+
+    def __post_init__(self) -> None:
+        """Reject booleans, other types, and every forbidden None or zero."""
+        check_limits(self, _UPLOAD)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -344,6 +368,31 @@ class CacheOptions:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class QueueOptions:
+    """Queue settings: `max_entries` and `parallelism` bound one drain, every other field an entry's fixed policy.
+
+    Durations are finite positive seconds and counts positive integers; `max_delivery_timeout` is at most 300.
+    """
+
+    max_entries: int | Unset = UNSET
+    parallelism: int | Unset = UNSET
+    max_entry_body_bytes: int | Unset = UNSET
+    max_deliveries: int | Unset = UNSET
+    entry_ttl: float | Unset = UNSET
+    retry_initial_delay: float | Unset = UNSET
+    retry_max_delay: float | Unset = UNSET
+    lease_min: float | Unset = UNSET
+    lease_grace: float | Unset = UNSET
+    max_delivery_timeout: float | Unset = UNSET
+
+    def __post_init__(self) -> None:
+        """Reject booleans, other types, zero, nonfinite durations, and a delivery timeout over 300 seconds."""
+        check_limits(self, QUEUE_FIELDS)
+        if not isinstance(timeout := self.max_delivery_timeout, Unset) and timeout > _MAX_DELIVERY_TIMEOUT:
+            raise ProtocolConfigurationError(field_path=("max_delivery_timeout",), condition="invalid_value")
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class ProtocolSecurityContext:
     """The nonsecret credential partition of helper state and the origins permitted beyond the same origin."""
 
@@ -354,6 +403,73 @@ class ProtocolSecurityContext:
         """Require a nonempty partition without control characters and copy the origins into a tuple."""
         _partition(self.credential_partition)
         object.__setattr__(self, "allowed_origins", _origins(self.allowed_origins))
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CircuitBreakerOptions:
+    """Circuit breaking of operations that declare a circuit group; off unless enabled.
+
+    failure_threshold consecutive failed calls open a group's circuit for cooldown seconds, after which one probe call
+    may close it again. Only one probe runs at a time, and no option changes that.
+    """
+
+    enabled: bool = False
+    failure_threshold: int = 5
+    cooldown: float = 30.0
+
+    def __post_init__(self) -> None:
+        """Require a boolean switch, a positive threshold, and a positive finite cooldown."""
+        _instance(self.enabled, (bool,), "enabled")
+        positive_count(self.failure_threshold, "failure_threshold")
+        checked_seconds(self.cooldown, "cooldown")
+
+    def resolved(self) -> ResolvedCircuitBreakerOptions:
+        """Return the limits a circuit store applies."""
+        return ResolvedCircuitBreakerOptions(failure_threshold=self.failure_threshold, cooldown=float(self.cooldown))
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ResolvedCircuitBreakerOptions:
+    """The limits a circuit store applies to one admission: the opening threshold and the cooldown in seconds."""
+
+    failure_threshold: int
+    cooldown: float
+
+
+class CircuitStore(Protocol):
+    """A borrowed store of circuit states; each method is atomic, and `now` is the caller's monotonic time."""
+
+    def admit(self, key: CircuitKey, *, now: float, options: ResolvedCircuitBreakerOptions) -> CircuitPermit:
+        """Admit one call, taking the single half-open probe slot when due, or raise CircuitOpenError."""
+        ...
+
+    def record(self, permit: CircuitPermit, outcome: CircuitOutcome, *, now: float) -> None:
+        """Apply a call's outcome once, ignoring a permit of another generation."""
+
+    def reset(self, key: CircuitKey) -> None:
+        """Close a circuit and advance its generation, so permits admitted before cannot change it."""
+
+    def snapshot(self, key: CircuitKey) -> CircuitSnapshot:
+        """Return the circuit's current state."""
+        ...
+
+
+class AsyncCircuitStore(Protocol):
+    """A borrowed asynchronous store of circuit states with the same atomic contract."""
+
+    async def admit(self, key: CircuitKey, *, now: float, options: ResolvedCircuitBreakerOptions) -> CircuitPermit:
+        """Admit one call, taking the single half-open probe slot when due, or raise CircuitOpenError."""
+        ...
+
+    async def record(self, permit: CircuitPermit, outcome: CircuitOutcome, *, now: float) -> None:
+        """Apply a call's outcome once, ignoring a permit of another generation."""
+
+    async def reset(self, key: CircuitKey) -> None:
+        """Close a circuit and advance its generation, so permits admitted before cannot change it."""
+
+    async def snapshot(self, key: CircuitKey) -> CircuitSnapshot:
+        """Return the circuit's current state."""
+        ...
 
 
 def _helper_defaults(value: object) -> Mapping[str, ProtocolDefaults]:
@@ -369,13 +485,13 @@ def _helper_defaults(value: object) -> Mapping[str, ProtocolDefaults]:
     return MappingProxyType(defaults)
 
 
-def _cache_stores(value: object) -> Mapping[str, object]:
+def _stores(value: object, field: str) -> Mapping[str, object]:
     if not _is_mapping(value):
-        raise ProtocolConfigurationError(field_path=("cache_stores",), condition="invalid_value")
+        raise ProtocolConfigurationError(field_path=(field,), condition="invalid_value")
     stores: dict[str, object] = {}
     for name, store in value.items():
         if not _is_helper_name(name):
-            raise ProtocolConfigurationError(field_path=("cache_stores",), condition="invalid_value")
+            raise ProtocolConfigurationError(field_path=(field,), condition="invalid_value")
         stores[name] = store
     return MappingProxyType(stores)
 
@@ -385,23 +501,43 @@ class ProtocolDefaults:
     """Defaults of one helper, below its call arguments and above the kind's effective defaults."""
 
     session: SessionOptions | Unset = UNSET
-    options: PaginationOptions | PollOptions | StreamOptions | CacheOptions | WSOptions | Unset = UNSET
+    options: (
+        PaginationOptions
+        | PollOptions
+        | StreamOptions
+        | CacheOptions
+        | WSOptions
+        | UploadOptions
+        | QueueOptions
+        | Unset
+    ) = UNSET
 
     def __post_init__(self) -> None:
         """Refuse values other than session options and one kind's options."""
         _instance(self.session, (SessionOptions, Unset), "session")
         _instance(
-            self.options, (PaginationOptions, PollOptions, StreamOptions, CacheOptions, WSOptions, Unset), "options"
+            self.options,
+            (
+                PaginationOptions,
+                PollOptions,
+                StreamOptions,
+                CacheOptions,
+                WSOptions,
+                UploadOptions,
+                QueueOptions,
+                Unset,
+            ),
+            "options",
         )
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ProtocolClientOptions:
-    """Protocol helper settings of one client: its security context, helper defaults, cache stores, and WebSockets.
+    """Protocol helper settings of one client: its security context, helper defaults, stores, and WebSockets.
 
-    None as the security context means anonymous use. The defaults and the borrowed cache stores are keyed by dotted
-    helper names; each mapping is copied into a read-only one that keeps each value's identity. A WebSocket connector is
-    borrowed and never closed; without one, the client opens its WebSocket connections itself.
+    None as the security context means anonymous use. The defaults and the borrowed cache and queue stores are keyed by
+    dotted helper names; each mapping is copied into a read-only one that keeps each value's identity. A WebSocket
+    connector is borrowed and never closed; without one, the client opens its WebSocket connections itself.
     """
 
     security: ProtocolSecurityContext | Unset | None = UNSET
@@ -409,17 +545,24 @@ class ProtocolClientOptions:
     cache_stores: Mapping[str, CacheStore | AsyncCacheStore] | Unset = UNSET
     websocket_connector: WebSocketConnector | AsyncWebSocketConnector | Unset | None = UNSET
     websocket_transport: WebSocketTransportOptions | Unset = UNSET
+    circuit: CircuitBreakerOptions | Unset = UNSET
+    circuit_store: CircuitStore | AsyncCircuitStore | Unset | None = field(default=UNSET, repr=False)
+    queue_stores: Mapping[str, QueueStore | AsyncQueueStore] | Unset = UNSET
 
     def __post_init__(self) -> None:
         """Refuse another security value, helper names that are not dotted identifiers, and other default values.
 
-        A connector needs an `open` method, and the transport settings their own type.
+        A connector needs an `open` method, and the transport settings their own type. The circuit store is only
+        borrowed here; whether its methods suit the client's mode is checked by the client.
         """
         _instance(self.security, (ProtocolSecurityContext, Unset, type(None)), "security")
         if not isinstance(self.defaults, Unset):
             object.__setattr__(self, "defaults", _helper_defaults(self.defaults))
+        _instance(self.circuit, (CircuitBreakerOptions, Unset), "circuit")
         if not isinstance(self.cache_stores, Unset):
-            object.__setattr__(self, "cache_stores", _cache_stores(self.cache_stores))
+            object.__setattr__(self, "cache_stores", _stores(self.cache_stores, "cache_stores"))
+        if not isinstance(self.queue_stores, Unset):
+            object.__setattr__(self, "queue_stores", _stores(self.queue_stores, "queue_stores"))
         connector = self.websocket_connector
         if (
             connector is not None
@@ -441,8 +584,10 @@ _KIND_OPTIONS: Final[Mapping[str, type]] = MappingProxyType({
     "polling": PollOptions,
     "sse": StreamOptions,
     "ndjson": StreamOptions,
+    "resumable_upload": UploadOptions,
     "cache": CacheOptions,
     "websocket": WSOptions,
+    "queue": QueueOptions,
 })
 
 
@@ -465,18 +610,33 @@ def checked_defaults(defaults: Mapping[str, ProtocolDefaults], helpers: tuple[tu
             )
 
 
-def checked_stores(stores: Mapping[str, object], helpers: tuple[tuple[str, str], ...], *, asynchronous: bool) -> None:
-    """Refuse a cache store under a name that is no cache helper of the package, or one the client cannot call.
+def checked_stores(
+    stores: Mapping[str, object],
+    helpers: tuple[tuple[str, str], ...],
+    *,
+    asynchronous: bool,
+    kind: Literal["cache", "queue"] = "cache",
+) -> None:
+    """Refuse a cache or queue store under a name that is no helper of its kind, or one the client cannot call.
 
-    A store must have every method of the cache store contract, coroutine functions for an asyncio client and plain
+    A store must have every method of its kind's store contract, coroutine functions for an asyncio client and plain
     functions for a synchronous one.
     """
-    kinds = dict(helpers)
+    kinds, field = dict(helpers), f"{kind}_stores"
     for name, store in stores.items():
-        if kinds.get(name) != "cache":
-            raise ProtocolConfigurationError(field_path=("protocols", "cache_stores", name), condition="unknown_field")
-        methods = [getattr(store, method, None) for method in _CACHE_METHODS]
+        if kinds.get(name) != kind:
+            raise ProtocolConfigurationError(field_path=("protocols", field, name), condition="unknown_field")
+        methods = [getattr(store, method, None) for method in _STORE_METHODS[kind]]
         if not all(callable(method) and iscoroutinefunction(method) == asynchronous for method in methods):
-            raise ProtocolConfigurationError(
-                field_path=("protocols", "cache_stores", name), condition="wrong_capability"
-            )
+            raise ProtocolConfigurationError(field_path=("protocols", field, name), condition="wrong_capability")
+
+
+def resolved_queue(layers: tuple[object, ...]) -> ResolvedQueueOptions:
+    """Return queue options with each field from the first layer that sets it, or the kind's default.
+
+    Retry delays out of order are refused as the maximum delay.
+    """
+    values = {name: layered(layers, name, getattr(QUEUE_DEFAULTS, name)) for name, *_ in QUEUE_FIELDS}
+    if values["retry_max_delay"] < values["retry_initial_delay"]:
+        raise ProtocolConfigurationError(field_path=("queue_options", "retry_max_delay"), condition="invalid_value")
+    return ResolvedQueueOptions(**values)

@@ -1,0 +1,35 @@
+schema_version: 1
+helpers:
+  errors.empty: {kind: queue, operations: {}}
+  errors.list: {kind: queue, operations: [/paths/~1orders/post]}
+  errors.missing: {kind: queue}
+  errors.alias:
+    kind: queue
+    operations:
+      class: {operation: /paths/~1orders/post, side_effects: false}
+      _hidden: {operation: /paths/~1orders/post, side_effects: false}
+      2nd: {operation: /paths/~1orders/post, side_effects: false}
+  errors.fields:
+    kind: queue
+    operations:
+      order: {operation: /paths/~1orders/post, side_effects: yes please, retries: 3}
+  errors.key:
+    kind: queue
+    operations:
+      order: {operation: /paths/~1orders/post, side_effects: true}
+  errors.ttl:
+    kind: queue
+    operations:
+      order: {operation: /paths/~1orders/post, side_effects: true, key_binding: {in: header, name: Idempotency-Key}}
+  errors.binding:
+    kind: queue
+    operations:
+      order: {operation: "/paths/~1orders~1{orderId}/get", side_effects: false, dedupe_ttl: 60}
+  errors.period:
+    kind: queue
+    operations:
+      order: {operation: /paths/~1orders/post, side_effects: true, key_binding: {in: header, name: Idempotency-Key}, dedupe_ttl: 0}
+  errors.target:
+    kind: queue
+    operations:
+      order: {operation: /paths/~1orders/post, side_effects: true, key_binding: {in: nowhere}, dedupe_ttl: 60}

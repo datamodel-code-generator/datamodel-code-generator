@@ -7,15 +7,16 @@ helper's plan loads them, since they need the operation runtime every generated 
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from typing import TYPE_CHECKING, TypeAlias
+from typing import TYPE_CHECKING, Any, Generic, TypeAlias
 
 from typing_extensions import TypeVar
 
 from ..client.operations import BodyMedia, ParameterSpec
 from ..client.paths import dot_segment, path_segments
 from ..model_codecs.errors import CodecAdapterError, ParameterEncodingError
+from ..model_codecs.unset import UNSET
 from .records import BodyTarget, ParameterTarget, QuerystringTarget
-from .values import Patch
+from .values import Patch, written
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -31,10 +32,14 @@ __all__ = (
     "ReadMedia",
     "ReadParameter",
     "ReadPaths",
+    "Targeted",
     "Writes",
     "dotted_read",
+    "dotted_write",
+    "position",
     "read_paths",
     "targeted",
+    "targeted_writes",
 )
 
 T = TypeVar("T")
@@ -89,7 +94,7 @@ class ReadMedia(BodyMedia):
         return wire
 
 
-def _position(call: OperationPlan[T, object], location: str, name: str) -> int:
+def position(call: OperationPlan[T, object], location: str, name: str) -> int:
     """Return the argument position of a declared parameter, matching a header's name without regard to case."""
 
     def key(value: str) -> str:
@@ -124,20 +129,20 @@ def targeted(
             patched = True
             continue
         if isinstance(target, QuerystringTarget):
-            position, pointer = _position(call, "querystring", target.name), target.pointer
+            index, pointer = position(call, "querystring", target.name), target.pointer
         else:
-            position, pointer = _position(call, target.location, target.name), None
+            index, pointer = position(call, target.location, target.name), None
             if (location := target.location) == "header":
                 headers.add(target.name.lower())
             elif location == "query":
                 queries.add(target.name)
-        spec = parameters[position]
-        parameters[position] = (
+        spec = parameters[index]
+        parameters[index] = (
             replace(spec, encoder=None)
             if pointer is None
             else PatchedParameter(plan=spec.plan, encoder=spec.encoder, adapter=spec.adapter)
         )
-        writes.append((position, pointer))
+        writes.append((index, pointer))
     body = call.body
     if patched:
         assert body is not None
@@ -164,7 +169,7 @@ def read_paths(call: OperationPlan[T, object], sources: Sequence[tuple[RequestTa
     }
     reads = {name for name, (_, selector) in paths.items() if selector is not None}
     return tuple(
-        (segment, tuple((name, *paths.get(name, (None, None)), _position(call, "path", name)) for name in names))
+        (segment, tuple((name, *paths.get(name, (None, None)), position(call, "path", name)) for name in names))
         for segment, names in (path_segments(call.path) if reads else ())
         if not reads.isdisjoint(names)
     )
@@ -195,3 +200,55 @@ def dotted_read(
         return None
     reads = [(name, read) for name, _, read, _ in parts if read is not None]
     return next((read for name, read in reads if texts[name]), reads[0][1])
+
+
+@dataclass(frozen=True, slots=True)
+class Targeted(Generic[T]):
+    """An operation that sends only the values a helper writes into its targets, and where each value goes.
+
+    A write is a parameter's argument position without a pointer, a querystring's position with a pointer into its
+    value, or no position with a pointer into the JSON body. `headers` and `queries` name the header and query
+    parameters it writes, which a call's options must not patch, and `dotted` the path segments a read value is
+    written to, which must not encode to a dot segment.
+    """
+
+    call: OperationPlan[T, object]
+    writes: Writes
+    headers: frozenset[str]
+    queries: frozenset[str]
+    dotted: ReadPaths
+
+    def request(self, values: tuple[WireValue, ...]) -> tuple[tuple[object, ...], object]:
+        """Return the arguments and body of a request writing each value in order, every other argument omitted.
+
+        A parameter's value replaces its argument, and the values for a querystring or the body are patched into an
+        empty object.
+        """
+        return written(self.writes, (UNSET,) * len(self.call.parameters), UNSET, values)
+
+
+def targeted_writes(
+    call: OperationPlan[T, object],
+    bindings: Iterable[tuple[RequestTarget, Selector | None]],
+    extra: Iterable[RequestTarget] = (),
+) -> Targeted[T]:
+    """Return an operation taking, in order, the value of each binding and then of each extra target, as wire values.
+
+    A binding is the target its value is written to and the selector that reads it, or None for a literal; an extra
+    target's value is one the helper computes rather than reads.
+    """
+    sources = (*bindings, *((target, None) for target in extra))
+    return Targeted(*targeted(call, (target for target, _ in sources)), read_paths(call, sources))
+
+
+def dotted_write(targeted: Targeted[Any], written: tuple[WireValue, ...]) -> Selector | None:
+    """Return the selector of a read value that makes a path segment a dot segment once encoded, or None."""
+    parameters = targeted.call.parameters
+    return next(
+        (
+            read
+            for segment, parts in targeted.dotted
+            if (read := dotted_read(parameters, segment, parts, written, dict)) is not None
+        ),
+        None,
+    )

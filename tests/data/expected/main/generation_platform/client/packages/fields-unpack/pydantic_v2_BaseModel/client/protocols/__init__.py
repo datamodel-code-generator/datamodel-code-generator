@@ -11,16 +11,38 @@ from .._runtime.protocols.caches import (
     CacheResult,
     CacheStore,
 )
+from .._runtime.protocols.circuit_records import (
+    CircuitKey,
+    CircuitPermit,
+    CircuitSnapshot,
+)
 from .._runtime.protocols.options import (
+    AsyncCircuitStore,
     CacheOptions,
-    Origin,
+    CircuitBreakerOptions,
+    CircuitStore,
     PaginationOptions,
     PollOptions,
     ProtocolDefaults,
     ProtocolSecurityContext,
+    QueueOptions,
+    ResolvedCircuitBreakerOptions,
     StreamOptions,
+    UploadOptions,
     WebSocketTransportOptions,
     WSOptions,
+)
+from .._runtime.protocols.origins import Origin
+from .._runtime.protocols.queues import (
+    AsyncQueueStore,
+    BlobRef,
+    DrainReport,
+    QueueEntry,
+    QueueLease,
+    QueueOutcome,
+    QueueReceipt,
+    QueueStore,
+    ResolvedQueueOptions,
 )
 from .._runtime.protocols.records import (
     BodySelector,
@@ -39,6 +61,15 @@ from .._runtime.protocols.records import (
 )
 from .._runtime.protocols.references import OperationRef
 from .._runtime.protocols.resume import ResumeState, import_state
+from .._runtime.protocols.sources import (
+    AsyncRangeReader,
+    AsyncUploadSource,
+    PartReceipt,
+    RangeReader,
+    UploadIdentity,
+    UploadProgress,
+    UploadSource,
+)
 from .._runtime.protocols.webhooks import (
     AsyncReplayStore,
     KeySet,
@@ -64,8 +95,10 @@ from .._runtime.protocols.websocket_types import (
 
 if TYPE_CHECKING:
     from .._runtime.protocols.cache_stores import AsyncMemoryCacheStore, MemoryCacheStore
+    from .._runtime.protocols.circuits import AsyncMemoryCircuitStore, MemoryCircuitStore
     from .._runtime.protocols.pagination import AsyncPager, Page, Pager
     from .._runtime.protocols.polling import AsyncLroHandle, LroHandle
+    from .._runtime.protocols.queue_stores import AsyncMemoryQueueStore, MemoryQueueStore
     from .._runtime.protocols.replay import AsyncMemoryReplayStore, MemoryReplayStore
     from .._runtime.protocols.streams import (
         AsyncEventStream,
@@ -73,32 +106,59 @@ if TYPE_CHECKING:
         StreamEvent,
         UnknownEvent,
     )
+    from .._runtime.protocols.upload_sources import (
+        AsyncBytesUploadSource,
+        AsyncFileUploadSource,
+        BytesUploadSource,
+        FileUploadSource,
+    )
+    from .._runtime.protocols.uploads import AsyncUploadHandle, UploadHandle
     from .._runtime.protocols.websocket import AsyncWebSocketSession, WebSocketSession
 
 __all__ = [
+    "AsyncBytesUploadSource",
     "AsyncCacheStore",
+    "AsyncCircuitStore",
     "AsyncEventStream",
+    "AsyncFileUploadSource",
     "AsyncLroHandle",
     "AsyncMemoryCacheStore",
+    "AsyncMemoryCircuitStore",
+    "AsyncMemoryQueueStore",
     "AsyncMemoryReplayStore",
     "AsyncPager",
+    "AsyncQueueStore",
+    "AsyncRangeReader",
     "AsyncReplayStore",
+    "AsyncUploadHandle",
+    "AsyncUploadSource",
     "AsyncWebSocketConnection",
     "AsyncWebSocketConnector",
     "AsyncWebSocketSession",
+    "BlobRef",
     "BodySelector",
     "BodyTarget",
+    "BytesUploadSource",
     "CacheEntry",
     "CacheOptions",
     "CacheResult",
     "CacheStore",
     "CancelReceipt",
+    "CircuitBreakerOptions",
+    "CircuitKey",
+    "CircuitPermit",
+    "CircuitSnapshot",
+    "CircuitStore",
     "Continuation",
+    "DrainReport",
     "EventStream",
+    "FileUploadSource",
     "HeaderSelector",
     "KeySet",
     "LroHandle",
     "MemoryCacheStore",
+    "MemoryCircuitStore",
+    "MemoryQueueStore",
     "MemoryReplayStore",
     "Message",
     "OperationRef",
@@ -107,6 +167,7 @@ __all__ = [
     "Pager",
     "PaginationOptions",
     "ParameterTarget",
+    "PartReceipt",
     "PingReceipt",
     "PollOptions",
     "PollSnapshot",
@@ -115,8 +176,17 @@ __all__ = [
     "ProtocolProgress",
     "ProtocolSecurityContext",
     "QuerystringTarget",
+    "QueueEntry",
+    "QueueLease",
+    "QueueOptions",
+    "QueueOutcome",
+    "QueueReceipt",
+    "QueueStore",
+    "RangeReader",
     "ReplayStore",
     "RequestTarget",
+    "ResolvedCircuitBreakerOptions",
+    "ResolvedQueueOptions",
     "ResolvedWSOptions",
     "ResolvedWebSocketTransportOptions",
     "ResolvedWebhookOptions",
@@ -126,6 +196,11 @@ __all__ = [
     "StreamEvent",
     "StreamOptions",
     "UnknownEvent",
+    "UploadHandle",
+    "UploadIdentity",
+    "UploadOptions",
+    "UploadProgress",
+    "UploadSource",
     "VerifiedSignature",
     "VerifiedWebhook",
     "Verifier",
@@ -142,7 +217,7 @@ __all__ = [
 
 
 def __getattr__(name: str) -> object:
-    """Load a memory store, a pagination, polling, or stream type, or a WebSocket session only when requested."""
+    """Load a memory store, a builtin upload source, or a pagination, polling, stream, upload, or session type."""
     if name in {"AsyncPager", "Page", "Pager"}:
         from .._runtime.protocols import pagination
 
@@ -159,10 +234,26 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import streams
 
         return getattr(streams, name)
+    if name in {"AsyncMemoryCircuitStore", "MemoryCircuitStore"}:
+        from .._runtime.protocols import circuits
+
+        return getattr(circuits, name)
+    if name in {"AsyncUploadHandle", "UploadHandle"}:
+        from .._runtime.protocols import uploads
+
+        return getattr(uploads, name)
+    if name in {"AsyncBytesUploadSource", "AsyncFileUploadSource", "BytesUploadSource", "FileUploadSource"}:
+        from .._runtime.protocols import upload_sources
+
+        return getattr(upload_sources, name)
     if name in {"AsyncWebSocketSession", "WebSocketSession"}:
         from .._runtime.protocols import websocket
 
         return getattr(websocket, name)
+    if name in {"AsyncMemoryQueueStore", "MemoryQueueStore"}:
+        from .._runtime.protocols import queue_stores
+
+        return getattr(queue_stores, name)
     if name == "MemoryReplayStore":
         from .._runtime.protocols.replay import MemoryReplayStore
 

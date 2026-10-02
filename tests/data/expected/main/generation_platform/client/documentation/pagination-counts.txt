@@ -742,3 +742,8 @@ raised as the call raises it, and checks the saved continuation and page as a se
 `PaginationCycleError` keep a checkpoint of where the pager stopped as `resume_state` when the call can be checkpointed.
 `ResumeState.export()` requires `ProtocolSecurityContext.credential_partition` when the operation declares security or
 the call configures auth; `import_state` reads the export back.
+
+## Request compression
+
+No operation of this package declares a request content coding, so `compression` in `ClientOptions` and views turns
+off for every call, and a call's own `RequestOptions(compression="gzip")` raises `ConfigurationError` before sending.

@@ -186,6 +186,7 @@ def _pending(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -
     _saved(lines, "before any poll", fresh)
     exchange.respond(job("done"), report(4))
     step(lines, "resumed before any poll", helper.resume(fresh).wait)
+    step(lines, "resumed with a coding", lambda: helper.resume(fresh, options=harness.request(compression="gzip")))
     reports = api.protocols.jobs.report
     exchange.respond(job("queued", 202))
     posted = reports.start(body=body).checkpoint()
@@ -478,6 +479,8 @@ def _expiries(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) 
     for label, value in (
         ("offset date-time", "2999-01-01T09:00:00.25+09:00"),
         ("lowercase date-time", "2999-01-01t00:00:00z"),
+        ("fraction in UTC", "2999-01-01T00:00:00.1Z"),
+        ("fraction past microseconds", "2999-01-01T00:00:00.123456789Z"),
         ("HTTP date", "Tue, 01 Jan 2999 00:00:00 GMT"),
         ("leap second", "2998-12-31T23:59:60Z"),
         ("leap second with a fraction and an offset", "2999-01-01T08:59:60.5+09:00"),
@@ -547,6 +550,11 @@ async def _async_resume(harness: Polling, lines: list[str]) -> None:
         state = handle.checkpoint()
         resumed = helper.resume(state)
         lines.append(f"  resumed {resumed!r}")
+        step(
+            lines,
+            "async resumed with a coding",
+            lambda: helper.resume(state, options=harness.request(compression="gzip")),
+        )
         exchange.respond(job("done"), report(3))
         await astep(lines, "resumed wait", resumed.wait)
         once = harness.request(retry=harness.options.RetryOptions(max_retries=0))

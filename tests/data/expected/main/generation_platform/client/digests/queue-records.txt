@@ -1,0 +1,3 @@
+# queues and queues-python
+  orders.outbox same True
+  account.offline same True

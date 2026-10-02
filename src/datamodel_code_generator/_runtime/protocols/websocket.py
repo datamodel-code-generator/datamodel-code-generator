@@ -1294,6 +1294,14 @@ def _connector(core: ClientCore | AsyncClientCore) -> object:
     return None if isinstance(connector, Unset) else connector
 
 
+def _coded(limits: _Limits) -> None:
+    """Refuse a request coding the helper call selects: a handshake sends no body to compress."""
+    if (options := limits.options) is not None and isinstance(selected := options.compression, str):
+        from ..client.compression import helper_children  # noqa: PLC0415 - Only a selected coding loads the encoder.
+
+        helper_children(selected, ())
+
+
 def connect_socket(  # noqa: PLR0913
     core: ClientCore,
     plan: ChannelPlan[SendT, RecvT],
@@ -1305,6 +1313,7 @@ def connect_socket(  # noqa: PLR0913
 ) -> WebSocketSession[SendT, RecvT]:
     """Open a helper's WebSocket in a session of its own, returning once its handshake got a valid 101."""
     limits = _limits(core, plan, ws_options, options, session_options)
+    _coded(limits)
     native = core.native_responses(limits.options, plan.call.operation_id)
     session = _session(plan, limits)
     injected = _connector(core)
@@ -1339,6 +1348,7 @@ async def aconnect_socket(  # noqa: PLR0913
 ) -> AsyncWebSocketSession[SendT, RecvT]:
     """Open a helper's WebSocket with asyncio, returning once its handshake got a valid 101."""
     limits = _limits(core, plan, ws_options, options, session_options)
+    _coded(limits)
     native = core.native_responses(limits.options, plan.call.operation_id)
     session = _session(plan, limits)
     injected = _connector(core)

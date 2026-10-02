@@ -22,6 +22,7 @@ pending operations
   > GET https://api.example.com/jobs/j1/report
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   resumed before any poll = Report(rows=4)
+  resumed with a coding ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error session=False
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   fetch written from the final poll saved {"bound": ["j1", 202], "cancel": [], "phase": "pending", "poll": null, "polls": 0, "result": null, "seed": [null], "wait_ms": "0ms"} payload=b'' expires_at=None
@@ -253,6 +254,12 @@ server expiries
   lowercase date-time expires_at=2999-01-01T00:00:00+00:00
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  fraction in UTC expires_at=2999-01-01T00:00:00.100000+00:00
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  fraction past microseconds expires_at=2999-01-01T00:00:00.123456+00:00
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   HTTP date expires_at=2999-01-01T00:00:00+00:00
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
@@ -333,6 +340,7 @@ async resume
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: queued] b''
   status = PollSnapshot(state='running', terminal=False, status=200, data=Job:j1)
   resumed AsyncLroHandle(phase='pending', polls=1)
+  async resumed with a coding ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error session=False
   > GET https://api.example.com/jobs/j1
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-trace: running] b''
   > GET https://api.example.com/jobs/j1/report

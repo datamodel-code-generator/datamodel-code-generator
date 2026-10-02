@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import fields, is_dataclass, replace
 from functools import partial
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Final, cast
 
 from typing_extensions import TypeIs
 
@@ -33,11 +33,13 @@ from datamodel_code_generator._client.protocol_plan import (
     protocol_helpers,
     protocol_metadata,
 )
+from datamodel_code_generator._client.queues import plan_queues
 from datamodel_code_generator._client.render import ClientRenderer
 from datamodel_code_generator._client.security import security_contract
 from datamodel_code_generator._client.sockets import DEPENDENCY as WEBSOCKETS
 from datamodel_code_generator._client.sockets import plan_sockets, socket_uses
 from datamodel_code_generator._client.streams import plan_streams, stream_uses
+from datamodel_code_generator._client.uploads import plan_uploads
 from datamodel_code_generator._client.validation import admission_problems, allowed, argument_uses
 from datamodel_code_generator._client.webhooks import (
     key_class,
@@ -66,8 +68,10 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.plan import ClientPlan, MediaSpec, OperationSpec, ParameterSpec, PartSpec
     from datamodel_code_generator._client.polling import PollingSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
+    from datamodel_code_generator._client.queues import QueueSpec
     from datamodel_code_generator._client.sockets import SocketSpec
     from datamodel_code_generator._client.streams import StreamSpec
+    from datamodel_code_generator._client.uploads import UploadSpec
     from datamodel_code_generator._client.webhooks import WebhookSpec
     from datamodel_code_generator._generation_contract import GeneratedTypeContractBatch, TypeUseBinding, TypeUseId
     from datamodel_code_generator._openapi_codec_plan import CodecBackend, CodecPlan
@@ -99,7 +103,7 @@ class ClientTarget:
     backends: frozenset[DataModelType] = frozenset(_BACKENDS)
     unsupported_backend: str = "E_CONFIG_VALUE"
 
-    def render(self, request: TargetRequest) -> TargetRender:  # noqa: PLR6301, PLR0914
+    def render(self, request: TargetRequest) -> TargetRender:  # noqa: PLR6301, PLR0914, PLR0915
         """Plan the selected operations, bind their codecs, and render the package."""
         config = request.config
         assert isinstance(config, ClientGenerationConfig)
@@ -147,8 +151,10 @@ class ClientTarget:
         pages, checked = plan_pagination(protocols, plan, codecs, wire, request)
         polls, polled = plan_polling(protocols, plan, codecs, wire, request)
         caches, cached = plan_caches(protocols, plan, codecs, wire, request)
+        uploads, uploaded = plan_uploads(protocols, plan, codecs, wire, request)
+        queues, queued = plan_queues(protocols, plan)
         order = {} if protocols is None else {helper.name: index for index, helper in enumerate(protocols.helpers)}
-        helpers = tuple(sorted((*pages, *polls, *caches), key=lambda spec: order[spec.helper.name]))
+        helpers = tuple(sorted((*pages, *polls, *caches, *uploads, *queues), key=lambda spec: order[spec.helper.name]))
         streams = plan_streams(streamed, protocols, plan, codecs, wire, request, stream_problems)
         sockets = plan_sockets(opened, codecs, socket_problems)
         webhooks = plan_webhooks(events, codecs, config, hooked)
@@ -157,7 +163,18 @@ class ClientTarget:
             *named,
             *admission_problems(config.validation, ordinary, argument_uses(plan)),
             *helper_problems(
-                protocols, plan, {**checked, **polled, **cached, **hooked, **stream_problems, **socket_problems}
+                protocols,
+                plan,
+                {
+                    **checked,
+                    **polled,
+                    **cached,
+                    **uploaded,
+                    **queued,
+                    **hooked,
+                    **stream_problems,
+                    **socket_problems,
+                },
             ),
         ):
             raise APIGenerationError(
@@ -171,6 +188,9 @@ class ClientTarget:
         fingerprints = {spec.helper.name: data.fingerprint(spec, metadata[spec.helper.name]) for spec in pages}
         fingerprints.update((spec.helper.name, data.polling(spec, metadata[spec.helper.name])) for spec in polls)
         fingerprints.update((spec.helper.name, data.cache(spec, metadata[spec.helper.name])) for spec in caches)
+        fingerprints.update((spec.helper.name, data.upload(spec, metadata[spec.helper.name])) for spec in uploads)
+        for spec in queues:
+            fingerprints.update(data.queue(spec, metadata[spec.helper.name]))
         fingerprints.update((spec.helper.name, data.webhook(spec, metadata[spec.helper.name])) for spec in webhooks)
         fingerprints.update((spec.helper.name, data.stream(spec, metadata[spec.helper.name])) for spec in streams)
         fingerprints.update((spec.helper.name, data.socket(spec, metadata[spec.helper.name])) for spec in sockets)
@@ -378,6 +398,37 @@ class _TargetData:
             "adapters": [],
         })
 
+    def upload(self, spec: UploadSpec, settings: JSONValue) -> str:
+        """Return the digest of an upload helper's contract closure: its signature and settings, operations, and uses.
+
+        The signature spells the create call's arguments, the size it writes, and the result type, and the uses are the
+        create responses' and the completion's.
+        """
+        operation, helper = spec.operation, spec.helper
+        body = operation.body
+        uses = (*spec.create_uses, *(() if spec.completion_use is None else (spec.completion_use,)))
+        signature = {
+            "name": helper.name,
+            "parameters": [(item.python_name, item.required, self.type(item.use)) for item in operation.parameters],
+            "size": None if spec.size is None else spec.size.python_name,
+            "body": None
+            if body is None
+            else (body.required, [(media.media_type, self.type(media.use)) for media in body.media]),
+            "result": None if spec.completion_use is None else self.type(spec.completion_use),
+            "uses": [self.type(use) for use in uses],
+            "settings": settings,
+        }
+        documents = self.request.documents
+        operations = (operation, spec.probe, spec.append, *(() if spec.completion is None else (spec.completion,)))
+        return _digest({
+            "kind": helper.kind,
+            "signatures": [signature],
+            "operations": [documents.operation(item.contract.id) for item in operations],
+            "schemas": list(spec.schemas),
+            "type_uses": [self.contract(use) for use in uses],
+            "adapters": [],
+        })
+
     def cache(self, spec: CacheSpec, settings: JSONValue) -> str:
         """Return the digest of a cache helper's contract closure: its and its mutations' signatures and operations.
 
@@ -409,6 +460,51 @@ class _TargetData:
             "type_uses": [self.contract(spec.response)],
             "adapters": [],
         })
+
+    def queue(self, spec: QueueSpec, settings: JSONValue) -> dict[str, str]:
+        """Return the digests of a queue helper's contract closure and of each queued operation's, an entry's binding.
+
+        An operation's digest covers its alias, arguments with their plans and schemas, its body media with their
+        schemas, its idempotency contract, and its settings, so an entry saved for one request contract never sends
+        through another; the helper's covers every operation's. Keys are the helper's name, and its name and each alias
+        joined by a slash.
+        """
+        documents, name = self.request.documents, spec.helper.name
+        aliases = cast("Mapping[str, JSONValue]", cast("Mapping[str, JSONValue]", settings)["operations"])
+        digests: dict[str, str] = {}
+        for queued in spec.operations:
+            operation = queued.operation
+            body, idempotency = operation.body, operation.idempotency
+            signature = {
+                "name": name,
+                "alias": queued.alias,
+                "parameters": [(item.python_name, item.required, self.type(item.use)) for item in operation.parameters],
+                "body": None
+                if body is None
+                else (body.required, [(media.media_type, self.type(media.use)) for media in body.media]),
+                "idempotency": None
+                if idempotency is None
+                else (idempotency.header_name, idempotency.replay_safe_with_key, idempotency.retention_seconds),
+                "settings": aliases[queued.alias],
+            }
+            uses = () if body is None else tuple(self.contract(media.use) for media in body.media)
+            digests[f"{name}/{queued.alias}"] = _digest({
+                "kind": spec.helper.kind,
+                "signatures": [signature],
+                "operations": [documents.operation(operation.contract.id)],
+                "schemas": [],
+                "type_uses": [*(self.parameter(item) for item in operation.parameters), *uses],
+                "adapters": [],
+            })
+        digests[name] = _digest({
+            "kind": spec.helper.kind,
+            "signatures": [{"name": name, "operations": dict(digests), "settings": settings}],
+            "operations": [documents.operation(queued.operation.contract.id) for queued in spec.operations],
+            "schemas": [],
+            "type_uses": [],
+            "adapters": [],
+        })
+        return digests
 
     def webhook(self, spec: WebhookSpec, settings: JSONValue) -> str:
         """Return the digest of a webhook helper's contract closure: its signature, settings, schemas, and event uses.
@@ -582,6 +678,10 @@ class _TargetData:
                 for item in body.media
             ],
         }
+        if spec.circuit_group is not None:
+            request["circuit_group"] = spec.circuit_group
+        if spec.accepted_content_encodings:
+            request["accepted_content_encodings"] = spec.accepted_content_encodings
         response = {
             "success_statuses": spec.success_statuses,
             "request_id_header": spec.request_id_header,

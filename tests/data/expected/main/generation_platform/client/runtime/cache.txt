@@ -4,6 +4,8 @@
   miss = network 3:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"v1"'), ('cache-control', 'max-age=60'), ('x-request-id', 'r1'), ('content-length', '21'), ('content-type', 'application/json')]
   fresh hit = fresh_cache 3:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('etag', '"v1"'), ('cache-control', 'max-age=60'), ('x-request-id', 'r1'), ('content-type', 'application/json'), ('Content-Length', '21')]
   fresh hit over the response limit ! ResponseTooLargeError: ResponseTooLargeError(operation_id='getUser', call_id='<call>') [operation_id='getUser', representation='decoded', limit=5, observed_bytes=21] response_too_large_error
+  fresh hit with a coding ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  miss with a coding ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
   > GET https://api.example.com/users/30
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   aged past max-age stored = network 30:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"e"'), ('cache-control', 'max-age=60'), ('age', '100'), ('content-length', '22'), ('content-type', 'application/json')]

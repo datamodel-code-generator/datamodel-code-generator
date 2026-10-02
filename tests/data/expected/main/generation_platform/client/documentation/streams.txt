@@ -498,3 +498,8 @@ connection `StreamInterruptedError` with its transport failure as the cause. A h
 never reconnects, and `StreamOptions(reconnect=True)` raises `ProtocolConfigurationError` for it. Close a stream with
 `with`, `async with`, or `close()`; leaving a loop early does not release its response, and closing the client with a
 stream open raises `CleanupError` once its cleanup timeout passes.
+
+## Request compression
+
+No operation of this package declares a request content coding, so `compression` in `ClientOptions` and views turns
+off for every call, and a call's own `RequestOptions(compression="gzip")` raises `ConfigurationError` before sending.

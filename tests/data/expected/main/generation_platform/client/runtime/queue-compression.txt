@@ -1,0 +1,61 @@
+# queues pydantic_v2.BaseModel
+  enqueue coding ! TypeError: _OrdersOutboxQueueOperation0.enqueue() got an unexpected keyword argument 'options' []
+  empty coding ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  bodyless coding ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  returned after conflict = e1 refresh pending deliveries=0 intent=False cancel=False leased=False outcome=-
+  mixed finite coding = succeeded=['e1', 'e2']
+  server GET /orders/o1
+  server POST /orders coding=gzip key=k1 body={"item":"tea","quantity":2} duplicate=False
+  new arrivals pending=1 deliveries=[0]
+  drain off = succeeded=['e3']
+  server POST /orders key=k2 body={"item":"tea","quantity":2} duplicate=False
+  drain inherited coding = succeeded=['e4']
+  empty inherited coding = empty
+  server POST /orders coding=gzip key=k3 body={"item":"tea","quantity":2} duplicate=False
+  malformed ! QueueStoreError: QueueStoreError(action='claim') [cause=_MalformedError()] queue_store_error action='claim' entry_id='<call>'
+  returned = e5 refresh pending deliveries=0 intent=False cancel=False leased=False outcome=-
+  invalid JSON ! QueueStoreError: QueueStoreError(action='claim') [cause=WireValidationError('The body is not valid JSON at /')] queue_store_error action='claim' entry_id='<call>'
+  returned = e6 refresh pending deliveries=0 intent=False cancel=False leased=False outcome=-
+  invalid body metadata ! QueueStoreError: QueueStoreError(action='claim') [cause=_MalformedError()] queue_store_error action='claim' entry_id='<call>'
+  returned = e7 refresh pending deliveries=0 intent=False cancel=False leased=False outcome=-
+  missing alias ! QueueBindingError: QueueBindingError(condition='binding_mismatch') [field_path=('entry_id',), condition='binding_mismatch'] queue_binding_error entry_id='<call>'
+  returned = e8 absent pending deliveries=0 intent=False cancel=False leased=False outcome=-
+  wrong fingerprint ! QueueBindingError: QueueBindingError(condition='binding_mismatch') [field_path=('entry_id',), condition='binding_mismatch'] queue_binding_error entry_id='<call>'
+  returned = e9 refresh pending deliveries=0 intent=False cancel=False leased=False outcome=-
+  wrong security ! QueueBindingError: QueueBindingError(condition='binding_mismatch') [field_path=('entry_id',), condition='binding_mismatch'] queue_binding_error entry_id='<call>'
+  returned = e10 refresh pending deliveries=0 intent=False cancel=False leased=False outcome=-
+  cancelled claim ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  ineligible claim returned = e11 create_order cancelled deliveries=0 intent=False cancel=True leased=False outcome=cancelled/None/None
+  expired claim ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  ineligible claim returned = e12 create_order pending deliveries=0 intent=False cancel=False leased=False outcome=-
+  failed return ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error  secondary=['QueueStoreError']
+  still leased = e13 refresh leased deliveries=0 intent=False cancel=False leased=True outcome=-
+  recover refused lease = succeeded=['e13']
+  server GET /orders/o1
+  cancel during return ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  cancelled unsent = e14 refresh cancelled deliveries=0 intent=False cancel=True leased=False outcome=cancelled/None/None
+  transferred lease ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  other lease retained = e15 refresh leased deliveries=0 intent=False cancel=False leased=True outcome=-
+  transferred on final return ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  final other lease retained = e16 refresh leased deliveries=0 intent=False cancel=False leased=True outcome=-
+  cancel compression admission ! RequestCancelledError: RequestCancelledError(source='cancel_token', delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] request_cancelled_error
+  cancelled admission returned = e17 create_order pending deliveries=0 intent=False cancel=False leased=False outcome=-
+  claim expiry between waves = succeeded=['e18'] deferred=['e19']
+  unsent expired lease returned = e19 create_order pending deliveries=0 intent=False cancel=False leased=False outcome=-
+  server POST /orders coding=gzip key=k4 body={"item":"tea","quantity":2} duplicate=False
+  finite send limit = succeeded=['e19']
+  unsent limited lease returned = e20 create_order pending deliveries=0 intent=False cancel=False leased=False outcome=-
+  zero time coding ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  server POST /orders coding=gzip key=k5 body={"item":"tea","quantity":2} duplicate=False
+  async empty coding ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  async bodyless coding ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  async returned = e21 refresh pending deliveries=0 intent=False cancel=False leased=False outcome=-
+  async mixed coding = succeeded=['e21', 'e22']
+  server GET /orders/o1
+  server POST /orders coding=gzip key=k6 body={"item":"tea","quantity":2} duplicate=False
+  async empty unset = empty
+  async cancelled admission ! RequestCancelledError: RequestCancelledError(source='cancel_token', delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] request_cancelled_error
+  async cancelled admission returned = e23 create_order pending deliveries=0 intent=False cancel=False leased=False outcome=-
+  async finite limit = succeeded=['e23']
+  async zero time coding ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  server POST /orders coding=gzip key=k7 body={"item":"tea","quantity":2} duplicate=False
