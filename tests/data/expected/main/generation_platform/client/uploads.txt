@@ -30,7 +30,7 @@ render pydantic_v2.BaseModel
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['files.upload', 'files.finish', 'files.put', 'files.parts', 'files.parts_abort', 'files.parts_probe', 'files.url', 'files.abort', 'files.parts_base64', 'files.parts_bare', 'files.parts_strict', 'files.parts_unlimited', 'files.parts_url'] bindings 41
+  namespace client helpers ['files.upload', 'files.finish', 'files.put', 'files.parts', 'files.parts_abort', 'files.parts_probe', 'files.url', 'files.abort', 'files.parts_base64', 'files.parts_bare', 'files.parts_strict', 'files.parts_unlimited', 'files.parts_url'] bindings 42
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   helper files.upload resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.upload 0542d402e404a7235e32a97be0fb69fd55c9e1e82db3c76fda8d99716282b897
   helper files.finish resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.finish 16665394b9c62b92f53fce4683f8af5abd4a53ecb9e0379d1c8c73baa7afd415
@@ -1632,16 +1632,19 @@ render pydantic_v2.BaseModel
   /selection/selected_operations/9 files.probe_file_completion(path:fileId=file_id)
     exports client.types.files.ProbeFileCompletionResponse client.types.files.ProbeFileCompletionErrorData client.types.files.ProbeFileCompletionHTTPError
     exports client.types.files.ProbeFileCompletionRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/10 files.abort_file(path:fileId=file_id)
+  /selection/selected_operations/10 files.refused_completion_probe(path:fileId=file_id)
+    exports client.types.files.RefusedCompletionProbeResponse client.types.files.RefusedCompletionProbeErrorData client.types.files.RefusedCompletionProbeHTTPError
+    exports client.types.files.RefusedCompletionProbeRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/11 files.abort_file(path:fileId=file_id)
     exports client.types.files.AbortFileResponse client.types.files.AbortFileErrorData client.types.files.AbortFileHTTPError
     exports client.types.files.AbortFileRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/11 files.assemble_binary_file(path:fileId=file_id)
+  /selection/selected_operations/12 files.assemble_binary_file(path:fileId=file_id)
     exports client.types.files.AssembleBinaryFileResponse client.types.files.AssembleBinaryFileErrorData client.types.files.AssembleBinaryFileHTTPError
     exports client.types.files.AssembleBinaryFileRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/12 files.assemble_untyped_file(path:fileId=file_id)
+  /selection/selected_operations/13 files.assemble_untyped_file(path:fileId=file_id)
     exports client.types.files.AssembleUntypedFileResponse client.types.files.AssembleUntypedFileErrorData client.types.files.AssembleUntypedFileHTTPError
     exports client.types.files.AssembleUntypedFileRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/13 files.upload_url_file_part(path:fileId=file_id, header:X-Part-Index=x_part_index, header:Digest=digest, header:Cookie=cookie)
+  /selection/selected_operations/14 files.upload_url_file_part(path:fileId=file_id, header:X-Part-Index=x_part_index, header:Digest=digest, header:Cookie=cookie)
     exports client.types.files.UploadUrlFilePartResponse client.types.files.UploadUrlFilePartErrorData client.types.files.UploadUrlFilePartHTTPError
     exports client.types.files.UploadUrlFilePartRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

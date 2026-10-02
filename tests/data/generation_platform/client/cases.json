@@ -3912,5 +3912,24 @@
       "protocols": "protocols/parts-checks.yaml"
     },
     "modules": false
+  },
+  "uploads-default": {
+    "input": "uploads-default.yaml",
+    "references": [
+      "protocols/uploads-default.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/uploads-default.yaml"
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
   }
 }

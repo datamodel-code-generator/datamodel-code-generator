@@ -104,10 +104,9 @@ class _Uploads:
         problems.extend(self.probe(helper, probe, sources))
         problems.extend(self.append(helper, append, sources))
         completion = self.completion(helper, sources, problems)
-        abort = self.child(helper, "abort", sources, problems)
-        completion_probe = self.child(helper, "completion_probe", sources, problems)
-        if completion_probe is not None:
-            offered = self.created(helper, completion_probe, problems, "completion_probe")
+        abort, _ = self.child(helper, "abort", sources, problems)
+        completion_probe, offered = self.child(helper, "completion_probe", sources, problems)
+        if completion_probe is not None and offered:
             read = tree["completion_probe"]["state"]
             if isinstance(
                 found := self.checks.read(
@@ -176,15 +175,15 @@ class _Uploads:
 
     def child(
         self, helper: Helper, part: str, sources: Mapping[str, list[_Source]], problems: list[Diagnostic]
-    ) -> OperationSpec | None:
+    ) -> tuple[OperationSpec | None, list[_Source]]:
         """Check optional child operations and the values their bindings require."""
         if (tree := helper.tree.get(part)) is None:
-            return None
+            return None, []
         spec = self.checks.spec(tree["operation"])
-        self.created(helper, spec, problems, part)
+        offered = self.created(helper, spec, problems, part)
         problems.extend(self.bindings(helper, spec, part, sources))
         problems.extend(self.required(helper, spec, part, self.keys(tree["bindings"])))
-        return spec
+        return spec, offered
 
     def created(
         self, helper: Helper, create: OperationSpec, problems: list[Diagnostic], part: str = "create"

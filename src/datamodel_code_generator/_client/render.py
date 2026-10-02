@@ -3192,7 +3192,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                 ("state=", self.selector(module, probe_tree["state"])),
                 ("completed_values=", _tuple(repr(_wire(value)) for value in probe_tree["completed_values"])),
                 ("result=", self.selector(module, probe_tree["result"])),
-                ("result_status=", repr(200 if response.status == "2XX" else int(response.status))),
+                ("result_status=", repr(200 if response.status in {"2XX", "default"} else int(response.status))),
                 ("result_media=", repr(response.media[0].media_type)),
                 ("bindings=", _tuple([self.binding(module, item) for item in probe_tree["bindings"]])),
             ]

@@ -74,6 +74,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
         "polling-plans",
         "uploads",
         "uploads-plans",
+        "uploads-default",
         "webhooks",
         "webhooks-schema",
         "webhooks-public-keys",

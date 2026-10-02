@@ -188,6 +188,14 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/CompletionState'}
+  /files/{fileId}/completion-refused:
+    get:
+      operationId: refusedCompletionProbe
+      tags: [files]
+      parameters:
+        - {name: fileId, in: path, required: true, schema: {type: string}}
+      responses:
+        '403': {description: Refused.}
   /files/{fileId}/abort:
     delete:
       operationId: abortFile

@@ -1929,3 +1929,99 @@ helpers:
       max_part_bytes: 4
       min_part_bytes: 3
       last_part_may_be_smaller: true
+  checks.probe_no_success:
+    kind: resumable_upload
+    profile: parts
+    create:
+      operation: /paths/~1files/post
+      size:
+        in: header
+        name: Upload-Length
+      expires_at:
+        from: body
+        pointer: /expires
+    list_parts:
+      operation: /paths/~1files~1{fileId}~1parts/get
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      items:
+        from: body
+        pointer: /parts
+      index:
+        from: body
+        pointer: /index
+      receipt:
+        from: body
+        pointer: /receipt
+      digest:
+        from: body
+        pointer: /digest
+    upload_part:
+      operation: /paths/~1files~1{fileId}~1parts~1{index}/put
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      index:
+        in: path
+        name: index
+      digest:
+        target:
+          in: header
+          name: Digest
+        algorithm: sha256
+        encoding: hex
+    complete:
+      operation: /paths/~1files~1{fileId}~1assemble/post
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      parts:
+        in: body
+        pointer: /parts
+      index_field: index
+      receipt_field: receipt
+      result_schema:
+        pointer: /components/schemas/Stored
+    limits:
+      max_parts: 10
+      max_part_bytes: 4
+      min_part_bytes: 3
+      last_part_may_be_smaller: true
+    completion_probe:
+      operation: /paths/~1files~1{fileId}~1completion-refused/get
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      state:
+        from: body
+        pointer: /state
+      completed_values:
+      - complete
+      result:
+        from: body
+        pointer: /result

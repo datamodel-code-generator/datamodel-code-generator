@@ -1,0 +1,214 @@
+# uploads-default
+render pydantic_v2.BaseModel
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/files/__init__.py
+  write client/resources/files/_sync.py
+  write client/resources/files/_async.py
+  write client/types/__init__.py
+  write client/types/files/__init__.py
+  write client/types/files/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/protocols/_plans.py
+  write client/protocols/_helpers.py
+  write client/protocols/_async_helpers.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['files.parts_probe'] bindings 17
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper files.parts_probe resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.parts_probe ea6027ed7817f570d40be3cb467825794e9f6f76d3495f0fd0952877eb12785f
+  {
+    "helpers": {
+      "files.parts_probe": {
+        "complete": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "index_field": "index",
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1assemble/post"
+          },
+          "parts": {
+            "in": "body",
+            "pointer": "/parts"
+          },
+          "receipt_field": "receipt",
+          "result_schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Stored"
+          }
+        },
+        "completion_probe": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "completed_values": [
+            "complete"
+          ],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1completion/get"
+          },
+          "result": {
+            "from": "body",
+            "pointer": "/result"
+          },
+          "state": {
+            "from": "body",
+            "pointer": "/state"
+          }
+        },
+        "create": {
+          "expires_at": {
+            "from": "body",
+            "pointer": "/expires"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files/post"
+          },
+          "size": {
+            "in": "header",
+            "name": "Upload-Length"
+          }
+        },
+        "enabled": true,
+        "kind": "resumable_upload",
+        "limits": {
+          "last_part_may_be_smaller": true,
+          "max_part_bytes": 4,
+          "max_parts": 10,
+          "min_part_bytes": 3
+        },
+        "list_parts": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "digest": {
+            "from": "body",
+            "pointer": "/digest"
+          },
+          "index": {
+            "from": "body",
+            "pointer": "/index"
+          },
+          "items": {
+            "from": "body",
+            "pointer": "/parts"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1parts/get"
+          },
+          "receipt": {
+            "from": "body",
+            "pointer": "/receipt"
+          }
+        },
+        "profile": "parts",
+        "upload_part": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "digest": {
+            "algorithm": "sha256",
+            "encoding": "hex",
+            "target": {
+              "in": "header",
+              "name": "Digest"
+            }
+          },
+          "index": {
+            "in": "path",
+            "name": "index"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1parts~1{index}/put"
+          }
+        }
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 files.create_file(header:Upload-Length=upload_length, header:Tus-Resumable=tus_resumable, header:X-Name=x_name)
+    exports client.types.files.CreateFileResponse client.types.files.CreateFileErrorData client.types.files.CreateFileHTTPError
+    exports client.types.files.CreateFileRequestCodecs client.types.files.decode_create_file_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 files.list_file_parts(path:fileId=file_id)
+    exports client.types.files.ListFilePartsResponse client.types.files.ListFilePartsErrorData client.types.files.ListFilePartsHTTPError
+    exports client.types.files.ListFilePartsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/2 files.upload_file_part(path:fileId=file_id, path:index=index, header:Digest=digest, header:Cookie=cookie)
+    exports client.types.files.UploadFilePartResponse client.types.files.UploadFilePartErrorData client.types.files.UploadFilePartHTTPError
+    exports client.types.files.UploadFilePartRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/3 files.assemble_file(path:fileId=file_id)
+    exports client.types.files.AssembleFileResponse client.types.files.AssembleFileErrorData client.types.files.AssembleFileHTTPError
+    exports client.types.files.AssembleFileRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/4 files.probe_file_completion(path:fileId=file_id)
+    exports client.types.files.ProbeFileCompletionResponse client.types.files.ProbeFileCompletionErrorData client.types.files.ProbeFileCompletionHTTPError
+    exports client.types.files.ProbeFileCompletionRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

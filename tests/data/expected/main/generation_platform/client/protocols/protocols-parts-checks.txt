@@ -29,3 +29,4 @@ render pydantic_v2.BaseModel
   E_CONFIG_VALUE config protocols.helpers['checks.complete_no_items'].complete.parts /paths/~1files~1{fileId}~1assemble/post: The completion array must declare its item schema
   E_CONFIG_VALUE config protocols.helpers['checks.probe_value'].completion_probe.completed_values[0] /paths/~1files~1{fileId}~1completion/get: The completion state 1 is integer, which its state never reads
   E_CONFIG_VALUE config protocols.helpers['checks.complete_untyped'].complete.parts /paths/~1files~1{fileId}~1assemble-untyped/post: The parts array of 'checks.complete_untyped' writes '/parts', which names no property of the request body of POST /files/{fileId}/assemble-untyped
+  E_CONFIG_VALUE config protocols.helpers['checks.probe_no_success'].completion_probe.operation /paths/~1files~1{fileId}~1completion-refused/get: GET /files/{fileId}/completion-refused must declare a success response for the upload helper 'checks.probe_no_success'

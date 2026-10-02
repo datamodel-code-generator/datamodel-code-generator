@@ -1,0 +1,214 @@
+openapi: 3.2.0
+info:
+  title: Resumable uploads
+  version: 1.0.0
+servers:
+- url: https://api.example.com
+paths:
+  /files:
+    post:
+      operationId: createFile
+      tags:
+      - files
+      parameters:
+      - name: Upload-Length
+        in: header
+        required: true
+        schema:
+          type: integer
+      - name: Tus-Resumable
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: X-Name
+        in: header
+        schema:
+          type: string
+      responses:
+        '201':
+          description: The upload was created.
+          headers:
+            Location:
+              schema:
+                type: string
+            Upload-Expires:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Upload'
+  /files/{fileId}/parts:
+    get:
+      operationId: listFileParts
+      tags:
+      - files
+      parameters:
+      - name: fileId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Stored parts in any order.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartList'
+  /files/{fileId}/parts/{index}:
+    put:
+      operationId: uploadFilePart
+      tags:
+      - files
+      parameters:
+      - name: fileId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: index
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: Digest
+        in: header
+        required: false
+        schema:
+          type: string
+      - name: Cookie
+        in: header
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '204':
+          description: Part stored.
+  /files/{fileId}/assemble:
+    post:
+      operationId: assembleFile
+      tags:
+      - files
+      parameters:
+      - name: fileId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompletionParts'
+      responses:
+        default:
+          description: Assembled content.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stored'
+  /files/{fileId}/completion:
+    get:
+      operationId: probeFileCompletion
+      tags:
+      - files
+      parameters:
+      - name: fileId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Confirmed completion state and result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompletionState'
+components:
+  schemas:
+    Upload:
+      type: object
+      required:
+      - id
+      properties:
+        id:
+          type: string
+        url: {}
+        expires: {}
+    Stored:
+      type: object
+      required:
+      - id
+      - size
+      - sha256
+      properties:
+        id:
+          type: string
+        size:
+          type: integer
+        sha256:
+          type: string
+    Part:
+      type: object
+      required:
+      - index
+      - receipt
+      - digest
+      properties:
+        index:
+          type: integer
+        receipt: {}
+        digest:
+          type: string
+    PartList:
+      type: object
+      required:
+      - parts
+      properties:
+        opaque:
+          type: array
+        parts:
+          anyOf:
+          - {}
+          items:
+            $ref: '#/components/schemas/Part'
+    CompletionPart:
+      type: object
+      required:
+      - index
+      - receipt
+      properties:
+        index:
+          type: integer
+        receipt:
+          type: string
+    CompletionParts:
+      type: object
+      required:
+      - parts
+      properties:
+        opaque:
+          type: array
+        parts:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompletionPart'
+    CompletionState:
+      type: object
+      required:
+      - state
+      properties:
+        state:
+          type: string
+        result:
+          $ref: '#/components/schemas/Stored'

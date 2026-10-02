@@ -204,7 +204,7 @@ PLAN_3: Final[UploadPlan[AssembleFileResponse, CreateFileResponse]] = UploadPlan
 
 ABORT_4: Final[UploadAbortPlan[AbortFileResponse]] = UploadAbortPlan(
     operation=OperationRef(pointer='/paths/~1files~1{fileId}~1abort/delete'),
-    call=_operations.OPERATION_10,
+    call=_operations.OPERATION_11,
     bindings=(
         PageBinding(
             target=ParameterTarget(location='path', name='fileId'),
@@ -385,7 +385,7 @@ PLAN_6: Final[UploadPlan[None, CreateFileResponse]] = UploadPlan(
 
 ABORT_7: Final[UploadAbortPlan[AbortFileResponse]] = UploadAbortPlan(
     operation=OperationRef(pointer='/paths/~1files~1{fileId}~1abort/delete'),
-    call=_operations.OPERATION_10,
+    call=_operations.OPERATION_11,
     bindings=(
         PageBinding(
             target=ParameterTarget(location='path', name='fileId'),
@@ -661,7 +661,7 @@ PLAN_12: Final[UploadPlan[AssembleFileResponse, CreateFileResponse]] = UploadPla
     probe=_operations.OPERATION_6,
     remote_offset=BodySelector(pointer='/parts'),
     append_operation=OperationRef(pointer='/paths/~1files~1{fileId}~1url-part/put'),
-    append=_operations.OPERATION_13,
+    append=_operations.OPERATION_14,
     offset=ParameterTarget(location='header', name='X-Part-Index'),
     max_chunk_bytes=4,
     partial_commit=False,
