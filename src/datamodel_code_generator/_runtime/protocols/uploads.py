@@ -452,6 +452,7 @@ class _Upload(Generic[T]):
         "_changed",
         "_chunk",
         "_closed",
+        "_completion_delivery",
         "_confirmed",
         "_delivery",
         "_digests",
@@ -489,6 +490,7 @@ class _Upload(Generic[T]):
         self._guard = threading.Lock()
         self._phase = _Phase.UPLOADING
         self._delivery: DeliveryState | None = None
+        self._completion_delivery = DeliveryState.NOT_SENT
         self._confirmed = 0
         self._verify = False
         self._high: int | None = 0
@@ -785,30 +787,24 @@ class _Upload(Generic[T]):
             self._saved = content, info.status_code, info.content_type
         return data
 
-    def _completing(self) -> int:
-        """Mark the completion unknown before it is sent, returning the session's sends so far.
-
-        A checkpoint taken while it is in flight, or after any interruption, never lets it be sent again.
-        """
+    def _completing(self) -> None:
+        """Keep a provisional unknown checkpoint while the completion child is active."""
         with self._guard:
             self._phase, self._delivery = _Phase.UNKNOWN, DeliveryState.MAYBE_SENT
-        return self._session.network_send_count
+            self._completion_delivery = DeliveryState.NOT_SENT
 
-    def _completion_failed(self, error: BaseException, sends: int) -> None:
-        """Let a completion that certainly did not apply be sent again; keep every other one unknown.
+    def _completion_observed(self, _error: BaseException, delivery: DeliveryState) -> None:
+        """Keep the completion child's resource evidence separately from OAuth traffic."""
+        self._completion_delivery = delivery
 
-        It did not apply when the server answered with an error status other than a gateway's 502 or 504, when nothing
-        reached the server, or when the session sent nothing. A response the server started, such as a success whose
-        body does not decode or a 502, keeps it unknown with RESPONSE_STARTED.
-        """
-        delivery = _delivery_of(error)
-        unapplied = _refused(error) or delivery is DeliveryState.NOT_SENT or self._session.network_send_count == sends
-        started = (isinstance(error, SDKError) and error.info is not None) or delivery is DeliveryState.RESPONSE_STARTED
+    def _completion_failed(self, error: BaseException) -> None:
+        """Restore uploading for an unapplied completion; keep actual resource uncertainty unknown."""
+        delivery = self._completion_delivery
         with self._guard:
-            if unapplied:
+            if _refused(error) or delivery is DeliveryState.NOT_SENT:
                 self._phase, self._delivery = _Phase.UPLOADING, None
-            elif started and self._phase is _Phase.UNKNOWN:
-                self._delivery = DeliveryState.RESPONSE_STARTED
+            elif self._phase is _Phase.UNKNOWN:
+                self._delivery = delivery
 
     def _completion_error(self, error: Exception) -> Exception:
         """Return the error of a failed completion: its own once it may be sent again, or else an unknown outcome."""
@@ -1104,7 +1100,7 @@ class UploadHandle(_Upload[T]):
         plan = self._plan
         completed = plan.completed
         assert completed is not None
-        sends = self._completing()
+        self._completing()
         try:
             with self._mapped():
                 try:
@@ -1118,9 +1114,10 @@ class UploadHandle(_Upload[T]):
                         options=self._limits.options,
                         session=self._session,
                         max_page_bytes=None,
+                        failed=self._completion_observed,
                     )
                 except BaseException as error:
-                    self._completion_failed(error, sends)
+                    self._completion_failed(error)
                     raise
         except Exception as error:
             if (failure := self._completion_error(error)) is error:
@@ -1324,7 +1321,7 @@ class AsyncUploadHandle(_Upload[T]):
         plan = self._plan
         completed = plan.completed
         assert completed is not None
-        sends = self._completing()
+        self._completing()
         try:
             with self._mapped():
                 try:
@@ -1338,9 +1335,10 @@ class AsyncUploadHandle(_Upload[T]):
                         options=self._limits.options,
                         session=self._session,
                         max_page_bytes=None,
+                        failed=self._completion_observed,
                     )
                 except BaseException as error:
-                    self._completion_failed(error, sends)
+                    self._completion_failed(error)
                     raise
         except Exception as error:
             if (failure := self._completion_error(error)) is error:
