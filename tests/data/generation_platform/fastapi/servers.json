@@ -2174,5 +2174,36 @@
       }
     ],
     "package_snapshots": []
+  },
+  "unbound": {
+    "input": "unbound.yaml",
+    "services": "unbound",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ],
+    "requests": [
+      {
+        "method": "GET",
+        "url": "/values/7"
+      },
+      {
+        "method": "GET",
+        "url": "/values/42?at=2026-10-02T12%3A34%3A56Z&tags=alpha&tags=two%20words"
+      },
+      {
+        "method": "GET",
+        "url": "/values/invalid"
+      },
+      {
+        "method": "GET",
+        "url": "/values/0"
+      },
+      {
+        "method": "GET",
+        "url": "/values/7?at=invalid"
+      }
+    ],
+    "package_snapshots": []
   }
 }
