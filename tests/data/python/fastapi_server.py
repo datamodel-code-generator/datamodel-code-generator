@@ -50,9 +50,9 @@ def _generate(case: dict[str, Any], backend: str, root: Path, package: str) -> N
     )
 
 
-def _generated(root: Path, package: str) -> dict[tuple[str, ...], str]:
-    """Return the Python modules generated for a package and its models, leaving out the copied runtime."""
-    owners = {package, f"{package}_models", f"{package}_models.py"}
+def _generated(root: Path, package: str, package_snapshots: set[str]) -> dict[tuple[str, ...], str]:
+    """Return selected package snapshots and every model, leaving out the copied runtime."""
+    owners = {f"{package}_models", f"{package}_models.py"} | ({package} & package_snapshots)
     return {
         parts: path.read_text(encoding="utf-8")
         for path in sorted(root.rglob("*.py"))
@@ -116,10 +116,14 @@ def _exchange(
         lines.extend(f"  {call}" for call in calls)
         media = response.headers.get("content-type", "-")
         textual = media.startswith("text/") or media.partition(";")[0].endswith(("/json", "+json"))
-        body = _errors(response) if response.status_code == 422 else response.text if textual else repr(response.content)
+        body = (
+            _errors(response) if response.status_code == 422 else response.text if textual else repr(response.content)
+        )
         lines.append(f"< {response.status_code} {media} {body}".rstrip())
         lines.extend(
-            f"< {name}: {response.headers[name]}" for name in request.get("show_headers", ()) if name in response.headers
+            f"< {name}: {response.headers[name]}"
+            for name in request.get("show_headers", ())
+            if name in response.headers
         )
     finally:
         calls.clear()
@@ -190,11 +194,15 @@ def fastapi_server_report(
     lines = [f"# {case_name}"]
     packages: dict[str, dict[tuple[str, ...], str]] = {}
     monkeypatch.syspath_prepend(str(root))
+    package_snapshots = {
+        f"{case_name.replace('-', '_')}_{backend.rpartition('.')[2].lower()}"
+        for backend in case.get("package_snapshots", case.get("backends", ["pydantic_v2.BaseModel"]))
+    }
     for backend in case.get("backends", ["pydantic_v2.BaseModel"]):
         package = f"{case_name.replace('-', '_')}_{backend.rpartition('.')[2].lower()}"
         lines.append(f"serve {backend}")
         _generate(case, backend, root, package)
-        packages[backend.replace(".", "_")] = _generated(root, package)
+        packages[backend.replace(".", "_")] = _generated(root, package, package_snapshots)
         try:
             server, models = _import(package)
             calls: list[str] = []
@@ -204,8 +212,7 @@ def fastapi_server_report(
             built = services.applications(server, sets) if hasattr(services, "applications") else {}
             errors = (server.HandlerConfigurationError, server.AuthConfigurationError, server.OpenAPIConfigurationError)
             lines.extend(
-                _build(name, partial(server.build_router, **sets[name]), errors)
-                for name in case.get("builds", ())
+                _build(name, partial(server.build_router, **sets[name]), errors) for name in case.get("builds", ())
             )
             if hasattr(services, "builds"):
                 lines.extend(_build(label, build, errors) for label, build in services.builds(server, models, calls))

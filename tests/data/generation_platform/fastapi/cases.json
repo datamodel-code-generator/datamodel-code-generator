@@ -21,7 +21,8 @@
           "request"
         ]
       ]
-    }
+    },
+    "package_snapshots": []
   },
   "request": {
     "input": "bodies.yaml",
@@ -81,7 +82,8 @@
           }
         ]
       ]
-    }
+    },
+    "package_snapshots": []
   },
   "single": {
     "input": "pets.yaml",
@@ -106,7 +108,8 @@
       "package_version": "1.0.0",
       "distribution_name": "menu-server",
       "model_dependency": "menu-models>=1.0"
-    }
+    },
+    "package_snapshots": []
   },
   "route-errors": {
     "input": "route-errors.yaml"
@@ -373,10 +376,12 @@
           ]
         }
       ]
-    }
+    },
+    "package_snapshots": []
   },
   "methods": {
-    "input": "methods.yaml"
+    "input": "methods.yaml",
+    "package_snapshots": []
   },
   "codec-errors": {
     "input": "codec-errors.yaml"
@@ -386,7 +391,8 @@
     "backends": [
       "pydantic_v2.BaseModel",
       "pydantic_v2.dataclass"
-    ]
+    ],
+    "package_snapshots": []
   },
   "native-settings": {
     "input": "native-settings.yaml",
@@ -428,13 +434,15 @@
           "backend": "pydantic_v2.BaseModel"
         }
       ]
-    }
+    },
+    "package_snapshots": []
   },
   "native-generator": {
     "input": "custom-models.yaml",
     "model": {
       "alias_generator": "to_camel"
-    }
+    },
+    "package_snapshots": []
   },
   "unbound-body": {
     "input": "unbound-body.yaml",
@@ -482,7 +490,8 @@
     "input": "info.yaml",
     "config": {
       "layout": "single"
-    }
+    },
+    "package_snapshots": []
   },
   "callbacks": {
     "input": "callbacks.yaml",
@@ -490,7 +499,8 @@
       "hooks": [
         "record"
       ]
-    }
+    },
+    "package_snapshots": []
   },
   "scheme-names": {
     "input": "scheme-names.yaml"
@@ -518,7 +528,8 @@
         ],
         "reason": "No operations yet."
       }
-    }
+    },
+    "package_snapshots": []
   },
   "hooks": {
     "input": "hooks.yaml",
@@ -540,7 +551,8 @@
     },
     "files": [
       "hooks-paths.yaml"
-    ]
+    ],
+    "package_snapshots": []
   },
   "hook-file": {
     "input": "hooks.yaml",
@@ -575,7 +587,8 @@
     },
     "files": [
       "hooks-paths.yaml"
-    ]
+    ],
+    "package_snapshots": []
   },
   "hook-invalid": {
     "input": "hooks.yaml",
