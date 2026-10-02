@@ -96,7 +96,9 @@ class _Batches(Harness):
 
     def users(self, count: int, start: int = 0, name: str = "user") -> list[Any]:
         """Return new users with consecutive IDs."""
-        return [self.models.NewUser(id=f"u{index:04d}", name=f"{name} {index}") for index in range(start, start + count)]
+        return [
+            self.models.NewUser(id=f"u{index:04d}", name=f"{name} {index}") for index in range(start, start + count)
+        ]
 
     def tags(self, *colors: str | None) -> list[Any]:
         """Return tags, each with its color or without one."""
@@ -131,7 +133,9 @@ def _record(item: Any) -> str:
 
 def _summarized(lines: list[str], label: str, records: list[Any], failure: BaseException | None) -> None:
     """Report records by outcome and order, the first and last ones, and the failure that ended them."""
-    outcomes = {name: sum(item.outcome == name for item in records) for name in ("success", "error", "delivery_unknown")}
+    outcomes = {
+        name: sum(item.outcome == name for item in records) for name in ("success", "error", "delivery_unknown")
+    }
     ordered = [item.index for item in records] == list(range(len(records)))
     lines.append(f"  {label}: {len(records)} results in order {ordered} {outcomes}")
     lines.extend(f"    {_record(item)}" for item in records[:2] + records[2:][-2:])
@@ -146,9 +150,9 @@ def continued(lines: list[str], label: str, iterator: Iterator[Any]) -> None:
     while True:
         try:
             records.append(next(iterator))
-        except StopIteration:
+        except StopIteration:  # noqa: PERF203 - Each step must report failures and continue to sibling outcomes.
             break
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:  # noqa: BLE001 - Report failures from public calls.
             failures.append(f"after {len(records)}: {describe(error)}")
     _summarized(lines, label, records, None)
     lines.extend(f"    ! {item}" for item in failures)
@@ -161,9 +165,9 @@ async def acontinued(lines: list[str], label: str, iterator: Any) -> None:
     while True:
         try:
             records.append(await anext(iterator))
-        except StopAsyncIteration:
+        except StopAsyncIteration:  # noqa: PERF203 - Each step must report failures and continue to sibling outcomes.
             break
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:  # noqa: BLE001 - Report failures from public calls.
             failures.append(f"after {len(records)}: {describe(error)}")
     _summarized(lines, label, records, None)
     lines.extend(f"    ! {item}" for item in failures)
@@ -175,7 +179,7 @@ def drained(lines: list[str], label: str, iterator: Iterator[Any]) -> list[Any]:
     failure: BaseException | None = None
     try:
         records.extend(iterator)
-    except Exception as error:  # noqa: BLE001
+    except Exception as error:  # noqa: BLE001 - Report failures from public calls.
         failure = error
     _summarized(lines, label, records, failure)
     return records
@@ -187,8 +191,8 @@ async def adrained(lines: list[str], label: str, iterator: Any) -> list[Any]:
     failure: BaseException | None = None
     try:
         async for item in iterator:
-            records.append(item)
-    except Exception as error:  # noqa: BLE001
+            records.append(item)  # noqa: PERF401 - Keep results consumed before the iterator raises.
+    except Exception as error:  # noqa: BLE001 - Report failures from public calls.
         failure = error
     _summarized(lines, label, records, failure)
     return records
@@ -288,7 +292,9 @@ def _limits(harness: _Batches, api: Any, server: _Server, lines: list[str]) -> N
         ),
     )
     drained(
-        lines, "call sends", users.iterate(harness.users(3), options=harness.options.RequestOptions(max_network_sends=0))
+        lines,
+        "call sends",
+        users.iterate(harness.users(3), options=harness.options.RequestOptions(max_network_sends=0)),
     )
     drained(
         lines,
@@ -315,7 +321,11 @@ def _mismatches(harness: _Batches, api: Any, server: _Server, lines: list[str]) 
         ("result without ID", [good, {"error": {"code": "x"}}, {"id": "u0000", "error": {"code": "x"}}]),
         (
             "both members",
-            [good, {"id": "u0002", "user": good["user"], "error": {"code": "x"}}, {"id": "u0000", "error": {"code": "x"}}],
+            [
+                good,
+                {"id": "u0002", "user": good["user"], "error": {"code": "x"}},
+                {"id": "u0000", "error": {"code": "x"}},
+            ],
         ),
         ("neither member", [good, {"id": "u0002", "user": None}, {"id": "u0000", "error": {"code": "x"}}]),
     ):
@@ -353,6 +363,16 @@ def _failures(harness: _Batches, api: Any, server: _Server, lines: list[str]) ->
         users.iterate(harness.users(5), batch_options=harness.batch(batch_size=2, parallelism=1, raise_on_error=True)),
     )
     server.report("unknown delivery raised")
+    for label, responder in (
+        (
+            "success body invalid JSON",
+            lambda _: httpx2.Response(200, content=b"{", headers={"Content-Type": "application/json"}),
+        ),
+        ("success body invalid model", json_response(200, {"results": 1})),
+    ):
+        server.respond(answer, responder, answer)
+        drained(lines, label, users.iterate(harness.users(5), batch_options=single))
+        server.report(label)
 
 
 def _head_fails(request: httpx2.Request) -> httpx2.Response:
@@ -422,9 +442,10 @@ def _deadline(harness: _Batches, server: _Server, lines: list[str]) -> None:
 
     clock = harness.options.Clock(monotonic=stepped)
     server.respond(late)
-    with server.client() as native, harness.package.Client(
-        http_client=native, options=harness.client_options(clock=clock)
-    ) as api:
+    with (
+        server.client() as native,
+        harness.package.Client(http_client=native, options=harness.client_options(clock=clock)) as api,
+    ):
         session = harness.options.SessionOptions(total_timeout=1)
         users = api.protocols.users.create
         continued(lines, "deadline while answered", users.iterate(harness.users(2), session_options=session))
@@ -448,7 +469,7 @@ def _interruption(harness: _Batches, lines: list[str]) -> None:
             while True:
                 next(iterator)
                 records += 1
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:  # noqa: BLE001 - Report failures from public calls.
             lines.append(f"  after the interruption, at most 2 records {records <= 2} ! {describe(error)}")
         closed = api.protocols.users.create.iterate(
             harness.users(6), batch_options=harness.batch(batch_size=2, parallelism=2)
@@ -478,7 +499,10 @@ def _inputs(harness: _Batches, api: Any, server: _Server, lines: list[str]) -> N
         ("batch options of another type", {"batch_options": harness.options.SessionOptions()}),
         ("request options of another type", {"options": harness.batch()}),
         ("session options of another type", {"session_options": harness.batch()}),
-        ("fixed idempotency key", {"options": harness.options.RequestOptions(idempotency_key=harness.options.IdempotencyKey.new())}),
+        (
+            "fixed idempotency key",
+            {"options": harness.options.RequestOptions(idempotency_key=harness.options.IdempotencyKey.new())},
+        ),
     ):
         record(lines, label, lambda settings=settings: users.iterate(harness.users(1), **settings))
     for label, settings in (
@@ -534,15 +558,22 @@ def _records(harness: _Batches, api: Any, server: _Server, lines: list[str]) -> 
     success, failure = list(api.protocols.users.create.iterate(harness.users(2, start=4)))
     records = harness.records
     lines.extend((
-        f"  success {type(success).__name__} outcome={success.outcome} id={success.item_id} "
-        f"token={success.retry_token} value={_field(success.value, 'name')}",
+        (
+            f"  success {type(success).__name__} outcome={success.outcome} id={success.item_id} "
+            f"token={success.retry_token} value={_field(success.value, 'name')}"
+        ),
         f"  failure {type(failure).__name__} outcome={failure.outcome} error={_field(failure.error, 'code')}",
-        f"  repr hides values {'user 5' not in repr(success)} {'taken' not in repr(failure)} {success!r}"
-        .replace(repr(success.response), "<response>"),
+        f"  repr hides values {'user 5' not in repr(success)} {'taken' not in repr(failure)} {success!r}".replace(
+            repr(success.response), "<response>"
+        ),
         f"  exported {sorted(name for name in records.__all__ if name.startswith('Users'))}",
     ))
     record(lines, "frozen", lambda: setattr(success, "index", 9))
-    record(lines, "outcome fixed", lambda: records.UsersCreateSuccess(index=0, item_id="a", response=None, value=1, outcome="error"))
+    record(
+        lines,
+        "outcome fixed",
+        lambda: records.UsersCreateSuccess(index=0, item_id="a", response=None, value=1, outcome="error"),
+    )
     unknown = records.TagsPutDeliveryUnknown(index=1, item_id=None, response=None)
     lines.append(f"  unknown {unknown!r}")
     server.report("records")
@@ -552,9 +583,10 @@ async def _async_batches(harness: _Batches, lines: list[str]) -> None:
     """Send items with the asyncio client, in the same order, from synchronous and asynchronous sources."""
     lines.append("asyncio")
     server = _Server(lines)
-    async with server.async_client() as native, harness.package.AsyncClient(
-        http_client=native, options=harness.client_options()
-    ) as api:
+    async with (
+        server.async_client() as native,
+        harness.package.AsyncClient(http_client=native, options=harness.client_options()) as api,
+    ):
         users = api.protocols.users.create
         await adrained(lines, "1000 users", users.iterate(harness.users(1000)))
         server.report("1000 users")
@@ -563,9 +595,29 @@ async def _async_batches(harness: _Batches, lines: list[str]) -> None:
         await adrained(lines, "tags", api.protocols.tags.put.iterate(harness.tags("red", None, "blue", "green")))
         server.report("sources")
         server.respond(answer, failing(httpx2.ReadError))
-        await adrained(lines, "unknown delivery", users.iterate(harness.users(4), batch_options=harness.batch(batch_size=2, parallelism=1)))
+        await adrained(
+            lines,
+            "unknown delivery",
+            users.iterate(harness.users(4), batch_options=harness.batch(batch_size=2, parallelism=1)),
+        )
+        for label, responder in (
+            (
+                "success body invalid JSON",
+                lambda _: httpx2.Response(200, content=b"{", headers={"Content-Type": "application/json"}),
+            ),
+            ("success body invalid model", json_response(200, {"results": 1})),
+        ):
+            server.respond(answer, responder, answer)
+            await adrained(
+                lines, label, users.iterate(harness.users(5), batch_options=harness.batch(batch_size=2, parallelism=1))
+            )
+            server.report(label)
         server.respond(json_response(503, {"message": "busy"}))
-        await adrained(lines, "unavailable", users.iterate(harness.users(4), batch_options=harness.batch(batch_size=2, parallelism=1)))
+        await adrained(
+            lines,
+            "unavailable",
+            users.iterate(harness.users(4), batch_options=harness.batch(batch_size=2, parallelism=1)),
+        )
         await adrained(
             lines,
             "call sends in parallel",
@@ -686,7 +738,7 @@ async def _cancelled(harness: _Batches, lines: list[str]) -> None:
         await asyncio.sleep(0)
         try:
             await anext(iterator)
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:  # noqa: BLE001 - Report failures from public calls.
             lines.append(f"  concurrent step ! {describe(error)}")
         first.cancel()
         cancelled = await asyncio.gather(first, return_exceptions=True)
@@ -704,7 +756,9 @@ def _errors(harness: _Batches, lines: list[str]) -> None:
     lines.append("errors")
     secret = _SECRET
     operation = protocols.OperationRef(pointer=f"/paths/{secret}/post")
-    info = responses.ResponseInfo(status_code=200, headers=responses.HeadersView(()), call_id="c", elapsed=0.1, content_type=None)
+    info = responses.ResponseInfo(
+        status_code=200, headers=responses.HeadersView(()), call_id="c", elapsed=0.1, content_type=None
+    )
     sent = errors.DeliveryState.MAYBE_SENT
     for name, fields in (
         ("BatchProtocolError", {"indices": (1, 2), "location": protocols.BodySelector(pointer=f"/{secret}")}),
@@ -716,17 +770,23 @@ def _errors(harness: _Batches, lines: list[str]) -> None:
         error = error_type(**fields, helper_id=secret, operation=operation, info=info)
         text = f"{error} {error!r}"
         lines.extend((
-            f"  {name}: base={error_type.__bases__[0].__name__} reason={error.reason_code} "
-            f"chain={[item.__name__ for item in error_type.__mro__ if issubclass(item, errors.SDKError)]}",
-            f"    retained={all(getattr(error, key) == value for key, value in fields.items())} "
-            f"secret={secret in text} str={error}",
+            (
+                f"  {name}: base={error_type.__bases__[0].__name__} reason={error.reason_code} "
+                f"chain={[item.__name__ for item in error_type.__mro__ if issubclass(item, errors.SDKError)]}"
+            ),
+            (
+                f"    retained={all(getattr(error, key) == value for key, value in fields.items())} "
+                f"secret={secret in text} str={error}"
+            ),
         ))
     unknown = errors.BatchDeliveryUnknownError(partial_results=(1,), batch_indices=(), delivery_state=sent)
     parameter = errors.BatchDeliveryUnknownError.__parameters__[0]
     hint = get_type_hints(errors.BatchDeliveryUnknownError.partial_results.fget)["return"]
     lines.append(
-        f"  partial results {unknown.partial_results} message={unknown.message_id} kind={errors.BatchItemTooLargeError(index=0, limit=0, observed=1).kind} "
-        f"covariance={parameter.__covariant__} subscripted={get_origin(errors.BatchDeliveryUnknownError[int]) is errors.BatchDeliveryUnknownError} "
+        f"  partial results {unknown.partial_results} message={unknown.message_id} "
+        f"kind={errors.BatchItemTooLargeError(index=0, limit=0, observed=1).kind} "
+        f"covariance={parameter.__covariant__} "
+        f"subscripted={get_origin(errors.BatchDeliveryUnknownError[int]) is errors.BatchDeliveryUnknownError} "
         f"hint={get_origin(hint) is tuple}"
     )
     not_sent = errors.DeliveryState.NOT_SENT
@@ -736,12 +796,14 @@ def _errors(harness: _Batches, lines: list[str]) -> None:
         ("fixed condition", lambda: errors.BatchProtocolError(indices=(), condition="value")),
         ("index negative", lambda: errors.BatchItemTooLargeError(index=-1, limit=0, observed=1)),
         ("fixed kind", lambda: errors.BatchItemTooLargeError(index=0, limit=0, observed=1, kind="page")),
-        ("partial results list", lambda: errors.BatchDeliveryUnknownError(
-            partial_results=[], batch_indices=(), delivery_state=sent
-        )),
-        ("batch indices bool", lambda: errors.BatchDeliveryUnknownError(
-            partial_results=(), batch_indices=(True,), delivery_state=sent
-        )),
+        (
+            "partial results list",
+            lambda: errors.BatchDeliveryUnknownError(partial_results=[], batch_indices=(), delivery_state=sent),
+        ),
+        (
+            "batch indices bool",
+            lambda: errors.BatchDeliveryUnknownError(partial_results=(), batch_indices=(True,), delivery_state=sent),
+        ),
         ("not sent", lambda: errors.DeliveryUnknownError(delivery_state=not_sent)),
         ("message id type", lambda: errors.DeliveryUnknownError(delivery_state=sent, message_id=1)),
         ("resume state type", lambda: errors.DeliveryUnknownError(delivery_state=sent, resume_state={})),
@@ -760,7 +822,6 @@ def batch_backends(package: ModuleType, lines: list[str]) -> None:
         server.report("requests")
 
 
-
 def batch_arguments(package: ModuleType, lines: list[str]) -> None:
     """Check the shared arguments with Pydantic once, before any request, when the package validates arguments."""
     harness = _Batches(package)
@@ -771,7 +832,7 @@ def batch_arguments(package: ModuleType, lines: list[str]) -> None:
         for label in ("invalid shared argument", "again"):
             try:
                 next(iterator)
-            except Exception as error:  # noqa: BLE001
+            except Exception as error:  # noqa: BLE001, PERF203
                 cause = type(error.__cause__ or getattr(error, "cause", None)).__name__
                 lines.append(f"  {label} ! {type(error).__name__} location={error.location} cause={cause}")
         dry_run = harness.argument("users", "CreateUsers", "query", "dryRun", True)

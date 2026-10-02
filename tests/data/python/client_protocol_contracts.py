@@ -30,34 +30,74 @@ _IMPORT_PROBE: Final = """
 import importlib
 import sys
 import threading
+
 sys.path.insert(0, sys.argv[1])
 before = threading.active_count()
-for name in ('._runtime.client.errors', '._runtime.client.options', '.errors', '.options'):
+for name in ("._runtime.client.errors", "._runtime.client.options", ".errors", ".options"):
     importlib.import_module(sys.argv[2] + name)
-loaded = sorted(name.removeprefix(sys.argv[2] + '.') for name in sys.modules if name.startswith(sys.argv[2] + '._runtime.protocols.'))
-print('client imports load protocols=' + repr(loaded))
-errors = importlib.import_module(sys.argv[2] + '.errors')
-options = importlib.import_module(sys.argv[2] + '.options')
-names = importlib.import_module(sys.argv[2] + '._runtime.protocols.names')
-print('dir lists lazy names=' + repr(('ProtocolDataError' in dir(errors), 'SessionLimitError' in dir(errors), 'ProtocolClientOptions' in dir(options), 'ProtocolClientOptions' in dir(names))))
-print('dir loads nothing=' + repr(sys.argv[2] + '._runtime.protocols.options' not in sys.modules and sys.argv[2] + '._runtime.protocols.errors' not in sys.modules))
-print('protocol errors loaded on use=' + repr(errors.SessionLimitError.__module__ == sys.argv[2] + '._runtime.protocols.errors'))
-print('lazy names cached=' + repr(('SessionLimitError' in vars(errors), 'ProtocolDataError' in vars(errors), options.ProtocolClientOptions is names.ProtocolClientOptions, 'ProtocolClientOptions' in vars(options), 'ProtocolClientOptions' in vars(names))))
-module = importlib.import_module(sys.argv[2] + '.protocols')
-optional = ('httpx2', 'httpcore2', 'cryptography', 'asyncio', 'pydantic', 'msgspec', 'anyio')
-print('optional imports=' + repr([name for name in optional if name in sys.modules]))
-print('import threads unchanged=' + repr(threading.active_count() == before))
-print('replay loaded with contracts=' + repr(sys.argv[2] + '._runtime.protocols.replay' in sys.modules))
-print('pagination loaded with contracts=' + repr(sys.argv[2] + '._runtime.protocols.pagination' in sys.modules))
-pagination = importlib.import_module(sys.argv[2] + '._runtime.protocols.pagination')
-print('pagination types=' + repr(tuple(getattr(module, name) is getattr(pagination, name) for name in ('Page', 'Pager', 'AsyncPager'))))
-print('pagination optional imports=' + repr([name for name in optional if name in sys.modules]))
-print('client protocols=' + repr(hasattr(importlib.import_module(sys.argv[2]).Client, 'protocols')))
-runtime = importlib.import_module(sys.argv[2] + '._runtime.protocols.options')
-print('option identities=' + repr((options.ProtocolClientOptions is runtime.ProtocolClientOptions, module.ProtocolDefaults is runtime.ProtocolDefaults)))
-state = module.ResumeState(helper_fingerprint='helper', security_fingerprint='security', state={'page': 1})
-print('resume round trip=' + repr(module.import_state(state.export()).export() == state.export()))
-print('construction threads unchanged=' + repr(threading.active_count() == before))
+loaded = sorted(
+    name.removeprefix(sys.argv[2] + ".")
+    for name in sys.modules
+    if name.startswith(sys.argv[2] + "._runtime.protocols.")
+)
+print("client imports load protocols=" + repr(loaded))
+errors = importlib.import_module(sys.argv[2] + ".errors")
+options = importlib.import_module(sys.argv[2] + ".options")
+names = importlib.import_module(sys.argv[2] + "._runtime.protocols.names")
+print(
+    "dir lists lazy names="
+    + repr((
+        "ProtocolDataError" in dir(errors),
+        "SessionLimitError" in dir(errors),
+        "ProtocolClientOptions" in dir(options),
+        "ProtocolClientOptions" in dir(names),
+    ))
+)
+print(
+    "dir loads nothing="
+    + repr(
+        sys.argv[2] + "._runtime.protocols.options" not in sys.modules
+        and sys.argv[2] + "._runtime.protocols.errors" not in sys.modules
+    )
+)
+print(
+    "protocol errors loaded on use="
+    + repr(errors.SessionLimitError.__module__ == sys.argv[2] + "._runtime.protocols.errors")
+)
+print(
+    "lazy names cached="
+    + repr((
+        "SessionLimitError" in vars(errors),
+        "ProtocolDataError" in vars(errors),
+        options.ProtocolClientOptions is names.ProtocolClientOptions,
+        "ProtocolClientOptions" in vars(options),
+        "ProtocolClientOptions" in vars(names),
+    ))
+)
+module = importlib.import_module(sys.argv[2] + ".protocols")
+optional = ("httpx2", "httpcore2", "cryptography", "asyncio", "pydantic", "msgspec", "anyio")
+print("optional imports=" + repr([name for name in optional if name in sys.modules]))
+print("import threads unchanged=" + repr(threading.active_count() == before))
+print("replay loaded with contracts=" + repr(sys.argv[2] + "._runtime.protocols.replay" in sys.modules))
+print("pagination loaded with contracts=" + repr(sys.argv[2] + "._runtime.protocols.pagination" in sys.modules))
+pagination = importlib.import_module(sys.argv[2] + "._runtime.protocols.pagination")
+print(
+    "pagination types="
+    + repr(tuple(getattr(module, name) is getattr(pagination, name) for name in ("Page", "Pager", "AsyncPager")))
+)
+print("pagination optional imports=" + repr([name for name in optional if name in sys.modules]))
+print("client protocols=" + repr(hasattr(importlib.import_module(sys.argv[2]).Client, "protocols")))
+runtime = importlib.import_module(sys.argv[2] + "._runtime.protocols.options")
+print(
+    "option identities="
+    + repr((
+        options.ProtocolClientOptions is runtime.ProtocolClientOptions,
+        module.ProtocolDefaults is runtime.ProtocolDefaults,
+    ))
+)
+state = module.ResumeState(helper_fingerprint="helper", security_fingerprint="security", state={"page": 1})
+print("resume round trip=" + repr(module.import_state(state.export()).export() == state.export()))
+print("construction threads unchanged=" + repr(threading.active_count() == before))
 """
 _RECORDS: Final = (
     "BodySelector",
@@ -69,6 +109,8 @@ _RECORDS: Final = (
     "Origin",
     "PollSnapshot",
     "PaginationOptions",
+    "BatchOptions",
+    "UploadOptions",
     "PollOptions",
     "StreamOptions",
     "ProtocolSecurityContext",
@@ -101,6 +143,12 @@ _OPTION_FIELDS: Final = (
     ("PaginationOptions", "max_items", _COUNTS),
     ("PaginationOptions", "max_page_bytes", _COUNTS),
     ("PaginationOptions", "max_cursor_bytes", _COUNTS),
+    *(
+        ("BatchOptions", name, _COUNTS)
+        for name in ("batch_size", "parallelism", "max_items", "max_item_bytes", "max_buffer_bytes")
+    ),
+    ("BatchOptions", "raise_on_error", (("True", True), ("False", False), ("None", None), ("1", 1), ("'yes'", "yes"))),
+    *(("UploadOptions", name, _COUNTS) for name in ("chunk_bytes", "max_parts", "parallelism", "max_uncertain_probes")),
     ("PollOptions", "max_polls", _COUNTS),
     ("PollOptions", "interval", _DURATIONS),
     ("PollOptions", "max_wait", _DURATIONS),
@@ -162,8 +210,10 @@ def _shapes(protocols: ModuleType, options: ModuleType, lines: list[str]) -> Non
         parameters = inspect.signature(record_type).parameters.values()
         lines.extend((
             f"  {name} fields={tuple(item.name for item in fields(record_type))}",
-            f"  {name} keyword-only={all(item.kind is inspect.Parameter.KEYWORD_ONLY for item in parameters)}"
-            f" hints={tuple(get_type_hints(record_type))}",
+            (
+                f"  {name} keyword-only={all(item.kind is inspect.Parameter.KEYWORD_ONLY for item in parameters)}"
+                f" hints={tuple(get_type_hints(record_type))}"
+            ),
         ))
     for name in ("Continuation", "ResumeState"):
         opaque = getattr(protocols, name)
@@ -181,7 +231,7 @@ def _shapes(protocols: ModuleType, options: ModuleType, lines: list[str]) -> Non
     )
     lines.extend(f"  {label} values={get_args(hint)}" for label, hint in literals)
     for alias in ("Selector", "RequestTarget"):
-        lines.append(f"  {alias} members={tuple(item.__name__ for item in get_args(getattr(protocols, alias)))}")
+        lines.append(f"  {alias} members={tuple(item.__name__ for item in get_args(getattr(protocols, alias)))}")  # noqa: PERF401 - Keep results consumed before the iterator raises.
     progress = protocols.ProtocolProgress
     lines.append(
         f"  ProtocolProgress mapping={get_origin(progress) is collections.abc.Mapping} "
@@ -201,9 +251,11 @@ def _shapes(protocols: ModuleType, options: ModuleType, lines: list[str]) -> Non
         ("origin", origin, "port", 8443),
         ("options", protocols.PollOptions(), "interval", 1),
     ):
-        record(lines, f"{label} frozen", lambda value=value, name=name, replacement=replacement: setattr(
-            value, name, replacement
-        ))
+        record(
+            lines,
+            f"{label} frozen",
+            lambda value=value, name=name, replacement=replacement: setattr(value, name, replacement),
+        )
     for label, create in (
         ("selector positional", lambda: protocols.BodySelector("/next")),
         ("header positional", lambda: protocols.HeaderSelector("X-Cursor")),
@@ -249,7 +301,7 @@ def _selectors(protocols: ModuleType, lines: list[str]) -> None:
         ("header missing name", {}),
     ):
         record(lines, label, lambda arguments=arguments: protocols.HeaderSelector(**arguments))
-    record(lines, "status selector", lambda: protocols.StatusSelector())
+    record(lines, "status selector", protocols.StatusSelector)
     for location, name in (
         ("path", "petId"),
         ("query", "cursor"),
@@ -336,7 +388,9 @@ def _continuations(protocols: ModuleType, records: ModuleType, lines: list[str])
     """Keep only canonical JSON, expose only the kind, and compare by identity."""
     canonical = records.continuation_json
     for kind in ("cursor", "offset", "page", "next_url", "link"):
-        record(lines, f"continuation {kind}", lambda kind=kind: protocols.Continuation(kind=kind, value="secret-cursor"))
+        record(
+            lines, f"continuation {kind}", lambda kind=kind: protocols.Continuation(kind=kind, value="secret-cursor")
+        )
     for label, value in (
         ("string", "secret-cursor"),
         ("integer", 20),
@@ -348,7 +402,7 @@ def _continuations(protocols: ModuleType, records: ModuleType, lines: list[str])
         ("whole float", 100.0),
         ("negative zero decimal", Decimal("-0")),
         ("exponent decimal", Decimal("1E+2")),
-        ("whole decimal", Decimal("7")),
+        ("whole decimal", Decimal(7)),
         ("large integer", 2**70),
         ("null", None),
         ("boolean", False),
@@ -383,9 +437,14 @@ def _continuations(protocols: ModuleType, records: ModuleType, lines: list[str])
     second = protocols.Continuation(kind="cursor", value="secret-cursor")
     lines.extend((
         f"  continuation kind={first.kind!r} repr={first!r} str={first} secret={'secret' in repr(first) + str(first)}",
-        f"  continuation identity equality={first == first}/{first == second}/{first != second} "
-        f"distinct hashes={len({first, second})} same bytes={canonical(first) == canonical(second)}",
-        f"  continuation dict={hasattr(first, '__dict__')} public={[name for name in dir(first) if not name.startswith('_')]}",
+        (
+            f"  continuation identity equality={first == first}/{first == second}/{first != second} "  # noqa: PLR0124 - Exercise reflexive equality of the opaque record.
+            f"distinct hashes={len({first, second})} same bytes={canonical(first) == canonical(second)}"
+        ),
+        (
+            f"  continuation dict={hasattr(first, '__dict__')} "
+            f"public={[name for name in dir(first) if not name.startswith('_')]}"
+        ),
     ))
     for name, value in (("kind", "page"), ("_json", b"{}"), ("_kind", "page"), ("value", "other")):
         record(lines, f"continuation set {name}", lambda name=name, value=value: setattr(first, name, value))
@@ -428,15 +487,19 @@ def _snapshots(protocols: ModuleType, responses: ModuleType, lines: list[str]) -
     state["status"] = "changed"
     lines.extend((
         f"  snapshot repr={snapshot!r}",
-        f"  snapshot secret={'secret' in repr(snapshot)} data identity={snapshot.data is data} "
-        f"response identity={snapshot.response is info}",
+        (
+            f"  snapshot secret={'secret' in repr(snapshot)} data identity={snapshot.data is data} "
+            f"response identity={snapshot.response is info}"
+        ),
         f"  snapshot state={type(snapshot.state).__name__} {dict(snapshot.state)!r}",
     ))
     record(lines, "snapshot frozen", lambda: setattr(snapshot, "terminal", True))
     record(lines, "snapshot state frozen", lambda: snapshot.state.__setitem__("status", "done"))
-    record(lines, "snapshot terminal", lambda: protocols.PollSnapshot(
-        state="done", terminal=True, data=None, response=info
-    ).terminal)
+    record(
+        lines,
+        "snapshot terminal",
+        lambda: protocols.PollSnapshot(state="done", terminal=True, data=None, response=info).terminal,
+    )
     for label, arguments in (
         ("terminal integer", {"terminal": 1}),
         ("terminal string", {"terminal": "yes"}),
@@ -448,7 +511,9 @@ def _snapshots(protocols: ModuleType, responses: ModuleType, lines: list[str]) -
     ):
         values = {"state": "running", "terminal": False, "data": data, "response": info, **arguments}
         record(lines, f"snapshot {label}", lambda values=values: protocols.PollSnapshot(**values))
-    record(lines, "snapshot missing data", lambda: protocols.PollSnapshot(state="running", terminal=False, response=info))
+    record(
+        lines, "snapshot missing data", lambda: protocols.PollSnapshot(state="running", terminal=False, response=info)
+    )
 
 
 def _resume_states(protocols: ModuleType, lines: list[str]) -> None:
@@ -470,20 +535,25 @@ def _resume_states(protocols: ModuleType, lines: list[str]) -> None:
         f"  resume independent checksum={envelope['sha256'] == digest} body={body.decode()}",
         f"  resume payload={base64.b64decode(envelope['payload'])!r}",
         f"  resume export stable={state.export() == exported}",
-        f"  resume identity equality={state == state}/{state == protocols.import_state(exported)}",
-        f"  resume dict={hasattr(state, '__dict__')} public={[name for name in dir(state) if not name.startswith('_')]}",
+        f"  resume identity equality={state == state}/{state == protocols.import_state(exported)}",  # noqa: PLR0124 - Exercise reflexive equality of the opaque record.
+        (
+            f"  resume dict={hasattr(state, '__dict__')} "
+            f"public={[name for name in dir(state) if not name.startswith('_')]}"
+        ),
     ))
     imported = protocols.import_state(exported)
-    lines.append(f"  resume round trip={imported!r} distinct={imported is not state} same={imported.export() == exported}")
+    lines.append(
+        f"  resume round trip={imported!r} distinct={imported is not state} same={imported.export() == exported}"
+    )
     minimal = protocols.ResumeState(helper_fingerprint="", security_fingerprint="", state=None)
-    record(lines, "resume minimal export", lambda: minimal.export())
+    record(lines, "resume minimal export", minimal.export)
     record(lines, "resume set state", lambda: setattr(state, "_state_json", b"{}"))
     record(lines, "resume set new", lambda: setattr(state, "version", 2))
     record(lines, "resume delete state", lambda: delattr(state, "_state_json"))
     lines.append(f"  resume copies={copy.copy(state) is state}/{copy.deepcopy(state) is state}")
     record(lines, "resume pickle", lambda: pickle.dumps(state))
     oversized = protocols.ResumeState(helper_fingerprint="", security_fingerprint="", state="x" * _LIMIT)
-    record(lines, "resume export over limit", lambda: oversized.export())
+    record(lines, "resume export over limit", oversized.export)
     valid = {"helper_fingerprint": "h", "security_fingerprint": "s", "state": {"page": 1}}
     for label, changes in (
         ("helper None", {"helper_fingerprint": None}),
@@ -493,7 +563,7 @@ def _resume_states(protocols: ModuleType, lines: list[str]) -> None:
         ("security bytes", {"security_fingerprint": b"s"}),
         ("payload bytearray", {"payload": bytearray(b"x")}),
         ("payload string", {"payload": "x"}),
-        ("expiry naive", {"expires_at": datetime(2999, 1, 1)}),
+        ("expiry naive", {"expires_at": datetime(2999, 1, 1)}),  # noqa: DTZ001 - Exercise rejection of naive expiry.
         ("expiry string", {"expires_at": "2999-01-01T00:00:00+00:00"}),
         ("expiry past", {"expires_at": datetime(2000, 1, 1, tzinfo=timezone.utc)}),
         ("state object", {"state": object()}),
@@ -501,7 +571,9 @@ def _resume_states(protocols: ModuleType, lines: list[str]) -> None:
         ("state deeply nested", {"state": _deep()}),
     ):
         record(lines, f"resume {label}", lambda changes=changes: protocols.ResumeState(**{**valid, **changes}))
-    record(lines, "resume missing state", lambda: protocols.ResumeState(helper_fingerprint="h", security_fingerprint="s"))
+    record(
+        lines, "resume missing state", lambda: protocols.ResumeState(helper_fingerprint="h", security_fingerprint="s")
+    )
     record(lines, "resume positional", lambda: protocols.ResumeState("h", "s", {}))
 
 
@@ -570,8 +642,10 @@ def _imported_states(protocols: ModuleType, lines: list[str]) -> None:
     ):
         record(outcomes, f"import {label}", lambda data=data: protocols.import_state(data))
     lines.extend(outcomes)
-    lines.append(f"  import secret={any('secret' in line for line in outcomes)}")
-    lines.append(f"  import exported independent envelope={protocols.import_state(valid).export() == valid}")
+    lines.extend((
+        f"  import secret={any('secret' in line for line in outcomes)}",
+        f"  import exported independent envelope={protocols.import_state(valid).export() == valid}",
+    ))
 
 
 def _option_matrix(protocols: ModuleType, options: ModuleType, lines: list[str]) -> None:
@@ -584,7 +658,7 @@ def _option_matrix(protocols: ModuleType, options: ModuleType, lines: list[str])
                 f"{type_name}.{name} {label}",
                 lambda option_type=option_type, name=name, value=value: getattr(option_type(**{name: value}), name),
             )
-    for type_name in ("PaginationOptions", "PollOptions", "StreamOptions"):
+    for type_name in ("PaginationOptions", "PollOptions", "StreamOptions", "BatchOptions", "UploadOptions"):
         option_type = getattr(protocols, type_name)
         omitted = option_type()
         lines.append(
@@ -622,9 +696,11 @@ def _security(protocols: ModuleType, lines: list[str]) -> None:
         f"  security repr={context!r} secret={'secret' in repr(context)}",
         f"  security origins={type(context.allowed_origins).__name__} identity={context.allowed_origins[0] is origin}",
     ))
-    record(lines, "security default origins", lambda: protocols.ProtocolSecurityContext(
-        credential_partition="anonymous"
-    ).allowed_origins)
+    record(
+        lines,
+        "security default origins",
+        lambda: protocols.ProtocolSecurityContext(credential_partition="anonymous").allowed_origins,
+    )
     record(lines, "security frozen", lambda: setattr(context, "credential_partition", "other"))
     for label, arguments in (
         ("missing partition", {}),
@@ -669,18 +745,36 @@ def _client_options(package: ModuleType, protocols: ModuleType, options: ModuleT
     source.clear()
     lines.extend((
         f"  protocol options repr={configured!r}",
-        f"  protocol options copy={type(configured.defaults).__name__} keys={tuple(configured.defaults)} "
-        f"identity={configured.defaults['users.all'] is defaults}/{configured.security is security}",
+        (
+            f"  protocol options copy={type(configured.defaults).__name__} keys={tuple(configured.defaults)} "
+            f"identity={configured.defaults['users.all'] is defaults}/{configured.security is security}"
+        ),
     ))
     record(lines, "protocol options frozen defaults", lambda: configured.defaults.__setitem__("x", defaults))
-    record(lines, "protocol options omitted", lambda: options.ProtocolClientOptions())
+    record(lines, "protocol options omitted", options.ProtocolClientOptions)
     record(lines, "protocol options anonymous", lambda: options.ProtocolClientOptions(security=None, defaults={}))
     for name in ("users", "users.all", "_private.x1", "v2.users.list_all", "match.case", "élèves"):
-        record(lines, f"helper name {name!r}", lambda name=name: tuple(options.ProtocolClientOptions(
-            defaults={name: defaults}
-        ).defaults))
-    for name in ("", "users.", ".users", "users..all", "class", "users.class", "1users", "users-all", "users all", 3, None):
-        record(lines, f"helper name {name!r}", lambda name=name: options.ProtocolClientOptions(defaults={name: defaults}))
+        record(
+            lines,
+            f"helper name {name!r}",
+            lambda name=name: tuple(options.ProtocolClientOptions(defaults={name: defaults}).defaults),
+        )
+    for name in (
+        "",
+        "users.",
+        ".users",
+        "users..all",
+        "class",
+        "users.class",
+        "1users",
+        "users-all",
+        "users all",
+        3,
+        None,
+    ):
+        record(
+            lines, f"helper name {name!r}", lambda name=name: options.ProtocolClientOptions(defaults={name: defaults})
+        )
     for label, arguments in (
         ("security string", {"security": "anonymous"}),
         ("security options", {"security": pagination}),
@@ -689,7 +783,9 @@ def _client_options(package: ModuleType, protocols: ModuleType, options: ModuleT
         ("defaults value", {"defaults": {"users": pagination}}),
         ("defaults value None", {"defaults": {"users": None}}),
     ):
-        record(lines, f"protocol options {label}", lambda arguments=arguments: options.ProtocolClientOptions(**arguments))
+        record(
+            lines, f"protocol options {label}", lambda arguments=arguments: options.ProtocolClientOptions(**arguments)
+        )
     client_options = options.ClientOptions(protocols=configured)
     hints = get_type_hints(options.ClientOptions)
     lines.append(
@@ -708,9 +804,15 @@ def _client_options(package: ModuleType, protocols: ModuleType, options: ModuleT
     ):
         record(lines, label, create)
     names = importlib.import_module(f"{package.__name__}._runtime.protocols.names")
-    for label, module in (("options", options), ("errors", importlib.import_module(f"{package.__name__}.errors")), ("names", names)):
-        record(lines, f"unknown {label} attribute", lambda module=module: getattr(module, "MissingProtocolType"))
-        record(lines, f"{label} dir", lambda module=module: [name for name in dir(module) if name.startswith("Protocol")])
+    for label, module in (
+        ("options", options),
+        ("errors", importlib.import_module(f"{package.__name__}.errors")),
+        ("names", names),
+    ):
+        record(lines, f"unknown {label} attribute", lambda module=module: module.MissingProtocolType)
+        record(
+            lines, f"{label} dir", lambda module=module: [name for name in dir(module) if name.startswith("Protocol")]
+        )
     record(lines, "client with defaults of helpers it lacks", lambda: package.Client(options=client_options))
     secured = options.ClientOptions(protocols=options.ProtocolClientOptions(security=security))
     _calls(package, options, secured, lines)
@@ -741,7 +843,7 @@ def _calls(package: ModuleType, options: ModuleType, client_options: Any, lines:
     record(lines, "client wrong protocols", lambda: package.Client(options=options.ClientOptions(protocols="x")))
 
 
-async def _async_calls(package: ModuleType, options: ModuleType, client_options: Any, lines: list[str]) -> None:
+async def _async_calls(package: ModuleType, options: ModuleType, client_options: Any, lines: list[str]) -> None:  # noqa: ARG001 - Keep the shared scenario signature.
     """Send an asynchronous call through a client configured with protocol settings."""
     exchange = Exchange(lines)
     trace = _trace(package)

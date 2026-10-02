@@ -70,7 +70,7 @@ def _replaced(state: Any, path: tuple[object, ...], value: object) -> dict[str, 
 def _failure(call: Callable[[], object]) -> Any:
     try:
         call()
-    except Exception as error:  # ruff: ignore[blind-except]
+    except Exception as error:  # noqa: BLE001 - Report failures from public calls.
         return error
     return None
 
@@ -561,7 +561,7 @@ async def _async_resume(harness: Polling, lines: list[str]) -> None:
         handle = await helper.start(body=body)
         try:
             await handle.status()
-        except Exception as error:  # ruff: ignore[blind-except]
+        except Exception as error:  # noqa: BLE001 - Report failures from public calls.
             _kept(lines, "async long server delay", error)
         lines.append("async remote cancellation")
         tracked = api.protocols.jobs.tracked
@@ -591,5 +591,5 @@ async def _async_resume(harness: Polling, lines: list[str]) -> None:
         unbudgeted = await tracked.start(body=body, session_options=harness.session(max_network_sends=1))
         try:
             await unbudgeted.cancel_remote()
-        except Exception as error:  # ruff: ignore[blind-except]
+        except Exception as error:  # noqa: BLE001 - Report failures from public calls.
             _kept(lines, "async cancel without a send slot", error)

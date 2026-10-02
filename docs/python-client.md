@@ -356,7 +356,7 @@ using it as a model.
 
 ## Protocol helper configuration
 
-Pagination, polling, SSE or NDJSON stream, WebSocket, webhook, cache, and resumable upload helpers of an API are declared
+Pagination, polling, SSE or NDJSON stream, WebSocket, webhook, cache, resumable upload, and batch helpers of an API are declared
 in a helper configuration, which the client target reads through its `protocols` setting. The helpers are still being
 implemented: generation validates every helper, resolves its references against the selected API, and records it in the
 target manifest. An enabled pagination helper generates the [pagination helper](#pagination-helpers) below, an enabled
@@ -364,8 +364,9 @@ polling helper the [polling helper](#polling-helpers), an enabled `offset` uploa
 [upload helper](#upload-helpers), an enabled SSE helper the [SSE stream helper](#sse-stream-helpers), an enabled NDJSON
 helper the [NDJSON stream helper](#ndjson-stream-helpers), an enabled WebSocket helper the
 [WebSocket helper](#websocket-helpers), an enabled cache helper the [cache helper](#cache-helpers), and an enabled
-webhook helper the [webhook verification helper](#webhook-verification-helpers). A disabled helper generates nothing,
-so the package is the same as without it. The `batch` and `queue` kinds, and the `parts` profile of `resumable_upload`,
+webhook helper the [webhook verification helper](#webhook-verification-helpers), and an enabled batch helper the
+[batch helper](#batch-helpers). A disabled helper generates nothing, so the package is the same as without it. The
+`queue` kind and the `parts` profile of `resumable_upload`,
 fail with `E_CLIENT_UNSUPPORTED` whether they are enabled or not, and their settings are not read yet; an enabled
 upload helper declaring `abort` or `create.session_url` fails with `E_CLIENT_UNSUPPORTED` too.
 
@@ -567,7 +568,7 @@ E_SELECTOR_DEPENDENCY selection protocols.helpers['audit.all'].operation /paths/
 
 `ProtocolConfiguration(schema_version=1, helpers={...})` takes `PaginationHelper`, `PollingHelper`, `StreamHelper`,
 `WebSocketHelper`, whose `send` and `receive` are `WebSocketMessage` records, `WebhookHelper`, `CacheHelper`, and
-`ResumableUploadHelper` records, which mirror the file: their fields have the file's names, with `from_` for `from`,
+`ResumableUploadHelper` and `BatchHelper` records, which mirror the file: their fields have the file's names, with `from_` for `from`,
 and they take the client's `Selector` and `RequestTarget` records, `OperationRef` or a pointer string, and `SchemaRef`.
 A webhook's `HmacSignature` (`hmac-sha256` or `hmac-sha512`) or `PublicKeySignature` (`ed25519` or `rsa-pss-sha256`)
 has the same fields and takes `HeaderName`, `TimestampHeader`, `SignedLiteral`, `FixedBytes`, and `AsciiBytes` records,
@@ -576,8 +577,9 @@ or `"none"`, and `signed_parts` entries `"raw-body"`, `"timestamp"`, and `"deliv
 declares an unsigned webhook. An event mapping is an `EventMapping` with an `EventDiscriminator(from_="body",
 pointer=...)`, a cache mutation a `CacheMutation(operation=..., invalidate_tags=(...))`, and an upload takes
 `UploadCreate`, `UploadProbe`, `UploadAppend`, `LengthCompletion()` or `OperationCompletion`, and `UploadAbort`
-records. They are validated as the file is, with the same diagnostics, when the client configuration is constructed.
-The later kinds have no records yet.
+records. A batch takes `BatchMember` records for success and error and either `PositionCorrelation()` or
+`IdCorrelation(input=..., result=...)`. They are validated as the file is, with the same diagnostics, when the client
+configuration is constructed. The `queue` kind has no records yet.
 
 ```python
 ClientGenerationConfig(

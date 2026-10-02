@@ -174,6 +174,24 @@ failures
   unknown delivery raised: 2 requests
     > u0000 POST /users/batch items=2 last=u0001 bytes=73
     > u0002 POST /users/batch items=2 last=u0003 bytes=73
+  success body invalid JSON: 5 results in order True {'success': 2, 'error': 1, 'delivery_unknown': 2}
+    error #0 id='u0000' status=200 error=taken
+    success #1 id='u0001' status=200 value=u0001
+    delivery_unknown #3 id='u0003' status=None no payload
+    success #4 id='u0004' status=200 value=u0004
+  success body invalid JSON: 3 requests
+    > u0000 POST /users/batch items=2 last=u0001 bytes=73
+    > u0002 POST /users/batch items=2 last=u0003 bytes=73
+    > u0004 POST /users/batch items=1 last=u0004 bytes=42
+  success body invalid model: 5 results in order True {'success': 2, 'error': 1, 'delivery_unknown': 2}
+    error #0 id='u0000' status=200 error=taken
+    success #1 id='u0001' status=200 value=u0001
+    delivery_unknown #3 id='u0003' status=None no payload
+    success #4 id='u0004' status=200 value=u0004
+  success body invalid model: 3 requests
+    > u0000 POST /users/batch items=2 last=u0001 bytes=73
+    > u0002 POST /users/batch items=2 last=u0003 bytes=73
+    > u0004 POST /users/batch items=1 last=u0004 bytes=42
 inputs
   source failure: 3 results in order True {'success': 2, 'error': 1, 'delivery_unknown': 0}
     error #0 id='u0000' status=200 error=taken
@@ -318,6 +336,26 @@ asyncio
     success #1 id='u0001' status=200 value=u0001
     delivery_unknown #2 id='u0002' status=None no payload
     delivery_unknown #3 id='u0003' status=None no payload
+  success body invalid JSON: 5 results in order True {'success': 2, 'error': 1, 'delivery_unknown': 2}
+    error #0 id='u0000' status=200 error=taken
+    success #1 id='u0001' status=200 value=u0001
+    delivery_unknown #3 id='u0003' status=None no payload
+    success #4 id='u0004' status=200 value=u0004
+  success body invalid JSON: 5 requests
+    > u0000 POST /users/batch items=2 last=u0001 bytes=73
+    > u0000 POST /users/batch items=2 last=u0001 bytes=73
+    > u0002 POST /users/batch items=2 last=u0003 bytes=73
+    > u0002 POST /users/batch items=2 last=u0003 bytes=73
+    > u0004 POST /users/batch items=1 last=u0004 bytes=42
+  success body invalid model: 5 results in order True {'success': 2, 'error': 1, 'delivery_unknown': 2}
+    error #0 id='u0000' status=200 error=taken
+    success #1 id='u0001' status=200 value=u0001
+    delivery_unknown #3 id='u0003' status=None no payload
+    success #4 id='u0004' status=200 value=u0004
+  success body invalid model: 3 requests
+    > u0000 POST /users/batch items=2 last=u0001 bytes=73
+    > u0002 POST /users/batch items=2 last=u0003 bytes=73
+    > u0004 POST /users/batch items=1 last=u0004 bytes=42
   unavailable: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
     ! CreateUsersHTTPError: CreateUsersHTTPError(status_code=503, operation_id='createUsers', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='createUsers', status_code=503, error_decoded=False, body_bytes=b'{"message":"busy"}', truncated=False] create_users_http_error
   call sends in parallel: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
@@ -330,12 +368,10 @@ asyncio
     success #2 id='u0002' status=200 value=u0002
     success #3 id='u0003' status=200 value=u0003
     ! after 0: CreateUsersHTTPError: CreateUsersHTTPError(status_code=503, operation_id='createUsers', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='createUsers', status_code=503, error_decoded=False, body_bytes=b'{"message":"busy"}', truncated=False] create_users_http_error
-  failures: 6 requests
+  failures: 4 requests
     > u0000 POST /users/batch items=2 last=u0001 bytes=73
     > u0000 POST /users/batch items=2 last=u0001 bytes=73
     > u0000 POST /users/batch items=2 last=u0001 bytes=73
-    > u0000 POST /users/batch items=2 last=u0001 bytes=73
-    > u0002 POST /users/batch items=2 last=u0003 bytes=73
     > u0002 POST /users/batch items=2 last=u0003 bytes=73
   first error #0 id='u0000' status=200 error=taken
   after close stops
