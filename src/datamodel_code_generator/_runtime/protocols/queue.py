@@ -879,8 +879,8 @@ def _interrupted(
     """Let a plan whose delivery was interrupted save it as of unknown delivery, keeping failures beside the error."""
     try:
         step = steps.throw(_InterruptedError())
-        while isinstance(step, _Store):
-            step = steps.send(_call(plan, store, step))
+        while True:
+            step = steps.send(_call(plan, store, cast("_Store", step)))
     except StopIteration:
         return
     except Exception as failure:  # noqa: BLE001
@@ -893,8 +893,8 @@ async def _ainterrupted(
     """Let a plan whose delivery was interrupted save it, as `_interrupted` does, awaiting the asynchronous store."""
     try:
         step = steps.throw(_InterruptedError())
-        while isinstance(step, _Store):
-            step = steps.send(await _acall(plan, store, step))
+        while True:
+            step = steps.send(await _acall(plan, store, cast("_Store", step)))
     except StopIteration:
         return
     except Exception as failure:  # noqa: BLE001

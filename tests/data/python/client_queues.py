@@ -206,6 +206,8 @@ class _Store:
         self.later: dict[str, tuple[int, BaseException]] = {}
         self.wrong: dict[str, object] = {}
         self.conflicts = 0
+        self.claims = 0
+        self.at_claim: dict[int, Callable[[], None]] = {}
         self.before: dict[str, Callable[[Any], None]] = {}
         self.writes = 0
 
@@ -241,6 +243,9 @@ class _Store:
     def claim(self, *, now: datetime, lease_until: datetime, limit: int) -> tuple[Any, ...]:
         """Recover expired leases, then lease ready pending entries in creation order."""
         with self.lock:
+            self.claims += 1
+            if (hook := self.at_claim.pop(self.claims, None)) is not None:
+                hook()
             if (wrong := self._hook("claim")) is not _Store:
                 return wrong  # type: ignore[return-value]
             for key, entry in list(self.entries.items()):
@@ -679,6 +684,20 @@ def _outcomes(queue: _Queues, native: httpx2.Client) -> None:
         step("inspect interrupted", lambda: outbox.inspect(interrupted.entry_id))
         step("retry interrupted", lambda: outbox.retry_unknown(interrupted.entry_id))
         step("drain interrupted again", outbox.drain)
+        unsaved = step("interrupted unsaved", lambda: outbox.operations.create_order.enqueue(body=queue.order))
+
+        def interrupt_unsaved(request: httpx2.Request) -> httpx2.Response:
+            server(request)
+            store.failures["compare_exchange"] = OSError("write")
+            raise _Crash
+
+        queue.exchange.respond(injected(interrupt_unsaved))
+        try:
+            outbox.drain()
+        except _Crash as crash:
+            lines.append(f"  interrupted with a failed save notes={len(getattr(crash, '__notes__', ()))}")
+        step("inspect unsaved", lambda: outbox.inspect(unsaved.entry_id))
+        store.entries.pop(unsaved.entry_id)
         lost = step("cancelled and taken", lambda: outbox.operations.create_order.enqueue(body=queue.order))
         stop = options.CancelToken()
 
@@ -718,6 +737,15 @@ def _holding(queue: _Queues, native: httpx2.Client) -> None:
         store.later["compare_exchange"] = (3, OSError("release"))
         step("release fails", outbox.drain)
         server.flush(lines)
+        for key in list(store.entries):
+            store.entries.pop(key)
+        stuck = step("held and stuck", lambda: outbox.operations.create_order.enqueue(body=queue.order, queue_options=soon))
+        queue.exchange.respond(queue.stepping(503))
+        store.at_claim[store.claims + 3] = lambda: setattr(store, "conflicts", 100)
+        step("release conflicts", outbox.drain)
+        store.conflicts = 0
+        step("inspect stuck", lambda: outbox.inspect(stuck.entry_id))
+        store.entries.pop(stuck.entry_id)
     recancelling = _Recancelling(protocols)
     with _client(queue, native, recancelling) as api:
         outbox = _helpers(api)[0]
@@ -1364,6 +1392,21 @@ async def _async_queues(queue: _Queues) -> None:
         await astep("retry held", lambda: outbox.retry_unknown(held.entry_id))
         queue.time.advance(400)
         await astep("redelivered", outbox.drain)
+        server.flush(lines, ordered=False)
+        unsaved = await astep("held unsaved", lambda: outbox.operations.create_order.enqueue(body=queue.order))
+        arrived, released = asyncio.Event(), threading.Event()
+        queue.exchange.respond(hold)
+        task = asyncio.ensure_future(outbox.drain())
+        await arrived.wait()
+        store.failures["compare_exchange"] = OSError("write")
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError as cancelled:
+            lines.append(f"  drain cancelled with a failed save notes={len(getattr(cancelled, '__notes__', ()))}")
+        released.set()
+        await astep("inspect unsaved", lambda: outbox.inspect(unsaved.entry_id))
+        store.entries.pop(unsaved.entry_id)
         server.flush(lines, ordered=False)
         failing_entry = await astep("intent entry", lambda: outbox.operations.create_order.enqueue(body=queue.order))
         store.failures["compare_exchange"] = OSError("write")
