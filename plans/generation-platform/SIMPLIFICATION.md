@@ -71,13 +71,23 @@ A capability is kept only where established SDKs have a precedent for it.
 - **Where it is recorded.** A target-only subclass of the existing generation store records each replacement (old
   reference → new reference or inner type) at the store's mutation methods. One map per generation attempt; only the
   accepted attempt's map is used. The ordinary path never constructs it.
-- **What follows automatically.** Renames and moves update the shared `Reference` in place. The final module comes
-  from dcg's own module grouping of the final model.
+- **What follows automatically.** Renames and moves update the shared `Reference` in place.
+- **Module and existence.** The final module of each class, and whether it exists, come from a record of each emitted
+  module and its models, taken where dcg writes module output. Recomputing module grouping afterwards is wrong for
+  tree-scope shared modules, single-module splits, relocated cycles and reuse-created classes.
+- **Operation uses.** The Api-scope parser records each operation-located schema use (schemas and item schemas) where
+  it acquires it.
+- **Verification.** These five recording points (two in the store, three in the parser) reproduced the previous
+  capture on every operation type use across the reuse, collapse, module-split, naming, output-type and
+  read/write-variant option matrix.
 - **The post-pass.** After the accepted attempt, a post-pass resolves each operation type use through the map. Field
   bindings (wire name, attribute, required, has_default) come from the final model fields.
 - **Target imports.** Target modules build their own imports.
 - **Unresolvable uses.** A type use the map cannot resolve fails target generation with the operation and schema
   pointer. It never produces a silently wrong name.
+- **Follow the models.** Where dcg's models represent a schema only through its `$ref` target (a circular `$ref` with
+  sibling keywords) or through a placeholder (a dangling `$ref`), the binding follows the models.
+- **Custom templates and formatters** are trusted to keep class and field names.
 - **Scope.** Targets always enable the `api` model scope. Model output equals ordinary generation with that scope.
 - **Not used.** Parser-method capture wrappers, ledgers and origin indexes, tokenizing of generated source, frozen
   backend facts and legacy-scope capture.
