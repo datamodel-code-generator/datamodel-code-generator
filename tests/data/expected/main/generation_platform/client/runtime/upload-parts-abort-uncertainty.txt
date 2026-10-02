@@ -1,0 +1,35 @@
+# uploads pydantic_v2.BaseModel
+sync uploading lost: error=TransportError delivery=DeliveryState.MAYBE_SENT phase=uploading creates=1 lists=0 completes=0 aborts=1 sent=[]
+sync uploading decode: error=ResponseValidationError delivery=None phase=uploading creates=1 lists=0 completes=0 aborts=1 sent=[]
+sync uploading native: error=_AbortNativeStop delivery=None phase=uploading creates=1 lists=0 completes=0 aborts=1 sent=[]
+  native identity: True
+sync unknown lost: error=TransportError delivery=DeliveryState.MAYBE_SENT phase=unknown creates=1 lists=4 completes=1 aborts=1 sent=[1, 2, 3, 4]
+  saved receipts: [[1, 'part-1'], [2, 'part-2'], [3, 'part-3'], [4, 'part-4']]
+  next run: UploadDeliveryUnknownError completes=1
+sync unknown decode: error=ResponseValidationError delivery=None phase=unknown creates=1 lists=4 completes=1 aborts=1 sent=[1, 2, 3, 4]
+  saved receipts: [[1, 'part-1'], [2, 'part-2'], [3, 'part-3'], [4, 'part-4']]
+  next run: UploadDeliveryUnknownError completes=1
+sync unknown native: error=_AbortNativeStop delivery=None phase=unknown creates=1 lists=4 completes=1 aborts=1 sent=[1, 2, 3, 4]
+  native identity: True
+  saved receipts: [[1, 'part-1'], [2, 'part-2'], [3, 'part-3'], [4, 'part-4']]
+  next run: UploadDeliveryUnknownError completes=1
+sync unknown success: error=None delivery=None phase=aborted creates=1 lists=4 completes=1 aborts=1 sent=[1, 2, 3, 4]
+  saved receipts: [[1, 'part-1'], [2, 'part-2'], [3, 'part-3'], [4, 'part-4']]
+  next run: ProtocolStateError completes=1
+async uploading lost: error=TransportError delivery=DeliveryState.MAYBE_SENT phase=uploading creates=1 lists=0 completes=0 aborts=1 sent=[]
+async uploading decode: error=ResponseValidationError delivery=None phase=uploading creates=1 lists=0 completes=0 aborts=1 sent=[]
+async uploading native: error=CancelledError delivery=None phase=uploading creates=1 lists=0 completes=0 aborts=1 sent=[]
+  native identity: True
+async unknown lost: error=TransportError delivery=DeliveryState.MAYBE_SENT phase=unknown creates=1 lists=4 completes=1 aborts=1 sent=[1, 2, 3, 4]
+  saved receipts: [[1, 'part-1'], [2, 'part-2'], [3, 'part-3'], [4, 'part-4']]
+  next run: UploadDeliveryUnknownError completes=1
+async unknown decode: error=ResponseValidationError delivery=None phase=unknown creates=1 lists=4 completes=1 aborts=1 sent=[1, 2, 3, 4]
+  saved receipts: [[1, 'part-1'], [2, 'part-2'], [3, 'part-3'], [4, 'part-4']]
+  next run: UploadDeliveryUnknownError completes=1
+async unknown native: error=CancelledError delivery=None phase=unknown creates=1 lists=4 completes=1 aborts=1 sent=[1, 2, 3, 4]
+  native identity: True
+  saved receipts: [[1, 'part-1'], [2, 'part-2'], [3, 'part-3'], [4, 'part-4']]
+  next run: UploadDeliveryUnknownError completes=1
+async unknown success: error=None delivery=None phase=aborted creates=1 lists=4 completes=1 aborts=1 sent=[1, 2, 3, 4]
+  saved receipts: [[1, 'part-1'], [2, 'part-2'], [3, 'part-3'], [4, 'part-4']]
+  next run: ProtocolStateError completes=1

@@ -2505,3 +2505,119 @@ async def _parts_zero_probe_recovery_async(harness: _Uploads, package: ModuleTyp
                 )
                 server.report(lines, "server")
             exchange.responders.clear()
+
+
+class _AbortNativeStop(BaseException):
+    """A native interruption whose identity must survive the public abort call."""
+
+
+class _AbortWire:
+    """Apply an independent server abort before losing or corrupting its reply."""
+
+    def __init__(self, mode: str, native_error: BaseException) -> None:
+        self.server = _PartsServer()
+        self.mode = mode
+        self.native_error = native_error
+        self.methods: list[str] = []
+
+    def __call__(self, request: httpx2.Request) -> httpx2.Response:
+        self.methods.append(request.method)
+        response = self.server(request)
+        if request.method != "DELETE":
+            return response
+        if self.mode == "lost":
+            raise httpx2.ReadError("abort response lost", request=request)
+        if self.mode == "native":
+            raise self.native_error
+        return json_response(200, {"aborted": "invalid" if self.mode == "decode" else True})(request)
+
+
+def _abort_observation(
+    lines: list[str], label: str, wire: _AbortWire, handle: Any, error: BaseException | None
+) -> None:
+    state = json.loads(handle.checkpoint().export())["state"]
+    lines.append(
+        f"{label}: error={type(error).__name__ if error is not None else None} "
+        f"delivery={getattr(error, 'delivery_state', None)} phase={state['phase']} "
+        f"creates={wire.server.creates} lists={wire.server.lists} completes={wire.server.completes} "
+        f"aborts={wire.server.aborts} sent={wire.server.sent}"
+    )
+    if wire.mode == "native":
+        lines.append(f"  native identity: {error is wire.native_error}")
+    if state["parts"]:
+        lines.append(f"  saved receipts: {state['parts']}")
+
+
+def parts_abort_uncertainty(package: ModuleType, lines: list[str]) -> None:
+    """Keep failed abort evidence and completion uncertainty without an extra workflow retry."""
+    harness = _Uploads(package)
+    options = harness.options.RequestOptions(retry=harness.options.RetryOptions(max_retries=0))
+    limits = harness.uploads(parallelism=1)
+    for prior, modes in (
+        ("uploading", ("lost", "decode", "native")),
+        ("unknown", ("lost", "decode", "native", "success")),
+    ):
+        for mode in modes:
+            exchange = Exchange([])
+            wire = _AbortWire(mode, _AbortNativeStop("native abort stop"))
+            exchange.respond(*(wire for _ in range(20)))
+            with exchange.client() as native, package.Client(http_client=native) as api:
+                with api.protocols.files.parts_abort.start(
+                    harness.source(_PART_CONTENT), tus_resumable=harness.tus, upload_options=limits, options=options
+                ) as handle:
+                    if prior == "unknown":
+                        wire.server.failure = "complete"
+                        with suppress(harness.errors.UploadDeliveryUnknownError):
+                            handle.run()
+                        wire.server.failure = None
+                    if mode == "native":
+                        exchange.responders[:] = [injected(wire)]
+                    error = None
+                    try:
+                        handle.abort_remote()
+                    except BaseException as caught:
+                        error = caught
+                    _abort_observation(lines, f"sync {prior} {mode}", wire, handle, error)
+                    if prior == "unknown":
+                        try:
+                            handle.run()
+                        except (harness.errors.UploadDeliveryUnknownError, harness.errors.ProtocolStateError) as caught:
+                            lines.append(f"  next run: {type(caught).__name__} completes={wire.server.completes}")
+    run(lambda: _parts_abort_uncertainty_async(harness, package, lines))
+
+
+async def _parts_abort_uncertainty_async(harness: _Uploads, package: ModuleType, lines: list[str]) -> None:
+    """Observe original asyncio cancellation and keep prior completion receipts without replay."""
+    options = harness.options.RequestOptions(retry=harness.options.RetryOptions(max_retries=0))
+    limits = harness.uploads(parallelism=1)
+    for prior, modes in (
+        ("uploading", ("lost", "decode", "native")),
+        ("unknown", ("lost", "decode", "native", "success")),
+    ):
+        for mode in modes:
+            exchange = Exchange([])
+            wire = _AbortWire(mode, asyncio.CancelledError("native abort stop"))
+            exchange.respond(*(wire for _ in range(20)))
+            async with exchange.async_client() as native, package.AsyncClient(http_client=native) as api:
+                source = harness.protocols.AsyncBytesUploadSource.from_bytes(_PART_CONTENT)
+                async with await api.protocols.files.parts_abort.start(
+                    source, tus_resumable=harness.tus, upload_options=limits, options=options
+                ) as handle:
+                    if prior == "unknown":
+                        wire.server.failure = "complete"
+                        with suppress(harness.errors.UploadDeliveryUnknownError):
+                            await handle.run()
+                        wire.server.failure = None
+                    if mode == "native":
+                        exchange.responders[:] = [injected(wire)]
+                    error = None
+                    try:
+                        await handle.abort_remote()
+                    except BaseException as caught:
+                        error = caught
+                    _abort_observation(lines, f"async {prior} {mode}", wire, handle, error)
+                    if prior == "unknown":
+                        try:
+                            await handle.run()
+                        except (harness.errors.UploadDeliveryUnknownError, harness.errors.ProtocolStateError) as caught:
+                            lines.append(f"  next run: {type(caught).__name__} completes={wire.server.completes}")

@@ -1490,6 +1490,13 @@ with `abort_remote()`, returning the abort operation's response type. Completed 
 a successful abort enters the checkpoint, and resume of that checkpoint raises `ProtocolStateError`. Local close
 and cancellation leave the remote state intact.
 
+Only a decoded successful abort response records an aborted checkpoint. An earlier transport, status, decoding,
+or native failure preserves the prior phase and propagates its existing evidence; a late interruption may follow a
+recorded success. The helper adds no abort retry loop; the operation's declared HTTP retry safety still applies.
+Failed abort after uncertain completion keeps completion uncertain and never authorizes completion replay. Successful
+abort confirms acceptance of the abort, without proving whether the earlier completion applied. After an exception,
+later explicit actions depend on the API's semantics; the exception proves neither cleanup nor definite failure.
+
 `create.session_url` may select the upload URL from the create response, such as a `Location` header. Subsequent
 calls follow it, resolving relative references against that response's URL. The shared pagination policy rejects
 userinfo, fragments, oversized URLs, and origins outside the client's explicit allow-list. For another permitted

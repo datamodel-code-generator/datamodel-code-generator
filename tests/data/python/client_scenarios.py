@@ -105,6 +105,7 @@ from tests.data.python.client_streams import stream_lifetimes as event_stream_li
 from tests.data.python.client_transports import lifecycle, transports
 from tests.data.python.client_unions import schema_unions, split_unions, unions
 from tests.data.python.client_uploads import (
+    parts_abort_uncertainty,
     parts_source_recovery,
     parts_zero_probe_recovery,
     parts_uploads,
@@ -855,6 +856,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "batch-compression": ("batches-compression", ("pydantic_v2.BaseModel",), batch_compression),
     "batch-admission": ("batches-admission", ("pydantic_v2.BaseModel",), batch_admission),
     "uploads": ("uploads", ("pydantic_v2.BaseModel",), uploads),
+    "upload-parts-abort-uncertainty": ("uploads", ("pydantic_v2.BaseModel",), parts_abort_uncertainty),
     "upload-parts-zero-probe-recovery": ("uploads", BACKENDS, parts_zero_probe_recovery),
     "upload-parts-composite": ("uploads-composite", ("pydantic_v2.BaseModel",), parts_source_recovery),
     "upload-parts-source-recovery": ("uploads", ("pydantic_v2.BaseModel",), parts_source_recovery),

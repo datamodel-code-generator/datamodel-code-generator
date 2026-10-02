@@ -3584,7 +3584,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             f'    """The {spec.helper.name} upload handle with remote abort."""\n\n'
             "    __slots__ = ()\n\n"
             f"    {prefix}def abort_remote(self) -> {receipt}:\n"
-            '        """Ask the server to abort and retain the aborted checkpoint."""\n'
+            '        """Ask the server to abort; only a decoded success records an aborted checkpoint."""\n'
             f"        return {wait}self._abort_remote({module.namespace.name('.', '_plans')}.ABORT_{index})"
         )
 
@@ -4669,6 +4669,13 @@ before create. The checkpoint fixes the chunk size.
 
 A helper declaring `abort` returns a concrete handle exposing `abort_remote`, with the abort operation's response
 type. Completed or closed uploads refuse it; an aborted checkpoint cannot resume. Local close never aborts remotely.
+Only a decoded successful abort response records an aborted checkpoint. An earlier transport, status, decoding,
+or native failure preserves the prior phase and propagates its existing evidence; a late interruption may follow a
+recorded success. The helper adds no abort retry loop; the operation's declared HTTP retry safety still applies.
+Failed abort after uncertain completion keeps completion uncertain and never authorizes completion replay. Successful
+abort confirms acceptance of the abort, without proving whether the earlier completion applied. After an exception,
+later explicit actions depend on the API's semantics; the exception proves neither cleanup nor definite failure.
+
 A declared `create.session_url` follows the shared pagination URL policy, including origin restrictions, userinfo and
 fragment refusal, and credential stripping for other permitted origins. The saved URL is checked again on resume.
 

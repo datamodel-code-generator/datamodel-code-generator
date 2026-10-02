@@ -363,7 +363,7 @@ class AsyncFilesPartsAbortHandle(AsyncPartsUploadHandle[AssembleFileResponse]):
     __slots__ = ()
 
     async def abort_remote(self) -> AbortFileResponse:
-        """Ask the server to abort and retain the aborted checkpoint."""
+        """Ask the server to abort; only a decoded success records an aborted checkpoint."""
         return await self._abort_remote(_plans.ABORT_4)
 
 
@@ -522,7 +522,7 @@ class AsyncFilesAbortHandle(AsyncUploadHandle[None]):
     __slots__ = ()
 
     async def abort_remote(self) -> AbortFileResponse:
-        """Ask the server to abort and retain the aborted checkpoint."""
+        """Ask the server to abort; only a decoded success records an aborted checkpoint."""
         return await self._abort_remote(_plans.ABORT_7)
 
 
