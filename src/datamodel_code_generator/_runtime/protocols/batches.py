@@ -22,6 +22,7 @@ from typing_extensions import Self, TypeVar
 
 from ..client.errors import (
     BudgetExceededError,
+    ClientClosedError,
     DeliveryState,
     ProtocolConfigurationError,
     RequestEncodingError,
@@ -29,6 +30,7 @@ from ..client.errors import (
     ResponseTooLargeError,
     SDKError,
     TransportError,
+    UnsupportedContentCodingError,
 )
 from ..client.operations import DATA_ERRORS
 from ..client.options import RequestOptions
@@ -40,6 +42,7 @@ from .errors import (
     BatchItemTooLargeError,
     BatchProtocolError,
     ProtocolDataError,
+    ProtocolSizeError,
     ProtocolStateError,
     SessionLimitError,
 )
@@ -214,6 +217,8 @@ class _Batch(Generic[R]):
     size: int
     held: int
     work: Any = None
+    delivery: DeliveryState = DeliveryState.NOT_SENT
+    interruption: BaseException | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -259,7 +264,22 @@ def _counters(error: BaseException) -> dict[str, Any]:
 
 def _applied(error: Exception) -> bool:
     """Return whether a failure arrived with a success response, which the server applied before its body failed."""
-    info = error.info if isinstance(error, (ResponseDecodeError, ResponseTooLargeError)) else None
+    if isinstance(error, ProtocolDataError) and error.location is not None:
+        return False
+    info = (
+        error.info
+        if isinstance(
+            error,
+            (
+                ResponseDecodeError,
+                ResponseTooLargeError,
+                ProtocolDataError,
+                UnsupportedContentCodingError,
+                ProtocolSizeError,
+            ),
+        )
+        else None
+    )
     return info is not None and _MIN_SUCCESS <= info.status_code <= _MAX_SUCCESS
 
 
@@ -463,7 +483,11 @@ class _Batches(Generic[R]):
 
     def _wants(self) -> bool:
         """Return whether one more item is read: the next request is incomplete, and input and buffer remain."""
-        return not self._front()[2] and not self._exhausted and self._buffered < self._limits.max_buffer_bytes
+        return (
+            not self._front()[2]
+            and not self._exhausted
+            and self._buffered + self._item_bytes <= self._limits.max_buffer_bytes
+        )
 
     def _cut(self) -> _Batch[R] | None:
         """Return the next request, or None when no item is held or a request cut short by the buffer should wait."""
@@ -512,6 +536,8 @@ class _Batches(Generic[R]):
         response's body failed; a failure other than a transport one, such as a deadline, a cancellation, or a closed
         client, also ends the iteration after the records.
         """
+        if isinstance(error, ClientClosedError) and batch.delivery in _UNKNOWN:
+            return self._unknown_records(batch, error, batch.delivery, terminal=True)
         if isinstance(error, BudgetExceededError) and error.budget_kind == "parent_network":
             raise self._refused(error) from None
         if isinstance(error, SDKError) and (state := getattr(error, "delivery_state", None)) in _UNKNOWN:
@@ -519,6 +545,23 @@ class _Batches(Generic[R]):
         if _applied(error):
             return self._unknown_records(batch, error, DeliveryState.RESPONSE_STARTED, terminal=False)
         raise error
+
+    def _delivery(self, batch: _Batch[R], error: BaseException, state: DeliveryState) -> None:
+        """Keep the child call's actual resource delivery evidence, including native interruptions."""
+        batch.delivery = state
+        if not isinstance(error, Exception):
+            batch.interruption = error
+            self._halted = True
+
+    def _interrupted_batch(self, batch: _Batch[R], error: BaseException) -> None:
+        """Keep a natively interrupted request's unknown records for steps after the original interruption."""
+        if batch.delivery in _UNKNOWN:
+            done = self._unknown_records(batch, error, batch.delivery, terminal=False)
+            if self._limits.raise_on_error:
+                self._ready.append(_Raise(self._unknown(batch, done)))
+            else:
+                self._ready.extend(done.records)
+        self._buffered -= batch.held
 
     def _unknown_records(
         self, batch: _Batch[R], error: BaseException, state: DeliveryState, *, terminal: bool
@@ -721,13 +764,19 @@ class BatchIterator(_Batches[R]):
                 options=self._limits.options,
                 session=self._session,
                 max_page_bytes=None,
+                failed=partial(self._delivery, batch),
             )
         except Exception as error:  # noqa: BLE001 - An unknown delivery becomes records; anything else is raised.
             return self._failed(batch, error)
+        except BaseException as error:
+            self._delivery(batch, error, batch.delivery)
+            raise
 
     def _head(self) -> _Batch[R] | None:
         """Submit requests while a slot is free and items are ready, then return the oldest one once it completed."""
         while not self._halted and len(self._slots) < self._limits.parallelism and (batch := self._group()) is not None:
+            if self._halted:
+                break
             if (executor := self._executor) is None:
                 from concurrent.futures import ThreadPoolExecutor  # noqa: PLC0415 - Only a sent batch needs threads.
 
@@ -779,7 +828,11 @@ class BatchIterator(_Batches[R]):
                 raise StopIteration
             work: Future[_Done[R]] = batch.work
             if (error := work.exception()) is not None:
-                self._halt()
+                if not isinstance(error, Exception):
+                    self._interrupt()
+                    self._interrupted_batch(batch, error)
+                else:
+                    self._halt()
                 raise error
             self._settled(batch, work.result())
         return record
@@ -825,7 +878,7 @@ class AsyncBatchIterator(_Batches[R]):
     Iterating from two tasks at once raises ProtocolStateError.
     """
 
-    __slots__ = ("_aiterator", "_core", "_iterator", "_source")
+    __slots__ = ("_aiterator", "_core", "_iterator", "_source", "_source_call")
 
     def __init__(  # noqa: PLR0913, PLR0917
         self,
@@ -843,6 +896,7 @@ class AsyncBatchIterator(_Batches[R]):
         self._source = source
         self._iterator: Iterator[object] | None = None
         self._aiterator: AsyncIterator[object] | None = None
+        self._source_call = core.waiting(limits.options, session, plan.call.operation_id)
 
     async def _value(self) -> object:
         """Return the next item of the caller's items, raising StopAsyncIteration after the last one."""
@@ -863,7 +917,7 @@ class AsyncBatchIterator(_Batches[R]):
     async def _take(self) -> _Item | None:
         """Read the next item, or return None once reading stopped."""
         try:
-            value = await self._value()
+            value = await self._source_call.bounded(self._value, delivery_state=DeliveryState.NOT_SENT)
         except StopAsyncIteration:
             self._stop_reading(None)
             return None
@@ -893,15 +947,21 @@ class AsyncBatchIterator(_Batches[R]):
                 options=self._limits.options,
                 session=self._session,
                 max_page_bytes=None,
+                failed=partial(self._delivery, batch),
             )
         except Exception as error:  # noqa: BLE001 - An unknown delivery becomes records; anything else is raised.
             return self._failed(batch, error)
+        except BaseException as error:
+            self._delivery(batch, error, batch.delivery)
+            raise
 
     async def _head(self) -> _Batch[R] | None:
         """Start requests while a slot is free and items are ready, then return the oldest one once it completed."""
         from asyncio import ensure_future, wait  # noqa: PLC0415 - Only an asyncio iterator starts tasks.
 
         while not self._halted and len(self._slots) < self._limits.parallelism and (batch := await self._group()):
+            if self._halted:
+                break
             batch.work = task = ensure_future(self._send(batch))
             task.add_done_callback(_retrieved)
             self._slots.append(batch)
@@ -934,9 +994,22 @@ class AsyncBatchIterator(_Batches[R]):
 
         task: Task[_Done[R]] = batch.work
         if task.cancelled():
-            return self._unknown_records(batch, CancelledError(), DeliveryState.MAYBE_SENT, terminal=False)
+            error = batch.interruption or CancelledError()
+            if not self._cancelled:
+                self._abort()
+                self._interrupted_batch(batch, error)
+                raise error
+            return (
+                self._unknown_records(batch, error, batch.delivery, terminal=False)
+                if batch.delivery in _UNKNOWN
+                else _Done([])
+            )
         if (error := task.exception()) is not None:
-            self._halt()
+            if not isinstance(error, Exception):
+                self._abort()
+                self._interrupted_batch(batch, error)
+            else:
+                self._halt()
             raise error
         return task.result()
 
