@@ -1,5 +1,9 @@
 # queues-restoration pydantic_v2.BaseModel
 sync restoration
+  remaining restoration prior=False: {'succeeded': 1, 'rescheduled': 0, 'dead': 0, 'unknown': 0, 'deferred': 0, 'cancelled': 0} succeeded success count=1
+  server POST /orders key=k1 body={"item":"tea","quantity":2} duplicate=False
+  remaining restoration prior=True: {'succeeded': 1, 'rescheduled': 0, 'dead': 0, 'unknown': 0, 'deferred': 0, 'cancelled': 0} succeeded success count=2
+  server POST /orders key=k2 body={"item":"tea","quantity":2} duplicate=False
   prior=False: {'succeeded': 0, 'rescheduled': 0, 'dead': 1, 'unknown': 0, 'deferred': 0, 'cancelled': 0} dead permanent/expired count=0
   sends: 0
   prior=True: {'succeeded': 0, 'rescheduled': 0, 'dead': 1, 'unknown': 0, 'deferred': 0, 'cancelled': 0} dead unknown/expired count=1
@@ -12,6 +16,10 @@ sync restoration
   prior=True preparation refused: {'succeeded': 0, 'rescheduled': 0, 'dead': 1, 'unknown': 0, 'deferred': 0, 'cancelled': 0} dead unknown
   sends: 0
 async restoration
+  remaining restoration prior=False: {'succeeded': 1, 'rescheduled': 0, 'dead': 0, 'unknown': 0, 'deferred': 0, 'cancelled': 0} succeeded success count=1
+  server POST /orders key=k1 body={"item":"tea","quantity":2} duplicate=False
+  remaining restoration prior=True: {'succeeded': 1, 'rescheduled': 0, 'dead': 0, 'unknown': 0, 'deferred': 0, 'cancelled': 0} succeeded success count=2
+  server POST /orders key=k2 body={"item":"tea","quantity":2} duplicate=False
   prior=False: {'succeeded': 0, 'rescheduled': 0, 'dead': 1, 'unknown': 0, 'deferred': 0, 'cancelled': 0} dead permanent/expired count=0
   sends: 0
   prior=True: {'succeeded': 0, 'rescheduled': 0, 'dead': 1, 'unknown': 0, 'deferred': 0, 'cancelled': 0} dead unknown/expired count=1
