@@ -238,10 +238,10 @@ booleans. Durations are finite numbers of seconds, excluding booleans; integers 
 | | `close_timeout`, `resume_ack_timeout` | `5` and `30` seconds | Positive duration |
 | | `max_message_bytes`, `max_queue` | `1048576` and `16` | Positive integer |
 | | `max_ack_buffer_messages`, `max_ack_buffer_bytes`, `max_unacked` | `16`, `16777216`, and `100` | Positive integer |
-| `QueueOptions` | `max_entries`, `parallelism`, and the entry policy fields | See [queue limits](#limits-and-policies) | Positive integers and durations; `max_delivery_timeout` at most 300 |
 | | `compression` | `None` | `"deflate"` or `None` |
 | | `reconnect` | `False` | `bool` |
 | | `max_reconnects` | `5` | Nonnegative integer or `None` |
+| `QueueOptions` | `max_entries`, `parallelism`, and the entry policy fields | See [queue limits](#limits-and-policies) | Positive integers and durations; `max_delivery_timeout` at most 300 |
 
 `ProtocolSecurityContext(*, credential_partition: str, allowed_origins: tuple[Origin, ...] = ())` names the
 nonsecret credential partition of helper state and the origins permitted in addition to the same origin. The
