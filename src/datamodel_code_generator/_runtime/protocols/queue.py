@@ -750,7 +750,7 @@ class _Drain:
             raise ended.failure
         return None  # noqa: B901 - Its runner receives the outcome.
 
-    def deliver(self, lease: QueueLease) -> Generator[_Step, object, str | None]:  # noqa: PLR0911, PLR0912, PLR0914
+    def deliver(self, lease: QueueLease) -> Generator[_Step, object, str | None]:  # noqa: PLR0911, PLR0912, PLR0914, PLR0915
         """Deliver one claimed entry and save how it ended, returning its report.
 
         An entry of another contract or security is returned to pending and raises QueueBindingError. A cancelled,
@@ -774,15 +774,35 @@ class _Drain:
         expires = min(_expiry(entry, queued), entry.created_at + timedelta(seconds=entry.policy.entry_ttl))
         if entry.cancel_requested:
             return (yield from self.settle(lease, entry, _cancelled(prior), prior=prior))
-        if now < entry.created_at or expires <= entry.created_at:
+        if (
+            now < entry.created_at
+            or expires <= entry.created_at
+            or entry.not_before - timedelta(seconds=entry.saved_wait_seconds) < entry.created_at
+        ):
             return (yield from self.settle(lease, entry, _dead("malformed_entry", prior=prior), prior=prior))
         if now >= expires:
             return (yield from self.settle(lease, entry, _dead("expired", prior=prior), prior=prior))
         if entry.delivery_count >= entry.policy.max_deliveries:
             return (yield from self.settle(lease, entry, _dead("max_deliveries", prior=prior), prior=prior))
+        if len(entry.payload) > entry.policy.max_entry_body_bytes or entry.blob is not None or entry.blob_owned:
+            return (yield from self.settle(lease, entry, _dead("malformed_entry", prior=prior), prior=prior))
+        saved_at = entry.not_before - timedelta(seconds=entry.saved_wait_seconds)
+        if now < entry.not_before:
+            wait = entry.saved_wait_seconds if now < saved_at else (entry.not_before - now).total_seconds()
+            at = now + timedelta(seconds=wait)
+            result = entry.result
+            outcome = QueueOutcome(
+                category="retryable",
+                retry_at=at,
+                response=None if result is None else result.response,
+                error_code=None if result is None else result.error_code,
+            )
+            ended = _Ended("pending", "rescheduled", outcome, not_before=at, wait=wait)
+            return (yield from self.settle(lease, entry, ended, prior=prior))
         policy = entry.policy
-        window = min(self.window(policy), (expires - now).total_seconds())
-        deadline = absolute_deadline(clock.monotonic() + window, clock=clock)
+        started = clock.monotonic()
+        expiry = started + (expires - now).total_seconds()
+        deadline = absolute_deadline(min(started + self.window(policy), expiry), clock=clock)
         try:
             arguments, body, media_type, identity = _restored(self.core, queued.call, entry)
             options = self.options(queued, entry)
@@ -827,6 +847,8 @@ class _Drain:
             )
         except SDKError as error:
             ended = _ended(error, current, queued, _now(clock), self.retry[queued.alias], clock)
+            if not error.resource_attempt_count and not error.redirect_count and clock.monotonic() >= expiry:
+                ended = replace(_dead("expired", prior=prior), reverted=True, failure=ended.failure)
             if prior and ended.state == "dead" and ended.outcome is not None:
                 ended = replace(ended, outcome=replace(ended.outcome, category="unknown"))
         except _InterruptedError:
@@ -882,7 +904,9 @@ def _retry(plan: QueuePlan, entry_id: str, clock: Clock) -> Generator[_Step, obj
         if current.state != "delivery_unknown":
             raise ProtocolStateError(state=current.state, action="retry_unknown", helper_id=plan.helper_id)
         now = _now(clock)
-        if now >= _expiry(current, plan.aliases.get(current.operation_alias)):
+        if now < current.created_at:
+            entry = _applied(current, _dead("malformed_entry", prior=True), prior=False)[0]
+        elif now >= _expiry(current, plan.aliases.get(current.operation_alias)):
             entry = _applied(current, _dead("expired", prior=True), prior=False)[0]
         elif current.delivery_count >= current.policy.max_deliveries:
             entry = _applied(current, _dead("max_deliveries", prior=True), prior=False)[0]
@@ -950,6 +974,23 @@ def _admission(step: _Send, current: QueueEntry | None, clock: Clock) -> None:
         raise ProtocolStateError(state="lease_lost", action="drain")
     if current.cancel_requested:
         raise ProtocolStateError(state="cancel_requested", action="drain")
+    saved = step.lease.entry
+    if any(
+        getattr(current, name) != getattr(saved, name)
+        for name in (
+            "operation_alias",
+            "helper_fingerprint",
+            "security_fingerprint",
+            "payload",
+            "idempotency_key",
+            "created_at",
+            "expires_at",
+            "policy",
+            "blob",
+            "blob_owned",
+        )
+    ):
+        raise QueueBindingError(entry_id=current.entry_id)
 
 
 def _driven(

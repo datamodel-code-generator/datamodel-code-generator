@@ -4131,5 +4131,143 @@
       }
     },
     "modules": false
+  },
+  "queues-restoration": {
+    "input": "queues.yaml",
+    "references": [
+      "protocols/queues.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/queues.yaml",
+      "operations": [
+        {
+          "ref": "/paths/~1orders/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "Idempotency-Key",
+              "replay_safe_with_key": true,
+              "retention_seconds": 86400.0,
+              "scope": "orders-v1"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1account/patch",
+          "runtime": {
+            "idempotency": {
+              "header_name": "Idempotency-Key",
+              "replay_safe_with_key": true,
+              "retention_seconds": 3600.0,
+              "scope": "orders-v1"
+            }
+          }
+        }
+      ],
+      "selection": {
+        "exclude_tags": [
+          "filtered"
+        ],
+        "reason": "Filtered listings are not queued"
+      },
+      "codec_adapters": [
+        {
+          "kind": "model",
+          "name": "queue-restoration",
+          "import_ref": "tests.data.python.queue_recovery_adapter:order",
+          "capabilities": {
+            "record": "CodecCapabilities",
+            "backends": [
+              "pydantic_v2.BaseModel"
+            ],
+            "native_kinds": [
+              "model"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1orders/post",
+              "role": "request_body",
+              "media_type": "application/json"
+            }
+          ]
+        },
+        {
+          "kind": "parameter",
+          "name": "queue-trace",
+          "import_ref": "tests.data.python.queue_recovery_adapter:trace",
+          "capabilities": {
+            "record": "ParameterCodecCapabilities",
+            "locations": [
+              "header"
+            ],
+            "styles": [
+              "simple"
+            ],
+            "explode_values": [
+              false
+            ],
+            "value_kinds": [
+              "string"
+            ]
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1orders/post",
+              "role": "parameter",
+              "location": "header",
+              "name": "X-Trace"
+            }
+          ]
+        }
+      ],
+      "validation": {
+        "request": "schema"
+      }
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
+  "queues-scope": {
+    "input": "queues.yaml",
+    "references": [
+      "protocols/queues.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/queues.yaml",
+      "operations": [
+        {
+          "ref": "/paths/~1orders/post",
+          "runtime": {
+            "idempotency": {
+              "header_name": "Idempotency-Key",
+              "replay_safe_with_key": true,
+              "retention_seconds": 86400.0,
+              "scope": "orders-v2"
+            }
+          }
+        },
+        {
+          "ref": "/paths/~1account/patch",
+          "runtime": {
+            "idempotency": {
+              "header_name": "Idempotency-Key",
+              "replay_safe_with_key": true,
+              "retention_seconds": 3600.0,
+              "scope": "orders-v1"
+            }
+          }
+        }
+      ],
+      "selection": {
+        "exclude_tags": [
+          "filtered"
+        ],
+        "reason": "Filtered listings are not queued"
+      }
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ]
   }
 }

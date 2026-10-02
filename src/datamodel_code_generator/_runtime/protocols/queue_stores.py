@@ -15,6 +15,8 @@ from .queues import TERMINAL_STATES, QueueEntry, QueueLease, QueueOutcome
 if TYPE_CHECKING:
     from datetime import datetime
 
+    from .queues import QueueState
+
 __all__ = ("AsyncMemoryQueueStore", "MemoryQueueStore")
 
 _MAX_ENTRIES: Final = 10000
@@ -63,22 +65,24 @@ class _Entries:
         with self._lock:
             for key, entry in entries.items():
                 if entry.state == "leased" and entry.lease_until is not None and entry.lease_until <= now:
-                    state = "pending"
+                    state: QueueState = "pending"
                     result = entry.result
                     if entry.cancel_requested:
                         state = "delivery_unknown" if entry.send_intent else "cancelled"
                         result = QueueOutcome(category="cancelled")
                     elif result is not None and result.category != "retryable":
-                        state = {
+                        recorded: dict[str, QueueState] = {
                             "success": "succeeded",
                             "permanent": "dead",
                             "unknown": "delivery_unknown",
                             "cancelled": "delivery_unknown" if entry.send_intent else "cancelled",
-                        }[result.category]
+                        }
+                        state = recorded[result.category]
                     entries[key] = replace(
                         entry,
                         state=state,
                         result=result,
+                        send_intent=entry.send_intent if state == "pending" else False,
                         lease_id=None,
                         lease_until=None,
                         version=uuid4().hex,

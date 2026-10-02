@@ -1,0 +1,199 @@
+# queues pydantic_v2.BaseModel
+sync
+  before_intent drain: {'succeeded': 1}
+  before_intent entry: succeeded count=1 intent=False outcome=success/None
+  before_intent identity: key=True payload=True time=True
+  before_intent effects: 1
+  before_intent stale CAS: False
+  before_intent recorded success drain: {}
+  server POST /orders key=k1 body={"item":"tea","quantity":2} duplicate=False
+  after_intent: interrupted
+  after_intent drain: {'succeeded': 1}
+  after_intent entry: succeeded count=2 intent=False outcome=success/None
+  after_intent identity: key=True payload=True time=True
+  after_intent effects: 1
+  after_intent stale CAS: False
+  after_intent recorded success drain: {}
+  server POST /orders key=k2 body={"item":"tea","quantity":2} duplicate=False
+  after_effect: interrupted
+  after_effect drain: {'succeeded': 1}
+  after_effect entry: succeeded count=2 intent=False outcome=success/None
+  after_effect identity: key=True payload=True time=True
+  after_effect effects: 1
+  after_effect stale CAS: False
+  after_effect recorded success drain: {}
+  server POST /orders key=k3 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders key=k3 body={"item":"tea","quantity":2} duplicate=True
+  expiry stop: {'dead': 1}
+  expiry entry: dead count=1 intent=False outcome=unknown/expired
+  cap stop: {'dead': 1}
+  cap entry: dead count=5 intent=False outcome=unknown/max_deliveries
+  payload stop: {'dead': 1}
+  payload entry: dead count=1 intent=False outcome=unknown/malformed_entry
+  missing_key stop: {'dead': 1}
+  missing_key entry: dead count=1 intent=False outcome=unknown/malformed_entry
+  changed_key stop: {'dead': 1}
+  changed_key entry: dead count=1 intent=False outcome=unknown/malformed_entry
+  future stop: {'dead': 1}
+  future entry: dead count=1 intent=False outcome=unknown/malformed_entry
+  cancel stop: {'unknown': 1}
+  cancel entry: delivery_unknown count=1 intent=False outcome=cancelled/None
+  basepath mismatch: QueueBindingError
+  basepath retained: pending count=0 intent=False outcome=none
+  header mismatch: QueueBindingError
+  header retained: pending count=0 intent=False outcome=none
+  query mismatch: QueueBindingError
+  query retained: pending count=0 intent=False outcome=none
+  record unknown: {'unknown': 1}
+  recorded unknown no resend: {}
+  explicit retry: pending count=1 intent=True outcome=unknown/transport_error
+  cancel explicit retry: delivery_unknown count=1 intent=False outcome=cancelled/None
+  server POST /orders key=k4 body={"item":"tea","quantity":2} duplicate=False
+  auth TTL prior=False: {'dead': 1}
+  auth TTL entry: dead count=0 intent=False outcome=permanent/expired
+  provider calls: 1
+  auth TTL prior=True: {'dead': 1}
+  auth TTL entry: dead count=1 intent=False outcome=unknown/expired
+  provider calls: 1
+  concurrent new owner: {'succeeded': 1}
+  concurrent old owner: {'succeeded': 0, 'rescheduled': 0, 'dead': 0, 'unknown': 0, 'deferred': 0, 'cancelled': 0}
+  concurrent settled: succeeded count=2 intent=False outcome=success/None
+  concurrent effects: 1
+  server POST /orders key=k5 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders key=k5 body={"item":"tea","quantity":2} duplicate=True
+  corrupt unkeyed_key: {'dead': 1}
+  corrupt unkeyed_key entry: dead count=0 intent=False outcome=permanent/malformed_entry
+  corrupt missing_key: {'dead': 1}
+  corrupt missing_key entry: dead count=0 intent=False outcome=permanent/malformed_entry
+  corrupt invalid_key: {'dead': 1}
+  corrupt invalid_key entry: dead count=0 intent=False outcome=permanent/malformed_entry
+  corrupt oversize: {'dead': 1}
+  corrupt oversize entry: dead count=0 intent=False outcome=permanent/malformed_entry
+  corrupt blob: {'dead': 1}
+  corrupt blob entry: dead count=0 intent=False outcome=permanent/malformed_entry
+  corrupt invalid_wait: {'dead': 1}
+  corrupt invalid_wait entry: dead count=0 intent=False outcome=permanent/malformed_entry
+  future explicit retry: dead count=0 intent=False outcome=unknown/malformed_entry
+  corrupt future_retry: {}
+  corrupt future_retry entry: dead count=0 intent=False outcome=unknown/malformed_entry
+  cancel during auth: {'unknown': 1}
+  cancel during auth entry: delivery_unknown count=1 intent=False outcome=cancelled/None
+  auth changed lease: {}
+  changed lease entry: leased count=1 intent=True outcome=none
+  auth changed identity: QueueBindingError
+  changed identity entry: pending count=0 intent=False outcome=none
+  saved server wait: {'rescheduled': 1}
+  rollback after ready claim: {'rescheduled': 1}
+  rollback saved wait: 120.0 outcome_matches=True
+  server POST /orders key=k6 -> 503
+  cancelled expired lease intent=False: {}
+  cancelled lease entry: cancelled count=0 intent=False outcome=cancelled/None
+  cancelled expired lease intent=True: {}
+  cancelled lease entry: delivery_unknown count=0 intent=False outcome=cancelled/None
+  record success no reclaim: {}
+  record success entry: succeeded count=0 intent=False outcome=success/None
+  record unknown no reclaim: {}
+  record unknown entry: delivery_unknown count=0 intent=False outcome=unknown/None
+  record permanent no reclaim: {}
+  record permanent entry: dead count=0 intent=False outcome=permanent/None
+  record cancelled no reclaim: {}
+  record cancelled entry: cancelled count=0 intent=False outcome=cancelled/None
+async
+  before_intent drain: {'succeeded': 1}
+  before_intent entry: succeeded count=1 intent=False outcome=success/None
+  before_intent identity: key=True payload=True time=True
+  before_intent effects: 1
+  before_intent stale CAS: False
+  before_intent recorded success drain: {}
+  server POST /orders key=k1 body={"item":"tea","quantity":2} duplicate=False
+  after_intent: interrupted
+  after_intent drain: {'succeeded': 1}
+  after_intent entry: succeeded count=2 intent=False outcome=success/None
+  after_intent identity: key=True payload=True time=True
+  after_intent effects: 1
+  after_intent stale CAS: False
+  after_intent recorded success drain: {}
+  server POST /orders key=k2 body={"item":"tea","quantity":2} duplicate=False
+  after_effect: interrupted
+  after_effect drain: {'succeeded': 1}
+  after_effect entry: succeeded count=2 intent=False outcome=success/None
+  after_effect identity: key=True payload=True time=True
+  after_effect effects: 1
+  after_effect stale CAS: False
+  after_effect recorded success drain: {}
+  server POST /orders key=k3 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders key=k3 body={"item":"tea","quantity":2} duplicate=True
+  expiry stop: {'dead': 1}
+  expiry entry: dead count=1 intent=False outcome=unknown/expired
+  cap stop: {'dead': 1}
+  cap entry: dead count=5 intent=False outcome=unknown/max_deliveries
+  payload stop: {'dead': 1}
+  payload entry: dead count=1 intent=False outcome=unknown/malformed_entry
+  missing_key stop: {'dead': 1}
+  missing_key entry: dead count=1 intent=False outcome=unknown/malformed_entry
+  changed_key stop: {'dead': 1}
+  changed_key entry: dead count=1 intent=False outcome=unknown/malformed_entry
+  future stop: {'dead': 1}
+  future entry: dead count=1 intent=False outcome=unknown/malformed_entry
+  cancel stop: {'unknown': 1}
+  cancel entry: delivery_unknown count=1 intent=False outcome=cancelled/None
+  basepath mismatch: QueueBindingError
+  basepath retained: pending count=0 intent=False outcome=none
+  header mismatch: QueueBindingError
+  header retained: pending count=0 intent=False outcome=none
+  query mismatch: QueueBindingError
+  query retained: pending count=0 intent=False outcome=none
+  record unknown: {'unknown': 1}
+  recorded unknown no resend: {}
+  explicit retry: pending count=1 intent=True outcome=unknown/transport_error
+  cancel explicit retry: delivery_unknown count=1 intent=False outcome=cancelled/None
+  server POST /orders key=k4 body={"item":"tea","quantity":2} duplicate=False
+  auth TTL prior=False: {'dead': 1}
+  auth TTL entry: dead count=0 intent=False outcome=permanent/expired
+  provider calls: 1
+  auth TTL prior=True: {'dead': 1}
+  auth TTL entry: dead count=1 intent=False outcome=unknown/expired
+  provider calls: 1
+  concurrent new owner: {'succeeded': 1}
+  concurrent old owner: {'succeeded': 0, 'rescheduled': 0, 'dead': 0, 'unknown': 0, 'deferred': 0, 'cancelled': 0}
+  concurrent settled: succeeded count=2 intent=False outcome=success/None
+  concurrent effects: 1
+  server POST /orders key=k5 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders key=k5 body={"item":"tea","quantity":2} duplicate=True
+  corrupt unkeyed_key: {'dead': 1}
+  corrupt unkeyed_key entry: dead count=0 intent=False outcome=permanent/malformed_entry
+  corrupt missing_key: {'dead': 1}
+  corrupt missing_key entry: dead count=0 intent=False outcome=permanent/malformed_entry
+  corrupt invalid_key: {'dead': 1}
+  corrupt invalid_key entry: dead count=0 intent=False outcome=permanent/malformed_entry
+  corrupt oversize: {'dead': 1}
+  corrupt oversize entry: dead count=0 intent=False outcome=permanent/malformed_entry
+  corrupt blob: {'dead': 1}
+  corrupt blob entry: dead count=0 intent=False outcome=permanent/malformed_entry
+  corrupt invalid_wait: {'dead': 1}
+  corrupt invalid_wait entry: dead count=0 intent=False outcome=permanent/malformed_entry
+  future explicit retry: dead count=0 intent=False outcome=unknown/malformed_entry
+  corrupt future_retry: {}
+  corrupt future_retry entry: dead count=0 intent=False outcome=unknown/malformed_entry
+  cancel during auth: {'unknown': 1}
+  cancel during auth entry: delivery_unknown count=1 intent=False outcome=cancelled/None
+  auth changed lease: {}
+  changed lease entry: leased count=1 intent=True outcome=none
+  auth changed identity: QueueBindingError
+  changed identity entry: pending count=0 intent=False outcome=none
+  saved server wait: {'rescheduled': 1}
+  rollback after ready claim: {'rescheduled': 1}
+  rollback saved wait: 120.0 outcome_matches=True
+  server POST /orders key=k6 -> 503
+  cancelled expired lease intent=False: {}
+  cancelled lease entry: cancelled count=0 intent=False outcome=cancelled/None
+  cancelled expired lease intent=True: {}
+  cancelled lease entry: delivery_unknown count=0 intent=False outcome=cancelled/None
+  record success no reclaim: {}
+  record success entry: succeeded count=0 intent=False outcome=success/None
+  record unknown no reclaim: {}
+  record unknown entry: delivery_unknown count=0 intent=False outcome=unknown/None
+  record permanent no reclaim: {}
+  record permanent entry: dead count=0 intent=False outcome=permanent/None
+  record cancelled no reclaim: {}
+  record cancelled entry: cancelled count=0 intent=False outcome=cancelled/None

@@ -2094,7 +2094,8 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         from .security import secret_names  # noqa: PLC0415
 
         headers, query = secret_names(self._shared.security_schemes)
-        if (bound := self._bound(operation, self._call_settings(options, operation.operation_id).auth)) is not None:
+        auth = self._call_settings(options, operation.operation_id).auth
+        if auth is not None and (bound := self._bound(operation, auth)) is not None:
             headers |= bound.managed_headers
             query |= bound.managed_query
         target = absolute_target(request.url)
@@ -2114,7 +2115,7 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         options: RequestOptions | None,
     ) -> WireValue:
         """Prepare the non-auth request a queue binds, using the ordinary encoding and patch rules."""
-        request, deferred = self._prepare(
+        request, _ = self._prepare(
             operation,
             arguments,
             self._call_settings(options, operation.operation_id),
@@ -2124,8 +2125,6 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
             accept=operation.responses.accept,
             narrowed=False,
         )
-        if not isinstance(deferred, Unset):
-            raise ProtocolConfigurationError(field_path=("body",), condition="wrong_capability")
         return self.queue_identity(operation, request, options)
 
     def unsaved_argument(
@@ -3541,7 +3540,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             if recovering:
                 auth.pending = rejected
 
-    def _send(  # noqa: PLR0915
+    def _send(  # noqa: PLR0912, PLR0915
         self,
         request: PreparedRequest[BodyAttempt],
         source: BodySource | None,
@@ -3557,8 +3556,11 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             call.retained()
             if isinstance(call, _SessionCall) and call.admission is not None:
                 call.admission()
-            call.check("send")
+                call.check("send")
             self._authorize(source, call)
+            if isinstance(call, _SessionCall) and call.admission is not None:
+                call.admission()
+                call.check("send")
             renewed = False
             while True:
                 if (limiter := call.settings.limiter) is not None:
@@ -3588,7 +3590,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             io = call.io_context(trace)
             if isinstance(call, _SessionCall) and call.admission is not None:
                 call.admission()
-            call.check("send")
+                call.check("send")
             call.admit_send(redirect=call.hop_index != 0)
             if events is not None:
                 events.sending()
@@ -4549,7 +4551,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             if recovering:
                 auth.pending = rejected
 
-    async def _send(  # noqa: PLR0915
+    async def _send(  # noqa: PLR0912, PLR0915
         self,
         request: PreparedRequest[AsyncBodyAttempt],
         source: AsyncBodySource | None,
@@ -4565,8 +4567,11 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             call.retained()
             if isinstance(call, _SessionCall) and call.admission is not None:
                 await cast("Awaitable[None]", call.admission())
-            call.check("send")
+                call.check("send")
             await self._authorize(source, call)
+            if isinstance(call, _SessionCall) and call.admission is not None:
+                await cast("Awaitable[None]", call.admission())
+                call.check("send")
             renewed = False
             while True:
                 if (limiter := call.settings.limiter) is not None:
@@ -4596,7 +4601,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             io = call.io_context(trace)
             if isinstance(call, _SessionCall) and call.admission is not None:
                 await cast("Awaitable[None]", call.admission())
-            call.check("send")
+                call.check("send")
             call.admit_send(redirect=call.hop_index != 0)
             if events is not None:
                 events.sending()

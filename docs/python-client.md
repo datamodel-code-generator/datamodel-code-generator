@@ -2455,8 +2455,8 @@ deduplicates that key, at most its `retention_seconds`; `key_binding` and `dedup
 
 `enqueue` encodes and checks the arguments and JSON body as the call would, then saves their wire values as the entry's
 `payload`, with the operation's alias and contract fingerprint, the client's security binding, a stable idempotency key
-for a keyed operation, and the entry's policy. It never saves credentials, tokens, auth headers, cookies, the client's
-or a view's header and query patches, or the server URL: an argument at a credential position, such as a cookie or a
+for a keyed operation, and the entry's policy. Its opaque payload also binds the prepared pre-auth URL, headers and body bytes, including non-auth client/view
+patches. It excludes credentials, tokens, auth headers, cookies and declared credential query positions: an argument at a credential position, such as a cookie or a
 security scheme's header, raises `ProtocolConfigurationError` with the condition `wrong_capability`, and a drain sends
 each entry through the client's current auth, so a refreshed token is used as it is. An operation that may
 authenticate needs `ProtocolClientOptions.security`, or `enqueue` raises `ProtocolConfigurationError` with the
@@ -2479,6 +2479,16 @@ payloads, keys, fingerprints, versions, and lease identifiers:
 An entry's `state` is `pending`, `leased`, or one of the ended states `succeeded`, `dead`, `delivery_unknown`, and
 `cancelled`. Instants are timezone-aware UTC.
 
+Queue crash recovery occurs only inside the next explicit `drain()`. It preserves the original request, key, first-use
+time, policy and conservative intent count. Recorded `delivery_unknown` requires `retry_unknown`; that explicit retry
+retains historical uncertainty if cancellation or a delivery stop follows. `dead` means automatic delivery stopped: an
+`unknown` outcome in a dead entry does not establish that an earlier request failed remotely. All deliveries, including
+unkeyed requests, consume their fixed TTL deadline during restoration and authentication. A known clock rollback
+never shortens the saved backoff. Adapters must use a consistent trusted UTC clock domain across restart; saved UTC
+fields do not prove arbitrary real elapsed time under an untrusted clock. Memory stores do not survive process restart.
+A payload missing immutable replay facts stops safely; changed base paths or non-auth header/query patches raise
+`QueueBindingError` before provider or resource admission. Credential refresh in the same partition remains supported.
+
 ### Stores
 
 `ProtocolClientOptions.queue_stores` lends each queue helper, by its name, a `QueueStore`, or an `AsyncQueueStore` for
@@ -2488,7 +2498,7 @@ An entry's `state` is `pending`, `leased`, or one of the ended states `succeeded
 |---|---|
 | `put(entry)` | Keeps a new entry atomically; a full store raises `QueueFullError` and evicts nothing |
 | `get(entry_id)` | Returns the entry, or None |
-| `claim(*, now, lease_until, limit)` | Recovers expired leases with saved send intent to `delivery_unknown` and unsent ones to pending, then leases up to `limit` pending entries whose `not_before` has come, in `created_at` and ID order, as `QueueLease` records |
+| `claim(*, now, lease_until, limit)` | Recovers outcome-free expired crash leases without cancellation to pending while retaining intent/key/request/time/count; cancellation ends unknown after intent or cancelled before intent; recorded terminal outcomes remain terminal. Then leases up to `limit` pending entries whose `not_before` has come, in `created_at` and ID order, as `QueueLease` records |
 | `compare_exchange(entry_id, expected_version, entry)` | Replaces the entry only when its stored version is `expected_version`, giving it a new version, and returns whether it did |
 | `purge_terminal(before)` | Removes and returns the ended entries created before `before` |
 
