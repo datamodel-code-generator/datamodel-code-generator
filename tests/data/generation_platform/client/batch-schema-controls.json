@@ -104,5 +104,23 @@
     ],
     "valid": false,
     "index": 1
+  },
+  {
+    "name": "property_min",
+    "labels": [
+      "one",
+      "two"
+    ],
+    "valid": true,
+    "omit": true
+  },
+  {
+    "name": "root_min",
+    "labels": [
+      "one",
+      "two"
+    ],
+    "valid": true,
+    "omit": true
   }
 ]
