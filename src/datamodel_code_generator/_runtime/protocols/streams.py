@@ -582,6 +582,8 @@ def _unpatched(
 
     The effective options are the client's, a view's, and the call's own, each of which patches every reopen.
     """
+    from .writes import query_written  # noqa: PLC0415 - Only resume metadata needs the write inventory.
+
     if core.fixes_key(request):
         raise _invalid(plan, ("options", "idempotency_key"), "invalid_value")
     headers, queries = core.patches(request)
@@ -591,7 +593,7 @@ def _unpatched(
                 raise _invalid(plan, ("options", "headers", name), "invalid_value")
     for patch in queries:
         for name, _ in patch:
-            if name in resume.queries:
+            if name in resume.queries or query_written(resume.call, resume.writes, name):
                 raise _invalid(plan, ("options", "query", name), "invalid_value")
 
 
@@ -603,7 +605,9 @@ def _progress(session: OperationSession, reconnects: int = 0) -> ProtocolProgres
     })
 
 
-def _session(plan: EventPlan[T], limits: _Limits) -> OperationSession:
+def _session(
+    plan: EventPlan[T], limits: _Limits, operation: OperationRef, operation_id: str | None
+) -> OperationSession:
     """Start the stream's session, refusing to open the stream when the session has no send slot."""
     from ..client.logical import OperationSession  # noqa: PLC0415 - Only an open loads the call runtime.
 
@@ -619,7 +623,8 @@ def _session(plan: EventPlan[T], limits: _Limits) -> OperationSession:
             limit=limit,
             progress=_progress(session),
             helper_id=plan.helper_id,
-            operation=plan.operation,
+            operation=operation,
+            operation_id=operation_id,
             parent_session_id=session.session_id,
         )
     return session
@@ -799,12 +804,23 @@ def _opened(plan: EventPlan[T], resume: StreamResumePlan, given: _Given, clock: 
     )
 
 
-def _reopen_request(resume: StreamResumePlan, position: _Position) -> _Given:
+def _reopen_request(
+    core: ClientCore | AsyncClientCore, plan: EventPlan[T], resume: StreamResumePlan, position: _Position
+) -> _Given:
     """Return the arguments, body, and media type of a reopen: each binding's value and then the cursor written.
 
     A reopen of the helper's own operation writes them into the caller's first request, and another operation's
     request takes nothing else. A cleared cursor's parameter is omitted.
     """
+    sent = _written(resume, (UNSET,) * len(resume.call.parameters), UNSET, position.bound, position.cursor)[0]
+    if (unsaved := core.unsaved_argument(resume.call, _wires(sent))) is not None:
+        raise ProtocolConfigurationError(
+            field_path=("arguments", *unsaved),
+            condition="wrong_capability",
+            helper_id=plan.helper_id,
+            operation=resume.operation,
+            operation_id=resume.call.operation_id,
+        )
     if (given := position.given) is not None:
         arguments, body, media_type = given
     else:
@@ -1016,18 +1032,13 @@ class _Events(Generic[T]):
         media_type = None if (given := self._given) is None else given[2]
         try:
             client.checked_page(
-                resume.reopened, lambda: (*_reopen_request(resume, position)[:2], None), media_type, options
+                resume.reopened,
+                lambda: (*_reopen_request(client, plan, resume, position)[:2], None),
+                media_type,
+                options,
             )
         except _ENCODING_ERRORS as error:
             raise self._unencodable(error) from None
-        sent = _written(resume, (UNSET,) * len(resume.call.parameters), UNSET, self._bound, self._cursor)[0]
-        if (unsaved := client.unsaved_argument(resume.call, _wires(sent))) is not None:
-            raise ProtocolConfigurationError(
-                field_path=("arguments", *unsaved),
-                condition="wrong_capability",
-                helper_id=plan.helper_id,
-                operation=plan.operation,
-            )
         arguments: WireValue = ()
         body: WireValue = ()
         if given is not None:
@@ -1477,7 +1488,7 @@ class EventStream(_Events[T]):
                 waiter.finish()
         self._reconnects += 1
         resume = cast("StreamResumePlan", self._resume)
-        request = _reopen_request(resume, self._position())
+        request = _reopen_request(self._client, self._plan, resume, self._position())
         try:
             response = _sent(self._core, resume.reopened, request, self._limits, self._session, resume.media)
         except BudgetExceededError as error:
@@ -1607,7 +1618,7 @@ class AsyncEventStream(_Events[T]):
                 waiter.finish()
         self._reconnects += 1
         resume = cast("StreamResumePlan", self._resume)
-        request = _reopen_request(resume, self._position())
+        request = _reopen_request(self._client, self._plan, resume, self._position())
         try:
             response = await _asent(self._core, resume.reopened, request, self._limits, self._session, resume.media)
         except BudgetExceededError as error:
@@ -1782,7 +1793,10 @@ def _restored(
         media_type = None if (given := position.given) is None else given[2]
         try:
             core.checked_page(
-                resume.reopened, lambda: (*_reopen_request(resume, position)[:2], None), media_type, limits.options
+                resume.reopened,
+                lambda: (*_reopen_request(core, plan, resume, position)[:2], None),
+                media_type,
+                limits.options,
             )
         except (RequestEncodingError, ProtocolDataError, CodecError):
             raise MalformedStateError from None
@@ -1864,7 +1878,7 @@ def open_events(  # noqa: PLR0913
     """
     limits = _limits(core, plan, stream_options, options, session_options)
     native = core.native_responses(limits.options, plan.call.operation_id)
-    session = _session(plan, limits)
+    session = _session(plan, limits, plan.operation, plan.call.operation_id)
     given = (arguments, body, media_type)
     try:
         response = _sent(core, plan.call, given, limits, session, plan.media)
@@ -1894,7 +1908,7 @@ async def aopen_events(  # noqa: PLR0913
     """Open a helper's stream with asyncio, returning once its response is a declared success, as `open_events` does."""
     limits = _limits(core, plan, stream_options, options, session_options)
     native = core.native_responses(limits.options, plan.call.operation_id)
-    session = _session(plan, limits)
+    session = _session(plan, limits, plan.operation, plan.call.operation_id)
     given = (arguments, body, media_type)
     try:
         response = await _asent(core, plan.call, given, limits, session, plan.media)
@@ -1927,9 +1941,11 @@ def resume_events(  # noqa: PLR0913
     limits = _limits(core, plan, stream_options, options, session_options)
     resume, position = _restored(core, plan, state, limits)
     native = core.native_responses(limits.options, plan.call.operation_id)
-    session = _session(plan, limits)
+    session = _session(plan, limits, resume.operation, resume.call.operation_id)
     try:
-        response = _sent(core, resume.reopened, _reopen_request(resume, position), limits, session, resume.media)
+        response = _sent(
+            core, resume.reopened, _reopen_request(core, plan, resume, position), limits, session, resume.media
+        )
     except BudgetExceededError as error:
         if error.budget_kind != "parent_network":
             raise
@@ -1951,8 +1967,8 @@ async def aresume_events(  # noqa: PLR0913
     limits = _limits(core, plan, stream_options, options, session_options)
     resume, position = _restored(core, plan, state, limits)
     native = core.native_responses(limits.options, plan.call.operation_id)
-    session = _session(plan, limits)
-    request = _reopen_request(resume, position)
+    session = _session(plan, limits, resume.operation, resume.call.operation_id)
+    request = _reopen_request(core, plan, resume, position)
     try:
         response = await _asent(core, resume.reopened, request, limits, session, resume.media)
     except BudgetExceededError as error:
