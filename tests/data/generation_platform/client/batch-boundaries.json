@@ -1,0 +1,88 @@
+{
+  "decoding": [
+    {
+      "label": "invalid JSON",
+      "content": "{",
+      "first_only": true
+    },
+    {
+      "label": "invalid model",
+      "content": "{\"results\":1}",
+      "first_only": true
+    },
+    {
+      "label": "corrupt gzip",
+      "coding": "gzip",
+      "content": "invalid gzip",
+      "first_only": true
+    },
+    {
+      "label": "unsupported coding",
+      "coding": "br",
+      "content": "encoded",
+      "first_only": true
+    },
+    {
+      "label": "coding depth",
+      "coding": "gzip,gzip,gzip",
+      "content": "encoded",
+      "first_only": true
+    },
+    {
+      "label": "expansion limit",
+      "coding": "gzip",
+      "expanded_bytes": 2097152,
+      "first_only": true
+    },
+    {
+      "label": "unsuccessful corrupt gzip",
+      "coding": "gzip",
+      "content": "invalid gzip",
+      "status": 503,
+      "first_only": true
+    }
+  ],
+  "interruptions": [
+    {
+      "label": "worker interrupted",
+      "native": true
+    },
+    {
+      "label": "worker interrupted with sibling",
+      "native": true,
+      "sibling": true
+    },
+    {
+      "label": "worker interrupted before headers",
+      "before_send": true
+    },
+    {
+      "label": "worker interrupted before admission",
+      "before_call": true
+    },
+    {
+      "label": "other native worker interruption",
+      "native": true,
+      "native_other": true
+    },
+    {
+      "label": "worker interrupted while acquiring lookahead",
+      "native": true,
+      "source_gate": true
+    }
+  ],
+  "buffer": {
+    "batch_size": 1,
+    "parallelism": 2,
+    "max_buffer_bytes": 60
+  },
+  "source_controls": [
+    "deadline",
+    "token",
+    "close"
+  ],
+  "caller_cancellation": [
+    false,
+    true
+  ]
+}

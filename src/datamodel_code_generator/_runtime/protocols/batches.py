@@ -25,6 +25,7 @@ from ..client.errors import (
     ClientClosedError,
     DeliveryState,
     ProtocolConfigurationError,
+    ProtocolSizeError,
     RequestEncodingError,
     ResponseDecodeError,
     ResponseTooLargeError,
@@ -42,7 +43,6 @@ from .errors import (
     BatchItemTooLargeError,
     BatchProtocolError,
     ProtocolDataError,
-    ProtocolSizeError,
     ProtocolStateError,
     SessionLimitError,
 )
@@ -264,7 +264,7 @@ def _counters(error: BaseException) -> dict[str, Any]:
 
 def _applied(error: Exception) -> bool:
     """Return whether a failure arrived with a success response, which the server applied before its body failed."""
-    if isinstance(error, ProtocolDataError) and error.location is not None:
+    if isinstance(error, BatchProtocolError) or (isinstance(error, ProtocolDataError) and error.location is not None):
         return False
     info = (
         error.info
@@ -1004,13 +1004,13 @@ class AsyncBatchIterator(_Batches[R]):
                 if batch.delivery in _UNKNOWN
                 else _Done([])
             )
-        if (error := task.exception()) is not None:
-            if not isinstance(error, Exception):
+        if (failure := task.exception()) is not None:
+            if not isinstance(failure, Exception):
                 self._abort()
-                self._interrupted_batch(batch, error)
+                self._interrupted_batch(batch, failure)
             else:
                 self._halt()
-            raise error
+            raise failure
         return task.result()
 
     async def _step(self) -> R:

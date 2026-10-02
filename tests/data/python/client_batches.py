@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 import asyncio
+import gzip
 import importlib
 import json
 import threading
+from contextlib import suppress
+from functools import partial
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final, get_origin, get_type_hints
 
 import httpx2
@@ -164,7 +168,9 @@ def continued(
     lines.extend(f"    ! {item}" for item in failures)
 
 
-async def acontinued(lines: list[str], label: str, iterator: Any) -> None:
+async def acontinued(
+    lines: list[str], label: str, iterator: Any, *, failure_description: Callable[[Exception], str] = describe
+) -> None:
     """Consume an asyncio batch iterator through its failures, reporting each one after the records before it."""
     records: list[Any] = []
     failures: list[str] = []
@@ -174,7 +180,7 @@ async def acontinued(lines: list[str], label: str, iterator: Any) -> None:
         except StopAsyncIteration:  # noqa: PERF203 - Each step must report failures and continue to sibling outcomes.
             break
         except Exception as error:  # noqa: BLE001 - Report failures from public calls.
-            failures.append(f"after {len(records)}: {describe(error)}")
+            failures.append(f"after {len(records)}: {failure_description(error)}")
     _summarized(lines, label, records, None)
     lines.extend(f"    ! {item}" for item in failures)
 
@@ -239,6 +245,8 @@ def batches(package: ModuleType, lines: list[str]) -> None:
         _records(harness, api, server, lines)
     run(lambda: _async_batches(harness, lines))
     _errors(harness, lines)
+    _boundary_controls(harness, lines)
+    run(lambda: _async_boundary_controls(harness, lines))
 
 
 def _chunks(harness: _Batches, api: Any, server: _Server, lines: list[str]) -> None:
@@ -863,3 +871,395 @@ def batch_arguments(package: ModuleType, lines: list[str]) -> None:
         dry_run = harness.argument("users", "CreateUsers", "query", "dryRun", True)
         drained(lines, "valid shared argument", users.iterate(harness.users(3), dry_run=dry_run))
         server.report("arguments")
+
+
+class _BoundaryResponse:
+    """A public transport response retaining its release and content-decoding observations."""
+
+    def __init__(self, owner: Any, items: list[Any]) -> None:
+        self.owner = owner
+        case = owner.case if items[0]["id"] == "u0000" or not owner.case.get("first_only") else {}
+        self.status_code = case.get("status", 200)
+        self.headers = owner.headers(
+            (("content-type", "application/json"),)
+            + ((("content-encoding", case["coding"]),) if case.get("coding") else ())
+        )
+        content = case.get("content")
+        self.content = (
+            gzip.compress(b"x" * case["expanded_bytes"], mtime=0)
+            if "expanded_bytes" in case
+            else content.encode()
+            if content is not None
+            else json.dumps({"results": [{"id": item["id"], "user": item} for item in items]}).encode()
+        )
+        self.closed = False
+
+    def iter_raw_bytes(self) -> Iterator[bytes]:
+        yield self.content
+
+    def close(self) -> None:
+        self.closed = True
+        self.owner.completed.set()
+
+    async def aclose(self) -> None:
+        self.close()
+
+
+class _AsyncBoundaryResponse(_BoundaryResponse):
+    """The same response with native asynchronous bytes."""
+
+    async def iter_raw_bytes(self) -> AsyncIterator[bytes]:
+        yield self.content
+
+
+class _BoundaryTransport:
+    """A public transport adapter driving transmission, response faults, and event gates."""
+
+    def __init__(self, harness: _Batches, case: dict[str, Any], *, asynchronous: bool = False) -> None:
+        transports = importlib.import_module(f"{harness.package.__name__}.transports")
+        responses = importlib.import_module(f"{harness.package.__name__}.responses")
+        self.capabilities = transports.TransportCapabilities(
+            internal_retry_limit=0, delivery_evidence=True, http_versions=("HTTP/1.1",)
+        )
+        self.headers = responses.HeadersView
+        self.case = case
+        event = asyncio.Event if asynchronous else threading.Event
+        self.started, self.release, self.completed, self.ended = event(), event(), event(), event()
+        self.requests: list[list[Any]] = []
+        self.responses: list[Any] = []
+        self.guard = threading.Lock()
+        self.native = (
+            asyncio.CancelledError("worker interruption") if asynchronous else KeyboardInterrupt("worker interruption")
+        )
+        if case.get("native_other"):
+            self.native = _Interrupt("worker interruption")
+
+    def _transmitted(self, content: bytes, context: Any) -> list[Any]:
+        items = json.loads(content)["users"]
+        with self.guard:
+            self.requests.append(items)
+        context.trace.request_headers_started()
+        context.trace.wire_send()
+        self.started.set()
+        return items
+
+    def _response(self, items: list[Any], context: Any, kind: type[_BoundaryResponse]) -> Any:
+        response = kind(self, items)
+        self.responses.append(response)
+        context.trace.response_headers_received(
+            http_version="HTTP/1.1", status_code=response.status_code, headers=response.headers
+        )
+        return response
+
+    def on_event(self, event: Any) -> None:
+        """Interrupt a public call-start hook when the control asks for failure before admission."""
+        if event.name == "call_end":
+            self.ended.set()
+        if self.case.get("before_call") and event.name == "call_start":
+            raise self.native
+
+    def send(self, request: Any, context: Any) -> Any:
+        if self.case.get("before_send"):
+            raise self.native
+        items = self._transmitted(b"".join(request.body.iter_bytes()), context)
+        if self.case.get("gate") or self.case.get("source_gate"):
+            self.release.wait(30)
+        if self.case.get("native") and items[0]["id"] == "u0000":
+            if self.case.get("sibling"):
+                self.completed.wait(30)
+            raise self.native
+        return self._response(items, context, _BoundaryResponse)
+
+    def close(self) -> None:
+        """Leave this borrowed adapter with its caller."""
+
+
+class _AsyncBoundaryTransport(_BoundaryTransport):
+    """Drive the same controls with native async sends and event waits."""
+
+    async def send(self, request: Any, context: Any) -> Any:
+        if self.case.get("before_send"):
+            raise self.native
+        items = self._transmitted(b"".join([part async for part in request.body.aiter_bytes()]), context)
+        if self.case.get("gate") or self.case.get("source_gate"):
+            await self.release.wait()
+        if self.case.get("native") and items[0]["id"] == "u0000":
+            if self.case.get("sibling"):
+                await self.completed.wait()
+            raise self.native
+        return self._response(items, context, _AsyncBoundaryResponse)
+
+    async def aclose(self) -> None:
+        """Leave this borrowed adapter with its caller."""
+
+
+def _boundary_cases() -> dict[str, Any]:
+    return json.loads((Path(__file__).parents[1] / "generation_platform/client/batch-boundaries.json").read_text())
+
+
+def _boundary_failure(error: Exception) -> str:
+    partial = [(item.index, item.outcome) for item in getattr(error, "partial_results", ())]
+    cause = getattr(error, "cause", None)
+    return (
+        f"{type(error).__name__} state={getattr(error, 'delivery_state', None)} "
+        f"partial={partial} cause={type(cause).__name__ if cause is not None else None} "
+        f"nested={type(cause.cause).__name__ if getattr(cause, 'cause', None) is not None else None}"
+    )
+
+
+def _boundary_report(lines: list[str], transport: Any) -> None:
+    lines.append(f"    sends={len(transport.requests)} closed={[reply.closed for reply in transport.responses]}")
+
+
+def _submission_source(items: list[Any], transport: Any) -> Iterator[Any]:
+    """Release a worker interruption while acquiring lookahead, then return the already-entered source item."""
+    yield items[0]
+    transport.release.set()
+    transport.ended.wait(30)
+    yield items[1]
+    yield from items[2:]
+
+
+async def _async_submission_source(items: list[Any], transport: Any) -> AsyncIterator[Any]:
+    """Release the async worker at source entry, and return lookahead only after its interruption is published."""
+    yield items[0]
+    transport.release.set()
+    await transport.ended.wait()
+    for item in items[1:]:
+        yield item
+
+
+def _boundary_controls(harness: _Batches, lines: list[str]) -> None:
+    cases = _boundary_cases()
+    lines.append("sync boundary controls")
+    for case in cases["decoding"]:
+        for raising in (False, True):
+            transport = _BoundaryTransport(harness, case)
+            with harness.package.Client(transport_adapter=transport) as api:
+                iterator = api.protocols.users.create.iterate(
+                    harness.users(4), batch_options=harness.batch(batch_size=2, parallelism=2, raise_on_error=raising)
+                )
+                continued(lines, f"{case['label']} raising={raising}", iterator, failure_description=_boundary_failure)
+                iterator.close()
+            _boundary_report(lines, transport)
+    for case in cases["interruptions"]:
+        for raising in (False, True):
+            transport = _BoundaryTransport(harness, case)
+            with harness.package.Client(transport_adapter=transport) as api:
+                iterator = api.protocols.users.create.iterate(
+                    _submission_source(harness.users(6), transport) if case.get("source_gate") else harness.users(6),
+                    options=harness.options.RequestOptions(hooks=(transport,)),
+                    batch_options=harness.batch(
+                        batch_size=1 if case.get("source_gate") else 2,
+                        parallelism=2 if case.get("sibling") or case.get("source_gate") else 1,
+                        raise_on_error=raising,
+                    ),
+                )
+                try:
+                    next(iterator)
+                except (KeyboardInterrupt, _Interrupt) as error:
+                    lines.append(f"  {case['label']} raising={raising}: original={error is transport.native}")
+                continued(lines, "retained after interruption", iterator, failure_description=_boundary_failure)
+                iterator.close()
+            _boundary_report(lines, transport)
+    for active in (False, True):
+        for raising in (False, True):
+            transport = _BoundaryTransport(harness, {"gate": active})
+            api = harness.package.Client(
+                transport_adapter=transport, options=harness.client_options(cleanup_timeout=0.05)
+            )
+            iterator = api.protocols.users.create.iterate(
+                harness.users(2), batch_options=harness.batch(parallelism=1, raise_on_error=raising)
+            )
+            records: list[str] = []
+            worker = threading.Thread(
+                target=partial(continued, records, "closed", iterator, failure_description=_boundary_failure)
+            )
+            if active:
+                worker.start()
+                transport.started.wait(30)
+            with suppress(harness.errors.CleanupError):
+                api.close()
+            transport.release.set()
+            if active:
+                worker.join(30)
+            else:
+                continued(records, "closed", iterator, failure_description=_boundary_failure)
+            lines.append(f"  client close active={active} raising={raising}")
+            lines.extend(records)
+            iterator.close()
+            api.close()
+            _boundary_report(lines, transport)
+    transport = _BoundaryTransport(harness, {"gate": True})
+    with harness.package.Client(transport_adapter=transport) as api:
+        source = _Counted(harness.users(2, name="x" * 7))
+        iterator = api.protocols.users.create.iterate(source, batch_options=harness.batch(**cases["buffer"]))
+        result: list[Any] = []
+        worker = threading.Thread(target=lambda: result.append(next(iterator)))
+        worker.start()
+        transport.started.wait(30)
+        held = sum(
+            len(json.dumps(item, separators=(",", ":")).encode()) for batch in transport.requests for item in batch
+        )
+        lines.append(f"  gated buffer before return: read={source.read} sends={len(transport.requests)} bytes={held}")
+        transport.release.set()
+        worker.join(30)
+        result.extend(iterator)
+        lines.append(f"  gated buffer results={[(item.index, item.outcome) for item in result]}")
+        iterator.close()
+    _boundary_report(lines, transport)
+
+
+async def _async_boundary_controls(harness: _Batches, lines: list[str]) -> None:
+    cases = _boundary_cases()
+    lines.append("async boundary controls")
+    for case in cases["decoding"]:
+        for raising in (False, True):
+            transport = _AsyncBoundaryTransport(harness, case, asynchronous=True)
+            async with harness.package.AsyncClient(transport_adapter=transport) as api:
+                iterator = api.protocols.users.create.iterate(
+                    harness.users(4), batch_options=harness.batch(batch_size=2, parallelism=2, raise_on_error=raising)
+                )
+                await acontinued(
+                    lines, f"{case['label']} raising={raising}", iterator, failure_description=_boundary_failure
+                )
+                await iterator.aclose()
+            _boundary_report(lines, transport)
+    for case in cases["interruptions"]:
+        for raising in (False, True):
+            transport = _AsyncBoundaryTransport(harness, case, asynchronous=True)
+            async with harness.package.AsyncClient(transport_adapter=transport) as api:
+                iterator = api.protocols.users.create.iterate(
+                    _async_submission_source(harness.users(6), transport)
+                    if case.get("source_gate")
+                    else harness.users(6),
+                    options=harness.options.RequestOptions(hooks=(transport,)),
+                    batch_options=harness.batch(
+                        batch_size=1 if case.get("source_gate") else 2,
+                        parallelism=2 if case.get("sibling") or case.get("source_gate") else 1,
+                        raise_on_error=raising,
+                    ),
+                )
+                try:
+                    await anext(iterator)
+                except (asyncio.CancelledError, _Interrupt) as error:
+                    lines.append(f"  {case['label']} raising={raising}: original={error is transport.native}")
+                await acontinued(lines, "retained after interruption", iterator, failure_description=_boundary_failure)
+                await iterator.aclose()
+            _boundary_report(lines, transport)
+    for active in (False, True):
+        for raising in (False, True):
+            transport = _AsyncBoundaryTransport(harness, {"gate": active}, asynchronous=True)
+            api = harness.package.AsyncClient(transport_adapter=transport)
+            iterator = api.protocols.users.create.iterate(
+                harness.users(2), batch_options=harness.batch(parallelism=1, raise_on_error=raising)
+            )
+            records: list[str] = []
+            if active:
+                worker = asyncio.create_task(
+                    acontinued(records, "closed", iterator, failure_description=_boundary_failure)
+                )
+                await transport.started.wait()
+            await api.aclose()
+            if active:
+                await worker
+            else:
+                await acontinued(records, "closed", iterator, failure_description=_boundary_failure)
+            lines.append(f"  client close active={active} raising={raising}")
+            lines.extend(records)
+            await iterator.aclose()
+            _boundary_report(lines, transport)
+    for raising in cases["caller_cancellation"]:
+        transport = _AsyncBoundaryTransport(harness, {"gate": True}, asynchronous=True)
+        async with harness.package.AsyncClient(transport_adapter=transport) as api:
+            iterator = api.protocols.users.create.iterate(
+                harness.users(6), batch_options=harness.batch(batch_size=2, parallelism=1, raise_on_error=raising)
+            )
+            step = asyncio.create_task(anext(iterator))
+            await transport.started.wait()
+            step.cancel("caller interruption")
+            try:
+                await step
+            except asyncio.CancelledError as error:
+                lines.append(f"  caller cancelled raising={raising}: {type(error).__name__} args={error.args}")
+            await acontinued(
+                lines, "retained after caller cancellation", iterator, failure_description=_boundary_failure
+            )
+            await iterator.aclose()
+        _boundary_report(lines, transport)
+    transport = _AsyncBoundaryTransport(harness, {"gate": True}, asynchronous=True)
+    async with harness.package.AsyncClient(transport_adapter=transport) as api:
+        source = _Counted(harness.users(2, name="x" * 7))
+        iterator = api.protocols.users.create.iterate(source, batch_options=harness.batch(**cases["buffer"]))
+        step = asyncio.create_task(anext(iterator))
+        await transport.started.wait()
+        held = sum(
+            len(json.dumps(item, separators=(",", ":")).encode()) for batch in transport.requests for item in batch
+        )
+        lines.append(f"  gated buffer before return: read={source.read} sends={len(transport.requests)} bytes={held}")
+        transport.release.set()
+        result = [await step]
+        result.extend([item async for item in iterator])
+        lines.append(f"  gated buffer results={[(item.index, item.outcome) for item in result]}")
+        await iterator.aclose()
+    _boundary_report(lines, transport)
+    await _source_controls(harness, lines, cases["source_controls"])
+
+
+class _BlockedSource:
+    """A source whose event wait records entry and release on interruption."""
+
+    def __init__(self, stepped: Any) -> None:
+        self.entered, self.release = asyncio.Event(), asyncio.Event()
+        self.exited = False
+        self.stepped = stepped
+
+    def __aiter__(self) -> _BlockedSource:
+        return self
+
+    async def __anext__(self) -> Any:
+        self.entered.set()
+        try:
+            if self.stepped is not None:
+                self.stepped.value += 10
+            await self.release.wait()
+        finally:
+            self.exited = True
+        raise StopAsyncIteration
+
+
+async def _source_controls(harness: _Batches, lines: list[str], controls: list[str]) -> None:
+    for reason in controls:
+        for during in (False, True):
+            stepped = _Stepped()
+            clock = harness.options.Clock(monotonic=stepped)
+            token = harness.options.CancelToken()
+            transport = _AsyncBoundaryTransport(harness, {}, asynchronous=True)
+            api = harness.package.AsyncClient(transport_adapter=transport, options=harness.client_options(clock=clock))
+            source = _BlockedSource(stepped if during and reason == "deadline" else None)
+            iterator = api.protocols.users.create.iterate(
+                source,
+                session_options=harness.options.SessionOptions(total_timeout=1),
+                options=harness.options.RequestOptions(cancel_token=token),
+            )
+            if not during:
+                if reason == "deadline":
+                    stepped.value += 10
+                elif reason == "token":
+                    token.cancel()
+                else:
+                    await api.aclose()
+            task = asyncio.create_task(anext(iterator))
+            if during:
+                await source.entered.wait()
+                if reason == "token":
+                    token.cancel()
+                elif reason == "close":
+                    await api.aclose()
+            result = await asyncio.gather(task, return_exceptions=True)
+            lines.append(
+                f"  source {reason} during={during}: entered={source.entered.is_set()} exited={source.exited} "
+                f"result={[type(item).__name__ for item in result]} sends={len(transport.requests)}"
+            )
+            await iterator.aclose()
+            await api.aclose()

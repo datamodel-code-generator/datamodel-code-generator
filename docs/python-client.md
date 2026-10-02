@@ -1673,6 +1673,11 @@ short waits for the oldest request instead, so at most `parallelism × batch_siz
 of the results. With `id`
 correlation, results may come in any order; with `position`, they must come in item order.
 
+Before reading another item, the iterator reserves room for its maximum allowed encoded size. A small
+`max_buffer_bytes` can therefore reduce chunk sizes and concurrency; a smaller `max_item_bytes` lets small items
+share the buffer more efficiently. Asynchronous source waits use the session deadline, cancellation token, and
+client close guards, including a check before entering the source.
+
 ### Results and failures
 
 A result item must carry exactly one of the success and error members, neither missing nor null. A response whose
@@ -1708,7 +1713,11 @@ iteration. Neither closes the client. A step of an `AsyncBatchIterator` that is 
 `<Helper>DeliveryUnknown` record per item of the cancelled requests, or raise `BatchDeliveryUnknownError` with
 `raise_on_error`, then raise `ProtocolStateError` with `state='cancelled'`, so the items read but never sent are not
 dropped silently. A `BatchIterator` interrupted while it reads the items, such as by `KeyboardInterrupt` from the
-caller's iterator, cancels the requests not started and ends the same way after the records of those in flight. Calling a step while another one runs raises `ProtocolStateError` with `state='iterating'`.
+caller's iterator, cancels the requests not started and ends the same way after the records of those in flight.
+Native interruptions raised inside a worker also propagate unchanged and stop new submissions. Following steps
+retain unknown records for requests admitted before interruption and completed sibling results; requests never
+admitted produce no unknown records. Calling a step while another one runs raises `ProtocolStateError` with
+`state='iterating'`.
 
 ### Limits and sessions
 

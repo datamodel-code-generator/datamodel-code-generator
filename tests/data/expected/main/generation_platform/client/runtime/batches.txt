@@ -71,11 +71,31 @@ read-ahead bounds
     > u0010 POST /users/batch items=5 last=u0014 bytes=171
     > u0015 POST /users/batch items=5 last=u0019 bytes=171
     > u0020 POST /users/batch items=3 last=u0022 bytes=107
-  buffer of one request: results 23 read ahead [13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
-  buffer of one request: 3 requests
-    > u0000 POST /users/batch items=10 last=u0009 bytes=321
-    > u0010 POST /users/batch items=10 last=u0019 bytes=331
-    > u0020 POST /users/batch items=3 last=u0022 bytes=107
+  buffer of one request: results 23 read ahead [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  buffer of one request: 23 requests
+    > u0000 POST /users/batch items=1 last=u0000 bytes=42
+    > u0001 POST /users/batch items=1 last=u0001 bytes=42
+    > u0002 POST /users/batch items=1 last=u0002 bytes=42
+    > u0003 POST /users/batch items=1 last=u0003 bytes=42
+    > u0004 POST /users/batch items=1 last=u0004 bytes=42
+    > u0005 POST /users/batch items=1 last=u0005 bytes=42
+    > u0006 POST /users/batch items=1 last=u0006 bytes=42
+    > u0007 POST /users/batch items=1 last=u0007 bytes=42
+    > u0008 POST /users/batch items=1 last=u0008 bytes=42
+    > u0009 POST /users/batch items=1 last=u0009 bytes=42
+    > u0010 POST /users/batch items=1 last=u0010 bytes=43
+    > u0011 POST /users/batch items=1 last=u0011 bytes=43
+    > u0012 POST /users/batch items=1 last=u0012 bytes=43
+    > u0013 POST /users/batch items=1 last=u0013 bytes=43
+    > u0014 POST /users/batch items=1 last=u0014 bytes=43
+    > u0015 POST /users/batch items=1 last=u0015 bytes=43
+    > u0016 POST /users/batch items=1 last=u0016 bytes=43
+    > u0017 POST /users/batch items=1 last=u0017 bytes=43
+    > u0018 POST /users/batch items=1 last=u0018 bytes=43
+    > u0019 POST /users/batch items=1 last=u0019 bytes=43
+    > u0020 POST /users/batch items=1 last=u0020 bytes=43
+    > u0021 POST /users/batch items=1 last=u0021 bytes=43
+    > u0022 POST /users/batch items=1 last=u0022 bytes=43
 limits
   too large item: 2 results in order True {'success': 1, 'error': 1, 'delivery_unknown': 0}
     error #0 id='u0000' status=200 error=taken
@@ -417,3 +437,337 @@ errors
   message id type ! ValueError: message_id must be a string or None []
   resume state type ! ValueError: resume_state must be a ResumeState or None []
   read-only partial results ! AttributeError: property 'partial_results' of 'BatchDeliveryUnknownError' object has no setter []
+sync boundary controls
+  invalid JSON raising=False: 4 results in order True {'success': 2, 'error': 0, 'delivery_unknown': 2}
+    delivery_unknown #0 id='u0000' status=None no payload
+    delivery_unknown #1 id='u0001' status=None no payload
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    sends=2 closed=[True, True]
+  invalid JSON raising=True: 2 results in order False {'success': 2, 'error': 0, 'delivery_unknown': 0}
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    ! after 0: BatchDeliveryUnknownError state=DeliveryState.RESPONSE_STARTED partial=[(0, 'delivery_unknown'), (1, 'delivery_unknown')] cause=DecodeError nested=WireValidationError
+    sends=2 closed=[True, True]
+  invalid model raising=False: 4 results in order True {'success': 2, 'error': 0, 'delivery_unknown': 2}
+    delivery_unknown #0 id='u0000' status=None no payload
+    delivery_unknown #1 id='u0001' status=None no payload
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    sends=2 closed=[True, True]
+  invalid model raising=True: 2 results in order False {'success': 2, 'error': 0, 'delivery_unknown': 0}
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    ! after 0: BatchDeliveryUnknownError state=DeliveryState.RESPONSE_STARTED partial=[(0, 'delivery_unknown'), (1, 'delivery_unknown')] cause=ResponseValidationError nested=NativeValidationError
+    sends=2 closed=[True, True]
+  corrupt gzip raising=False: 4 results in order True {'success': 2, 'error': 0, 'delivery_unknown': 2}
+    delivery_unknown #0 id='u0000' status=None no payload
+    delivery_unknown #1 id='u0001' status=None no payload
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    sends=2 closed=[True, True]
+  corrupt gzip raising=True: 2 results in order False {'success': 2, 'error': 0, 'delivery_unknown': 0}
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    ! after 0: BatchDeliveryUnknownError state=DeliveryState.RESPONSE_STARTED partial=[(0, 'delivery_unknown'), (1, 'delivery_unknown')] cause=ProtocolDataError nested=error
+    sends=2 closed=[True, True]
+  unsupported coding raising=False: 4 results in order True {'success': 2, 'error': 0, 'delivery_unknown': 2}
+    delivery_unknown #0 id='u0000' status=None no payload
+    delivery_unknown #1 id='u0001' status=None no payload
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    sends=2 closed=[True, True]
+  unsupported coding raising=True: 2 results in order False {'success': 2, 'error': 0, 'delivery_unknown': 0}
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    ! after 0: BatchDeliveryUnknownError state=DeliveryState.RESPONSE_STARTED partial=[(0, 'delivery_unknown'), (1, 'delivery_unknown')] cause=UnsupportedContentCodingError nested=None
+    sends=2 closed=[True, True]
+  coding depth raising=False: 4 results in order True {'success': 2, 'error': 0, 'delivery_unknown': 2}
+    delivery_unknown #0 id='u0000' status=None no payload
+    delivery_unknown #1 id='u0001' status=None no payload
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    sends=2 closed=[True, True]
+  coding depth raising=True: 2 results in order False {'success': 2, 'error': 0, 'delivery_unknown': 0}
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    ! after 0: BatchDeliveryUnknownError state=DeliveryState.RESPONSE_STARTED partial=[(0, 'delivery_unknown'), (1, 'delivery_unknown')] cause=ProtocolSizeError nested=None
+    sends=2 closed=[True, True]
+  expansion limit raising=False: 4 results in order True {'success': 2, 'error': 0, 'delivery_unknown': 2}
+    delivery_unknown #0 id='u0000' status=None no payload
+    delivery_unknown #1 id='u0001' status=None no payload
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    sends=2 closed=[True, True]
+  expansion limit raising=True: 2 results in order False {'success': 2, 'error': 0, 'delivery_unknown': 0}
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    ! after 0: BatchDeliveryUnknownError state=DeliveryState.RESPONSE_STARTED partial=[(0, 'delivery_unknown'), (1, 'delivery_unknown')] cause=DecompressionLimitError nested=None
+    sends=2 closed=[True, True]
+  unsuccessful corrupt gzip raising=False: 2 results in order False {'success': 2, 'error': 0, 'delivery_unknown': 0}
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    ! after 0: CreateUsersHTTPError state=None partial=[] cause=None nested=None
+    sends=2 closed=[True, True]
+  unsuccessful corrupt gzip raising=True: 2 results in order False {'success': 2, 'error': 0, 'delivery_unknown': 0}
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    ! after 0: CreateUsersHTTPError state=None partial=[] cause=None nested=None
+    sends=2 closed=[True, True]
+  worker interrupted raising=False: original=True
+  retained after interruption: 2 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 2}
+    delivery_unknown #0 id='u0000' status=None no payload
+    delivery_unknown #1 id='u0001' status=None no payload
+    ! after 2: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=1 closed=[]
+  worker interrupted raising=True: original=True
+  retained after interruption: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: BatchDeliveryUnknownError state=DeliveryState.MAYBE_SENT partial=[(0, 'delivery_unknown'), (1, 'delivery_unknown')] cause=KeyboardInterrupt nested=None
+    ! after 0: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=1 closed=[]
+  worker interrupted with sibling raising=False: original=True
+  retained after interruption: 4 results in order True {'success': 2, 'error': 0, 'delivery_unknown': 2}
+    delivery_unknown #0 id='u0000' status=None no payload
+    delivery_unknown #1 id='u0001' status=None no payload
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    ! after 4: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=2 closed=[True]
+  worker interrupted with sibling raising=True: original=True
+  retained after interruption: 2 results in order False {'success': 2, 'error': 0, 'delivery_unknown': 0}
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    ! after 0: BatchDeliveryUnknownError state=DeliveryState.MAYBE_SENT partial=[(0, 'delivery_unknown'), (1, 'delivery_unknown')] cause=KeyboardInterrupt nested=None
+    ! after 2: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=2 closed=[True]
+  worker interrupted before headers raising=False: original=True
+  retained after interruption: 2 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 2}
+    delivery_unknown #0 id='u0000' status=None no payload
+    delivery_unknown #1 id='u0001' status=None no payload
+    ! after 2: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=0 closed=[]
+  worker interrupted before headers raising=True: original=True
+  retained after interruption: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: BatchDeliveryUnknownError state=DeliveryState.MAYBE_SENT partial=[(0, 'delivery_unknown'), (1, 'delivery_unknown')] cause=KeyboardInterrupt nested=None
+    ! after 0: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=0 closed=[]
+  worker interrupted before admission raising=False: original=True
+  retained after interruption: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=0 closed=[]
+  worker interrupted before admission raising=True: original=True
+  retained after interruption: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=0 closed=[]
+  other native worker interruption raising=False: original=True
+  retained after interruption: 2 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 2}
+    delivery_unknown #0 id='u0000' status=None no payload
+    delivery_unknown #1 id='u0001' status=None no payload
+    ! after 2: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=1 closed=[]
+  other native worker interruption raising=True: original=True
+  retained after interruption: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: BatchDeliveryUnknownError state=DeliveryState.MAYBE_SENT partial=[(0, 'delivery_unknown'), (1, 'delivery_unknown')] cause=_Interrupt nested=None
+    ! after 0: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=1 closed=[]
+  worker interrupted while acquiring lookahead raising=False: original=True
+  retained after interruption: 1 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 1}
+    delivery_unknown #0 id='u0000' status=None no payload
+    ! after 1: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=1 closed=[]
+  worker interrupted while acquiring lookahead raising=True: original=True
+  retained after interruption: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: BatchDeliveryUnknownError state=DeliveryState.MAYBE_SENT partial=[(0, 'delivery_unknown')] cause=KeyboardInterrupt nested=None
+    ! after 0: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=1 closed=[]
+  client close active=False raising=False
+  closed: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: ClientClosedError state=None partial=[] cause=None nested=None
+    sends=0 closed=[]
+  client close active=False raising=True
+  closed: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: ClientClosedError state=None partial=[] cause=None nested=None
+    sends=0 closed=[]
+  client close active=True raising=False
+  closed: 2 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 2}
+    delivery_unknown #0 id='u0000' status=None no payload
+    delivery_unknown #1 id='u0001' status=None no payload
+    ! after 2: ClientClosedError state=None partial=[] cause=None nested=None
+    sends=1 closed=[True]
+  client close active=True raising=True
+  closed: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: BatchDeliveryUnknownError state=DeliveryState.RESPONSE_STARTED partial=[(0, 'delivery_unknown'), (1, 'delivery_unknown')] cause=ClientClosedError nested=None
+    sends=1 closed=[True]
+  gated buffer before return: read=1 sends=1 bytes=33
+  gated buffer results=[(0, 'success'), (1, 'success')]
+    sends=2 closed=[True, True]
+async boundary controls
+  invalid JSON raising=False: 4 results in order True {'success': 2, 'error': 0, 'delivery_unknown': 2}
+    delivery_unknown #0 id='u0000' status=None no payload
+    delivery_unknown #1 id='u0001' status=None no payload
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    sends=2 closed=[True, True]
+  invalid JSON raising=True: 2 results in order False {'success': 2, 'error': 0, 'delivery_unknown': 0}
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    ! after 0: BatchDeliveryUnknownError state=DeliveryState.RESPONSE_STARTED partial=[(0, 'delivery_unknown'), (1, 'delivery_unknown')] cause=DecodeError nested=WireValidationError
+    sends=2 closed=[True, True]
+  invalid model raising=False: 4 results in order True {'success': 2, 'error': 0, 'delivery_unknown': 2}
+    delivery_unknown #0 id='u0000' status=None no payload
+    delivery_unknown #1 id='u0001' status=None no payload
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    sends=2 closed=[True, True]
+  invalid model raising=True: 2 results in order False {'success': 2, 'error': 0, 'delivery_unknown': 0}
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    ! after 0: BatchDeliveryUnknownError state=DeliveryState.RESPONSE_STARTED partial=[(0, 'delivery_unknown'), (1, 'delivery_unknown')] cause=ResponseValidationError nested=NativeValidationError
+    sends=2 closed=[True, True]
+  corrupt gzip raising=False: 4 results in order True {'success': 2, 'error': 0, 'delivery_unknown': 2}
+    delivery_unknown #0 id='u0000' status=None no payload
+    delivery_unknown #1 id='u0001' status=None no payload
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    sends=2 closed=[True, True]
+  corrupt gzip raising=True: 2 results in order False {'success': 2, 'error': 0, 'delivery_unknown': 0}
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    ! after 0: BatchDeliveryUnknownError state=DeliveryState.RESPONSE_STARTED partial=[(0, 'delivery_unknown'), (1, 'delivery_unknown')] cause=ProtocolDataError nested=error
+    sends=2 closed=[True, True]
+  unsupported coding raising=False: 4 results in order True {'success': 2, 'error': 0, 'delivery_unknown': 2}
+    delivery_unknown #0 id='u0000' status=None no payload
+    delivery_unknown #1 id='u0001' status=None no payload
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    sends=2 closed=[True, True]
+  unsupported coding raising=True: 2 results in order False {'success': 2, 'error': 0, 'delivery_unknown': 0}
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    ! after 0: BatchDeliveryUnknownError state=DeliveryState.RESPONSE_STARTED partial=[(0, 'delivery_unknown'), (1, 'delivery_unknown')] cause=UnsupportedContentCodingError nested=None
+    sends=2 closed=[True, True]
+  coding depth raising=False: 4 results in order True {'success': 2, 'error': 0, 'delivery_unknown': 2}
+    delivery_unknown #0 id='u0000' status=None no payload
+    delivery_unknown #1 id='u0001' status=None no payload
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    sends=2 closed=[True, True]
+  coding depth raising=True: 2 results in order False {'success': 2, 'error': 0, 'delivery_unknown': 0}
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    ! after 0: BatchDeliveryUnknownError state=DeliveryState.RESPONSE_STARTED partial=[(0, 'delivery_unknown'), (1, 'delivery_unknown')] cause=ProtocolSizeError nested=None
+    sends=2 closed=[True, True]
+  expansion limit raising=False: 4 results in order True {'success': 2, 'error': 0, 'delivery_unknown': 2}
+    delivery_unknown #0 id='u0000' status=None no payload
+    delivery_unknown #1 id='u0001' status=None no payload
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    sends=2 closed=[True, True]
+  expansion limit raising=True: 2 results in order False {'success': 2, 'error': 0, 'delivery_unknown': 0}
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    ! after 0: BatchDeliveryUnknownError state=DeliveryState.RESPONSE_STARTED partial=[(0, 'delivery_unknown'), (1, 'delivery_unknown')] cause=DecompressionLimitError nested=None
+    sends=2 closed=[True, True]
+  unsuccessful corrupt gzip raising=False: 2 results in order False {'success': 2, 'error': 0, 'delivery_unknown': 0}
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    ! after 0: CreateUsersHTTPError state=None partial=[] cause=None nested=None
+    sends=2 closed=[True, True]
+  unsuccessful corrupt gzip raising=True: 2 results in order False {'success': 2, 'error': 0, 'delivery_unknown': 0}
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    ! after 0: CreateUsersHTTPError state=None partial=[] cause=None nested=None
+    sends=2 closed=[True, True]
+  worker interrupted raising=False: original=True
+  retained after interruption: 2 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 2}
+    delivery_unknown #0 id='u0000' status=None no payload
+    delivery_unknown #1 id='u0001' status=None no payload
+    ! after 2: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=1 closed=[]
+  worker interrupted raising=True: original=True
+  retained after interruption: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: BatchDeliveryUnknownError state=DeliveryState.MAYBE_SENT partial=[(0, 'delivery_unknown'), (1, 'delivery_unknown')] cause=CancelledError nested=None
+    ! after 0: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=1 closed=[]
+  worker interrupted with sibling raising=False: original=True
+  retained after interruption: 4 results in order True {'success': 2, 'error': 0, 'delivery_unknown': 2}
+    delivery_unknown #0 id='u0000' status=None no payload
+    delivery_unknown #1 id='u0001' status=None no payload
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    ! after 4: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=2 closed=[True]
+  worker interrupted with sibling raising=True: original=True
+  retained after interruption: 2 results in order False {'success': 2, 'error': 0, 'delivery_unknown': 0}
+    success #2 id='u0002' status=200 value=u0002
+    success #3 id='u0003' status=200 value=u0003
+    ! after 0: BatchDeliveryUnknownError state=DeliveryState.MAYBE_SENT partial=[(0, 'delivery_unknown'), (1, 'delivery_unknown')] cause=CancelledError nested=None
+    ! after 2: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=2 closed=[True]
+  worker interrupted before headers raising=False: original=True
+  retained after interruption: 2 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 2}
+    delivery_unknown #0 id='u0000' status=None no payload
+    delivery_unknown #1 id='u0001' status=None no payload
+    ! after 2: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=0 closed=[]
+  worker interrupted before headers raising=True: original=True
+  retained after interruption: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: BatchDeliveryUnknownError state=DeliveryState.MAYBE_SENT partial=[(0, 'delivery_unknown'), (1, 'delivery_unknown')] cause=CancelledError nested=None
+    ! after 0: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=0 closed=[]
+  worker interrupted before admission raising=False: original=True
+  retained after interruption: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=0 closed=[]
+  worker interrupted before admission raising=True: original=True
+  retained after interruption: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=0 closed=[]
+  other native worker interruption raising=False: original=True
+  retained after interruption: 2 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 2}
+    delivery_unknown #0 id='u0000' status=None no payload
+    delivery_unknown #1 id='u0001' status=None no payload
+    ! after 2: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=1 closed=[]
+  other native worker interruption raising=True: original=True
+  retained after interruption: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: BatchDeliveryUnknownError state=DeliveryState.MAYBE_SENT partial=[(0, 'delivery_unknown'), (1, 'delivery_unknown')] cause=_Interrupt nested=None
+    ! after 0: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=1 closed=[]
+  worker interrupted while acquiring lookahead raising=False: original=True
+  retained after interruption: 1 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 1}
+    delivery_unknown #0 id='u0000' status=None no payload
+    ! after 1: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=1 closed=[]
+  worker interrupted while acquiring lookahead raising=True: original=True
+  retained after interruption: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: BatchDeliveryUnknownError state=DeliveryState.MAYBE_SENT partial=[(0, 'delivery_unknown')] cause=CancelledError nested=None
+    ! after 0: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=1 closed=[]
+  client close active=False raising=False
+  closed: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: ClientClosedError state=None partial=[] cause=None nested=None
+    sends=0 closed=[]
+  client close active=False raising=True
+  closed: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: ClientClosedError state=None partial=[] cause=None nested=None
+    sends=0 closed=[]
+  client close active=True raising=False
+  closed: 2 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 2}
+    delivery_unknown #0 id='u0000' status=None no payload
+    delivery_unknown #1 id='u0001' status=None no payload
+    ! after 2: ClientClosedError state=None partial=[] cause=None nested=None
+    sends=1 closed=[]
+  client close active=True raising=True
+  closed: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: BatchDeliveryUnknownError state=DeliveryState.MAYBE_SENT partial=[(0, 'delivery_unknown'), (1, 'delivery_unknown')] cause=ClientClosedError nested=None
+    sends=1 closed=[]
+  gated buffer before return: read=1 sends=1 bytes=33
+  gated buffer results=[(0, 'success'), (1, 'success')]
+    sends=2 closed=[True, True]
+  source deadline during=False: entered=False exited=False result=['DeadlineExceededError'] sends=0
+  source deadline during=True: entered=True exited=True result=['DeadlineExceededError'] sends=0
+  source token during=False: entered=False exited=False result=['RequestCancelledError'] sends=0
+  source token during=True: entered=True exited=True result=['RequestCancelledError'] sends=0
+  source close during=False: entered=False exited=False result=['ClientClosedError'] sends=0
+  source close during=True: entered=True exited=True result=['ClientClosedError'] sends=0
