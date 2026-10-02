@@ -482,3 +482,8 @@ sent after it, and the requests in flight still return their records in order. A
 requests in flight, whose items become unknown deliveries, and the iteration then ends with `ProtocolStateError`.
 Iterate in a `with` or `async with` block: `close()` or `aclose()` stops sending and drops the results not yet
 returned; it never closes the client. A call's options must not fix an idempotency key.
+
+## Request compression
+
+No operation of this package declares a request content coding, so `compression` in `ClientOptions` and views turns
+off for every call, and a call's own `RequestOptions(compression="gzip")` raises `ConfigurationError` before sending.

@@ -17,8 +17,8 @@ from .._runtime.protocols.circuit_records import (
     CircuitSnapshot,
 )
 from .._runtime.protocols.options import (
-    BatchOptions,
     AsyncCircuitStore,
+    BatchOptions,
     CacheOptions,
     CircuitBreakerOptions,
     CircuitStore,
