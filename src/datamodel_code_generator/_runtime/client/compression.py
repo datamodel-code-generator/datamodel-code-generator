@@ -45,7 +45,8 @@ def gzipped_attempt(attempt: EncodedAttempt, check: Callable[[], None]) -> Encod
 
     `check` runs before each step, so a cancelled or expired call stops compressing a large body.
     """
-    content, output = attempt.content, []
+    content = attempt.content
+    output: list[bytes] = []
     compressor = _compressor()
     for offset in range(0, len(content), CHUNK):
         check()
