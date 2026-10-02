@@ -957,20 +957,34 @@ def _clock(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lin
     ticks = [1000.0]
     wall = datetime(3000, 1, 1, tzinfo=timezone.utc).timestamp()
     clock = harness.options.Clock(monotonic=lambda: ticks[0], time=lambda: wall)
+    values = json.loads(
+        (Path(__file__).parents[1] / "generation_platform/client/defaults.json").read_text(encoding="utf-8")
+    )["upload_limits"]
     with (
         exchange.client() as native,
         harness.package.Client(http_client=native, options=harness.client_options(clock=clock)) as timed,
     ):
         helper = timed.protocols.files.upload
-        exchange.respond(server, server)
-        handle = helper.start(harness.source(), tus_resumable=harness.tus)
-        step(lines, "advance", handle.advance)
-        state = handle.checkpoint()
-        record(
-            lines, "resume a checkpoint whose expiry the clock passed", lambda: helper.resume(harness.source(), state)
-        )
-        ticks[0] += 601
-        step(lines, "advance once the clock passed the session's total timeout", handle.advance)
+        for label, session in (
+            ("explicit", harness.session(total_timeout=values["total_timeout"])),
+            ("default", None),
+        ):
+            exchange.respond(server, server)
+            handle = helper.start(harness.source(), tus_resumable=harness.tus, session_options=session)
+            step(lines, f"{label} advance", handle.advance)
+            state = handle.checkpoint()
+            record(
+                lines,
+                "resume a checkpoint whose expiry the clock passed",
+                lambda state=state: helper.resume(harness.source(), state),
+            )
+            ticks[0] += values["clock_step"]
+            if session is None:
+                exchange.respond(server, server)
+            step(lines, f"{label} advance once the clock passed the former session timeout", handle.advance)
+            if session is None:
+                step(lines, "default upload completes", handle.run)
+            handle.close()
 
 
 def _limits(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lines: list[str]) -> None:
@@ -1210,6 +1224,33 @@ async def _async_uploads(harness: _Uploads, server: _Server, lines: list[str]) -
                 lines.append(f"  hash a missing file ! {type(error).__name__}")
         lines.append(f"  async ranges: {await _async_ranges(content)}")
         _drained(exchange, lines)
+
+    values = json.loads(
+        (Path(__file__).parents[1] / "generation_platform/client/defaults.json").read_text(encoding="utf-8")
+    )["upload_limits"]
+    ticks = [0.0]
+    clock = harness.options.Clock(monotonic=lambda: ticks[0], time=lambda: 0.0)
+    async with (
+        exchange.async_client() as native,
+        package.AsyncClient(http_client=native, options=harness.client_options(clock=clock)) as timed,
+    ):
+        for label, session in (
+            ("explicit", harness.session(total_timeout=values["total_timeout"])),
+            ("default", None),
+        ):
+            exchange.respond(server, server)
+            handle = await timed.protocols.files.upload.start(
+                content, tus_resumable=harness.tus, session_options=session
+            )
+            await astep(lines, f"async {label} advance", handle.advance)
+            ticks[0] += values["clock_step"]
+            if session is None:
+                exchange.respond(server, server)
+            await astep(lines, f"async {label} advance after former timeout", handle.advance)
+            if session is None:
+                await astep(lines, "async default upload completes", handle.run)
+            await handle.aclose()
+            _drained(exchange, lines)
 
 
 async def _fifo_ranges(harness: _Uploads, lines: list[str]) -> None:
