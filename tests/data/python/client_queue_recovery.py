@@ -421,18 +421,19 @@ async def _matrix(package: ModuleType, lines: list[str], asynchronous: bool, pat
             await observed(f"cancelled expired lease intent={intent}", outbox.drain)
             await observed("cancelled lease entry", partial(outbox.inspect, receipt.entry_id))
         for category in inputs["records"]:
-            receipt = await _value(partial(outbox.operations.create_order.enqueue, body=queue.order))
-            entry = store.get(receipt.entry_id)
-            now = queue.time.now()
-            leased = store.claim(now=now, lease_until=now + timedelta(seconds=1), limit=1)[0].entry
-            store.compare_exchange(
-                receipt.entry_id,
-                leased.version,
-                replace(leased, result=queue.protocols.QueueOutcome(category=category)),
-            )
-            queue.time.advance(2)
-            await observed(f"record {category} no reclaim", outbox.drain)
-            await observed(f"record {category} entry", partial(outbox.inspect, entry.entry_id))
+            for cancelled in (False, True):
+                receipt = await _value(partial(outbox.operations.create_order.enqueue, body=queue.order))
+                entry = store.get(receipt.entry_id)
+                now = queue.time.now()
+                leased = store.claim(now=now, lease_until=now + timedelta(seconds=1), limit=1)[0].entry
+                store.compare_exchange(
+                    receipt.entry_id,
+                    leased.version,
+                    replace(leased, result=queue.protocols.QueueOutcome(category=category), cancel_requested=cancelled),
+                )
+                queue.time.advance(2)
+                await observed(f"record {category} cancel={cancelled} no reclaim", outbox.drain)
+                await observed(f"record {category} cancel={cancelled} entry", partial(outbox.inspect, entry.entry_id))
         queue.server.flush(lines)
         await shut(instance)
 
