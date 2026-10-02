@@ -112,7 +112,7 @@ def _uncancel(task: asyncio.Task[object] | None) -> int:
 
 
 async def _joined(tasks: tuple[asyncio.Task[None], ...]) -> None:
-    import asyncio  # ruff: ignore[import-outside-top-level]
+    import asyncio  # noqa: PLC0415
 
     await asyncio.wait(tasks)
     if failures := [failure for task in tasks if (failure := task_failure(task)) is not None]:
@@ -148,7 +148,7 @@ class _Guard:
         interruption: asyncio.Future[BaseException] | None = None,
     ) -> None:
         """Arm the call's deadline, stream idle limit, client closing signals, and token polling."""
-        import asyncio  # ruff: ignore[import-outside-top-level]
+        import asyncio  # noqa: PLC0415
 
         self._loop = loop = asyncio.get_running_loop()
         self.task: asyncio.Task[object] | None = asyncio.current_task()
@@ -243,7 +243,7 @@ class OperationSession:
         return (limit := self.send_limit) is None or self.network_send_budget_used + exchange < limit
 
 
-class LogicalCallContext:  # ruff: ignore[too-many-public-methods] - It owns every counter and budget of one call.
+class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of one call.
     """Keep all state belonging to a call, through stream handoff and the release of its owned work.
 
     A child call of a helper session also reserves its sends in that session's budget.
@@ -468,7 +468,7 @@ class LogicalCallContext:  # ruff: ignore[too-many-public-methods] - It owns eve
             return error
         try:
             self.check(phase, delivery_state, error)
-        except BaseException as failure:  # ruff: ignore[blind-except]
+        except BaseException as failure:  # noqa: BLE001
             return failure
         return self.snapshot_error(error) if isinstance(error, SDKError) else error
 
@@ -522,7 +522,7 @@ class LogicalCallContext:  # ruff: ignore[too-many-public-methods] - It owns eve
 
     async def asleep_until(self, not_before: float) -> None:
         """Wait in the caller's task under the call's guard, keeping its original deadline and cancellation."""
-        import asyncio  # ruff: ignore[import-outside-top-level]
+        import asyncio  # noqa: PLC0415
 
         await self.bounded(lambda: asyncio.sleep(max(0.0, not_before - self.monotonic())), phase="sleep")
 
@@ -625,7 +625,7 @@ class LogicalCallContext:  # ruff: ignore[too-many-public-methods] - It owns eve
 
     def _native(self, error: BaseException | None) -> BaseException:
         """Return the native cancellation that stops the call, even when the work suppressed or converted it."""
-        import asyncio  # ruff: ignore[import-outside-top-level]
+        import asyncio  # noqa: PLC0415
 
         if self._interrupted is None:
             self._interrupted = error if isinstance(error, asyncio.CancelledError) else asyncio.CancelledError()
@@ -636,13 +636,13 @@ class LogicalCallContext:  # ruff: ignore[too-many-public-methods] - It owns eve
 
         Another task that closes a handed-over stream keeps its own interruption.
         """
-        import asyncio  # ruff: ignore[import-outside-top-level]
+        import asyncio  # noqa: PLC0415
 
         return asyncio.current_task() is (self._task if (guard := self._guard) is None else guard.task)
 
     def _stopper(self, error: BaseException) -> _Guard | None:
         """Return the guard whose own request a cancellation is, rather than a native interruption."""
-        import asyncio  # ruff: ignore[import-outside-top-level]
+        import asyncio  # noqa: PLC0415
 
         guard = self._guard
         return (
@@ -678,7 +678,7 @@ class LogicalCallContext:  # ruff: ignore[too-many-public-methods] - It owns eve
         failure = cause if isinstance(cause, Exception) else None
         try:
             self.check(phase, delivery_state, failure)
-        except BaseException as error:  # ruff: ignore[blind-except]
+        except BaseException as error:  # noqa: BLE001
             return error
         delivery = self.delivery_state if delivery_state is None else delivery_state
         if guard.reason == "idle" and (idle_timeout := guard.idle_timeout) is not None:
@@ -709,7 +709,7 @@ class LogicalCallContext:  # ruff: ignore[too-many-public-methods] - It owns eve
 
         A cancellation the cleanup work raised itself replaces no failure unless the call's task is being cancelled.
         """
-        import asyncio  # ruff: ignore[import-outside-top-level]
+        import asyncio  # noqa: PLC0415
 
         return not isinstance(failure, Exception) and (
             not isinstance(failure, asyncio.CancelledError) or self._pending_native()
@@ -761,11 +761,11 @@ class LogicalCallContext:  # ruff: ignore[too-many-public-methods] - It owns eve
     ) -> T:
         try:
             result = await operation()
-        except BaseException as error:  # ruff: ignore[blind-except]
+        except BaseException as error:  # noqa: BLE001
             raise self.failure(error, phase, delivery_state) from None
         return await self._checked(result, phase, delivery_state, cleanup)
 
-    async def bounded(  # ruff: ignore[too-many-arguments]
+    async def bounded(  # noqa: PLR0913
         self,
         operation: Callable[[], Awaitable[T]],
         *,
@@ -801,8 +801,8 @@ class LogicalCallContext:  # ruff: ignore[too-many-public-methods] - It owns eve
         left = LEFT_WORK.set(self._left)
         try:
             result = await operation()
-        except BaseException as error:  # ruff: ignore[blind-except]
-            import asyncio  # ruff: ignore[import-outside-top-level]
+        except BaseException as error:  # noqa: BLE001
+            import asyncio  # noqa: PLC0415
 
             LEFT_WORK.reset(left)
             self._guard = None
@@ -836,14 +836,14 @@ class LogicalCallContext:  # ruff: ignore[too-many-public-methods] - It owns eve
         A primary failure that is the guard's own cancellation becomes the call's stop error first, so late failures
         stay on the error the caller receives.
         """
-        import asyncio  # ruff: ignore[import-outside-top-level]
+        import asyncio  # noqa: PLC0415
 
         error = self._kept(error)
         task = asyncio.create_task(_released(operation))
         self._scope.retain_cleanup(task, error, owner=self)
         try:
             await asyncio.wait((task,), timeout=self.settings.cleanup_timeout)
-        except BaseException as interrupted:  # ruff: ignore[blind-except]
+        except BaseException as interrupted:  # noqa: BLE001
             primary = interrupted
             if (guard := self._stopper(interrupted)) is None:
                 if not isinstance(interrupted, Exception) and self._interrupted is None and self._owning():

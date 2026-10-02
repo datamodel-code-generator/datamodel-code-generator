@@ -110,5 +110,9 @@
         "delivery_state": "RESPONSE_STARTED"
       }
     }
+  ],
+  "source_stops": [
+    false,
+    true
   ]
 }

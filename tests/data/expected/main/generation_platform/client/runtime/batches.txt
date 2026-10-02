@@ -438,6 +438,17 @@ errors
   resume state type ! ValueError: resume_state must be a ResumeState or None []
   read-only partial results ! AttributeError: property 'partial_results' of 'BatchDeliveryUnknownError' object has no setter []
 sync boundary controls
+  worker source stop raising=False: original=True read=[0, 1, 2]
+  retained source stop: 2 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 2}
+    delivery_unknown #0 id='u0000' status=None no payload
+    delivery_unknown #1 id='u0001' status=None no payload
+    ! after 2: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=1 closed=[]
+  worker source stop raising=True: original=True read=[0, 1, 2]
+  retained source stop: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: BatchDeliveryUnknownError state=DeliveryState.MAYBE_SENT partial=[(0, 'delivery_unknown'), (1, 'delivery_unknown')] cause=KeyboardInterrupt nested=None
+    ! after 0: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=1 closed=[]
   invalid JSON raising=False: 4 results in order True {'success': 2, 'error': 0, 'delivery_unknown': 2}
     delivery_unknown #0 id='u0000' status=None no payload
     delivery_unknown #1 id='u0001' status=None no payload
@@ -818,3 +829,25 @@ async boundary controls
   source token during=True: entered=True exited=True result=['RequestCancelledError'] sends=0
   source close during=False: entered=False exited=False result=['ClientClosedError'] sends=0
   source close during=True: entered=True exited=True result=['ClientClosedError'] sends=0
+  worker source stop pending=False raising=False: original=True read=[0, 1, 2] cleanup=True gate=False
+  retained source stop: 2 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 2}
+    delivery_unknown #0 id='u0000' status=None no payload
+    delivery_unknown #1 id='u0001' status=None no payload
+    ! after 2: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=1 closed=[]
+  worker source stop pending=False raising=True: original=True read=[0, 1, 2] cleanup=True gate=False
+  retained source stop: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: BatchDeliveryUnknownError state=DeliveryState.MAYBE_SENT partial=[(0, 'delivery_unknown'), (1, 'delivery_unknown')] cause=CancelledError nested=None
+    ! after 0: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=1 closed=[]
+  worker source stop pending=True raising=False: original=True read=[0, 1, 2] cleanup=True gate=False
+  retained source stop: 2 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 2}
+    delivery_unknown #0 id='u0000' status=None no payload
+    delivery_unknown #1 id='u0001' status=None no payload
+    ! after 2: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=1 closed=[]
+  worker source stop pending=True raising=True: original=True read=[0, 1, 2] cleanup=True gate=False
+  retained source stop: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: BatchDeliveryUnknownError state=DeliveryState.MAYBE_SENT partial=[(0, 'delivery_unknown'), (1, 'delivery_unknown')] cause=CancelledError nested=None
+    ! after 0: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=1 closed=[]

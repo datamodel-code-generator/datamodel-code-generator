@@ -120,7 +120,7 @@ class BatchPlan(Generic[InputT, R]):
 
     def __post_init__(self) -> None:
         """Derive the operation that sends a request's items as a wire value, and the bytes of an empty request."""
-        from .writes import targeted  # ruff: ignore[import-outside-top-level] - Only a plan loads the operation runtime.
+        from .writes import targeted  # noqa: PLC0415 - Only a plan loads the operation runtime.
 
         member = self.items_member
         pointer = "" if member is None else f"/{_escaped(member)}"
@@ -443,7 +443,7 @@ class _Batches(Generic[R]):
             return None
         try:
             return self._item(value, index)
-        except Exception as error:  # ruff: ignore[blind-except] - The failure is raised in order, after earlier results.
+        except Exception as error:  # noqa: BLE001 - An unknown delivery becomes records; anything else is raised.
             self._stop_reading(error)
         return None
 
@@ -721,7 +721,7 @@ class BatchIterator(_Batches[R]):
 
     __slots__ = ("_core", "_executor", "_source", "_submissions")
 
-    def __init__(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
+    def __init__(  # noqa: PLR0913, PLR0917
         self,
         core: ClientCore,
         plan: BatchPlan[Any, R],
@@ -750,7 +750,7 @@ class BatchIterator(_Batches[R]):
         except StopIteration:
             self._stop_reading(None)
             return None
-        except Exception as error:  # ruff: ignore[blind-except] - The caller's failure is raised after earlier results.
+        except Exception as error:  # noqa: BLE001 - An unknown delivery becomes records; anything else is raised.
             self._stop_reading(error)
             return None
         return self._accepted(value)
@@ -778,7 +778,7 @@ class BatchIterator(_Batches[R]):
                 max_page_bytes=None,
                 failed=partial(self._delivery, batch),
             )
-        except Exception as error:  # ruff: ignore[blind-except] - An unknown delivery becomes records; anything else is raised.
+        except Exception as error:  # noqa: BLE001 - An unknown delivery becomes records; anything else is raised.
             return self._failed(batch, error)
         except BaseException as error:
             self._delivery(batch, error, batch.delivery)
@@ -791,7 +791,7 @@ class BatchIterator(_Batches[R]):
                 if self._halted:
                     break
                 if (executor := self._executor) is None:
-                    from concurrent.futures import ThreadPoolExecutor  # ruff: ignore[import-outside-top-level] - Only a sent batch needs threads.
+                    from concurrent.futures import ThreadPoolExecutor  # noqa: PLC0415 - Only a sent batch needs threads.
 
                     executor = self._executor = ThreadPoolExecutor(
                         max_workers=self._limits.parallelism, thread_name_prefix="batch"
@@ -893,7 +893,7 @@ class AsyncBatchIterator(_Batches[R]):
 
     __slots__ = ("_aiterator", "_core", "_interruption", "_iterator", "_source", "_source_call")
 
-    def __init__(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
+    def __init__(  # noqa: PLR0913, PLR0917
         self,
         core: AsyncClientCore,
         plan: BatchPlan[Any, R],
@@ -947,7 +947,7 @@ class AsyncBatchIterator(_Batches[R]):
         except StopAsyncIteration:
             self._stop_reading(None)
             return None
-        except Exception as error:  # ruff: ignore[blind-except] - The caller's failure is raised after earlier results.
+        except Exception as error:  # noqa: BLE001 - An unknown delivery becomes records; anything else is raised.
             self._stop_reading(error)
             return None
         return self._accepted(value)
@@ -975,7 +975,7 @@ class AsyncBatchIterator(_Batches[R]):
                 max_page_bytes=None,
                 failed=partial(self._delivery, batch),
             )
-        except Exception as error:  # ruff: ignore[blind-except] - An unknown delivery becomes records; anything else is raised.
+        except Exception as error:  # noqa: BLE001 - An unknown delivery becomes records; anything else is raised.
             return self._failed(batch, error)
         except BaseException as error:
             self._delivery(batch, error, batch.delivery)
@@ -983,7 +983,7 @@ class AsyncBatchIterator(_Batches[R]):
 
     async def _head(self) -> _Batch[R] | None:
         """Start requests while a slot is free and items are ready, then return the oldest one once it completed."""
-        from asyncio import ensure_future, wait  # ruff: ignore[import-outside-top-level] - Only an asyncio iterator starts tasks.
+        from asyncio import ensure_future, wait  # noqa: PLC0415 - Only an asyncio iterator starts tasks.
 
         while not self._halted and len(self._slots) < self._limits.parallelism and (batch := await self._group()):
             if self._halted:
@@ -1005,7 +1005,7 @@ class AsyncBatchIterator(_Batches[R]):
 
     async def _finish(self) -> None:
         """Stop sending, then cancel and await the requests in flight, dropping their results."""
-        from asyncio import gather  # ruff: ignore[import-outside-top-level] - Only an asyncio iterator awaits tasks.
+        from asyncio import gather  # noqa: PLC0415 - Only an asyncio iterator awaits tasks.
 
         self._done = True
         self._halt()
@@ -1016,7 +1016,7 @@ class AsyncBatchIterator(_Batches[R]):
 
     def _outcome(self, batch: _Batch[R]) -> _Done[R]:
         """Return a completed request's records: unknown deliveries when it was cancelled, or raise its failure."""
-        from asyncio import CancelledError  # ruff: ignore[import-outside-top-level] - Only an asyncio iterator cancels tasks.
+        from asyncio import CancelledError  # noqa: PLC0415 - Only an asyncio iterator cancels tasks.
 
         task: Task[_Done[R]] = batch.work
         if task.cancelled():
@@ -1096,14 +1096,14 @@ def _present(result: WireValue, pointer: str) -> bool:
 
 def _retrieved(task: Task[Any]) -> None:
     """Retrieve a dropped request's outcome, so that its failure is never reported as unretrieved."""
-    from asyncio import CancelledError  # ruff: ignore[import-outside-top-level] - Only an asyncio iterator drops tasks.
+    from asyncio import CancelledError  # noqa: PLC0415 - Only an asyncio iterator drops tasks.
 
     with suppress(CancelledError):
         task.exception()
 
 
 def _session(limits: _Limits) -> OperationSession:
-    from ..client.logical import OperationSession  # ruff: ignore[import-outside-top-level] - Only an iterating helper loads the call runtime.
+    from ..client.logical import OperationSession  # noqa: PLC0415 - Only an iterating helper loads the call runtime.
 
     return OperationSession(
         total_timeout=limits.total_timeout,
@@ -1120,7 +1120,7 @@ def _items(plan: BatchPlan[Any, Any], items: object, kinds: tuple[type, ...]) ->
         )
 
 
-def iterate_batches(  # ruff: ignore[too-many-arguments]
+def iterate_batches(  # noqa: PLR0913
     core: ClientCore,
     plan: BatchPlan[InputT, R],
     arguments: tuple[object, ...],
@@ -1136,7 +1136,7 @@ def iterate_batches(  # ruff: ignore[too-many-arguments]
     return BatchIterator(core, plan, arguments, iter(items), limits, _session(limits))
 
 
-def aiterate_batches(  # ruff: ignore[too-many-arguments]
+def aiterate_batches(  # noqa: PLR0913
     core: AsyncClientCore,
     plan: BatchPlan[InputT, R],
     arguments: tuple[object, ...],

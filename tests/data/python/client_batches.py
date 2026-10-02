@@ -1068,6 +1068,7 @@ def _presend_error(
 def _boundary_controls(harness: _Batches, lines: list[str]) -> None:
     cases = _boundary_cases()
     lines.append("sync boundary controls")
+    _worker_source_stops(harness, lines)
     for case in cases["decoding"]:
         for raising in (False, True):
             transport = _BoundaryTransport(harness, case)
@@ -1257,6 +1258,7 @@ async def _async_boundary_controls(harness: _Batches, lines: list[str]) -> None:
         await iterator.aclose()
     _boundary_report(lines, transport)
     await _source_controls(harness, lines, cases["source_controls"])
+    await _async_worker_source_stops(harness, lines, cases["source_stops"])
 
 
 async def _caller_controls(harness: _Batches, lines: list[str], controls: list[bool]) -> None:
@@ -1338,3 +1340,79 @@ async def _source_controls(harness: _Batches, lines: list[str], controls: list[s
             )
             await iterator.aclose()
             await api.aclose()
+
+
+def _worker_stop_source(items: list[Any], transport: Any, read: list[int]) -> Iterator[Any]:
+    """Publish a worker stop from an already-entered synchronous read, then detect any later acquisition."""
+    for index, item in enumerate(items):
+        if index == 2:
+            transport.release.set()
+            if not transport.ended.wait(30):
+                msg = "worker stop watchdog"
+                raise RuntimeError(msg)
+        read.append(index)
+        yield item
+
+
+def _worker_source_stops(harness: _Batches, lines: list[str]) -> None:
+    for raising in (False, True):
+        transport = _BoundaryTransport(harness, {"native": True, "source_gate": True})
+        read: list[int] = []
+        with harness.package.Client(transport_adapter=transport) as api:
+            iterator = api.protocols.users.create.iterate(
+                _worker_stop_source(harness.users(6), transport, read),
+                options=harness.options.RequestOptions(hooks=(transport,)),
+                batch_options=harness.batch(batch_size=2, parallelism=2, raise_on_error=raising),
+            )
+            try:
+                next(iterator)
+            except KeyboardInterrupt as error:
+                lines.append(
+                    f"  worker source stop raising={raising}: original={error is transport.native} read={read}"
+                )
+            continued(lines, "retained source stop", iterator, failure_description=_boundary_failure)
+            iterator.close()
+        _boundary_report(lines, transport)
+
+
+async def _worker_stop_async_source(
+    items: list[Any], transport: Any, read: list[int], pending: bool, gate: asyncio.Event, exited: asyncio.Event
+) -> AsyncIterator[Any]:
+    """Keep an input await owned by the iterator until the worker publishes its native stop."""
+    try:
+        for index, item in enumerate(items):
+            read.append(index)
+            if index == 2:
+                transport.release.set()
+                if pending:
+                    await gate.wait()
+                else:
+                    await transport.ended.wait()
+            yield item
+    finally:
+        exited.set()
+
+
+async def _async_worker_source_stops(harness: _Batches, lines: list[str], controls: list[bool]) -> None:
+    for pending, raising in product(controls, (False, True)):
+        transport = _AsyncBoundaryTransport(harness, {"native": True, "source_gate": True}, asynchronous=True)
+        read: list[int] = []
+        gate, exited = asyncio.Event(), asyncio.Event()
+        async with harness.package.AsyncClient(transport_adapter=transport) as api:
+            iterator = api.protocols.users.create.iterate(
+                _worker_stop_async_source(harness.users(6), transport, read, pending, gate, exited),
+                options=harness.options.RequestOptions(hooks=(transport,)),
+                session_options=harness.options.SessionOptions(total_timeout=None),
+                batch_options=harness.batch(batch_size=2, parallelism=2, raise_on_error=raising),
+            )
+            try:
+                await asyncio.wait_for(anext(iterator), timeout=30)
+            except asyncio.CancelledError as error:
+                lines.append(
+                    f"  worker source stop pending={pending} raising={raising}: "
+                    f"original={error is transport.native} read={read} "
+                    f"cleanup={exited.is_set()} gate={gate.is_set()}"
+                )
+            await acontinued(lines, "retained source stop", iterator, failure_description=_boundary_failure)
+            await iterator.aclose()
+        _boundary_report(lines, transport)
