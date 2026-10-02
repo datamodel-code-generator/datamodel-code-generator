@@ -302,6 +302,48 @@ def _helpers(harness: _Harness, lines: list[str]) -> None:
         record(lines, "inherited bodyless pages", lambda: api.protocols.items.listing.page().items)
 
 
+def _stream_resume(harness: _Harness, lines: list[str]) -> None:
+    """Admit only reachable compressed stream requests, and recheck the saved reopen on resume."""
+    exchange, protocols = harness.exchange, harness.protocols
+    gzip = harness.call("gzip")
+    event = raw_response(200, b'id: c1\ndata: {"text":"a"}\n\n', "text/event-stream")
+    reconnect = protocols.StreamOptions(reconnect=True)
+    with harness.client() as api:
+        for name in ("resumable", "tail"):
+            helper = getattr(api.protocols.events, name)
+            exchange.respond(event)
+            with helper.open(body=harness.query(), options=gzip, stream_options=reconnect) as stream:
+                lines.append(f"  {name} first {next(stream).data}")
+                state = stream.checkpoint()
+            if name == "tail":
+                record(
+                    lines,
+                    "bodyless reopen compression",
+                    lambda helper=helper, state=state: helper.resume(state, options=gzip),
+                )
+                exchange.respond(event)
+                with helper.resume(state) as stream:
+                    lines.append(f"  tail plain resume {next(stream).data}")
+            else:
+                exchange.respond(event)
+                with helper.resume(state, options=gzip) as stream:
+                    lines.append(f"  own compressed resume {next(stream).data}")
+        helper = api.protocols.events.push
+        record(lines, "disabled reconnect compression", lambda: helper.open(options=gzip))
+        record(
+            lines,
+            "zero reconnect compression",
+            lambda: helper.open(options=gzip, stream_options=protocols.StreamOptions(reconnect=True, max_reconnects=0)),
+        )
+        exchange.respond(event)
+        with helper.open(options=gzip, stream_options=reconnect) as stream:
+            lines.append(f"  bodyless open {next(stream).data}")
+            state = stream.checkpoint()
+        exchange.respond(event)
+        with helper.resume(state, options=gzip) as stream:
+            lines.append(f"  cursor body resume {next(stream).data}")
+
+
 async def _async(harness: _Harness, lines: list[str]) -> None:
     exchange, bodies = harness.exchange, harness.bodies
     gzip = harness.call("gzip")
@@ -335,12 +377,38 @@ async def _async(harness: _Harness, lines: list[str]) -> None:
             ),
         )
 
+    event = raw_response(200, b'id: c1\ndata: {"text":"a"}\n\n', "text/event-stream")
+    async with harness.async_client() as api:
+        for name in ("resumable", "tail"):
+            helper = getattr(api.protocols.events, name)
+            exchange.respond(event)
+            async with await helper.open(body=harness.query(), options=gzip) as stream:
+                lines.append(f"  async {name} first {(await anext(stream)).data}")
+                state = stream.checkpoint()
+            if name == "tail":
+                await arecord(
+                    lines,
+                    "async bodyless reopen compression",
+                    lambda helper=helper, state=state: helper.resume(state, options=gzip),
+                )
+            else:
+                exchange.respond(event)
+                async with await helper.resume(state, options=gzip) as stream:
+                    lines.append(f"  async own compressed resume {(await anext(stream)).data}")
+        exchange.respond(event)
+        async with await api.protocols.events.push.open() as stream:
+            lines.append(f"  async bodyless open {(await anext(stream)).data}")
+            state = stream.checkpoint()
+        exchange.respond(event)
+        async with await api.protocols.events.push.resume(state, options=gzip) as stream:
+            lines.append(f"  async cursor body resume {(await anext(stream)).data}")
+
 
 def compression(package: ModuleType, lines: list[str]) -> None:
     """Select gzip on clients, views, calls, and helpers, and report which requests are sent compressed."""
     exchange = Exchange(lines)
     harness = _Harness(package, exchange)
-    for step in (_values, _inherited, _signed, _framing, _explicit, _helpers):
+    for step in (_values, _inherited, _signed, _framing, _explicit, _helpers, _stream_resume):
         lines.append(f"# {step.__name__.strip('_')}")
         step(harness, lines)
     lines.append("# async")

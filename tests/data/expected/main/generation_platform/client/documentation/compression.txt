@@ -43,14 +43,17 @@
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['items.search_all', 'items.feed_all', 'items.listing', 'jobs.run', 'events.watch', 'checks.run'] bindings 21
+  namespace client helpers ['items.search_all', 'items.feed_all', 'items.listing', 'jobs.run', 'events.watch', 'checks.run', 'events.resumable', 'events.tail', 'events.push'] bindings 25
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   helper items.search_all pagination enabled True /inputs/target_config/protocol_metadata/helpers/items.search_all 82875108af8ecb1bcd16e0e968d16b1f5f9d55fcdbb08e1367da78ec112d20ae
   helper items.feed_all pagination enabled True /inputs/target_config/protocol_metadata/helpers/items.feed_all fd13cb9a239fb0be12362ed222cb4b2671841700ae9464ea9584f910a41c878a
   helper items.listing pagination enabled True /inputs/target_config/protocol_metadata/helpers/items.listing 8cc3e7115654f81cb07dfe3cf388eb738b322643e1a47e51485d8a4753acfa21
   helper jobs.run polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.run 999e15400d3718a2ce920cb75da4c727e585c9ee4cf0e0ea6e2d73feffcfb48e
-  helper events.watch sse enabled True /inputs/target_config/protocol_metadata/helpers/events.watch af4d7c37d8c2caeeef47a92866348bdd5f3f28d0e3ae07fddaa720c599c8789f
+  helper events.watch sse enabled True /inputs/target_config/protocol_metadata/helpers/events.watch 666e3eceed15c0bfbbb24d239df356b1cd3cc9449b6b18d78899273fd4639e86
   helper checks.run polling enabled True /inputs/target_config/protocol_metadata/helpers/checks.run 55e70eed26d3a11d793cb2836e16d3d036df3600b148803b70d224c9e73f712c
+  helper events.resumable sse enabled True /inputs/target_config/protocol_metadata/helpers/events.resumable 0e1f86fed55e81392cb7997f586de30ea24f99f58132207a7204aff451236f4c
+  helper events.tail sse enabled True /inputs/target_config/protocol_metadata/helpers/events.tail fd94ac1a851d966108c0507b9b0879d88e26ed1d2f3b2435680fbb7a13af0a11
+  helper events.push sse enabled True /inputs/target_config/protocol_metadata/helpers/events.push 77b3cbc5a9587aea853d1a1187019d7ed18bc4f52316b2e0b9063f399033439e
   {
     "helpers": {
       "checks.run": {
@@ -109,6 +112,116 @@
         "succeeded": [
           "done"
         ]
+      },
+      "events.push": {
+        "completion": {
+          "kind": "eof"
+        },
+        "enabled": true,
+        "error_events": {},
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Message"
+        },
+        "kind": "sse",
+        "media": "text/event-stream",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1events/get"
+        },
+        "resume": {
+          "bindings": [],
+          "cursor": {
+            "from": "body",
+            "pointer": "/text"
+          },
+          "delivery": "at_least_once",
+          "enabled": true,
+          "missing": "error",
+          "null": "error",
+          "reconnect_on": [
+            "transport_interruption"
+          ],
+          "reopen_operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1events/post"
+          },
+          "write": {
+            "in": "body",
+            "pointer": "/text"
+          }
+        },
+        "unknown": "error"
+      },
+      "events.resumable": {
+        "completion": {
+          "kind": "eof"
+        },
+        "enabled": true,
+        "error_events": {},
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Message"
+        },
+        "kind": "sse",
+        "media": "text/event-stream",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1events/post"
+        },
+        "resume": {
+          "bindings": [],
+          "cursor": "event_id",
+          "delivery": "at_least_once",
+          "enabled": true,
+          "reconnect_on": [
+            "transport_interruption"
+          ],
+          "reopen_operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1events/post"
+          },
+          "write": {
+            "in": "query",
+            "name": "cursor"
+          }
+        },
+        "unknown": "error"
+      },
+      "events.tail": {
+        "completion": {
+          "kind": "eof"
+        },
+        "enabled": true,
+        "error_events": {},
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Message"
+        },
+        "kind": "sse",
+        "media": "text/event-stream",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1events/post"
+        },
+        "resume": {
+          "bindings": [],
+          "cursor": "event_id",
+          "delivery": "at_least_once",
+          "enabled": true,
+          "reconnect_on": [
+            "transport_interruption"
+          ],
+          "reopen_operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1events/get"
+          },
+          "write": {
+            "in": "query",
+            "name": "cursor"
+          }
+        },
+        "unknown": "error"
       },
       "events.watch": {
         "completion": {
@@ -325,7 +438,10 @@
   /selection/selected_operations/9 checks.check_status()
     exports client.types.checks.CheckStatusResponse client.types.checks.CheckStatusErrorData client.types.checks.CheckStatusHTTPError
     exports client.types.checks.CheckStatusRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/10 events.watch()
+  /selection/selected_operations/10 events.reopen_events(query:cursor=cursor)
+    exports client.types.events.ReopenEventsResponse client.types.events.ReopenEventsErrorData client.types.events.ReopenEventsHTTPError
+    exports client.types.events.ReopenEventsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/11 events.watch(query:cursor=cursor)
     exports client.types.events.WatchResponse client.types.events.WatchErrorData client.types.events.WatchHTTPError
     exports client.types.events.WatchRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
@@ -476,6 +592,17 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
     "auth_challenge_less_401": false
   },
   {
+    "operation": "events.reopen_events",
+    "method": "GET",
+    "path": "/events",
+    "retry_safety": "method_default",
+    "idempotency": null,
+    "retry_after_ms_header": null,
+    "should_retry_header": null,
+    "security": null,
+    "auth_challenge_less_401": false
+  },
+  {
     "operation": "events.watch",
     "method": "POST",
     "path": "/events",
@@ -494,7 +621,8 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
 `client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.
 An SSE helper's `open` sends its operation in a session of its own and returns an event stream once the
 response is a declared success; the stream reads only the bytes each event needs, and `close()` or `aclose()` releases
-the response.
+the response. A helper that declares `resume` also has `resume`, which reopens a stream after its
+`checkpoint()`, and its streams reconnect when `StreamOptions(reconnect=True)`.
 A pagination helper's `page` fetches the first page and `next_page` the page after one it returned, each in a
 session of its own; `iterate` returns a pager, which sends nothing until it is iterated and fetches each page only
 once the previous one is consumed, and `resume` returns one continuing a pager's `checkpoint()`. See the runtime
@@ -547,6 +675,27 @@ the runtime reference for their limits and checkpoints.
     "kind": "sse",
     "operation": "events.watch",
     "method": "POST",
+    "path": "/events"
+  },
+  {
+    "helper": "events.resumable",
+    "kind": "sse",
+    "operation": "events.watch",
+    "method": "POST",
+    "path": "/events"
+  },
+  {
+    "helper": "events.tail",
+    "kind": "sse",
+    "operation": "events.watch",
+    "method": "POST",
+    "path": "/events"
+  },
+  {
+    "helper": "events.push",
+    "kind": "sse",
+    "operation": "events.reopen_events",
+    "method": "GET",
     "path": "/events"
   }
 ]
@@ -895,6 +1044,8 @@ from:
 | event data size | 1 MiB |
 | session total timeout | None |
 | network sends per session | 16; None removes it |
+| reconnections, counted across resumes | 5; None removes the limit, and 0 allows none |
+| reconnection wait | 60 seconds; None removes it |
 
 The idle timeout runs only while the next step waits for bytes. An event's data is JSON decoded by the schema its
 discriminator maps it to; data that does not decode raises `StreamDecodeError`, a declared error event raises
@@ -904,6 +1055,27 @@ connection `StreamInterruptedError` with its transport failure as the cause. A h
 never reconnects, and `StreamOptions(reconnect=True)` raises `ProtocolConfigurationError` for it. Close a stream with
 `with`, `async with`, or `close()`; leaving a loop early does not release its response, and closing the client with a
 stream open raises `CleanupError` once its cleanup timeout passes.
+
+A helper that declares `resume` tracks the cursor of the last event it delivered: the SSE event ID, or the value its
+cursor pointer reads from an event's data, which an empty event ID or a null value clears. Once a cursor was delivered,
+a stream's `checkpoint()` returns a `ResumeState` without sending: the cursor, the event and reconnection counts, the
+last `retry` time, the bindings' values, and the caller's first request when the reopen repeats it, never events,
+responses, the session, or the call's options. A call given a cookie or credential argument cannot be checkpointed:
+`checkpoint()` raises `ProtocolConfigurationError` with the condition `wrong_capability`, and `ProtocolDataError` for a
+cursor the reopen request cannot encode, as a reconnection does. The helper's `resume` sends the reopen in a session of
+its own, writing the cursor, and omitting a cleared one, and returns once its response is a declared success; it
+refuses another helper's state, one made under other security, an expired one, and one that does not fit with
+`ResumeStateError` before sending. `StreamInterruptedError` keeps a checkpoint as `resume_state`, and no options, the
+client's, a view's, or the call's, may patch a header or query parameter a reopen writes or fix an idempotency key.
+
+With `StreamOptions(reconnect=True)` such a stream reopens itself as one more child call of its session after a
+transport interruption, a read-phase failure classified as retryable or a read timeout the call's own
+`TimeoutOptions(read=...)` set, or after an incomplete end when the helper declares `incomplete_eof`, once a cursor was
+delivered and after the retry backoff and at least the last `retry` time. Running out of reconnections or of the
+session's sends raises `StreamResumeExhaustedError` with a checkpoint; a wait whose backoff cap or `retry` time is
+longer than allowed, or a wait longer than the session has left, raises the interruption instead. Decode, size, remote,
+idle, and deadline failures, the declared end, and closing never reconnect, and events the server sends again after a
+reopen are delivered again.
 
 ## Request compression
 

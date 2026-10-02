@@ -69,3 +69,41 @@ helpers:
       selector: {from: body, pointer: /result}
       schema: {pointer: /components/schemas/Outcome}
     interval: {seconds: 1}
+  events.resumable:
+    kind: sse
+    operation: /paths/~1events/post
+    media: text/event-stream
+    event_schema: {pointer: /components/schemas/Message}
+    completion: {kind: eof}
+    resume:
+      enabled: true
+      delivery: at_least_once
+      cursor: event_id
+      write: {in: query, name: cursor}
+      reopen_operation: /paths/~1events/post
+  events.tail:
+    kind: sse
+    operation: /paths/~1events/post
+    media: text/event-stream
+    event_schema: {pointer: /components/schemas/Message}
+    completion: {kind: eof}
+    resume:
+      enabled: true
+      delivery: at_least_once
+      cursor: event_id
+      reopen_operation: /paths/~1events/get
+      write: {in: query, name: cursor}
+  events.push:
+    kind: sse
+    operation: /paths/~1events/get
+    media: text/event-stream
+    event_schema: {pointer: /components/schemas/Message}
+    completion: {kind: eof}
+    resume:
+      enabled: true
+      delivery: at_least_once
+      reopen_operation: /paths/~1events/post
+      cursor: {from: body, pointer: /text}
+      missing: error
+      'null': error
+      write: {in: body, pointer: /text}

@@ -29,6 +29,10 @@ from .types.checks import (
     CreateCheckResponse,
 )
 from .types.events import (
+    ReopenEventsErrorData,
+    ReopenEventsHTTPError,
+    ReopenEventsRequestCodecs,
+    ReopenEventsResponse,
     WatchErrorData,
     WatchHTTPError,
     WatchRequestCodecs,
@@ -371,9 +375,9 @@ OPERATION_9: Final[OperationPlan[CheckStatusResponse, CheckStatusErrorData]] = O
     codecs=CheckStatusRequestCodecs,
 )
 
-OPERATION_10: Final[OperationPlan[WatchResponse, WatchErrorData]] = OperationPlan(
-    operation_id='watch',
-    method='POST',
+OPERATION_10: Final[OperationPlan[ReopenEventsResponse, ReopenEventsErrorData]] = OperationPlan(
+    operation_id='reopenEvents',
+    method='GET',
     path='/events',
     servers=_SERVERS_0,
     responses=ResponseDecoder(
@@ -386,14 +390,56 @@ OPERATION_10: Final[OperationPlan[WatchResponse, WatchErrorData]] = OperationPla
             ),
         ),
         (),
+        ReopenEventsHTTPError,
+    ),
+    parameters=(
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='query',
+                name='cursor',
+                style='form',
+                explode=True,
+            ),
+            encoder=Encoder(model_bindings.codec_18, model_bindings.CONTEXT_18),
+        ),
+    ),
+    codecs=ReopenEventsRequestCodecs,
+)
+
+OPERATION_11: Final[OperationPlan[WatchResponse, WatchErrorData]] = OperationPlan(
+    operation_id='watch',
+    method='POST',
+    path='/events',
+    servers=_SERVERS_0,
+    responses=ResponseDecoder(
+        (
+            model_branch(
+                '200',
+                'text/event-stream',
+                'text',
+                model_bindings.codec_22, model_bindings.CONTEXT_22,
+            ),
+        ),
+        (),
         WatchHTTPError,
+    ),
+    parameters=(
+        ParameterSpec(
+            plan=ParameterPlan(
+                location='query',
+                name='cursor',
+                style='form',
+                explode=True,
+            ),
+            encoder=Encoder(model_bindings.codec_20, model_bindings.CONTEXT_20),
+        ),
     ),
     body=RequestBody(
         media=(
             BodyMedia(
                 media_type='application/json',
                 kind='json',
-                encoder=Encoder(model_bindings.codec_18, model_bindings.CONTEXT_18),
+                encoder=Encoder(model_bindings.codec_21, model_bindings.CONTEXT_21),
             ),
         ),
         default='application/json',

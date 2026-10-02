@@ -149,6 +149,28 @@
   > GET https://api.example.com/items
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   inherited bodyless pages = (Item(name='a'),)
+# stream_resume
+  > POST https://api.example.com/events
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip again b'{"text":"q"}'
+  resumable first text='a'
+  > POST https://api.example.com/events?cursor=c1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip again b'{"text":"q"}'
+  own compressed resume text='a'
+  > POST https://api.example.com/events
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip again b'{"text":"q"}'
+  tail first text='a'
+  bodyless reopen compression ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  > GET https://api.example.com/events?cursor=c1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
+  tail plain resume text='a'
+  disabled reconnect compression ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  zero reconnect compression ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  > GET https://api.example.com/events
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
+  bodyless open text='a'
+  > POST https://api.example.com/events
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip b'{"text":"a"}'
+  cursor body resume text='a'
 # async
   > POST https://api.example.com/items
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip b'{"name":"n"}'
@@ -172,3 +194,19 @@
   async cursor pages ['a', 'b']
   async bodyless pages ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
   async helper header conflict ! ConfigurationError: ConfigurationError(operation_id='createJob', call_id='<call>', field_path='headers.Content-Encoding', condition='managed') [operation_id='createJob', field_path=('headers', 'Content-Encoding'), condition='managed'] configuration_error
+  > POST https://api.example.com/events
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip again b'{"text":"q"}'
+  async resumable first text='a'
+  > POST https://api.example.com/events?cursor=c1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip again b'{"text":"q"}'
+  async own compressed resume text='a'
+  > POST https://api.example.com/events
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip again b'{"text":"q"}'
+  async tail first text='a'
+  async bodyless reopen compression ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  > GET https://api.example.com/events
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream] b''
+  async bodyless open text='a'
+  > POST https://api.example.com/events
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip b'{"text":"a"}'
+  async cursor body resume text='a'

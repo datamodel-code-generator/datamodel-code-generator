@@ -223,7 +223,27 @@ paths:
               schema:
                 $ref: '#/components/schemas/Job'
   /events:
+    get:
+      operationId: reopenEvents
+      tags: [events]
+      parameters:
+        - name: cursor
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Events
+          content:
+            text/event-stream:
+              schema:
+                type: string
     post:
+      parameters:
+        - name: cursor
+          in: query
+          schema:
+            type: string
       operationId: watch
       tags: [events]
       requestBody:
