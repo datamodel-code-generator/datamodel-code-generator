@@ -27,6 +27,9 @@ _VALID = {
     "retry.max_retry_after": "unlimited",
 }
 _BAD = {
+    "root mode": 'mode="disabled"',
+    "root conflict": 'mode="disabled"\ntimeout={read=1}',
+    "root extra": 'mode="disabled"\nsecret=1',
     "unknown": "unknown=1",
     "unknown nested": "retry={secret=1}",
     "vendor": 'retry={retry_after_ms_header="X-Retry"}',

@@ -12,6 +12,9 @@ valid max_stream_bytes {"max_stream_bytes": null}
 valid stream_idle_timeout {"stream_idle_timeout": null}
 valid stream_total_timeout {"stream_total_timeout": null}
 valid retry.max_retry_after {"retry": {"max_retry_after": null}}
+invalid root mode E_CONFIG_VALUE runtime_defaults
+invalid root conflict E_CONFIG_CONFLICT runtime_defaults
+invalid root extra E_CONFIG_UNKNOWN runtime_defaults
 invalid unknown E_CONFIG_UNKNOWN runtime_defaults.unknown
 invalid unknown nested E_CONFIG_UNKNOWN runtime_defaults.retry.secret
 invalid vendor E_CONFIG_UNKNOWN runtime_defaults.retry.retry_after_ms_header

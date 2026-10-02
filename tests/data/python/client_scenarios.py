@@ -90,6 +90,8 @@ from tests.data.python.client_runtime import (
     record,
     run,
 )
+from tests.data.python.client_runtime_defaults_options import defaults_options
+from tests.data.python.client_runtime_defaults_wire import defaults_wire, defaults_zero
 from tests.data.python.client_selectors import selectors
 from tests.data.python.client_signatures import keywords, signatures
 from tests.data.python.client_socket_connectors import socket_connectors
@@ -752,6 +754,9 @@ BACKENDS: Final = (
 ALL_BUT_MSGSPEC: Final = BACKENDS[:-1]
 STRUCTURAL: Final = BACKENDS[2:]
 SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, list[str]], None]]]] = {
+    "runtime-defaults-wire": ("runtime-defaults-wire", BACKENDS, defaults_wire),
+    "runtime-defaults-zero": ("runtime-defaults", BACKENDS, defaults_zero),
+    "runtime-defaults-options": ("runtime-defaults-wire", BACKENDS, defaults_options),
     "no-success": ("no-success", BACKENDS, no_success),
     "no-success-unpack": ("no-success-unpack", BACKENDS, no_success),
     "json-decode-errors-sse": ("streams", ("pydantic_v2.BaseModel",), json_decode_errors),

@@ -198,6 +198,8 @@ def _table(value: object, kind: type[DefaultsRecord], path: str, *, tagged: bool
     if not isinstance(value, Mapping):
         raise _ConfigValueError(path, "Defaults must be a table")
     allowed = frozenset(item.name for item in fields(kind))
+    if tagged and "mode" in value:
+        _tag(value, path, allowed)
     if unknown := set(value) - allowed:
         option_path = f"{path}.{next(iter(sorted(unknown)))}"
         raise _ConfigValueError(option_path, "Unknown runtime default", code="E_CONFIG_UNKNOWN")

@@ -1,0 +1,15 @@
+# runtime-defaults pydantic_v2.BaseModel
+  zero BudgetExceededError attempts=0 sends=0 stop=None limit=0 body=None truncated=None sends=0
+  zero effective defaults [{'max_response_bytes': 0, 'max_error_body_bytes': 1, 'max_stream_bytes': 0, 'cleanup_timeout': 1.0, 'total_timeout': None, 'max_network_sends': 0, 'stream_idle_timeout': None, 'stream_total_timeout': 0.0}]
+# runtime-defaults pydantic_v2.dataclass
+  zero BudgetExceededError attempts=0 sends=0 stop=None limit=0 body=None truncated=None sends=0
+  zero effective defaults [{'max_response_bytes': 0, 'max_error_body_bytes': 1, 'max_stream_bytes': 0, 'cleanup_timeout': 1.0, 'total_timeout': None, 'max_network_sends': 0, 'stream_idle_timeout': None, 'stream_total_timeout': 0.0}]
+# runtime-defaults dataclasses.dataclass
+  zero BudgetExceededError attempts=0 sends=0 stop=None limit=0 body=None truncated=None sends=0
+  zero effective defaults [{'max_response_bytes': 0, 'max_error_body_bytes': 1, 'max_stream_bytes': 0, 'cleanup_timeout': 1.0, 'total_timeout': None, 'max_network_sends': 0, 'stream_idle_timeout': None, 'stream_total_timeout': 0.0}]
+# runtime-defaults typing.TypedDict
+  zero BudgetExceededError attempts=0 sends=0 stop=None limit=0 body=None truncated=None sends=0
+  zero effective defaults [{'max_response_bytes': 0, 'max_error_body_bytes': 1, 'max_stream_bytes': 0, 'cleanup_timeout': 1.0, 'total_timeout': None, 'max_network_sends': 0, 'stream_idle_timeout': None, 'stream_total_timeout': 0.0}]
+# runtime-defaults msgspec.Struct
+  zero BudgetExceededError attempts=0 sends=0 stop=None limit=0 body=None truncated=None sends=0
+  zero effective defaults [{'max_response_bytes': 0, 'max_error_body_bytes': 1, 'max_stream_bytes': 0, 'cleanup_timeout': 1.0, 'total_timeout': None, 'max_network_sends': 0, 'stream_idle_timeout': None, 'stream_total_timeout': 0.0}]

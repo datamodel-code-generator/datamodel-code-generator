@@ -4573,5 +4573,119 @@
         "compression": "gzip"
       }
     }
+  },
+  "runtime-defaults-wire": {
+    "input": "compression.yaml",
+    "references": [
+      "protocols/compression.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/compression.yaml",
+      "operations": [
+        {
+          "ref": "/paths/~1items/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1items/get",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1blobs/put",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1search/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1feed/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1jobs/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1events/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1checks~1status/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        }
+      ],
+      "runtime_defaults": {
+        "timeout": {
+          "connect": 1,
+          "read": 2,
+          "write": 3,
+          "pool": null
+        },
+        "total_timeout": null,
+        "retry": {
+          "max_retries": 2,
+          "initial_delay": 1,
+          "max_delay": 1,
+          "jitter": "none",
+          "statuses": [
+            503
+          ],
+          "max_retry_after": 2,
+          "respect_retry_after": false,
+          "retry_on_pool_timeout": true
+        },
+        "redirects": {
+          "enabled": true,
+          "max_redirects": 2,
+          "allow_303_to_get": true,
+          "allowed_origins": [
+            "https://other.example.com:443"
+          ],
+          "allow_https_downgrade": false
+        },
+        "max_network_sends": 6,
+        "max_response_bytes": 1024,
+        "max_error_body_bytes": 4,
+        "max_stream_bytes": 64,
+        "stream_idle_timeout": 10,
+        "stream_total_timeout": 20,
+        "cleanup_timeout": 1,
+        "compression": "gzip"
+      }
+    },
+    "modules": false
   }
 }
