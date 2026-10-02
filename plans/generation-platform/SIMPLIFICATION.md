@@ -101,8 +101,9 @@ The core client is published first:
 Further helpers are optional and come later. Acceptance matrices are targeted (§4, R8).
 
 ### P8. The foundation stays at the released baseline
-- Files that exist in release 0.83.0 end up identical to 0.83.0, except for listed model bug fixes, the typing-tool
-  update and the minimal CLI wiring for the experimental target flags.
+- Files that exist in release 0.83.0 end up identical to 0.83.0, except for changes that close independent issues
+  (bug fixes, and features unrelated to the targets such as Python API project-configuration loading), the
+  typing-tool update and the minimal CLI wiring for the experimental target flags.
 - Verification is done against the `0.83.0` tag:
   - the source diff of those files contains only the listed changes;
   - the model e2e expected outputs are unchanged except for the listed fixes, and the model e2e suite passes;
