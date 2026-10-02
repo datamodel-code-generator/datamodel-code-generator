@@ -1,0 +1,29 @@
+openapi: 3.1.0
+info: {title: Completion OAuth control, version: '1'}
+servers: [{url: https://api.example.com}]
+paths:
+  /files:
+    $ref: uploads.yaml#/paths/~1files
+  /files/{fileId}:
+    $ref: uploads.yaml#/paths/~1files~1{fileId}
+  /files/{fileId}/status:
+    $ref: uploads.yaml#/paths/~1files~1{fileId}~1status
+  /files/{fileId}/complete:
+    post:
+      operationId: completeFile
+      tags: [files]
+      security: [{oauth: []}]
+      parameters:
+        - {name: fileId, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: The stored file.
+          content:
+            application/json:
+              schema: {$ref: uploads.yaml#/components/schemas/Stored}
+components:
+  securitySchemes:
+    oauth:
+      type: oauth2
+      flows:
+        clientCredentials: {tokenUrl: 'https://auth.example.com/token', scopes: {}}

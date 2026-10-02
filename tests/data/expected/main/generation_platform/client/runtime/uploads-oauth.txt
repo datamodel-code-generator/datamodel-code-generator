@@ -1,0 +1,9 @@
+# uploads-oauth pydantic_v2.BaseModel
+sync original failure: ClientClosedError cause=None
+  handle UploadHandle(phase='uploading', confirmed_bytes=0, total_bytes=0) token=1 resource=['POST /files']
+  resumed size=0 token=1 resource=['POST /files', 'GET /files/u1/status', 'POST /files/u1/complete']
+  responses closed=True
+async original failure: ClientClosedError cause=None
+  handle AsyncUploadHandle(phase='uploading', confirmed_bytes=0, total_bytes=0) token=1 resource=['POST /files']
+  resumed size=0 token=1 resource=['POST /files', 'GET /files/u1/status', 'POST /files/u1/complete']
+  responses closed=True

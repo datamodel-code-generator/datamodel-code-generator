@@ -95,7 +95,7 @@ from tests.data.python.client_streams import ndjson, ndjson_backends, ndjson_spl
 from tests.data.python.client_streams import stream_lifetimes as event_stream_lifetimes
 from tests.data.python.client_transports import lifecycle, transports
 from tests.data.python.client_unions import schema_unions, split_unions, unions
-from tests.data.python.client_uploads import uploads
+from tests.data.python.client_uploads import uploads, uploads_oauth
 from tests.data.python.client_validation import arguments, validation
 from tests.data.python.client_webhook_adapters import (
     webhook_adapter_imports,
@@ -240,7 +240,7 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
             exchange.respond(raw_response(302, b"", Location="https://elsewhere.example.com"))
             try:
                 api.pets.list_pets(x_trace=trace)
-            except Exception as failure:  # noqa: BLE001 - Report failures from public calls.
+            except Exception as failure:  # ruff: ignore[blind-except] - Report failures from public calls.
                 lines.append(f"  redirect info {failure.status_code} {failure.headers!r}")
         if error is None and label == "error":
             exchange.respond(*((json_response(500, {"code": 7}),) * 3))
@@ -454,7 +454,7 @@ async def _async_pets(package: ModuleType, exchange: Exchange, lines: list[str])
 
 
 def _async_invalid(package: ModuleType) -> Callable[[], Any]:
-    async def build() -> object:  # noqa: RUF029 - The public adapter requires an async callback.
+    async def build() -> object:  # ruff: ignore[unused-async] - The public adapter requires an async callback.
         return package.AsyncClient(http_client=httpx2.Client())
 
     return build
@@ -660,7 +660,7 @@ def _limit(call: Callable[[], object]) -> Callable[[], str]:
     def limited() -> str:
         try:
             call()
-        except Exception as error:  # noqa: BLE001 - Report failures from public calls.
+        except Exception as error:  # ruff: ignore[blind-except] - Report failures from public calls.
             over = error.observed > error.limit >= 1024 * 1024
             return f"{type(error).__name__} layer={error.layer} ratio={error.max_ratio} over={over}"
         return "decoded"
@@ -830,6 +830,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "batch-backends": ("batches", BACKENDS, batch_backends),
     "batch-arguments": ("batches-arguments", ("pydantic_v2.BaseModel",), batch_arguments),
     "uploads": ("uploads", ("pydantic_v2.BaseModel",), uploads),
+    "uploads-oauth": ("uploads-oauth", ("pydantic_v2.BaseModel",), uploads_oauth),
     "polling-resume": ("polling", ("pydantic_v2.BaseModel",), polling_resume),
     "streams": ("streams", ("pydantic_v2.BaseModel",), streams),
     "stream-events": ("streams", ("pydantic_v2.BaseModel",), event_stream_lifetimes),

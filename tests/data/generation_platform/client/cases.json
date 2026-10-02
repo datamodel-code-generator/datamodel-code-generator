@@ -4039,5 +4039,18 @@
       }
     },
     "modules": false
+  },
+  "uploads-oauth": {
+    "input": "uploads-oauth.yaml",
+    "references": [
+      "uploads.yaml",
+      "protocols/uploads.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/uploads.yaml"
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ]
   }
 }
