@@ -360,6 +360,8 @@
     poll again = AuthStateConflictError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown action=poll
   unlimited sends = TokenSet(revision=0) value=access-1 type=Bearer scopes=() expires_in_minutes=60 refresh=refresh-1
     poll again = AuthStateConflictError state=SUCCEEDED delivery_state=NOT_SENT phase=unknown action=poll
+  poll intervals on a frozen clock = TokenSet(revision=0) value=access-1 type=Bearer scopes=() expires_in_minutes=60 refresh=refresh-1
+    poll again = AuthStateConflictError state=SUCCEEDED delivery_state=NOT_SENT phase=unknown action=poll
   session deadline = DeadlineExceededError delivery_state=NOT_SENT phase=sleep
     poll again = AuthStateConflictError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown action=poll
   poll cut by the session limit = DeadlineExceededError delivery_state=MAYBE_SENT phase=send cause=PhaseTimeoutError
@@ -389,6 +391,7 @@
   async poll = TokenSet(revision=0) value=access-1 type=Bearer scopes=('read',) expires_in_minutes=60 refresh=refresh-1
   async begin secret failure = AuthProviderExecutionError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown callback=get cause=RuntimeError
     begin again = AuthStateConflictError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown action=begin
+  async poll intervals on a frozen clock = TokenSet(revision=0) value=access-1 type=Bearer scopes=() expires_in_minutes=60 refresh=refresh-1
   async concurrent poll = AuthStateConflictError state=EXCHANGING delivery_state=NOT_SENT phase=unknown action=poll
   async cancelled while waiting = CancelledError
     poll again = AuthStateConflictError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown action=poll

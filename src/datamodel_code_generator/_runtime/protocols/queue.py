@@ -563,7 +563,10 @@ class _Drain:
 
         self.core, self.plan, self.limits = core, plan, limits
         self.session: OperationSession = OperationSession(
-            total_timeout=limits.total_timeout, deadline=limits.deadline, max_network_sends=limits.max_network_sends
+            total_timeout=limits.total_timeout,
+            deadline=limits.deadline,
+            max_network_sends=limits.max_network_sends,
+            clock=core.clock,
         )
         self.security = {
             queued.alias: _fingerprint(core.checkpoint_security(queued.call, limits.options)[0])

@@ -1,4 +1,4 @@
-"""Selectors, request targets, continuations, poll snapshots, progress keys, and canonical JSON of protocol values."""
+"""Selectors, request targets, continuations, poll snapshots, cancel receipts, progress keys, and canonical JSON."""
 
 from __future__ import annotations
 
@@ -18,6 +18,7 @@ from ..model_codecs.wire import JSONValue, WireValue, checked_text, checked_wire
 __all__ = (
     "BodySelector",
     "BodyTarget",
+    "CancelReceipt",
     "Continuation",
     "HeaderSelector",
     "ParameterTarget",
@@ -31,6 +32,7 @@ __all__ = (
 )
 
 P_co = TypeVar("P_co", covariant=True, default=object)
+C_co = TypeVar("C_co", covariant=True, default=object)
 
 ContinuationKind: TypeAlias = Literal["cursor", "offset", "page", "next_url", "link"]
 ProgressKey: TypeAlias = Literal[
@@ -276,4 +278,16 @@ class PollSnapshot(Generic[P_co]):
         """Freeze the state value and require a boolean terminal flag and the response metadata."""
         object.__setattr__(self, "state", frozen_wire(self.state))
         record_instance(self.terminal, bool, "terminal must be a bool")
+        record_instance(self.response, ResponseInfo, "response must be a ResponseInfo")
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CancelReceipt(Generic[C_co]):
+    """The response of a remote cancel request: its decoded body and metadata, never a sign the operation ended."""
+
+    data: C_co = field(repr=False)
+    response: ResponseInfo
+
+    def __post_init__(self) -> None:
+        """Require the response metadata."""
         record_instance(self.response, ResponseInfo, "response must be a ResponseInfo")

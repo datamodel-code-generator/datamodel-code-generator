@@ -5,7 +5,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from .._runtime.protocols.caches import (
+    AsyncCacheStore,
+    CacheEntry,
+    CacheResult,
+    CacheStore,
+)
 from .._runtime.protocols.options import (
+    CacheOptions,
     Origin,
     PaginationOptions,
     PollOptions,
@@ -13,6 +20,8 @@ from .._runtime.protocols.options import (
     ProtocolSecurityContext,
     QueueOptions,
     StreamOptions,
+    WebSocketTransportOptions,
+    WSOptions,
 )
 from .._runtime.protocols.queues import (
     AsyncQueueStore,
@@ -28,6 +37,7 @@ from .._runtime.protocols.queues import (
 from .._runtime.protocols.records import (
     BodySelector,
     BodyTarget,
+    CancelReceipt,
     Continuation,
     HeaderSelector,
     ParameterTarget,
@@ -51,8 +61,21 @@ from .._runtime.protocols.webhooks import (
     Verifier,
     WebhookOptions,
 )
+from .._runtime.protocols.websocket_types import (
+    AsyncWebSocketConnection,
+    AsyncWebSocketConnector,
+    Message,
+    PingReceipt,
+    ResolvedWebSocketTransportOptions,
+    ResolvedWSOptions,
+    WebSocketConnection,
+    WebSocketConnector,
+    WebSocketOpenRequest,
+    WSFrame,
+)
 
 if TYPE_CHECKING:
+    from .._runtime.protocols.cache_stores import AsyncMemoryCacheStore, MemoryCacheStore
     from .._runtime.protocols.pagination import AsyncPager, Page, Pager
     from .._runtime.protocols.polling import AsyncLroHandle, LroHandle
     from .._runtime.protocols.queue_stores import AsyncMemoryQueueStore, MemoryQueueStore
@@ -63,32 +86,46 @@ if TYPE_CHECKING:
         StreamEvent,
         UnknownEvent,
     )
+    from .._runtime.protocols.websocket import AsyncWebSocketSession, WebSocketSession
 
 __all__ = [
+    "AsyncCacheStore",
     "AsyncEventStream",
     "AsyncLroHandle",
+    "AsyncMemoryCacheStore",
     "AsyncMemoryQueueStore",
     "AsyncMemoryReplayStore",
     "AsyncPager",
     "AsyncQueueStore",
     "AsyncReplayStore",
+    "AsyncWebSocketConnection",
+    "AsyncWebSocketConnector",
+    "AsyncWebSocketSession",
     "BlobRef",
     "BodySelector",
     "BodyTarget",
+    "CacheEntry",
+    "CacheOptions",
+    "CacheResult",
+    "CacheStore",
+    "CancelReceipt",
     "Continuation",
     "DrainReport",
     "EventStream",
     "HeaderSelector",
     "KeySet",
     "LroHandle",
+    "MemoryCacheStore",
     "MemoryQueueStore",
     "MemoryReplayStore",
+    "Message",
     "OperationRef",
     "Origin",
     "Page",
     "Pager",
     "PaginationOptions",
     "ParameterTarget",
+    "PingReceipt",
     "PollOptions",
     "PollSnapshot",
     "ProgressKey",
@@ -105,6 +142,8 @@ __all__ = [
     "ReplayStore",
     "RequestTarget",
     "ResolvedQueueOptions",
+    "ResolvedWSOptions",
+    "ResolvedWebSocketTransportOptions",
     "ResolvedWebhookOptions",
     "ResumeState",
     "Selector",
@@ -115,13 +154,20 @@ __all__ = [
     "VerifiedSignature",
     "VerifiedWebhook",
     "Verifier",
+    "WSFrame",
+    "WSOptions",
+    "WebSocketConnection",
+    "WebSocketConnector",
+    "WebSocketOpenRequest",
+    "WebSocketSession",
+    "WebSocketTransportOptions",
     "WebhookOptions",
     "import_state",
 ]
 
 
 def __getattr__(name: str) -> object:
-    """Load a memory store or a pagination, polling, or stream type only when its public class is requested."""
+    """Load a memory store, a pagination, polling, or stream type, or a WebSocket session only when requested."""
     if name in {"AsyncPager", "Page", "Pager"}:
         from .._runtime.protocols import pagination
 
@@ -130,10 +176,18 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import polling
 
         return getattr(polling, name)
+    if name in {"AsyncMemoryCacheStore", "MemoryCacheStore"}:
+        from .._runtime.protocols import cache_stores
+
+        return getattr(cache_stores, name)
     if name in {"AsyncEventStream", "EventStream", "StreamEvent", "UnknownEvent"}:
         from .._runtime.protocols import streams
 
         return getattr(streams, name)
+    if name in {"AsyncWebSocketSession", "WebSocketSession"}:
+        from .._runtime.protocols import websocket
+
+        return getattr(websocket, name)
     if name in {"AsyncMemoryQueueStore", "MemoryQueueStore"}:
         from .._runtime.protocols import queue_stores
 

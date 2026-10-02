@@ -66,6 +66,15 @@ def _resources() -> tuple[SchemaResource, ...]:
                             },
                         },
                         'Item': {'type': 'object', 'required': ['id'], 'properties': {'id': {'type': 'string'}}},
+                        'Job': {
+                            'type': 'object',
+                            'required': ['id', 'status', 'tags'],
+                            'properties': {
+                                'id': {'type': 'string'},
+                                'status': {'type': 'string'},
+                                'tags': {'$ref': 'https://dcg.invalid/inputs/root#/components/schemas/Tags'},
+                            },
+                        },
                         'Key': {'type': 'object', 'required': ['a'], 'properties': {'a': {'type': 'integer'}}},
                         'Members': {'type': 'object', 'properties': {'b': {'type': 'string'}}},
                         'Options': {'type': 'object', 'properties': {'a': {'type': 'string'}}},
@@ -80,6 +89,7 @@ def _resources() -> tuple[SchemaResource, ...]:
                                 'has_more': {'type': 'boolean'},
                             },
                         },
+                        'Report': {'type': 'object', 'required': ['rows'], 'properties': {'rows': {'type': 'integer'}}},
                         'ShelfPage': {
                             'type': 'object',
                             'required': ['data'],
@@ -127,6 +137,55 @@ def _resources() -> tuple[SchemaResource, ...]:
                             'parameters': [
                                 {'schema': {'$ref': 'https://dcg.invalid/inputs/root#/components/schemas/Key'}},
                             ],
+                        },
+                    },
+                    '/jobs': {
+                        'post': {
+                            'responses': {
+                                '202': {
+                                    'content': {
+                                        'application/json': {
+                                            'schema': {
+                                                '$ref': 'https://dcg.invalid/inputs/root#/components/schemas/Job',
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    '/jobs/{jobId}': {
+                        'get': {
+                            'parameters': [{'schema': {'type': 'string'}}],
+                            'responses': {
+                                '200': {
+                                    'content': {
+                                        'application/json': {
+                                            'schema': {
+                                                '$ref': 'https://dcg.invalid/inputs/root#/components/schemas/Job',
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    '/reports': {
+                        'get': {
+                            'parameters': [
+                                {'schema': {'$ref': 'https://dcg.invalid/inputs/root#/components/schemas/Tags'}},
+                            ],
+                            'responses': {
+                                '200': {
+                                    'content': {
+                                        'application/json': {
+                                            'schema': {
+                                                '$ref': 'https://dcg.invalid/inputs/root#/components/schemas/Report',
+                                            },
+                                        },
+                                    },
+                                },
+                            },
                         },
                     },
                     '/search': {
@@ -185,15 +244,22 @@ def _resources() -> tuple[SchemaResource, ...]:
                 '/components/schemas/Criteria',
                 '/components/schemas/Filter',
                 '/components/schemas/Item',
+                '/components/schemas/Job',
                 '/components/schemas/Key',
                 '/components/schemas/Members',
                 '/components/schemas/Options',
                 '/components/schemas/Page',
+                '/components/schemas/Report',
                 '/components/schemas/ShelfPage',
                 '/components/schemas/Tags',
                 '/paths/~1finds/get/parameters/0/content/application~1json/schema',
                 '/paths/~1finds/get/responses/200/content/application~1json/schema',
                 '/paths/~1items~1{key}/get/parameters/0/schema',
+                '/paths/~1jobs/post/responses/202/content/application~1json/schema',
+                '/paths/~1jobs~1{jobId}/get/parameters/0/schema',
+                '/paths/~1jobs~1{jobId}/get/responses/200/content/application~1json/schema',
+                '/paths/~1reports/get/parameters/0/schema',
+                '/paths/~1reports/get/responses/200/content/application~1json/schema',
                 '/paths/~1search/get/parameters/0/schema',
                 '/paths/~1search/get/parameters/1/schema',
                 '/paths/~1search/get/parameters/2/schema',
@@ -334,6 +400,12 @@ def request_registry() -> BundleSchemaRegistry:
                 ),
                 dialect='https://json-schema.org/draft/2020-12/schema',
                 raw=freeze_wire({'type': 'string'}),
+            ),
+            SchemaSource(
+                schema_id='https://dcg.invalid/inputs/root#/paths/~1reports/get/parameters/0/schema',
+                source=CodecSourceRef(document='/inputs/root', pointer='/paths/~1reports/get/parameters/0/schema'),
+                dialect='https://json-schema.org/draft/2020-12/schema',
+                raw=freeze_wire({'$ref': '#/components/schemas/Tags'}),
             ),
         ),
     )
@@ -709,18 +781,98 @@ def _model_17() -> ModelBinding:
 
 
 @cache
+def _model_18() -> ModelBinding:
+    return ModelBinding(
+        symbol='models:Job',
+        native_kind='model',
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Job',
+        fields=(
+            FieldBinding(
+                field_id='models:Job.id',
+                native_name='id',
+                wire_name='id',
+                validation_key='id',
+                validation_keys=('id',),
+                required=True,
+                read_only=False,
+                write_only=False,
+                omit_none=False,
+                type=LeafNode(),
+            ),
+            FieldBinding(
+                field_id='models:Job.status',
+                native_name='status',
+                wire_name='status',
+                validation_key='status',
+                validation_keys=('status',),
+                required=True,
+                read_only=False,
+                write_only=False,
+                omit_none=False,
+                type=LeafNode(),
+            ),
+            FieldBinding(
+                field_id='models:Job.tags',
+                native_name='tags',
+                wire_name='tags',
+                validation_key='tags',
+                validation_keys=('tags',),
+                required=True,
+                read_only=False,
+                write_only=False,
+                omit_none=False,
+                type=ModelNode(symbol='models:Tags'),
+            ),
+        ),
+    )
+
+
+@cache
+def _model_19() -> ModelBinding:
+    return ModelBinding(
+        symbol='models:FieldJobsJobIdGetPathJobIdParameter',
+        native_kind='root',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1jobs~1%7BjobId%7D/get/parameters/0/schema',
+        root=LeafNode(),
+    )
+
+
+@cache
+def _model_20() -> ModelBinding:
+    return ModelBinding(
+        symbol='models:Report',
+        native_kind='model',
+        schema_id='https://dcg.invalid/inputs/root#/components/schemas/Report',
+        fields=(
+            FieldBinding(
+                field_id='models:Report.rows',
+                native_name='rows',
+                wire_name='rows',
+                validation_key='rows',
+                validation_keys=('rows',),
+                required=True,
+                read_only=False,
+                write_only=False,
+                omit_none=False,
+                type=LeafNode(),
+            ),
+        ),
+    )
+
+
+@cache
 def _factory_0() -> ParameterCodecAdapterV1:
     return tests_data_python_parameter_adapters.json_cookie()
 
 
 @cache
 def _factory_1() -> ParameterCodecAdapterV1:
-    return tests_data_python_parameter_adapters.json_query()
+    return tests_data_python_parameter_adapters.json_header()
 
 
 @cache
 def _factory_2() -> ParameterCodecAdapterV1:
-    return tests_data_python_parameter_adapters.json_header()
+    return tests_data_python_parameter_adapters.json_query()
 
 
 @cache
@@ -1014,7 +1166,7 @@ def parameter_2() -> AdapterParameterCodec:
             content_media_type=None,
             reserved_names=(),
         ),
-        adapter=_factory_1(),
+        adapter=_factory_2(),
     )
 
 
@@ -1104,7 +1256,7 @@ def parameter_3() -> AdapterParameterCodec:
             content_media_type=None,
             reserved_names=(),
         ),
-        adapter=_factory_2(),
+        adapter=_factory_1(),
     )
 
 
@@ -2294,5 +2446,231 @@ def codec_17() -> PydanticModelCodec[models.ShelfPage]:
         ),
         models.ShelfPage,
         {'models:Item': models.Item, 'models:ShelfPage': models.ShelfPage},
+        response_bundle,
+    )
+
+
+CONTEXT_18: Final = CodecContext(
+    surface='client',
+    direction='response',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1jobs/post/responses/202/content/application~1json/schema',
+    operation_id='/paths/~1jobs/post',
+    media_type='application/json',
+)
+
+
+@cache
+def codec_18() -> PydanticModelCodec[models.Job]:
+    """Codec of /paths/~1jobs/post response_body (response 202 application/json)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/components/schemas/Job|ModelNode(symbol='models:Job')",
+            direction='response',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1jobs/post/responses/202/content/application~1json/schema',
+            operation_id='/paths/~1jobs/post',
+            media_type='application/json',
+            backend='pydantic_v2.BaseModel',
+            native_kind='model',
+            native_export='models:Job',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='models:Job'),
+            models=(_model_18(), _model_0()),
+        ),
+        models.Job,
+        {'models:Job': models.Job, 'models:Tags': models.Tags},
+        response_bundle,
+    )
+
+
+CONTEXT_19: Final = CodecContext(
+    surface='client',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1jobs~1%7BjobId%7D/get/parameters/0/schema',
+    operation_id='/paths/~1jobs~1{jobId}/get',
+)
+
+
+@cache
+def codec_19() -> PydanticModelCodec[models.FieldJobsJobIdGetPathJobIdParameter]:
+    """Codec of /paths/~1jobs~1{jobId}/get parameter (request path jobId)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1jobs~1%7BjobId%7D/get/parameters/0/schema|ModelNode(symbol='models:FieldJobsJobIdGetPathJobIdParameter')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1jobs~1%7BjobId%7D/get/parameters/0/schema',
+            operation_id='/paths/~1jobs~1{jobId}/get',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='root',
+            native_export='models:FieldJobsJobIdGetPathJobIdParameter',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='models:FieldJobsJobIdGetPathJobIdParameter'),
+            models=(_model_19(),),
+        ),
+        models.FieldJobsJobIdGetPathJobIdParameter,
+        {'models:FieldJobsJobIdGetPathJobIdParameter': models.FieldJobsJobIdGetPathJobIdParameter},
+        request_bundle,
+    )
+
+
+@cache
+def outbound_19() -> NativeOutboundCodec[models.FieldJobsJobIdGetPathJobIdParameter]:
+    return NativeOutboundCodec(codec_19(), CONTEXT_19)
+
+
+CONTEXT_20: Final = CodecContext(
+    surface='client',
+    direction='response',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1jobs~1%7BjobId%7D/get/responses/200/content/application~1json/schema',
+    operation_id='/paths/~1jobs~1{jobId}/get',
+    media_type='application/json',
+)
+
+
+@cache
+def codec_20() -> PydanticModelCodec[models.Job]:
+    """Codec of /paths/~1jobs~1{jobId}/get response_body (response 200 application/json)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/components/schemas/Job|ModelNode(symbol='models:Job')",
+            direction='response',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1jobs~1%7BjobId%7D/get/responses/200/content/application~1json/schema',
+            operation_id='/paths/~1jobs~1{jobId}/get',
+            media_type='application/json',
+            backend='pydantic_v2.BaseModel',
+            native_kind='model',
+            native_export='models:Job',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='models:Job'),
+            models=(_model_18(), _model_0()),
+        ),
+        models.Job,
+        {'models:Job': models.Job, 'models:Tags': models.Tags},
+        response_bundle,
+    )
+
+
+CONTEXT_21: Final = CodecContext(
+    surface='client',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1reports/get/parameters/0/schema',
+    operation_id='/paths/~1reports/get',
+)
+
+
+@cache
+def codec_21() -> PydanticModelCodec[models.Tags]:
+    """Codec of /paths/~1reports/get parameter (request header X-Tags)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/components/schemas/Tags|ModelNode(symbol='models:Tags')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1reports/get/parameters/0/schema',
+            operation_id='/paths/~1reports/get',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='root',
+            native_export='models:Tags',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='models:Tags'),
+            models=(_model_0(),),
+        ),
+        models.Tags,
+        {'models:Tags': models.Tags},
+        request_bundle,
+    )
+
+
+@cache
+def outbound_21() -> NativeOutboundCodec[models.Tags]:
+    return NativeOutboundCodec(codec_21(), CONTEXT_21)
+
+
+@cache
+def parameter_21() -> AdapterParameterCodec:
+    return AdapterParameterCodec(
+        manifest=AdapterManifest(
+            name='json-header',
+            import_ref='tests.data.python.parameter_adapters:json_header',
+            capabilities=ParameterCodecCapabilities(
+                locations=('header',),
+                styles=('simple',),
+                explode_values=(False, True),
+                value_kinds=('array',),
+            ),
+        ),
+        plan=ParameterPlanView(
+            binding=CodecBindingView(
+                binding_id="https://dcg.invalid/inputs/root#/components/schemas/Tags|ModelNode(symbol='models:Tags')",
+                use=CodecUseView(
+                    owner_kind='operation',
+                    owner=CodecSourceRef(document='/inputs/root', pointer='/paths/~1reports/get'),
+                    role='parameter',
+                    use_site=CodecSourceRef(document='/inputs/root', pointer='/paths/~1reports/get/parameters/0'),
+                    schema=CodecSourceRef(document='/inputs/root', pointer='/paths/~1reports/get/parameters/0/schema'),
+                    declaration=CodecSourceRef(document='/inputs/root', pointer='/paths/~1reports/get/parameters/0'),
+                    direction='request',
+                    projection='value',
+                    location='header',
+                    name='X-Tags',
+                    status=None,
+                    media=None,
+                ),
+                schema=request_registry().get('https://dcg.invalid/inputs/root#/paths/~1reports/get/parameters/0/schema'),
+                backend='pydantic_v2.BaseModel',
+                native_kind='root',
+                native_export=ModelExportView(module='models', symbol='Tags'),
+                fields=(),
+                projection_mode='native',
+                converter_strategy='pydantic_type_adapter',
+            ),
+            location='header',
+            name='X-Tags',
+            oas_version='3.2.0',
+            style='simple',
+            explode=False,
+            required=False,
+            allow_reserved=False,
+            allow_empty_value=False,
+            content_media_type=None,
+            reserved_names=(),
+        ),
+        adapter=_factory_1(),
+    )
+
+
+CONTEXT_22: Final = CodecContext(
+    surface='client',
+    direction='response',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1reports/get/responses/200/content/application~1json/schema',
+    operation_id='/paths/~1reports/get',
+    media_type='application/json',
+)
+
+
+@cache
+def codec_22() -> PydanticModelCodec[models.Report]:
+    """Codec of /paths/~1reports/get response_body (response 200 application/json)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/components/schemas/Report|ModelNode(symbol='models:Report')",
+            direction='response',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1reports/get/responses/200/content/application~1json/schema',
+            operation_id='/paths/~1reports/get',
+            media_type='application/json',
+            backend='pydantic_v2.BaseModel',
+            native_kind='model',
+            native_export='models:Report',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='models:Report'),
+            models=(_model_20(),),
+        ),
+        models.Report,
+        {'models:Report': models.Report},
         response_bundle,
     )

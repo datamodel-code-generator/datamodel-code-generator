@@ -30,3 +30,21 @@ helpers:
         value: {literal: "."}
       - target: {in: path, name: slot}
         value: {source: previous, selector: {from: body, pointer: /slot}}
+  jobs.report:
+    kind: polling
+    create: /paths/~1jobs/post
+    accepted_statuses: [202]
+    poll: /paths/~1jobs~1{jobId}/get
+    bindings:
+      - target: {in: path, name: jobId}
+        value: {source: initial, selector: {from: body, pointer: /id}}
+    state: {from: body, pointer: /status}
+    pending: [queued]
+    succeeded: [done]
+    result:
+      kind: operation
+      operation: /paths/~1reports/get
+      bindings:
+        - target: {in: header, name: X-Tags}
+          value: {source: initial, selector: {from: body, pointer: /tags}}
+    interval: {seconds: 0.000001}

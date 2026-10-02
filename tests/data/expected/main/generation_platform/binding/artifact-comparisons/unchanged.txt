@@ -1,5 +1,0 @@
-{
-  "changed_fields": [],
-  "same_models": true,
-  "same_partitioned_models": true
-}

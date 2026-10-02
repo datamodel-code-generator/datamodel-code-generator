@@ -113,10 +113,10 @@ delivery IDs, namespaces, operation references, entry IDs, and causes; callers m
 
 ## Protocol contracts
 
-Generated packages also expose the shared contracts of pagination, polling, stream, and queue helpers. Records, options,
-and resume state come from `pkg.protocols`; `ProtocolClientOptions` comes from `pkg.options`; exceptions come from
-`pkg.errors`. These imports need no HTTP library and start no threads. A client that uses no protocol settings loads
-none of these definitions: `pkg.options` and `pkg.errors` load them the first time one of their names is used. The
+Generated packages also expose the shared contracts of pagination, polling, stream, cache, and queue helpers. Records,
+options, cache and queue stores, and resume state come from `pkg.protocols`; `ProtocolClientOptions` comes from `pkg.options`; exceptions
+come from `pkg.errors`. These imports need no HTTP library and start no threads. A client that uses no protocol settings
+loads none of these definitions: `pkg.options` and `pkg.errors` load them the first time one of their names is used. The
 helpers that use these contracts are still being implemented; constructing a record or option sends nothing.
 
 ### Selectors, targets, and origins
@@ -155,7 +155,9 @@ itself, and it cannot be modified.
 
 `PollSnapshot[P]` is an immutable poll result with `state: WireValue`, `terminal: bool`, `data: P`, and
 `response: ResponseInfo`. The state is frozen, and the state and data are excluded from the representation. `P` is
-covariant, so a `PollSnapshot[Pet]` is also a `PollSnapshot[object]`.
+covariant, so a `PollSnapshot[Pet]` is also a `PollSnapshot[object]`. `CancelReceipt[C]` is the immutable response of
+a remote cancel request, with `data: C` and `response: ResponseInfo`; the data is excluded from the representation, and
+`C` is covariant too.
 
 `ProgressKey` is `Literal['pages', 'items', 'polls', 'reconnects', 'parts', 'confirmed_bytes', 'network_send_count',
 'network_send_budget_used', 'messages_sent', 'messages_received']`, and `ProtocolProgress` is
@@ -230,7 +232,16 @@ booleans. Durations are finite numbers of seconds, excluding booleans; integers 
 | | `reconnect` | `False` | `bool` |
 | | `max_reconnects` | `5` | Nonnegative integer or `None` |
 | | `max_reconnect_wait` | `60` seconds | Positive duration or `None` |
+| `CacheOptions` | `max_entry_bytes` | `2097152` | Positive integer: the largest body a fetch stores |
+| | `max_ttl` | `300` seconds | Positive duration: the cap on any entry's freshness |
+| `WSOptions` | `open_timeout`, `idle_timeout`, `send_timeout`, `ping_interval`, `pong_timeout` | See [WebSocket limits](#websocket-limits) | Positive duration or `None` |
+| | `close_timeout`, `resume_ack_timeout` | `5` and `30` seconds | Positive duration |
+| | `max_message_bytes`, `max_queue` | `1048576` and `16` | Positive integer |
+| | `max_ack_buffer_messages`, `max_ack_buffer_bytes`, `max_unacked` | `16`, `16777216`, and `100` | Positive integer |
 | `QueueOptions` | `max_entries`, `parallelism`, and the entry policy fields | See [queue limits](#limits-and-policies) | Positive integers and durations; `max_delivery_timeout` at most 300 |
+| | `compression` | `None` | `"deflate"` or `None` |
+| | `reconnect` | `False` | `bool` |
+| | `max_reconnects` | `5` | Nonnegative integer or `None` |
 
 `ProtocolSecurityContext(*, credential_partition: str, allowed_origins: tuple[Origin, ...] = ())` names the
 nonsecret credential partition of helper state and the origins permitted in addition to the same origin. The
@@ -267,8 +278,11 @@ client = Client(options=options)
 | `ProtocolClientOptions.security` | `ProtocolSecurityContext \| None`, default `UNSET` | `None` means anonymous use. Its `allowed_origins` are the origins beyond the server's that a next-URL or Link pagination helper may follow a URL to |
 | `ProtocolClientOptions.defaults` | `Mapping[str, ProtocolDefaults]`, default `UNSET` | Keys are helper names: Python identifiers separated by dots, without keywords or empty parts. The mapping is copied into a read-only mapping, and its values keep their identity |
 | `ProtocolDefaults.session` | `SessionOptions`, default `UNSET` | Session limits of that helper |
+| `ProtocolDefaults.options` | `PaginationOptions \| PollOptions \| StreamOptions \| CacheOptions \| WSOptions \| QueueOptions`, default `UNSET` | Kind-specific options of that helper |
+| `ProtocolClientOptions.cache_stores` | `Mapping[str, CacheStore \| AsyncCacheStore]`, default `UNSET` | The store each [cache helper](#cache-helpers) keeps its entries in, by helper name. The mapping is copied into a read-only mapping that keeps each store's identity; the client borrows the stores and never closes them |
+| `ProtocolClientOptions.websocket_connector` | `WebSocketConnector \| AsyncWebSocketConnector \| None`, default `UNSET` | A borrowed connector that opens WebSocket connections; see [connectors and transports](#connectors-and-transports) |
+| `ProtocolClientOptions.websocket_transport` | `WebSocketTransportOptions`, default `UNSET` | TLS contexts, proxy, and `trust_env` of WebSocket connections |
 | `ProtocolClientOptions.queue_stores` | `Mapping[str, QueueStore \| AsyncQueueStore]`, default `UNSET` | The borrowed store of each [queue helper](#queue-helpers), by its name. The mapping is copied into a read-only mapping, and its values keep their identity |
-| `ProtocolDefaults.options` | `PaginationOptions \| PollOptions \| StreamOptions \| QueueOptions`, default `UNSET` | Kind-specific options of that helper |
 
 Invalid values inside `ProtocolClientOptions` and `ProtocolDefaults` raise `ProtocolConfigurationError`. Explicit
 call options take precedence over these defaults, which take precedence over the effective defaults above.
@@ -296,30 +310,40 @@ Invalid field values raise `ValueError`.
 | `StreamInterruptedError` | `ProtocolError` | `condition: Literal['eof', 'transport']`, `sequence: int`, `resume_state: ResumeState \| None = None` |
 | `IncompleteFrameError` | `StreamInterruptedError` | `buffered_bytes: int`; `condition` is always `eof` |
 | `StreamRemoteError[E]` | `ProtocolError` | `event_type: str \| None`, `data: E`, a read-only property, `sequence: int` |
+| `CacheStoreError` | `ProtocolStoreError` | `action`, the store method that failed, and `entry_id: str \| None = None` |
+| `CacheProtocolError` | `ProtocolDataError` | No other fields; `condition` is always `inconsistent` |
+| `CacheValidatorConflictError` | `ProtocolConfigurationError` | `header_name: Literal['If-None-Match', 'If-Modified-Since']`; `field_path` is the header's name and `condition` is always `binding_mismatch` |
+| `CacheInvalidationError[T]` | `CacheStoreError` | `tags: tuple[str, ...]`, `completed_result: T \| Unset = UNSET`, a read-only property; `has_completed_result` and `require_result()`, which raises `ResultUnavailableError` without a result; `action` is always `invalidate` |
+| `ConcurrentReceiveError` | `ProtocolStateError` | None; `state` is always `receiving` and `action` always `receive` |
+| `WebSocketClosedError` | `ProtocolError` | `code: int \| None`, `reason: str` of at most 123 UTF-8 bytes, `clean: bool` |
+| `WebSocketHandshakeError` | `TransportError` | `condition: Literal['invalid_message', 'invalid_header', 'upgrade', 'negotiation', 'security', 'size']`, `delivery_state`, `retry_stop_reason = None`; `phase` is always `connect` |
+| `WebSocketProxyError` | `TransportError` | `proxy_status_code: int \| None = None`, `retry_stop_reason = None`; `phase` is always `connect` and `delivery_state` `NOT_SENT` |
+| `HandshakeResponse` | `ProtocolError` | `status_code: int`, `headers: HeadersView`, `body_prefix: bytes` of at most 65536 bytes, `truncated: bool`; raised only by connectors |
+| `DeliveryUnknownError` | `ProtocolError` | `delivery_state`, `MAYBE_SENT` or `RESPONSE_STARTED`, `resume_state: ResumeState \| None = None`, `message_id: str \| None = None` |
 | `QueueStoreError` | `ProtocolStoreError` | `action`, `entry_id: str \| None = None` |
 | `QueueFullError` | `QueueStoreError` | `kind: Literal['entries', 'bytes']`, `limit: int`, `observed: int` |
 | `QueueBindingError` | `ProtocolConfigurationError` | `entry_id: str`; `condition` is always `binding_mismatch` |
 | `QueuePolicyConflictError` | `ProtocolConfigurationError` | `fields: tuple[str, ...]`, nonempty; `condition` is always `invalid_value` |
 
-A field whose value is fixed is not a constructor argument, so passing it raises `TypeError`. `progress` is
-copied into a read-only mapping. Messages and representations exclude locations, progress, resume state, snapshots,
-raw bytes, event types, and event data; read those attributes explicitly. The payload type parameters are covariant
-and default to `object`, so an unparameterized `OperationFailedError` has `object` snapshot data. Narrow the payload
-explicitly before using it as a model.
+A field whose value is fixed is not a constructor argument, so passing it raises `TypeError`. `progress` is copied into
+a read-only mapping. Messages and representations exclude locations, progress, resume state, snapshots, raw bytes, event
+types, event data, and tags; read those attributes explicitly. The payload type parameters are covariant and default to
+`object`, so an unparameterized `OperationFailedError` has `object` snapshot data. Narrow the payload explicitly before
+using it as a model.
 
 ## Protocol helper configuration
 
-Pagination, polling, and SSE or NDJSON stream helpers of an API are declared in a helper configuration, which the client
-target reads through its `protocols` setting. The helpers are still being implemented: generation validates every
-helper, resolves its references against the selected API, and records it in the target manifest. An enabled pagination
-helper generates the [pagination helper](#pagination-helpers) below, an enabled polling helper the
-[polling helper](#polling-helpers), an enabled SSE helper the [SSE stream helper](#sse-stream-helpers), an enabled
-NDJSON helper the [NDJSON stream helper](#ndjson-stream-helpers), an enabled queue helper the
-[queue helper](#queue-helpers), and an enabled webhook helper the
-[webhook verification helper](#webhook-verification-helpers); any other enabled helper fails with `E_CLIENT_UNSUPPORTED`.
-A disabled helper generates nothing, so the package is the same as without it. The `websocket`, `cache`,
-`resumable_upload`, and `batch` kinds fail with `E_CLIENT_UNSUPPORTED` whether they are enabled or not, and their
-settings are not read yet.
+Pagination, polling, SSE or NDJSON stream, WebSocket, webhook, cache, and queue helpers of an API are declared in a helper
+configuration, which the client target reads through its `protocols` setting. The helpers are still being implemented:
+generation validates every helper, resolves its references against the selected API, and records it in the target
+manifest. An enabled pagination helper generates the [pagination helper](#pagination-helpers) below, an enabled polling
+helper the [polling helper](#polling-helpers), an enabled SSE helper the [SSE stream helper](#sse-stream-helpers), an
+enabled NDJSON helper the [NDJSON stream helper](#ndjson-stream-helpers), an enabled WebSocket helper the
+[WebSocket helper](#websocket-helpers), an enabled cache helper the [cache helper](#cache-helpers), an enabled queue
+helper the [queue helper](#queue-helpers), and an enabled webhook helper the
+[webhook verification helper](#webhook-verification-helpers). A disabled helper generates nothing, so the package is the
+same as without it. The `resumable_upload` and `batch` kinds fail with `E_CLIENT_UNSUPPORTED` whether they are enabled
+or not, and their settings are not read yet.
 
 | Setting | Values | Default | Where |
 |---|---|---|---|
@@ -465,7 +489,9 @@ querystring, or its request body. An operation that owns a querystring takes no 
 | `pagination` | `operation`, `items` (a body selector), `item_schema`, `continuation` | `bindings` (`[]`), such as a snapshot token each request carries |
 | `polling` | `create`, `accepted_statuses`, `poll`, `bindings` (create to poll), `state`, `pending`, `succeeded`, `result` | `failed` and `cancelled` (`[]`), `interval` (`{seconds: 1, retry_after_header: null}`), `remote_cancel` (`{operation, bindings?}`), `immediate_result` (`{statuses, selector, schema}`), `expires_at` |
 | `sse`, `ndjson` | `operation`, `media`, `event_schema`, `completion`, and for `ndjson` `final_line` (`require_newline` or `allow_eof`) | `unknown` (`error`, the default, or `raw`), `error_events` (`{}`), `resume` (`{enabled: false}`) |
+| `websocket` | `operation` (a GET without a body), `send`, `receive` (each `{codec: json\|utf8\|bytes, frame?, schema?}`) | `subprotocols` (`[]`), `compression` (`false`) |
 | `webhook` | `event_schema`, `signature` (see [webhook verification helpers](#webhook-verification-helpers)) | `duplicates` (`report`, the default, or `reject`, which needs a signature) |
+| `cache` | `operation`, `validator` (`etag`, `last_modified`, or `both`), `authenticated` (a boolean) | `statuses` (`[200]`), `vary_allowlist` (`[]`), `tags` (`[]`), `mutations` (`{}`); see [cache helpers](#cache-helpers) |
 | `queue` | `operations`, a nonempty mapping of aliases to `{operation, side_effects}` (see [queue helpers](#queue-helpers)) | Per operation, `key_binding` and `dedupe_ttl`, given together and required with side effects |
 
 A pagination `continuation` is one of these:
@@ -511,17 +537,18 @@ E_SELECTOR_DEPENDENCY selection protocols.helpers['audit.all'].operation /paths/
 
 ### Python records and the manifest
 
-`ProtocolConfiguration(schema_version=1, helpers={...})` takes `PaginationHelper`, `PollingHelper`, `StreamHelper`, and
-`WebhookHelper` records, which mirror the file: their fields have the file's names, with `from_` for `from`, and they
-take the client's `Selector` and `RequestTarget` records, `OperationRef` or a pointer string, and `SchemaRef`. A
-webhook's `HmacSignature` (`hmac-sha256` or `hmac-sha512`) or `PublicKeySignature` (`ed25519` or `rsa-pss-sha256`) has
-the same fields and takes `HeaderName`, `TimestampHeader`, `SignedLiteral`, `FixedBytes`, and `AsciiBytes` records, or
+`ProtocolConfiguration(schema_version=1, helpers={...})` takes `PaginationHelper`, `PollingHelper`, `StreamHelper`,
+`WebSocketHelper`, whose `send` and `receive` are `WebSocketMessage` records, `WebhookHelper`, and `CacheHelper`
+records, which mirror the file: their fields have the file's names, with `from_` for `from`, and they take the client's
+`Selector` and `RequestTarget` records, `OperationRef` or a pointer string, and `SchemaRef`. A webhook's
+`HmacSignature` (`hmac-sha256` or `hmac-sha512`) or `PublicKeySignature` (`ed25519` or `rsa-pss-sha256`) has the same
+fields and takes `HeaderName`, `TimestampHeader`, `SignedLiteral`, `FixedBytes`, and `AsciiBytes` records, or
 `"none"`, and `signed_parts` entries `"raw-body"`, `"timestamp"`, and `"delivery-id"`; `AdapterSignature(timestamp=...,
 delivery_id=...)` takes `"required"` or `"none"` for each fact, and `NoSignature()` declares an unsigned webhook. An
-event mapping is an `EventMapping` with an `EventDiscriminator(from_="body", pointer=...)`. A queue is a `QueueHelper`
-whose `operations` map aliases to `QueuedOperation(operation=..., side_effects=..., key_binding=..., dedupe_ttl=...)`.
-They are validated as the file is, with the same diagnostics, when the client configuration is constructed. The later
-kinds have no records yet.
+event mapping is an `EventMapping` with an `EventDiscriminator(from_="body", pointer=...)`, and a cache mutation a
+`CacheMutation(operation=..., invalidate_tags=(...))`. A queue is a `QueueHelper` whose `operations` map aliases to
+`QueuedOperation(operation=..., side_effects=..., key_binding=..., dedupe_ttl=...)`. They are validated as the file is,
+with the same diagnostics, when the client configuration is constructed. The later kinds have no records yet.
 
 ```python
 ClientGenerationConfig(
@@ -980,7 +1007,8 @@ fetch, raises `SessionLimitError` again before sending. `close()` or `aclose()`,
 `async with` block, stops only local polling; the remote operation goes on, and every later step raises
 `ProtocolStateError` with `state='closed'`. Calling `status`, `wait`, `close`, or `aclose` while another step runs
 raises `ProtocolStateError` with `state='polling'`; a block that ends with an error while another step runs leaves the
-handle open and lets its own error propagate.
+handle open and lets its own error propagate. `checkpoint()` and `cancel_remote()` are not steps: they run while
+another thread or task is in `status` or `wait`, such as one sleeping until its next poll.
 
 ### Waits and server delays
 
@@ -998,8 +1026,8 @@ than `max_wait`, or not shorter than what remains of the session's deadline or t
 the handle stays as it was. A wait ends early for the options' `CancelToken` and the client's close, raising
 `RequestCancelledError` or `ClientClosedError` with the `operation_id` of the operation it waits to call, the poll's
 or the result fetch's, and the session's `parent_session_id`. Once the client is closed, every later `status` or
-`wait` that needs a poll or a result fetch raises `ClientClosedError`. `resume_state` is None, since checkpoints of
-polling helpers are not supported yet.
+`wait` that needs a poll or a result fetch raises `ClientClosedError`. `PollWaitLimitError.resume_state` holds a
+[checkpoint](#checkpoints-and-resume-of-operations) of the handle as it stood.
 
 ### Limits and sessions
 
@@ -1018,10 +1046,153 @@ call's options, then the helper's `ProtocolDefaults` in `ProtocolClientOptions.d
 | `SessionOptions.max_network_sends` | 2000 sends | Removes the limit |
 
 A poll or a result fetch past a limit raises `SessionLimitError` with the kind `polls` or `network_sends` and the
-progress so far, before sending; a create request the session has no slot for raises it too. The options of `start`
-apply to every call of the handle. They must not fix an idempotency key, from the client, a view, or the call, and
+progress so far, before sending, keeping a checkpoint of the handle as `resume_state`; a create request the session
+has no slot for raises it too, with `resume_state=None`, since nothing was created. The options of `start` apply to
+every call of the handle. They must not fix an idempotency key, from the client, a view, or the call, and
 must not patch a header or a query parameter a binding writes; `start` raises `ProtocolConfigurationError` before
 sending, as it does for options of another type.
+
+### Checkpoints and resume of operations
+
+`handle.checkpoint()` returns a `ResumeState` without sending, on `LroHandle` and `AsyncLroHandle` alike, also after
+`close`. While another thread or task runs `status` or `wait`, it saves the handle as the last poll or fetch that
+settled left it, never waiting for a step and never refusing; a poll in flight is not saved, so a resumed handle polls
+again. The helper's `resume(state, *, poll_options=None, options=None, session_options=None)` is not awaited, even on
+`AsyncClient`, and returns the handle type `start` returns, in a session of its own, without sending: it never creates
+the operation again, and `status` or `wait` sends its first poll.
+
+```python
+from pkg.errors import PollWaitLimitError
+from pkg.protocols import PollOptions, import_state
+
+with Client() as client:
+    helper = client.protocols.jobs.run
+    handle = helper.start(body=job)
+    saved = handle.checkpoint().export()
+    report = helper.resume(import_state(saved)).wait()
+    try:
+        helper.start(body=job).wait()
+    except PollWaitLimitError as error:
+        if error.resume_state is not None:
+            later = helper.resume(error.resume_state, poll_options=PollOptions(max_wait=None))
+```
+
+| Saved | Never saved |
+|---|---|
+| The phase: pending, succeeded, failed, or cancelled | The create request, its body, and its idempotency key, since resume never sends it |
+| The polls so far, and the wait left before the next poll or result fetch, in milliseconds rounded up and at most 2^53 - 1, which a longer server delay saves | The session, its deadline, and its send counters |
+| The values the next poll, the result fetch, and a remote cancel write, read from the responses so far | The call's `options`, and anything its auth adds |
+| A settled operation's final poll and its state value, and the create response of an immediate result or the fetched result, as body, status, and media type | Model objects, which are decoded again, and any other response metadata |
+| The server's expiry an `expires_at` helper read, as the state's expiry | |
+
+A resumed pending handle waits out the saved wait, then polls with the saved values; a resumed handle whose result
+fetch is due fetches it once. A settled one sends nothing: `wait` returns the result decoded again from its saved body
+under the call's response validation, or raises `OperationFailedError` or `OperationCancelledError` again, and
+`status` returns the final poll, whose `response` holds only the saved status and `Content-Type` and an empty
+`call_id`. Polls count on from the checkpoint against the resumed call's `max_polls`, so a poll limit that stopped the
+handle stops it again unless it is raised, while the session's timeout, deadline, and sends start afresh. A literal
+binding sends the plan's value, never a saved one.
+
+`resume` checks the resumed call's options as `start` does, then the state, before returning:
+
+| Rejected state | Exception |
+|---|---|
+| Not a `ResumeState` | `ProtocolConfigurationError(field_path=("state",), condition="invalid_value")` |
+| Another helper's, or one generated differently | `ResumeStateError(condition="fingerprint")` |
+| Made under another credential partition, allowed origins, or auth, or with other server origins or declared security of the poll, result fetch, or remote cancel operation, as for [pagers](#checkpoints-and-resume) | `ResumeStateError(condition="security")` |
+| An expiry that has passed | `ResumeStateError(condition="expired")` |
+| A state or saved body that does not fit the helper: an unknown phase or member, a wait over 2^53 - 1 milliseconds, a saved state value of another phase or none the helper declares, a body that does not decode or does not carry the result, an immediate result of a status the helper does not declare, or a saved value that cannot be encoded into the next poll, result fetch, or remote cancel, such as one with CR, LF, or NUL in a header | `ResumeStateError(condition="malformed")` |
+| A saved body over the resumed call's `max_response_bytes` of its operation | `ProtocolSizeError(kind="body")`, as receiving it would |
+| A dot segment (`.` or `..`) a saved value would write to a path parameter | `ProtocolDataError`, as for a server's value |
+
+A pending checkpoint saves the result fetch's `initial` values before the final poll gives its others: `resume` encodes
+each one written to a parameter as the fetch encodes it, while one written into the fetch's querystring or body is
+checked only when the fetch request is built, which refuses a value it cannot send before sending. `ResumeState.export()` requires `ProtocolSecurityContext.credential_partition`
+when one of these operations declares security or the call configures auth, as for pagers; the saved bodies are not
+encrypted, so store exported states as the call's own data.
+
+### Remote cancellation and expiry
+
+A helper that declares `remote_cancel` generates a handle class of its own, a subclass of `LroHandle` or
+`AsyncLroHandle`, which `start` and `resume` return. Only it has `cancel_remote()`, a coroutine on the asyncio handle,
+which returns a `CancelReceipt[C]`, imported from `pkg.protocols`, where `C` is the cancel operation's response type;
+helpers without `remote_cancel` have no such method:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.polling.handle -->
+<!-- fmt: off -->
+
+```python
+class JobsTrackedHandle(LroHandle[_dcg_type_1, GetJobResponse]):
+    """A handle of the jobs.tracked polling helper, which also cancels the operation with DELETE /jobs/{jobId}."""
+
+    __slots__ = ()
+
+    def cancel_remote(self) -> CancelReceipt[CancelJobResponse]:
+        """Ask the server to cancel the operation; the handle keeps its last poll until it polls again."""
+        return self._cancel_remote(_plans.CANCEL_5)
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.polling.handle -->
+
+`cancel_remote()` sends the cancel operation once, at once, as a call of the handle's session, writing its bindings'
+values: what its selectors read from the create response for `source: initial`, or from the latest response, the
+create response and then each pending poll, for `source: previous`. A missing value in one of those responses fails
+it as a poll binding's does. The receipt is immutable, with read-only `data` and `response`. The request does not
+settle the operation: the handle keeps its phase, its last poll, and the time of its next poll, and only the next
+`status` or `wait` tells whether the operation was cancelled. It counts no poll; a session without a send slot raises
+`SessionLimitError` with a checkpoint, and any other error leaves the handle as it was. It runs while another thread or
+task is in `status` or `wait`, so a waiting operation can be cancelled from elsewhere: it reads the values to send when
+it starts, and the `wait` goes on until a poll tells it the operation settled. A settled operation raises
+`ProtocolStateError` with its phase as the `state`, and a closed handle with `state='closed'`, both without sending.
+`close()` never sends the cancel request.
+
+The concrete handle classes are not exported from `pkg.protocols`: use the type `start` and `resume` return, or
+annotate a handle as `LroHandle[T, P]` or `AsyncLroHandle[T, P]`, which they subclass, without `cancel_remote`.
+
+`expires_at` is a selector of the server's expiry of the operation, read once from the accepted create response: a
+string giving an RFC 3339 date-time with an offset or an HTTP date, where a leap second is the second after the one
+before it. A missing, null, non-string, or unparsable value fails `start` with `ProtocolDataError` after the create
+response, as a missing binding value does; the remote operation was created all the same, and nothing cancels it. The expiry, in UTC,
+becomes the expiry of every checkpoint of the handle, so `import_state` and `resume` refuse them afterwards with
+`ResumeStateError(condition="expired")`; it does not stop a live handle from polling. Without `expires_at`, checkpoints
+never expire, and no expiry is assumed. An immediate result has none.
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.polling.tracked -->
+<!-- fmt: off -->
+
+```yaml
+schema_version: 1
+helpers:
+  jobs.tracked:
+    kind: polling
+    create: /paths/~1jobs/post
+    accepted_statuses: [202]
+    poll: /paths/~1jobs~1{jobId}/get
+    bindings:
+      - target: {in: path, name: jobId}
+        value: {source: initial, selector: {from: body, pointer: /id}}
+    state: {from: body, pointer: /status}
+    pending: [queued, running]
+    succeeded: [done]
+    failed: [failed]
+    cancelled: [cancelled]
+    result:
+      kind: inline
+      selector: {from: body, pointer: /result}
+      schema: {pointer: /components/schemas/Report}
+    remote_cancel:
+      operation: /paths/~1jobs~1{jobId}/delete
+      bindings:
+        - target: {in: path, name: jobId}
+          value: {source: previous, selector: {from: body, pointer: /id}}
+        - target: {in: header, name: X-Reason}
+          value: {literal: requested}
+    expires_at: {from: body, pointer: /expires}
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.polling.tracked -->
 
 ### Generation checks
 
@@ -1039,18 +1210,19 @@ a credential position: a
 cookie, the `Authorization`, `Proxy-Authorization`, `Cookie`, and `Cookie2` headers, or a header, query parameter, or
 querystring property a security scheme of the package names. An inline or immediate result reads a body pointer whose
 schema is the declared `schema`; an immediate result needs a result kind other than `none`, success responses of
-`create` that are all one JSON model, and the type of the result. Bindings that read the helper's input, request
-bodies other than JSON written by a binding, `remote_cancel`, `expires_at`, and pointers that read through a union or a
-map are not supported yet:
+`create` that are all one JSON model, and the type of the result. A `remote_cancel` operation must declare a success
+response, and its bindings are checked as the poll's, against the same responses; `expires_at` must read strings from
+every accepted create response. Bindings that read the helper's input, request bodies other than JSON written by a
+binding, and pointers that read through a union or a map are not supported yet:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.polling.diagnostics -->
 <!-- fmt: off -->
 
 ```text
-E_CLIENT_UNSUPPORTED target protocols.helpers['checks.later'].remote_cancel /paths/~1jobs/post: The polling helper 'checks.later' declares remote cancellation, which is not supported yet
-E_CLIENT_UNSUPPORTED target protocols.helpers['checks.later'].expires_at /paths/~1jobs/post: The polling helper 'checks.later' declares a server expiry, which is not supported yet
 E_CONFIG_VALUE config protocols.helpers['checks.later'].accepted_statuses[1] /paths/~1jobs/post: The accepted status 201 of 'checks.later' selects no success response of POST /jobs
 E_CONFIG_VALUE config protocols.helpers['checks.later'].accepted_statuses[2] /paths/~1jobs/post: The accepted status 404 of 'checks.later' selects no success response of POST /jobs
+E_CONFIG_VALUE config protocols.helpers['checks.later'].expires_at /paths/~1jobs/post: The expiry of 'checks.later' reads integer values, where only a string gives a date and time
+E_CONFIG_VALUE config protocols.helpers['checks.later'].remote_cancel.operation /paths/~1archives/post: POST /archives must declare a success response for the remote cancel of 'checks.later'
 E_CONFIG_VALUE config protocols.helpers['checks.poll'].poll /paths/~1exports/post: POST /exports must declare exactly one JSON success response for the polling helper 'checks.poll'
 E_CONFIG_VALUE config protocols.helpers['checks.states'].pending[0] /paths/~1exports~1status/get: The state 'zero' of 'checks.states' is string, which its state never reads
 E_CONFIG_VALUE config protocols.helpers['checks.states'].failed[0] /paths/~1exports~1status/get: The state True of 'checks.states' is boolean, which its state never reads
@@ -1087,6 +1259,9 @@ E_CONFIG_VALUE config protocols.helpers['checks.no_success'].accepted_statuses[0
 E_CONFIG_VALUE config protocols.helpers['checks.no_success'].immediate_result.statuses[0] /paths/~1archives/post: The immediate status 200 of 'checks.no_success' selects no success response of POST /archives
 E_CLIENT_UNSUPPORTED target protocols.helpers['checks.no_success'].immediate_result /paths/~1archives/post: The immediate result of 'checks.no_success' reads POST /archives, whose success responses are not all one JSON model, which is not supported yet
 E_CONFIG_VALUE config protocols.helpers['checks.media'].result.bindings /paths/~1archives~1search/post: The polling helper 'checks.media' writes a request body of POST /archives/search, which has no default media type; set the operation's request_media_type
+E_CONFIG_VALUE config protocols.helpers['checks.cancel'].expires_at /paths/~1jobs/post: The expiry of 'checks.cancel' reads the header 'Expires', which POST /jobs does not declare
+E_CONFIG_VALUE config protocols.helpers['checks.cancel'].remote_cancel.bindings[0].target /paths/~1jobs~1{jobId}/delete: The cancel binding 0 of 'checks.cancel' gives integer values, which the header parameter 'X-Reason' of DELETE /jobs/{jobId} does not accept
+E_CONFIG_VALUE config protocols.helpers['checks.cancel'].remote_cancel.bindings /paths/~1jobs~1{jobId}/delete: DELETE /jobs/{jobId} requires the path parameter 'jobId', which no binding of 'checks.cancel' writes
 ```
 
 <!-- fmt: on -->
@@ -1314,6 +1489,403 @@ E_CONFIG_VALUE config protocols.helpers['checks.discriminator_absent'].event_sch
 
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.ndjson.diagnostics -->
+
+## WebSocket helpers
+
+An enabled `websocket` helper is generated at `client.protocols.<name>` on `Client` and `AsyncClient` alike, with one
+method, `connect`. Its channel is a GET operation, whose handshake request the helper sends: the operation gives the
+URL, the parameters, the servers, and the security. `connect` takes the operation's parameters as keywords, then
+`ws_options`, `options`, and `session_options`, and returns a `WebSocketSession[S, R]`, or with one `await` an
+`AsyncWebSocketSession[S, R]`, once the server accepted the handshake:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.websocket.helper -->
+<!-- fmt: off -->
+
+```python
+    def connect(
+        self,
+        *,
+        room: _dcg_type_0 | ModelValue[_dcg_type_0],
+        since: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        ws_options: WSOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> WebSocketSession[_dcg_type_2 | ModelValue[_dcg_type_2], _dcg_type_3]:
+        """Open the WebSocket of GET /rooms/{room}/socket, returning once its handshake got a valid 101."""
+        return connect_socket(
+            self._core,
+            _plans.SOCKET_0,
+            (room, since),
+            ws_options=ws_options,
+            options=options,
+            session_options=session_options,
+        )
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.websocket.helper -->
+
+```python
+with Client() as client, client.protocols.rooms.chat.connect(room="lobby") as session:
+    session.send(ClientMessage(text="hi"))
+    for message in session:
+        print(message.sequence, message.data)
+```
+
+```yaml
+helpers:
+  rooms.chat:
+    kind: websocket
+    operation: /paths/~1rooms~1{room}~1socket/get
+    subprotocols: [chat.v2, chat.v1]
+    compression: true
+    send: {codec: json, schema: {pointer: /components/schemas/ClientMessage}}
+    receive: {codec: json, schema: {pointer: /components/schemas/ServerMessage}}
+```
+
+`send` and `receive` declare how the messages of each direction are coded: `codec: json` with a `schema`, whose value
+is sent as compact UTF-8 JSON and received through the schema's codec, `codec: utf8` for `str` text, or
+`codec: bytes`. `frame` is `text` or `binary`; it defaults to `text` for JSON and UTF-8 messages and to `binary` for
+bytes, and only JSON messages may choose. `S` is the send schema's argument type, `T | ModelValue[T]`, or `str` or
+`bytes`, and `R` the received type; a union schema carries several message types. `subprotocols` lists the offered
+subprotocols in order (`[]` by default), and `compression` (`false` by default) permits
+`WSOptions(compression="deflate")`.
+
+`WebSocketSession`, `AsyncWebSocketSession`, `Message`, `PingReceipt`, `WSOptions`, and `WebSocketTransportOptions` are
+imported from `pkg.protocols`, and the WebSocket exceptions from `pkg.errors`. A package without WebSocket helpers
+never imports the WebSocket library.
+
+### Handshakes
+
+The handshake is one logical call of the operation, with its retries, `Retry-After`, redirects, authentication and
+token refresh, limiter, hooks, and deadline, as any call has. Only a 101 response whose headers validate opens the
+session: any other response is read up to `max_error_body_bytes` and raises the operation's typed `HTTPStatusError`,
+or `UnexpectedStatusError` for an undeclared status, so 101 need not be declared. The handshake's limiter permit is
+held for the whole session and released when it closes or fails. URLs keep their `https` or `http` server and are
+opened as `wss` or `ws`; a redirect to a `wss` or `ws` location follows the shared redirect policy as the `https` or
+`http` URL it names. When the helper offers subprotocols, the server must select one of them, or
+`connect` raises `WebSocketHandshakeError` with the condition `negotiation`; `session.subprotocol` is the selected one
+and `session.response` the 101 response. Credentials are sent as the operation's security declares, on every attempt
+and only to the server's origin or the security context's allowed origins. Headers the handshake manages, such as
+`Upgrade`, `Connection`, and `Sec-WebSocket-*`, given through request options or parameters raise `ConfigurationError`
+with the condition `managed` before anything is sent. The handshake's hooks end with the call outcome `handed_off`, and
+the session's end emits `stream_end`.
+
+### Sessions
+
+| Method | Behavior |
+|---|---|
+| `send(value)` | Encodes one message and sends it as one message of the declared frame |
+| `receive()` | Returns the next `Message[R]`: `data`, `frame` (`text` or `binary`), `sequence` from 1, and `raw` bytes |
+| Iteration | Yields messages until the server closes normally |
+| `ping(payload=b"")` | Sends a ping of at most 125 bytes and returns a `PingReceipt` with the pong's `latency` in seconds |
+| `close(code=1000, reason="")`, `aclose` | Closes with 1000, 1001, or a code from 3000 to 4999 and a reason of at most 123 UTF-8 bytes; repeats do nothing |
+| `with`, `async with` | Closes the session on exit |
+| `progress` | `reconnects`, the session's network sends, `messages_sent`, and `messages_received` |
+
+The session owns the connection until it closes or fails, and closing the client closes it after the client's cleanup
+wait. One `receive` waits at a time: another raises `ConcurrentReceiveError`, while one send may run beside it, and
+sends go one at a time in arrival order. Cancelling the task of an asyncio `receive`, as `asyncio.wait_for` does, leaves
+the session usable, since whole messages are read; a cancelled `send` or `ping` fails the session, since a message may
+be half written. A received message of another frame kind, or one that does not decode, raises
+`StreamDecodeError` with at most 64 KiB of it as `raw_prefix` and closes the connection with 1002. A server's closure
+raises `WebSocketClosedError` with its `code`, `reason`, and `clean`, which is true for a normal closure that alone
+ends iteration; after it, `receive`, `send`, and `ping` raise it again. After any other failure, every step raises
+`ProtocolStateError`, as it does after `close()`. Representations
+never show messages, URLs, headers, or close reasons.
+
+### WebSocket limits
+
+Each limit comes from the call's `ws_options`, then the helper's `ProtocolDefaults` in `ProtocolClientOptions.defaults`,
+then the default below. The session's deadline and its idle, send, and pong timeouts run on the client's `Clock`; a wait
+ends once that clock reaches its end, or once as much real time passed as the clock had left when the wait began:
+
+| Limit | Default | None |
+|---|---|---|
+| `WSOptions.open_timeout` | 5 seconds, also capped by the connect, read, and write timeouts and the deadline | No open limit |
+| `WSOptions.idle_timeout` | The call's merged `stream_idle_timeout`, 60 seconds by default | No idle limit |
+| `WSOptions.max_message_bytes` | 1 MiB per message, after decompression | Not allowed |
+| `WSOptions.max_queue` | 16 frames: the high-water mark of received frames, above which reading pauses | Not allowed |
+| `WSOptions.send_timeout` | 30 seconds, waiting for earlier sends included | No send limit |
+| `WSOptions.ping_interval`, `pong_timeout` | 20 seconds each | No keepalive pings |
+| `WSOptions.close_timeout` | 5 seconds | Not allowed |
+| `SessionOptions.total_timeout`, `deadline` | None | No session deadline |
+| `SessionOptions.max_network_sends` | 16 sends, for handshakes and token requests | Removes the limit |
+
+A message over `max_message_bytes` raises `ProtocolSizeError` with the kind `message` after the connection closed with
+1009. A receive that waits longer than the idle timeout raises `PhaseTimeoutError` with the phase `read` and closes with
+1001, and a missed pong closes with 1011 and raises `WebSocketClosedError` with `clean` false. The session deadline
+bounds every wait and raises `DeadlineExceededError`. A send that sent nothing before its timeout raises
+`PhaseTimeoutError` with the phase `write` and keeps the session open; one that may have reached the server raises
+`DeliveryUnknownError` with the delivery state `MAYBE_SENT`, closes the session, and is never sent again. A send to a
+connection the server closed raises `WebSocketClosedError`. Sessions never reconnect yet, so
+`WSOptions(reconnect=True)` raises `ProtocolConfigurationError` with the condition `missing_metadata`, as `compression`
+does for a helper that does not permit it with `invalid_value`; the resume and acknowledgment limits have no effect
+yet. Options of another type raise `ProtocolConfigurationError`.
+
+### Connectors and transports
+
+Without a connector, the client opens its connections with the `websockets` library, which a package with WebSocket
+helpers depends on, so generation prints it among the packages to add. `ProtocolClientOptions(websocket_connector=...)`
+borrows a `WebSocketConnector`, or an `AsyncWebSocketConnector` for `AsyncClient`, which is never closed: its `open`
+receives a `WebSocketOpenRequest` with the `ws` or `wss` URL, the headers, and the offered subprotocols, the attempt's
+context, the resolved `WSOptions`, and the resolved transport settings, and opens one connection or raises
+`HandshakeResponse` with a response other than 101, which the client turns into the call's result. A connector of the
+other kind raises `ProtocolConfigurationError` with the condition `wrong_capability` when the client is constructed.
+
+`websocket_transport=WebSocketTransportOptions(...)` sets the `ssl_context` of the server connection, an HTTP or HTTPS
+`proxy` URL, which the representation hides, the `proxy_ssl_context` of an HTTPS proxy, and `trust_env`, which lets
+environment proxies apply. A proxy that refuses or breaks the tunnel raises `WebSocketProxyError`; SOCKS proxies are
+not supported.
+
+### WebSocket generation checks
+
+The operation must be a GET without a request body, and each JSON message's schema must exist and code natively,
+without an envelope; a schema outside the selected model scopes fails with `BND_MODEL_SCOPE_REQUIRED`. Message
+definitions, frames, and subprotocol tokens are checked as the helper file is read:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.websocket.diagnostics -->
+<!-- fmt: off -->
+
+```text
+E_CONFIG_VALUE config protocols.helpers['checks.method'].operation /paths/~1chat/post: The WebSocket helper 'checks.method' opens POST /chat, which is not a GET operation
+E_CONFIG_VALUE config protocols.helpers['checks.body'].operation /paths/~1upload/get: The WebSocket helper 'checks.body' opens GET /upload, which takes a request body
+E_CONFIG_VALUE config protocols.helpers['checks.schema'].send.schema /paths/~1chat/get: The schema '/components/schemas/Nobody' of 'checks.schema' does not exist in its document
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.envelope'].receive.schema /paths/~1chat/get: The WebSocket helper 'checks.envelope' codes an envelope-projected message, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['codec.unknown'].send.codec: protocols.helpers['codec.unknown'].send.codec must be 'json', 'utf8' or 'bytes'
+E_CONFIG_VALUE config protocols.helpers['codec.schema_missing'].send.schema: protocols.helpers['codec.schema_missing'].send needs 'schema' for JSON messages
+E_CONFIG_CONFLICT config protocols.helpers['codec.schema_extra'].send.schema: protocols.helpers['codec.schema_extra'].send.schema applies only to JSON messages
+E_CONFIG_CONFLICT config protocols.helpers['frame.text'].send.frame: protocols.helpers['frame.text'].send.frame must be 'text' for utf8 messages
+E_CONFIG_CONFLICT config protocols.helpers['frame.binary'].receive.frame: protocols.helpers['frame.binary'].receive.frame must be 'binary' for bytes messages
+E_CONFIG_VALUE config protocols.helpers['frame.json'].receive.frame: protocols.helpers['frame.json'].receive.frame must be 'text' or 'binary'
+E_CONFIG_VALUE config protocols.helpers['subprotocols.token'].subprotocols[0]: protocols.helpers['subprotocols.token'].subprotocols[0] must be a subprotocol token
+E_CONFIG_VALUE config protocols.helpers['subprotocols.token'].subprotocols[1]: protocols.helpers['subprotocols.token'].subprotocols[1] must be a subprotocol token
+E_CONFIG_VALUE config protocols.helpers['subprotocols.repeated'].subprotocols[1]: protocols.helpers['subprotocols.repeated'].subprotocols[1] repeats a subprotocol
+E_CONFIG_VALUE config protocols.helpers['message.type'].compression: protocols.helpers['message.type'].compression must be a boolean
+E_CONFIG_VALUE config protocols.helpers['message.type'].send: protocols.helpers['message.type'].send must be a message definition
+E_CONFIG_UNKNOWN config protocols.helpers['message.type'].receive.extra: protocols.helpers['message.type'].receive has no key 'extra'
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.websocket.diagnostics -->
+
+## Cache helpers
+
+An enabled `cache` helper fetches one GET operation through a private cache that you lend it: it answers from a fresh
+stored response without sending, revalidates a stale one with its `ETag` or `Last-Modified` validator, and otherwise
+sends the request as an ordinary call. Nothing is cached for ordinary methods, and a client without a helper or a
+store keeps no cache state. The helper is generated at `client.protocols.<name>` on `Client` and `AsyncClient` alike:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.cache.yaml -->
+<!-- fmt: off -->
+
+```yaml
+schema_version: 1
+helpers:
+  users.profile:
+    kind: cache
+    operation: /paths/~1users~1{userId}/get
+    validator: both
+    authenticated: false
+    vary_allowlist: [Accept-Language]
+    tags: ["user:{userId}", users]
+    mutations:
+      rename:
+        operation: /paths/~1users~1{userId}/patch
+        invalidate_tags: ["user:{userId}"]
+      remove:
+        operation: /paths/~1users~1{userId}/delete
+        invalidate_tags: ["user:{userId}", users]
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.cache.yaml -->
+
+| Setting | Meaning |
+|---|---|
+| `operation` | The GET operation the helper fetches. It takes no request body, and each cacheable status is a declared 2xx success with one JSON body |
+| `validator` | `etag` revalidates with `If-None-Match` from `ETag`, `last_modified` with `If-Modified-Since` from `Last-Modified`, and `both` with `If-None-Match` when an `ETag` is stored and `If-Modified-Since` otherwise |
+| `authenticated` | Whether the fetch carries credentials. It must match every call: a call that the auth, a credential or cookie header, or a security scheme's field authenticates needs `true` and a credential partition, and any other call `false` |
+| `statuses` | The cacheable statuses, distinct, from 100 to 599 |
+| `vary_allowlist` | The request headers a response's `Vary` may name; a response that varies on any other header, or on `*`, is not stored. A header credentials travel in (`Authorization`, `Proxy-Authorization`, `Cookie`, `Cookie2`, or a declared security scheme's header) fails generation with `E_CONFIG_VALUE`. Responses behind a CDN often vary on `Accept-Encoding`: allow it to store them |
+| `tags` | Text the stored entries carry; each `{name}` is replaced by the wire value of the required path or query parameter of that name, as text |
+| `mutations` | Method names mapped to `{operation, invalidate_tags}`: a POST, PUT, PATCH, or DELETE operation and the tags its success removes |
+
+`fetch` takes the operation's parameters as keywords, then `cache_options` and `options`, and returns a `CacheResult`;
+`invalidate(tags)` removes the entries carrying any of the tags and returns how many, and `mutations.<name>(...)` takes
+its operation's parameters and body like its method and returns its result. With asyncio, the three are coroutines:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.cache.helper -->
+<!-- fmt: off -->
+
+```python
+    def fetch(
+        self,
+        *,
+        fields: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        accept_language: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        user_id: _dcg_type_2 | ModelValue[_dcg_type_2],
+        cache_options: CacheOptions | None = None,
+        options: RequestOptions | None = None,
+    ) -> CacheResult[GetUserResponse]:
+        """Fetch GET /users/{userId} through the helper's cache, revalidating a stale entry."""
+        return fetch(
+            self._core,
+            _plans.PLAN_0,
+            (fields, accept_language, user_id),
+            cache_options=cache_options,
+            options=options,
+        )
+
+    def invalidate(self, tags: tuple[str, ...]) -> int:
+        """Remove the stored entries that carry any of the tags, returning how many."""
+        return invalidate(self._core, _plans.PLAN_0, tags)
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.cache.helper -->
+
+A helper needs the store `ProtocolClientOptions.cache_stores` lends it under its name, or `fetch`, `invalidate`, and the
+mutations raise `ProtocolConfigurationError(condition='missing_adapter')` before sending. The client checks the stores
+when it is constructed: a name that is no cache helper of the package fails with `unknown_field`, and an object without
+the five store methods, or whose methods are coroutines for a `Client` or plain functions for an `AsyncClient`, with
+`wrong_capability`. The client borrows a store: it never creates, closes, or keeps one after a call.
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.cache.usage -->
+<!-- fmt: off -->
+
+```python
+def cached_client() -> Client:
+    """Lend a bounded memory store to the users.profile helper, which keeps its entries there."""
+    store = MemoryCacheStore(max_entries=1000, max_bytes=8 * 1024 * 1024)
+    return Client(options=ClientOptions(protocols=ProtocolClientOptions(cache_stores={"users.profile": store})))
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.cache.usage -->
+
+### Results and freshness
+
+`CacheResult[T]` is immutable: `data: T`, the decoded body; `source`, `network` for a response the network sent,
+`fresh_cache` for a fresh stored response answered without sending, or `revalidated` for a stored response a 304
+confirmed; `response: ResponseInfo`; and `network_status`, the status the network returned, 304 for a revalidation and
+`None` for a fresh answer. A fresh answer's `response` has a new `call_id`, every count 0, and the elapsed time of the
+lookup and decoding; a revalidation's has the 304 call's identity, counts, and elapsed time, with the stored status and
+the merged headers, request id, and content type. A stored body is decoded again on every use, so callers never share a
+model object. A fresh answer sends nothing, so it emits no call events to hooks and takes no limiter permit; a network
+fetch emits the events of an ordinary call.
+
+An entry is fresh while its age is below its freshness lifetime and below `CacheOptions.max_ttl`. The lifetime is the
+response's `Cache-Control: max-age`, else `Expires` minus `Date`, else 0; the age follows RFC 9111 from `Age`, `Date`,
+and the times of the request and the response. There is no heuristic freshness and no stale-on-error. A response's
+`no-cache` makes every use revalidate. A fetch's own `Cache-Control` may say `no-cache` (revalidate), `no-store` (no
+stored response is read or written), or `max-age=N` (use a stored response only up to that age); any other directive,
+and a `Range`, `If-Range`, `If-Match`, or `If-Unmodified-Since` header, raises `ProtocolConfigurationError` before
+anything is looked up.
+
+A stale entry is revalidated with its validator as `validator` declares; a fetch that gives `If-None-Match` or
+`If-Modified-Since` itself sends it once, and raises `CacheValidatorConflictError` before sending when a usable entry
+has another validator or the header is given more than once. A 304 updates the entry's headers, except `Content-Type`, `Content-Encoding`, `Content-Length`,
+and hop-by-hop fields, and its freshness. A 304 without a usable entry, after a redirect, or with an `ETag` or
+`Last-Modified` other than the entry's raises `CacheProtocolError`; no request is sent again.
+
+### Storing and keys
+
+A response is stored only when its status is cacheable, its body is within `CacheOptions.max_entry_bytes`, it came
+without a redirect, it has no `Set-Cookie`, its `Cache-Control` has only RFC 9111 directives (`s-maxage` is ignored)
+and no `no-store`, its `Vary` names only allowlisted headers, and it is fresh or can be revalidated. A response that
+cannot be stored removes the entry it supersedes, and errors and decoding failures store nothing and keep the entry.
+Entries hold the body after content decoding and the headers without `Content-Encoding` or hop-by-hop fields.
+
+An entry's key is a SHA-256 digest of the method, the URL as the client interprets it, the `Accept` header, the
+credential partition, which is `anonymous` without a security context, and what identifies the credentials the call
+carries: each credential's scheme, kind, and required scopes, the audience of an SDK OAuth provider, and each signer's
+declared capabilities, never a secret. Calls with different partitions, schemes, scopes, or audiences never share an
+entry; give each tenant or permission set its own `ProtocolSecurityContext.credential_partition`. Token refreshes keep
+the key. Among the entries of one key, the store selects the one whose `Vary` fingerprints match the request's headers
+before auth; the store computes the fingerprints as keyed hashes, so header values never become keys. Besides the
+response's `Vary`, an entry varies on every header a client, view, or call header patch names, every declared header
+parameter, and `Cookie` when the operation declares a cookie parameter, except `Cache-Control`, `If-None-Match`, and
+`If-Modified-Since`. The key names these headers too, so a caller's own `X-Api-Key` or `X-On-Behalf-Of` patch keeps
+callers apart whichever of them fetched first. A header patch whose value is new on every call, such as a request ID or
+a `traceparent`, therefore disables caching for that helper: each fetch misses and stores an entry no other fetch can
+use.
+
+!!! warning "Credentials the cache cannot see"
+    The auth adds its credentials after the cache looks a request up, so a response whose `Vary` names a header the
+    call's auth manages, such as `Authorization`, a cookie, a declared scheme's header, or a signer's managed header, is
+    never stored. Within one partition, all calls are taken to share one permission set: a provider whose token or
+    identity changes from call to call needs a client per partition. A view's or a call's own `auth` therefore fails
+    an authenticated fetch with `ProtocolConfigurationError(field_path=('options', 'auth'),
+    condition='security_partition')`; `auth=None` stays allowed for anonymous fetches. Credentials the SDK never sees,
+    such as a client certificate, a borrowed HTTP client's own headers, or a transport adapter that authenticates, make
+    a call look anonymous: give each such identity its own `credential_partition`, or its own store.
+
+### Stores
+
+`CacheStore` and `AsyncCacheStore` are the store protocols: `lookup(base_key, request_headers) -> CacheEntry | None`,
+`fingerprint_vary(names, request_headers) -> tuple[bytes, ...]`, `compare_exchange(base_key, expected_version, entry)
+-> bool`, `delete(base_key, version) -> bool`, and `invalidate(tags) -> int`. `compare_exchange` stores an entry only
+when the slot of its key and Vary fingerprints holds `expected_version`, `None` for an empty slot; a fetch whose entry
+another fetch replaced first keeps the newer entry and returns its own network result. Every entry a fetch writes has a
+new `version`. A store's exception, or a result of another type, raises `CacheStoreError` with the store method as
+`action`, keeping the exception as `cause`; the request is never sent again for it.
+
+`CacheEntry` has `version`, `vary`, `vary_fingerprints`, `status_code`, `headers`, `body`, `request_time`,
+`response_time`, `stored_at`, `freshness_seconds`, `initial_age_seconds`, `tags`, and `schema_fingerprint`, the helper's
+fingerprint; a looked-up entry of another fingerprint or status is not used, and the next stored response replaces it.
+Its representation names only the status.
+
+`MemoryCacheStore(max_entries=128, max_bytes=16 MiB)` and `AsyncMemoryCacheStore` keep entries in the process, with a
+secret of their own for the fingerprints. A lookup fingerprints the request once for each set of `Vary` names among the
+key's entries. When an entry needs room, expired entries are evicted first, the earliest expired first, then the least
+recently used ones; an entry larger than `max_bytes`, counted in body bytes and header characters, is not stored.
+A store may be shared by clients on different clocks, so it judges which entries have expired for eviction by the
+system wall clock. Whether a fetch may use an entry is decided by the fetching client's clock.
+
+### Invalidation
+
+Only explicit calls remove entries. A mutation runs its operation as its method does and, after it returns a success,
+removes the entries carrying its rendered `invalidate_tags`; a failed call removes nothing. When the store then fails,
+`CacheInvalidationError` keeps the mutation's result, which `require_result()` returns, and the mutation is not sent
+again. `invalidate(tags)` raises `CacheInvalidationError` without a result.
+
+### Cache generation checks
+
+The operation must be a GET without a request body; other methods fail with `E_CONFIG_VALUE`, and HEAD is not
+supported yet. Each cacheable status must be a declared 2xx success with one natively decoded JSON body, a helper
+declared anonymous cannot fetch an operation that requires credentials, a tag's placeholder must name one required
+path or query parameter whose values are strings, numbers, integers, or booleans, and a mutation's operation must be a
+POST, PUT, PATCH, or DELETE:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.cache.diagnostics -->
+<!-- fmt: off -->
+
+```text
+E_CONFIG_VALUE config protocols.helpers['users.created'].operation /paths/~1users/post: The cache helper 'users.created' fetches POST /users, which changes state; only GET is cached
+E_CONFIG_VALUE config protocols.helpers['users.created'].operation /paths/~1users/post: The cache helper 'users.created' fetches POST /users, which takes a request body
+E_CONFIG_VALUE config protocols.helpers['users.created'].statuses[0] /paths/~1users/post: The cacheable status 200 of 'users.created' is no declared 2xx success of POST /users
+E_CLIENT_UNSUPPORTED target protocols.helpers['users.checked'].operation /paths/~1users~1{userId}/head: The cache helper 'users.checked' fetches HEAD /users/{userId}, and HEAD is not supported yet
+E_CLIENT_UNSUPPORTED target protocols.helpers['users.checked'].statuses[0] /paths/~1users~1{userId}/head: The cacheable status 200 of 'users.checked' has a response other than one natively decoded JSON body, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['reports.get'].operation /paths/~1reports/get: The cache helper 'reports.get' fetches GET /reports, which takes a request body
+E_CLIENT_UNSUPPORTED target protocols.helpers['reports.get'].statuses[0] /paths/~1reports/get: The cacheable status 200 of 'reports.get' has a response other than one natively decoded JSON body, which is not supported yet
+E_CLIENT_UNSUPPORTED target protocols.helpers['reports.get'].statuses[1] /paths/~1reports/get: The cacheable status 204 of 'reports.get' has a response other than one natively decoded JSON body, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['users.statuses'].statuses[0] /paths/~1users~1{userId}/get: The cacheable status 404 of 'users.statuses' is no declared 2xx success of GET /users/{userId}
+E_CONFIG_VALUE config protocols.helpers['users.statuses'].statuses[1] /paths/~1users~1{userId}/get: The cacheable status 201 of 'users.statuses' is no declared 2xx success of GET /users/{userId}
+E_CONFIG_VALUE config protocols.helpers['secure.anonymous'].authenticated /paths/~1secure~1users~1{userId}/get: The cache helper 'secure.anonymous' is declared anonymous, but GET /secure/users/{userId} requires credentials
+E_CONFIG_VALUE config protocols.helpers['secure.varying'].vary_allowlist[1] /paths/~1secure~1users~1{userId}/get: The cache helper 'secure.varying' allows a Vary on 'authorization', which credentials travel in; the auth adds it after the cache looks a request up
+E_CONFIG_VALUE config protocols.helpers['secure.varying'].vary_allowlist[2] /paths/~1secure~1users~1{userId}/get: The cache helper 'secure.varying' allows a Vary on 'Cookie', which credentials travel in; the auth adds it after the cache looks a request up
+E_CONFIG_VALUE config protocols.helpers['users.tagged'].tags[0] /paths/~1users/get: The tag '{fields}' of 'users.tagged' names no path or query parameter 'fields' of GET /users
+E_CONFIG_VALUE config protocols.helpers['users.tagged'].tags[1] /paths/~1users/get: The tag 'page:{page}' of 'users.tagged' names the optional parameter 'page' of GET /users
+E_CONFIG_VALUE config protocols.helpers['users.tagged'].tags[2] /paths/~1users/get: The tag '{role}' of 'users.tagged' names the optional parameter 'role' of GET /users
+E_CONFIG_VALUE config protocols.helpers['users.tagged'].mutations['refetch'].operation /paths/~1users~1{userId}/get: The mutation 'refetch' of 'users.tagged' calls GET /users/{userId}; only POST, PUT, PATCH, and DELETE invalidate
+E_CONFIG_VALUE config protocols.helpers['users.tagged'].mutations['create'].invalidate_tags[0] /paths/~1users/post: The tag '{userId}' of 'users.tagged' names no path or query parameter 'userId' of POST /users
+E_CONFIG_VALUE config protocols.helpers['items.ambiguous'].tags[0] /paths/~1items~1{id}/get: The tag 'item:{id}' of 'items.ambiguous' names more than one path or query parameter 'id' of GET /items/{id}
+E_CONFIG_VALUE config protocols.helpers['items.ambiguous'].tags[1] /paths/~1items~1{id}/get: The tag '{kinds}' of 'items.ambiguous' names the parameter 'kinds' of GET /items/{id}, which is not always a string, number, integer, or boolean
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.cache.diagnostics -->
 
 ## Queue helpers
 
@@ -2201,8 +2773,9 @@ validation.
 ## Timeouts, cancellation, and send limits
 
 The generated package's `options` module provides `ClientOptions`, `RequestOptions`, `TimeoutOptions`, `Deadline`,
-and `CancelToken`. These settings apply to typed operations and `request_raw`, including their response and streaming
-views. The following examples use a generated package named `pets` and take the service URL from their caller.
+`CancelToken`, and `Clock`. These settings apply to typed operations and `request_raw`, including their response and
+streaming views. The following examples use a generated package named `pets` and take the service URL from their
+caller.
 
 | Option | Effective default | Meaning |
 |---|---|---|
@@ -2215,6 +2788,7 @@ views. The following examples use a generated package named `pets` and take the 
 | `stream_total_timeout` | `None` | Total stream lifetime after handoff |
 | `cleanup_timeout` | `5` | Separate positive, finite budget for releasing resources |
 | `limiter` | `None` | An application-provided `Limiter` or `AsyncLimiter` |
+| `clock` | `Clock()`, the system clock | Client only: the time and jitter sources of every call, described in [Clocks and retry jitter](#clocks-and-retry-jitter) |
 
 Omitted fields remain `UNSET` until resolution. Each field inherits in this order: request, `with_options` view,
 client, generated default. `TimeoutOptions` merges each phase separately. For example, a client's
@@ -2237,8 +2811,9 @@ the SDK would first acquire a token.
 ### A budget shared by every phase
 
 `Deadline.after(10)` fixes the expiry when it is created. Reusing that object across calls shares the same expiry;
-each call's `total_timeout` starts again at call entry. `Deadline.at` is the readonly monotonic timestamp, and
-`remaining()` returns the seconds left, never a negative number. Do not compare `at` with wall-clock timestamps.
+each call's `total_timeout` starts again at call entry. `Deadline.at` is the readonly monotonic timestamp on the
+deadline's clock, `Deadline.clock`, and `remaining()` returns the seconds left on that clock, never a negative number.
+Do not compare `at` with wall-clock timestamps.
 
 ```python
 from pets import Client
@@ -2349,6 +2924,65 @@ within `cleanup_timeout`, for a download's file work to finish.
 
 `stream_to(file_object)` writes to a borrowed file on the calling thread or event loop and never closes, seeks, or
 truncates it; bytes already written stay there. A failed write closes the response before the failure propagates.
+
+### Clocks and retry jitter
+
+`ClientOptions(clock=Clock(...))` replaces the time and jitter sources of every call a client makes. Views and requests
+cannot change it. Each of the three sources is a function that takes no arguments:
+
+| Source | Default | Read for |
+|---|---|---|
+| `monotonic` | `time.monotonic` | Deadlines, elapsed times, retry targets, idempotency key retention, token expiry, hook event durations, and protocol helper sessions, poll intervals, a polling checkpoint's `wait_ms`, and stream deadlines |
+| `time` | `time.time` | Placing a wall-clock instant on the monotonic scale once: an HTTP-date `Retry-After` or polling delay header at receipt, an idempotency key's `first_used_at` at call entry, and an access token's `expires_at`; a resumed pager's or polling handle's check of its state's `expires_at`; and a cache fetch's request, response, and age times |
+| `random` | A secure uniform draw | The fraction in `[0, 1)` of a full-jitter backoff, drawn only when a retry needs one |
+
+A source that cannot be called raises `ConfigurationError` with the `field_path` `("clock", name)`. OAuth providers
+and flows keep their own time through `OAuthProviderOptions(clock=...)`, since one provider can serve several clients.
+A client and the providers it uses must agree on wall time, because an access token's `expires_at` passes between them
+as a UTC datetime. A key from `IdempotencyKey.new()` takes its first use from the system clock; pass `first_used_at`
+yourself for a client with another clock. `import_state` has no client, so it checks an expiry by the system clock.
+
+A deadline remembers its clock. `Deadline.after(seconds, clock=clock)` creates it on that clock, the system clock by
+default, and `remaining()` reads that clock, so an adapter, limiter, or provider that receives it measures it
+correctly. A call given a deadline made on another `Clock` object moves it onto its own clock by the time remaining at
+call entry. A deadline made on the client's own `Clock` object stays the same object, so
+`DeadlineExceededError.deadline_at` equals its `at`.
+
+The client still waits in real time. A retry sleep, a wait before a poll, a device flow's poll interval, or a wait for
+a token refresh ends once its clock reaches the target or once as much real time has passed as the wait measured on its
+clock when it began, whichever comes first, so a frozen clock still waits as long as the policy chose. An I/O timeout
+or an asyncio deadline timer lasts the time left that was measured on the clock when it started. Closing a client and its cleanup
+limits use the system clock, and closing an OAuth provider waits for its running token requests until their sessions
+end on the provider's clock or in real time, whichever comes first.
+
+A test clock that should skip a wait advances itself, for example from a hook when a retry is scheduled:
+
+```python
+from pets import Client
+from pets.hooks import CallEvent
+from pets.options import ClientOptions, Clock, RetryOptions
+
+
+class SteppedClock:
+    def __init__(self) -> None:
+        self.now = 0.0
+
+    def __call__(self) -> float:
+        return self.now
+
+    def on_event(self, event: CallEvent) -> None:
+        if event.name == "retry_scheduled" and event.duration is not None:
+            self.now += event.duration
+
+
+def instant_retries(url: str) -> Client:
+    stepped = SteppedClock()
+    clock = Clock(monotonic=stepped, random=lambda: 0.5)
+    return Client(options=ClientOptions(base_url=url, retry=RetryOptions(), hooks=(stepped,), clock=clock))
+```
+
+Each retry of this client is scheduled at half its backoff cap and starts at once, while its hooks and errors report
+the delays the retry policy chose.
 
 ## Application concurrency limits
 

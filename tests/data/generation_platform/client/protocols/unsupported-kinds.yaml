@@ -1,6 +1,4 @@
 schema_version: 1
 helpers:
-  chat.connect: {kind: websocket, channel: /chat}
-  users.cached: {kind: cache}
   files.upload: {kind: resumable_upload}
   users.bulk: {kind: batch}

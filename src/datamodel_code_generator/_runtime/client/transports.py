@@ -9,7 +9,6 @@ from __future__ import annotations
 import inspect
 from collections.abc import AsyncIterator, Iterator  # noqa: TC003 - Public annotations support get_type_hints().
 from dataclasses import dataclass, field
-from time import monotonic, time
 from typing import TYPE_CHECKING, Final, Generic, Protocol, get_args
 
 from typing_extensions import TypeIs, TypeVar
@@ -25,6 +24,7 @@ from .timing import (
 
 if TYPE_CHECKING:
     from .evidence import ConnectFailureEvidence
+    from .timing import Clock
 
 __all__ = (
     "AsyncTransportAdapter",
@@ -168,6 +168,7 @@ class AttemptTrace:
 
     __slots__ = (
         "broken",
+        "clock",
         "connect_failure",
         "head",
         "headers_started",
@@ -177,8 +178,9 @@ class AttemptTrace:
         "wire_sent",
     )
 
-    def __init__(self) -> None:
-        """Start before any I/O."""
+    def __init__(self, *, clock: Clock) -> None:
+        """Start before any I/O, reading header receipt times from the clock."""
+        self.clock = clock
         self.phase: IOPhase = "unknown"
         self.headers_started = False
         self.wire_sent = False
@@ -218,8 +220,8 @@ class AttemptTrace:
                 http_version=http_version,
                 status_code=status_code,
                 headers=headers,
-                received_at=monotonic(),
-                received_wall_time=time(),
+                received_at=self.clock.monotonic(),
+                received_wall_time=self.clock.time(),
             )
 
     def wire_send(self) -> None:

@@ -36,8 +36,8 @@
   write client/.dcg-state/model-artifacts.json
   namespace client helpers ['orders.outbox', 'account.offline'] bindings 14
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper orders.outbox queue enabled True /inputs/target_config/protocol_metadata/helpers/orders.outbox 2c7284a96be3eced168376179ecb2f1123fc97f0c5727284b1664c563b5f2908
-  helper account.offline queue enabled True /inputs/target_config/protocol_metadata/helpers/account.offline 7fa3a50cb3355f413d7c537101c7aa4675f6e34868348f6aff9bff4809fd5357
+  helper orders.outbox queue enabled True /inputs/target_config/protocol_metadata/helpers/orders.outbox 0855c18fb6fc64214ab1364a0c6988b28955256575c06cb95471dc5994ed2baa
+  helper account.offline queue enabled True /inputs/target_config/protocol_metadata/helpers/account.offline de2e1437103d12aaed901dc40222a499ccdd2720367a28eed941d7755f6a8f23
   {
     "helpers": {
       "account.offline": {
@@ -315,6 +315,9 @@ refunded. `Deadline.after(seconds)` shares an absolute monotonic expiry across c
 the relative total timeout wins. `CancelToken` is thread-safe and remains cancelled once signalled. Sync callbacks,
 DNS, I/O, and cleanup are cooperative and may return after a deadline. Async SDK waits enforce their budgets.
 Native cancellation remains the original exception. No work starts after an observed cancellation or expiry.
+`ClientOptions(clock=Clock(monotonic=..., time=..., random=...))` replaces the time and jitter sources of every call;
+`OAuthProviderOptions(clock=...)` does so for a provider, and `Deadline.after(seconds, clock=...)` creates a deadline
+on that clock. Waits still pass in real time, so a test clock skips one by advancing itself.
 
 ## Retry decisions and delays
 

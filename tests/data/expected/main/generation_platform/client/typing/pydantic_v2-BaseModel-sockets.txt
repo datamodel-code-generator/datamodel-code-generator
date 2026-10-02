@@ -1,0 +1,34 @@
+mypy pets and sockets.py: clean
+pyright pets and sockets.py: clean
+ty pets and sockets.py: clean
+sockets_negative.py 9 marked lines
+mypy sockets_negative.py: 9/9 marked lines with one error, 0 elsewhere, 0 in other files
+  18 call-overload
+  19 misc
+  20 call-arg
+  21 arg-type
+  22 arg-type
+  23 arg-type
+  24 arg-type
+  25 assignment
+  26 misc
+pyright sockets_negative.py: 9/9 marked lines with one error, 0 elsewhere, 0 in other files
+  18 reportArgumentType
+  19 reportGeneralTypeIssues
+  20 reportCallIssue
+  21 reportArgumentType
+  22 reportArgumentType
+  23 reportArgumentType
+  24 reportArgumentType
+  25 reportAssignmentType
+  26 reportAttributeAccessIssue
+ty sockets_negative.py: 9/9 marked lines with one error, 0 elsewhere, 0 in other files
+  18 invalid-argument-type
+  19 invalid-await
+  20 missing-argument
+  21 invalid-argument-type
+  22 invalid-argument-type
+  23 invalid-argument-type
+  24 invalid-argument-type
+  25 invalid-assignment
+  26 invalid-assignment

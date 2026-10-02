@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Literal
 
 from datamodel_code_generator import DataModelType, OpenAPIScope, PythonVersionMin
-from datamodel_code_generator._generation_contract import AttemptId, BuiltinType, FieldSlot, SymbolId
+from datamodel_code_generator._generation_contract import AttemptId, FieldSlot, SymbolId
 from datamodel_code_generator.config import OpenAPIParserConfig
 from datamodel_code_generator.format import PythonVersion
 from datamodel_code_generator.imports import Import
@@ -13,10 +13,6 @@ from datamodel_code_generator.model import get_data_model_types
 from datamodel_code_generator.model.binding import ExpectedFieldDeclaration
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
-
-    from datamodel_code_generator.model.base import DataModelFieldBase
-    from datamodel_code_generator.model.binding import FieldArtifactDeclaration, FieldProjectionContext
     from datamodel_code_generator.parser.openapi_contract import ContractApiOpenAPIParser
     from datamodel_code_generator.parser.openapi_contract_freeze import FinalModelInventory
     from datamodel_code_generator.parser.openapi_contract_types import FinalTypeProjector
@@ -84,63 +80,6 @@ def builtin_field_imports() -> tuple[Import, ...]:
     )
 
 
-def functional_field_expectations(parser: ContractApiOpenAPIParser) -> tuple[ExpectedFieldDeclaration, ...]:
-    """Prepare known scalar keys from the functional-fields source fixture."""
-    model = parser.results[0]
-    return tuple(
-        ExpectedFieldDeclaration(
-            AttemptId(1),
-            SymbolId(0),
-            FieldSlot(AttemptId(1), SymbolId(0), parser.binding_ledger.identity(field), index, str(field.name)),
-            model.name,
-            str(field.name),
-            "typeddict",
-            BuiltinType("str"),
-            form="typeddict_entry",
-            entry_key=field.original_name if field.original_name is not None else field.name,
-            entry_ordinal=index,
-        )
-        for index, field in enumerate(model.fields)
-    )
-
-
-def final_reference_projector(parser: ContractApiOpenAPIParser) -> FinalTypeProjector:
-    """Bind emitted references and discriminator members to their final symbols and policies."""
-    from datamodel_code_generator._generation_contract import GeneratedEnumMember
-    from datamodel_code_generator.model.base import DataModel
-    from datamodel_code_generator.model.pydantic_v2.types import PydanticV2DataType
-    from datamodel_code_generator.parser.openapi_contract_types import FinalTypeProjector, ReferenceTypeBinding
-
-    ledger = parser.binding_ledger
-    manager = parser.data_type_manager
-    serialize_as_any = manager.use_serialize_as_any and issubclass(manager.data_type, PydanticV2DataType)
-    symbols = {ledger.identity(model): SymbolId(index) for index, model in enumerate(parser.results)}
-    collapsed = {id(collapse.reference) for collapse in ledger.collapses if collapse.completed}
-    return FinalTypeProjector(
-        {
-            ledger.identity(model.reference): ReferenceTypeBinding(
-                symbols[ledger.identity(model)],
-                model.nullable,
-                model.is_alias,
-                serialize_as_any
-                and any(isinstance(child, DataModel) and child.fields for child in model.reference.children),
-            )
-            for model in parser.results
-            if id(model.reference) not in collapsed
-        },
-        {
-            ledger.identity(observation.data_type): tuple(
-                GeneratedEnumMember(symbols[observation.enum], fields[name], name)
-                for _, name in observation.data_type.enum_member_literals
-            )
-            for observation in parser.discriminator_types
-            if observation.enum in symbols
-            and observation.data_type.enum_member_literals
-            and (fields := {name: field for name, field in observation.members if name is not None})
-        },
-    )
-
-
 def projected_field_expectations(
     parser: ContractApiOpenAPIParser,
     model_name: str,
@@ -183,103 +122,6 @@ def projected_field_expectations(
                 )
             )
     return tuple(declarations)
-
-
-def accepted_field_facts(
-    parser: ContractApiOpenAPIParser,
-    body: str,
-    backend: DataModelType,
-    model_name: str,
-    imports: tuple[Import, ...] = (),
-) -> Iterator[tuple[FieldArtifactDeclaration, DataModelFieldBase, FieldProjectionContext]]:
-    """Join accepted emitted facts with actual producer observations, as the final field batch does."""
-    from datamodel_code_generator.model.binding import (
-        FieldProjectionContext,
-        FrozenImportBindings,
-        index_builtin_field_declarations,
-    )
-
-    projector = final_reference_projector(parser)
-    index = index_builtin_field_declarations(
-        body,
-        expected=projected_field_expectations(parser, model_name, backend, projector),
-        imports=FrozenImportBindings(
-            (*builtin_field_imports(), *imports),
-            tuple((SymbolId(index), model.name) for index, model in enumerate(parser.results)),
-        ),
-    )
-    fields = {parser.binding_ledger.identity(field): field for model in parser.results for field in model.fields}
-    for declaration in sorted(index.fields, key=lambda item: item.expected.native_name):
-        identity = declaration.expected.slot.field
-        construction = parser.field_constructions[identity]
-        policy = construction.default_policy
-        producers = tuple(
-            value.resolution.producer
-            for value in (parser.inherited_defaults.get(identity), policy)
-            if value is not None
-        )
-        origin = parser.field_origins.get(identity)
-        yield (
-            declaration,
-            fields[identity],
-            FieldProjectionContext(
-                origin.required_by_node if origin is not None else None,
-                policy.has_default if policy is not None else None,
-                None if not producers or "opaque" in producers else "override" in producers,
-                construction.schema is not None and construction.schema.nullable is True,
-                projector.preexisting_null(construction.preexisting_null, alias_nullable={}),
-                parser.force_optional_for_required_fields,
-                builtin_semantics=True,
-                backend=binding_backend_name(backend),
-            ),
-        )
-
-
-def default_provenance_table(
-    parser: ContractApiOpenAPIParser,
-    body: str,
-    backend: DataModelType,
-    model_name: str,
-    imports: tuple[Import, ...] = (),
-) -> str:
-    """Render final None-default provenance for each accepted field of one consumer."""
-    from datamodel_code_generator.model.binding import freeze_none_default_provenance
-
-    return "".join(
-        f"{declaration.expected.native_name}: {value.emitted_default} / {value.origin} / "
-        f"{value.annotation_null_origin}\n"
-        for declaration, field, projection in accepted_field_facts(parser, body, backend, model_name, imports)
-        for value in (freeze_none_default_provenance(field, emitted=declaration.facts, projection=projection),)
-    )
-
-
-def constructor_fact_table(
-    parser: ContractApiOpenAPIParser,
-    body: str,
-    backend: DataModelType,
-    model_name: str,
-    imports: tuple[Import, ...] = (),
-) -> str:
-    """Render actual per-field constructor policies read from accepted declarations."""
-    import json
-
-    from datamodel_code_generator.model.binding import freeze_builtin_field_facts
-    from tests.data.python.binding_type_snapshot import type_snapshot
-
-    return (
-        json.dumps(
-            {
-                declaration.expected.native_name: {
-                    "constructor_init": type_snapshot(facts.constructor_init),
-                    "kw_only": type_snapshot(facts.kw_only),
-                }
-                for declaration, field, projection in accepted_field_facts(parser, body, backend, model_name, imports)
-                for facts in (freeze_builtin_field_facts(field, emitted=declaration.facts, projection=projection),)
-            },
-            indent=2,
-        )
-        + "\n"
-    )
 
 
 def builtin_model_config(backend: DataModelType, *, configured: bool) -> OpenAPIParserConfig:
