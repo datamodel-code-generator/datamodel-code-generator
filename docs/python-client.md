@@ -1426,9 +1426,10 @@ earlier session sent, so it accepts any offset up to the size.
 An upload completed by `length` completes when the server holds every byte. A completion `operation` is sent once with
 its bindings; its response is the result. A completion whose outcome is unknown is never sent again: it raises
 `UploadDeliveryUnknownError(phase='complete')`, and so does every later step and every resume of its checkpoint,
-without sending. A completion refused with a non-success status other than 502/504, or proven not sent, may be sent again by the next
-step. A 2xx whose body fails decoding, a cancellation after transmission, or any SDK error with uncertain delivery
-keeps completion unknown.
+without sending. That includes a completion answered with 502 or 504, which a gateway gives even when the server behind
+it may have applied the completion. A completion refused with another error status, such as a 503 with `Retry-After`,
+or proven not sent, may be sent again by the next step. A 2xx whose body fails decoding, a cancellation after
+transmission, or any SDK error with uncertain delivery keeps completion unknown.
 
 `close()` or `aclose()`, or leaving a `with` or `async with` block, stops only local uploading; the remote upload
 stays, and every later step raises `ProtocolStateError` with `state='closed'`. Calling `advance`, `run`, `close`, or

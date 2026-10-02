@@ -110,6 +110,7 @@ _MANIFEST_BYTES: Final = MAX_STATE_BYTES - 1024 * 1024
 _RESULT_FIELDS: Final = 2
 _MIN_SUCCESS: Final = 200
 _MAX_SUCCESS: Final = 299
+_GATEWAY_STATUSES: Final = frozenset({502, 504})
 _BOUND_FIELDS: Final = 3
 
 
@@ -938,9 +939,9 @@ class _Upload(Generic[T]):
     def _completion_failed(self, error: BaseException, sends: int) -> None:
         """Let a completion that certainly did not apply be sent again; keep every other one unknown.
 
-        It did not apply when the server answered with an error status, when nothing reached the server, or when the
-        session sent nothing. A response the server started, such as a success whose body does not decode, keeps it
-        unknown with RESPONSE_STARTED.
+        It did not apply when the server answered with an error status other than a gateway's 502 or 504, when nothing
+        reached the server, or when the session sent nothing. A response the server started, such as a success whose
+        body does not decode or a 502, keeps it unknown with RESPONSE_STARTED.
         """
         delivery = _delivery_of(error)
         unapplied = delivery not in _UNKNOWN and (
@@ -1028,11 +1029,14 @@ def _dotted(
 
 
 def _refused(error: BaseException) -> bool:
-    """Return whether the server answered a call with an error status, so it did not apply the call."""
+    """Return whether the server answered a call with an error status, so it did not apply the call.
+
+    A 502 or 504 proves nothing: a gateway answers with it when the server behind it may have applied the call.
+    """
     return (
         isinstance(error, (HTTPStatusError, UnexpectedStatusError))
-        and not _MIN_SUCCESS <= error.info.status_code <= _MAX_SUCCESS
-        and error.info.status_code not in {502, 504}
+        and not _MIN_SUCCESS <= (status := error.info.status_code) <= _MAX_SUCCESS
+        and status not in _GATEWAY_STATUSES
     )
 
 

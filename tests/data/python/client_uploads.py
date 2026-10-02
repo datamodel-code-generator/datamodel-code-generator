@@ -549,7 +549,7 @@ def _offsets(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
 
 
 def _completions(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lines: list[str]) -> None:
-    """Never send a completion of unknown outcome again; send one an error answered again."""
+    """Never send a completion of unknown outcome, a 502 or 504 included, again; send one an error answered again."""
     helper = api.protocols.files.finish
     lines.append("a completion of unknown outcome")
     exchange.respond(server, server, server, failing(httpx2.ReadError))
@@ -564,6 +564,15 @@ def _completions(harness: _Uploads, api: Any, server: _Server, exchange: Exchang
     handle = helper.start(harness.source(), tus_resumable=harness.tus)
     step(lines, "run", handle.run)
     step(lines, "run again", handle.run)
+    for status in (502, 504):
+        lines.append(f"a completion a gateway answered with {status}")
+        exchange.respond(server, server, server, raw_response(status))
+        handle = helper.start(harness.source(), tus_resumable=harness.tus)
+        step(lines, "run", handle.run)
+        step(lines, "run again", handle.run)
+        step(lines, "advance again", handle.advance)
+        state = handle.checkpoint()
+        step(lines, "resume", lambda state=state: helper.resume(harness.source(), state))
     lines.append("a completion the server answered with a body that does not decode")
     exchange.respond(server, server, server, json_response(200, {"id": 5}))
     handle = helper.start(harness.source(), tus_resumable=harness.tus)
