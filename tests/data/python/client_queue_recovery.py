@@ -172,6 +172,32 @@ async def _matrix(package: ModuleType, lines: list[str], asynchronous: bool, pat
             queue.server.flush(lines)
             await shut(instance)
 
+        store = _Journal(queue.protocols)
+        instance = api(store)
+        outbox = instance.protocols.orders.outbox
+        receipt = await _value(
+            partial(outbox.operations.refresh.enqueue, order_id=queue.argument("GetOrder", "path", "orderId", "safe"))
+        )
+        original = store.entries[receipt.entry_id]
+        now = queue.time.now()
+        lease = store.claim(now=now, lease_until=now + timedelta(seconds=30), limit=1)[0]
+        store.compare_exchange(
+            receipt.entry_id, lease.entry.version, replace(lease.entry, send_intent=True, delivery_count=1)
+        )
+        await shut(instance)
+        fresh = store.reopened(path)
+        queue.time.advance(inputs["lease_seconds"])
+        instance = api(fresh)
+        outbox = instance.protocols.orders.outbox
+        await observed("unkeyed crash drain", outbox.drain)
+        recovered = await observed("unkeyed crash entry", partial(outbox.inspect, receipt.entry_id))
+        lines.append(
+            f"  unkeyed identity: key={recovered.idempotency_key} "
+            f"payload={recovered.payload == original.payload} time={recovered.created_at == original.created_at}"
+        )
+        queue.server.flush(lines)
+        await shut(instance)
+
         for mode in inputs["stops"]:
             store = _Store(queue.protocols)
             instance = api(store)
@@ -228,6 +254,28 @@ async def _matrix(package: ModuleType, lines: list[str], asynchronous: bool, pat
         await observed("cancel explicit retry", lambda: outbox.cancel(receipt.entry_id))
         queue.server.flush(lines)
         await shut(instance)
+
+        for mode in inputs["patches"]:
+            store = _Store(queue.protocols)
+            provider = _Provider(queue, asynchronous, lambda: None)
+            auth = queue.auth.AuthConfig({"bearer": provider})
+            instance = api(store, auth=auth)
+            account = instance.protocols.account.offline
+            receipt = await _value(account.operations.fetch.enqueue)
+            await shut(instance)
+            settings = {"base_url": "https://api.example.com/other"} if mode == "basepath" else {}
+            instance = api(store, auth=auth, **settings)
+            account = instance.protocols.account.offline
+            options = None
+            if mode == "header":
+                options = queue.options.RequestOptions(headers=(("X-Unsafe", "changed"),))
+            elif mode == "query":
+                options = queue.options.RequestOptions(query=(("unsafe", "changed"),))
+            await observed(f"auth {mode} mismatch", partial(account.drain, options=options))
+            await observed(f"auth {mode} retained", partial(account.inspect, receipt.entry_id))
+            lines.append(f"  provider calls: {provider.calls}")
+            queue.server.flush(lines)
+            await shut(instance)
 
         for historical in (False, True):
             store = _Store(queue.protocols)

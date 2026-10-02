@@ -24,6 +24,10 @@ sync
   after_effect recorded success drain: {}
   server POST /orders key=k3 body={"item":"tea","quantity":2} duplicate=False
   server POST /orders key=k3 body={"item":"tea","quantity":2} duplicate=True
+  unkeyed crash drain: {'succeeded': 1}
+  unkeyed crash entry: succeeded count=2 intent=False outcome=success/None
+  unkeyed identity: key=None payload=True time=True
+  server GET /orders/safe
   expiry stop: {'dead': 1}
   expiry entry: dead count=1 intent=False outcome=unknown/expired
   cap stop: {'dead': 1}
@@ -49,6 +53,15 @@ sync
   explicit retry: pending count=1 intent=True outcome=unknown/transport_error
   cancel explicit retry: delivery_unknown count=1 intent=False outcome=cancelled/None
   server POST /orders key=k4 body={"item":"tea","quantity":2} duplicate=False
+  auth basepath mismatch: QueueBindingError
+  auth basepath retained: pending count=0 intent=False outcome=none
+  provider calls: 0
+  auth header mismatch: QueueBindingError
+  auth header retained: pending count=0 intent=False outcome=none
+  provider calls: 0
+  auth query mismatch: QueueBindingError
+  auth query retained: pending count=0 intent=False outcome=none
+  provider calls: 0
   auth TTL prior=False: {'dead': 1}
   auth TTL entry: dead count=0 intent=False outcome=permanent/expired
   provider calls: 1
@@ -123,6 +136,10 @@ async
   after_effect recorded success drain: {}
   server POST /orders key=k3 body={"item":"tea","quantity":2} duplicate=False
   server POST /orders key=k3 body={"item":"tea","quantity":2} duplicate=True
+  unkeyed crash drain: {'succeeded': 1}
+  unkeyed crash entry: succeeded count=2 intent=False outcome=success/None
+  unkeyed identity: key=None payload=True time=True
+  server GET /orders/safe
   expiry stop: {'dead': 1}
   expiry entry: dead count=1 intent=False outcome=unknown/expired
   cap stop: {'dead': 1}
@@ -148,6 +165,15 @@ async
   explicit retry: pending count=1 intent=True outcome=unknown/transport_error
   cancel explicit retry: delivery_unknown count=1 intent=False outcome=cancelled/None
   server POST /orders key=k4 body={"item":"tea","quantity":2} duplicate=False
+  auth basepath mismatch: QueueBindingError
+  auth basepath retained: pending count=0 intent=False outcome=none
+  provider calls: 0
+  auth header mismatch: QueueBindingError
+  auth header retained: pending count=0 intent=False outcome=none
+  provider calls: 0
+  auth query mismatch: QueueBindingError
+  auth query retained: pending count=0 intent=False outcome=none
+  provider calls: 0
   auth TTL prior=False: {'dead': 1}
   auth TTL entry: dead count=0 intent=False outcome=permanent/expired
   provider calls: 1
