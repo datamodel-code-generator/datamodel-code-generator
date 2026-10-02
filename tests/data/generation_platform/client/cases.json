@@ -3939,7 +3939,6 @@
     },
     "modules": false
   },
-<<<<<<< HEAD
   "protocols-parts-checks": {
     "input": "uploads.yaml",
     "references": [
@@ -4011,8 +4010,6 @@
     ],
     "modules": false
   },
-=======
->>>>>>> generation-platform-client-replay-queues
   "queues": {
     "input": "queues.yaml",
     "references": [
@@ -4339,21 +4336,6 @@
         ],
         "reason": "Filtered listings are not queued"
       }
-<<<<<<< HEAD
-    },
-    "backends": [
-      "pydantic_v2.BaseModel"
-    ]
-  },
-  "uploads-oauth": {
-    "input": "uploads-oauth.yaml",
-    "references": [
-      "protocols/uploads.yaml"
-    ],
-    "config": {
-      "protocols": "protocols/uploads-oauth.yaml"
-=======
->>>>>>> generation-platform-client-replay-queues
     },
     "backends": [
       "pydantic_v2.BaseModel"
