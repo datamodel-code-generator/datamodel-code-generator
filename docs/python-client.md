@@ -4207,8 +4207,9 @@ allowed 303, also drops `Content-Encoding`; a redirect that keeps the body keeps
 
 ### Protocol helpers
 
-A coding passed in a helper call's `options` is checked once, when the helper call is made and before anything is
-sent: at least one request the helper may send for that call must have a body whose operation accepts the coding, or
+A coding passed in a helper call's `options` is checked once before anything is sent. Lazy iterators perform this
+check at the first `next` or `anext`; other helpers check at their execution entry. At least one request the helper
+may send for that call must have a body whose operation accepts the coding, or
 the call raises `ConfigurationError(field_path=('options', 'compression'), condition='no_applicable_helper_child')`.
 Then each request the helper sends is compressed only when it has such a body:
 
@@ -4220,7 +4221,13 @@ Then each request the helper sends is compressed only when it has such a body:
 | Polling `resume` | Only a poll or result fetch whose bindings write into its body: a resumed handle never creates the operation again |
 | SSE and NDJSON `open` | The stream's request |
 | WebSocket `connect` | None: a handshake sends no body |
+| Upload `start` and `resume` | Create on start, remaining append or part ranges, and completion requests with a declared body; resume excludes create and completed results. Offsets and digests refer to the original bytes |
+| Batch `iterate` | The first bounded prepared batch and later batch requests; empty input or `max_items=0` has no applicable request |
 | Queue `enqueue` and `drain` | `enqueue` accepts only `queue_options`, so request `options` raise `TypeError`; `drain` claims at most `max_entries` once and admits matching saved bodies; otherwise it returns its leases and raises `no_applicable_helper_child` |
+
+New upload resumes on completed state reject an explicit coding with `no_applicable_helper_child`. An existing
+completed handle returns its saved result without another check. Omitted, inherited, or `None` codings preserve
+successful empty processing; inherited codings still apply only to declared requests with bodies.
 
 A cache helper's `fetch` sends a bodyless GET, so a coding its call selects raises
 `ConfigurationError(field_path=('options', 'compression'), condition='no_applicable_helper_child')` before the cache is
