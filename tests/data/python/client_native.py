@@ -147,11 +147,13 @@ def _wire(package: ModuleType, options: ModuleType, lines: list[str], *, asynchr
     defaults = json.loads((SOURCE / "defaults.json").read_text(encoding="utf-8"))
     environment_cases = defaults["transport_environment"] + [
         {"name": name, "proxy": None} for name in defaults["transport_direct"]
-    ]
+    ] + defaults["transport_ca"]
     for case in environment_cases:
         name = case["name"]
         server = NativeFixture(proxy="forward" if case["proxy"] in {"forward", "all"} else case["proxy"])
-        peer = NativeFixture(proxy="tunnel")
+        peer = NativeFixture(proxy=None if case.get("https_proxy") else "tunnel")
+        if case.get("https_proxy"):
+            peer.status = 407
         try:
             with pytest.MonkeyPatch.context() as environment, TemporaryDirectory() as directory:
                 for key in tuple(os.environ):
@@ -160,7 +162,29 @@ def _wire(package: ModuleType, options: ModuleType, lines: list[str], *, asynchr
                 environment.setenv("NO_PROXY", "*")
                 transport = options.TransportOptions(ssl_context=server.verify)
                 base_url = server.url
-                if variable := case.get("variable"):
+                if setting := case.get("tls_setting"):
+                    ca_directory = Path(directory) / "certs"
+                    ca_directory.mkdir()
+                    ca_file = Path(directory) / "ca.pem"
+                    authority = peer if case.get("https_proxy") or "context" in setting or "verify-off" in setting else server
+                    ca_file.write_bytes(authority.ca_pem)
+                    (ca_directory / defaults["ca_directory_filename"]).write_bytes(authority.ca_pem)
+                    if case.get("ca_source") == "directory":
+                        environment.setenv("SSL_CERT_DIR", str(ca_directory))
+                    else:
+                        environment.setenv("SSL_CERT_FILE", str(ca_file))
+                    arguments = {"trust_env": not setting.endswith("false")}
+                    if "context" in setting:
+                        arguments["ssl_context"] = server.verify
+                    elif "verify-off" in setting:
+                        arguments["verify"] = False
+                    if case.get("https_proxy"):
+                        arguments["proxy"] = peer.url
+                    elif case.get("plain_proxy"):
+                        arguments["proxy"] = server.proxy_url
+                        base_url = _url(server)
+                    transport = options.UNSET if setting == "default" else options.TransportOptions(**arguments)
+                elif variable := case.get("variable"):
                     environment.setenv("NO_PROXY", "")
                     environment.setenv(variable, server.proxy_url)
                     base_url = ("https" if case["proxy"] == "tunnel" else "http") + "://origin.test"
@@ -194,8 +218,6 @@ def _wire(package: ModuleType, options: ModuleType, lines: list[str], *, asynchr
                             async with package.AsyncClient(
                                 options=settings, **({"http_client": native} if name == "injected" else {})
                             ) as api:
-                                if name.startswith("ca-default") or name == "ca-opt-out":
-                                    environment.delenv("SSL_CERT_FILE")
                                 await arecord(
                                     lines,
                                     f"{mode} environment {name}",
@@ -210,8 +232,6 @@ def _wire(package: ModuleType, options: ModuleType, lines: list[str], *, asynchr
                         with package.Client(
                             options=settings, **({"http_client": native} if name == "injected" else {})
                         ) as api:
-                            if name.startswith("ca-default") or name == "ca-opt-out":
-                                environment.delenv("SSL_CERT_FILE")
                             record(
                                 lines, f"{mode} environment {name}", lambda: _called(api.retry.with_response.get_safe)
                             )
@@ -220,6 +240,7 @@ def _wire(package: ModuleType, options: ModuleType, lines: list[str], *, asynchr
                 lines.append(
                     f"  origin arrivals={len(server.requests)} connects={server.connects} "
                     f"proxy arrivals={len(peer.requests)} connects={peer.connects}"
+                    + (f" methods={[request[0].decode() for request in peer.requests]}" if case.get("https_proxy") else "")
                 )
         finally:
             server.stop()
