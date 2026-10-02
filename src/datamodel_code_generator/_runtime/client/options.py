@@ -809,14 +809,11 @@ class GenerationDefaults:
     compression: str | Unset | None = UNSET
 
     def __post_init__(self) -> None:
-        """Share runtime field validation and reject vendor headers in this closed layer."""
+        """Share runtime validation for the canonical generator-owned data layer."""
         _check_runtime_defaults(self)
         if not isinstance(self.cleanup_timeout, Unset):
             object.__setattr__(self, "cleanup_timeout", float(self.cleanup_timeout))
         if not isinstance(self.retry, Unset):
-            for name in ("retry_after_ms_header", "should_retry_header"):
-                if not isinstance(getattr(self.retry, name), Unset):
-                    raise ConfigurationError(field_path=("retry", name), condition="invalid_value")
             layered_retry(DEFAULT_RETRY, self.retry)
 
     def applied(self, settings: Settings) -> Settings:
