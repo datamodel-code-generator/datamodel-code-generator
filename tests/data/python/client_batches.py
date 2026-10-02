@@ -1022,10 +1022,11 @@ def _submission_source(items: list[Any], transport: Any) -> Iterator[Any]:
 
 
 async def _async_submission_source(items: list[Any], transport: Any) -> AsyncIterator[Any]:
-    """Release the async worker at source entry, and return lookahead only after its interruption is published."""
+    """Return already acquired lookahead even if the owned await is cancelled after worker publication."""
     yield items[0]
     transport.release.set()
-    await transport.ended.wait()
+    with suppress(asyncio.CancelledError):
+        await transport.ended.wait()
     for item in items[1:]:
         yield item
 
