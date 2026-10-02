@@ -1,0 +1,3 @@
+# session-ambiguous-status
+render pydantic_v2.BaseModel default
+  diagnostic BindingCaptureError: Source pointer is ambiguous between string and integer keys

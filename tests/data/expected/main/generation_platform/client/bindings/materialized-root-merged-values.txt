@@ -1,0 +1,31 @@
+# materialized-root-merged-values
+render pydantic_v2.BaseModel default
+  diagnostic APIGenerationError
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/BaseTuple/items: Array-form items requires an explicit schema adapter
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/BaseTuple/additionalItems: Keyword additionalItems requires an explicit schema adapter
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/TupleValue/allOf/0/items: Array-form items requires an explicit schema adapter
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/TupleValue/allOf/0/additionalItems: Keyword additionalItems requires an explicit schema adapter
+render pydantic_v2.dataclass default
+  diagnostic APIGenerationError
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/BaseTuple/items: Array-form items requires an explicit schema adapter
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/BaseTuple/additionalItems: Keyword additionalItems requires an explicit schema adapter
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/TupleValue/allOf/0/items: Array-form items requires an explicit schema adapter
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/TupleValue/allOf/0/additionalItems: Keyword additionalItems requires an explicit schema adapter
+render dataclasses.dataclass default
+  diagnostic APIGenerationError
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/BaseTuple/items: Array-form items requires an explicit schema adapter
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/BaseTuple/additionalItems: Keyword additionalItems requires an explicit schema adapter
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/TupleValue/allOf/0/items: Array-form items requires an explicit schema adapter
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/TupleValue/allOf/0/additionalItems: Keyword additionalItems requires an explicit schema adapter
+render typing.TypedDict default
+  diagnostic APIGenerationError
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/BaseTuple/items: Array-form items requires an explicit schema adapter
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/BaseTuple/additionalItems: Keyword additionalItems requires an explicit schema adapter
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/TupleValue/allOf/0/items: Array-form items requires an explicit schema adapter
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/TupleValue/allOf/0/additionalItems: Keyword additionalItems requires an explicit schema adapter
+render msgspec.Struct default
+  diagnostic APIGenerationError
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/BaseTuple/items: Array-form items requires an explicit schema adapter
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/BaseTuple/additionalItems: Keyword additionalItems requires an explicit schema adapter
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/TupleValue/allOf/0/items: Array-form items requires an explicit schema adapter
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/TupleValue/allOf/0/additionalItems: Keyword additionalItems requires an explicit schema adapter

@@ -1,1 +1,0 @@
-(('invalid_pointer', '#/components/securitySchemes/~2'),)

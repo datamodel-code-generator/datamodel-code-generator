@@ -1,0 +1,5 @@
+# default-inputs
+render pydantic_v2.BaseModel default
+  diagnostic APIGenerationError
+  diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~12/post/requestBody: The use's final type has no expression a generated module can import
+  diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~12/post/responses/200: The use's final type has no expression a generated module can import

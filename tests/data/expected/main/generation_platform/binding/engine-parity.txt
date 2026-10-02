@@ -1,4 +1,0 @@
-{
-  "identical_model_bytes": true,
-  "identical_engine_calls": true
-}

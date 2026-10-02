@@ -29,7 +29,7 @@ def final_type_failure(source: Path, case: str, monkeypatch: pytest.MonkeyPatch)
 
     with monkeypatch.context() as fault:
         fault.setattr(OpenAPIGenerationSession, "freeze_attempt", corrupt)
-        product, retained = generate_product(
+        product = generate_product(
             source,
             GenerateConfig(
                 input_file_type="openapi",
@@ -41,4 +41,4 @@ def final_type_failure(source: Path, case: str, monkeypatch: pytest.MonkeyPatch)
         )
     product.close()
     errors = require_type_bindings(product.batch, tuple(use.id for use in product.batch.type_uses))
-    return {"codes": sorted({error.code for error in errors}), "retained_graph": retained}
+    return {"codes": sorted({error.code for error in errors})}

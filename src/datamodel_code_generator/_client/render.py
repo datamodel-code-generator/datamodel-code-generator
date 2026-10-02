@@ -2424,6 +2424,34 @@ _POLL_OPTIONS: Final = (("poll_options", ".", "PollOptions"), *_HELPER_OPTIONS[1
 _POLLING: Final = "_runtime.protocols.polling"
 _UPLOADS: Final = "_runtime.protocols.uploads"
 _UPLOAD_OPTIONS: Final = (("upload_options", ".", "UploadOptions"), *_HELPER_OPTIONS[1:])
+_STREAMS: Final = "_runtime.protocols.streams"
+_RESUMES: Final = """ A helper that declares `resume` also has `resume`, which reopens a stream after its
+`checkpoint()`, and its streams reconnect when `StreamOptions(reconnect=True)`."""
+_RECONNECT_LIMITS: Final = """| reconnections, counted across resumes | 5; None removes the limit, and 0 allows none |
+| reconnection wait | 60 seconds; None removes it |
+"""
+_RESUMED: Final = """
+A helper that declares `resume` tracks the cursor of the last event it delivered: the SSE event ID, or the value its
+cursor pointer reads from an event's data, which an empty event ID or a null value clears. Once a cursor was delivered,
+a stream's `checkpoint()` returns a `ResumeState` without sending: the cursor, the event and reconnection counts, the
+last `retry` time, the bindings' values, and the caller's first request when the reopen repeats it, never events,
+responses, the session, or the call's options. A call given a cookie or credential argument cannot be checkpointed:
+`checkpoint()` raises `ProtocolConfigurationError` with the condition `wrong_capability`, and `ProtocolDataError` for a
+cursor the reopen request cannot encode, as a reconnection does. The helper's `resume` sends the reopen in a session of
+its own, writing the cursor, and omitting a cleared one, and returns once its response is a declared success; it
+refuses another helper's state, one made under other security, an expired one, and one that does not fit with
+`ResumeStateError` before sending. `StreamInterruptedError` keeps a checkpoint as `resume_state`, and no options, the
+client's, a view's, or the call's, may patch a header or query parameter a reopen writes or fix an idempotency key.
+
+With `StreamOptions(reconnect=True)` such a stream reopens itself as one more child call of its session after a
+transport interruption, a read-phase failure classified as retryable or a read timeout the call's own
+`TimeoutOptions(read=...)` set, or after an incomplete end when the helper declares `incomplete_eof`, once a cursor was
+delivered and after the retry backoff and at least the last `retry` time. Running out of reconnections or of the
+session's sends raises `StreamResumeExhaustedError` with a checkpoint; a wait whose backoff cap or `retry` time is
+longer than allowed, or a wait longer than the session has left, raises the interruption instead. Decode, size, remote,
+idle, and deadline failures, the declared end, and closing never reconnect, and events the server sends again after a
+reopen are delivered again.
+"""
 _CACHE: Final = "_runtime.protocols.cache"
 _CACHE_OPTIONS: Final = (("cache_options", ".", "CacheOptions"), _HELPER_OPTIONS[1])
 _DEFAULT_STATUSES: Final = [200]
@@ -2847,7 +2875,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                 f"the {spec.helper.name} {_HELPER_KINDS[spec.helper.kind]} of {spec.operation.contract.method.upper()} "
                 f"{spec.operation.contract.path}",
                 core,
-                [self.stream_method(module, index, spec, asynchronous=asynchronous)],
+                self.stream_methods(module, index, spec, asynchronous=asynchronous),
                 leaf=True,
             )
             for index, (name, spec) in enumerate(streams.items())
@@ -3400,7 +3428,8 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
     def stream_plan(self, module: Module, index: int, spec: StreamSpec) -> str:
         """Return a stream helper's plan: its identity, operation, media type, event and error decoders, and end.
 
-        An NDJSON plan also names its kind, and its final line when the body may end without a line end.
+        An NDJSON plan also names its kind, and its final line when the body may end without a line end, and a plan of
+        a helper declaring resumption how it reopens its stream.
         """
         runtime = "_runtime.protocols.streams"
         helper = spec.helper
@@ -3442,11 +3471,42 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             entries.append(("kind=", repr(helper.kind)))
             if (final := tree["final_line"]) != "require_newline":
                 entries.append(("final_line=", repr(final)))
+        if (reopen := spec.reopen) is not None:
+            entries.append(("resume=", self.resumption(module, spec, reopen)))
         head = f"STREAM_{index}: {module.name('typing', 'Final')}[{plan}[{self.event_type(module, spec)}]] = "
         return head + layout(_call(plan, entries), 0, len(head), WIDTH)
 
-    def stream_method(self, module: Module, index: int, spec: StreamSpec, *, asynchronous: bool) -> str:
-        """Return a stream helper's open method, which takes its operation's parameters and body."""
+    def resumption(self, module: Module, spec: StreamSpec, reopen: OperationSpec) -> Doc:
+        """Return the runtime record of a stream helper's resumption: its reopen, cursor, bindings, and expiry.
+
+        A setting is named only when it differs from the runtime's default.
+        """
+        resume = spec.helper.tree["resume"]
+        entries: list[tuple[str, Doc]] = [
+            ("operation=", self.reference(module, reopen)),
+            ("call=", f"{module.root('_operations')}.OPERATION_{reopen.index}"),
+            ("media=", repr(spec.reopen_media)),
+            ("write=", self.target(module, resume["write"])),
+        ]
+        if spec.own:
+            entries.append(("own=", "True"))
+        if (cursor := resume["cursor"]) != "event_id":
+            entries.append(("cursor=", self.selector(module, cursor)))
+            entries.extend(
+                (f"{name}=", repr(resume[name]))
+                for name, default in (("missing", "inherit"), ("null", "clear"))
+                if resume[name] != default
+            )
+        if bindings := resume["bindings"]:
+            entries.append(("bindings=", _tuple([self.binding(module, item) for item in bindings])))
+        if (reasons := tuple(resume["reconnect_on"])) != ("transport_interruption",):
+            entries.append(("reconnect_on=", _tuple(map(repr, reasons))))
+        if (expires_at := resume.get("expires_at")) is not None:
+            entries.append(("expires_at=", self.selector(module, expires_at)))
+        return _call(module.local(_STREAMS, "StreamResumePlan"), entries)
+
+    def stream_methods(self, module: Module, index: int, spec: StreamSpec, *, asynchronous: bool) -> list[str]:
+        """Return a stream helper's open method, taking its operation's parameters and body, and any resume method."""
         operation = replace(spec.operation, fields=())
         resources = self.resources
         runtime = "_runtime.protocols.streams"
@@ -3469,16 +3529,47 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         signature = tuple(argument.parameter(module) for argument in (*arguments, *body, *options))
         wait = "await " if asynchronous else ""
         stream = _STREAM_KINDS[spec.helper.kind]
+        returns = f"{handle}[{self.event_type(module, spec)}]"
+        methods = [
+            "\n".join((
+                _signature("open", signature, returns, asynchronous=asynchronous, stub=False),
+                f'        """Open the {stream} of {route}, returning once its response is a declared success."""',
+                f"        return {wait}{layout(_call(opener, passed), 8, 7 + len(wait), WIDTH)}",
+            ))
+        ]
+        if spec.reopen is not None:
+            methods.append(self.stream_resume(module, index, spec, (options, returns), asynchronous=asynchronous))
+        return methods
+
+    @staticmethod
+    def stream_resume(
+        module: Module, index: int, spec: StreamSpec, signature: tuple[list[_Argument], str], *, asynchronous: bool
+    ) -> str:
+        """Return a stream helper's resume method, which takes a checkpoint and the open method's options."""
+        options, returns = signature
+        resume = module.local(_STREAMS, "aresume_events" if asynchronous else "resume_events")
+        state = f"state: {module.local('_runtime.protocols.resume', 'ResumeState')}"
+        passed = [
+            ("", "self._core"),
+            ("", f"{module.namespace.name('.', '_plans')}.STREAM_{index}"),
+            ("", "state"),
+            *((f"{name}=", name) for name, _, _ in _STREAM_OPTIONS),
+        ]
+        wait = "await " if asynchronous else ""
+        what = f"Reopen the {_STREAM_KINDS[spec.helper.kind]} after a checkpoint's cursor"
         return "\n".join((
-            _signature(
-                "open",
-                signature,
-                f"{handle}[{self.event_type(module, spec)}]",
-                asynchronous=asynchronous,
-                stub=False,
+            layout(
+                Group(
+                    f"    {'async ' if asynchronous else ''}def resume(",
+                    items(("self", state, "*", *(argument.parameter(module) for argument in options))),
+                    f") -> {returns}:",
+                ),
+                4,
+                0,
+                WIDTH,
             ),
-            f'        """Open the {stream} of {route}, returning once its response is a declared success."""',
-            f"        return {wait}{layout(_call(opener, passed), 8, 7 + len(wait), WIDTH)}",
+            f'        """{what}, returning once its response is a declared success."""',
+            f"        return {wait}{layout(_call(resume, passed), 8, 7 + len(wait), WIDTH)}",
         ))
 
     def message_types(self, module: Module, spec: SocketSpec) -> tuple[str, str]:
@@ -3710,7 +3801,7 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
             f"""
 An {self.stream_label} helper's `open` sends its operation in a session of its own and returns an event stream once the
 response is a declared success; the stream reads only the bytes each event needs, and `close()` or `aclose()` releases
-the response."""
+the response.{_RESUMES if any(spec.reopen is not None for spec in self.streams) else ""}"""
             if self.streams
             else ""
         )
@@ -4265,6 +4356,7 @@ event type and no event ID, and a declared error record raises `StreamRemoteErro
             if any(spec.helper.kind == "ndjson" for spec in self.streams)
             else ""
         )
+        resumed = any(spec.reopen is not None for spec in self.streams)
         return f"""
 ## {self.stream_label} streams
 
@@ -4285,16 +4377,16 @@ from:
 | event data size | 1 MiB |
 | session total timeout | None |
 | network sends per session | 16; None removes it |
-
+{_RECONNECT_LIMITS if resumed else ""}
 The idle timeout runs only while the next step waits for bytes. An event's data is JSON decoded by the schema its
 discriminator maps it to; data that does not decode raises `StreamDecodeError`, a declared error event raises
 `StreamRemoteError`, and a line or event over its limit raises `ProtocolSizeError`. The stream ends at its declared
 completion; an end before it raises `StreamInterruptedError`, a cut frame `IncompleteFrameError`, and a broken
-connection `StreamInterruptedError` with its transport failure as the cause. Streams never reconnect, so
-`StreamOptions(reconnect=True)` raises `ProtocolConfigurationError`. Close a stream with `with`, `async with`, or
-`close()`; leaving a loop early does not release its response, and closing the client with a stream open raises
-`CleanupError` once its cleanup timeout passes.
-{lines}"""
+connection `StreamInterruptedError` with its transport failure as the cause. A helper that does not declare `resume`
+never reconnects, and `StreamOptions(reconnect=True)` raises `ProtocolConfigurationError` for it. Close a stream with
+`with`, `async with`, or `close()`; leaving a loop early does not release its response, and closing the client with a
+stream open raises `CleanupError` once its cleanup timeout passes.
+{lines}{_RESUMED if resumed else ""}"""
 
     def socket_runtime(self) -> str:
         """Describe WebSocket sessions and their limits, or nothing for a package without WebSocket helpers."""
