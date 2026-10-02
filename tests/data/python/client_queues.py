@@ -1612,6 +1612,8 @@ def queue_compression(package: ModuleType, lines: list[str]) -> None:
             queue.server.flush(lines)
         for label, change in (
             ("malformed", {"payload": b"{}"}),
+            ("invalid JSON", {"payload": b"["}),
+            ("invalid body metadata", {"payload": b'{"version":1,"arguments":[[]],"body":0}'}),
             ("missing alias", {"operation_alias": "absent"}),
             ("wrong fingerprint", {"helper_fingerprint": "absent"}),
             ("wrong security", {"security_fingerprint": "absent"}),
@@ -1657,6 +1659,20 @@ def queue_compression(package: ModuleType, lines: list[str]) -> None:
         )
         queue.step("unsent expired lease returned", lambda: outbox.inspect(waiting.entry_id))
         queue.server.flush(lines)
+        waiting = outbox.operations.create_order.enqueue(body=queue.order)
+        queue.step(
+            "finite send limit",
+            lambda: outbox.drain(
+                options=coding, queue_options=limits, session_options=queue.options.SessionOptions(max_network_sends=1)
+            ),
+        )
+        queue.step("unsent limited lease returned", lambda: outbox.inspect(waiting.entry_id))
+        queue.step(
+            "zero time coding",
+            lambda: outbox.drain(options=coding, session_options=queue.options.SessionOptions(total_timeout=0)),
+        )
+        queue.server.flush(lines)
+
     run(lambda: _async_queue_compression(queue))
 
 
@@ -1688,3 +1704,15 @@ async def _async_queue_compression(queue: _Queues) -> None:
             lambda: outbox.drain(options=queue.options.RequestOptions(compression="gzip", cancel_token=token)),
         )
         await queue.astep("async cancelled admission returned", lambda: outbox.inspect(receipt.entry_id))
+        await outbox.operations.create_order.enqueue(body=queue.order)
+        await queue.astep(
+            "async finite limit",
+            lambda: outbox.drain(
+                options=coding, queue_options=limits, session_options=queue.options.SessionOptions(max_network_sends=1)
+            ),
+        )
+        await queue.astep(
+            "async zero time coding",
+            lambda: outbox.drain(options=coding, session_options=queue.options.SessionOptions(total_timeout=0)),
+        )
+        queue.server.flush(queue.lines)

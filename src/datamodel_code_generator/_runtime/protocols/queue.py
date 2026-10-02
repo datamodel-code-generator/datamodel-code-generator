@@ -664,7 +664,7 @@ class _Drain:
         from ..client.compression import helper_children  # noqa: PLC0415 - Only an explicit coding loads admission.
 
         self.held.extend(leases)
-        children = []
+        children: list[tuple[OperationPlan[object, object], bool]] = []
         for lease in leases:
             entry = lease.entry
             queued = self.plan.aliases.get(entry.operation_alias)
