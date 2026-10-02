@@ -62,6 +62,7 @@
   option max_network_sends type ! ConfigurationError: ConfigurationError(field_path='max_network_sends', condition='out_of_range') [field_path=('max_network_sends',), condition='out_of_range'] configuration_error
   option max_network_sends type ! ConfigurationError: ConfigurationError(field_path='max_network_sends', condition='out_of_range') [field_path=('max_network_sends',), condition='out_of_range'] configuration_error
   option max_network_sends type ! ConfigurationError: ConfigurationError(field_path='max_network_sends', condition='out_of_range') [field_path=('max_network_sends',), condition='out_of_range'] configuration_error
+  option clock type ! ConfigurationError: ConfigurationError(field_path='clock', condition='invalid_type') [field_path=('clock',), condition='invalid_type'] configuration_error
   timeout unset = TimeoutOptions(connect=UNSET, read=UNSET, write=UNSET, pool=UNSET)
   timeout zero = TimeoutOptions(connect=0.0, read=0.0, write=0.0, pool=0.0)
   timeout mixed = TimeoutOptions(connect=None, read=1.0, write=2.5, pool=UNSET)
@@ -190,9 +191,10 @@
   invalid elapsed negative ! ValueError: elapsed must be a finite number in its permitted range []
   invalid elapsed infinity ! ValueError: elapsed must be a finite number in its permitted range []
   hints TimeoutOptions ('connect', 'read', 'write', 'pool', 'return')
-  hints ClientOptions ('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'cleanup_timeout', 'max_stream_bytes', 'hooks', 'context', 'validation', 'timeout', 'total_timeout', 'deadline', 'cancel_token', 'limiter', 'max_network_sends', 'stream_idle_timeout', 'stream_total_timeout', 'retry', 'redirects', 'idempotency_key', 'auth', 'compression', 'transport', 'protocols', 'return')
+  hints ClientOptions ('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'cleanup_timeout', 'max_stream_bytes', 'hooks', 'context', 'validation', 'timeout', 'total_timeout', 'deadline', 'cancel_token', 'limiter', 'max_network_sends', 'stream_idle_timeout', 'stream_total_timeout', 'retry', 'redirects', 'idempotency_key', 'auth', 'compression', 'transport', 'protocols', 'clock', 'return')
   hints RequestOptions ('server', 'base_url', 'headers', 'query', 'max_response_bytes', 'max_error_body_bytes', 'cleanup_timeout', 'max_stream_bytes', 'hooks', 'context', 'validation', 'timeout', 'total_timeout', 'deadline', 'cancel_token', 'limiter', 'max_network_sends', 'stream_idle_timeout', 'stream_total_timeout', 'retry', 'redirects', 'idempotency_key', 'auth', 'compression', 'return')
   hints Deadline ('return',)
+  hints Clock ('monotonic', 'time', 'random', 'return')
   hints CancelToken ('return',)
   hints LimiterContext ('operation_id', 'origin', 'call_id', 'parent_session_id', 'remaining_timeout', 'cancel_token', 'return')
   hints AttemptIOContext ('timeout', 'trace', 'deadline', 'cancel_token', 'return')
@@ -203,9 +205,10 @@
   hints RequestCancelledError ('source', 'delivery_state', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
   hints BudgetExceededError ('budget_kind', 'limit', 'used', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
   hints LimiterExecutionError ('action', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
-  hints Deadline.after ('seconds', 'return')
+  hints Deadline.after ('seconds', 'clock', 'return')
   hints Deadline.remaining ('return',)
   hints Deadline.at ('return',)
+  hints Deadline.clock ('return',)
   hints CancelToken.cancel ('return',)
   hints CancelToken.cancelled ('return',)
   hints Limiter.acquire ('context', 'return')
@@ -233,3 +236,12 @@
   nested timeout clear = b'cleared'
   attempt context deadline=True remaining=True token=True phase=unknown slotted=True
   adapter failure keeps context ! TransportError: TransportError(call_id='<call>', delivery_state='NOT_SENT', phase='connect') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect'] transport_error
+  clock monotonic type ! ConfigurationError: ConfigurationError(field_path='clock.monotonic', condition='invalid_type') [field_path=('clock', 'monotonic'), condition='invalid_type'] configuration_error
+  clock time type ! ConfigurationError: ConfigurationError(field_path='clock.time', condition='invalid_type') [field_path=('clock', 'time'), condition='invalid_type'] configuration_error
+  clock random type ! ConfigurationError: ConfigurationError(field_path='clock.random', condition='invalid_type') [field_path=('clock', 'random'), condition='invalid_type'] configuration_error
+  deadline clock type ! ConfigurationError: ConfigurationError(field_path='clock', condition='invalid_type') [field_path=('clock',), condition='invalid_type'] configuration_error
+  fake clock deadline at=105.0 remaining=5.0 clock=True system=True
+  hashing ignores sources clock=True request=True
+  deadline on the same clock ! TransportError: TransportError(call_id='<call>', delivery_state='NOT_SENT', phase='connect') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect'] transport_error
+  deadline on the system clock ! TransportError: TransportError(call_id='<call>', delivery_state='NOT_SENT', phase='connect') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='connect'] transport_error
+  kept=True moved onto the call's clock=True by its remaining time=True

@@ -6,6 +6,7 @@ from collections.abc import Iterator
 from typing import BinaryIO
 
 from pets import AsyncClient, Client
+from pets.auth import OAuthProviderOptions
 from pets.errors import (
     BudgetExceededError,
     DeadlineExceededError,
@@ -20,6 +21,7 @@ from pets.hooks import AsyncLimiter, AsyncPermit, Limiter, LimiterContext, Permi
 from pets.options import (
     CancelToken,
     ClientOptions,
+    Clock,
     Deadline,
     IdempotencyKey,
     RedirectOptions,
@@ -152,6 +154,12 @@ def misuse_timing(deadline: Deadline, token: CancelToken, phase: TimeoutOptions,
     RequestOptions(stream_idle_timeout="forever")  # error
     RequestOptions(stream_total_timeout="forever")  # error
     deadline.at = 0  # error
+    deadline.clock = Clock()  # error
+    Deadline.after(1, clock="system")  # error
+    Clock(monotonic=0.0)  # error
+    RequestOptions(clock=Clock())  # error
+    ClientOptions(clock=None)  # error
+    OAuthProviderOptions(clock=object())  # error
     token.cancelled = True  # error
     phase.read = 1  # error
     context.remaining_timeout = 0  # error

@@ -2925,6 +2925,12 @@
               "role": "parameter",
               "location": "header",
               "name": "X-Labels"
+            },
+            {
+              "operation": "/paths/~1reports/get",
+              "role": "parameter",
+              "location": "header",
+              "name": "X-Tags"
             }
           ]
         },
@@ -3321,6 +3327,12 @@
               "role": "parameter",
               "location": "header",
               "name": "X-Labels"
+            },
+            {
+              "operation": "/paths/~1reports/get",
+              "role": "parameter",
+              "location": "header",
+              "name": "X-Tags"
             }
           ]
         },
@@ -3606,6 +3618,219 @@
         }
       ]
     }
+  },
+  "no-success": {
+    "input": "no-success.yaml",
+    "config": {}
+  },
+  "no-success-unpack": {
+    "input": "no-success.yaml",
+    "config": {
+      "signature_style": "unpack"
+    }
+  },
+  "caching": {
+    "input": "caching.yaml",
+    "references": [
+      "protocols/caching.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/caching.yaml",
+      "selection": {
+        "exclude_tags": [
+          "items",
+          "reports"
+        ],
+        "reason": "Checked elsewhere"
+      },
+      "validation": {
+        "argument_overrides": [
+          "pydantic"
+        ]
+      }
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ]
+    ]
+  },
+  "caching-backends": {
+    "input": "caching.yaml",
+    "references": [
+      "protocols/caching.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/caching.yaml",
+      "selection": {
+        "exclude_tags": [
+          "items",
+          "reports"
+        ],
+        "reason": "Checked elsewhere"
+      }
+    },
+    "modules": false
+  },
+  "protocols-cache-checks": {
+    "input": "caching.yaml",
+    "references": [
+      "protocols/cache-checks.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/cache-checks.yaml",
+      "operations": [
+        {
+          "ref": "/paths/~1items~1{id}/get",
+          "parameter_names": [
+            {
+              "in_": "query",
+              "name": "id",
+              "python_name": "query_id"
+            }
+          ]
+        }
+      ]
+    },
+    "modules": false
+  },
+  "protocols-cache-errors": {
+    "input": "caching.yaml",
+    "references": [
+      "protocols/cache-errors.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/cache-errors.yaml"
+    },
+    "modules": false
+  },
+  "caching-python": {
+    "input": "caching.yaml",
+    "config": {
+      "protocols": {
+        "python": "caching"
+      },
+      "selection": {
+        "exclude_tags": [
+          "items",
+          "reports"
+        ],
+        "reason": "Checked elsewhere"
+      },
+      "validation": {
+        "argument_overrides": [
+          "pydantic"
+        ]
+      }
+    }
+  },
+  "caching-typing": {
+    "input": "caching.yaml",
+    "references": [
+      "protocols/caching.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/caching.yaml",
+      "selection": {
+        "exclude_tags": [
+          "items",
+          "reports"
+        ],
+        "reason": "Checked elsewhere"
+      }
+    },
+    "modules": false
+  },
+  "sockets": {
+    "input": "sockets.yaml",
+    "references": [
+      "protocols/sockets.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/sockets.yaml",
+      "validation": {
+        "response_overrides": [
+          "schema"
+        ]
+      }
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ]
+    ]
+  },
+  "protocols-socket-checks": {
+    "input": "socket-checks.yaml",
+    "references": [
+      "protocols/socket-checks.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/socket-checks.yaml"
+    },
+    "modules": false
+  },
+  "protocols-socket-errors": {
+    "input": "sockets.yaml",
+    "references": [
+      "protocols/socket-errors.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/socket-errors.yaml"
+    },
+    "modules": false
+  },
+  "protocols-socket-scope": {
+    "input": "socket-checks.yaml",
+    "references": [
+      "protocols/socket-scope.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/socket-scope.yaml"
+    },
+    "modules": false,
+    "model": {
+      "openapi_scopes": [
+        "schemas"
+      ]
+    }
+  },
+  "sockets-schema": {
+    "input": "sockets.yaml",
+    "references": [
+      "protocols/sockets.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/sockets.yaml",
+      "validation": {
+        "response": "schema"
+      }
+    },
+    "modules": false
   },
   "circuits": {
     "input": "circuits.yaml",

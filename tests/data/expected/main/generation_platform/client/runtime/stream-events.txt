@@ -81,3 +81,33 @@
   > GET https://api.example.com/events accept=text/event-stream
   < closed
   async no idle limit before the session deadline ! DeadlineExceededError: DeadlineExceededError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded_error
+  > GET https://api.example.com/events accept=text/event-stream
+  session total on the client clock
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    ! DeadlineExceededError: DeadlineExceededError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded_error
+  > GET https://api.example.com/events accept=text/event-stream
+  session deadline from another clock
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    ! DeadlineExceededError: DeadlineExceededError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded_error
+  > GET https://api.example.com/events accept=text/event-stream
+  stream total on the client clock
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    ! DeadlineExceededError: DeadlineExceededError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded_error
+  > GET https://api.example.com/events accept=text/event-stream
+  async session total on the client clock
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    ! DeadlineExceededError: DeadlineExceededError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded_error
+  > GET https://api.example.com/events accept=text/event-stream
+  async session deadline from another clock
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    ! DeadlineExceededError: DeadlineExceededError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded_error
+  > GET https://api.example.com/events accept=text/event-stream
+  async stream total on the client clock
+    1 message id=None retry=None data=Message{'text': 'a'} raw='{"text": "a"}'
+  < closed
+    ! DeadlineExceededError: DeadlineExceededError(operation_id='streamEvents', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='stream') [operation_id='streamEvents', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='stream'] deadline_exceeded_error

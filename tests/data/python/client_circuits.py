@@ -529,11 +529,29 @@ async def _async_circuits(harness: _Harness, lines: list[str]) -> None:
         lines.append(f"  async after cancel {_snapshot(await store.snapshot(harness.key()))}")
 
 
+def _clock(harness: _Harness, lines: list[str]) -> None:
+    exchange, options = harness.exchange, harness.options
+    times = [_START]
+    clock = options.Clock(monotonic=lambda: times[0])
+    with harness.client(threshold=1, clock=clock) as api:
+        exchange.respond(_down())
+        record(lines, "clocked failure", lambda: api.backend.get_status())
+        try:
+            api.backend.get_status()
+        except harness.errors.CircuitOpenError as failure:
+            lines.append(f"  clocked open retry_at={failure.retry_at}")
+        times[0] = _START + 29.5
+        record(lines, "clocked cooling", lambda: api.backend.get_status())
+        times[0] = _START + 30
+        exchange.respond(json_response(200, _UP))
+        record(lines, "clocked probe", lambda: api.backend.get_status())
+
+
 def circuits(package: ModuleType, lines: list[str]) -> None:
     """Drive circuit breakers through every state, outcome, store, and partition, then the asyncio client."""
     exchange = Exchange(lines)
     harness = _Harness(package, exchange)
-    for step in (_values, _construction, _opening, _counting, _resets, _partitions, _store_failures):
+    for step in (_values, _construction, _opening, _counting, _resets, _partitions, _store_failures, _clock):
         lines.append(f"# {step.__name__.strip('_')}")
         step(harness, lines)
     lines.append("# async")

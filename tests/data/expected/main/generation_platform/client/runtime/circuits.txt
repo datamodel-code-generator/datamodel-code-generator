@@ -362,6 +362,15 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
   raw record failure ! CircuitStoreError: CircuitStoreError(operation_id='getStatus', call_id='<call>', action='record') [operation_id='getStatus', cause=RuntimeError('store down')] circuit_store_error
   reset failure ! CircuitStoreError: CircuitStoreError(action='reset') [cause=RuntimeError('store down')] circuit_store_error
+# clock
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  clocked failure ! GetStatusHTTPError: GetStatusHTTPError(status_code=503, operation_id='getStatus', call_id='<call>', retry_stop_reason='disabled') [operation_id='getStatus', status_code=503, error_decoded=True, error_data=FieldStatusGetResponse(root='down'), body_bytes=b'down', truncated=False] get_status_http_error
+  clocked open retry_at=1030.0
+  clocked cooling ! CircuitOpenError: CircuitOpenError(operation_id='getStatus', call_id='<call>', group='backend') [operation_id='getStatus'] circuit_open_error
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  clocked probe = Status(state='up')
 # async
     admit backend generation=0 probe=False
   > GET https://api.example.com/status

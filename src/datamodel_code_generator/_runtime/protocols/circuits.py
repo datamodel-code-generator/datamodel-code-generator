@@ -12,7 +12,6 @@ from dataclasses import dataclass, field
 from inspect import iscoroutinefunction
 from itertools import count
 from threading import Lock
-from time import monotonic
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
 
 from ..client.errors import (
@@ -42,6 +41,7 @@ if TYPE_CHECKING:
 
     from typing_extensions import TypeVar
 
+    from ..client.timing import Clock
     from .options import AsyncCircuitStore, CircuitStore, ProtocolClientOptions
 
     R = TypeVar("R")
@@ -54,11 +54,6 @@ _TOO_MANY_REQUESTS: Final = 429
 _FAILED_PHASES: Final = frozenset({"connect", "read", "write"})
 _METHODS: Final = ("admit", "record", "reset", "snapshot")
 _Action: TypeAlias = Literal["admit", "record", "reset"]
-
-
-def now() -> float:
-    """Return the monotonic time circuits are measured in; every SDK reading of circuit time goes through here."""
-    return monotonic()
 
 
 def outcome(error: BaseException | None, status: int | None) -> CircuitOutcome:
@@ -250,18 +245,20 @@ def _permit(value: object, key: CircuitKey) -> CircuitPermit:
 class Breaker:
     """The circuit breaking of one client and its views: its store, its limits, and its credential partition."""
 
-    __slots__ = ("_keys", "_options", "_partition", "_store")
+    __slots__ = ("_keys", "_now", "_options", "_partition", "_store")
 
     def __init__(
         self,
         store: CircuitStore | AsyncCircuitStore,
         options: ResolvedCircuitBreakerOptions,
         partition: str | None,
+        now: Callable[[], float],
     ) -> None:
         """Borrow the store; keys of the client's partition, or of anonymous use without one, are made on first use."""
         self._store = store
         self._options = options
         self._partition = partition
+        self._now = now
         self._keys: dict[tuple[tuple[str, str, int], str], CircuitKey] = {}
 
     def key(self, origin: tuple[str, str, int], group: str) -> CircuitKey:
@@ -284,18 +281,18 @@ class Breaker:
     def admit(self, key: CircuitKey) -> CircuitPermit:
         """Admit a call through a synchronous store."""
         store, options = cast("CircuitStore", self._store), self._options
-        return _permit(_stored("admit", lambda: store.admit(key, now=now(), options=options)), key)
+        return _permit(_stored("admit", lambda: store.admit(key, now=self._now(), options=options)), key)
 
     async def aadmit(self, key: CircuitKey) -> CircuitPermit:
         """Admit a call through an asynchronous store."""
         store, options = cast("AsyncCircuitStore", self._store), self._options
-        return _permit(await _astored("admit", lambda: store.admit(key, now=now(), options=options)), key)
+        return _permit(await _astored("admit", lambda: store.admit(key, now=self._now(), options=options)), key)
 
     def record(self, permit: CircuitPermit, error: BaseException | None, status: int | None) -> None:
         """Record a call's outcome; a store failure is the call's secondary error, or raised after a success."""
         store, result = cast("CircuitStore", self._store), outcome(error, status)
         try:
-            _stored("record", lambda: store.record(permit, result, now=now()))
+            _stored("record", lambda: store.record(permit, result, now=self._now()))
         except CircuitStoreError as failure:
             if error is None:
                 raise
@@ -305,7 +302,7 @@ class Breaker:
         """Record a call's outcome through an asynchronous store, with the same failure rules."""
         store, result = cast("AsyncCircuitStore", self._store), outcome(error, status)
         try:
-            await _astored("record", lambda: store.record(permit, result, now=now()))
+            await _astored("record", lambda: store.record(permit, result, now=self._now()))
         except CircuitStoreError as failure:
             if error is None:
                 raise
@@ -330,7 +327,7 @@ def _capable(store: object, *, asynchronous: bool) -> None:
         raise ProtocolConfigurationError(field_path=("protocols", "circuit_store"), condition="wrong_capability")
 
 
-def breaker(protocols: ProtocolClientOptions, *, asynchronous: bool) -> Breaker | None:
+def breaker(protocols: ProtocolClientOptions, clock: Clock, *, asynchronous: bool) -> Breaker | None:
     """Return a client's breaker, or None unless its protocol settings enable one; a missing store is created."""
     if isinstance(circuit := protocols.circuit, Unset) or not circuit.enabled:
         return None
@@ -341,4 +338,4 @@ def breaker(protocols: ProtocolClientOptions, *, asynchronous: bool) -> Breaker 
         _capable(store, asynchronous=asynchronous)
     security = protocols.security
     partition = security.credential_partition if isinstance(security, ProtocolSecurityContext) else None
-    return Breaker(store, circuit.resolved(), partition)
+    return Breaker(store, circuit.resolved(), partition, clock.monotonic)

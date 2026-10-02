@@ -1,0 +1,47 @@
+openapi: 3.1.0
+info:
+  title: Socket checks
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /chat:
+    get:
+      operationId: chatSocket
+      tags: [chat]
+      responses:
+        '101':
+          description: The chat channel.
+    post:
+      operationId: postChat
+      tags: [chat]
+      responses:
+        '204':
+          description: The message was posted.
+  /upload:
+    get:
+      operationId: uploadSocket
+      tags: [upload]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text: {type: string}
+      responses:
+        '101':
+          description: The upload channel.
+components:
+  schemas:
+    Message:
+      type: object
+      required: [text]
+      properties:
+        text: {type: string}
+    Secret:
+      type: object
+      required: [id, token]
+      properties:
+        id: {type: string}
+        token: {type: string, writeOnly: true}

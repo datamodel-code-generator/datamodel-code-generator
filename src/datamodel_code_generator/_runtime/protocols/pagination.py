@@ -11,7 +11,6 @@ import threading
 from collections.abc import Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
-from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from enum import Enum
 from hashlib import sha256
@@ -30,7 +29,7 @@ from ..client.errors import (
 from ..client.options import RequestOptions
 from ..client.paths import dot_segment, path_segments
 from ..client.responses import ResponseInfo
-from ..client.timing import SessionOptions
+from ..client.timing import SYSTEM_CLOCK, SessionOptions
 from ..model_codecs.errors import CodecError
 from ..model_codecs.media import decode_json
 from ..model_codecs.unset import UNSET, Unset
@@ -50,7 +49,12 @@ from .records import (
     frozen_wire,
     record_instance,
 )
+from .resume import MalformedStateError as _MalformedError
 from .resume import ResumeState, helper_state, state_fields
+from .resume import require_state as _require
+from .resume import state_array as _array
+from .resume import state_count as _count
+from .resume import state_text as _text
 from .values import MISSING, Missing, Patch, RepeatedValueError, resolve, selected
 
 if TYPE_CHECKING:
@@ -61,7 +65,7 @@ if TYPE_CHECKING:
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan
     from ..client.responses import HeadersView
-    from ..client.timing import Deadline
+    from ..client.timing import Clock, Deadline
     from ..client.urls import Origin
     from ..model_codecs.selectors import MediaSelector
     from ..model_codecs.wire import WireValue
@@ -388,6 +392,7 @@ class _Limits:
     deadline: Deadline | None = None
     max_network_sends: int | None = 3000
     options: RequestOptions | None = None
+    clock: Clock = SYSTEM_CLOCK
 
 
 _DEFAULTS: Final = _Limits()
@@ -441,6 +446,7 @@ def _limits(
         deadline=layered(sessions, "deadline", _DEFAULTS.deadline),
         max_network_sends=layered(sessions, "max_network_sends", _DEFAULTS.max_network_sends),
         options=request,
+        clock=core.clock,
     )
 
 
@@ -799,6 +805,7 @@ class _Walk(Generic[T, P]):
                 total_timeout=limits.total_timeout,
                 deadline=limits.deadline,
                 max_network_sends=limits.max_network_sends,
+                clock=limits.clock,
             )
         if (limit := session.send_limit) is not None and session.network_send_budget_used >= limit:
             raise self.limit(limit, "network_sends")
@@ -1153,32 +1160,6 @@ def _page_link(plan: PaginationPlan[T, P], page: object) -> _Link:
     return link
 
 
-class _MalformedError(Exception):
-    """A checkpoint whose state or saved page does not fit the helper resuming it."""
-
-
-def _require(condition: bool) -> None:  # noqa: FBT001
-    if not condition:
-        raise _MalformedError
-
-
-def _array(value: WireValue) -> tuple[WireValue, ...]:
-    _require(isinstance(value, tuple))
-    return cast("tuple[WireValue, ...]", value)
-
-
-def _count(value: WireValue, limit: int | None = None) -> int:
-    _require(
-        isinstance(value, int) and not isinstance(value, bool) and value >= 0 and (limit is None or value <= limit)
-    )
-    return cast("int", value)
-
-
-def _text(value: WireValue) -> str | None:
-    _require(value is None or isinstance(value, str))
-    return cast("str | None", value)
-
-
 def _digest(value: WireValue) -> bytes:
     _require(isinstance(value, str) and _DIGEST.fullmatch(value) is not None)
     return bytes.fromhex(cast("str", value))
@@ -1195,8 +1176,9 @@ def _restored(
 ) -> tuple[_Walk[T, P], tuple[T, ...], int]:
     """Return the walk a checkpoint continues, with the items it left of its last page and the position among them.
 
-    The checkpoint must be this helper's, made under the security the call runs with, and unexpired. Its continuation
-    is checked as one a server just gave, and a state or saved page that does not fit the helper is malformed.
+    The checkpoint must be this helper's, made under the security the call runs with, and unexpired by the client's
+    wall clock. Its continuation is checked as one a server just gave, and a state or saved page that does not fit the
+    helper is malformed.
     """
     if not isinstance(state, ResumeState):
         raise _invalid(plan, ("state",))
@@ -1205,7 +1187,7 @@ def _restored(
         raise _resume_error(plan, "fingerprint")
     if security != sha256(canonical_json(core.checkpoint_security(plan.call, limits.options)[0])).hexdigest():
         raise _resume_error(plan, "security")
-    if expires_at is not None and expires_at <= datetime.now(timezone.utc):
+    if expires_at is not None and expires_at.timestamp() <= core.clock.time():
         raise _resume_error(plan, "expired")
     try:
         return _walked(core, plan, decode_json(state_json), payload, limits)
@@ -1296,7 +1278,7 @@ def _walked(
     _require(len(rest) == _LEFT_FIELDS)
     remaining, status, content_type = _count(rest[0]), _count(rest[1]), _text(rest[2])
     try:
-        data, wire = core.saved_page(plan.call, payload, status, content_type, limits.options)
+        data, wire = core.saved_page(plan.call, payload, status, content_type, limits.options)[:2]
     except SDKError:
         raise _MalformedError from None
     native = plan.items(data)

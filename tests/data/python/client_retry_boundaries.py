@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import importlib
 import sys
-from contextlib import ExitStack
 from datetime import datetime, timedelta, timezone
 from time import monotonic
 from typing import TYPE_CHECKING
@@ -99,14 +98,6 @@ class _NativeBody(_Broken):
         raise self.failure
 
 
-def _clock(package: ModuleType, clock: _Clock) -> ExitStack:
-    stack = ExitStack()
-    for name in ("client", "logical", "timing", "transports", "events"):
-        module = importlib.import_module(f"{package.__name__}._runtime.client.{name}")
-        stack.enter_context(patch.object(module, "monotonic", clock))
-    return stack
-
-
 def retry_boundaries(package: ModuleType, lines: list[str]) -> None:
     """Keep keys, permits, and error attribution correct when preparation or waiting changes the call state."""
     options, bodies, errors, transports = (
@@ -196,7 +187,6 @@ def _retention(package: ModuleType, options: ModuleType, bodies: ModuleType, lin
         exchange.respond(first, raw_response(200, b"unused", "text/plain"))
         key = options.IdempotencyKey("same-key", first_used_at=datetime.now(timezone.utc) - timedelta(seconds=86399))
         with (
-            _clock(package, clock),
             exchange.client() as native,
             package.Client(
                 http_client=native,
@@ -206,6 +196,7 @@ def _retention(package: ModuleType, options: ModuleType, bodies: ModuleType, lin
                     idempotency_key=key,
                     limiter=limiter,
                     hooks=(events, hook),
+                    clock=options.Clock(monotonic=clock),
                 ),
             ) as api,
         ):
@@ -283,26 +274,30 @@ def _uncapped(
 
 
 def _closing_wait(package: ModuleType, options: ModuleType, errors: ModuleType, lines: list[str]) -> None:
+    """Close the client after the retry sleep checked the call and read what is left, just before it waits.
+
+    Once the retry is scheduled, the sleep reads the clock to bound its real time, then again after its check.
+    """
     exchange = Exchange([])
-    armed = False
+    reads = 0
     close_failures: list[str] = []
 
     def scheduled() -> None:
-        nonlocal armed
-        armed = True
+        nonlocal reads
+        reads = 2
 
     def clock() -> float:
-        nonlocal armed
-        if armed:
-            armed = False
-            try:
-                api.close()
-            except errors.CleanupError as error:
-                close_failures.append(type(error).__name__)
+        nonlocal reads
+        if reads:
+            reads -= 1
+            if not reads:
+                try:
+                    api.close()
+                except errors.CleanupError as error:
+                    close_failures.append(type(error).__name__)
         return monotonic()
 
     events = _Events(scheduled=scheduled)
-    logical = importlib.import_module(f"{package.__name__}._runtime.client.logical")
     exchange.respond(raw_response(503, b"busy", "text/plain"), raw_response(200, b"unused", "text/plain"))
     with (
         exchange.client() as native,
@@ -313,9 +308,9 @@ def _closing_wait(package: ModuleType, options: ModuleType, errors: ModuleType, 
                 cleanup_timeout=0.001,
                 retry=options.RetryOptions(initial_delay=0.1, jitter="none"),
                 hooks=(events,),
+                clock=options.Clock(monotonic=clock),
             ),
         ) as api,
-        patch.object(logical, "monotonic", clock),
     ):
         record(lines, "close wins immediately before wait", lambda: _capture(api.retry.get_safe))
     record(lines, "close race cleanup", lambda: close_failures)
@@ -363,27 +358,27 @@ async def _async_retention(package: ModuleType, options: ModuleType, bodies: Mod
         first = raw_response(307, Location="/next") if stage == "redirect" else raw_response(503, b"busy", "text/plain")
         exchange.respond(first, raw_response(200, b"unused", "text/plain"))
         key = options.IdempotencyKey("same-key", first_used_at=datetime.now(timezone.utc) - timedelta(seconds=86399))
-        with _clock(package, clock):
-            async with (
-                exchange.async_client() as native,
-                package.AsyncClient(
-                    http_client=native,
-                    options=options.ClientOptions(
-                        retry=options.RetryOptions(initial_delay=0),
-                        redirects=options.RedirectOptions(enabled=stage == "redirect"),
-                        idempotency_key=key,
-                        limiter=limiter,
-                        hooks=(events, hook),
-                    ),
-                ) as api,
-            ):
-                await arecord(
-                    lines,
-                    f"async key expires during {stage}",
-                    lambda api=api, factory=factory: _acapture(
-                        lambda: api.retry.post_keyed(body=bodies.AsyncBodyFactory(factory.async_call))
-                    ),
-                )
+        async with (
+            exchange.async_client() as native,
+            package.AsyncClient(
+                http_client=native,
+                options=options.ClientOptions(
+                    retry=options.RetryOptions(initial_delay=0),
+                    redirects=options.RedirectOptions(enabled=stage == "redirect"),
+                    idempotency_key=key,
+                    limiter=limiter,
+                    hooks=(events, hook),
+                    clock=options.Clock(monotonic=clock),
+                ),
+            ) as api,
+        ):
+            await arecord(
+                lines,
+                f"async key expires during {stage}",
+                lambda api=api, factory=factory: _acapture(
+                    lambda: api.retry.post_keyed(body=bodies.AsyncBodyFactory(factory.async_call))
+                ),
+            )
         record(
             lines,
             "async retention resources",

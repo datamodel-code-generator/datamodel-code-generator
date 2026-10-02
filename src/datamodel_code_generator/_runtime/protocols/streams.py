@@ -27,7 +27,7 @@ from ..client.errors import (
 )
 from ..client.options import RequestOptions
 from ..client.raw import afinished, aheld, checked, finished, held
-from ..client.timing import SessionOptions
+from ..client.timing import SYSTEM_CLOCK, SessionOptions
 from ..model_codecs.errors import (
     CodecBindingError,
     CodecResourceLimitError,
@@ -60,7 +60,7 @@ if TYPE_CHECKING:
     from ..client.operations import OperationPlan
     from ..client.raw import AsyncRawResponse, RawResponse
     from ..client.responses import ResponseInfo
-    from ..client.timing import Deadline
+    from ..client.timing import Clock, Deadline
     from ..model_codecs.selectors import MediaSelector
     from ..model_codecs.wire import WireValue
     from .records import BodySelector, ProtocolProgress
@@ -405,6 +405,7 @@ class _Limits:
     deadline: Deadline | None = None
     max_network_sends: int | None = 16
     options: RequestOptions | None = None
+    clock: Clock = SYSTEM_CLOCK
 
 
 _DEFAULTS: Final = _Limits()
@@ -460,6 +461,7 @@ def _limits(
         deadline=_first(sessions, "deadline", _DEFAULTS.deadline),
         max_network_sends=_first(sessions, "max_network_sends", _DEFAULTS.max_network_sends),
         options=request,
+        clock=core.clock,
     )
 
 
@@ -484,7 +486,10 @@ def _session(plan: EventPlan[T], limits: _Limits) -> OperationSession:
     from ..client.logical import OperationSession  # noqa: PLC0415 - Only an open loads the call runtime.
 
     session = OperationSession(
-        total_timeout=limits.total_timeout, deadline=limits.deadline, max_network_sends=limits.max_network_sends
+        total_timeout=limits.total_timeout,
+        deadline=limits.deadline,
+        max_network_sends=limits.max_network_sends,
+        clock=limits.clock,
     )
     if (limit := session.send_limit) is not None and limit <= 0:
         raise SessionLimitError(
@@ -679,6 +684,8 @@ class _Events(Generic[T]):
 
     def _broken(self, error: BaseException) -> BaseException:
         """Return how a failure ends the stream: a transport failure reading it, but no phase timeout, interrupts it."""
+        if isinstance(error, StreamDecodeError):
+            return error.with_traceback(None)
         if isinstance(error, TransportError) and not isinstance(error, PhaseTimeoutError):
             return self._stamped(StreamInterruptedError(condition="transport", sequence=self._delivered, cause=error))
         return error
