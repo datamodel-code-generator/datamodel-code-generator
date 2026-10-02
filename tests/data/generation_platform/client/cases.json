@@ -4739,5 +4739,56 @@
       "msgspec.Struct"
     ],
     "modules": false
+  },
+  "batch-schema-adapter": {
+    "input": "batch-schema-adapter.json",
+    "references": [
+      "protocols/batches.yaml"
+    ],
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "modules": false,
+    "config": {
+      "protocols": "protocols/batches.yaml",
+      "validation": {
+        "request": "schema"
+      },
+      "codec_adapters": [
+        {
+          "kind": "schema",
+          "name": "batch-array",
+          "import_ref": "tests.data.python.client_batch_schema:array_schema",
+          "capabilities": {
+            "record": "SchemaCodecCapabilities",
+            "dialects": [
+              "https://json-schema.org/draft/2020-12/schema"
+            ],
+            "vocabularies": [],
+            "keywords": [
+              "$ref",
+              "type",
+              "items",
+              "properties",
+              "required",
+              "minItems",
+              "minLength"
+            ],
+            "pattern_dialects": []
+          },
+          "uses": [
+            {
+              "operation": "/paths/~1tags~1batch/put",
+              "role": "request_body",
+              "media_type": "application/json"
+            }
+          ]
+        }
+      ]
+    }
   }
 }
