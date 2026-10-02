@@ -2131,6 +2131,9 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         """Return immutable pre-auth replay facts, excluding every declared credential position."""
         from base64 import b64encode  # noqa: PLC0415
 
+        auth = self._call_settings(options, operation.operation_id).auth
+        if auth is not None:
+            self._bound(operation, auth)
         headers, query = self._secret_positions(operation, options)
         target = absolute_target(request.url)
         return {

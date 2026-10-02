@@ -517,7 +517,7 @@ def _write(  # noqa: PLR0913
 ) -> Generator[_Step, object, tuple[bool, QueueEntry | None]]:
     """Write an entry over the version expected, then read it back when asked or when another write came first."""
     outcome = entry.result
-    if outcome is not None and outcome.response is not None:
+    if outcome is expected.result and outcome is not None and outcome.response is not None:
         entry = replace(entry, result=_saved_outcome(core, plan, entry, outcome, outcome.response, options))
     if (written := (yield _exchange(expected, entry))) and not reload:
         return True, entry
