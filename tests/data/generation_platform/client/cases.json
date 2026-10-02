@@ -4273,7 +4273,7 @@
   "uploads-oauth": {
     "input": "uploads-oauth.yaml",
     "references": [
-      "protocols/uploads.yaml"
+      "protocols/uploads-oauth.yaml"
     ],
     "config": {
       "protocols": "protocols/uploads-oauth.yaml"
