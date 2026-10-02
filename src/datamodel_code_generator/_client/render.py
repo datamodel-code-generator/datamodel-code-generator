@@ -2610,8 +2610,8 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             entries.append(("tags=", _tuple(map(repr, spec.tags))))
         head = f"PLAN_{index}: {module.name('typing', 'Final')}[{plan}[{self.response(module, spec.operation)}]] = "
         sections = [head + layout(_call(plan, entries), 0, len(head), WIDTH)]
-        mutation = module.local(_CACHE, "CacheMutationPlan")
         for position, item in enumerate(spec.mutations):
+            mutation = module.local(_CACHE, "CacheMutationPlan")
             head = (
                 f"MUTATION_{index}_{position}: {module.name('typing', 'Final')}"
                 f"[{mutation}[{self.response(module, item.operation)}]] = "
