@@ -1,0 +1,15 @@
+# protocols-socket-errors
+render pydantic_v2.BaseModel
+  APIGenerationError
+  E_CONFIG_VALUE config protocols.helpers['codec.unknown'].send.codec: protocols.helpers['codec.unknown'].send.codec must be 'json', 'utf8' or 'bytes'
+  E_CONFIG_VALUE config protocols.helpers['codec.schema_missing'].send.schema: protocols.helpers['codec.schema_missing'].send needs 'schema' for JSON messages
+  E_CONFIG_CONFLICT config protocols.helpers['codec.schema_extra'].send.schema: protocols.helpers['codec.schema_extra'].send.schema applies only to JSON messages
+  E_CONFIG_CONFLICT config protocols.helpers['frame.text'].send.frame: protocols.helpers['frame.text'].send.frame must be 'text' for utf8 messages
+  E_CONFIG_CONFLICT config protocols.helpers['frame.binary'].receive.frame: protocols.helpers['frame.binary'].receive.frame must be 'binary' for bytes messages
+  E_CONFIG_VALUE config protocols.helpers['frame.json'].receive.frame: protocols.helpers['frame.json'].receive.frame must be 'text' or 'binary'
+  E_CONFIG_VALUE config protocols.helpers['subprotocols.token'].subprotocols[0]: protocols.helpers['subprotocols.token'].subprotocols[0] must be a subprotocol token
+  E_CONFIG_VALUE config protocols.helpers['subprotocols.token'].subprotocols[1]: protocols.helpers['subprotocols.token'].subprotocols[1] must be a subprotocol token
+  E_CONFIG_VALUE config protocols.helpers['subprotocols.repeated'].subprotocols[1]: protocols.helpers['subprotocols.repeated'].subprotocols[1] repeats a subprotocol
+  E_CONFIG_VALUE config protocols.helpers['message.type'].compression: protocols.helpers['message.type'].compression must be a boolean
+  E_CONFIG_VALUE config protocols.helpers['message.type'].send: protocols.helpers['message.type'].send must be a message definition
+  E_CONFIG_UNKNOWN config protocols.helpers['message.type'].receive.extra: protocols.helpers['message.type'].receive has no key 'extra'

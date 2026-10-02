@@ -1,0 +1,60 @@
+# caching-backends pydantic_v2.BaseModel
+  > GET https://api.example.com/users/1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  backend miss = network 1:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"a"'), ('cache-control', 'max-age=0'), ('content-length', '21'), ('content-type', 'application/json')]
+  > GET https://api.example.com/users/1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "a"] b''
+  backend revalidated = revalidated 1:cat status=200 network=304 sends=1 attempts=1 type=application/json request_id=None headers=[('content-type', 'application/json'), ('etag', '"a"'), ('cache-control', 'max-age=60'), ('Content-Length', '21')]
+  backend fresh = fresh_cache 1:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('content-type', 'application/json'), ('etag', '"a"'), ('cache-control', 'max-age=60'), ('Content-Length', '21')]
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  backend list miss = network [1,2] status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '50'), ('content-type', 'application/json')]
+  backend list fresh = fresh_cache [1,2] status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '50')]
+# caching-backends pydantic_v2.dataclass
+  > GET https://api.example.com/users/1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  backend miss = network 1:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"a"'), ('cache-control', 'max-age=0'), ('content-length', '21'), ('content-type', 'application/json')]
+  > GET https://api.example.com/users/1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "a"] b''
+  backend revalidated = revalidated 1:cat status=200 network=304 sends=1 attempts=1 type=application/json request_id=None headers=[('content-type', 'application/json'), ('etag', '"a"'), ('cache-control', 'max-age=60'), ('Content-Length', '21')]
+  backend fresh = fresh_cache 1:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('content-type', 'application/json'), ('etag', '"a"'), ('cache-control', 'max-age=60'), ('Content-Length', '21')]
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  backend list miss = network [1,2] status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '50'), ('content-type', 'application/json')]
+  backend list fresh = fresh_cache [1,2] status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '50')]
+# caching-backends dataclasses.dataclass
+  > GET https://api.example.com/users/1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  backend miss = network 1:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"a"'), ('cache-control', 'max-age=0'), ('content-length', '21'), ('content-type', 'application/json')]
+  > GET https://api.example.com/users/1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "a"] b''
+  backend revalidated = revalidated 1:cat status=200 network=304 sends=1 attempts=1 type=application/json request_id=None headers=[('content-type', 'application/json'), ('etag', '"a"'), ('cache-control', 'max-age=60'), ('Content-Length', '21')]
+  backend fresh = fresh_cache 1:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('content-type', 'application/json'), ('etag', '"a"'), ('cache-control', 'max-age=60'), ('Content-Length', '21')]
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  backend list miss = network [1,2] status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '50'), ('content-type', 'application/json')]
+  backend list fresh = fresh_cache [1,2] status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '50')]
+# caching-backends typing.TypedDict
+  > GET https://api.example.com/users/1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  backend miss = network 1:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"a"'), ('cache-control', 'max-age=0'), ('content-length', '21'), ('content-type', 'application/json')]
+  > GET https://api.example.com/users/1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "a"] b''
+  backend revalidated = revalidated 1:cat status=200 network=304 sends=1 attempts=1 type=application/json request_id=None headers=[('content-type', 'application/json'), ('etag', '"a"'), ('cache-control', 'max-age=60'), ('Content-Length', '21')]
+  backend fresh = fresh_cache 1:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('content-type', 'application/json'), ('etag', '"a"'), ('cache-control', 'max-age=60'), ('Content-Length', '21')]
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  backend list miss = network [1,2] status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '50'), ('content-type', 'application/json')]
+  backend list fresh = fresh_cache [1,2] status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '50')]
+# caching-backends msgspec.Struct
+  > GET https://api.example.com/users/1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  backend miss = network 1:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"a"'), ('cache-control', 'max-age=0'), ('content-length', '21'), ('content-type', 'application/json')]
+  > GET https://api.example.com/users/1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "a"] b''
+  backend revalidated = revalidated 1:cat status=200 network=304 sends=1 attempts=1 type=application/json request_id=None headers=[('content-type', 'application/json'), ('etag', '"a"'), ('cache-control', 'max-age=60'), ('Content-Length', '21')]
+  backend fresh = fresh_cache 1:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('content-type', 'application/json'), ('etag', '"a"'), ('cache-control', 'max-age=60'), ('Content-Length', '21')]
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  backend list miss = network [1,2] status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '50'), ('content-type', 'application/json')]
+  backend list fresh = fresh_cache [1,2] status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '50')]

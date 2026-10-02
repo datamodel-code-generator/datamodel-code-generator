@@ -1,0 +1,23 @@
+# protocols-cache-errors
+render pydantic_v2.BaseModel
+  APIGenerationError
+  E_CONFIG_VALUE config protocols.helpers['bad.validator'].validator: protocols.helpers['bad.validator'].validator must be 'etag', 'last_modified' or 'both'
+  E_CONFIG_VALUE config protocols.helpers['bad.validator'].authenticated: protocols.helpers['bad.validator'].authenticated must be a boolean
+  E_CONFIG_VALUE config protocols.helpers['bad.missing'].validator: protocols.helpers['bad.missing'] needs 'validator'
+  E_CONFIG_VALUE config protocols.helpers['bad.missing'].authenticated: protocols.helpers['bad.missing'] needs 'authenticated'
+  E_CONFIG_VALUE config protocols.helpers['bad.vary'].vary_allowlist[0]: protocols.helpers['bad.vary'].vary_allowlist[0] must name a header, not '*'
+  E_CONFIG_VALUE config protocols.helpers['bad.vary'].vary_allowlist[3]: protocols.helpers['bad.vary'].vary_allowlist[3] must be a header name
+  E_CONFIG_VALUE config protocols.helpers['bad.repeated'].vary_allowlist[1]: protocols.helpers['bad.repeated'].vary_allowlist[1] repeats a header name
+  E_CONFIG_VALUE config protocols.helpers['bad.tags'].tags[0]: protocols.helpers['bad.tags'].tags[0] must be nonempty text whose braces each name a parameter
+  E_CONFIG_VALUE config protocols.helpers['bad.tags'].tags[1]: protocols.helpers['bad.tags'].tags[1] must be nonempty text whose braces each name a parameter
+  E_CONFIG_VALUE config protocols.helpers['bad.tags'].tags[2]: protocols.helpers['bad.tags'].tags[2] must be nonempty text whose braces each name a parameter
+  E_CONFIG_VALUE config protocols.helpers['bad.tags'].tags[3]: protocols.helpers['bad.tags'].tags[3] must be nonempty text whose braces each name a parameter
+  E_CONFIG_VALUE config protocols.helpers['bad.tags'].tags[6]: protocols.helpers['bad.tags'].tags[6] must be nonempty text whose braces each name a parameter
+  E_CONFIG_VALUE config protocols.helpers['bad.repeated_tags'].tags[1]: protocols.helpers['bad.repeated_tags'].tags[1] repeats a tag
+  E_CONFIG_VALUE config protocols.helpers['bad.statuses'].statuses[0]: protocols.helpers['bad.statuses'].statuses[0] must be a status from 100 to 599
+  E_CONFIG_VALUE config protocols.helpers['bad.mutations'].mutations: protocols.helpers['bad.mutations'].mutations has the key '_private', which is not a public method name
+  E_CONFIG_VALUE config protocols.helpers['bad.mutations'].mutations: protocols.helpers['bad.mutations'].mutations has the key 'class', which is not a public method name
+  E_CONFIG_VALUE config protocols.helpers['bad.mutations'].mutations: protocols.helpers['bad.mutations'].mutations has the key 5, which is not a public method name
+  E_CONFIG_VALUE config protocols.helpers['bad.mutations'].mutations['empty'].invalidate_tags: protocols.helpers['bad.mutations'].mutations['empty'].invalidate_tags must be a nonempty list
+  E_CONFIG_UNKNOWN config protocols.helpers['bad.mutations'].mutations['extra'].more: protocols.helpers['bad.mutations'].mutations['extra'] has no key 'more'
+  E_CONFIG_VALUE config protocols.helpers['bad.mutation_list'].mutations: protocols.helpers['bad.mutation_list'].mutations must be a mapping
