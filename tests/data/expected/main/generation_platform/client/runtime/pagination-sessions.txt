@@ -67,6 +67,17 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   items after the concurrent steps ['1']
   limiter sessions 1 named=True
+  default traversal: items=1001 failure=none progress={'pages': 1001, 'items': 1001, 'network_send_count': 3003, 'network_send_budget_used': 3003}
+  explicit page budget: items=2 failure=SessionLimitError: SessionLimitError(kind='pages', limit=2) [kind='pages', limit=2] session_limit_error progress={'pages': 2, 'items': 2, 'network_send_count': 6, 'network_send_budget_used': 6}
+  explicit send budget: items=1 failure=SessionLimitError: SessionLimitError(kind='network_sends', limit=3) [kind='network_sends', limit=3] session_limit_error progress={'pages': 1, 'items': 1, 'network_send_count': 3, 'network_send_budget_used': 3}
+  default item budget: items=100001 failure=none progress={'pages': 1, 'items': 100001, 'network_send_count': 1, 'network_send_budget_used': 1}
+  explicit item budget: items=100000 failure=SessionLimitError: SessionLimitError(kind='items', limit=100000) [kind='items', limit=100000] session_limit_error progress={'pages': 1, 'items': 100000, 'network_send_count': 1, 'network_send_budget_used': 1}
+  default session clock first = '1'
+  default session clock after former timeout = '2'
+    progress {'pages': 2, 'items': 2, 'network_send_count': 2, 'network_send_budget_used': 2}
+  explicit session clock first = '1'
+  explicit session clock after former timeout ! DeadlineExceededError: DeadlineExceededError(operation_id='listUsers', call_id='<call>', delivery_state='NOT_SENT', phase='unknown') [operation_id='listUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded_error
+    progress {'pages': 1, 'items': 1, 'network_send_count': 1, 'network_send_budget_used': 1}
   client with defaults of an unknown helper ! ProtocolConfigurationError: ProtocolConfigurationError(condition='unknown_field') [field_path=('protocols', 'defaults', 'users.everyone'), condition='unknown_field'] protocol_configuration_error
   async client with defaults of an unknown helper ! ProtocolConfigurationError: ProtocolConfigurationError(condition='unknown_field') [field_path=('protocols', 'defaults', 'users.everyone'), condition='unknown_field'] protocol_configuration_error
   client with defaults of an options of another kind ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('protocols', 'defaults', 'users.all', 'options'), condition='invalid_value'] protocol_configuration_error
@@ -125,6 +136,17 @@
   item before closing the client = '1'
   item after closing the client ! ClientClosedError: ClientClosedError(operation_id='listUsers', call_id='<call>', state='CLOSED', owner='client') [operation_id='listUsers'] client_closed_error
   item after the closed client ! ProtocolStateError: ProtocolStateError(state='failed', action='next') [] protocol_state_error
+  async default traversal: items=1001 failure=none progress={'pages': 1001, 'items': 1001, 'network_send_count': 3003, 'network_send_budget_used': 3003}
+  async explicit page budget: items=2 failure=SessionLimitError: SessionLimitError(kind='pages', limit=2) [kind='pages', limit=2] session_limit_error progress={'pages': 2, 'items': 2, 'network_send_count': 6, 'network_send_budget_used': 6}
+  async explicit send budget: items=1 failure=SessionLimitError: SessionLimitError(kind='network_sends', limit=3) [kind='network_sends', limit=3] session_limit_error progress={'pages': 1, 'items': 1, 'network_send_count': 3, 'network_send_budget_used': 3}
+  async default item budget: items=100001 failure=none progress={'pages': 1, 'items': 100001, 'network_send_count': 1, 'network_send_budget_used': 1}
+  async explicit item budget: items=100000 failure=SessionLimitError: SessionLimitError(kind='items', limit=100000) [kind='items', limit=100000] session_limit_error progress={'pages': 1, 'items': 100000, 'network_send_count': 1, 'network_send_budget_used': 1}
+  async default session clock first = User(id='1', name=None)
+  async default session clock after former timeout = User(id='2', name=None)
+    progress {'pages': 2, 'items': 2, 'network_send_count': 2, 'network_send_budget_used': 2}
+  async explicit session clock first = User(id='1', name=None)
+  async explicit session clock after former timeout ! DeadlineExceededError: DeadlineExceededError(operation_id='listUsers', call_id='<call>', delivery_state='NOT_SENT', phase='unknown') [operation_id='listUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded_error
+    progress {'pages': 1, 'items': 1, 'network_send_count': 1, 'network_send_budget_used': 1}
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?cursor=a

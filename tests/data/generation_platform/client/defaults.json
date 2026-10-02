@@ -46,5 +46,19 @@
     "explicit_cap": 8,
     "error_bytes": 65537,
     "error_cap": 65536
+  },
+  "pagination_limits": {
+    "pages": 1001,
+    "items": 100001,
+    "retries_per_page": 2,
+    "explicit_pages": 2,
+    "explicit_items": 100000,
+    "explicit_sends": 3,
+    "total_timeout": 300,
+    "clock_step": 301
+  },
+  "upload_limits": {
+    "total_timeout": 600,
+    "clock_step": 601
   }
 }

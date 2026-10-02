@@ -782,12 +782,12 @@ another kind's options, fail construction. The session types are imported from:
 
 | Limit | Effective default |
 |---|---|
-| pages per session | 1000; None removes it |
-| items per session | 100000; None removes it, and 0 ends a pager at once |
+| pages per session | None (no limit) |
+| items per session | None (no limit); 0 ends a pager at once |
 | decoded body per page | 8 MiB |
 | cursor size | 64 KiB |
-| session total timeout | 300 seconds; None removes it |
-| network sends per session | 3000; None removes it |
+| session total timeout | None (no limit) |
+| network sends per session | None (no limit) |
 
 A page's items must be a JSON array. Each value a binding reads is sent as it came, without its target's schema
 checks; a dot segment for a path parameter, and a missing binding value, raise `ProtocolDataError`. A limit reached

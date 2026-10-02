@@ -492,9 +492,21 @@ the client's clock
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
   > PATCH https://api.example.com/files/u41
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, content-type: application/offset+octet-stream, content-length: 4] b'0123'
-  advance = progress 4/10 complete=False
+  explicit advance = progress 4/10 complete=False
   resume a checkpoint whose expiry the clock passed ! UploadExpiredError: UploadExpiredError(condition='expired') [condition='expired'] upload_expired_error
-  advance once the clock passed the session's total timeout ! DeadlineExceededError: DeadlineExceededError(operation_id='appendFile', call_id='<call>', delivery_state='NOT_SENT', phase='unknown') [operation_id='appendFile', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded_error [phase='unknown']
+  explicit advance once the clock passed the former session timeout ! DeadlineExceededError: DeadlineExceededError(operation_id='appendFile', call_id='<call>', delivery_state='NOT_SENT', phase='unknown') [operation_id='appendFile', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded_error [phase='unknown']
+  > POST https://api.example.com/files
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
+  > PATCH https://api.example.com/files/u42
+    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, content-type: application/offset+octet-stream, content-length: 4] b'0123'
+  default advance = progress 4/10 complete=False
+  resume a checkpoint whose expiry the clock passed ! UploadExpiredError: UploadExpiredError(condition='expired') [condition='expired'] upload_expired_error
+  > PATCH https://api.example.com/files/u42
+    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 4, tus-resumable: 1.0.0, x-chunk-length: 4, content-type: application/offset+octet-stream, content-length: 4] b'4567'
+  default advance once the clock passed the former session timeout = progress 8/10 complete=False
+  > PATCH https://api.example.com/files/u42
+    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, x-chunk-length: 2, content-type: application/offset+octet-stream, content-length: 2] b'89'
+  default upload completes = None
 refused options
   start with too many chunks ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('upload_options', 'max_parts'), condition='invalid_value'] protocol_configuration_error
   start with a digest list over the checkpoint limit ! ProtocolSizeError: ProtocolSizeError(kind='part_manifest', limit=15728640, observed=17066668) [kind='part_manifest', unit='bytes', limit=15728640] protocol_size_error
@@ -508,7 +520,7 @@ refused options
 a session's send limit
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
-  > PATCH https://api.example.com/files/u42
+  > PATCH https://api.example.com/files/u43
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, content-type: application/offset+octet-stream, content-length: 4] b'0123'
   advance = progress 4/10 complete=False
   advance ! SessionLimitError: SessionLimitError(operation_id='appendFile', call_id='<call>', kind='network_sends', limit=2) [operation_id='appendFile', kind='network_sends', limit=2, cause=BudgetExceededError()] session_limit_error resume_state=True
@@ -516,7 +528,7 @@ a session's send limit
 defaults from the client
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
-  > PATCH https://api.example.com/files/u43
+  > PATCH https://api.example.com/files/u44
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 2, content-type: application/offset+octet-stream, content-length: 2] b'01'
   advance two bytes = progress 2/10 complete=False
 steps during a step
@@ -526,7 +538,7 @@ steps during a step
   checkpoint during a step: ResumeState
   close during a step ! ProtocolStateError: ProtocolStateError(state='uploading', action='close') [] protocol_state_error
   leave a block with an error during a step = None
-  > PATCH https://api.example.com/files/u44
+  > PATCH https://api.example.com/files/u45
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, content-type: application/offset+octet-stream, content-length: 4] b'0123'
   advance = progress 4/10 complete=False
   advance after close ! ProtocolStateError: ProtocolStateError(state='closed', action='advance') [] protocol_state_error
@@ -535,116 +547,116 @@ steps during a step
 async uploads
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
-  > PATCH https://api.example.com/files/u45
+  > PATCH https://api.example.com/files/u46
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, content-type: application/offset+octet-stream, content-length: 4] b'0123'
   advance = progress 4/10 complete=False
-  > PATCH https://api.example.com/files/u45
+  > PATCH https://api.example.com/files/u46
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 4, tus-resumable: 1.0.0, x-chunk-length: 4, content-type: application/offset+octet-stream, content-length: 4] b'4567'
-  > HEAD https://api.example.com/files/u45
+  > HEAD https://api.example.com/files/u46
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
-  > PATCH https://api.example.com/files/u45
+  > PATCH https://api.example.com/files/u46
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 6, tus-resumable: 1.0.0, x-chunk-length: 2, content-type: application/offset+octet-stream, content-length: 2] b'67'
   advance = progress 8/10 complete=False
-  > PATCH https://api.example.com/files/u45
+  > PATCH https://api.example.com/files/u46
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, x-chunk-length: 2, content-type: application/offset+octet-stream, content-length: 2] b'89'
   run = None
   run again = None
   advance after completion = progress 10/10 complete=True
-  stored u45: 10 bytes, original=True
+  stored u46: 10 bytes, original=True
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
-  > PATCH https://api.example.com/files/u46
+  > PATCH https://api.example.com/files/u47
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, content-type: application/offset+octet-stream, content-length: 4] b'0123'
-  > HEAD https://api.example.com/files/u46
+  > HEAD https://api.example.com/files/u47
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
   advance over a lost acknowledgement = progress 4/10 complete=False
-  > PATCH https://api.example.com/files/u46
+  > PATCH https://api.example.com/files/u47
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 4, tus-resumable: 1.0.0, x-chunk-length: 4, content-type: application/offset+octet-stream, content-length: 4] b'4567'
   advance = progress 8/10 complete=False
-  > PATCH https://api.example.com/files/u46
+  > PATCH https://api.example.com/files/u47
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, x-chunk-length: 2, content-type: application/offset+octet-stream, content-length: 2] b'89'
   advance stored but refused ! AppendFileHTTPError: AppendFileHTTPError(status_code=503, operation_id='appendFile', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='appendFile', status_code=503, error_decoded=False, body_bytes=b'', truncated=False] append_file_http_error
-  > HEAD https://api.example.com/files/u46
+  > HEAD https://api.example.com/files/u47
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
   advance probes first = progress 10/10 complete=True
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
-  > PATCH https://api.example.com/files/u47
+  > PATCH https://api.example.com/files/u48
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, content-type: application/offset+octet-stream, content-length: 4] b'0123'
   advance stored but refused ! AppendFileHTTPError: AppendFileHTTPError(status_code=503, operation_id='appendFile', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='appendFile', status_code=503, error_decoded=False, body_bytes=b'', truncated=False] append_file_http_error
-  > HEAD https://api.example.com/files/u47
+  > HEAD https://api.example.com/files/u48
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
-  > PATCH https://api.example.com/files/u47
+  > PATCH https://api.example.com/files/u48
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 4, tus-resumable: 1.0.0, x-chunk-length: 4, content-type: application/offset+octet-stream, content-length: 4] b'4567'
-  > PATCH https://api.example.com/files/u47
+  > PATCH https://api.example.com/files/u48
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, x-chunk-length: 2, content-type: application/offset+octet-stream, content-length: 2] b'89'
   run probes first = None
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
-  > PATCH https://api.example.com/files/u48
+  > PATCH https://api.example.com/files/u49
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-length: 8] b'01234567'
-  > PATCH https://api.example.com/files/u48
+  > PATCH https://api.example.com/files/u49
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-length: 2] b'89'
-  > POST https://api.example.com/files/u48/complete
+  > POST https://api.example.com/files/u49/complete
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json] b''
-  run with a completion = Stored(id='u48', size=10, sha256='84d89877f0d4041efb6bf91a16f0248f2fd573e6af05c19f96bedb9f882f7882')
+  run with a completion = Stored(id='u49', size=10, sha256='84d89877f0d4041efb6bf91a16f0248f2fd573e6af05c19f96bedb9f882f7882')
   completion digest is the original's: True
   resume the complete upload = AsyncUploadHandle(phase='complete', confirmed_bytes=10, total_bytes=10)
-  run it = Stored(id='u48', size=10, sha256='84d89877f0d4041efb6bf91a16f0248f2fd573e6af05c19f96bedb9f882f7882')
+  run it = Stored(id='u49', size=10, sha256='84d89877f0d4041efb6bf91a16f0248f2fd573e6af05c19f96bedb9f882f7882')
   start with longer content than its identity ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent') [condition='inconsistent'] upload_source_changed_error expected=10 actual=11
 async resume and refusals
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
-  > PATCH https://api.example.com/files/u49
+  > PATCH https://api.example.com/files/u50
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, content-type: application/offset+octet-stream, content-length: 4] b'0123'
   advance = progress 4/10 complete=False
   advance after aclose ! ProtocolStateError: ProtocolStateError(state='closed', action='advance') [] protocol_state_error
-  > HEAD https://api.example.com/files/u49
+  > HEAD https://api.example.com/files/u50
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
   resume = AsyncUploadHandle(phase='uploading', confirmed_bytes=4, total_bytes=10)
-  > PATCH https://api.example.com/files/u49
+  > PATCH https://api.example.com/files/u50
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 4, tus-resumable: 1.0.0, x-chunk-length: 4, content-type: application/offset+octet-stream, content-length: 4] b'4567'
-  > PATCH https://api.example.com/files/u49
+  > PATCH https://api.example.com/files/u50
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, x-chunk-length: 2, content-type: application/offset+octet-stream, content-length: 2] b'89'
   run = None
   start with a synchronous source ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('source',), condition='wrong_capability'] protocol_configuration_error
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
-  > PATCH https://api.example.com/files/u50
+  > PATCH https://api.example.com/files/u51
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-length: 8] b'01234567'
-  > PATCH https://api.example.com/files/u50
+  > PATCH https://api.example.com/files/u51
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-length: 2] b'89'
-  > POST https://api.example.com/files/u50/complete
+  > POST https://api.example.com/files/u51/complete
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json] b''
   run with a completion of unknown outcome ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete', cause=TransportError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
   resume it ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
-  > PATCH https://api.example.com/files/u51
+  > PATCH https://api.example.com/files/u52
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, content-type: application/offset+octet-stream, content-length: 4] b'0123'
-  > HEAD https://api.example.com/files/u51
+  > HEAD https://api.example.com/files/u52
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
   advance with probes that never answer ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='append') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='append', cause=TransportError()] upload_delivery_unknown_error [phase='append'] resume_state=True
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
-  > PATCH https://api.example.com/files/u52
+  > PATCH https://api.example.com/files/u53
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, content-type: application/offset+octet-stream, content-length: 4] b'0123'
   advance = progress 4/10 complete=False
-  > PATCH https://api.example.com/files/u52
+  > PATCH https://api.example.com/files/u53
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 4, tus-resumable: 1.0.0, x-chunk-length: 4, content-type: application/offset+octet-stream, content-length: 4] b'4567'
-  > HEAD https://api.example.com/files/u52
+  > HEAD https://api.example.com/files/u53
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
   advance to a regressed offset ! UploadOffsetError: UploadOffsetError(condition='inconsistent', confirmed_offset=4, expected_offset=8, remote_offset=0, size=10) [condition='inconsistent', location=HeaderSelector(name='Upload-Offset', occurrence='single')] upload_offset_error [confirmed_offset=4, expected_offset=8, remote_offset=0, size=10] resume_state=True
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
-  > PATCH https://api.example.com/files/u53
+  > PATCH https://api.example.com/files/u54
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-length: 8] b'01234567'
-  > GET https://api.example.com/files/u53/status
+  > GET https://api.example.com/files/u54/status
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   advance with a forbidden partial commit ! UploadOffsetError: UploadOffsetError(condition='inconsistent', confirmed_offset=0, expected_offset=8, remote_offset=5, size=10) [condition='inconsistent', location=BodySelector(pointer='/offset')] upload_offset_error [confirmed_offset=0, expected_offset=8, remote_offset=5, size=10] resume_state=True
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
-  > PATCH https://api.example.com/files/u54
+  > PATCH https://api.example.com/files/u55
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, content-type: application/offset+octet-stream, content-length: 4] b'0123'
   advance = progress 4/10 complete=False
   advance past the send limit ! SessionLimitError: SessionLimitError(operation_id='appendFile', call_id='<call>', kind='network_sends', limit=2) [operation_id='appendFile', kind='network_sends', limit=2, cause=BudgetExceededError()] session_limit_error resume_state=True
@@ -654,28 +666,28 @@ async resume and refusals
 async append cancelled in flight
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
-  > PATCH https://api.example.com/files/u56
+  > PATCH https://api.example.com/files/u57
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, content-type: application/offset+octet-stream, content-length: 4] b'0123'
   advance cancelled
-  > HEAD https://api.example.com/files/u56
+  > HEAD https://api.example.com/files/u57
     [host: api.example.com, accept-encoding: gzip, deflate, tus-resumable: 1.0.0] b''
-  > PATCH https://api.example.com/files/u56
+  > PATCH https://api.example.com/files/u57
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, content-type: application/offset+octet-stream, content-length: 4] b'0123'
-  > PATCH https://api.example.com/files/u56
+  > PATCH https://api.example.com/files/u57
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 4, tus-resumable: 1.0.0, x-chunk-length: 4, content-type: application/offset+octet-stream, content-length: 4] b'4567'
-  > PATCH https://api.example.com/files/u56
+  > PATCH https://api.example.com/files/u57
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, x-chunk-length: 2, content-type: application/offset+octet-stream, content-length: 2] b'89'
   run probes first = None
 async completion cancelled in flight
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
-  > PATCH https://api.example.com/files/u57
+  > PATCH https://api.example.com/files/u58
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-length: 8] b'01234567'
   advance = progress 8/10 complete=False
-  > PATCH https://api.example.com/files/u57
+  > PATCH https://api.example.com/files/u58
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, content-type: application/offset+octet-stream, content-length: 2] b'89'
   advance = progress 10/10 complete=False
-  > POST https://api.example.com/files/u57/complete
+  > POST https://api.example.com/files/u58/complete
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json] b''
   run cancelled
   run again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
@@ -684,20 +696,37 @@ async file source
   source AsyncFileUploadSource(size=10)
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
-  > PATCH https://api.example.com/files/u58
+  > PATCH https://api.example.com/files/u59
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, content-type: application/offset+octet-stream, content-length: 4] b'0123'
-  > PATCH https://api.example.com/files/u58
+  > PATCH https://api.example.com/files/u59
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 4, tus-resumable: 1.0.0, x-chunk-length: 4, content-type: application/offset+octet-stream, content-length: 4] b'4567'
-  > PATCH https://api.example.com/files/u58
+  > PATCH https://api.example.com/files/u59
     [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, x-chunk-length: 2, content-type: application/offset+octet-stream, content-length: 2] b'89'
   run = None
-  stored u58: 10 bytes, original=True
+  stored u59: 10 bytes, original=True
   file range b'234', after close b''
   start after the file changed ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', offset=0) [condition='inconsistent'] upload_source_changed_error
   start after the source closed ! ProtocolStateError: ProtocolStateError(state='closed', action='open_range') [] protocol_state_error
   hash a directory ! NonResumableSourceError: NonResumableSourceError(condition='wrong_capability', source_kind='stream') [field_path=('source',), condition='wrong_capability'] non_resumable_source_error
   hash a missing file ! FileNotFoundError
   async ranges: b'23' b'4' b'' after close b'', past the end refused
+  > POST https://api.example.com/files
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
+  > PATCH https://api.example.com/files/u60
+    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, content-type: application/offset+octet-stream, content-length: 4] b'0123'
+  async explicit advance = progress 4/10 complete=False
+  async explicit advance after former timeout ! DeadlineExceededError: DeadlineExceededError(operation_id='appendFile', call_id='<call>', delivery_state='NOT_SENT', phase='unknown') [operation_id='appendFile', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='unknown'] deadline_exceeded_error [phase='unknown']
+  > POST https://api.example.com/files
+    [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
+  > PATCH https://api.example.com/files/u61
+    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 0, tus-resumable: 1.0.0, x-chunk-length: 4, content-type: application/offset+octet-stream, content-length: 4] b'0123'
+  async default advance = progress 4/10 complete=False
+  > PATCH https://api.example.com/files/u61
+    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 4, tus-resumable: 1.0.0, x-chunk-length: 4, content-type: application/offset+octet-stream, content-length: 4] b'4567'
+  async default advance after former timeout = progress 8/10 complete=False
+  > PATCH https://api.example.com/files/u61
+    [host: api.example.com, accept-encoding: gzip, deflate, upload-offset: 8, tus-resumable: 1.0.0, x-chunk-length: 2, content-type: application/offset+octet-stream, content-length: 2] b'89'
+  async default upload completes = None
 file ranges after FIFO replacement (where supported)
   sync open_range ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', offset=2) [condition='inconsistent'] upload_source_changed_error [offset=2] expected=10
   async open_range ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', offset=2) [condition='inconsistent'] upload_source_changed_error [offset=2] expected=10

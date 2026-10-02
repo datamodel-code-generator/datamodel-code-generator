@@ -673,7 +673,7 @@ and idempotency key; the session bounds all of them. Each limit comes from the c
 | chunk size | 8 MiB, or the helper's smaller `max_chunk_bytes` |
 | chunks per upload | 10000; None removes it |
 | probes after an append of unknown outcome | 3; 0 probes none |
-| session total timeout | 600 seconds from `start` or `resume`, the reading of the source included; None removes it |
+| session total timeout | None (no limit), including reading the source at `start` or `resume` |
 | network sends per session | 10000; None removes it |
 
 A source has an immutable identity, its size and SHA-256 digest, and opens an independent reader for each range. Before
