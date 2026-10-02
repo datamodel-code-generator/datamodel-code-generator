@@ -205,7 +205,6 @@ if TYPE_CHECKING:
             raise NotImplementedError
 
 
-MAX_RESPONSE_BYTES: Final = 16 * 1024 * 1024
 MAX_ERROR_BODY_BYTES: Final = 64 * 1024
 CLEANUP_TIMEOUT: Final = 5.0
 _ACCEPT_ENCODING: Final = ("Accept-Encoding", "gzip, deflate")
@@ -355,7 +354,7 @@ def _client_settings(options: object, defaults: ClientDefaults) -> Settings:
     settings = Settings(
         None,
         _DEFAULT_SERVER,
-        MAX_RESPONSE_BYTES,
+        None,
         MAX_ERROR_BODY_BYTES,
         CLEANUP_TIMEOUT,
         None,

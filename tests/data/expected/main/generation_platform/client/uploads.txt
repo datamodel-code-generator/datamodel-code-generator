@@ -338,4 +338,4 @@ render pydantic_v2.BaseModel
   /selection/selected_operations/5 files.complete_file(path:fileId=file_id)
     exports client.types.files.CompleteFileResponse client.types.files.CompleteFileErrorData client.types.files.CompleteFileHTTPError
     exports client.types.files.CompleteFileRequestCodecs None
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

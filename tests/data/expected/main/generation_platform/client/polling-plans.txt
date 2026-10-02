@@ -529,7 +529,7 @@ render pydantic_v2.dataclass
   /selection/selected_operations/10 reports.add_note()
     exports client.types.reports.AddNoteResponse client.types.reports.AddNoteErrorData client.types.reports.AddNoteHTTPError
     exports client.types.reports.AddNoteRequestCodecs None
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
   S_OPERATION_EXCLUDED selection /paths/~1archives/post: POST /archives is excluded by exclude_tags 'archives': Archives have no success response
   S_OPERATION_EXCLUDED selection /paths/~1archives~1search/post: POST /archives/search is excluded by exclude_tags 'archives': Archives have no success response
 render dataclasses.dataclass
@@ -1062,7 +1062,7 @@ render dataclasses.dataclass
   /selection/selected_operations/10 reports.add_note()
     exports client.types.reports.AddNoteResponse client.types.reports.AddNoteErrorData client.types.reports.AddNoteHTTPError
     exports client.types.reports.AddNoteRequestCodecs None
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
   S_OPERATION_EXCLUDED selection /paths/~1archives/post: POST /archives is excluded by exclude_tags 'archives': Archives have no success response
   S_OPERATION_EXCLUDED selection /paths/~1archives~1search/post: POST /archives/search is excluded by exclude_tags 'archives': Archives have no success response
 render typing.TypedDict
@@ -1595,7 +1595,7 @@ render typing.TypedDict
   /selection/selected_operations/10 reports.add_note()
     exports client.types.reports.AddNoteResponse client.types.reports.AddNoteErrorData client.types.reports.AddNoteHTTPError
     exports client.types.reports.AddNoteRequestCodecs None
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
   S_OPERATION_EXCLUDED selection /paths/~1archives/post: POST /archives is excluded by exclude_tags 'archives': Archives have no success response
   S_OPERATION_EXCLUDED selection /paths/~1archives~1search/post: POST /archives/search is excluded by exclude_tags 'archives': Archives have no success response
 render msgspec.Struct
@@ -2128,6 +2128,6 @@ render msgspec.Struct
   /selection/selected_operations/10 reports.add_note()
     exports client.types.reports.AddNoteResponse client.types.reports.AddNoteErrorData client.types.reports.AddNoteHTTPError
     exports client.types.reports.AddNoteRequestCodecs None
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'msgspec>=0.18']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'msgspec>=0.18']
   S_OPERATION_EXCLUDED selection /paths/~1archives/post: POST /archives is excluded by exclude_tags 'archives': Archives have no success response
   S_OPERATION_EXCLUDED selection /paths/~1archives~1search/post: POST /archives/search is excluded by exclude_tags 'archives': Archives have no success response

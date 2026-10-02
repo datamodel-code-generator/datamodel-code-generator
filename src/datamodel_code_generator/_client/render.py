@@ -265,7 +265,6 @@ _ERROR_NAMES: Final = (
     "HTTPStatusError",
     "HookExecutionError",
     "IOPhase",
-    "InsufficientScopeError",
     "LimiterExecutionError",
     "OAuthExchangeError",
     "PhaseTimeoutError",
@@ -4050,9 +4049,16 @@ deadline. The origin allowlist and HTTPS downgrade permission are separate; cred
 original request are stripped on an origin change. Invalid/multiple Location, loops, limits, and rejected hops raise
 `RedirectPolicyError` with `body_available=False` and delivery/response metadata when available.
 
-`TransportOptions` belongs only to `ClientOptions`: verify=True, ssl_context=None, proxy=None, trust_env=False,
+`TransportOptions` belongs only to `ClientOptions`: verify=True, ssl_context=None, proxy=None, trust_env=True,
 http2=False, max_connections=100, max_keepalive_connections=20, keepalive_expiry=5, retry_owner="sdk".
-An SSLContext supplies TLS settings and conflicts with any explicit verify override. HTTP/2 is explicit and requires
+SDK-created HTTP clients honor proxy and CA environment settings with trust_env=True, preserving native system
+trust. With trust_env=False, default origin TLS and an explicit HTTPS proxy's independent default TLS use certifi's
+Mozilla public-root bundle without CA environment overrides. Plain HTTP proxies retain native behavior. Caller
+ssl_context or verify=False controls origin TLS; injected native clients retain their settings and ownership.
+For enterprise roots with trust_env=False, supply an SSLContext.
+Buffered success responses have no default size cap; explicit max_response_bytes still applies, and error bodies
+retain their 64 KiB default cap. An SSLContext supplies TLS settings and conflicts with any explicit verify override.
+HTTP/2 is explicit and requires
 its dependency. Injected native clients retain their pool/proxy/TLS construction; incompatible construction settings
 are rejected. Borrowed clients/adapters are not closed; `OwnedTransportAdapter` transfers adapter ownership.
 `retry_owner="transport"` requires an explicitly injected adapter with the declared internal retry/deadline/body
@@ -4082,7 +4088,7 @@ or token HTTP. `EnvironmentCredentialProvider(variable_name, kind="api_key")` re
 its async counterpart has the same explicit selection. Imports and constructors do not discover environment secrets.
 
 Known scopes are canonical tuples: None means unknown and leaves authorization to the server; () is known empty.
-Insufficient known grants fail before sending with `InsufficientScopeError`; 403 never expands scope automatically.
+Token grants are metadata; the resource server authorizes scopes. A 403 never expands scope or triggers recovery.
 Provider contexts carry current origin/deadline/cancellation/requirements, and audience is currently None.
 Borrow providers by default; only `OwnedCredentialProvider` transfers a closeable provider to the root scope.
 Views share that ownership. Provider and signer callbacks consume the call deadline; synchronous callbacks are
@@ -4309,7 +4315,7 @@ and idempotency key; the session bounds all of them. Each limit comes from the c
 | chunk size | 8 MiB, or the helper's smaller `max_chunk_bytes` |
 | chunks per upload | 10000; None removes it |
 | probes after an append of unknown outcome | 3; 0 probes none |
-| session total timeout | 600 seconds from `start` or `resume`, the reading of the source included; None removes it |
+| session total timeout | None (no limit), including reading the source at `start` or `resume` |
 | network sends per session | 10000; None removes it |
 
 A source has an immutable identity, its size and SHA-256 digest, and opens an independent reader for each range. Before
@@ -4447,11 +4453,11 @@ another kind's options, fail construction. The session types are imported from:
 
 | Limit | Effective default |
 |---|---|
-| pages per session | 1000; None removes it |
-| items per session | 100000; None removes it, and 0 ends a pager at once |
+| pages per session | None (no limit) |
+| items per session | None (no limit); 0 ends a pager at once |
 | decoded body per page | 8 MiB |
-{size}| session total timeout | 300 seconds; None removes it |
-| network sends per session | 3000; None removes it |
+{size}| session total timeout | None (no limit) |
+| network sends per session | None (no limit) |
 
 {rules}
 {self.count_runtime(kinds)}{self.follow_runtime(kinds)}{_RESUME_RUNTIME}"""

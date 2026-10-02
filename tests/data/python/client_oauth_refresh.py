@@ -108,10 +108,14 @@ def _reply(responses: ModuleType, payload: object, status: int = 200) -> Respons
     return Response(responses, status, json.dumps(payload).encode())
 
 
-def _expiry(package: ModuleType, auth: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]) -> None:
+def _expiry(
+    package: ModuleType, auth: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
+) -> None:
     """Renew a token a tenth of its lifetime early, but serve one without a refresh token until it expires."""
     now = time.monotonic()
-    timed = auth.OAuthProviderOptions(clock=importlib.import_module(f"{package.__name__}.options").Clock(monotonic=lambda: now))
+    timed = auth.OAuthProviderOptions(
+        clock=importlib.import_module(f"{package.__name__}.options").Clock(monotonic=lambda: now)
+    )
     for refresh in ("refresh-1", None):
         adapter = _Sent(transports, _reply(responses, _ROTATED))
         with auth.RefreshTokenProvider(
@@ -130,7 +134,9 @@ def _expiry(package: ModuleType, auth: ModuleType, transports: ModuleType, respo
                 f" same={family.get(_context(auth)) is first if refresh is None else None}"
             )
             now = start + 101
-            lines.append(f"    after 101s = {_outcome(lambda family=family: family.get(_context(auth)))} sent={adapter.refresh_tokens}")
+            lines.append(
+                f"    after 101s = {_outcome(lambda family=family: family.get(_context(auth)))} sent={adapter.refresh_tokens}"
+            )
     errors = importlib.import_module(f"{package.__name__}.errors")
     unsent = errors.TransportError(delivery_state=errors.DeliveryState.NOT_SENT, phase="connect")
     adapter = _Sent(transports, unsent, unsent, unsent, evidence=True)
@@ -228,8 +234,14 @@ def _configuration(auth: ModuleType, transports: ModuleType, lines: list[str]) -
                 _TOKEN, client_id="c", token_set=tokens, client_auth_method="none", token_transport=Adapter(transports)
             ),
         ),
-        ("lone scope string", lambda: provider(_TOKEN, client_id="c", token_set=tokens, client_secret=secret, scopes="a")),
-        ("empty audience", lambda: provider(_TOKEN, client_id="c", token_set=tokens, client_secret=secret, audience="")),
+        (
+            "lone scope string",
+            lambda: provider(_TOKEN, client_id="c", token_set=tokens, client_secret=secret, scopes="a"),
+        ),
+        (
+            "empty audience",
+            lambda: provider(_TOKEN, client_id="c", token_set=tokens, client_secret=secret, audience=""),
+        ),
         ("options type", lambda: provider(_TOKEN, client_id="c", token_set=tokens, client_secret=secret, options=1)),
     )
     for label, call in cases:
@@ -288,7 +300,9 @@ def _wire(package: ModuleType, auth: ModuleType, options: ModuleType, lines: lis
         json_reply(200, _ROTATED),
         json_reply(200, {"access_token": "access-3", "token_type": "Bearer", "expires_in": 3600, "scope": "read"}),
     )
-    with provider(_tokens(auth, minutes=-1, scopes=("read", "write")), scopes=("write", "read"), audience="api") as family:
+    with provider(
+        _tokens(auth, minutes=-1, scopes=("read", "write")), scopes=("write", "read"), audience="api"
+    ) as family:
         first = family.get(_context(auth))
         lines.append(f"  basic = {_material(first)}")
         lines.append(f"    cached for the configured audience = {family.get(_context(auth, audience='api')) is first}")
@@ -315,7 +329,9 @@ def _wire(package: ModuleType, auth: ModuleType, options: ModuleType, lines: lis
     with provider(_tokens(auth, minutes=-1), "none") as public:
         lines.append(f"  public client keeping its refresh token = {_outcome(lambda: public.get(_context(auth)))}")
         public.invalidate(public.get(_context(auth)).version)
-        lines.append(f"    no refresh token was spent = {_outcome(lambda: public.replace_token_set(_tokens(auth, revision=2)))}")
+        lines.append(
+            f"    no refresh token was spent = {_outcome(lambda: public.replace_token_set(_tokens(auth, revision=2)))}"
+        )
     failures: tuple[tuple[str, Callable[..., Any]], ...] = (
         ("invalid grant", json_reply(400, {"error": "invalid_grant"})),
         ("rejected scope", json_reply(400, {"error": "invalid_scope"})),
@@ -358,11 +374,25 @@ def _generated(
 ) -> None:
     """Authenticate generated calls with the family's token, refreshing it once a resource rejects it."""
     ok = raw_response(200, b"ok", "application/octet-stream")
-    exchange.respond(ok, raw_response(401, b"rejected", "application/octet-stream", **_REJECTED), json_reply(200, _ROTATED), ok)
+    forbidden = raw_response(
+        403, b"forbidden", "application/octet-stream", **{"WWW-Authenticate": 'Bearer error="insufficient_scope"'}
+    )
+    exchange.respond(
+        ok,
+        raw_response(401, b"rejected", "application/octet-stream", **_REJECTED),
+        json_reply(200, {**_ROTATED, "scope": "read"}),
+        ok,
+        forbidden,
+        forbidden,
+        json_reply(200, {**_ROTATED, "scope": "read"}),
+        ok,
+        forbidden,
+    )
+    first_line = len(lines)
     retry = options.RetryOptions(initial_delay=0)
     with (
-        provider(_tokens(auth, scopes=("read", "write"))) as family,
-        provider(_tokens(auth, minutes=-1, scopes=("read",))) as narrow,
+        provider(_tokens(auth, scopes=("read", "write")), scopes=("read", "write")) as family,
+        provider(_tokens(auth, minutes=-1, scopes=("read",)), scopes=("read", "write")) as narrow,
         exchange.client() as native,
         package.Client(
             http_client=native, options=options.ClientOptions(auth=auth.AuthConfig({"oauth": family}), retry=retry)
@@ -370,8 +400,22 @@ def _generated(
     ):
         record(lines, "generated call", api.auth.with_response.oauth_read)
         record(lines, "rejected token refreshed", api.auth.with_response.oauth_read)
+        record(lines, "refreshed narrow grant refused by resource", api.auth.with_response.oauth_scopes)
+        record(lines, "403 leaves the refreshed grant unchanged", api.auth.with_response.oauth_scopes)
         narrowed = options.RequestOptions(auth=auth.AuthConfig({"oauth": narrow}))
-        record(lines, "write operation beyond the known grants", lambda: api.auth.with_response.oauth_scopes(options=narrowed))
+        record(
+            lines,
+            "expired narrow grant refreshed and accepted",
+            lambda: api.auth.with_response.oauth_read(options=narrowed),
+        )
+        record(
+            lines, "write operation refused by resource", lambda: api.auth.with_response.oauth_scopes(options=narrowed)
+        )
+        lines.append(
+            f"    token_requests={sum(line.startswith('  > POST') for line in lines[first_line:])}"
+            f" resource_arrivals={sum(line.startswith('  > GET') for line in lines[first_line:])}"
+            f" refreshed_grants={family.get(_context(auth)).token.scopes}"
+        )
 
 
 def _faults(  # noqa: PLR0913, PLR0915
@@ -384,7 +428,9 @@ def _faults(  # noqa: PLR0913, PLR0915
     lines: list[str],
 ) -> None:
     """Keep the refresh token of a refresh that sent nothing, and spend it once a request may have delivered it."""
-    read = errors.PhaseTimeoutError(effective_timeout=15.0, delivery_state=errors.DeliveryState.MAYBE_SENT, phase="read")
+    read = errors.PhaseTimeoutError(
+        effective_timeout=15.0, delivery_state=errors.DeliveryState.MAYBE_SENT, phase="read"
+    )
     unsent = errors.TransportError(delivery_state=errors.DeliveryState.NOT_SENT, phase="connect")
     secret = auth.StaticCredentialProvider(auth.ApiKeyCredential("s"))
 
@@ -435,7 +481,9 @@ def _faults(  # noqa: PLR0913, PLR0915
                 f"  answer after the session and its grace{label} = {_outcome(lambda: family.get(_context(auth)))}"
             )
             unstuck.set()
-            lines.append(f"    later get = {_outcome(lambda: family.get(_context(auth)))} sent={adapter.refresh_tokens}")
+            lines.append(
+                f"    later get = {_outcome(lambda: family.get(_context(auth)))} sent={adapter.refresh_tokens}"
+            )
     oauth = importlib.import_module(f"{package.__name__}._runtime.client.oauth")
     held = _Held(oauth.token_request)
     adapter = _Sent(transports, rotated)
@@ -481,12 +529,16 @@ def _faults(  # noqa: PLR0913, PLR0915
         starter = started(lambda: family.get(_context(auth)), adapter.entered, _outcome)
         token = watched(options)
         joiner = started(lambda: family.get(_context(auth, cancel_token=token)), token.checked, _outcome)
-        lines.append(f"  replace while a refresh runs = {_outcome(lambda: family.replace_token_set(_tokens(auth, revision=5)))}")
+        lines.append(
+            f"  replace while a refresh runs = {_outcome(lambda: family.replace_token_set(_tokens(auth, revision=5)))}"
+        )
         lines.append(f"    exchange needed meanwhile = {family.exchange_needed(auth.TokenVersion())}")
         gate.set()
         starter.join(LIMIT)
         joiner.join(LIMIT)
-        lines.append(f"  one refresh for concurrent callers = {starter.line} / {joiner.line} sent={adapter.refresh_tokens}")
+        lines.append(
+            f"  one refresh for concurrent callers = {starter.line} / {joiner.line} sent={adapter.refresh_tokens}"
+        )
         current = family.get(_context(auth))
         lines.append(f"    exchange needed for the current version = {family.exchange_needed(current.version)}")
         lines.append(f"    exchange needed for another version = {family.exchange_needed(auth.TokenVersion())}")
@@ -500,14 +552,6 @@ def _faults(  # noqa: PLR0913, PLR0915
         lines.append(f"    later refresh = {_outcome(lambda: family.refresh(_context(auth)))} sends={adapter.sends}")
     with provider(_Sent(transports), token_set=_tokens(auth, refresh=None)) as family:
         lines.append(f"  forced refresh without a refresh token = {_outcome(lambda: family.refresh(_context(auth)))}")
-    adapter = _Sent(transports, rotated)
-    with provider(adapter, token_set=_tokens(auth, minutes=-1, scopes=("read",))) as family:
-        lines.append(f"  expired token without a scope = {_outcome(lambda: family.get(_context(auth, 'write')))} sends={adapter.sends}")
-        lines.append(f"    caller within its grants = {_outcome(lambda: family.get(_context(auth, 'read')))}")
-    adapter = _Sent(transports, _reply(responses, {**_ROTATED, "scope": "read"}))
-    with provider(adapter, token_set=_tokens(auth, minutes=-1, scopes=("read", "write"))) as family:
-        lines.append(f"  refresh narrowing the grants = {_outcome(lambda: family.get(_context(auth, 'read', 'write')))}")
-        lines.append(f"    caller within the new grants = {_outcome(lambda: family.get(_context(auth, 'read')))} sends={adapter.sends}")
     expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
     claimed = auth.TokenSet(auth.AccessToken("access-1", expires_at=expires_at, audience="other"), "refresh-1")
     for audience in ("api", "other"):
@@ -515,10 +559,14 @@ def _faults(  # noqa: PLR0913, PLR0915
             lines.append(
                 f"  token for audience other with audience {audience} = {_outcome(lambda family=family: family.get(_context(auth)))}"
             )
-    lapsed = auth.TokenSet(auth.AccessToken("access-1", expires_at=expires_at - timedelta(hours=2), audience="other"), "refresh-1")
+    lapsed = auth.TokenSet(
+        auth.AccessToken("access-1", expires_at=expires_at - timedelta(hours=2), audience="other"), "refresh-1"
+    )
     adapter = _Sent(transports, rotated)
     with provider(adapter, token_set=lapsed, audience="api") as family:
-        lines.append(f"  expired token for audience other with audience api = {_outcome(lambda: family.get(_context(auth)))}")
+        lines.append(
+            f"  expired token for audience other with audience api = {_outcome(lambda: family.get(_context(auth)))}"
+        )
         lines.append(f"    later get = {_outcome(lambda: family.get(_context(auth)))} sent={adapter.refresh_tokens}")
 
 
@@ -556,7 +604,9 @@ async def _async(auth: ModuleType, transports: ModuleType, responses: ModuleType
         first = asyncio.create_task(_aoutcome(lambda: family.get(_context(auth))))
         await asyncio.sleep(0)
         time.sleep(1.6)
-        lines.append(f"  async refresh starting once its session ended = {await _aoutcome(lambda: family.get(_context(auth)))}")
+        lines.append(
+            f"  async refresh starting once its session ended = {await _aoutcome(lambda: family.get(_context(auth)))}"
+        )
         lines.append(f"    first caller = {await first} sends={blocked.sends}")
 
 
@@ -656,7 +706,9 @@ def _load_configuration(auth: ModuleType, transports: ModuleType, lines: list[st
         ),
         (
             "reload without a load",
-            lambda: provider(_TOKEN, client_id="c", token_set=_tokens(auth), client_auth_method="none").reload_token_set(),
+            lambda: provider(
+                _TOKEN, client_id="c", token_set=_tokens(auth), client_auth_method="none"
+            ).reload_token_set(),
         ),
     ):
         lines.append(f"  {label} = {_outcome(call)}")
@@ -685,7 +737,9 @@ def _load_configuration(auth: ModuleType, transports: ModuleType, lines: list[st
     )
 
 
-def _loads(auth: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]) -> None:
+def _loads(
+    auth: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
+) -> None:
     """Load once before the first acquisition, keeping the newer token set, and stop on what cannot be trusted."""
     stored, same = _tokens(auth, "stored", "refresh-5", revision=3), _tokens(auth)
     for label, answer, initial in (
@@ -778,7 +832,9 @@ def _loads(auth: ModuleType, options: ModuleType, transports: ModuleType, respon
         lines.append(f"    get = {_outcome(lambda: family.get(_context(auth)))} sent={adapter.refresh_tokens}")
 
 
-def _reloads(auth: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]) -> None:
+def _reloads(
+    auth: ModuleType, options: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
+) -> None:
     """Reload on request: recover a family that failed or stopped, and leave it as it was when nothing is newer."""
     newer = _tokens(auth, "reloaded", "refresh-7", revision=5)
 
@@ -794,7 +850,9 @@ def _reloads(auth: ModuleType, options: ModuleType, transports: ModuleType, resp
         lines.append(f"  initial load failed = {_outcome(lambda: family.get(_context(auth)))}")
         lines.append(f"    reload = {_reloaded(family.reload_token_set)}")
         lines.append(f"    get = {_outcome(lambda: family.get(_context(auth)))}")
-    family, _ = provider(_Load(_tokens(auth, revision=2), None, _tokens(auth, "old", "refresh-0"), RuntimeError("load")))
+    family, _ = provider(
+        _Load(_tokens(auth, revision=2), None, _tokens(auth, "old", "refresh-0"), RuntimeError("load"))
+    )
     with family:
         family.get(_context(auth))
         for label in ("nothing stored", "older token set stored", "load failure"):
@@ -852,7 +910,9 @@ def _reloads(auth: ModuleType, options: ModuleType, transports: ModuleType, resp
 
 async def _async_loads(auth: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]) -> None:
     """Load and reload an asyncio family on its event loop, within the load's session."""
-    load = _AsyncLoad(_tokens(auth, "stored", "refresh-5", revision=3), _tokens(auth, "reloaded", "refresh-7", revision=5))
+    load = _AsyncLoad(
+        _tokens(auth, "stored", "refresh-5", revision=3), _tokens(auth, "reloaded", "refresh-7", revision=5)
+    )
     async with auth.AsyncRefreshTokenProvider(
         _TOKEN, client_id="c", load=load, client_auth_method="none", token_transport=AsyncAdapter(transports)
     ) as family:
@@ -878,7 +938,9 @@ async def _async_loads(auth: ModuleType, transports: ModuleType, responses: Modu
     async with auth.AsyncRefreshTokenProvider(
         _TOKEN, client_id="c", load=load, client_auth_method="none", token_transport=adapter
     ) as family:
-        lines.append(f"  async stored token set needing a refresh = {await _aoutcome(lambda: family.get(_context(auth)))}")
+        lines.append(
+            f"  async stored token set needing a refresh = {await _aoutcome(lambda: family.get(_context(auth)))}"
+        )
     rejected = AsyncResponse(responses, 400, json.dumps({"error": "invalid_grant"}).encode())
     for label, held, replies in (
         ("async load before a refresh outliving its session", 1, ()),
@@ -913,7 +975,11 @@ def _refresh_loads(auth: ModuleType, transports: ModuleType, responses: ModuleTy
             (_reply(responses, _ROTATED),),
         ),
         ("load failure before a refresh", (RuntimeError("load"), None), (_reply(responses, _ROTATED),)),
-        ("newer token set that can never serve before a refresh", (_tokens(auth, "unusable", None, revision=3, minutes=-1),), ()),
+        (
+            "newer token set that can never serve before a refresh",
+            (_tokens(auth, "unusable", None, revision=3, minutes=-1),),
+            (),
+        ),
         ("invalid grant recovered by a newer usable token set", (None, stored), (rejected,)),
         ("invalid grant with nothing newer stored", (None, None), (rejected,)),
         ("invalid grant with a failing load", (None, RuntimeError("load")), (rejected,)),
@@ -922,8 +988,16 @@ def _refresh_loads(auth: ModuleType, transports: ModuleType, responses: ModuleTy
             (None, _tokens(auth, "other", "refresh-9", revision=2)),
             (rejected,),
         ),
-        ("invalid grant with a newer expired token set", (None, _tokens(auth, "stored", "refresh-5", revision=3, minutes=-1)), (rejected,)),
-        ("invalid grant with a newer token set bringing back the rejected refresh token", (None, _tokens(auth, "stored", "refresh-1", revision=3)), (rejected,)),
+        (
+            "invalid grant with a newer expired token set",
+            (None, _tokens(auth, "stored", "refresh-5", revision=3, minutes=-1)),
+            (rejected,),
+        ),
+        (
+            "invalid grant with a newer token set bringing back the rejected refresh token",
+            (None, _tokens(auth, "stored", "refresh-1", revision=3)),
+            (rejected,),
+        ),
         ("invalid grant with an interrupted load", (None, KeyboardInterrupt()), (rejected,)),
     )
     for label, answers, replies in rows:
@@ -1013,13 +1087,18 @@ def _refresh_loads(auth: ModuleType, transports: ModuleType, responses: ModuleTy
         lines.append(f"    later get = {_outcome(lambda: family.get(_context(auth)))} sent={adapter.refresh_tokens}")
 
 
-def _load_budget(package: ModuleType, auth: ModuleType, options: ModuleType, transports: ModuleType, lines: list[str]) -> None:
+def _load_budget(
+    package: ModuleType, auth: ModuleType, options: ModuleType, transports: ModuleType, lines: list[str]
+) -> None:
     """Load without an exchange of the call's budget; a refresh the loaded token set needs still pays one.
 
     A refresh that finds a newer usable stored token set sends nothing, yet keeps the exchange it charged.
     """
     exchange = Exchange(lines)
-    ok, rejected = raw_response(200, b"ok", "application/octet-stream"), raw_response(401, b"no", "text/plain", **_REJECTED)
+    ok, rejected = (
+        raw_response(200, b"ok", "application/octet-stream"),
+        raw_response(401, b"no", "text/plain", **_REJECTED),
+    )
     exchange.respond(rejected, ok)
     family = auth.RefreshTokenProvider(
         _TOKEN,

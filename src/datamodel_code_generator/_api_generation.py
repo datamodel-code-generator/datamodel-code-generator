@@ -1115,18 +1115,8 @@ def render_target(
 def generate_target(
     input_: _GenerationInput, *, model_config: GenerateConfig, config: TargetConfig, generator: TargetGenerator
 ) -> GenerationReport:
-    """Render one target and its models once, then publish every change together under the resource locks."""
+    """Render one target and its models once, then publish every change together through one journal."""
     planner, project = _plan(input_, model_config, config, generator)
     from datamodel_code_generator._api_publication import publish_project  # noqa: PLC0415
 
-    models = planner.models
-    output = planner.effective.output
-    assert output is not None
-    resources = [(models.cwd / output.expanduser()).resolve(), planner.root]
-    if models.metadata is not None and config.model_mode == "generate":
-        metadata = (models.cwd / models.metadata[0].expanduser()).resolve()
-        if not any(metadata.is_relative_to(resource) for resource in resources):
-            resources.append(metadata)
-    if models.lock is not None:
-        resources.append(models.lock.path)
-    return publish_project(project, planner.observed, cwd=models.cwd, resources=resources, lock=models.lock)
+    return publish_project(project, planner.observed, cwd=planner.models.cwd, lock=planner.models.lock)

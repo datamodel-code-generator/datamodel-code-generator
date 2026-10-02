@@ -499,4 +499,4 @@ render pydantic_v2.BaseModel
   /selection/selected_operations/8 secure.list_secure_users(query:cursor=cursor)
     exports client.types.secure.ListSecureUsersResponse client.types.secure.ListSecureUsersErrorData client.types.secure.ListSecureUsersHTTPError
     exports client.types.secure.ListSecureUsersRequestCodecs None
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

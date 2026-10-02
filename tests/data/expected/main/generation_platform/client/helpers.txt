@@ -84,5 +84,5 @@ render pydantic_v2.BaseModel
   /selection/selected_operations/9 records.stream_records(query:after=after)
     exports client.types.records.StreamRecordsResponse client.types.records.StreamRecordsErrorData client.types.records.StreamRecordsHTTPError
     exports client.types.records.StreamRecordsRequestCodecs None
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
   S_OPERATION_EXCLUDED selection /paths/~1admin~1audit/get: GET /admin/audit is excluded by exclude_tags 'admin': Administration stays internal

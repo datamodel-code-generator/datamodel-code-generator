@@ -12,7 +12,6 @@ from typing_extensions import TypeIs, TypeVar
 from ..model_codecs.unset import UNSET, Unset
 from ..protocols.references import OperationRef
 from .responses import HeadersView, Response, ResponseInfo  # noqa: TC001 - Public annotations support get_type_hints().
-from .scopes import scope_tuple
 
 E_co = TypeVar("E_co", covariant=True, default=object)
 T_co = TypeVar("T_co", covariant=True, default=object)
@@ -925,81 +924,6 @@ class AuthProviderExecutionError(AuthRefreshError):
     def callback(self) -> Literal["get", "invalidate", "refresh"]:
         """Return the provider callback category that failed."""
         return self._callback
-
-
-class InsufficientScopeError(AuthRefreshError):
-    """Known credential grants do not contain the caller's required scopes."""
-
-    __slots__ = ("_granted_scopes", "_missing_scopes", "_required_scopes")
-
-    def __init__(  # noqa: PLR0913
-        self,
-        *,
-        required_scopes: tuple[str, ...],
-        granted_scopes: tuple[str, ...],
-        provider_id: str | None = None,
-        refresh_id: str | None = None,
-        state: str = "UNKNOWN",
-        delivery_state: DeliveryState = DeliveryState.MAYBE_SENT,
-        phase: AuthPhase = "unknown",
-        operation_id: str | None = None,
-        call_id: str | None = None,
-        parent_session_id: str | None = None,
-        info: ResponseInfo | None = None,
-        cause: BaseException | None = None,
-        secondary_errors: tuple[BaseException, ...] = (),
-        resource_attempt_count: int = 0,
-        redirect_count: int = 0,
-        auth_exchange_count: int = 0,
-        network_send_count: int = 0,
-        network_send_budget_used: int = 0,
-        auth_exchange_budget_used: int = 0,
-        auth_refresh_ids: tuple[str, ...] = (),
-        auth_refresh_pending: int = 0,
-        wire_send_count: int | None = None,
-    ) -> None:
-        """Copy canonical known scope tuples and retain their ordered difference for explicit inspection."""
-        super().__init__(
-            provider_id=provider_id,
-            refresh_id=refresh_id,
-            state=state,
-            delivery_state=delivery_state,
-            phase=phase,
-            operation_id=operation_id,
-            call_id=call_id,
-            parent_session_id=parent_session_id,
-            info=info,
-            cause=cause,
-            secondary_errors=secondary_errors,
-            resource_attempt_count=resource_attempt_count,
-            redirect_count=redirect_count,
-            auth_exchange_count=auth_exchange_count,
-            network_send_count=network_send_count,
-            network_send_budget_used=network_send_budget_used,
-            auth_exchange_budget_used=auth_exchange_budget_used,
-            auth_refresh_ids=auth_refresh_ids,
-            auth_refresh_pending=auth_refresh_pending,
-            wire_send_count=wire_send_count,
-        )
-        self._required_scopes = scope_tuple(required_scopes)
-        self._granted_scopes = scope_tuple(granted_scopes)
-        granted = frozenset(self._granted_scopes)
-        self._missing_scopes = tuple(scope for scope in self._required_scopes if scope not in granted)
-
-    @property
-    def required_scopes(self) -> tuple[str, ...]:
-        """Return the canonical scopes requested by this caller."""
-        return self._required_scopes
-
-    @property
-    def granted_scopes(self) -> tuple[str, ...]:
-        """Return the credential's known canonical grants."""
-        return self._granted_scopes
-
-    @property
-    def missing_scopes(self) -> tuple[str, ...]:
-        """Return required scopes absent from the grants, in canonical required order."""
-        return self._missing_scopes
 
 
 class TokenExpiredError(AuthRefreshError):

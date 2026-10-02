@@ -34,4 +34,4 @@ render pydantic_v2.BaseModel
   /selection/selected_operations/1 default.get_regional()
     exports client.types.default.GetRegionalResponse client.types.default.GetRegionalErrorData client.types.default.GetRegionalHTTPError
     exports client.types.default.GetRegionalRequestCodecs None
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'pydantic>=2.13.5']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'pydantic>=2.13.5']

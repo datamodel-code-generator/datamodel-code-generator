@@ -4053,8 +4053,6 @@
         "tests/api_generation/test_target_generation.py::test_target_generate_lock_discard": 2637,
         "tests/api_generation/test_target_generation.py::test_target_generate_rollback[error]": 1852,
         "tests/api_generation/test_target_generation.py::test_target_generate_rollback[interrupt]": 1756,
-        "tests/api_generation/test_target_generation.py::test_target_render[busy-metadata]": 1461,
-        "tests/api_generation/test_target_generation.py::test_target_render[busy]": 2908,
         "tests/api_generation/test_target_generation.py::test_target_render[directory]": 1197,
         "tests/api_generation/test_target_generation.py::test_target_render[first-run]": 1571,
         "tests/api_generation/test_target_generation.py::test_target_render[layout-embedded]": 2297,

@@ -13,12 +13,12 @@ import subprocess
 import sys
 import threading
 from contextlib import contextmanager
-from pathlib import Path
 from dataclasses import asdict, is_dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
-from tests.data.python.client_runtime import describe, run
 from tests.data.python.client_regressions import json_error_body, retained_body
+from tests.data.python.client_runtime import describe, run
 from tests.data.python.fixture_websocket import Play, RawPeer, SocketServer, TunnelProxy, client_context
 
 if TYPE_CHECKING:
@@ -795,7 +795,7 @@ def _proxies(harness: _Harness) -> None:
             ("environment proxy", harness.transport(trust_env=True), {"https_proxy": proxy.url, "no_proxy": ""}),
         ):
             plays = server.play(Play(talk=_echo))
-            with _environment(**environment), harness.package.Client(options=harness.client(transport=transport)) as api:
+            with harness.package.Client(options=harness.client(transport=transport)) as api, _environment(**environment):
                 session = api.protocols.feed.text.connect()
                 lines.append(f"  {label} {_message(session.receive())}")
                 session.close()
@@ -811,8 +811,8 @@ def _proxies(harness: _Harness) -> None:
             ("environment proxy user without a password", "http://user@proxy.test:3128"),
         ):
             with (
-                _environment(https_proxy=environment_proxy, no_proxy=""),
                 harness.package.Client(options=harness.client(transport=harness.transport(trust_env=True))) as api,
+                _environment(https_proxy=environment_proxy, no_proxy=""),
             ):
                 record(lines, label, api.protocols.feed.text.connect)
     finally:

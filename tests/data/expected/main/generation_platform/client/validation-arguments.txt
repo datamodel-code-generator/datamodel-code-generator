@@ -54,7 +54,7 @@ render pydantic_v2.BaseModel
   /selection/selected_operations/7 default.get_account(path:accountId=account_id)
     exports client.types.default.GetAccountResponse client.types.default.GetAccountErrorData client.types.default.GetAccountHTTPError
     exports client.types.default.GetAccountRequestCodecs None
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5', 'google-re2>=1.1.20251105']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5', 'google-re2>=1.1.20251105']
 render typing.TypedDict
   write models.py
   write client/__init__.py
@@ -110,4 +110,4 @@ render typing.TypedDict
   /selection/selected_operations/7 default.get_account(path:accountId=account_id)
     exports client.types.default.GetAccountResponse client.types.default.GetAccountErrorData client.types.default.GetAccountHTTPError
     exports client.types.default.GetAccountRequestCodecs None
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5', 'google-re2>=1.1.20251105']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5', 'google-re2>=1.1.20251105']
