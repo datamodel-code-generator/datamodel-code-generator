@@ -1968,12 +1968,14 @@ def parts_source_recovery(package: ModuleType, lines: list[str]) -> None:
         _respond(exchange, server)
         with exchange.client() as native, package.Client(http_client=native) as api:
             helper = api.protocols.files.parts_probe
-            with helper.start(source, tus_resumable=harness.tus) as handle:
+            with helper.start(
+                source, tus_resumable=harness.tus, upload_options=harness.uploads(chunk_bytes=4, parallelism=1)
+            ) as handle:
                 step(lines, "original wave", handle.advance)
                 server.failure = "complete"
                 step(lines, "unknown completion", handle.run)
                 state = handle.checkpoint()
-                path.write_bytes(_PART_CONTENT + b"!")
+                path.write_bytes(b"X" * len(_PART_CONTENT))
                 step(lines, "live changed source", handle.run)
             step(lines, "resume changed source", lambda: helper.resume(source, state))
             server.report(lines, "unchanged remote completion")
@@ -1991,12 +1993,14 @@ async def _async_parts_source_recovery(harness: _Uploads, path: Path, lines: lis
         harness.package.AsyncClient(http_client=native) as api,
     ):
         helper = api.protocols.files.parts_probe
-        async with await helper.start(source, tus_resumable=harness.tus) as handle:
+        async with await helper.start(
+            source, tus_resumable=harness.tus, upload_options=harness.uploads(chunk_bytes=4, parallelism=1)
+        ) as handle:
             await astep(lines, "async original wave", handle.advance)
             server.failure = "complete"
             await astep(lines, "async unknown completion", handle.run)
             state = handle.checkpoint()
-            await asyncio.to_thread(path.write_bytes, _PART_CONTENT + b"!")
+            await asyncio.to_thread(path.write_bytes, b"X" * len(_PART_CONTENT))
             await astep(lines, "async live changed source", handle.run)
         await astep(lines, "async resume changed source", lambda: helper.resume(source, state))
         server.report(lines, "async unchanged remote completion")

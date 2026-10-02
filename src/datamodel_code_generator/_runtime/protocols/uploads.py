@@ -2348,7 +2348,7 @@ def _checked(
         if item is not None
     )
     for targeted, values, extra, payload in requests:
-        _dotted(plan, targeted, values, None)
+        _dotted(plan, targeted, (*values, *extra), None)
         arguments, body = targeted.request((*values, *extra))
         try:
             core.checked_page(targeted.call, _fixed(arguments, body if payload is None else payload), None, options)

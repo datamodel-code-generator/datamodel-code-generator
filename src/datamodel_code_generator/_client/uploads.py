@@ -441,8 +441,12 @@ class _Uploads:
             item = _child(resolved, "items")
             filled = {completion["index_field"], completion["receipt_field"]}
             pending = [self.pages.nonnull(item)]
+            seen = set()
             while pending:
                 location, item_shape, members = self.pages.members(pending.pop())
+                if location in seen:
+                    continue
+                seen.add(location)
                 pending.extend(members)
                 if isinstance(parts := item_shape.get("allOf"), tuple):
                     pending.extend(_child(location, f"allOf/{index}") for index in range(len(parts)))
