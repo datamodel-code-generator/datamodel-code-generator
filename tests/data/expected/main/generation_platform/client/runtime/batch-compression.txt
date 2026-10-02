@@ -1,0 +1,37 @@
+# batches-compression pydantic_v2.BaseModel
+    > POST /users/batch coding=gzip body=b'{"users":[{"id":"u0000","name":"user 0"},{"id":"u0001","name":"user 1"}]}'
+  inherited gzip: 2 results in order True {'success': 1, 'error': 1, 'delivery_unknown': 0}
+    error #0 id='u0000' status=200 error=taken
+    success #1 id='u0001' status=200 value=u0001
+    > POST /users/batch coding=gzip body=b'{"users":[{"id":"u0000","name":"user 0"},{"id":"u0001","name":"user 1"}]}'
+  explicit gzip: 2 results in order True {'success': 1, 'error': 1, 'delivery_unknown': 0}
+    error #0 id='u0000' status=200 error=taken
+    success #1 id='u0001' status=200 value=u0001
+    > POST /users/batch coding=None body=b'{"users":[{"id":"u0000","name":"user 0"},{"id":"u0001","name":"user 1"}]}'
+  explicit off: 2 results in order True {'success': 1, 'error': 1, 'delivery_unknown': 0}
+    error #0 id='u0000' status=200 error=taken
+    success #1 id='u0001' status=200 value=u0001
+    > PUT /tags/batch coding=None body=b'[{"label":"t000","color":"red"}]'
+  undeclared inherited off: 1 results in order True {'success': 1, 'error': 0, 'delivery_unknown': 0}
+    success #0 id=None status=200 value=t000
+  explicit unsupported factory input reads=0
+  explicit unsupported compression ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  explicit unsupported input reads=0 sends=0
+    > POST /users/batch coding=gzip body=b'{"users":[{"id":"u0000","name":"user 0"},{"id":"u0001","name":"user 1"}]}'
+  async inherited gzip: 2 results in order True {'success': 1, 'error': 1, 'delivery_unknown': 0}
+    error #0 id='u0000' status=200 error=taken
+    success #1 id='u0001' status=200 value=u0001
+    > POST /users/batch coding=gzip body=b'{"users":[{"id":"u0000","name":"user 0"},{"id":"u0001","name":"user 1"}]}'
+  async explicit gzip: 2 results in order True {'success': 1, 'error': 1, 'delivery_unknown': 0}
+    error #0 id='u0000' status=200 error=taken
+    success #1 id='u0001' status=200 value=u0001
+    > POST /users/batch coding=None body=b'{"users":[{"id":"u0000","name":"user 0"},{"id":"u0001","name":"user 1"}]}'
+  async explicit off: 2 results in order True {'success': 1, 'error': 1, 'delivery_unknown': 0}
+    error #0 id='u0000' status=200 error=taken
+    success #1 id='u0001' status=200 value=u0001
+    > PUT /tags/batch coding=None body=b'[{"label":"t000","color":"red"}]'
+  async undeclared inherited off: 1 results in order True {'success': 1, 'error': 0, 'delivery_unknown': 0}
+    success #0 id=None status=200 value=t000
+  async explicit unsupported factory input reads=0
+  async explicit unsupported compression ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  async explicit unsupported input reads=0 sends=0

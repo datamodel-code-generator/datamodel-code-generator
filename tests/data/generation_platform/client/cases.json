@@ -2739,6 +2739,34 @@
       ]
     ]
   },
+  "batches-compression": {
+    "input": "batches.yaml",
+    "references": [
+      "protocols/batches.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/batches.yaml",
+      "operations": [
+        {
+          "ref": "/paths/~1users~1batch/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        }
+      ]
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
   "batches-plans": {
     "input": "batches.yaml",
     "references": [

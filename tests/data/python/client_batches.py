@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any, Final, get_origin, get_type_hints
 import httpx2
 
 from tests.data.python.client_pagination import Harness
-from tests.data.python.client_runtime import Exchange, describe, failing, json_response, record, run
+from tests.data.python.client_runtime import Exchange, arecord, describe, failing, json_response, record, run
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterable, Iterator
@@ -872,6 +872,88 @@ def batch_arguments(package: ModuleType, lines: list[str]) -> None:
         dry_run = harness.argument("users", "CreateUsers", "query", "dryRun", True)
         drained(lines, "valid shared argument", users.iterate(harness.users(3), dry_run=dry_run))
         server.report("arguments")
+
+
+def _batch_compression_response(request: httpx2.Request) -> httpx2.Response:
+    """Answer a users batch from its wire JSON, decoding its declared gzip when present."""
+    content = gzip.decompress(request.content) if request.headers.get("content-encoding") == "gzip" else request.content
+    body = json.loads(content)
+    payload = (
+        {"results": [_user(item) for item in reversed(body["users"])]}
+        if isinstance(body, dict)
+        else {"items": [_tag(item) for item in body]}
+    )
+    return json_response(200, payload)(request)
+
+
+class _BatchCompressionServer(Exchange):
+    """Report received batch coding and decoded payload bytes through a real local HTTP server."""
+
+    def handle(self, request: httpx2.Request) -> httpx2.Response:
+        """Read the request once and answer from its actual wire representation."""
+        request.read()
+        coding = request.headers.get("content-encoding")
+        content = gzip.decompress(request.content) if coding == "gzip" else request.content
+        self.lines.append(f"    > {request.method} {request.url.path} coding={coding} body={content!r}")
+        return _batch_compression_response(request)
+
+
+def batch_compression(package: ModuleType, lines: list[str]) -> None:
+    """Compress declared batch children and refuse explicit coding on undeclared helpers before input or sends."""
+    harness = _Batches(package)
+    exchange = _BatchCompressionServer(lines)
+    with (
+        exchange.client() as native,
+        package.Client(http_client=native, options=harness.client_options(compression="gzip")) as api,
+    ):
+        for label, options in (
+            ("inherited gzip", None),
+            ("explicit gzip", harness.options.RequestOptions(compression="gzip")),
+            ("explicit off", harness.options.RequestOptions(compression=None)),
+        ):
+            with api.protocols.users.create.iterate(harness.users(2), options=options) as iterator:
+                drained(lines, label, iterator)
+        with api.protocols.tags.put.iterate(harness.tags("red")) as iterator:
+            drained(lines, "undeclared inherited off", iterator)
+        source = _Counted(harness.tags("red"))
+        with api.protocols.tags.put.iterate(
+            source, options=harness.options.RequestOptions(compression="gzip")
+        ) as iterator:
+            lines.append(f"  explicit unsupported factory input reads={source.read}")
+            record(lines, "explicit unsupported compression", lambda: next(iterator))
+            lines.append(
+                f"  explicit unsupported input reads={source.read} "
+                f"sends={dict(iterator.progress)['network_send_count']}"
+            )
+    run(lambda: _async_batch_compression(harness, lines))
+
+
+async def _async_batch_compression(harness: _Batches, lines: list[str]) -> None:
+    """Exercise the same declared, inherited, disabled and refused coding through asyncio helpers."""
+    exchange = _BatchCompressionServer(lines)
+    async with (
+        exchange.async_client() as native,
+        harness.package.AsyncClient(http_client=native, options=harness.client_options(compression="gzip")) as api,
+    ):
+        for label, options in (
+            ("async inherited gzip", None),
+            ("async explicit gzip", harness.options.RequestOptions(compression="gzip")),
+            ("async explicit off", harness.options.RequestOptions(compression=None)),
+        ):
+            async with api.protocols.users.create.iterate(harness.users(2), options=options) as iterator:
+                await adrained(lines, label, iterator)
+        async with api.protocols.tags.put.iterate(harness.tags("red")) as iterator:
+            await adrained(lines, "async undeclared inherited off", iterator)
+        source = _Counted(harness.tags("red"))
+        async with api.protocols.tags.put.iterate(
+            source, options=harness.options.RequestOptions(compression="gzip")
+        ) as iterator:
+            lines.append(f"  async explicit unsupported factory input reads={source.read}")
+            await arecord(lines, "async explicit unsupported compression", lambda: anext(iterator))
+            lines.append(
+                f"  async explicit unsupported input reads={source.read} "
+                f"sends={dict(iterator.progress)['network_send_count']}"
+            )
 
 
 class _BoundaryResponse:

@@ -380,6 +380,10 @@ class _Batches(Generic[R]):
         """Check the shared arguments once, before anything is sent, as the operation's own calls are checked."""
         if not self._checked:
             self._arguments = core.validated_arguments(self._plan.call, self._arguments, self._limits.options)
+            if (options := self._limits.options) is not None and isinstance(coding := options.compression, str):
+                from ..client.compression import helper_children  # noqa: PLC0415 - Only an explicit coding loads it.
+
+                helper_children(coding, ((self._plan.call, True),))
             self._checked = True
 
     def _item(self, value: object, index: int) -> _Item:
