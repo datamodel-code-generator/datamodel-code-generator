@@ -762,6 +762,17 @@ async boundary controls
   closed: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
     ! after 0: BatchDeliveryUnknownError state=DeliveryState.MAYBE_SENT partial=[(0, 'delivery_unknown'), (1, 'delivery_unknown')] cause=ClientClosedError nested=None
     sends=1 closed=[]
+  caller cancelled raising=False: CancelledError args=('caller interruption',)
+  retained after caller cancellation: 2 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 2}
+    delivery_unknown #0 id='u0000' status=None no payload
+    delivery_unknown #1 id='u0001' status=None no payload
+    ! after 2: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=1 closed=[]
+  caller cancelled raising=True: CancelledError args=('caller interruption',)
+  retained after caller cancellation: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: BatchDeliveryUnknownError state=DeliveryState.MAYBE_SENT partial=[(0, 'delivery_unknown'), (1, 'delivery_unknown')] cause=CancelledError nested=None
+    ! after 0: ProtocolStateError state=None partial=[] cause=None nested=None
+    sends=1 closed=[]
   gated buffer before return: read=1 sends=1 bytes=33
   gated buffer results=[(0, 'success'), (1, 'success')]
     sends=2 closed=[True, True]
