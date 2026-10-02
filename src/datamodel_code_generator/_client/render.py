@@ -3911,8 +3911,8 @@ reference for their limits."""
         queues = (
             """
 A queue helper's `operations.<alias>.enqueue` saves a call in the queue's store and sends nothing; only `drain` sends,
-delivering ready entries in creation order, each at least once and with a stable idempotency key where it has side
-effects. `inspect`, `cancel`, `retry_unknown`, and `purge_terminal` manage its entries. See the runtime reference for
+delivering ready entries in creation order and with a stable idempotency key where they have side effects.
+`inspect`, `cancel`, `retry_unknown`, and `purge_terminal` manage its entries. See the runtime reference for
 their limits."""
             if "queue" in kinds
             else ""
@@ -4323,9 +4323,10 @@ or auth raises `QueueBindingError` and is never migrated. A drain ends when noth
 its session has no time or sends left, and returns a `DrainReport` of entry IDs: `succeeded`, `rescheduled`, `dead`,
 `unknown`, `deferred`, and `cancelled`. An entry is delivered at most once per drain.
 
-A claim leases its entries; a lease that expires, after a crash for example, returns the entry to pending, so delivery
-is at least once, never exactly once. `cancel` ends a pending entry at once, cancelled, or of unknown delivery when a
-crash may have sent it, and asks the drain holding a leased one to end it at its next boundary. `purge_terminal(before)`
+A claim leases its entries. When a lease expires, an unsent entry returns to pending; an entry with saved send intent
+becomes `delivery_unknown` and is never sent again automatically. Only explicit `retry_unknown` can redeliver it with
+the same key within its expiry. `cancel` ends a pending entry at once, cancelled, or of unknown delivery when a crash
+may have sent it, and asks the drain holding a leased one to end it at its next boundary. `purge_terminal(before)`
 removes the ended entries created before an instant and returns them.
 """
 
