@@ -141,7 +141,7 @@ if TYPE_CHECKING:
     )
     from typing import Protocol
 
-    from ..model_codecs.parameters import ParameterFragment
+    from ..model_codecs.parameters import ParameterFragment, ParameterPlan
     from ..model_codecs.wire import WireValue
     from ..protocols.options import ProtocolClientOptions, ProtocolDefaults, ProtocolSecurityContext
     from ..protocols.references import OperationRef
@@ -500,21 +500,33 @@ def _auth_identity(auth: AuthConfig) -> WireValue:
 
 
 def _secret(spec: ParameterSpec, value: WireValue, headers: frozenset[str], queries: frozenset[str]) -> bool:
-    """Return whether an argument carries credentials: a cookie, a credential header, or a scheme's query field."""
-    name = spec.plan.name
+    """Return whether an argument carries credentials: a cookie, a credential header, or a scheme's query field.
+
+    An exploded form object query parameter sends each of its properties as a query field of its own, as a querystring
+    does, an additional property included.
+    """
+    plan = spec.plan
+    name = plan.name
     secret = False
-    match spec.plan.location:
+    match plan.location:
         case "cookie":
             secret = True
         case "header":
             secret = name.lower() in headers
         case "query":
-            secret = name in queries
+            secret = name in queries or (
+                _exploded(plan) and isinstance(value, Mapping) and not queries.isdisjoint(value)
+            )
         case "querystring":
             secret = isinstance(value, Mapping) and not queries.isdisjoint(value)
         case _:
             pass
     return secret
+
+
+def _exploded(plan: ParameterPlan) -> bool:
+    """Return whether a parameter sends each property of its object value as a field of its own."""
+    return plan.shape == "object" and plan.explode and plan.style in {"form", "cookie"}
 
 
 def _coded(operation: OperationPlan[object, object], spec: ParameterSpec, code: Callable[[], R]) -> R:
@@ -888,7 +900,7 @@ def _parameter_names(operation: OperationPlan[object, object], location: str) ->
     for parameter in operation.parameters:
         plan = parameter.plan
         if plan.location == location:
-            if plan.shape == "object" and plan.explode and plan.style in {"form", "cookie"}:
+            if _exploded(plan):
                 yield from (field.name for field in plan.fields)
             else:
                 yield plan.name
@@ -1544,6 +1556,25 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         """Return whether a call's effective options, its own, a view's, or the client's, fix an idempotency key."""
         return isinstance(self._call_settings(options, None).idempotency_key, IdempotencyKey)
 
+    def patches(self, options: RequestOptions | None) -> tuple[tuple[HeaderPatch, ...], tuple[QueryPatch, ...]]:
+        """Return the header and query patches of a call's effective options: the client's, a view's, and its own."""
+        settings = self._call_settings(options, None)
+        return settings.headers, settings.query
+
+    def reconnects_after(self, error: TransportError, options: RequestOptions | None, operation_id: str | None) -> bool:
+        """Return whether a transport failure reading a stream's body is one an automatic reconnection may follow.
+
+        It is a read-phase failure the shared retry classification retries. A read timeout qualifies only when the
+        call's own read timeout set its cap, not the stream's idle limit, which wins a tie.
+        """
+        if error.phase != "read" or transport_retry_reason(error, AttemptTrace(clock=self.clock)) is None:
+            return False
+        if not isinstance(error, PhaseTimeoutError):
+            return True
+        settings = self._call_settings(options, operation_id)
+        read, idle = settings.stream_read_timeout, settings.stream_idle_timeout
+        return read is not None and (idle is None or read < idle)
+
     def waiting(
         self, options: RequestOptions | None, session: OperationSession, operation_id: str | None
     ) -> LogicalCallContext:
@@ -1555,6 +1586,24 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         """
         settings = replace(self._call_settings(options, operation_id), total_timeout=None)
         return _SessionWait(settings, self._scope, session, operation_id)
+
+    def reconnect_backoff(
+        self, options: RequestOptions | None, operation_id: str | None, previous_cap: float | None
+    ) -> tuple[float, float]:
+        """Return the backoff cap and the wait of a helper's next automatic reconnection, by the call's retry options.
+
+        The cap starts at the initial delay and doubles up to the maximum delay, and full jitter draws the wait below
+        it, as a retry's backoff does.
+        """
+        settings = self._call_settings(options, operation_id)
+        planned = retry_delay(
+            settings.retry,
+            reason="read_error",
+            server=None,
+            timing=RetryTiming(previous_cap, 0.0, None, settings.clock.random),
+        )
+        assert not isinstance(planned, str)
+        return planned.backoff_cap, planned.delay
 
     def protocol_defaults(self, name: str) -> ProtocolDefaults | None:
         """Return the defaults the client's protocol settings give one helper, or None."""

@@ -1,0 +1,11 @@
+# session-media-ignored
+render pydantic_v2.BaseModel default
+  model_bindings.py
+render pydantic_v2.dataclass default
+  model_bindings.py
+render dataclasses.dataclass default
+  model_bindings.py
+render typing.TypedDict default
+  model_bindings.py
+render msgspec.Struct default
+  model_bindings.py

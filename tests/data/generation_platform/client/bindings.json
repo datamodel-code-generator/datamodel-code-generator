@@ -1290,5 +1290,3856 @@
         }
       }
     }
+  },
+  "contract-resolver": {
+    "source": "generation_platform/binding/resolver.json",
+    "variants": {
+      "api": {},
+      "schemas": {
+        "openapi_scopes": [
+          "schemas",
+          "paths"
+        ]
+      }
+    }
+  },
+  "api-external": {
+    "source": "generation_platform/api_scope/external.json",
+    "references": [
+      "library.json"
+    ]
+  },
+  "api-traversal": {
+    "source": "generation_platform/api_scope/traversal.json"
+  },
+  "api-media-32": {
+    "source": "generation_platform/api_scope/media-32.json"
+  },
+  "api-resources": {
+    "source": "generation_platform/api_scope/resources.json",
+    "references": [
+      "resources-library.json"
+    ]
+  },
+  "api-local-roots": {
+    "source": "generation_platform/api_scope/local-roots.json"
+  },
+  "api-anchors": {
+    "source": "generation_platform/api_scope/anchors.json",
+    "references": [
+      "anchors-library.json"
+    ]
+  },
+  "api-typed-reuse": {
+    "source": "generation_platform/api_scope/typed-reuse.json"
+  },
+  "api-method-case": {
+    "source": "generation_platform/api_scope/method-case.json"
+  },
+  "api-items-object": {
+    "source": "generation_platform/api_scope/items-object.json"
+  },
+  "api-items-primitive": {
+    "source": "generation_platform/api_scope/items-primitive.json"
+  },
+  "legacy-operations": {
+    "source": "generation_platform/binding/legacy-operations.json",
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ]
+    }
+  },
+  "legacy-candidates": {
+    "source": "generation_platform/binding/legacy-candidates.yaml",
+    "verbatim": true,
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ],
+      "openapi_include_paths": [
+        "/chosen"
+      ]
+    }
+  },
+  "legacy-ambiguous": {
+    "pins": "#4299: the two operations that share one YAML operation object ship without model codecs, and their BND_OPERATION_ORIGIN_UNRESOLVED diagnostics are dropped",
+    "source": "generation_platform/binding/legacy-ambiguous.yaml",
+    "verbatim": true,
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ]
+    }
+  },
+  "capture-observation": {
+    "source": "generation_platform/observation.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "collapse_root_models": true,
+      "collapse_root_models_name_strategy": "child",
+      "reuse_model": true,
+      "collapse_reuse_models": true,
+      "read_only_write_only_model_type": "all"
+    }
+  },
+  "capture-replacements": {
+    "source": "generation_platform/binding/replacements.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "collapse_root_models": true,
+      "collapse_root_models_name_strategy": "child",
+      "reuse_model": true,
+      "collapse_reuse_models": true,
+      "read_only_write_only_model_type": "all"
+    }
+  },
+  "capture-inherited-overrides": {
+    "source": "generation_platform/binding/inherited-overrides.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "collapse_root_models": true,
+      "collapse_root_models_name_strategy": "child",
+      "reuse_model": true,
+      "collapse_reuse_models": true,
+      "read_only_write_only_model_type": "all"
+    }
+  },
+  "capture-split": {
+    "source": "generation_platform/observation.json",
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ],
+      "read_only_write_only_model_type": "all",
+      "collapse_root_models": true,
+      "reuse_model": true,
+      "module_split_mode": "single"
+    },
+    "models": "models"
+  },
+  "capture-deduplication": {
+    "source": "openapi/duplicate_model_simplify.yaml",
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ]
+    }
+  },
+  "inherited-merge": {
+    "source": "openapi/allof_partial_override_inherited_types.yaml",
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ],
+      "read_only_write_only_model_type": "all"
+    },
+    "variants": {
+      "all": {
+        "allof_merge_mode": "all"
+      },
+      "constraints": {
+        "allof_merge_mode": "constraints"
+      },
+      "none": {
+        "allof_merge_mode": "none"
+      }
+    }
+  },
+  "copied-field-origins": {
+    "source": "generation_platform/binding/copied-field-origins.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "read_only_write_only_model_type": "all"
+    },
+    "variants": {
+      "all": {
+        "allof_merge_mode": "all"
+      },
+      "constraints": {
+        "allof_merge_mode": "constraints"
+      },
+      "none": {
+        "allof_merge_mode": "none"
+      }
+    }
+  },
+  "copied-default-overrides": {
+    "source": "generation_platform/binding/copied-field-origins.json",
+    "model": {
+      "read_only_write_only_model_type": "all",
+      "default_value_overrides": {
+        "Child.raw-note": null,
+        "GrandChild.raw-note": "grand",
+        "GrandChild.secret": null
+      }
+    }
+  },
+  "field-origins": {
+    "source": "generation_platform/binding/field-origins.json",
+    "variants": {
+      "api": {},
+      "schemas": {
+        "openapi_scopes": [
+          "schemas",
+          "paths"
+        ]
+      }
+    }
+  },
+  "aliased-origins": {
+    "source": "generation_platform/binding/aliased-origins.yaml",
+    "verbatim": true
+  },
+  "default-origins": {
+    "source": "generation_platform/binding/default-origins.json",
+    "model": {
+      "default_value_overrides": {
+        "equalOverride": null,
+        "Defaults.scopedOverride": 7
+      }
+    }
+  },
+  "default-inputs": {
+    "source": "generation_platform/binding/default-inputs.json",
+    "model": {
+      "default_value_overrides": {
+        "equalOverride": null,
+        "Defaults.scopedOverride": 7
+      }
+    }
+  },
+  "conditional-origins": {
+    "source": "generation_platform/binding/conditional-origins.json",
+    "model": {
+      "generate_schema_validators": true
+    }
+  },
+  "materialized-inherited-origins": {
+    "source": "generation_platform/binding/inherited-origins.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_title_as_name": true,
+      "read_only_write_only_model_type": "request-response"
+    }
+  },
+  "materialized-combined-origins": {
+    "source": "generation_platform/binding/combined-origins.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_title_as_name": true,
+      "read_only_write_only_model_type": "request-response"
+    }
+  },
+  "materialized-allof-union-origins": {
+    "source": "generation_platform/binding/allof-union-origins.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_title_as_name": true,
+      "read_only_write_only_model_type": "request-response"
+    }
+  },
+  "materialized-merged-origins": {
+    "source": "generation_platform/binding/merged-origins.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_title_as_name": true,
+      "read_only_write_only_model_type": "request-response"
+    }
+  },
+  "materialized-root-origins": {
+    "source": "generation_platform/binding/root-origins.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_title_as_name": true,
+      "read_only_write_only_model_type": "request-response"
+    }
+  },
+  "materialized-root-merged-values": {
+    "source": "generation_platform/binding/root-merged-values.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_title_as_name": true,
+      "read_only_write_only_model_type": "request-response"
+    },
+    "document": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema"
+    }
+  },
+  "materialized-synthetic-origins": {
+    "source": "generation_platform/binding/synthetic-origins.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_title_as_name": true,
+      "read_only_write_only_model_type": "request-response"
+    }
+  },
+  "materialized-merge-edges": {
+    "source": "generation_platform/binding/merge-edges.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_title_as_name": true,
+      "read_only_write_only_model_type": "request-response"
+    }
+  },
+  "materialized-root-edges": {
+    "source": "generation_platform/binding/root-edges.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_title_as_name": true,
+      "read_only_write_only_model_type": "request-response"
+    },
+    "document": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema"
+    }
+  },
+  "materialized-null-property-names": {
+    "source": "generation_platform/binding/null-property-names.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_title_as_name": true,
+      "read_only_write_only_model_type": "request-response"
+    },
+    "document": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema"
+    }
+  },
+  "materialized-session-helper-producers": {
+    "source": "generation_platform/binding/session-helper-producers.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_title_as_name": true,
+      "read_only_write_only_model_type": "request-response"
+    }
+  },
+  "materialized-inline-allof-union": {
+    "source": "generation_platform/binding/inline-allof-union.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_title_as_name": true,
+      "read_only_write_only_model_type": "request-response"
+    }
+  },
+  "capture-branches": {
+    "source": "generation_platform/binding/capture-branches.json",
+    "variants": {
+      "default": {},
+      "no-merge": {
+        "allof_merge_mode": "none"
+      },
+      "validators": {
+        "generate_schema_validators": true
+      }
+    }
+  },
+  "marker-references": {
+    "source": "generation_platform/binding/marker-references.json",
+    "model": {
+      "generate_schema_validators": true,
+      "openapi_scopes": [
+        "schemas",
+        "paths",
+        "parameters"
+      ]
+    },
+    "document": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema"
+    }
+  },
+  "dangling-sibling": {
+    "source": "generation_platform/binding/dangling-sibling.yaml",
+    "verbatim": true,
+    "model": {
+      "use_title_as_name": true,
+      "read_only_write_only_model_type": "request-response"
+    }
+  },
+  "final-imports": {
+    "source": "generation_platform/binding/final-imports.json",
+    "model": {
+      "strict_types": [
+        "str"
+      ],
+      "import_overrides": {
+        "StrictStr": "pydantic.types",
+        "Color": "palette"
+      }
+    }
+  },
+  "final-reused-inheritance": {
+    "source": "generation_platform/binding/final-reused-inheritance.json",
+    "model": {
+      "use_serialize_as_any": true,
+      "reuse_model": true
+    }
+  },
+  "inline-allof-anyOf": {
+    "source": "generation_platform/binding/inline-allof-anyOf.json"
+  },
+  "inline-allof-oneOf": {
+    "source": "generation_platform/binding/inline-allof-oneOf.json"
+  },
+  "quoted-constraints": {
+    "source": "generation_platform/binding/quoted-constraints.json",
+    "model": {
+      "use_double_quotes": true,
+      "wrap_string_literal": true,
+      "use_decimal_for_multiple_of": true,
+      "deserialize_default_values": [
+        "decimal"
+      ]
+    },
+    "variants": {
+      "builtin": {},
+      "black": {
+        "formatters": [
+          "black"
+        ]
+      }
+    }
+  },
+  "api-reference-declarations": {
+    "source": "generation_platform/api_scope/reference-declarations.json"
+  },
+  "api-pointer-percent": {
+    "source": "generation_platform/api_scope/pointer-percent.json"
+  },
+  "api-pointer-utf8": {
+    "source": "generation_platform/api_scope/pointer-utf8.json"
+  },
+  "api-pointer-escape": {
+    "source": "generation_platform/api_scope/pointer-escape.json"
+  },
+  "api-pointer-tilde": {
+    "source": "generation_platform/api_scope/pointer-tilde.json"
+  },
+  "api-pointer-ambiguous": {
+    "source": "generation_platform/api_scope/pointer-ambiguous.json"
+  },
+  "api-pointer-external-ambiguous": {
+    "source": "generation_platform/api_scope/pointer-external-ambiguous.json",
+    "references": [
+      "pointer-external-library.json"
+    ]
+  },
+  "api-reference-anchors": {
+    "source": "generation_platform/api_scope/anchors.json",
+    "references": [
+      "anchors-library.json"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ]
+    }
+  },
+  "capture-module-outputs": {
+    "source": "generation_platform/observation.json",
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ],
+      "read_only_write_only_model_type": "all",
+      "collapse_root_models": true,
+      "reuse_model": true
+    }
+  },
+  "session-contract": {
+    "source": "generation_platform/binding/session-contract.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "use_union_operator": true,
+      "use_standard_collections": true,
+      "formatters": [
+        "black",
+        "isort"
+      ]
+    },
+    "changes": [
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "line-offsets",
+        "old": "class Record(BaseModel):",
+        "new": "\n\nclass Record(BaseModel):"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "base",
+        "old": "class Record(BaseModel):",
+        "new": "class Record(dict):"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "configuration",
+        "old": "extra='forbid'",
+        "new": "extra='allow'"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "new-field",
+        "old": "class Record(BaseModel):",
+        "new": "class Record(BaseModel):\n    unexpected: str"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "decorator",
+        "old": "class Record(BaseModel):",
+        "new": "@custom_decorator\nclass Record(BaseModel):"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "symbol-shadow",
+        "old": "    root: int",
+        "new": "    root: int\n\nfrom builtins import str as Record"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "import-identity",
+        "old": "from pydantic import BaseModel, ConfigDict, Field, RootModel, conint",
+        "new": "from custom_backend import BaseModel, ConfigDict, Field, RootModel, conint"
+      }
+    ],
+    "verbatim": true
+  },
+  "session-metadata-local": {
+    "source": "generation_platform/binding/session-metadata-local.json",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "verbatim": true
+  },
+  "session-metadata-loaded": {
+    "source": "generation_platform/binding/session-metadata-loaded.json",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "verbatim": true,
+    "references": [
+      "session-metadata-library.json"
+    ]
+  },
+  "session-metadata-shadow": {
+    "source": "generation_platform/binding/session-metadata-shadow.json",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "verbatim": true,
+    "references": [
+      "session-metadata-cycle.json"
+    ]
+  },
+  "session-metadata-unobserved": {
+    "source": "generation_platform/binding/session-metadata-unobserved.json",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "verbatim": true
+  },
+  "session-metadata-missing": {
+    "source": "generation_platform/binding/session-metadata-missing.json",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "verbatim": true
+  },
+  "session-metadata-cycle": {
+    "source": "generation_platform/binding/session-metadata-cycle.json",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "verbatim": true
+  },
+  "session-metadata-invalid": {
+    "source": "generation_platform/binding/session-metadata-invalid.json",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "verbatim": true
+  },
+  "session-metadata-anchor": {
+    "source": "generation_platform/binding/session-metadata-anchor.json",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "verbatim": true
+  },
+  "session-metadata-nonobject": {
+    "source": "generation_platform/binding/session-metadata-nonobject.json",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "verbatim": true
+  },
+  "session-schema-callback": {
+    "source": "generation_platform/binding/session-schema-callback.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "variants": {
+      "schemas": {
+        "openapi_scopes": [
+          "schemas"
+        ]
+      },
+      "api": {
+        "openapi_scopes": [
+          "api"
+        ]
+      }
+    },
+    "verbatim": true
+  },
+  "session-schema-callback-referenced": {
+    "source": "generation_platform/binding/session-schema-callback-referenced.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "variants": {
+      "schemas": {
+        "openapi_scopes": [
+          "schemas"
+        ]
+      },
+      "api": {
+        "openapi_scopes": [
+          "api"
+        ]
+      }
+    },
+    "verbatim": true
+  },
+  "session-final-enum": {
+    "source": "openapi/discriminator_enum.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "use_enum_values_in_discriminator": true,
+      "use_subclass_enum": true,
+      "use_serialize_as_any": true,
+      "reuse_model": true
+    }
+  },
+  "session-discriminator-copied": {
+    "source": "generation_platform/binding/session-discriminator-copied.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "use_subclass_enum": true,
+      "reuse_model": true
+    },
+    "variants": {
+      "members": {},
+      "values": {
+        "use_enum_values_in_discriminator": true
+      },
+      "alias": {
+        "aliases": {
+          "version": "kind"
+        }
+      }
+    }
+  },
+  "session-discriminator-alias": {
+    "source": "generation_platform/binding/session-discriminator-override.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "use_subclass_enum": true,
+      "reuse_model": true,
+      "aliases": {
+        "version": "kind"
+      }
+    },
+    "variants": {
+      "members": {},
+      "values": {
+        "use_enum_values_in_discriminator": true
+      }
+    }
+  },
+  "session-discriminator-ambiguous": {
+    "source": "generation_platform/binding/session-discriminator-ambiguous.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "use_enum_values_in_discriminator": true,
+      "use_subclass_enum": true,
+      "reuse_model": true
+    }
+  },
+  "session-root-items": {
+    "source": "generation_platform/binding/session-root-items.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "use_title_as_name": true
+    }
+  },
+  "session-final-imports": {
+    "source": "generation_platform/binding/session-final-imports.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "import_overrides": {
+        "UUID": "custom_uuid",
+        "datetime": "custom_dates",
+        "argparse": "custom_runtime",
+        "Bar": "custom_models",
+        "Qux": "custom_models",
+        "conint": "pydantic.types",
+        "constr": "pydantic.types",
+        "NamedTuple": "typing_extensions"
+      }
+    },
+    "variants": {
+      "plain": {},
+      "annotated": {
+        "use_annotated": true,
+        "field_constraints": true
+      }
+    }
+  },
+  "final-types-metadata-types": {
+    "source": "generation_platform/binding/metadata-types.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "variants": {
+      "annotated": {
+        "use_annotated": true,
+        "field_constraints": true
+      },
+      "collapsed-remapped": {
+        "collapse_root_models": true,
+        "import_overrides": {
+          "Field": "pydantic",
+          "Meta": "msgspec"
+        }
+      }
+    }
+  },
+  "final-types-container-types": {
+    "source": "generation_platform/binding/container-types.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "variants": {
+      "annotated": {
+        "use_annotated": true,
+        "field_constraints": true
+      },
+      "collapsed-remapped": {
+        "collapse_root_models": true,
+        "import_overrides": {
+          "Field": "pydantic",
+          "Meta": "msgspec"
+        }
+      }
+    }
+  },
+  "final-types-empty-fixed-tuple": {
+    "source": "generation_platform/binding/empty-fixed-tuple.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "variants": {
+      "annotated": {
+        "use_annotated": true,
+        "field_constraints": true
+      },
+      "collapsed-remapped": {
+        "collapse_root_models": true,
+        "import_overrides": {
+          "Field": "pydantic",
+          "Meta": "msgspec"
+        }
+      }
+    }
+  },
+  "final-types-emitted-defaults": {
+    "source": "generation_platform/binding/emitted-defaults.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "variants": {
+      "annotated": {
+        "use_annotated": true,
+        "field_constraints": true
+      },
+      "collapsed-remapped": {
+        "collapse_root_models": true,
+        "import_overrides": {
+          "Field": "pydantic",
+          "Meta": "msgspec"
+        }
+      }
+    }
+  },
+  "final-types-synthetic-origins": {
+    "source": "generation_platform/binding/synthetic-origins.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "variants": {
+      "annotated": {
+        "use_annotated": true,
+        "field_constraints": true
+      },
+      "collapsed-remapped": {
+        "collapse_root_models": true,
+        "import_overrides": {
+          "Field": "pydantic",
+          "Meta": "msgspec"
+        }
+      }
+    }
+  },
+  "session-enums": {
+    "source": "generation_platform/binding/session-enums.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    }
+  },
+  "session-forward": {
+    "source": "generation_platform/binding/session-forward.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    }
+  },
+  "session-reuse": {
+    "source": "generation_platform/binding/session-reuse.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "reuse_model": true
+    },
+    "verbatim": true
+  },
+  "session-parameter-override": {
+    "source": "generation_platform/binding/session-parameter-override.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "verbatim": true
+  },
+  "session-media-precedence": {
+    "source": "generation_platform/binding/session-media-precedence.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "verbatim": true
+  },
+  "session-media-ignored": {
+    "source": "generation_platform/binding/session-media-ignored.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "verbatim": true
+  },
+  "session-media-stream": {
+    "source": "generation_platform/binding/session-media-stream.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "verbatim": true
+  },
+  "session-discriminator-synthetic": {
+    "source": "generation_platform/binding/session-discriminator-synthetic.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    }
+  },
+  "session-imports": {
+    "source": "openapi/circular_imports_acyclic.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "models": "models"
+  },
+  "session-builtin-alias": {
+    "source": "openapi/builtin_type_field_names.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    }
+  },
+  "session-missing-reference": {
+    "source": "generation_platform/binding/session-missing-reference.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "variants": {
+      "api": {
+        "openapi_scopes": [
+          "api"
+        ]
+      },
+      "api-collapsed": {
+        "openapi_scopes": [
+          "api"
+        ],
+        "collapse_root_models": true
+      },
+      "paths": {
+        "openapi_scopes": [
+          "paths"
+        ]
+      },
+      "schemas-collapsed": {
+        "openapi_scopes": [
+          "schemas"
+        ],
+        "collapse_root_models": true
+      }
+    },
+    "verbatim": true
+  },
+  "session-legacy-discriminator": {
+    "source": "generation_platform/binding/session-legacy-discriminator.json",
+    "variants": {
+      "schemas": {
+        "openapi_scopes": [
+          "schemas"
+        ]
+      },
+      "paths": {
+        "openapi_scopes": [
+          "paths"
+        ]
+      },
+      "api": {
+        "openapi_scopes": [
+          "api"
+        ]
+      }
+    },
+    "verbatim": true
+  },
+  "session-legacy-nullable": {
+    "source": "generation_platform/binding/session-legacy-nullable.json",
+    "variants": {
+      "schemas": {
+        "openapi_scopes": [
+          "schemas"
+        ]
+      },
+      "paths": {
+        "openapi_scopes": [
+          "paths"
+        ]
+      },
+      "api": {
+        "openapi_scopes": [
+          "api"
+        ]
+      }
+    },
+    "verbatim": true
+  },
+  "session-contentless": {
+    "source": "generation_platform/api_scope/contentless.json",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "verbatim": true
+  },
+  "session-legacy-parameters": {
+    "source": "generation_platform/binding/session-legacy-parameters.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "variants": {
+      "paths": {
+        "openapi_scopes": [
+          "paths"
+        ]
+      },
+      "parameters": {
+        "openapi_scopes": [
+          "paths",
+          "parameters"
+        ]
+      },
+      "api": {
+        "openapi_scopes": [
+          "api"
+        ]
+      }
+    },
+    "verbatim": true
+  },
+  "session-missing-reuse": {
+    "source": "generation_platform/binding/session-missing-reuse.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "variants": {
+      "plain": {},
+      "reuse": {
+        "reuse_model": true
+      },
+      "collapse": {
+        "collapse_root_models": true
+      },
+      "reuse-collapse": {
+        "reuse_model": true,
+        "collapse_root_models": true
+      }
+    },
+    "verbatim": true
+  },
+  "session-missing-collapsed-reuse": {
+    "source": "generation_platform/binding/session-missing-reuse.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "reuse_model": true,
+      "collapse_reuse_models": true,
+      "read_only_write_only_model_type": "all"
+    },
+    "verbatim": true
+  },
+  "session-missing-inherited-array": {
+    "source": "generation_platform/binding/session-missing-inherited-array.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "reuse_model": true,
+      "collapse_reuse_models": true,
+      "read_only_write_only_model_type": "all"
+    },
+    "verbatim": true
+  },
+  "session-missing-directional-array": {
+    "source": "generation_platform/binding/session-missing-directional-array.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "reuse_model": true,
+      "collapse_reuse_models": true,
+      "read_only_write_only_model_type": "request-response"
+    },
+    "verbatim": true
+  },
+  "session-import-override": {
+    "source": "generation_platform/binding/session-import-override.json",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "collapse_root_models": true,
+      "output_datetime_class": "AwareDatetime",
+      "import_overrides": {
+        "AwareDatetime": "custom_dates"
+      }
+    },
+    "verbatim": true
+  },
+  "session-type-alias-mutual-recursive": {
+    "source": "openapi/type_alias_mutual_recursive.yaml",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "collapse_root_models": true
+    }
+  },
+  "session-type-alias-forward-ref-multiple": {
+    "source": "openapi/type_alias_forward_ref_multiple.yaml",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "collapse_root_models": true
+    }
+  },
+  "session-dynamic-names": {
+    "pins": "#4299: the package ships while its BND_TYPE_EXPRESSION_UNSUPPORTED diagnostic is dropped",
+    "source": "generation_platform/binding/session-dynamic-names.json",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "set_default_enum_member": true
+    }
+  },
+  "session-selection": {
+    "source": "generation_platform/binding/session-selection.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "changes": [
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "field",
+        "old": "bad: str",
+        "new": "bad: int"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "function",
+        "old": "bad: str",
+        "new": "bad: str\n\ndef Bad():\n    return 1\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "delete",
+        "old": "bad: str",
+        "new": "bad: str\n\ndel Bad\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "unpack",
+        "old": "bad: str",
+        "new": "bad: str\n\nBad, other = int, str\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "augmented",
+        "old": "bad: str",
+        "new": "bad: str\n\nBad |= int\n"
+      },
+      {
+        "render": "pydantic_v2.dataclass default",
+        "id": "field",
+        "old": "bad: str",
+        "new": "bad: int"
+      },
+      {
+        "render": "pydantic_v2.dataclass default",
+        "id": "function",
+        "old": "bad: str",
+        "new": "bad: str\n\ndef Bad():\n    return 1\n"
+      },
+      {
+        "render": "pydantic_v2.dataclass default",
+        "id": "delete",
+        "old": "bad: str",
+        "new": "bad: str\n\ndel Bad\n"
+      },
+      {
+        "render": "pydantic_v2.dataclass default",
+        "id": "unpack",
+        "old": "bad: str",
+        "new": "bad: str\n\nBad, other = int, str\n"
+      },
+      {
+        "render": "pydantic_v2.dataclass default",
+        "id": "augmented",
+        "old": "bad: str",
+        "new": "bad: str\n\nBad |= int\n"
+      },
+      {
+        "render": "dataclasses.dataclass default",
+        "id": "field",
+        "old": "bad: str",
+        "new": "bad: int"
+      },
+      {
+        "render": "dataclasses.dataclass default",
+        "id": "function",
+        "old": "bad: str",
+        "new": "bad: str\n\ndef Bad():\n    return 1\n"
+      },
+      {
+        "render": "dataclasses.dataclass default",
+        "id": "delete",
+        "old": "bad: str",
+        "new": "bad: str\n\ndel Bad\n"
+      },
+      {
+        "render": "dataclasses.dataclass default",
+        "id": "unpack",
+        "old": "bad: str",
+        "new": "bad: str\n\nBad, other = int, str\n"
+      },
+      {
+        "render": "dataclasses.dataclass default",
+        "id": "augmented",
+        "old": "bad: str",
+        "new": "bad: str\n\nBad |= int\n"
+      },
+      {
+        "render": "typing.TypedDict default",
+        "id": "field",
+        "old": "bad: str",
+        "new": "bad: int"
+      },
+      {
+        "render": "typing.TypedDict default",
+        "id": "function",
+        "old": "bad: str",
+        "new": "bad: str\n\ndef Bad():\n    return 1\n"
+      },
+      {
+        "render": "typing.TypedDict default",
+        "id": "delete",
+        "old": "bad: str",
+        "new": "bad: str\n\ndel Bad\n"
+      },
+      {
+        "render": "typing.TypedDict default",
+        "id": "unpack",
+        "old": "bad: str",
+        "new": "bad: str\n\nBad, other = int, str\n"
+      },
+      {
+        "render": "typing.TypedDict default",
+        "id": "augmented",
+        "old": "bad: str",
+        "new": "bad: str\n\nBad |= int\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "field",
+        "old": "bad: str",
+        "new": "bad: int"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "function",
+        "old": "bad: str",
+        "new": "bad: str\n\ndef Bad():\n    return 1\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "delete",
+        "old": "bad: str",
+        "new": "bad: str\n\ndel Bad\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "unpack",
+        "old": "bad: str",
+        "new": "bad: str\n\nBad, other = int, str\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "augmented",
+        "old": "bad: str",
+        "new": "bad: str\n\nBad |= int\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "imported-base",
+        "old": "from pydantic import BaseModel",
+        "new": "from pydantic import BaseModel\n\ndef BaseModel():\n    return 1\n"
+      }
+    ],
+    "verbatim": true
+  },
+  "session-custom-origins": {
+    "source": "generation_platform/binding/session-selection.json",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "variants": {
+      "custom-base": {
+        "base_class": "app.Base"
+      },
+      "mapped-base": {
+        "base_class_map": {
+          "Bad": "app.Base"
+        }
+      },
+      "decorated": {
+        "class_decorators": [
+          "@functools.total_ordering"
+        ]
+      }
+    },
+    "verbatim": true
+  },
+  "session-directions": {
+    "source": "generation_platform/binding/session-directions.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "variants": {
+      "request-response": {
+        "read_only_write_only_model_type": "request-response"
+      },
+      "all": {
+        "read_only_write_only_model_type": "all"
+      },
+      "all-reuse-collapse": {
+        "read_only_write_only_model_type": "all",
+        "reuse_model": true,
+        "collapse_root_models": true
+      },
+      "request-response-reuse-collapse": {
+        "read_only_write_only_model_type": "request-response",
+        "reuse_model": true,
+        "collapse_root_models": true
+      }
+    },
+    "verbatim": true
+  },
+  "session-directional-producers": {
+    "source": "generation_platform/binding/session-directional-producers.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "variants": {
+      "request-response": {
+        "read_only_write_only_model_type": "request-response"
+      },
+      "all": {
+        "read_only_write_only_model_type": "all"
+      },
+      "all-reuse-collapse": {
+        "read_only_write_only_model_type": "all",
+        "reuse_model": true,
+        "collapse_root_models": true
+      },
+      "request-response-reuse-collapse": {
+        "read_only_write_only_model_type": "request-response",
+        "reuse_model": true,
+        "collapse_root_models": true
+      }
+    },
+    "verbatim": true
+  },
+  "session-legacy": {
+    "source": "generation_platform/binding/session-legacy.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "variants": {
+      "schemas": {
+        "openapi_scopes": [
+          "schemas"
+        ]
+      },
+      "paths": {
+        "openapi_scopes": [
+          "paths"
+        ]
+      },
+      "api": {
+        "openapi_scopes": [
+          "api"
+        ]
+      }
+    },
+    "verbatim": true
+  },
+  "session-legacy-source": {
+    "source": "generation_platform/binding/session-legacy-source.json",
+    "model": {
+      "openapi_scopes": [
+        "schemas"
+      ]
+    },
+    "verbatim": true
+  },
+  "session-legacy-media": {
+    "source": "generation_platform/binding/session-legacy-media.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "paths"
+      ]
+    },
+    "variants": {
+      "plain": {},
+      "collapsed": {
+        "collapse_root_models": true
+      }
+    },
+    "verbatim": true
+  },
+  "session-legacy-shared": {
+    "source": "generation_platform/binding/session-legacy-shared.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "paths"
+      ]
+    },
+    "variants": {
+      "plain": {},
+      "status-names": {
+        "use_status_code_in_response_name": true
+      }
+    },
+    "verbatim": true
+  },
+  "session-legacy-external": {
+    "source": "generation_platform/binding/session-legacy-external.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "paths"
+      ]
+    },
+    "verbatim": true,
+    "references": [
+      "session-legacy-media.json",
+      "session-media-stream.json"
+    ]
+  },
+  "session-legacy-shared-stream": {
+    "source": "generation_platform/binding/session-legacy-shared-stream.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_union_operator": true,
+      "use_standard_collections": true,
+      "openapi_scopes": [
+        "paths"
+      ],
+      "use_status_code_in_response_name": true
+    },
+    "changes": [
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "corrupt-root",
+        "old": "root: list[BPostRequestItem]",
+        "new": "root: list[str]"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "corrupt-item",
+        "old": "class BPostRequestItem(BaseModel):\n    value: int",
+        "new": "class BPostRequestItem(BaseModel):\n    value: str"
+      }
+    ],
+    "verbatim": true
+  },
+  "session-integer-status": {
+    "source": "generation_platform/binding/session-integer-status.yaml",
+    "verbatim": true,
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "variants": {
+      "paths": {
+        "openapi_scopes": [
+          "paths"
+        ]
+      },
+      "api": {
+        "openapi_scopes": [
+          "api"
+        ]
+      }
+    }
+  },
+  "session-ambiguous-status": {
+    "pins": "a YAML response status written once as a string and once as an integer escapes target generation as the internal BindingCaptureError instead of a diagnostic (not yet filed)",
+    "source": "generation_platform/binding/session-ambiguous-status.yaml",
+    "verbatim": true,
+    "raises": "BindingCaptureError",
+    "model": {
+      "openapi_scopes": [
+        "paths"
+      ]
+    }
+  },
+  "session-cyclic-metadata": {
+    "pins": "cyclic YAML metadata escapes target generation as the internal BindingCaptureError instead of a diagnostic (not yet filed)",
+    "source": "generation_platform/binding/session-cyclic-metadata.yaml",
+    "verbatim": true,
+    "raises": "BindingCaptureError"
+  },
+  "session-self-array": {
+    "source": "generation_platform/binding/session-self-array.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "variants": {
+      "typing": {},
+      "standard": {
+        "use_standard_collections": true
+      },
+      "generic": {
+        "use_generic_container_types": true
+      },
+      "standard-collapsed": {
+        "use_standard_collections": true,
+        "collapse_root_models": true
+      }
+    },
+    "changes": [
+      {
+        "render": "pydantic_v2.BaseModel standard",
+        "id": "list(object)",
+        "old": "list",
+        "new": "list[object]"
+      },
+      {
+        "render": "pydantic_v2.BaseModel standard",
+        "id": "list(())",
+        "old": "list",
+        "new": "list[()]"
+      },
+      {
+        "render": "pydantic_v2.BaseModel standard",
+        "id": "list()",
+        "old": "list",
+        "new": "list[]"
+      },
+      {
+        "render": "pydantic_v2.BaseModel standard",
+        "id": "tuple(())",
+        "old": "list",
+        "new": "tuple[()]"
+      },
+      {
+        "render": "pydantic_v2.BaseModel standard",
+        "id": "dict",
+        "old": "list",
+        "new": "dict"
+      },
+      {
+        "render": "pydantic_v2.dataclass standard",
+        "id": "list(object)",
+        "old": "list",
+        "new": "list[object]"
+      },
+      {
+        "render": "pydantic_v2.dataclass standard",
+        "id": "list(())",
+        "old": "list",
+        "new": "list[()]"
+      },
+      {
+        "render": "pydantic_v2.dataclass standard",
+        "id": "list()",
+        "old": "list",
+        "new": "list[]"
+      },
+      {
+        "render": "pydantic_v2.dataclass standard",
+        "id": "tuple(())",
+        "old": "list",
+        "new": "tuple[()]"
+      },
+      {
+        "render": "pydantic_v2.dataclass standard",
+        "id": "dict",
+        "old": "list",
+        "new": "dict"
+      },
+      {
+        "render": "dataclasses.dataclass standard",
+        "id": "list(object)",
+        "old": "list",
+        "new": "list[object]"
+      },
+      {
+        "render": "dataclasses.dataclass standard",
+        "id": "list(())",
+        "old": "list",
+        "new": "list[()]"
+      },
+      {
+        "render": "dataclasses.dataclass standard",
+        "id": "list()",
+        "old": "list",
+        "new": "list[]"
+      },
+      {
+        "render": "dataclasses.dataclass standard",
+        "id": "tuple(())",
+        "old": "list",
+        "new": "tuple[()]"
+      },
+      {
+        "render": "dataclasses.dataclass standard",
+        "id": "dict",
+        "old": "list",
+        "new": "dict"
+      },
+      {
+        "render": "typing.TypedDict standard",
+        "id": "list(object)",
+        "old": "list",
+        "new": "list[object]"
+      },
+      {
+        "render": "typing.TypedDict standard",
+        "id": "list(())",
+        "old": "list",
+        "new": "list[()]"
+      },
+      {
+        "render": "typing.TypedDict standard",
+        "id": "list()",
+        "old": "list",
+        "new": "list[]"
+      },
+      {
+        "render": "typing.TypedDict standard",
+        "id": "tuple(())",
+        "old": "list",
+        "new": "tuple[()]"
+      },
+      {
+        "render": "typing.TypedDict standard",
+        "id": "dict",
+        "old": "list",
+        "new": "dict"
+      },
+      {
+        "render": "msgspec.Struct standard",
+        "id": "list(object)",
+        "old": "list",
+        "new": "list[object]"
+      },
+      {
+        "render": "msgspec.Struct standard",
+        "id": "list(())",
+        "old": "list",
+        "new": "list[()]"
+      },
+      {
+        "render": "msgspec.Struct standard",
+        "id": "list()",
+        "old": "list",
+        "new": "list[]"
+      },
+      {
+        "render": "msgspec.Struct standard",
+        "id": "tuple(())",
+        "old": "list",
+        "new": "tuple[()]"
+      },
+      {
+        "render": "msgspec.Struct standard",
+        "id": "dict",
+        "old": "list",
+        "new": "dict"
+      }
+    ],
+    "verbatim": true
+  },
+  "session-common-tuple": {
+    "source": "generation_platform/binding/session-common-tuple.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    }
+  },
+  "session-common-any": {
+    "source": "generation_platform/binding/session-common-any.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    }
+  },
+  "session-common-one": {
+    "source": "generation_platform/binding/session-common-one.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    }
+  },
+  "session-constrained-object": {
+    "source": "generation_platform/binding/session-constrained-object-False.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "field_constraints": true
+    },
+    "variants": {
+      "plain": {},
+      "annotated": {
+        "use_annotated": true
+      }
+    }
+  },
+  "session-constrained-values": {
+    "source": "generation_platform/binding/session-constrained-object-True.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "field_constraints": true
+    },
+    "variants": {
+      "plain": {},
+      "annotated": {
+        "use_annotated": true
+      }
+    }
+  },
+  "session-constrained-nested": {
+    "source": "generation_platform/binding/session-constrained-object-nested.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "field_constraints": true
+    },
+    "variants": {
+      "plain": {},
+      "annotated": {
+        "use_annotated": true
+      }
+    }
+  },
+  "session-constrained-plain": {
+    "source": "generation_platform/binding/session-plain-unions.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "field_constraints": true
+    },
+    "variants": {
+      "plain": {},
+      "annotated": {
+        "use_annotated": true
+      }
+    }
+  },
+  "session-default-policies-forced": {
+    "source": "generation_platform/binding/session-default-policies.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "default_value_overrides": {
+        "override_null": null
+      },
+      "force_optional_for_required_fields": true
+    }
+  },
+  "session-extra-items": {
+    "source": "generation_platform/binding/session-extra-items.json",
+    "backends": [
+      "typing.TypedDict"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "use_standard_primitive_types": true,
+      "use_closed_typed_dict": true
+    },
+    "variants": {
+      "typing": {},
+      "standard": {
+        "use_standard_collections": true
+      },
+      "remapped": {
+        "import_overrides": {
+          "UUID": "custom_uuid"
+        }
+      },
+      "standard-remapped": {
+        "use_standard_collections": true,
+        "import_overrides": {
+          "UUID": "custom_uuid"
+        }
+      }
+    },
+    "changes": [
+      {
+        "render": "typing.TypedDict typing",
+        "id": "corrupt-child",
+        "old": "bad: str",
+        "new": "bad: int"
+      },
+      {
+        "render": "typing.TypedDict standard",
+        "id": "corrupt-child",
+        "old": "bad: str",
+        "new": "bad: int"
+      }
+    ],
+    "verbatim": true
+  },
+  "session-inherited-shapes": {
+    "source": "generation_platform/binding/session-inherited-shapes.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "allof_merge_mode": "none"
+    }
+  },
+  "session-inherited-tuple": {
+    "source": "generation_platform/binding/session-inherited-tuple.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "allof_merge_mode": "none"
+    }
+  },
+  "session-inherited-distributed": {
+    "source": "generation_platform/binding/session-inherited-distributed.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "allof_merge_mode": "none"
+    }
+  },
+  "session-inherited-ref-sibling": {
+    "source": "generation_platform/binding/session-inherited-ref-sibling.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "allof_merge_mode": "none"
+    }
+  },
+  "session-inherited-ref-chain": {
+    "source": "generation_platform/binding/session-inherited-ref-chain.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "allof_merge_mode": "none"
+    }
+  },
+  "session-inherited-property-names": {
+    "source": "generation_platform/binding/session-inherited-property-names.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "allof_merge_mode": "none"
+    }
+  },
+  "session-inherited-x-property-names": {
+    "source": "generation_platform/binding/session-inherited-x-property-names.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "allof_merge_mode": "none"
+    }
+  },
+  "inherited-no-merge-backend-types": {
+    "source": "openapi/allof_no_merge_backend_types.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "allof_merge_mode": "none"
+    }
+  },
+  "inherited-no-merge-constraint-type-shape": {
+    "source": "openapi/allof_no_merge_constraint_type_shape.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "allof_merge_mode": "none"
+    }
+  },
+  "inherited-no-merge-recursive-constraints": {
+    "source": "openapi/allof_no_merge_recursive_constraints.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "allof_merge_mode": "none"
+    }
+  },
+  "inherited-no-merge-boolean-false-ref": {
+    "source": "openapi/allof_no_merge_boolean_false_ref.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "allof_merge_mode": "none"
+    }
+  },
+  "inherited-no-merge-boolean-false-literal": {
+    "source": "openapi/allof_no_merge_boolean_false_literal.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "allof_merge_mode": "none"
+    }
+  },
+  "inherited-no-merge-boolean-false-nested": {
+    "source": "openapi/allof_no_merge_boolean_false_nested.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "allof_merge_mode": "none"
+    }
+  },
+  "session-module-writes": {
+    "source": "generation_platform/binding/session-module-writes.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "changes": [
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "if-assignment",
+        "append": "\n\nif True:\n    Model = int\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "if-inline",
+        "append": "\n\nif True: Model = int\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "nested-control",
+        "append": "\n\nif True:\n    if True:\n        Model = int\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "conditional-import",
+        "append": "\n\nif True:\n    from builtins import int as Model\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "conditional-builtin",
+        "append": "\n\nif True:\n    str = int\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "for-target",
+        "append": "\n\nfor Model in (int,):\n    pass\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "for-body",
+        "append": "\n\nfor item in (int,):\n    Model = item\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "with-target",
+        "append": "\n\nwith resource() as Model:\n    pass\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "with-body",
+        "append": "\n\nwith resource():\n    Model = int\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "except-target",
+        "append": "\n\ntry:\n    pass\nexcept ValueError as Model:\n    pass\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "finally-body",
+        "append": "\n\ntry:\n    pass\nfinally:\n    Model = int\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "while-named-expression",
+        "append": "\n\nwhile (Model := int):\n    break\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "if-named-expression",
+        "append": "\n\nif (Model := int):\n    pass\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "case-capture",
+        "append": "\n\nmatch int:\n    case Model:\n        pass\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "conditional-delete",
+        "append": "\n\nif True:\n    del Model\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "conditional-function",
+        "append": "\n\nif True:\n    def Model():\n        pass\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "conditional-class",
+        "append": "\n\nif True:\n    class Model:\n        pass\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "conditional-unpack",
+        "append": "\n\nif True:\n    (Model, other) = (int, str)\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "conditional-augmented",
+        "append": "\n\nif True:\n    Model |= int\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "condition-read",
+        "append": "\n\nif Other:\n    Model = int\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "function-local",
+        "append": "\n\ndef helper():\n    Model = int\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "async-local",
+        "append": "\n\nasync def helper():\n    Model = int\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "class-local",
+        "append": "\n\nclass Helper:\n    Model = int\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "conditional-function-local",
+        "append": "\n\nif True:\n    def helper():\n        Model = int\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "conditional-class-local",
+        "append": "\n\nif True:\n    class Helper:\n        Model = int\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "conditional-local-siblings",
+        "append": "\n\nif True:\n    def helper():\n        Model = int\n    class Helper:\n        Model = int\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "conditional-read",
+        "append": "\n\nif Model:\n    pass\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "exec",
+        "append": "\n\nexec('Model = int')\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "globals",
+        "append": "\n\nglobals()['Model'] = int\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "conditional-exec",
+        "append": "\n\nif True:\n    exec('Model = int')\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "class-globals",
+        "append": "\n\nclass Helper:\n    globals()['Model'] = int\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "eval",
+        "append": "\n\neval(\"globals().__setitem__('Model', int)\")\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "locals",
+        "append": "\n\nlocals()['Model'] = int\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "vars",
+        "append": "\n\nvars()['Model'] = int\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "setattr",
+        "append": "\n\nsetattr(Model, '__annotations__', {'value': int})\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "builtins",
+        "append": "\n\n__builtins__['exec']('Model = int')\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "aliased-exec",
+        "append": "\n\nrun = exec\nrun('Model = int')\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "import",
+        "append": "\n\n__import__('builtins').exec('Model = int')\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "function-dynamic",
+        "append": "\n\ndef helper():\n    exec('Model = int')\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "function-dynamic-sibling",
+        "append": "\n\ndef helper():\n    globals()['Model'] = int\n\nif Model:\n    pass\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "string-dynamic",
+        "append": "\n\ncomment = \"exec('Model = int')\"\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "class-local-dynamic-name",
+        "append": "\n\nclass Helper:\n    globals: str\n    exec: str\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "imported-exec",
+        "append": "\n\nfrom builtins import exec as run\nrun('Model = int')\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "parenthesized-exec",
+        "append": "\n\nrun = (exec)\nrun('Model = int')\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "function-inline-dynamic",
+        "append": "\n\ndef helper(): exec('Model = int')\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "function-inline-globals",
+        "append": "\n\ndef helper(): globals()['Model'] = int\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "local-dynamic-definition-name",
+        "append": "\n\nexec = int\nglobals = str\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "called-function",
+        "append": "\n\ndef helper():\n    global Model\n    Model = int\nhelper()\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "conditional-call",
+        "append": "\n\nif True:\n    arbitrary_mutator()\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "call-attribute",
+        "append": "\n\nexternal.mutate()\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "assigned-call",
+        "append": "\n\ndef alter():\n    global Model\n    Model = int\nmarker = alter()\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "assigned-parenthesized-call",
+        "append": "\n\nmarker = (alter)()\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "assigned-indexed-call",
+        "append": "\n\nmarker = handlers[0]()\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "assigned-tuple-call",
+        "append": "\n\nmarker = (alter(), 1)[1]\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "conditional-test-call",
+        "append": "\n\nif alter():\n    pass\n"
+      },
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "conditional-assigned-call",
+        "append": "\n\nif True:\n    marker = alter()\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "if-assignment",
+        "append": "\n\nif True:\n    Model = int\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "if-inline",
+        "append": "\n\nif True: Model = int\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "nested-control",
+        "append": "\n\nif True:\n    if True:\n        Model = int\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "conditional-import",
+        "append": "\n\nif True:\n    from builtins import int as Model\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "conditional-builtin",
+        "append": "\n\nif True:\n    str = int\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "for-target",
+        "append": "\n\nfor Model in (int,):\n    pass\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "for-body",
+        "append": "\n\nfor item in (int,):\n    Model = item\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "with-target",
+        "append": "\n\nwith resource() as Model:\n    pass\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "with-body",
+        "append": "\n\nwith resource():\n    Model = int\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "except-target",
+        "append": "\n\ntry:\n    pass\nexcept ValueError as Model:\n    pass\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "finally-body",
+        "append": "\n\ntry:\n    pass\nfinally:\n    Model = int\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "while-named-expression",
+        "append": "\n\nwhile (Model := int):\n    break\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "if-named-expression",
+        "append": "\n\nif (Model := int):\n    pass\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "case-capture",
+        "append": "\n\nmatch int:\n    case Model:\n        pass\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "conditional-delete",
+        "append": "\n\nif True:\n    del Model\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "conditional-function",
+        "append": "\n\nif True:\n    def Model():\n        pass\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "conditional-class",
+        "append": "\n\nif True:\n    class Model:\n        pass\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "conditional-unpack",
+        "append": "\n\nif True:\n    (Model, other) = (int, str)\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "conditional-augmented",
+        "append": "\n\nif True:\n    Model |= int\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "condition-read",
+        "append": "\n\nif Other:\n    Model = int\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "function-local",
+        "append": "\n\ndef helper():\n    Model = int\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "async-local",
+        "append": "\n\nasync def helper():\n    Model = int\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "class-local",
+        "append": "\n\nclass Helper:\n    Model = int\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "conditional-function-local",
+        "append": "\n\nif True:\n    def helper():\n        Model = int\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "conditional-class-local",
+        "append": "\n\nif True:\n    class Helper:\n        Model = int\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "conditional-local-siblings",
+        "append": "\n\nif True:\n    def helper():\n        Model = int\n    class Helper:\n        Model = int\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "conditional-read",
+        "append": "\n\nif Model:\n    pass\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "exec",
+        "append": "\n\nexec('Model = int')\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "globals",
+        "append": "\n\nglobals()['Model'] = int\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "conditional-exec",
+        "append": "\n\nif True:\n    exec('Model = int')\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "class-globals",
+        "append": "\n\nclass Helper:\n    globals()['Model'] = int\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "eval",
+        "append": "\n\neval(\"globals().__setitem__('Model', int)\")\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "locals",
+        "append": "\n\nlocals()['Model'] = int\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "vars",
+        "append": "\n\nvars()['Model'] = int\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "setattr",
+        "append": "\n\nsetattr(Model, '__annotations__', {'value': int})\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "builtins",
+        "append": "\n\n__builtins__['exec']('Model = int')\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "aliased-exec",
+        "append": "\n\nrun = exec\nrun('Model = int')\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "import",
+        "append": "\n\n__import__('builtins').exec('Model = int')\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "function-dynamic",
+        "append": "\n\ndef helper():\n    exec('Model = int')\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "function-dynamic-sibling",
+        "append": "\n\ndef helper():\n    globals()['Model'] = int\n\nif Model:\n    pass\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "string-dynamic",
+        "append": "\n\ncomment = \"exec('Model = int')\"\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "class-local-dynamic-name",
+        "append": "\n\nclass Helper:\n    globals: str\n    exec: str\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "imported-exec",
+        "append": "\n\nfrom builtins import exec as run\nrun('Model = int')\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "parenthesized-exec",
+        "append": "\n\nrun = (exec)\nrun('Model = int')\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "function-inline-dynamic",
+        "append": "\n\ndef helper(): exec('Model = int')\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "function-inline-globals",
+        "append": "\n\ndef helper(): globals()['Model'] = int\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "local-dynamic-definition-name",
+        "append": "\n\nexec = int\nglobals = str\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "called-function",
+        "append": "\n\ndef helper():\n    global Model\n    Model = int\nhelper()\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "conditional-call",
+        "append": "\n\nif True:\n    arbitrary_mutator()\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "call-attribute",
+        "append": "\n\nexternal.mutate()\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "assigned-call",
+        "append": "\n\ndef alter():\n    global Model\n    Model = int\nmarker = alter()\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "assigned-parenthesized-call",
+        "append": "\n\nmarker = (alter)()\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "assigned-indexed-call",
+        "append": "\n\nmarker = handlers[0]()\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "assigned-tuple-call",
+        "append": "\n\nmarker = (alter(), 1)[1]\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "conditional-test-call",
+        "append": "\n\nif alter():\n    pass\n"
+      },
+      {
+        "render": "msgspec.Struct default",
+        "id": "conditional-assigned-call",
+        "append": "\n\nif True:\n    marker = alter()\n"
+      }
+    ],
+    "rewrites_pin": "#4299: the package ships rewritten models with their old bindings and no diagnostic",
+    "rewrites": [
+      {
+        "render": "pydantic_v2.BaseModel default",
+        "id": "if-assignment",
+        "old": "    flag: bool",
+        "new": "    flag: bool\n\nif True:\n    Model = int\n"
+      }
+    ]
+  },
+  "session-nullable-aliases": {
+    "source": "generation_platform/binding/session-nullable-aliases.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "use_union_operator": true,
+      "use_standard_collections": true
+    },
+    "variants": {
+      "plain": {},
+      "collapsed": {
+        "collapse_root_models": true
+      },
+      "annotated-remapped": {
+        "use_annotated": true,
+        "field_constraints": true,
+        "import_overrides": {
+          "Any": "typing_extensions"
+        }
+      }
+    },
+    "verbatim": true
+  },
+  "session-nullable-root-alias": {
+    "source": "generation_platform/binding/session-nullable-aliases.json",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "use_union_operator": true,
+      "use_standard_collections": true,
+      "use_root_model_type_alias": true
+    },
+    "variants": {
+      "plain": {},
+      "collapsed": {
+        "collapse_root_models": true
+      },
+      "annotated-remapped": {
+        "use_annotated": true,
+        "field_constraints": true,
+        "import_overrides": {
+          "Any": "typing_extensions"
+        }
+      }
+    },
+    "changes": [
+      {
+        "render": "pydantic_v2.BaseModel plain",
+        "id": "wrapper-0",
+        "old": "Nullable = RootModel[str | None]",
+        "new": "Nullable = str | None"
+      },
+      {
+        "render": "pydantic_v2.BaseModel plain",
+        "id": "wrapper-1",
+        "old": "Nullable = RootModel[str | None]",
+        "new": "Nullable = list[str | None]"
+      },
+      {
+        "render": "pydantic_v2.BaseModel plain",
+        "id": "wrapper-2",
+        "old": "Nullable = RootModel[str | None]",
+        "new": "Nullable = RootModel[str, None]"
+      },
+      {
+        "render": "pydantic_v2.BaseModel plain",
+        "id": "wrapper-3",
+        "old": "Nullable = RootModel[str | None]",
+        "new": "Nullable = RootModel[]"
+      },
+      {
+        "render": "pydantic_v2.BaseModel plain",
+        "id": "wrapper-4",
+        "old": "Nullable = RootModel[str | None]",
+        "new": "Nullable = RootModel[str]"
+      }
+    ],
+    "verbatim": true
+  },
+  "session-alias-dependencies": {
+    "source": "generation_platform/binding/session-alias-dependencies.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "variants": {
+      "plain": {}
+    },
+    "verbatim": true
+  },
+  "session-alias-dependencies-root": {
+    "source": "generation_platform/binding/session-alias-dependencies.json",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "use_root_model_type_alias": true
+    },
+    "verbatim": true
+  },
+  "session-alias-forms": {
+    "source": "generation_platform/binding/session-nullable-aliases.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "use_union_operator": true,
+      "use_standard_collections": true,
+      "use_type_alias": true
+    },
+    "variants": {
+      "py311": {},
+      "py311-annotated": {
+        "use_annotated": true,
+        "field_constraints": true
+      },
+      "py312": {
+        "target_python_version": "3.12"
+      },
+      "py312-annotated": {
+        "target_python_version": "3.12",
+        "use_annotated": true,
+        "field_constraints": true
+      }
+    },
+    "changes": [
+      {
+        "render": "pydantic_v2.BaseModel py311",
+        "id": "value-0",
+        "old": "Nullable = TypeAliasType(\"Nullable\", str | None)",
+        "new": "Nullable: str"
+      },
+      {
+        "render": "pydantic_v2.BaseModel py311",
+        "id": "value-1",
+        "old": "Nullable = TypeAliasType(\"Nullable\", str | None)",
+        "new": "Nullable ="
+      },
+      {
+        "render": "pydantic_v2.BaseModel py311",
+        "id": "value-2",
+        "old": "Nullable = TypeAliasType(\"Nullable\", str | None)",
+        "new": "Nullable = TypeAliasType(\"Wrong\", str | None)"
+      },
+      {
+        "render": "pydantic_v2.BaseModel py311",
+        "id": "value-3",
+        "old": "Nullable = TypeAliasType(\"Nullable\", str | None)",
+        "new": "Nullable = TypeAliasType(\"Nullable\")"
+      },
+      {
+        "render": "pydantic_v2.BaseModel py311",
+        "id": "value-4",
+        "old": "Nullable = TypeAliasType(\"Nullable\", str | None)",
+        "new": "Nullable = TypeAliasType(\"Nullable\", str | None, str)"
+      }
+    ],
+    "verbatim": true
+  },
+  "session-serialize-imports-False": {
+    "source": "generation_platform/binding/session-serialize-imports-False.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_serialize_as_any": true
+    },
+    "variants": {
+      "schemas": {
+        "openapi_scopes": [
+          "schemas"
+        ]
+      },
+      "paths": {
+        "openapi_scopes": [
+          "paths"
+        ]
+      },
+      "api": {
+        "openapi_scopes": [
+          "api"
+        ]
+      }
+    },
+    "verbatim": true
+  },
+  "session-serialize-imports-True": {
+    "source": "generation_platform/binding/session-serialize-imports-True.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_serialize_as_any": true
+    },
+    "variants": {
+      "schemas": {
+        "openapi_scopes": [
+          "schemas"
+        ]
+      },
+      "paths": {
+        "openapi_scopes": [
+          "paths"
+        ]
+      },
+      "api": {
+        "openapi_scopes": [
+          "api"
+        ]
+      }
+    },
+    "verbatim": true
+  },
+  "session-serialize-imports-collision": {
+    "source": "generation_platform/binding/session-serialize-imports-collision.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_serialize_as_any": true
+    },
+    "variants": {
+      "schemas": {
+        "openapi_scopes": [
+          "schemas"
+        ]
+      },
+      "paths": {
+        "openapi_scopes": [
+          "paths"
+        ]
+      },
+      "api": {
+        "openapi_scopes": [
+          "api"
+        ]
+      }
+    },
+    "verbatim": true
+  },
+  "session-global-imports-plain": {
+    "source": "generation_platform/binding/session-global-imports-plain.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "reuse_model": false,
+      "reuse_scope": "module",
+      "shared_module_name": "shared",
+      "treat_dot_as_module": false,
+      "all_exports_collision_strategy": "full-prefix"
+    },
+    "variants": {
+      "plain": {},
+      "remapped": {
+        "import_overrides": {
+          "UUID": "custom_uuid"
+        }
+      }
+    },
+    "verbatim": true
+  },
+  "session-global-imports-partial": {
+    "pins": "#4299: the packages ship while their BND_UNRESOLVED_REFERENCE diagnostics are dropped",
+    "source": "generation_platform/binding/session-global-imports-partial.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "reuse_model": false,
+      "reuse_scope": "module",
+      "shared_module_name": "shared",
+      "treat_dot_as_module": false,
+      "all_exports_collision_strategy": "full-prefix"
+    },
+    "variants": {
+      "plain": {},
+      "remapped": {
+        "import_overrides": {
+          "UUID": "custom_uuid"
+        }
+      }
+    },
+    "verbatim": true
+  },
+  "session-global-imports-dotted": {
+    "source": "generation_platform/binding/session-global-imports-dotted.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "reuse_model": true,
+      "reuse_scope": "tree",
+      "shared_module_name": "shared.types",
+      "treat_dot_as_module": true,
+      "all_exports_collision_strategy": "full-prefix",
+      "all_exports_scope": "recursive"
+    },
+    "variants": {
+      "plain": {},
+      "remapped": {
+        "import_overrides": {
+          "UUID": "custom_uuid"
+        }
+      }
+    },
+    "verbatim": true
+  },
+  "session-imported-helper": {
+    "source": "generation_platform/binding/session-imported-helper.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "use_standard_primitive_types": true,
+      "import_overrides": {
+        "UUID": "custom_uuid"
+      }
+    }
+  },
+  "session-discriminator-forward": {
+    "pins": "#4299: the enum-value renders ship while their BND_TYPE_EXPRESSION_UNSUPPORTED diagnostics are dropped",
+    "source": "generation_platform/binding/session-discriminator-forward.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "models": "models",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "module_split_mode": "single",
+      "use_subclass_enum": true,
+      "reuse_model": true
+    },
+    "variants": {
+      "members": {},
+      "values": {
+        "use_enum_values_in_discriminator": true
+      }
+    }
+  },
+  "session-discriminator-collapse": {
+    "pins": "#4299: the enum-value renders ship while their BND_TYPE_EXPRESSION_UNSUPPORTED diagnostics are dropped",
+    "source": "generation_platform/binding/session-discriminator-collapse.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "models": "models",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "module_split_mode": "single",
+      "use_subclass_enum": true,
+      "reuse_model": true,
+      "collapse_root_models": true
+    },
+    "variants": {
+      "members": {},
+      "values": {
+        "use_enum_values_in_discriminator": true
+      }
+    }
+  },
+  "session-encoding-3.0.3": {
+    "source": "generation_platform/binding/session-encoding-3.0.3.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "variants": {
+      "schemas": {
+        "openapi_scopes": [
+          "schemas"
+        ]
+      },
+      "paths": {
+        "openapi_scopes": [
+          "paths"
+        ]
+      },
+      "api": {
+        "openapi_scopes": [
+          "api"
+        ]
+      }
+    },
+    "verbatim": true
+  },
+  "session-encoding-3.2.0": {
+    "source": "generation_platform/binding/session-encoding-3.2.0.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "variants": {
+      "schemas": {
+        "openapi_scopes": [
+          "schemas"
+        ]
+      },
+      "paths": {
+        "openapi_scopes": [
+          "paths"
+        ]
+      },
+      "api": {
+        "openapi_scopes": [
+          "api"
+        ]
+      }
+    },
+    "verbatim": true
+  },
+  "edge-ref-sibling-recursive-target": {
+    "source": "generation_platform/binding/ref-sibling-recursive-target.yaml",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "verbatim": true
+  },
+  "edge-prefix-items-true": {
+    "source": "generation_platform/binding/prefix-items-true.yaml",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "verbatim": true
+  },
+  "edge-discriminator-dict-key": {
+    "source": "generation_platform/binding/session-discriminator-dict-key.json",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "module_split_mode": "single",
+      "collapse_root_models": true
+    },
+    "verbatim": true
+  },
+  "edge-legacy-dangling-response": {
+    "source": "generation_platform/binding/legacy-dangling-response.yaml",
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ]
+    },
+    "verbatim": true
+  },
+  "edge-legacy-reference-siblings": {
+    "source": "generation_platform/binding/legacy-reference-siblings.yaml",
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ]
+    },
+    "verbatim": true
+  },
+  "edge-legacy-reference-sibling-override": {
+    "source": "generation_platform/binding/legacy-reference-sibling-override.yaml",
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ]
+    },
+    "verbatim": true
+  },
+  "edge-legacy-shared-reference-body": {
+    "source": "generation_platform/binding/legacy-shared-reference-body.yaml",
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ]
+    },
+    "verbatim": true
+  },
+  "edge-legacy-parameter-content": {
+    "source": "openapi/parameter_content.yaml",
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ]
+    },
+    "verbatim": true
+  },
+  "edge-legacy-path-item-reference": {
+    "source": "openapi/body_and_parameters.yaml",
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ]
+    },
+    "verbatim": true
+  },
+  "edge-legacy-directional-alias": {
+    "source": "openapi/read_only_write_only_variant_graph.yaml",
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ],
+      "read_only_write_only_model_type": "request-response"
+    },
+    "verbatim": true
+  },
+  "edge-legacy-global-parameters": {
+    "source": "generation_platform/binding/legacy-global-parameters.yaml",
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "paths",
+        "parameters"
+      ],
+      "openapi_include_paths": [
+        "/pets"
+      ]
+    },
+    "verbatim": true
+  },
+  "edge-scope-edges-paths": {
+    "source": "generation_platform/binding/session-scope-edges.yaml",
+    "model": {
+      "openapi_scopes": [
+        "paths"
+      ]
+    },
+    "verbatim": true,
+    "references": [
+      "session-scope-edges-library.yaml"
+    ]
+  },
+  "edge-scope-edges-api": {
+    "source": "generation_platform/binding/session-scope-edges.yaml",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "verbatim": true,
+    "references": [
+      "session-scope-edges-library.yaml"
+    ]
+  },
+  "edge-legacy-stream-collision": {
+    "source": "generation_platform/binding/session-legacy-stream-collision.yaml",
+    "model": {
+      "openapi_scopes": [
+        "paths"
+      ],
+      "collapse_root_models": true
+    },
+    "verbatim": true
+  },
+  "edge-legacy-parameter-naming": {
+    "source": "generation_platform/binding/session-legacy-parameter-naming.yaml",
+    "model": {
+      "openapi_scopes": [
+        "paths",
+        "parameters"
+      ],
+      "naming_strategy": "parent-prefixed"
+    },
+    "verbatim": true
+  },
+  "edge-unresolved-reuse": {
+    "source": "generation_platform/binding/session-unresolved-reuse.yaml",
+    "model": {
+      "openapi_scopes": [
+        "paths"
+      ],
+      "reuse_model": true,
+      "collapse_reuse_models": true
+    },
+    "verbatim": true
+  },
+  "edge-legacy-header-map": {
+    "source": "generation_platform/binding/session-legacy-header-map.yaml",
+    "model": {
+      "openapi_scopes": [
+        "paths"
+      ]
+    },
+    "verbatim": true
+  },
+  "edge-nested-collapse": {
+    "source": "generation_platform/binding/session-nested-collapse.yaml",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "collapse_root_models": true
+    },
+    "verbatim": true
+  },
+  "edge-directional-base": {
+    "source": "generation_platform/binding/session-directional-base.yaml",
+    "model": {
+      "openapi_scopes": [
+        "paths"
+      ],
+      "read_only_write_only_model_type": "request-response"
+    },
+    "verbatim": true
+  },
+  "edge-recursive-ref-sibling": {
+    "source": "generation_platform/binding/session-recursive-ref-sibling.yaml",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "verbatim": true
+  },
+  "edge-legacy-media-reuse": {
+    "source": "generation_platform/binding/session-legacy-media.json",
+    "model": {
+      "openapi_scopes": [
+        "paths"
+      ],
+      "reuse_model": true
+    },
+    "verbatim": true
+  },
+  "edge-collapse-shared-types": {
+    "source": "generation_platform/binding/session-collapse-shared-types.json",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "collapse_root_models": true
+    },
+    "verbatim": true
+  },
+  "edge-self-alias-redirect": {
+    "pins": "#4299: the package ships while its BND_SYMBOL_NOT_EMITTED diagnostic is dropped",
+    "source": "generation_platform/binding/session-self-alias-redirect.json",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "verbatim": true
+  },
+  "edge-missing-collapse-recipes": {
+    "pins": "#4299: the package ships while its BND_UNRESOLVED_REFERENCE diagnostic is dropped",
+    "source": "generation_platform/binding/session-missing-collapse-recipes.json",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "collapse_root_models": true
+    },
+    "verbatim": true
+  },
+  "edge-discriminator-type-override": {
+    "source": "generation_platform/binding/session-discriminator-type-override.json",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "use_enum_values_in_discriminator": true,
+      "type_overrides": {
+        "Dog.kind": "my_app.types.DogKind"
+      }
+    },
+    "verbatim": true
+  },
+  "edge-typeddict-field-ownership": {
+    "source": "generation_platform/binding/field-ownership.json",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "backends": [
+      "typing.TypedDict"
+    ],
+    "verbatim": true
+  },
+  "edge-overridden-variant": {
+    "source": "generation_platform/binding/session-overridden-variant.json",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "read_only_write_only_model_type": "all",
+      "type_overrides": {
+        "PetRequest": "my_app.models.PetRequest"
+      }
+    },
+    "verbatim": true
+  },
+  "edge-variant-required-only": {
+    "source": "generation_platform/binding/session-variant-required-only.json",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "read_only_write_only_model_type": "all"
+    },
+    "verbatim": true
+  },
+  "api-declarations": {
+    "source": "generation_platform/api_scope/declarations.json",
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "use_operation_id_as_name": true,
+      "formatters": [
+        "black",
+        "isort"
+      ]
+    },
+    "verbatim": true
   }
 }

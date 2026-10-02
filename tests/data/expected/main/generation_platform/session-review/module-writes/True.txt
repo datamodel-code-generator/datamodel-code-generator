@@ -1,5 +1,0 @@
-{
-  "Model": true,
-  "Other": false,
-  "retained_graph": 0
-}

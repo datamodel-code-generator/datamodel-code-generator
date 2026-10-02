@@ -244,6 +244,16 @@ def test_client_typing_streams(backend: DataModelType, tmp_path: Path) -> None:
     )
 
 
+def test_client_typing_stream_resume(tmp_path: Path) -> None:
+    """Check resumable stream helpers: checkpoints, sync and asyncio resumes, and misuses of each."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(
+        client_typing_report(tmp_path, DataModelType.PydanticV2BaseModel, "stream-resume", ("stream_resume",)),
+        EXPECTED / "pydantic_v2-BaseModel-stream-resume.txt",
+    )
+
+
 @pytest.mark.parametrize(
     "backend",
     [

@@ -698,6 +698,12 @@ async file source
   hash a directory ! NonResumableSourceError: NonResumableSourceError(condition='wrong_capability', source_kind='stream') [field_path=('source',), condition='wrong_capability'] non_resumable_source_error
   hash a missing file ! FileNotFoundError
   async ranges: b'23' b'4' b'' after close b'', past the end refused
+file ranges after FIFO replacement (where supported)
+  sync open_range ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', offset=2) [condition='inconsistent'] upload_source_changed_error [offset=2] expected=10
+  async open_range ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', offset=2) [condition='inconsistent'] upload_source_changed_error [offset=2] expected=10
+  existing async range b'234'
+  existing async range after close b''
+  async source closed
 parts ranges capacity=4 shared=False
   run = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
   ranges: most=4 opened=5 closed=5 part_limit=4 read_limit=17

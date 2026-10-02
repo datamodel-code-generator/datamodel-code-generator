@@ -1,1 +1,0 @@
-{"captures_released": true, "graph_released": true}
