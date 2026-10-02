@@ -1623,6 +1623,17 @@ def queue_compression(package: ModuleType, lines: list[str]) -> None:
             queue.step(label, lambda: outbox.drain(options=coding))
             queue.step("returned", lambda receipt=receipt: outbox.inspect(receipt.entry_id))
             outbox.cancel(receipt.entry_id)
+        for label, change in (
+            ("cancelled claim", {"cancel_requested": True}),
+            ("expired claim", {"expires_at": queue.time.now()}),
+        ):
+            receipt = outbox.operations.create_order.enqueue(body=queue.order)
+            store.at_claim[store.claims + 1] = lambda receipt=receipt, change=change: store.tamper(
+                receipt.entry_id, **change
+            )
+            queue.step(label, lambda: outbox.drain(options=coding))
+            queue.step("ineligible claim returned", lambda receipt=receipt: outbox.inspect(receipt.entry_id))
+            outbox.cancel(receipt.entry_id)
         receipt = refresh.enqueue(order_id=order_id)
         store.conflicts = 2
         queue.step("failed return", lambda: outbox.drain(options=coding))
@@ -1638,6 +1649,14 @@ def queue_compression(package: ModuleType, lines: list[str]) -> None:
         store.before["compare_exchange"] = lambda _: store.tamper(receipt.entry_id, lease_id="another-worker")
         queue.step("transferred lease", lambda: outbox.drain(options=coding))
         queue.step("other lease retained", lambda: outbox.inspect(receipt.entry_id))
+        store.entries.clear()
+        receipt = refresh.enqueue(order_id=order_id)
+        store.conflicts = 1
+        store.before["compare_exchange"] = lambda _: store.before.update(
+            compare_exchange=lambda _: store.tamper(receipt.entry_id, lease_id="second-worker")
+        )
+        queue.step("transferred on final return", lambda: outbox.drain(options=coding))
+        queue.step("final other lease retained", lambda: outbox.inspect(receipt.entry_id))
         store.entries.clear()
         receipt = outbox.operations.create_order.enqueue(body=queue.order)
         token = queue.options.CancelToken()

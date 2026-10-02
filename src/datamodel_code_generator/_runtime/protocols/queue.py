@@ -732,9 +732,10 @@ class _Drain:
                 if written:
                     break
             else:
-                raise QueueStoreError(
-                    action="compare_exchange", entry_id=lease.entry.entry_id, helper_id=self.plan.helper_id
-                )
+                if self.coding is not None and _ours(current, lease):
+                    raise QueueStoreError(
+                        action="compare_exchange", entry_id=lease.entry.entry_id, helper_id=self.plan.helper_id
+                    )
 
     def report(self) -> DrainReport:
         """Return the drain's report."""
