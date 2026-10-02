@@ -428,6 +428,7 @@ class _Ended:
     state: QueueState
     report: str
     outcome: QueueOutcome | None = None
+    response: ResponseInfo | None = None
     reverted: bool = False
     not_before: datetime | None = None
     wait: float = 0.0
@@ -436,31 +437,56 @@ class _Ended:
 
 def _dead(code: str, response: ResponseInfo | None = None, *, prior: bool = False) -> _Ended:
     return _Ended(
-        "dead", "dead", QueueOutcome(category="unknown" if prior else "permanent", response=response, error_code=code)
+        "dead", "dead", QueueOutcome(category="unknown" if prior else "permanent", error_code=code), response=response
     )
 
 
 def _cancelled(intent: bool, response: ResponseInfo | None = None) -> _Ended:  # noqa: FBT001
     """End a cancelled entry: cancelled when nothing may have been sent, else of unknown delivery."""
     state: QueueState = "delivery_unknown" if intent else "cancelled"
-    return _Ended(state, "unknown" if intent else "cancelled", QueueOutcome(category="cancelled", response=response))
+    return _Ended(state, "unknown" if intent else "cancelled", QueueOutcome(category="cancelled"), response=response)
 
 
 def _released(entry: QueueEntry) -> QueueEntry:
     return replace(entry, state="pending", lease_id=None, lease_until=None)
 
 
-def _applied(current: QueueEntry, ended: _Ended, *, prior: bool) -> tuple[QueueEntry, _Ended]:
+def _saved_outcome(  # noqa: PLR0913, PLR0917
+    core: ClientCore | AsyncClientCore,
+    plan: QueuePlan,
+    entry: QueueEntry,
+    outcome: QueueOutcome | None,
+    response: ResponseInfo | None,
+    options: RequestOptions | None,
+) -> QueueOutcome | None:
+    """Save metadata only after stripping credential positions, including a reused store result."""
+    if outcome is None or response is None:
+        return outcome
+    queued = plan.aliases.get(entry.operation_alias)
+    return replace(outcome, response=core.saved_response(response, None if queued is None else queued.call, options))
+
+
+def _applied(  # noqa: PLR0913
+    core: ClientCore | AsyncClientCore,
+    plan: QueuePlan,
+    current: QueueEntry,
+    ended: _Ended,
+    *,
+    prior: bool,
+    options: RequestOptions | None = None,
+) -> tuple[QueueEntry, _Ended]:
     """Return the entry an ending writes over the current one, and the ending a cancel requested meanwhile gives.
 
     A cancel requested while the delivery ran turns an entry that would wait for another delivery into a cancelled
     one, or into one of unknown delivery when a request may have reached the server.
     """
     if current.cancel_requested and ended.state == "pending":
-        response = None if ended.outcome is None else ended.outcome.response
         ended = replace(
-            _cancelled(not ended.reverted or prior, response), reverted=ended.reverted, failure=ended.failure
+            _cancelled(not ended.reverted or prior, ended.response), reverted=ended.reverted, failure=ended.failure
         )
+    outcome = current.result if ended.outcome is None else ended.outcome
+    response = (None if outcome is None else outcome.response) if ended.outcome is None else ended.response
+    outcome = _saved_outcome(core, plan, current, outcome, response, options)
     count = current.delivery_count - ended.reverted
     entry = replace(
         current,
@@ -469,7 +495,7 @@ def _applied(current: QueueEntry, ended: _Ended, *, prior: bool) -> tuple[QueueE
         send_intent=prior if ended.state == "pending" else False,
         lease_id=None,
         lease_until=None,
-        result=current.result if ended.outcome is None else ended.outcome,
+        result=outcome,
     )
     if ended.not_before is not None:
         entry = replace(entry, not_before=ended.not_before, saved_wait_seconds=ended.wait)
@@ -480,10 +506,19 @@ def _ours(entry: QueueEntry | None, lease: QueueLease) -> bool:
     return entry is not None and entry.state == "leased" and entry.lease_id == lease.lease_id
 
 
-def _write(
-    expected: QueueEntry, entry: QueueEntry, *, reload: bool = False
+def _write(  # noqa: PLR0913
+    core: ClientCore | AsyncClientCore,
+    plan: QueuePlan,
+    expected: QueueEntry,
+    entry: QueueEntry,
+    *,
+    options: RequestOptions | None = None,
+    reload: bool = False,
 ) -> Generator[_Step, object, tuple[bool, QueueEntry | None]]:
     """Write an entry over the version expected, then read it back when asked or when another write came first."""
+    outcome = entry.result
+    if outcome is not None and outcome.response is not None:
+        entry = replace(entry, result=_saved_outcome(core, plan, entry, outcome, outcome.response, options))
     if (written := (yield _exchange(expected, entry))) and not reload:
         return True, entry
     current = cast("QueueEntry | None", (yield _get(entry.entry_id)))
@@ -524,8 +559,8 @@ def _retried(  # noqa: PLR0913
     if wait >= (_expiry(entry, queued) - now).total_seconds():
         return _dead("expired", info)
     at = now + timedelta(seconds=wait)
-    outcome = QueueOutcome(category="retryable", response=info, retry_at=at, error_code=code)
-    return _Ended("pending", "rescheduled", outcome, not_before=at, wait=wait)
+    outcome = QueueOutcome(category="retryable", retry_at=at, error_code=code)
+    return _Ended("pending", "rescheduled", outcome, response=info, not_before=at, wait=wait)
 
 
 def _retryable(error: SDKError, status: int, retry: ResolvedRetryOptions) -> bool:
@@ -553,7 +588,7 @@ def _ended(  # noqa: PLR0913, PLR0917
     info, code = error.info, error.reason_code
     stop = error if isinstance(error, _STOPS) else None
     if info is not None and _SUCCESS_MIN <= info.status_code <= _SUCCESS_MAX:
-        return _Ended("succeeded", "succeeded", QueueOutcome(category="success", response=info), failure=stop)
+        return _Ended("succeeded", "succeeded", QueueOutcome(category="success"), response=info, failure=stop)
     if not error.resource_attempt_count and not error.redirect_count:
         if isinstance(error, RequestEncodingError):
             return _dead(code)
@@ -566,8 +601,8 @@ def _ended(  # noqa: PLR0913, PLR0917
         return replace(_retried(entry, queued, info, code, now=now, clock=clock), failure=stop)
     if isinstance(error, HTTPStatusError):
         return replace(_dead(code, info), failure=stop)
-    outcome = QueueOutcome(category="unknown", response=info, error_code=code)
-    return _Ended("delivery_unknown", "unknown", outcome, failure=stop)
+    outcome = QueueOutcome(category="unknown", error_code=code)
+    return _Ended("delivery_unknown", "unknown", outcome, response=info, failure=stop)
 
 
 @dataclass(frozen=True, slots=True)
@@ -695,10 +730,10 @@ class _Drain:
                 if current is None or not _ours(current, lease):
                     break
                 if current.cancel_requested:
-                    entry = _applied(current, _cancelled(current.send_intent), prior=False)[0]
+                    entry = _applied(self.core, self.plan, current, _cancelled(current.send_intent), prior=False)[0]
                 else:
                     entry = _released(current)
-                written, current = yield from _write(current, entry)
+                written, current = yield from _write(self.core, self.plan, current, entry, options=self.limits.options)
                 if written:
                     break
 
@@ -736,8 +771,8 @@ class _Drain:
         for _ in range(_ROUNDS):
             if current is None or not _ours(current, lease):
                 break
-            entry, final = _applied(current, ended, prior=prior)
-            written, current = yield from _write(current, entry)
+            entry, final = _applied(self.core, self.plan, current, ended, prior=prior, options=self.limits.options)
+            written, current = yield from _write(self.core, self.plan, current, entry, options=self.limits.options)
             if written:
                 if final.failure is not None:
                     raise final.failure
@@ -764,7 +799,7 @@ class _Drain:
             or entry.helper_fingerprint != queued.fingerprint
             or entry.security_fingerprint != self.security[queued.alias]
         ):
-            yield from _write(entry, _released(entry))
+            yield from _write(self.core, self.plan, entry, _released(entry), options=self.limits.options)
             raise QueueBindingError(
                 entry_id=entry.entry_id,
                 helper_id=plan.helper_id,
@@ -794,10 +829,16 @@ class _Drain:
             outcome = QueueOutcome(
                 category="retryable",
                 retry_at=at,
-                response=None if result is None else result.response,
                 error_code=None if result is None else result.error_code,
             )
-            ended = _Ended("pending", "rescheduled", outcome, not_before=at, wait=wait)
+            ended = _Ended(
+                "pending",
+                "rescheduled",
+                outcome,
+                response=None if result is None else result.response,
+                not_before=at,
+                wait=wait,
+            )
             return (yield from self.settle(lease, entry, ended, prior=prior))
         policy = entry.policy
         started = clock.monotonic()
@@ -810,7 +851,7 @@ class _Drain:
         except (_MalformedError, SDKError, CodecError):
             return (yield from self.settle(lease, entry, _dead("malformed_entry", prior=prior), prior=prior))
         if actual != identity:
-            yield from _write(entry, _released(entry))
+            yield from _write(self.core, self.plan, entry, _released(entry), options=self.limits.options)
             raise QueueBindingError(entry_id=entry.entry_id, helper_id=plan.helper_id, operation=queued.operation)
         if deadline.remaining() <= 0:
             return (yield from self.settle(lease, entry, _dead("expired", prior=prior), prior=prior))
@@ -825,7 +866,9 @@ class _Drain:
             intended = replace(
                 current, send_intent=True, delivery_count=current.delivery_count + 1, lease_until=until, result=None
             )
-            written, current = yield from _write(current, intended, reload=True)
+            written, current = yield from _write(
+                self.core, self.plan, current, intended, options=self.limits.options, reload=True
+            )
             if written:
                 break
         else:
@@ -854,7 +897,7 @@ class _Drain:
         except _InterruptedError:
             ended = _cancelled(intent=True)
         else:
-            ended = _Ended("succeeded", "succeeded", QueueOutcome(category="success", response=info))
+            ended = _Ended("succeeded", "succeeded", QueueOutcome(category="success"), response=info)
         return (yield from self.settle(lease, current, ended, prior=prior))  # noqa: B901 - Its runner receives the outcome.
 
 
@@ -874,7 +917,9 @@ def _purge(before: datetime) -> _Store:
     return _Store("purge_terminal", None, (before,), {}, _entries)
 
 
-def _cancel(plan: QueuePlan, entry_id: str) -> Generator[_Step, object, QueueEntry | None]:
+def _cancel(
+    core: ClientCore | AsyncClientCore, plan: QueuePlan, entry_id: str
+) -> Generator[_Step, object, QueueEntry | None]:
     """Cancel an entry: a pending one ends at once, a leased one is asked to end at its drain's next boundary.
 
     A pending entry a request may have reached ends as of unknown delivery instead; a cancelled one stays as it is.
@@ -888,14 +933,16 @@ def _cancel(plan: QueuePlan, entry_id: str) -> Generator[_Step, object, QueueEnt
         if current.state == "leased":
             entry = replace(current, cancel_requested=True)
         else:
-            entry = _applied(current, _cancelled(current.send_intent), prior=False)[0]
-        written, current = yield from _write(current, entry, reload=True)
+            entry = _applied(core, plan, current, _cancelled(current.send_intent), prior=False)[0]
+        written, current = yield from _write(core, plan, current, entry, reload=True)
         if written:
             return current  # noqa: B901 - Its runner receives the outcome.
     raise QueueStoreError(action="compare_exchange", entry_id=entry_id, helper_id=plan.helper_id)
 
 
-def _retry(plan: QueuePlan, entry_id: str, clock: Clock) -> Generator[_Step, object, QueueEntry | None]:
+def _retry(
+    core: ClientCore | AsyncClientCore, plan: QueuePlan, entry_id: str, clock: Clock
+) -> Generator[_Step, object, QueueEntry | None]:
     """Return an entry of unknown delivery to pending with its key, or end it dead when expired or out of deliveries."""
     current = cast("QueueEntry | None", (yield _get(entry_id)))
     for _ in range(_ROUNDS):
@@ -905,11 +952,11 @@ def _retry(plan: QueuePlan, entry_id: str, clock: Clock) -> Generator[_Step, obj
             raise ProtocolStateError(state=current.state, action="retry_unknown", helper_id=plan.helper_id)
         now = _now(clock)
         if now < current.created_at:
-            entry = _applied(current, _dead("malformed_entry", prior=True), prior=False)[0]
+            entry = _applied(core, plan, current, _dead("malformed_entry", prior=True), prior=False)[0]
         elif now >= _expiry(current, plan.aliases.get(current.operation_alias)):
-            entry = _applied(current, _dead("expired", prior=True), prior=False)[0]
+            entry = _applied(core, plan, current, _dead("expired", prior=True), prior=False)[0]
         elif current.delivery_count >= current.policy.max_deliveries:
-            entry = _applied(current, _dead("max_deliveries", prior=True), prior=False)[0]
+            entry = _applied(core, plan, current, _dead("max_deliveries", prior=True), prior=False)[0]
         else:
             entry = replace(
                 current,
@@ -919,7 +966,7 @@ def _retry(plan: QueuePlan, entry_id: str, clock: Clock) -> Generator[_Step, obj
                 cancel_requested=False,
                 send_intent=True,
             )
-        written, current = yield from _write(current, entry, reload=True)
+        written, current = yield from _write(core, plan, current, entry, reload=True)
         if written:
             return current  # noqa: B901 - Its runner receives the outcome.
     raise QueueStoreError(action="compare_exchange", entry_id=entry_id, helper_id=plan.helper_id)
@@ -1238,25 +1285,25 @@ async def ainspect_entry(core: AsyncClientCore, plan: QueuePlan, entry_id: objec
 def cancel_entry(core: ClientCore, plan: QueuePlan, entry_id: object) -> QueueEntry | None:
     """Cancel an entry and return it as saved, or None for an unknown entry."""
     store: QueueStore = _store(core, plan)
-    return _driven(plan, core, store, _cancel(plan, _entry_id(plan, entry_id)))
+    return _driven(plan, core, store, _cancel(core, plan, _entry_id(plan, entry_id)))
 
 
 async def acancel_entry(core: AsyncClientCore, plan: QueuePlan, entry_id: object) -> QueueEntry | None:
     """Cancel an entry as `cancel_entry` does, awaiting the asynchronous store."""
     store: AsyncQueueStore = _store(core, plan)
-    return await _adriven(plan, core, store, _cancel(plan, _entry_id(plan, entry_id)))
+    return await _adriven(plan, core, store, _cancel(core, plan, _entry_id(plan, entry_id)))
 
 
 def retry_entry(core: ClientCore, plan: QueuePlan, entry_id: object) -> QueueEntry | None:
     """Return an entry of unknown delivery to pending, or end it dead, and return it as saved; None when unknown."""
     store: QueueStore = _store(core, plan)
-    return _driven(plan, core, store, _retry(plan, _entry_id(plan, entry_id), core.clock))
+    return _driven(plan, core, store, _retry(core, plan, _entry_id(plan, entry_id), core.clock))
 
 
 async def aretry_entry(core: AsyncClientCore, plan: QueuePlan, entry_id: object) -> QueueEntry | None:
     """Retry an entry of unknown delivery as `retry_entry` does, awaiting the asynchronous store."""
     store: AsyncQueueStore = _store(core, plan)
-    return await _adriven(plan, core, store, _retry(plan, _entry_id(plan, entry_id), core.clock))
+    return await _adriven(plan, core, store, _retry(core, plan, _entry_id(plan, entry_id), core.clock))
 
 
 def purge_entries(core: ClientCore, plan: QueuePlan, before: object) -> tuple[QueueEntry, ...]:
