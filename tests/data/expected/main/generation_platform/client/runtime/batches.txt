@@ -258,7 +258,7 @@ requests in flight after a failure
   deadline while answered: 2 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 2}
     delivery_unknown #0 id='u0000' status=None no payload
     delivery_unknown #1 id='u0001' status=None no payload
-    ! after 2: DeadlineExceededError: DeadlineExceededError(operation_id='createUsers', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='send') [operation_id='createUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='send'] deadline_exceeded_error
+    ! after 2: DeadlineExceededError delivery_unknown=True phase=send reason=deadline_exceeded_error
   deadline while answered: 1 requests
     > u0000 POST /users/batch items=2 last=u0001 bytes=73
   interrupted while reading

@@ -14,7 +14,7 @@ from tests.data.python.client_pagination import Harness
 from tests.data.python.client_runtime import Exchange, describe, failing, json_response, record, run
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Iterable, Iterator
+    from collections.abc import AsyncIterator, Callable, Iterable, Iterator
     from types import ModuleType
 
 _SECRET: Final = "private-batch-marker"
@@ -143,7 +143,13 @@ def _summarized(lines: list[str], label: str, records: list[Any], failure: BaseE
         lines.append(f"    ! {describe(failure)}")
 
 
-def continued(lines: list[str], label: str, iterator: Iterator[Any]) -> None:
+def continued(
+    lines: list[str],
+    label: str,
+    iterator: Iterator[Any],
+    *,
+    failure_description: Callable[[Exception], str] = describe,
+) -> None:
     """Consume a batch iterator through its failures, reporting each failure after the records before it."""
     records: list[Any] = []
     failures: list[str] = []
@@ -153,7 +159,7 @@ def continued(lines: list[str], label: str, iterator: Iterator[Any]) -> None:
         except StopIteration:  # noqa: PERF203 - Each step must report failures and continue to sibling outcomes.
             break
         except Exception as error:  # noqa: BLE001 - Report failures from public calls.
-            failures.append(f"after {len(records)}: {describe(error)}")
+            failures.append(f"after {len(records)}: {failure_description(error)}")
     _summarized(lines, label, records, None)
     lines.extend(f"    ! {item}" for item in failures)
 
@@ -435,6 +441,7 @@ def _deadline(harness: _Batches, server: _Server, lines: list[str]) -> None:
     The client's clock is stepped by the server while it answers, so the outcome never depends on real time.
     """
     stepped = _Stepped()
+    states = {harness.errors.DeliveryState.MAYBE_SENT, harness.errors.DeliveryState.RESPONSE_STARTED}
 
     def late(request: httpx2.Request) -> httpx2.Response:
         stepped.value += 10.0
@@ -448,7 +455,16 @@ def _deadline(harness: _Batches, server: _Server, lines: list[str]) -> None:
     ):
         session = harness.options.SessionOptions(total_timeout=1)
         users = api.protocols.users.create
-        continued(lines, "deadline while answered", users.iterate(harness.users(2), session_options=session))
+        continued(
+            lines,
+            "deadline while answered",
+            users.iterate(harness.users(2), session_options=session),
+            failure_description=lambda error: (
+                f"{type(error).__name__} delivery_unknown="
+                f"{error.delivery_state in states} "
+                f"phase={error.phase} reason={error.reason_code}"
+            ),
+        )
 
 
 def _interruption(harness: _Batches, lines: list[str]) -> None:
