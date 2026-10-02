@@ -215,6 +215,10 @@ to your project instead.
 
 ## Regenerating and checking
 
+Generation stages file changes and rolls back earlier changes if publication fails.
+Before publishing, it rechecks planned file hashes and reports `E_STATE_CHANGED`
+when they differ. Run generators that share output files one at a time.
+
 Run the same command again after the OpenAPI document changes. The service Protocols change with the operations, so
 type checkers point at the implementations to update, and Python refuses to create an instance of a subclass that
 lacks a new method; your own modules are never touched. `--check` renders everything without writing it and exits

@@ -1,0 +1,253 @@
+{
+  "transport_environment": [
+    {
+      "name": "forward-upper",
+      "proxy": "forward",
+      "variable": "HTTP_PROXY"
+    },
+    {
+      "name": "forward-lower",
+      "proxy": "forward",
+      "variable": "http_proxy"
+    },
+    {
+      "name": "tunnel-upper",
+      "proxy": "tunnel",
+      "variable": "HTTPS_PROXY"
+    },
+    {
+      "name": "tunnel-lower",
+      "proxy": "tunnel",
+      "variable": "https_proxy"
+    },
+    {
+      "name": "all-upper",
+      "proxy": "all",
+      "variable": "ALL_PROXY"
+    },
+    {
+      "name": "all-lower",
+      "proxy": "all",
+      "variable": "all_proxy"
+    }
+  ],
+  "transport_direct": [
+    "no-proxy-upper",
+    "no-proxy-lower",
+    "opt-out",
+    "ca-default-upper",
+    "ca-opt-out",
+    "ca-context",
+    "injected"
+  ],
+  "response_limits": {
+    "former_cap": 16777216,
+    "large_bytes": 16777217,
+    "explicit_cap": 8,
+    "error_bytes": 65537,
+    "error_cap": 65536
+  },
+  "ca_directory_filename": "0c666e75.0",
+  "transport_ca": [
+    {
+      "name": "ca-file-default",
+      "ca_source": "file",
+      "tls_setting": "default",
+      "proxy": null
+    },
+    {
+      "name": "ca-file-true",
+      "ca_source": "file",
+      "tls_setting": "true",
+      "proxy": null
+    },
+    {
+      "name": "ca-file-false",
+      "ca_source": "file",
+      "tls_setting": "false",
+      "proxy": null
+    },
+    {
+      "name": "ca-file-context-true",
+      "ca_source": "file",
+      "tls_setting": "context-true",
+      "proxy": null
+    },
+    {
+      "name": "ca-file-context-false",
+      "ca_source": "file",
+      "tls_setting": "context-false",
+      "proxy": null
+    },
+    {
+      "name": "ca-file-verify-off-true",
+      "ca_source": "file",
+      "tls_setting": "verify-off-true",
+      "proxy": null
+    },
+    {
+      "name": "ca-file-verify-off-false",
+      "ca_source": "file",
+      "tls_setting": "verify-off-false",
+      "proxy": null
+    },
+    {
+      "name": "https-proxy-file-true",
+      "ca_source": "file",
+      "tls_setting": "true",
+      "proxy": null,
+      "https_proxy": true
+    },
+    {
+      "name": "https-proxy-file-false",
+      "ca_source": "file",
+      "tls_setting": "false",
+      "proxy": null,
+      "https_proxy": true
+    },
+    {
+      "name": "https-proxy-file-context-true",
+      "ca_source": "file",
+      "tls_setting": "context-true",
+      "proxy": null,
+      "https_proxy": true
+    },
+    {
+      "name": "https-proxy-file-context-false",
+      "ca_source": "file",
+      "tls_setting": "context-false",
+      "proxy": null,
+      "https_proxy": true
+    },
+    {
+      "name": "https-proxy-file-verify-off-true",
+      "ca_source": "file",
+      "tls_setting": "verify-off-true",
+      "proxy": null,
+      "https_proxy": true
+    },
+    {
+      "name": "https-proxy-file-verify-off-false",
+      "ca_source": "file",
+      "tls_setting": "verify-off-false",
+      "proxy": null,
+      "https_proxy": true
+    },
+    {
+      "name": "ca-directory-default",
+      "ca_source": "directory",
+      "tls_setting": "default",
+      "proxy": null
+    },
+    {
+      "name": "ca-directory-true",
+      "ca_source": "directory",
+      "tls_setting": "true",
+      "proxy": null
+    },
+    {
+      "name": "ca-directory-false",
+      "ca_source": "directory",
+      "tls_setting": "false",
+      "proxy": null
+    },
+    {
+      "name": "ca-directory-context-true",
+      "ca_source": "directory",
+      "tls_setting": "context-true",
+      "proxy": null
+    },
+    {
+      "name": "ca-directory-context-false",
+      "ca_source": "directory",
+      "tls_setting": "context-false",
+      "proxy": null
+    },
+    {
+      "name": "ca-directory-verify-off-true",
+      "ca_source": "directory",
+      "tls_setting": "verify-off-true",
+      "proxy": null
+    },
+    {
+      "name": "ca-directory-verify-off-false",
+      "ca_source": "directory",
+      "tls_setting": "verify-off-false",
+      "proxy": null
+    },
+    {
+      "name": "https-proxy-directory-true",
+      "ca_source": "directory",
+      "tls_setting": "true",
+      "proxy": null,
+      "https_proxy": true
+    },
+    {
+      "name": "https-proxy-directory-false",
+      "ca_source": "directory",
+      "tls_setting": "false",
+      "proxy": null,
+      "https_proxy": true
+    },
+    {
+      "name": "https-proxy-directory-context-true",
+      "ca_source": "directory",
+      "tls_setting": "context-true",
+      "proxy": null,
+      "https_proxy": true
+    },
+    {
+      "name": "https-proxy-directory-context-false",
+      "ca_source": "directory",
+      "tls_setting": "context-false",
+      "proxy": null,
+      "https_proxy": true
+    },
+    {
+      "name": "https-proxy-directory-verify-off-true",
+      "ca_source": "directory",
+      "tls_setting": "verify-off-true",
+      "proxy": null,
+      "https_proxy": true
+    },
+    {
+      "name": "https-proxy-directory-verify-off-false",
+      "ca_source": "directory",
+      "tls_setting": "verify-off-false",
+      "proxy": null,
+      "https_proxy": true
+    },
+    {
+      "name": "plain-proxy-context-false",
+      "proxy": "tunnel",
+      "tls_setting": "context-false",
+      "plain_proxy": true
+    },
+    {
+      "name": "plain-proxy-verify-off-false",
+      "proxy": "tunnel",
+      "tls_setting": "verify-off-false",
+      "plain_proxy": true
+    },
+    {
+      "name": "plain-proxy-default-false",
+      "proxy": "forward",
+      "tls_setting": "false",
+      "plain_proxy": true
+    }
+  ],
+  "pagination_limits": {
+    "pages": 1001,
+    "items": 100001,
+    "retries_per_page": 2,
+    "explicit_pages": 2,
+    "explicit_items": 100000,
+    "explicit_sends": 3,
+    "total_timeout": 300,
+    "clock_step": 301
+  },
+  "upload_limits": {
+    "total_timeout": 600,
+    "clock_step": 601
+  }
+}

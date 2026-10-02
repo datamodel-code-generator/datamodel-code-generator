@@ -6,11 +6,10 @@ The target entry points expose these records through `datamodel_code_generator.a
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path  # noqa: TC003 - Public annotations support get_type_hints().
+from pathlib import Path  # ruff: ignore[typing-only-standard-library-import] - Public annotations support get_type_hints().
 from typing import Final, Literal, TypeAlias
 
 from datamodel_code_generator._codec_declarations import OperationRef
-from datamodel_code_generator._publication import PublicationRollbackError
 
 __all__ = [
     "APIGenerationError",
@@ -43,6 +42,19 @@ ArtifactKind: TypeAlias = Literal[
 ArtifactAction: TypeAlias = Literal["write", "delete", "unchanged"]
 OperationSelector: TypeAlias = OperationRef | str
 _ATTACHED: Final = "__dcg_diagnostic__"
+
+
+class PublicationRollbackError(Exception):
+    """Report a failed publication whose rollback could not restore every destination.
+
+    The original failure is the ``__cause__``. Backups of destinations that were not restored stay in place.
+    """
+
+    def __init__(self, unrestored: tuple[Path, ...], backups: tuple[Path, ...]) -> None:
+        """Keep the destinations that were not restored and the backups left for recovery."""
+        self.unrestored = unrestored
+        self.backups = backups
+        super().__init__(f"Publication rollback failed for {', '.join(path.as_posix() for path in unrestored)}")
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

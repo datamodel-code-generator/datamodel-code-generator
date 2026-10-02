@@ -128,43 +128,6 @@
   undeclared AuthProviderExecutionError.oauth_error TypeError secondary []
   undeclared AuthProviderExecutionError.retry_stop_reason TypeError secondary []
   positional AuthProviderExecutionError TypeError secondary []
-  family InsufficientScopeError bases=('AuthRefreshError',) code=insufficient_scope_error
-  signature InsufficientScopeError keyword-only=True required=('required_scopes', 'granted_scopes')
-  hints InsufficientScopeError ('required_scopes', 'granted_scopes', 'provider_id', 'refresh_id', 'state', 'delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
-  defaults InsufficientScopeError fields=(('provider_id', None), ('refresh_id', None), ('state', 'UNKNOWN'), ('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('required_scopes', ('read',)), ('granted_scopes', ()), ('missing_scopes', ('read',))) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
-  metadata InsufficientScopeError call=('auth_operation', 'auth-call', 'auth-parent') info=True headers=True cause=True secondary=True counters=(1, 2, 3, 4, 5, 6, ('refresh-one',), 7, 8)
-  supplied InsufficientScopeError (('provider_id', 'private-secret-provider'), ('refresh_id', 'private-secret-refresh'), ('state', 'READY'), ('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('required_scopes', ('read',)), ('granted_scopes', ()), ('missing_scopes', ('read',)))
-  safe InsufficientScopeError True text="InsufficientScopeError(operation_id='auth_operation', call_id='auth-call', state='READY', delivery_state='NOT_SENT', phase='validate')"
-  readonly InsufficientScopeError.resource_attempt_count AttributeError secondary [] unchanged=True
-  readonly InsufficientScopeError.redirect_count AttributeError secondary [] unchanged=True
-  readonly InsufficientScopeError.auth_exchange_count AttributeError secondary [] unchanged=True
-  readonly InsufficientScopeError.network_send_count AttributeError secondary [] unchanged=True
-  readonly InsufficientScopeError.network_send_budget_used AttributeError secondary [] unchanged=True
-  readonly InsufficientScopeError.auth_exchange_budget_used AttributeError secondary [] unchanged=True
-  readonly InsufficientScopeError.auth_refresh_ids AttributeError secondary [] unchanged=True
-  readonly InsufficientScopeError.auth_refresh_pending AttributeError secondary [] unchanged=True
-  readonly InsufficientScopeError.wire_send_count AttributeError secondary [] unchanged=True
-  readonly InsufficientScopeError.provider_id AttributeError secondary [] unchanged=True
-  readonly InsufficientScopeError.refresh_id AttributeError secondary [] unchanged=True
-  readonly InsufficientScopeError.state AttributeError secondary [] unchanged=True
-  readonly InsufficientScopeError.delivery_state AttributeError secondary [] unchanged=True
-  readonly InsufficientScopeError.phase AttributeError secondary [] unchanged=True
-  readonly InsufficientScopeError.required_scopes AttributeError secondary [] unchanged=True
-  readonly InsufficientScopeError.granted_scopes AttributeError secondary [] unchanged=True
-  readonly InsufficientScopeError.missing_scopes AttributeError secondary [] unchanged=True
-  property hints InsufficientScopeError.provider_id ('return',)
-  property hints InsufficientScopeError.refresh_id ('return',)
-  property hints InsufficientScopeError.state ('return',)
-  property hints InsufficientScopeError.delivery_state ('return',)
-  property hints InsufficientScopeError.phase ('return',)
-  property hints InsufficientScopeError.required_scopes ('return',)
-  property hints InsufficientScopeError.granted_scopes ('return',)
-  property hints InsufficientScopeError.missing_scopes ('return',)
-  undeclared InsufficientScopeError.message TypeError secondary []
-  undeclared InsufficientScopeError.status_code TypeError secondary []
-  undeclared InsufficientScopeError.oauth_error TypeError secondary []
-  undeclared InsufficientScopeError.retry_stop_reason TypeError secondary []
-  positional InsufficientScopeError TypeError secondary []
   family TokenExpiredError bases=('AuthRefreshError',) code=token_expired_error
   signature TokenExpiredError keyword-only=True required=('condition',)
   hints TokenExpiredError ('condition', 'expires_at', 'provider_id', 'refresh_id', 'state', 'delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
@@ -586,7 +549,6 @@
   closed inherited state default='CLOSED'
   closed state omitted = AuthProviderClosedError: AuthProviderClosedError(state='CLOSED', delivery_state='MAYBE_SENT', phase='unknown') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='unknown'] auth_provider_closed_error
   missing required AuthProviderExecutionError TypeError secondary []
-  missing required InsufficientScopeError TypeError secondary []
   missing required TokenExpiredError TypeError secondary []
   missing required AuthTimeoutError TypeError secondary []
   missing required AuthStateUncertainError TypeError secondary []
@@ -720,41 +682,3 @@
   invalid expiry expires_at 2 ! ValueError: expires_at must be a datetime or None []
   invalid expiry expires_at 3 ! ValueError: expires_at must be a datetime or None []
   invalid expiry expires_at 4 ! ValueError: expires_at must be a datetime or None []
-  scopes required=('read', 'write') granted=('read',) missing=('write',) safe=True
-  scopes required=('Read', 'Write', 'read', 'write') granted=('read', 'write') missing=('Read', 'Write') safe=True
-  scopes required=('read,write',) granted=('read', 'write') missing=('read,write',) safe=True
-  scopes required=() granted=() missing=() safe=True
-  scopes required=('read',) granted=('read',) missing=() safe=True
-  scopes required=() granted=('read',) missing=() safe=True
-  scopes required=('!', '#', '[', ']', '~') granted=('!', '[', '~') missing=('#', ']') safe=True
-  scopes required=('private-secret',) granted=() missing=('private-secret',) safe=True
-  copied scopes (('read', 'write'), ('read',), ('write',))
-  invalid scopes required_scopes unknown ! ValueError: Scopes must be a tuple or list. []
-  invalid scopes required_scopes text ! ValueError: Scopes must be a tuple or list. []
-  invalid scopes required_scopes iterator ! ValueError: Scopes must be a tuple or list. []
-  invalid scopes required_scopes set ! ValueError: Scopes must be a tuple or list. []
-  invalid scopes required_scopes number ! ValueError: Scopes must contain valid ASCII scope tokens. []
-  invalid scopes required_scopes empty ! ValueError: Scopes must contain valid ASCII scope tokens. []
-  invalid scopes required_scopes leading space ! ValueError: Scopes must contain valid ASCII scope tokens. []
-  invalid scopes required_scopes trailing space ! ValueError: Scopes must contain valid ASCII scope tokens. []
-  invalid scopes required_scopes double space ! ValueError: Scopes must contain valid ASCII scope tokens. []
-  invalid scopes required_scopes quote ! ValueError: Scopes must contain valid ASCII scope tokens. []
-  invalid scopes required_scopes backslash ! ValueError: Scopes must contain valid ASCII scope tokens. []
-  invalid scopes required_scopes control ! ValueError: Scopes must contain valid ASCII scope tokens. []
-  invalid scopes required_scopes delete ! ValueError: Scopes must contain valid ASCII scope tokens. []
-  invalid scopes required_scopes nonascii ! ValueError: Scopes must contain valid ASCII scope tokens. []
-  invalid scopes granted_scopes unknown ! ValueError: Scopes must be a tuple or list. []
-  invalid scopes granted_scopes text ! ValueError: Scopes must be a tuple or list. []
-  invalid scopes granted_scopes iterator ! ValueError: Scopes must be a tuple or list. []
-  invalid scopes granted_scopes set ! ValueError: Scopes must be a tuple or list. []
-  invalid scopes granted_scopes number ! ValueError: Scopes must contain valid ASCII scope tokens. []
-  invalid scopes granted_scopes empty ! ValueError: Scopes must contain valid ASCII scope tokens. []
-  invalid scopes granted_scopes leading space ! ValueError: Scopes must contain valid ASCII scope tokens. []
-  invalid scopes granted_scopes trailing space ! ValueError: Scopes must contain valid ASCII scope tokens. []
-  invalid scopes granted_scopes double space ! ValueError: Scopes must contain valid ASCII scope tokens. []
-  invalid scopes granted_scopes quote ! ValueError: Scopes must contain valid ASCII scope tokens. []
-  invalid scopes granted_scopes backslash ! ValueError: Scopes must contain valid ASCII scope tokens. []
-  invalid scopes granted_scopes control ! ValueError: Scopes must contain valid ASCII scope tokens. []
-  invalid scopes granted_scopes delete ! ValueError: Scopes must contain valid ASCII scope tokens. []
-  invalid scopes granted_scopes nonascii ! ValueError: Scopes must contain valid ASCII scope tokens. []
-  derived missing keyword TypeError secondary []

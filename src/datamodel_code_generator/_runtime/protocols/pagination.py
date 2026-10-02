@@ -392,13 +392,13 @@ class Page(Sealed, Generic[T_co, P_co]):
 class _Limits:
     """The effective limits of one helper call, each from the first layer that sets it; None removes a limit."""
 
-    max_pages: int | None = 1000
-    max_items: int | None = 100000
+    max_pages: int | None = None
+    max_items: int | None = None
     max_page_bytes: int = 8 * 1024 * 1024
     max_cursor_bytes: int = 64 * 1024
-    total_timeout: float | None = 300.0
+    total_timeout: float | None = None
     deadline: Deadline | None = None
-    max_network_sends: int | None = 3000
+    max_network_sends: int | None = None
     options: RequestOptions | None = None
     clock: Clock = SYSTEM_CLOCK
 
