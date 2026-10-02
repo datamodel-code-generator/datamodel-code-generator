@@ -70,12 +70,6 @@ from .types.jobs import (
     GetJobRequestCodecs,
     GetJobResponse,
 )
-from .types.profiles import (
-    GetProfileErrorData,
-    GetProfileHTTPError,
-    GetProfileRequestCodecs,
-    GetProfileResponse,
-)
 
 _SERVERS_0: Final = (ServerPlan(url='https://api.example.com'),)
 
@@ -314,28 +308,7 @@ OPERATION_7: Final[OperationPlan[GetJobResponse, GetJobErrorData]] = OperationPl
     codecs=GetJobRequestCodecs,
 )
 
-OPERATION_8: Final[OperationPlan[GetProfileResponse, GetProfileErrorData]] = OperationPlan(
-    operation_id='getProfile',
-    method='GET',
-    path='/profile',
-    servers=_SERVERS_0,
-    responses=ResponseDecoder(
-        (
-            model_branch(
-                '200',
-                'application/json',
-                'json',
-                model_bindings.codec_14, model_bindings.CONTEXT_14,
-            ),
-        ),
-        (),
-        GetProfileHTTPError,
-    ),
-    accepted_content_encodings=('gzip',),
-    codecs=GetProfileRequestCodecs,
-)
-
-OPERATION_9: Final[OperationPlan[CreateCheckResponse, CreateCheckErrorData]] = OperationPlan(
+OPERATION_8: Final[OperationPlan[CreateCheckResponse, CreateCheckErrorData]] = OperationPlan(
     operation_id='createCheck',
     method='POST',
     path='/checks',
@@ -346,7 +319,7 @@ OPERATION_9: Final[OperationPlan[CreateCheckResponse, CreateCheckErrorData]] = O
                 '202',
                 'application/json',
                 'json',
-                model_bindings.codec_15, model_bindings.CONTEXT_15,
+                model_bindings.codec_14, model_bindings.CONTEXT_14,
             ),
         ),
         (),
@@ -355,7 +328,7 @@ OPERATION_9: Final[OperationPlan[CreateCheckResponse, CreateCheckErrorData]] = O
     codecs=CreateCheckRequestCodecs,
 )
 
-OPERATION_10: Final[OperationPlan[CheckStatusResponse, CheckStatusErrorData]] = OperationPlan(
+OPERATION_9: Final[OperationPlan[CheckStatusResponse, CheckStatusErrorData]] = OperationPlan(
     operation_id='checkStatus',
     method='POST',
     path='/checks/status',
@@ -366,7 +339,7 @@ OPERATION_10: Final[OperationPlan[CheckStatusResponse, CheckStatusErrorData]] = 
                 '200',
                 'application/json',
                 'json',
-                model_bindings.codec_17, model_bindings.CONTEXT_17,
+                model_bindings.codec_16, model_bindings.CONTEXT_16,
             ),
         ),
         (),
@@ -377,7 +350,7 @@ OPERATION_10: Final[OperationPlan[CheckStatusResponse, CheckStatusErrorData]] = 
             BodyMedia(
                 media_type='application/json',
                 kind='json',
-                encoder=Encoder(model_bindings.codec_16, model_bindings.CONTEXT_16),
+                encoder=Encoder(model_bindings.codec_15, model_bindings.CONTEXT_15),
             ),
         ),
         default='application/json',
@@ -387,7 +360,7 @@ OPERATION_10: Final[OperationPlan[CheckStatusResponse, CheckStatusErrorData]] = 
     codecs=CheckStatusRequestCodecs,
 )
 
-OPERATION_11: Final[OperationPlan[WatchResponse, WatchErrorData]] = OperationPlan(
+OPERATION_10: Final[OperationPlan[WatchResponse, WatchErrorData]] = OperationPlan(
     operation_id='watch',
     method='POST',
     path='/events',
@@ -398,7 +371,7 @@ OPERATION_11: Final[OperationPlan[WatchResponse, WatchErrorData]] = OperationPla
                 '200',
                 'text/event-stream',
                 'text',
-                model_bindings.codec_19, model_bindings.CONTEXT_19,
+                model_bindings.codec_18, model_bindings.CONTEXT_18,
             ),
         ),
         (),
@@ -409,7 +382,7 @@ OPERATION_11: Final[OperationPlan[WatchResponse, WatchErrorData]] = OperationPla
             BodyMedia(
                 media_type='application/json',
                 kind='json',
-                encoder=Encoder(model_bindings.codec_18, model_bindings.CONTEXT_18),
+                encoder=Encoder(model_bindings.codec_17, model_bindings.CONTEXT_17),
             ),
         ),
         default='application/json',

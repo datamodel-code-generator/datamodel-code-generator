@@ -18,9 +18,6 @@
   write client/resources/jobs/__init__.py
   write client/resources/jobs/_sync.py
   write client/resources/jobs/_async.py
-  write client/resources/profiles/__init__.py
-  write client/resources/profiles/_sync.py
-  write client/resources/profiles/_async.py
   write client/resources/checks/__init__.py
   write client/resources/checks/_sync.py
   write client/resources/checks/_async.py
@@ -32,8 +29,6 @@
   write client/types/items/_operations.py
   write client/types/jobs/__init__.py
   write client/types/jobs/_operations.py
-  write client/types/profiles/__init__.py
-  write client/types/profiles/_operations.py
   write client/types/checks/__init__.py
   write client/types/checks/_operations.py
   write client/types/events/__init__.py
@@ -48,7 +43,7 @@
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['items.search_all', 'items.feed_all', 'items.listing', 'jobs.run', 'events.watch', 'checks.run', 'profiles.current'] bindings 21
+  namespace client helpers ['items.search_all', 'items.feed_all', 'items.listing', 'jobs.run', 'events.watch', 'checks.run'] bindings 20
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   helper items.search_all pagination enabled True /inputs/target_config/protocol_metadata/helpers/items.search_all 82875108af8ecb1bcd16e0e968d16b1f5f9d55fcdbb08e1367da78ec112d20ae
   helper items.feed_all pagination enabled True /inputs/target_config/protocol_metadata/helpers/items.feed_all fd13cb9a239fb0be12362ed222cb4b2671841700ae9464ea9584f910a41c878a
@@ -56,7 +51,6 @@
   helper jobs.run polling enabled True /inputs/target_config/protocol_metadata/helpers/jobs.run 999e15400d3718a2ce920cb75da4c727e585c9ee4cf0e0ea6e2d73feffcfb48e
   helper events.watch sse enabled True /inputs/target_config/protocol_metadata/helpers/events.watch af4d7c37d8c2caeeef47a92866348bdd5f3f28d0e3ae07fddaa720c599c8789f
   helper checks.run polling enabled True /inputs/target_config/protocol_metadata/helpers/checks.run 55e70eed26d3a11d793cb2836e16d3d036df3600b148803b70d224c9e73f712c
-  helper profiles.current cache enabled True /inputs/target_config/protocol_metadata/helpers/profiles.current a5bd266286722507312e98186273cd555178784706949e15bebc226e5249aff8
   {
     "helpers": {
       "checks.run": {
@@ -297,22 +291,6 @@
         "succeeded": [
           "done"
         ]
-      },
-      "profiles.current": {
-        "authenticated": false,
-        "enabled": true,
-        "kind": "cache",
-        "mutations": {},
-        "operation": {
-          "document": "/inputs/root",
-          "pointer": "/paths/~1profile/get"
-        },
-        "statuses": [
-          200
-        ],
-        "tags": [],
-        "validator": "etag",
-        "vary_allowlist": []
       }
     },
     "schema_version": 1
@@ -341,16 +319,13 @@
   /selection/selected_operations/7 jobs.get_job(path:jobId=job_id)
     exports client.types.jobs.GetJobResponse client.types.jobs.GetJobErrorData client.types.jobs.GetJobHTTPError
     exports client.types.jobs.GetJobRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/8 profiles.get_profile()
-    exports client.types.profiles.GetProfileResponse client.types.profiles.GetProfileErrorData client.types.profiles.GetProfileHTTPError
-    exports client.types.profiles.GetProfileRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/9 checks.create_check()
+  /selection/selected_operations/8 checks.create_check()
     exports client.types.checks.CreateCheckResponse client.types.checks.CreateCheckErrorData client.types.checks.CreateCheckHTTPError
     exports client.types.checks.CreateCheckRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/10 checks.check_status()
+  /selection/selected_operations/9 checks.check_status()
     exports client.types.checks.CheckStatusResponse client.types.checks.CheckStatusErrorData client.types.checks.CheckStatusHTTPError
     exports client.types.checks.CheckStatusRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/11 events.watch()
+  /selection/selected_operations/10 events.watch()
     exports client.types.events.WatchResponse client.types.events.WatchErrorData client.types.events.WatchHTTPError
     exports client.types.events.WatchRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
@@ -479,17 +454,6 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
     "auth_challenge_less_401": false
   },
   {
-    "operation": "profiles.get_profile",
-    "method": "GET",
-    "path": "/profile",
-    "retry_safety": "method_default",
-    "idempotency": null,
-    "retry_after_ms_header": null,
-    "should_retry_header": null,
-    "security": null,
-    "auth_challenge_less_401": false
-  },
-  {
     "operation": "checks.create_check",
     "method": "POST",
     "path": "/checks",
@@ -540,9 +504,6 @@ it settles and returns its result, each poll after the wait the last response re
 stops only local polling. `resume` returns a handle continuing a handle's `checkpoint()` without creating the
 operation again, and a helper that declares a remote cancellation returns a handle whose `cancel_remote` sends it. See
 the runtime reference for their limits and checkpoints.
-A cache helper's `fetch` answers from a fresh entry of the store `ProtocolClientOptions.cache_stores` lends it, or
-sends the request, revalidating a stale entry; `invalidate` and its `mutations` remove tagged entries. See the runtime
-reference for their limits.
 
 ```json
 [
@@ -582,13 +543,6 @@ reference for their limits.
     "path": "/checks"
   },
   {
-    "helper": "profiles.current",
-    "kind": "cache",
-    "operation": "profiles.get_profile",
-    "method": "GET",
-    "path": "/profile"
-  },
-  {
     "helper": "events.watch",
     "kind": "sse",
     "operation": "events.watch",
@@ -621,9 +575,6 @@ call's `RequestOptions` compresses their bodies. See the runtime reference.
     "gzip"
   ],
   "jobs.create_job": [
-    "gzip"
-  ],
-  "profiles.get_profile": [
     "gzip"
   ],
   "checks.check_status": [
@@ -924,35 +875,6 @@ A helper that declares `remote_cancel` returns a handle of its own class whose `
 request once, while the operation is pending, and returns a `CancelReceipt` of its response; it also runs while
 another thread or task waits in `status` or `wait`. It does not change the handle, which keeps its last poll until it
 polls again; closing sends nothing.
-
-## Cache helpers
-
-A cache helper keeps entries only in the store `ProtocolClientOptions.cache_stores` lends it under its name, a
-`MemoryCacheStore` or `AsyncMemoryCacheStore` or another implementation of `CacheStore` or `AsyncCacheStore` of the
-client's mode; a client without one refuses `fetch`, `invalidate`, and the mutations with
-`ProtocolConfigurationError` before sending. The client never creates or closes a store. The types are imported from
-`client.protocols`: `CacheOptions`, `CacheResult`, `CacheEntry`, the store protocols, and the memory
-stores.
-
-| Limit | Effective default |
-|---|---|
-| stored body per entry | 2 MiB |
-| freshness of any entry | 300 seconds |
-
-`fetch` returns a `CacheResult` whose `source` is `fresh_cache` for a fresh entry, answered without sending or call
-events, `revalidated` for a stale entry a 304 confirmed, and `network` otherwise; a stored body is decoded again every
-time. An entry is keyed by the method, the URL, the Accept header, the credential partition, and the credentials the
-auth binds, and selected by the request headers its `Vary` names and those a header patch or a declared parameter fills.
-A request carrying credentials needs `ProtocolSecurityContext.credential_partition`, a helper declared authenticated,
-and the client's own auth, not a view's or a call's; anything else raises `ProtocolConfigurationError`. A response whose
-`Vary` names a header the auth manages is never stored, and one partition is one permission set: credentials the client
-cannot see, such as a client certificate, need a partition of their own. Freshness comes from `max-age` or `Expires`
-only, capped by `max_ttl`; a stale entry is revalidated with its validator, and a 304 without a usable entry raises
-`CacheProtocolError`. A response is stored only when its status is cacheable, it came without a redirect, Set-Cookie,
-`no-store`, or an unsupported Cache-Control directive, and its `Vary` names only allowlisted headers; otherwise it
-removes the entry it supersedes. Store failures raise `CacheStoreError` and never resend a request. A mutation removes
-the entries its tags name only after it succeeds; a store failure then raises `CacheInvalidationError`, whose
-`require_result()` returns the mutation's result.
 
 ## SSE streams
 

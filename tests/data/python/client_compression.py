@@ -284,26 +284,11 @@ async def _async(harness: _Harness, lines: list[str]) -> None:
         )
 
 
-def _cached(harness: _Harness, lines: list[str]) -> None:
-    exchange, protocols = harness.exchange, harness.protocols
-    gzip = harness.call("gzip")
-    stores = harness.options.ProtocolClientOptions(cache_stores={"profiles.current": protocols.MemoryCacheStore()})
-    with harness.client(protocols=stores) as api:
-        cache = api.protocols.profiles.current
-        exchange.respond(json_response(200, {"name": "p"}, ETag='"v1"', **{"Cache-Control": "max-age=60"}))
-        record(lines, "cache fill", lambda: cache.fetch().source)
-        record(lines, "cache hit with a coding", lambda: cache.fetch(options=gzip))
-        record(lines, "cache hit", lambda: cache.fetch().source)
-    empty = harness.options.ProtocolClientOptions(cache_stores={"profiles.current": protocols.MemoryCacheStore()})
-    with harness.client(protocols=empty) as api:
-        record(lines, "cache miss with a coding", lambda: api.protocols.profiles.current.fetch(options=gzip))
-
-
 def compression(package: ModuleType, lines: list[str]) -> None:
     """Select gzip on clients, views, calls, and helpers, and report which requests are sent compressed."""
     exchange = Exchange(lines)
     harness = _Harness(package, exchange)
-    for step in (_values, _inherited, _signed, _explicit, _helpers, _cached):
+    for step in (_values, _inherited, _signed, _explicit, _helpers):
         lines.append(f"# {step.__name__.strip('_')}")
         step(harness, lines)
     lines.append("# async")

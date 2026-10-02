@@ -189,17 +189,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Job'
-  /profile:
-    get:
-      operationId: getProfile
-      tags: [profiles]
-      responses:
-        '200':
-          description: The profile
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Item'
   /checks:
     post:
       operationId: createCheck

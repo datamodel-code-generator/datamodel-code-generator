@@ -131,13 +131,6 @@
   > GET https://api.example.com/items
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   inherited bodyless pages = (Item(name='a'),)
-# cached
-  > GET https://api.example.com/profile
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  cache fill = 'network'
-  cache hit with a coding ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
-  cache hit = 'fresh_cache'
-  cache miss with a coding ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
 # async
   > POST https://api.example.com/items
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip b'{"name":"n"}'

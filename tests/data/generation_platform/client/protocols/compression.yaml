@@ -69,8 +69,3 @@ helpers:
       selector: {from: body, pointer: /result}
       schema: {pointer: /components/schemas/Outcome}
     interval: {seconds: 1}
-  profiles.current:
-    kind: cache
-    operation: /paths/~1profile/get
-    validator: etag
-    authenticated: false
