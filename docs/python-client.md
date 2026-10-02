@@ -103,7 +103,6 @@ Webhook exceptions have keyword-only constructors and the following additional f
 | `WebhookReplayError` | `ProtocolError` | `delivery_id: str`, `namespace: str` |
 | `ProtocolStoreError` | `ProtocolError` | `action: Literal['lookup', 'fingerprint_vary', 'compare_exchange', 'delete', 'invalidate', 'claim', 'put', 'get', 'open', 'read', 'close', 'purge_terminal', 'admit', 'record', 'reset', 'snapshot']`, `entry_id: str \| None = None` |
 | `WebhookStoreError` | `ProtocolStoreError` | No additional fields |
-| `CircuitStoreError` | `ProtocolStoreError` | No additional fields; see [Circuit breakers](#circuit-breakers) |
 | `ReplayStoreFullError` | `WebhookStoreError` | `max_entries: int` |
 
 All fields without a displayed default are required. They also accept the shared context fields
@@ -312,6 +311,7 @@ Invalid field values raise `ValueError`.
 | `IncompleteFrameError` | `StreamInterruptedError` | `buffered_bytes: int`; `condition` is always `eof` |
 | `StreamRemoteError[E]` | `ProtocolError` | `event_type: str \| None`, `data: E`, a read-only property, `sequence: int` |
 | `CacheStoreError` | `ProtocolStoreError` | `action`, the store method that failed, and `entry_id: str \| None = None` |
+| `CircuitStoreError` | `ProtocolStoreError` | `action`, the store method that failed; see [Circuit breakers](#circuit-breakers) |
 | `CacheProtocolError` | `ProtocolDataError` | No other fields; `condition` is always `inconsistent` |
 | `CacheValidatorConflictError` | `ProtocolConfigurationError` | `header_name: Literal['If-None-Match', 'If-Modified-Since']`; `field_path` is the header's name and `condition` is always `binding_mismatch` |
 | `CacheInvalidationError[T]` | `CacheStoreError` | `tags: tuple[str, ...]`, `completed_result: T \| Unset = UNSET`, a read-only property; `has_completed_result` and `require_result()`, which raises `ResultUnavailableError` without a result; `action` is always `invalidate` |
