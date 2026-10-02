@@ -4014,7 +4014,11 @@ bodyless: ordinary and `with_response` calls return `None` data for an empty fin
 `verify=True`, `ssl_context=None`, `proxy=None`, `trust_env=True`, `http2=False`, `max_connections=100`,
 `max_keepalive_connections=20`, `keepalive_expiry=5`, and `retry_owner="sdk"`. Supplying an SSLContext uses its CA,
 verification, and client certificate settings and rejects any explicit `verify` override. Proxy/environment/TLS
-settings follow HTTPX2 environment handling by default; `trust_env=False` opts out.
+settings follow HTTPX2 environment handling by default, preserving native system trust. With `trust_env=False`,
+default origin TLS and an explicit HTTPS proxy's independent default TLS use certifi's Mozilla public-root bundle
+without CA environment overrides. Plain HTTP proxies retain native behavior. Caller `ssl_context` or `verify=False`
+controls origin TLS; injected native clients retain their settings and ownership. For enterprise roots with
+`trust_env=False`, supply an `SSLContext`.
 Buffered success responses have no default size cap. Set `max_response_bytes` on client, view, or request options
 to bound them; `None` removes an inherited cap. Error bodies retain their 64 KiB default cap. HTTP/2 is opt-in and requires its optional dependency.
 
