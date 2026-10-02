@@ -67,10 +67,7 @@ class _Entries:
                 if entry.state == "leased" and entry.lease_until is not None and entry.lease_until <= now:
                     state: QueueState = "pending"
                     result = entry.result
-                    if entry.cancel_requested:
-                        state = "delivery_unknown" if entry.send_intent else "cancelled"
-                        result = QueueOutcome(category="cancelled")
-                    elif result is not None and result.category != "retryable":
+                    if result is not None and result.category != "retryable":
                         recorded: dict[str, QueueState] = {
                             "success": "succeeded",
                             "permanent": "dead",
@@ -78,6 +75,9 @@ class _Entries:
                             "cancelled": "delivery_unknown" if entry.send_intent else "cancelled",
                         }
                         state = recorded[result.category]
+                    elif entry.cancel_requested:
+                        state = "delivery_unknown" if entry.send_intent else "cancelled"
+                        result = QueueOutcome(category="cancelled")
                     entries[key] = replace(
                         entry,
                         state=state,

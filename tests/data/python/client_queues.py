@@ -261,15 +261,23 @@ class _Store:
                 return wrong  # type: ignore[return-value]
             for key, entry in list(self.entries.items()):
                 if entry.state == "leased" and entry.lease_until <= now:
+                    state, result = "pending", entry.result
+                    if result is not None and result.category != "retryable":
+                        state = {
+                            "success": "succeeded",
+                            "permanent": "dead",
+                            "unknown": "delivery_unknown",
+                            "cancelled": "delivery_unknown" if entry.send_intent else "cancelled",
+                        }[result.category]
+                    elif entry.cancel_requested:
+                        state = "delivery_unknown" if entry.send_intent else "cancelled"
+                        result = self.protocols.QueueOutcome(category="cancelled")
                     self.entries[key] = self._next(
                         replace(
                             entry,
-                            state=("delivery_unknown" if entry.send_intent else "cancelled")
-                            if entry.cancel_requested
-                            else "pending",
-                            result=self.protocols.QueueOutcome(category="cancelled")
-                            if entry.cancel_requested
-                            else entry.result,
+                            state=state,
+                            result=result,
+                            send_intent=entry.send_intent if state == "pending" else False,
                             lease_id=None,
                             lease_until=None,
                         )
@@ -1681,7 +1689,14 @@ def queue_compression(package: ModuleType, lines: list[str]) -> None:
         outbox.cancel(receipt.entry_id)
         outbox.operations.create_order.enqueue(body=queue.order)
         waiting = outbox.operations.create_order.enqueue(body=queue.order)
-        queue.server.during = lambda: queue.time.advance(400)
+
+        def expire_after_outcome(entry: Any) -> None:
+            if entry.state == "succeeded":
+                queue.time.advance(400)
+            else:
+                store.before["compare_exchange"] = expire_after_outcome
+
+        store.before["compare_exchange"] = expire_after_outcome
         queue.step(
             "claim expiry between waves",
             lambda: outbox.drain(

@@ -4437,5 +4437,17 @@
     "backends": [
       "pydantic_v2.BaseModel"
     ]
+  },
+  "uploads-oauth": {
+    "input": "uploads-oauth.yaml",
+    "references": [
+      "protocols/uploads.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/uploads.yaml"
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ]
   }
 }
