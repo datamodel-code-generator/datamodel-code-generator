@@ -256,7 +256,10 @@ class _Store:
                 return wrong  # type: ignore[return-value]
             for key, entry in list(self.entries.items()):
                 if entry.state == "leased" and entry.lease_until <= now:
-                    self.entries[key] = self._next(replace(entry, state="pending", lease_id=None, lease_until=None))
+                    self.entries[key] = self._next(replace(
+                        entry, state="delivery_unknown" if entry.send_intent else "pending", send_intent=False,
+                        lease_id=None, lease_until=None,
+                    ))
             ready = sorted(
                 (entry for entry in self.entries.values() if entry.state == "pending" and entry.not_before <= now),
                 key=lambda entry: (entry.created_at, entry.entry_id),
@@ -832,7 +835,7 @@ def _waits(queue: _Queues, native: httpx2.Client) -> None:
 
 
 def _recovery(queue: _Queues, native: httpx2.Client) -> None:
-    """A crash after the intent or after the response leaves a lease that expires; redelivery keeps the key."""
+    """A crash after the intent or response leaves unknown delivery; only an unsent expired lease is redelivered."""
     lines, step, server = queue.lines, queue.step, queue.server
     lines.append("recovery")
     store = _Store(queue.protocols)
@@ -1299,8 +1302,15 @@ def _memory_stores(queue: _Queues) -> None:
     lines.append(f"  claimed {[lease.entry.entry_id for lease in leases]} lease hidden {'lease_id' not in repr(leases[0])}")
     step("claim none", lambda: store.claim(now=now, lease_until=now, limit=1))
     step("claim zero", lambda: store.claim(now=now, lease_until=now, limit=0))
+    intended = store.get("b")
+    step("save b intent", lambda: store.compare_exchange(
+        "b", intended.version, replace(intended, send_intent=True, delivery_count=1)
+    ))
     recovered = store.claim(now=now + timedelta(seconds=6), lease_until=now + timedelta(seconds=9), limit=1)
     lines.append(f"  recovered {[lease.entry.entry_id for lease in recovered]}")
+    recovered_intent = store.get("b")
+    lines.append(f"  recovered intent {recovered_intent.state} count={recovered_intent.delivery_count} "
+                 f"intent={recovered_intent.send_intent} lease={recovered_intent.lease_id}")
     current = store.get("a")
     step("exchange stale", lambda: store.compare_exchange("a", "stale", current))
     step("exchange other lease", lambda: store.compare_exchange("a", current.version, replace(current, lease_id="x")))
@@ -1453,6 +1463,17 @@ async def _async_queues(queue: _Queues) -> None:
         await astep("memory inspect", lambda: outbox.inspect(entry.entry_id))
         await astep("memory purge", lambda: outbox.purge_terminal(queue.time.now() + timedelta(seconds=1)))
 
+        intended = await astep("async recovery enqueue", lambda: outbox.operations.create_order.enqueue(body=queue.order))
+        now = queue.time.now()
+        leases = await memory.claim(now=now, lease_until=now + timedelta(seconds=1), limit=1)
+        leased = leases[0].entry
+        await astep("async recovery intent", lambda: memory.compare_exchange(
+            intended.entry_id, leased.version, replace(leased, send_intent=True, delivery_count=1)
+        ))
+        queue.time.advance(2)
+        await astep("async expired intent drain", outbox.drain)
+        await astep("async recovered intent", lambda: outbox.inspect(intended.entry_id))
+        server.flush(lines)
 
 def queue_compression(package: ModuleType, lines: list[str]) -> None:
     """Refuse explicit queue codings before storing or sending, preserving pending entries for a later drain."""

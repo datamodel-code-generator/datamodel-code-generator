@@ -2520,8 +2520,9 @@ shared retries inside it, and returns a `DrainReport`. An entry ready again duri
 the drain ends and then returned to pending, so a drain delivers each entry at most once. Before the first send of a
 delivery, the drain saves the entry's send intent and its delivery count plus one, and sends nothing unless that save
 succeeds; a keyed entry sends its stable key on every attempt and every delivery, so the server can deduplicate it.
-Delivery is at least once, never exactly once: a claim's lease that expires, after a crash for example, returns the
-entry to pending, and a crash after the intent consumes a delivery even when nothing was sent.
+A claim's lease that expires, after a crash for example, returns an unsent entry to pending. An entry with saved send
+intent becomes `delivery_unknown` and is never redelivered automatically; a crash after the intent consumes a delivery
+even when nothing was sent. Only an explicit `retry_unknown` can redeliver it, with the same key within its expiry.
 
 | Delivery ends | Entry becomes | Report |
 |---|---|---|
