@@ -114,6 +114,7 @@ def json_projection(value: YamlValue, *, source_uri: str) -> JSONValue:
     ancestors: set[int] = set()
 
     def project(item: YamlValue, pointer: str) -> JSONValue:
+        """Project one value at its source pointer, retaining only its active container ancestry."""
         match item:
             case dict() | list():
                 identity = id(item)
@@ -200,6 +201,7 @@ def persistent_uri(identity: str, root: Path, option_path: str) -> str:
 
 
 def _digest(lease: SourceLease, document: SourceDocumentId, uri: str) -> str:
+    """Digest a borrowed document, locating cyclic values in its persistent source URI."""
     from datamodel_code_generator._generation_contract import SourceLocation  # noqa: PLC0415
 
     return sha256(

@@ -166,6 +166,7 @@ def _diagnostic(item: Diagnostic) -> str:
 
 
 def _public_api(content: bytes) -> list[str]:
+    """Report the operations and helper identities of a rendered client manifest."""
     manifest = json.loads(content)
     data = manifest["target_data"]["client"]
     helpers = data["protocol_helpers"]
