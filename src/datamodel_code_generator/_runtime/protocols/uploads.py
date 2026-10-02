@@ -100,6 +100,7 @@ _MANIFEST_BYTES: Final = MAX_STATE_BYTES - 1024 * 1024
 _RESULT_FIELDS: Final = 2
 _MIN_SUCCESS: Final = 200
 _MAX_SUCCESS: Final = 299
+_GATEWAY_STATUSES: Final = frozenset({502, 504})
 _BOUND_FIELDS: Final = 3
 
 
@@ -172,11 +173,16 @@ class UploadPlan(Generic[T, C]):
 
         from .writes import position, targeted_writes  # noqa: PLC0415 - Only a plan loads the operation runtime.
 
-        probed = targeted_writes(self.probe, self.probe_bindings)
+        probed = targeted_writes(self.probe, (binding.written for binding in self.probe_bindings))
         extra = (self.offset,) if self.length is None else (self.offset, self.length)
-        appended = targeted_writes(self.append, self.append_bindings, extra)
+        appended = targeted_writes(self.append, (binding.written for binding in self.append_bindings), extra)
         appended = replace(appended, call=_unreplayed(appended.call))
-        completed = None if self.completion is None else targeted_writes(self.completion, self.completion_bindings)
+        completion = self.completion
+        completed = (
+            None
+            if completion is None
+            else targeted_writes(completion, (binding.written for binding in self.completion_bindings))
+        )
         children = (probed, appended, *(() if completed is None else (completed,)))
         headers, queries = set[str](), set[str]()
         if (size := self.size) is not None:
@@ -791,9 +797,9 @@ class _Upload(Generic[T]):
     def _completion_failed(self, error: BaseException, sends: int) -> None:
         """Let a completion that certainly did not apply be sent again; keep every other one unknown.
 
-        It did not apply when the server answered with an error status, when nothing reached the server, or when the
-        session sent nothing. A response the server started, such as a success whose body does not decode, keeps it
-        unknown with RESPONSE_STARTED.
+        It did not apply when the server answered with an error status other than a gateway's 502 or 504, when nothing
+        reached the server, or when the session sent nothing. A response the server started, such as a success whose
+        body does not decode or a 502, keeps it unknown with RESPONSE_STARTED.
         """
         delivery = _delivery_of(error)
         unapplied = _refused(error) or delivery is DeliveryState.NOT_SENT or self._session.network_send_count == sends
@@ -868,10 +874,14 @@ def _dotted(
 
 
 def _refused(error: BaseException) -> bool:
-    """Return whether the server answered a call with an error status, so it did not apply the call."""
+    """Return whether the server answered a call with an error status, so it did not apply the call.
+
+    A 502 or 504 proves nothing: a gateway answers with it when the server behind it may have applied the call.
+    """
     return (
         isinstance(error, (HTTPStatusError, UnexpectedStatusError))
-        and not _MIN_SUCCESS <= error.info.status_code <= _MAX_SUCCESS
+        and not _MIN_SUCCESS <= (status := error.info.status_code) <= _MAX_SUCCESS
+        and status not in _GATEWAY_STATUSES
     )
 
 

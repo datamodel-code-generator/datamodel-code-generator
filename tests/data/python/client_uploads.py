@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import io
 import json
+import os
 import tempfile
 import threading
 from datetime import datetime, timezone
@@ -309,6 +310,7 @@ def uploads(package: ModuleType, lines: list[str]) -> None:
             section(harness, api, server, exchange, lines)
             _drained(exchange, lines)
     run(lambda: _async_uploads(harness, server, lines))
+    run(lambda: _fifo_ranges(harness, lines))
 
 
 def _drained(exchange: Exchange, lines: list[str]) -> None:
@@ -541,7 +543,7 @@ def _offsets(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
 
 
 def _completions(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lines: list[str]) -> None:
-    """Never send a completion of unknown outcome again; send one an error answered again."""
+    """Never send a completion of unknown outcome, a 502 or 504 included, again; send one an error answered again."""
     helper = api.protocols.files.finish
     lines.append("a completion of unknown outcome")
     exchange.respond(server, server, server, failing(httpx2.ReadError))
@@ -556,6 +558,15 @@ def _completions(harness: _Uploads, api: Any, server: _Server, exchange: Exchang
     handle = helper.start(harness.source(), tus_resumable=harness.tus)
     step(lines, "run", handle.run)
     step(lines, "run again", handle.run)
+    for status in (502, 504):
+        lines.append(f"a completion a gateway answered with {status}")
+        exchange.respond(server, server, server, raw_response(status))
+        handle = helper.start(harness.source(), tus_resumable=harness.tus)
+        step(lines, "run", handle.run)
+        step(lines, "run again", handle.run)
+        step(lines, "advance again", handle.advance)
+        state = handle.checkpoint()
+        step(lines, "resume", lambda: helper.resume(harness.source(), state))
     lines.append("a completion the server answered with a body that does not decode")
     exchange.respond(server, server, server, json_response(200, {"id": 5}))
     handle = helper.start(harness.source(), tus_resumable=harness.tus)
@@ -728,8 +739,14 @@ def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
         ("another helper", lambda: finish.resume(harness.source(), state)),
         ("not a state", lambda: helper.resume(harness.source(), "state")),
         ("bytes", lambda: helper.resume(_CONTENT, state)),
-        ("a smaller chunk size", lambda: helper.resume(harness.source(), state, upload_options=harness.uploads(chunk_bytes=2))),
-        ("fewer chunks allowed", lambda: helper.resume(harness.source(), state, upload_options=harness.uploads(max_parts=2))),
+        (
+            "a smaller chunk size",
+            lambda: helper.resume(harness.source(), state, upload_options=harness.uploads(chunk_bytes=2)),
+        ),
+        (
+            "fewer chunks allowed",
+            lambda: helper.resume(harness.source(), state, upload_options=harness.uploads(max_parts=2)),
+        ),
     ):
         record(lines, f"resume with {label}", call)
     envelope = json.loads(exported)
@@ -787,7 +804,8 @@ def _expiry(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, li
     for label, value in (
         ("no date", "tomorrow"),
         ("no day", "2999-02-30T00:00:00Z"),
-        ("a leap second", "2999-12-31T23:59:60Z"), ("a fraction", "2999-01-01t00:00:00.123456789z"),
+        ("a leap second", "2999-12-31T23:59:60Z"),
+        ("a fraction", "2999-01-01t00:00:00.123456789z"),
     ):
         server.expires = value
         exchange.respond(server)
@@ -819,7 +837,9 @@ def _clock(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lin
         handle = helper.start(harness.source(), tus_resumable=harness.tus)
         step(lines, "advance", handle.advance)
         state = handle.checkpoint()
-        record(lines, "resume a checkpoint whose expiry the clock passed", lambda: helper.resume(harness.source(), state))
+        record(
+            lines, "resume a checkpoint whose expiry the clock passed", lambda: helper.resume(harness.source(), state)
+        )
         ticks[0] += 601
         step(lines, "advance once the clock passed the session's total timeout", handle.advance)
 
@@ -1061,6 +1081,35 @@ async def _async_uploads(harness: _Uploads, server: _Server, lines: list[str]) -
                 lines.append(f"  hash a missing file ! {type(error).__name__}")
         lines.append(f"  async ranges: {await _async_ranges(content)}")
         _drained(exchange, lines)
+
+
+async def _fifo_ranges(harness: _Uploads, lines: list[str]) -> None:
+    """Refuse ranges after FIFO replacement without a writer; use a changed file where FIFOs are unsupported."""
+    lines.append("file ranges after FIFO replacement (where supported)")
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory, "content.bin")
+        await asyncio.to_thread(path.write_bytes, _CONTENT)
+        source = harness.protocols.FileUploadSource.from_path(path)
+
+        def opened() -> bytes:
+            with source.open_range(2, 3) as synchronous:
+                return synchronous.read(3)
+
+        async with (
+            await harness.protocols.AsyncFileUploadSource.from_path(path) as asynchronous,
+            asynchronous.open_range(2, 3) as reader,
+        ):
+            if mkfifo := getattr(os, "mkfifo", None):
+                await asyncio.to_thread(path.unlink)
+                await asyncio.to_thread(mkfifo, path)
+            else:
+                await asyncio.to_thread(path.write_bytes, _CONTENT + b"!")
+            step(lines, "sync open_range", opened)
+            await astep(lines, "async open_range", lambda: _async_ranges(asynchronous))
+            lines.append(f"  existing async range {await reader.read(3)!r}")
+            await reader.aclose()
+            lines.append(f"  existing async range after close {await reader.read(1)!r}")
+        lines.append("  async source closed")
 
 
 async def _async_ranges(source: Any) -> str:

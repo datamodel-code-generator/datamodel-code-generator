@@ -7,7 +7,7 @@ helper's plan loads them, since they need the operation runtime every generated 
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, Generic, TypeAlias
 
 from typing_extensions import TypeVar
 
@@ -16,7 +16,7 @@ from ..client.paths import dot_segment, path_segments
 from ..model_codecs.errors import CodecAdapterError, ParameterEncodingError
 from ..model_codecs.unset import UNSET
 from .records import BodyTarget, ParameterTarget, QuerystringTarget
-from .values import Patch
+from .values import Patch, written
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -27,7 +27,6 @@ if TYPE_CHECKING:
     from .records import RequestTarget, Selector
 
 __all__ = (
-    "Binding",
     "PatchedMedia",
     "PatchedParameter",
     "ReadMedia",
@@ -203,18 +202,6 @@ def dotted_read(
     return next((read for name, read in reads if texts[name]), reads[0][1])
 
 
-class Binding(Protocol):
-    """A value a helper writes into a target: one a selector reads from a response, or a literal without one."""
-
-    @property
-    def target(self) -> RequestTarget:
-        """Return where the value is written."""
-
-    @property
-    def selector(self) -> Selector | None:
-        """Return what reads the value from a response, or None for a literal."""
-
-
 @dataclass(frozen=True, slots=True)
 class Targeted(Generic[T]):
     """An operation that sends only the values a helper writes into its targets, and where each value goes.
@@ -237,30 +224,20 @@ class Targeted(Generic[T]):
         A parameter's value replaces its argument, and the values for a querystring or the body are patched into an
         empty object.
         """
-        arguments: list[object] = [UNSET] * len(self.call.parameters)
-        patches: dict[int | None, list[tuple[str, WireValue]]] = {}
-        for (written, pointer), value in zip(self.writes, values, strict=True):
-            if pointer is None:
-                arguments[cast("int", written)] = value
-            else:
-                patches.setdefault(written, []).append((pointer, value))
-        body: object = UNSET
-        for written, writes in patches.items():
-            if written is None:
-                body = Patch(UNSET, tuple(writes))
-            else:
-                arguments[written] = Patch(UNSET, tuple(writes))
-        return tuple(arguments), body
+        return written(self.writes, (UNSET,) * len(self.call.parameters), UNSET, values)
 
 
 def targeted_writes(
-    call: OperationPlan[T, object], bindings: Iterable[Binding], extra: Iterable[RequestTarget] = ()
+    call: OperationPlan[T, object],
+    bindings: Iterable[tuple[RequestTarget, Selector | None]],
+    extra: Iterable[RequestTarget] = (),
 ) -> Targeted[T]:
     """Return an operation taking, in order, the value of each binding and then of each extra target, as wire values.
 
-    An extra target's value is one the helper computes rather than reads.
+    A binding is the target its value is written to and the selector that reads it, or None for a literal; an extra
+    target's value is one the helper computes rather than reads.
     """
-    sources = (*((binding.target, binding.selector) for binding in bindings), *((target, None) for target in extra))
+    sources = (*bindings, *((target, None) for target in extra))
     return Targeted(*targeted(call, (target for target, _ in sources)), read_paths(call, sources))
 
 

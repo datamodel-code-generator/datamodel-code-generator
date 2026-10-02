@@ -2403,6 +2403,34 @@ _POLL_OPTIONS: Final = (("poll_options", ".", "PollOptions"), *_HELPER_OPTIONS[1
 _POLLING: Final = "_runtime.protocols.polling"
 _UPLOADS: Final = "_runtime.protocols.uploads"
 _UPLOAD_OPTIONS: Final = (("upload_options", ".", "UploadOptions"), *_HELPER_OPTIONS[1:])
+_STREAMS: Final = "_runtime.protocols.streams"
+_RESUMES: Final = """ A helper that declares `resume` also has `resume`, which reopens a stream after its
+`checkpoint()`, and its streams reconnect when `StreamOptions(reconnect=True)`."""
+_RECONNECT_LIMITS: Final = """| reconnections, counted across resumes | 5; None removes the limit, and 0 allows none |
+| reconnection wait | 60 seconds; None removes it |
+"""
+_RESUMED: Final = """
+A helper that declares `resume` tracks the cursor of the last event it delivered: the SSE event ID, or the value its
+cursor pointer reads from an event's data, which an empty event ID or a null value clears. Once a cursor was delivered,
+a stream's `checkpoint()` returns a `ResumeState` without sending: the cursor, the event and reconnection counts, the
+last `retry` time, the bindings' values, and the caller's first request when the reopen repeats it, never events,
+responses, the session, or the call's options. A call given a cookie or credential argument cannot be checkpointed:
+`checkpoint()` raises `ProtocolConfigurationError` with the condition `wrong_capability`, and `ProtocolDataError` for a
+cursor the reopen request cannot encode, as a reconnection does. The helper's `resume` sends the reopen in a session of
+its own, writing the cursor, and omitting a cleared one, and returns once its response is a declared success; it
+refuses another helper's state, one made under other security, an expired one, and one that does not fit with
+`ResumeStateError` before sending. `StreamInterruptedError` keeps a checkpoint as `resume_state`, and no options, the
+client's, a view's, or the call's, may patch a header or query parameter a reopen writes or fix an idempotency key.
+
+With `StreamOptions(reconnect=True)` such a stream reopens itself as one more child call of its session after a
+transport interruption, a read-phase failure classified as retryable or a read timeout the call's own
+`TimeoutOptions(read=...)` set, or after an incomplete end when the helper declares `incomplete_eof`, once a cursor was
+delivered and after the retry backoff and at least the last `retry` time. Running out of reconnections or of the
+session's sends raises `StreamResumeExhaustedError` with a checkpoint; a wait whose backoff cap or `retry` time is
+longer than allowed, or a wait longer than the session has left, raises the interruption instead. Decode, size, remote,
+idle, and deadline failures, the declared end, and closing never reconnect, and events the server sends again after a
+reopen are delivered again.
+"""
 _CACHE: Final = "_runtime.protocols.cache"
 _CACHE_OPTIONS: Final = (("cache_options", ".", "CacheOptions"), _HELPER_OPTIONS[1])
 _DEFAULT_STATUSES: Final = [200]
@@ -2795,7 +2823,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                 else:
                     nodes.setdefault(parts, {})
         leaves = {named[spec.helper.name]: spec for spec in self.helpers}
-        {named[spec.helper.name]: spec for spec in self.streams}
+        streams = {named[spec.helper.name]: spec for spec in self.streams}
         sockets = {named[spec.helper.name]: spec for spec in self.sockets}
         handles = {
             name: _handle(spec, prefix)
@@ -2829,13 +2857,13 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         sections.extend(
             self.node(
                 name,
-                f"the {spec.helper.name} WebSocket helper of {spec.operation.contract.method.upper()} "
+                f"the {spec.helper.name} {_HELPER_KINDS[spec.helper.kind]} of {spec.operation.contract.method.upper()} "
                 f"{spec.operation.contract.path}",
                 core,
-                [self.socket_method(module, index, spec, asynchronous=asynchronous)],
+                self.stream_methods(module, index, spec, asynchronous=asynchronous),
                 leaf=True,
             )
-            for index, (name, spec) in enumerate(sockets.items())
+            for index, (name, spec) in enumerate(streams.items())
         )
         sections.extend(
             self.node(
@@ -4481,36 +4509,3 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
             RenderedFile(path=documentation / "README.md", kind="readme", text=self.readme()),
             RenderedFile(path=reference, kind="documentation", text=self.runtime_documentation()),
         )
-
-
-_STREAMS: Final = "_runtime.protocols.streams"
-
-_RESUMES: Final = """ A helper that declares `resume` also has `resume`, which reopens a stream after its
-`checkpoint()`, and its streams reconnect when `StreamOptions(reconnect=True)`."""
-
-_RECONNECT_LIMITS: Final = """| reconnections, counted across resumes | 5; None removes the limit, and 0 allows none |
-| reconnection wait | 60 seconds; None removes it |
-"""
-
-_RESUMED: Final = """
-A helper that declares `resume` tracks the cursor of the last event it delivered: the SSE event ID, or the value its
-cursor pointer reads from an event's data, which an empty event ID or a null value clears. Once a cursor was delivered,
-a stream's `checkpoint()` returns a `ResumeState` without sending: the cursor, the event and reconnection counts, the
-last `retry` time, the bindings' values, and the caller's first request when the reopen repeats it, never events,
-responses, the session, or the call's options. A call given a cookie or credential argument cannot be checkpointed:
-`checkpoint()` raises `ProtocolConfigurationError` with the condition `wrong_capability`, and `ProtocolDataError` for a
-cursor the reopen request cannot encode, as a reconnection does. The helper's `resume` sends the reopen in a session of
-its own, writing the cursor, and omitting a cleared one, and returns once its response is a declared success; it
-refuses another helper's state, one made under other security, an expired one, and one that does not fit with
-`ResumeStateError` before sending. `StreamInterruptedError` keeps a checkpoint as `resume_state`, and no options, the
-client's, a view's, or the call's, may patch a header or query parameter a reopen writes or fix an idempotency key.
-
-With `StreamOptions(reconnect=True)` such a stream reopens itself as one more child call of its session after a
-transport interruption, a read-phase failure classified as retryable or a read timeout the call's own
-`TimeoutOptions(read=...)` set, or after an incomplete end when the helper declares `incomplete_eof`, once a cursor was
-delivered and after the retry backoff and at least the last `retry` time. Running out of reconnections or of the
-session's sends raises `StreamResumeExhaustedError` with a checkpoint; a wait whose backoff cap or `retry` time is
-longer than allowed, or a wait longer than the session has left, raises the interruption instead. Decode, size, remote,
-idle, and deadline failures, the declared end, and closing never reconnect, and events the server sends again after a
-reopen are delivered again.
-"""
