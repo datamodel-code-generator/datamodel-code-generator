@@ -356,7 +356,7 @@ def _opening(harness: _Harness, lines: list[str]) -> None:
             exchange.respond(_down())
             record(lines, f"failure {index}", lambda api=api: api.backend.get_status())
         lines.append(f"  opened {_snapshot(store.snapshot(harness.key()))}")
-        record(lines, "open", lambda: api.backend.get_status())
+        record(lines, "open", api.backend.get_status)
         try:
             api.backend.get_status()
         except harness.errors.CircuitOpenError as failure:
@@ -365,19 +365,19 @@ def _opening(harness: _Harness, lines: list[str]) -> None:
                 f"attempts={failure.resource_attempt_count}"
             )
         exchange.respond(json_response(200, _UP), json_response(200, _UP))
-        record(lines, "ungrouped", lambda: api.backend.get_health())
-        record(lines, "other group", lambda: api.search.search())
+        record(lines, "ungrouped", api.backend.get_health)
+        record(lines, "other group", api.search.search)
         exchange.respond(_down())
         record(lines, "raw request", lambda: api.request_raw("GET", "https://api.example.com/status").info.status_code)
         store.time = _START + 29.5
-        record(lines, "cooling", lambda: api.backend.get_status())
+        record(lines, "cooling", api.backend.get_status)
         store.time = _START + 30
         exchange.respond(_down())
-        record(lines, "probe failure", lambda: api.backend.get_status())
+        record(lines, "probe failure", api.backend.get_status)
         lines.append(f"  reopened {_snapshot(store.snapshot(harness.key()))}")
         store.time = _START + 60
         exchange.respond(json_response(200, _UP))
-        record(lines, "probe success", lambda: api.backend.get_status())
+        record(lines, "probe success", api.backend.get_status)
         lines.append(f"  closed {_snapshot(store.snapshot(harness.key()))}")
 
 
@@ -392,7 +392,7 @@ def _counting(harness: _Harness, lines: list[str]) -> None:
     store = _Clocked(protocols.MemoryCircuitStore(), lines)
     with harness.client(store, retries=2) as api:
         exchange.respond(_down(), _down(), _down())
-        record(lines, "retried once", lambda: api.backend.get_status())
+        record(lines, "retried once", api.backend.get_status)
         lines.append(f"  retried {_snapshot(store.snapshot(harness.key()))}")
     store = _Clocked(protocols.MemoryCircuitStore(), lines)
     with harness.client(store, threshold=100) as api:
@@ -425,24 +425,24 @@ def _resets(harness: _Harness, lines: list[str]) -> None:
     store = _Clocked(protocols.MemoryCircuitStore(), lines)
     with harness.client(store) as api:
         _failures(lines, exchange, api.backend.get_status, "opening")
-        record(lines, "before reset", lambda: api.backend.get_status())
+        record(lines, "before reset", api.backend.get_status)
         api.reset_circuit("backend", origin=harness.origin)
         lines.append(f"  reset {_snapshot(store.snapshot(harness.key()))}")
 
         resetting = _OnAttempt(lambda: api.reset_circuit("backend", origin=harness.origin))
         exchange.respond(_down())
         view = api.with_options(options.RequestOptions(hooks=(resetting,)))
-        record(lines, "stale failure", lambda: view.backend.get_status())
+        record(lines, "stale failure", view.backend.get_status)
         lines.append(f"  stale {_snapshot(store.snapshot(harness.key()))}")
         _failures(lines, exchange, api.backend.get_status, "reopening")
         store.time = _START + 30
         token = options.CancelToken()
         hooks = (_OnAttempt(token.cancel),)
         cancelled = api.with_options(options.RequestOptions(hooks=hooks, cancel_token=token))
-        record(lines, "cancelled probe", lambda: cancelled.backend.get_status())
+        record(lines, "cancelled probe", cancelled.backend.get_status)
         lines.append(f"  after cancel {_snapshot(store.snapshot(harness.key()))}")
         exchange.respond(json_response(200, _UP))
-        record(lines, "next probe", lambda: api.backend.get_status())
+        record(lines, "next probe", api.backend.get_status)
 
 
 def _partitions(harness: _Harness, lines: list[str]) -> None:
@@ -450,31 +450,31 @@ def _partitions(harness: _Harness, lines: list[str]) -> None:
     shared = protocols.MemoryCircuitStore()
     with harness.client() as first, harness.client() as second, harness.client(shared) as third:
         _failures(lines, exchange, first.backend.get_status, "first")
-        record(lines, "own store open", lambda: first.backend.get_status())
+        record(lines, "own store open", first.backend.get_status)
         exchange.respond(json_response(200, _UP))
-        record(lines, "other client", lambda: second.backend.get_status())
+        record(lines, "other client", second.backend.get_status)
         _failures(lines, exchange, third.backend.get_status, "third")
     with harness.client(shared) as fourth, harness.client(shared, partition="tenant-b") as fifth:
-        record(lines, "shared store", lambda: fourth.backend.get_status())
+        record(lines, "shared store", fourth.backend.get_status)
         exchange.respond(json_response(200, _UP))
-        record(lines, "other partition", lambda: fifth.backend.get_status())
+        record(lines, "other partition", fifth.backend.get_status)
     lines.append(
         f"  shared {shared.snapshot(harness.key()).state} {shared.snapshot(harness.key(partition='tenant-b')).state}"
     )
     token = auth.AuthConfig({"bearer": auth.StaticTokenProvider(auth.AccessToken("token-secret", scopes=None))})
     store = _Clocked(protocols.MemoryCircuitStore(), lines)
     with harness.client(store, auth=token) as anonymous:
-        record(lines, "auth without partition", lambda: anonymous.backend.get_account())
+        record(lines, "auth without partition", anonymous.backend.get_account)
         exchange.respond(json_response(200, _UP))
-        record(lines, "ungrouped with auth", lambda: anonymous.backend.get_health())
+        record(lines, "ungrouped with auth", anonymous.backend.get_health)
     with harness.client(store, auth=token, partition="tenant-a") as partitioned:
         exchange.respond(json_response(200, _UP))
-        record(lines, "auth with partition", lambda: partitioned.backend.get_account())
+        record(lines, "auth with partition", partitioned.backend.get_account)
         other = auth.AuthConfig({"bearer": auth.StaticTokenProvider(auth.AccessToken("tenant-b", scopes=None))})
         foreign = partitioned.with_options(harness.options.RequestOptions(auth=other))
-        record(lines, "other auth in a view", lambda: foreign.backend.get_account())
+        record(lines, "other auth in a view", foreign.backend.get_account)
         exchange.respond(json_response(200, _UP))
-        record(lines, "other auth ungrouped", lambda: foreign.backend.get_health())
+        record(lines, "other auth ungrouped", foreign.backend.get_health)
 
 
 def _store_failures(harness: _Harness, lines: list[str]) -> None:
@@ -500,7 +500,7 @@ def _store_failures(harness: _Harness, lines: list[str]) -> None:
     store = _Failing(protocols.MemoryCircuitStore(), {"record": RuntimeError("store down")})
     with harness.client(store) as api:
         exchange.respond(json_response(200, _UP))
-        record(lines, "raw record failure", lambda: api.backend.with_raw_response.get_status())
+        record(lines, "raw record failure", api.backend.with_raw_response.get_status)
     store = _Failing(protocols.MemoryCircuitStore(), {"reset": RuntimeError("store down")})
     with harness.client(store) as api:
         record(lines, "reset failure", lambda: api.reset_circuit("backend", origin=harness.origin))
@@ -531,13 +531,15 @@ async def _async_circuits(harness: _Harness, lines: list[str]) -> None:
     async with harness.async_client(store) as api:
         for index in range(5):
             exchange.respond(_down())
-            await arecord(lines, f"async failure {index}", lambda: api.backend.get_status())
-        await arecord(lines, "async open", lambda: api.backend.get_status())
+            await arecord(lines, f"async failure {index}", api.backend.get_status)
+        await arecord(lines, "async open", api.backend.get_status)
         store.time = _START + 30
         exchange.respond(json_response(200, _UP))
         results = await asyncio.gather(*(api.backend.get_status() for _ in range(20)), return_exceptions=True)
-        lines.append(f"  async probes {sorted(Counter(type(result).__name__ for result in results).items())}")
-        lines.append(f"  async closed {_snapshot(await store.snapshot(harness.key()))}")
+        lines.extend((
+            f"  async probes {sorted(Counter(type(result).__name__ for result in results).items())}",
+            f"  async closed {_snapshot(await store.snapshot(harness.key()))}",
+        ))
         for _ in range(5):
             exchange.respond(_down())
             lines.append(f"  async reopen {await aoutcome(api.backend.get_status)}")
@@ -548,8 +550,8 @@ async def _async_circuits(harness: _Harness, lines: list[str]) -> None:
         lines.append(f"  async raw {raw.info.status_code} {_snapshot(await store.snapshot(harness.key()))}")
     async with harness.async_client() as api:
         exchange.respond(json_response(200, _UP), json_response(200, _UP))
-        await arecord(lines, "async default store", lambda: api.backend.get_status())
-        await arecord(lines, "async ungrouped", lambda: api.backend.get_health())
+        await arecord(lines, "async default store", api.backend.get_status)
+        await arecord(lines, "async ungrouped", api.backend.get_health)
         await api.reset_circuit("backend", origin=harness.origin)
     async with harness.async_client(enabled=False) as api:
         await arecord(lines, "async disabled reset", lambda: api.reset_circuit("backend", origin=harness.origin))
@@ -565,11 +567,11 @@ async def _async_circuits(harness: _Harness, lines: list[str]) -> None:
             if responder is not None:
                 exchange.respond(responder)
             if label.endswith("reset failure"):
-                call = lambda api=api: api.reset_circuit("backend", origin=harness.origin)  # noqa: E731
+                call = lambda api=api: api.reset_circuit("backend", origin=harness.origin)  # ruff: ignore[lambda-assignment]
             elif "raw" in label:
-                call = lambda api=api: api.backend.with_raw_response.get_status()  # noqa: E731
+                call = lambda api=api: api.backend.with_raw_response.get_status()  # ruff: ignore[lambda-assignment]
             else:
-                call = lambda api=api: api.backend.get_status()  # noqa: E731
+                call = lambda api=api: api.backend.get_status()  # ruff: ignore[lambda-assignment]
             await arecord(lines, label, call)
     store = _AsyncClocked(protocols.AsyncMemoryCircuitStore(), lines)
     async with harness.async_client(store) as api:
@@ -580,7 +582,7 @@ async def _async_circuits(harness: _Harness, lines: list[str]) -> None:
         token = harness.options.CancelToken()
         hooks = (_OnAttempt(token.cancel),)
         cancelled = api.with_options(harness.options.RequestOptions(hooks=hooks, cancel_token=token))
-        await arecord(lines, "async cancelled probe", lambda: cancelled.backend.get_status())
+        await arecord(lines, "async cancelled probe", cancelled.backend.get_status)
         lines.append(f"  async after cancel {_snapshot(await store.snapshot(harness.key()))}")
 
 
@@ -590,16 +592,16 @@ def _clock(harness: _Harness, lines: list[str]) -> None:
     clock = options.Clock(monotonic=lambda: times[0])
     with harness.client(threshold=1, clock=clock) as api:
         exchange.respond(_down())
-        record(lines, "clocked failure", lambda: api.backend.get_status())
+        record(lines, "clocked failure", api.backend.get_status)
         try:
             api.backend.get_status()
         except harness.errors.CircuitOpenError as failure:
             lines.append(f"  clocked open retry_at={failure.retry_at}")
         times[0] = _START + 29.5
-        record(lines, "clocked cooling", lambda: api.backend.get_status())
+        record(lines, "clocked cooling", api.backend.get_status)
         times[0] = _START + 30
         exchange.respond(json_response(200, _UP))
-        record(lines, "clocked probe", lambda: api.backend.get_status())
+        record(lines, "clocked probe", api.backend.get_status)
 
 
 def circuits(package: ModuleType, lines: list[str]) -> None:
