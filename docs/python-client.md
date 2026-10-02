@@ -334,7 +334,6 @@ Invalid field values raise `ValueError`.
 | `HandshakeResponse` | `ProtocolError` | `status_code: int`, `headers: HeadersView`, `body_prefix: bytes` of at most 65536 bytes, `truncated: bool`; raised only by connectors |
 | `DeliveryUnknownError` | `ProtocolError` | `delivery_state`, `MAYBE_SENT` or `RESPONSE_STARTED`, `resume_state: ResumeState \| None = None`, `message_id: str \| None = None` |
 | `NonResumableSourceError` | `ProtocolConfigurationError` | `source_kind: Literal['iterable', 'iterator', 'stream', 'reader']`; `field_path` is always `('source',)` and `condition` `wrong_capability` |
-| `DeliveryUnknownError` | `ProtocolError` | `delivery_state: DeliveryState`, `MAYBE_SENT` or `RESPONSE_STARTED`, `resume_state: ResumeState \| None = None`, `message_id: str \| None = None` |
 | `UploadDeliveryUnknownError` | `DeliveryUnknownError` | `phase: Literal['append', 'part', 'complete']`, `part` being reserved for the parts profile, `progress: UploadProgress`; no `message_id` |
 | `UploadSourceChangedError` | `ProtocolDataError` | `expected: UploadIdentity`, `actual: UploadIdentity \| None`, `offset: int \| None = None`; `condition` is always `inconsistent` |
 | `UploadOffsetError` | `ProtocolDataError` | `confirmed_offset: int`, `expected_offset: int`, `remote_offset: int`, `size: int`, `resume_state: ResumeState \| None = None`; `condition` is always `inconsistent` |
