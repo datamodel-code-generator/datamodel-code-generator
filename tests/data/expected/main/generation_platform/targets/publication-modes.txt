@@ -1,4 +1,5 @@
-# publish-verify
+# publication-modes
+chmod . 0750
 generate
   target=fastapi schema_version=1
   written model models.py
@@ -19,53 +20,34 @@ generate
   written target server/services.py (target)
   written target server/README.md (target)
   written target server/py.typed (target)
-  written model_metadata meta/models.json
   written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
   26 runtime modules ['written']
+mode models.py: 0640
+mode server/__init__.py: 0640
+mode server/.dcg-target-manifest.json: 0640
+chmod models.py 0604
 generate
   target=fastapi schema_version=1
+  written model models.py
+  written target server/application.py (target)
+  written target server/routers/untagged.py (target)
+  written target server/_generated/contract.py (target)
+  written target server/_generated/model_bindings.py (target)
+  written target server/_generated/openapi.py (target)
+  written target server/responses.py (target)
+  written target server/services.py (target)
+  written target server/README.md (target)
   written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
-  unchanged model models.py
   unchanged target server/__init__.py (target)
-  unchanged target server/application.py (target)
   unchanged target server/routers/__init__.py (target)
-  unchanged target server/routers/pets.py (target)
-  unchanged target server/routers/store.py (target)
-  unchanged target server/routers/untagged.py (target)
   unchanged target server/_generated/__init__.py (target)
-  unchanged target server/_generated/contract.py (target)
-  unchanged target server/_generated/model_bindings.py (target)
-  unchanged target server/_generated/openapi.py (target)
   unchanged target server/model_codecs.py (target)
-  unchanged target server/responses.py (target)
   unchanged target server/errors.py (target)
   unchanged target server/auth_types.py (target)
-  unchanged target server/services.py (target)
-  unchanged target server/README.md (target)
   unchanged target server/py.typed (target)
   26 runtime modules ['unchanged']
-tree
-  meta/models.json
-  models.py
-  server/.dcg-state/model-artifacts.json
-  server/.dcg-target-manifest.json
-  server/README.md
-  server/__init__.py
-  server/_generated/__init__.py
-  server/_generated/contract.py
-  server/_generated/model_bindings.py
-  server/_generated/openapi.py
-  server/application.py
-  server/auth_types.py
-  server/errors.py
-  server/model_codecs.py
-  server/py.typed
-  server/responses.py
-  server/routers/__init__.py
-  server/routers/pets.py
-  server/routers/store.py
-  server/routers/untagged.py
-  server/services.py
-  26 runtime modules ['present']
+  deleted target server/routers/pets.py (target)
+  deleted target server/routers/store.py (target)
+mode models.py: 0604
