@@ -1427,7 +1427,9 @@ def _coded(
     if (options := limits.options) is not None and isinstance(selected := options.compression, str):
         from ..client.compression import helper_children  # noqa: PLC0415 - Only a selected coding loads the encoder.
 
-        children = [] if saved is not None else [(plan.create, body is not UNSET)]
+        children: list[tuple[OperationPlan[Any, object], bool]] = (
+            [] if saved is not None else [(plan.create, body is not UNSET)]
+        )
         if remaining:
             children.append((plan.append, True))
         if (saved is None or saved.phase is _Phase.UPLOADING) and (completed := plan.completed) is not None:

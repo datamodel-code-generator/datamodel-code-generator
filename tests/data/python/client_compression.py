@@ -98,13 +98,13 @@ def _inherited(harness: _Harness, lines: list[str]) -> None:
         exchange.respond(_created())
         record(lines, "declared body", lambda: api.items.create_item(body=harness.item("compressed")))
         exchange.respond(_created())
-        record(lines, "declared without body", lambda: api.items.create_item())
+        record(lines, "declared without body", api.items.create_item)
         exchange.respond(_created())
         record(lines, "declared null", lambda: api.items.create_item(body=None))
         exchange.respond(_stored())
         record(lines, "undeclared body", lambda: api.items.create_note(body=harness.item("plain")))
         exchange.respond(json_response(200, {"data": []}))
-        record(lines, "declared bodyless", lambda: api.items.list_items())
+        record(lines, "declared bodyless", api.items.list_items)
         exchange.respond(_stored())
         record(
             lines,
@@ -364,7 +364,7 @@ async def _async(harness: _Harness, lines: list[str]) -> None:
     exchange, bodies = harness.exchange, harness.bodies
     gzip = harness.call("gzip")
 
-    async def chunks() -> AsyncIterator[bytes]:
+    async def chunks() -> AsyncIterator[bytes]:  # ruff: ignore[unused-async]
         yield b"async "
         yield b"stream"
 
@@ -385,6 +385,38 @@ async def _async(harness: _Harness, lines: list[str]) -> None:
             lines, "async cursor pages", api.protocols.items.search_all.iterate(body=harness.query(), options=gzip)
         )
         await arecord(lines, "async bodyless pages", lambda: api.protocols.items.listing.page(options=gzip))
+        exchange.respond(*_results((["a"], "c2")))
+        first = await api.protocols.items.search_all.page(body=harness.query())
+        zero = harness.protocols.PaginationOptions(max_items=0)
+        await arecord(
+            lines,
+            "async zero next",
+            lambda: api.protocols.items.search_all.next_page(first, options=gzip, pagination_options=zero),
+        )
+        exchange.respond(*_results((["a"], "c2")))
+        async with api.protocols.items.search_all.iterate(body=harness.query()) as pager:
+            await anext(pager)
+            state = pager.checkpoint()
+        await arecord(
+            lines,
+            "async zero resume",
+            lambda: api.protocols.items.search_all.resume(state, options=gzip, pagination_options=zero),
+        )
+        exchange.respond(
+            json_response(202, {"id": "c1", "status": "running"}),
+            json_response(200, {"id": "c1", "status": "done", "result": {"value": "ok"}}),
+        )
+        check = await api.protocols.checks.run.start(
+            options=gzip, poll_options=harness.protocols.PollOptions(interval=0.000001)
+        )
+        await arecord(lines, "async check", check.wait)
+        state = check.checkpoint()
+        await arecord(
+            lines, "async completed check resume", lambda: api.protocols.checks.run.resume(state, options=gzip)
+        )
+        resumed = api.protocols.checks.run.resume(state)
+        await arecord(lines, "async inherited completed check", resumed.wait)
+
         await arecord(
             lines,
             "async helper header conflict",

@@ -73,6 +73,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
         "polling",
         "polling-plans",
         "uploads",
+        "uploads-compression",
         "uploads-plans",
         "queues",
         "webhooks",
