@@ -15,6 +15,10 @@
   sync schema 10:body_bound RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   sync schema 11:root_min RequestEncodingError:('items', 0) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   sync schema 12:property_min RequestEncodingError:('items', 1) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  sync schema 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]}'
+  sync schema 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]'
   sync none 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   sync none 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
@@ -41,90 +45,110 @@
     body=b'[{"id":"i0","wire-label":"","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   sync none 12:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"","tier":"basic","secret":"sent"}]}'
+  sync none 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]}'
+  sync none 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]'
   async-Iterable schema 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable schema 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   async-Iterable schema 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable schema 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   async-Iterable schema 2:property_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 2:property_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 3:root_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 3:root_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 4:property_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 4:property_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 5:root_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 5:root_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 6:property_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 6:property_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 7:root_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 7:root_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 8:root_contains RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 8:root_contains RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable schema 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   async-Iterable schema 10:body_bound RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 10:body_bound RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 11:root_min RequestEncodingError:('items', 0) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 11:root_min RequestEncodingError:('items', 0) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 12:property_min RequestEncodingError:('items', 1) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 12:property_min RequestEncodingError:('items', 1) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-Iterable schema 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]}'
+  async-AsyncIterable schema 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]}'
+  async-Iterable schema 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]'
+  async-AsyncIterable schema 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]'
   async-Iterable none 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable none 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   async-Iterable none 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   async-Iterable none 2:property_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable none 2:property_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]}'
   async-Iterable none 3:root_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 3:root_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]'
   async-Iterable none 4:property_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable none 4:property_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   async-Iterable none 5:root_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 5:root_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   async-Iterable none 6:property_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable none 6:property_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]}'
   async-Iterable none 7:root_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 7:root_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]'
   async-Iterable none 8:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"one","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 8:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"one","tier":"basic","secret":"sent"}]'
   async-Iterable none 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   async-Iterable none 10:body_bound ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable none 10:body_bound ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   async-Iterable none 11:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-Iterable none 12:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable schema 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable schema 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable schema 2:property_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 3:root_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 4:property_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 5:root_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 6:property_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 7:root_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 8:root_contains RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable schema 10:body_bound RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 11:root_min RequestEncodingError:('items', 0) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 12:property_min RequestEncodingError:('items', 1) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable none 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable none 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 2:property_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable none 3:root_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 4:property_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable none 5:root_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 6:property_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable none 7:root_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 8:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"one","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 10:body_bound ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   async-AsyncIterable none 11:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-Iterable none 12:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"","tier":"basic","secret":"sent"}]}'
   async-AsyncIterable none 12:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"","tier":"basic","secret":"sent"}]}'
+  async-Iterable none 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]}'
+  async-AsyncIterable none 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]}'
+  async-Iterable none 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]'
+  async-AsyncIterable none 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]'
   retry property_min ok indices=[0, 1] arrivals=2 admissions=2 sends=2 budget=2
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
@@ -133,6 +157,18 @@
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
     same-body=True same-key=True key-present=True
+  getters schema property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]}'
+    original-field-reads={'id': 2, 'wire_label': 2}
+  getters schema root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]'
+    original-field-reads={'id': 2, 'wire_label': 2}
+  getters none property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]}'
+    original-field-reads={'id': 2, 'wire_label': 2}
+  getters none root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]'
+    original-field-reads={'id': 2, 'wire_label': 2}
 # batch-schema pydantic_v2.dataclass
   sync schema 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
@@ -150,6 +186,10 @@
   sync schema 10:body_bound RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   sync schema 11:root_min RequestEncodingError:('items', 0) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   sync schema 12:property_min RequestEncodingError:('items', 1) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  sync schema 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]}'
+  sync schema 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]'
   sync none 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   sync none 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
@@ -176,90 +216,110 @@
     body=b'[{"id":"i0","wire-label":"","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   sync none 12:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"","tier":"basic","secret":"sent"}]}'
+  sync none 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]}'
+  sync none 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]'
   async-Iterable schema 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable schema 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   async-Iterable schema 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable schema 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   async-Iterable schema 2:property_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 2:property_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 3:root_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 3:root_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 4:property_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 4:property_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 5:root_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 5:root_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 6:property_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 6:property_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 7:root_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 7:root_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 8:root_contains RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 8:root_contains RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable schema 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   async-Iterable schema 10:body_bound RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 10:body_bound RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 11:root_min RequestEncodingError:('items', 0) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 11:root_min RequestEncodingError:('items', 0) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 12:property_min RequestEncodingError:('items', 1) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 12:property_min RequestEncodingError:('items', 1) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-Iterable schema 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]}'
+  async-AsyncIterable schema 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]}'
+  async-Iterable schema 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]'
+  async-AsyncIterable schema 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]'
   async-Iterable none 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable none 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   async-Iterable none 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   async-Iterable none 2:property_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable none 2:property_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]}'
   async-Iterable none 3:root_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 3:root_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]'
   async-Iterable none 4:property_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable none 4:property_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   async-Iterable none 5:root_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 5:root_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   async-Iterable none 6:property_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable none 6:property_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]}'
   async-Iterable none 7:root_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 7:root_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]'
   async-Iterable none 8:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"one","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 8:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"one","tier":"basic","secret":"sent"}]'
   async-Iterable none 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   async-Iterable none 10:body_bound ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable none 10:body_bound ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   async-Iterable none 11:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-Iterable none 12:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable schema 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable schema 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable schema 2:property_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 3:root_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 4:property_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 5:root_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 6:property_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 7:root_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 8:root_contains RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable schema 10:body_bound RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 11:root_min RequestEncodingError:('items', 0) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 12:property_min RequestEncodingError:('items', 1) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable none 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable none 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 2:property_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable none 3:root_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 4:property_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable none 5:root_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 6:property_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable none 7:root_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 8:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"one","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 10:body_bound ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   async-AsyncIterable none 11:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-Iterable none 12:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"","tier":"basic","secret":"sent"}]}'
   async-AsyncIterable none 12:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"","tier":"basic","secret":"sent"}]}'
+  async-Iterable none 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]}'
+  async-AsyncIterable none 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]}'
+  async-Iterable none 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]'
+  async-AsyncIterable none 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]'
   retry property_min ok indices=[0, 1] arrivals=2 admissions=2 sends=2 budget=2
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
@@ -268,6 +328,18 @@
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
     same-body=True same-key=True key-present=True
+  getters schema property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]}'
+    original-field-reads={'id': 4, 'wire_label': 4}
+  getters schema root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]'
+    original-field-reads={'id': 4, 'wire_label': 4}
+  getters none property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]}'
+    original-field-reads={'id': 4, 'wire_label': 4}
+  getters none root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]'
+    original-field-reads={'id': 4, 'wire_label': 4}
 # batch-schema dataclasses.dataclass
   sync schema 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
@@ -285,6 +357,10 @@
   sync schema 10:body_bound RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   sync schema 11:root_min RequestEncodingError:('items', 0) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   sync schema 12:property_min RequestEncodingError:('items', 1) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  sync schema 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]}'
+  sync schema 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]'
   sync none 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   sync none 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
@@ -311,90 +387,110 @@
     body=b'[{"id":"i0","wire-label":"","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   sync none 12:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"","tier":"basic","secret":"sent"}]}'
+  sync none 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]}'
+  sync none 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]'
   async-Iterable schema 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable schema 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   async-Iterable schema 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable schema 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   async-Iterable schema 2:property_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 2:property_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 3:root_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 3:root_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 4:property_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 4:property_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 5:root_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 5:root_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 6:property_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 6:property_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 7:root_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 7:root_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 8:root_contains RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 8:root_contains RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable schema 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   async-Iterable schema 10:body_bound RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 10:body_bound RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 11:root_min RequestEncodingError:('items', 0) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 11:root_min RequestEncodingError:('items', 0) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 12:property_min RequestEncodingError:('items', 1) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 12:property_min RequestEncodingError:('items', 1) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-Iterable schema 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]}'
+  async-AsyncIterable schema 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]}'
+  async-Iterable schema 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]'
+  async-AsyncIterable schema 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]'
   async-Iterable none 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable none 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   async-Iterable none 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   async-Iterable none 2:property_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable none 2:property_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]}'
   async-Iterable none 3:root_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 3:root_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]'
   async-Iterable none 4:property_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable none 4:property_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   async-Iterable none 5:root_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 5:root_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   async-Iterable none 6:property_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable none 6:property_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]}'
   async-Iterable none 7:root_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 7:root_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]'
   async-Iterable none 8:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"one","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 8:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"one","tier":"basic","secret":"sent"}]'
   async-Iterable none 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   async-Iterable none 10:body_bound ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable none 10:body_bound ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   async-Iterable none 11:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-Iterable none 12:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable schema 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable schema 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable schema 2:property_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 3:root_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 4:property_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 5:root_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 6:property_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 7:root_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 8:root_contains RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable schema 10:body_bound RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 11:root_min RequestEncodingError:('items', 0) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 12:property_min RequestEncodingError:('items', 1) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable none 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable none 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 2:property_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable none 3:root_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 4:property_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable none 5:root_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 6:property_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable none 7:root_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 8:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"one","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 10:body_bound ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   async-AsyncIterable none 11:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-Iterable none 12:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"","tier":"basic","secret":"sent"}]}'
   async-AsyncIterable none 12:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"","tier":"basic","secret":"sent"}]}'
+  async-Iterable none 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]}'
+  async-AsyncIterable none 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]}'
+  async-Iterable none 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]'
+  async-AsyncIterable none 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]'
   retry property_min ok indices=[0, 1] arrivals=2 admissions=2 sends=2 budget=2
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
@@ -403,6 +499,18 @@
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
     same-body=True same-key=True key-present=True
+  getters schema property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]}'
+    original-field-reads={'id': 2, 'wire_label': 2}
+  getters schema root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]'
+    original-field-reads={'id': 2, 'wire_label': 2}
+  getters none property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]}'
+    original-field-reads={'id': 2, 'wire_label': 2}
+  getters none root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]'
+    original-field-reads={'id': 2, 'wire_label': 2}
 # batch-schema typing.TypedDict
   sync schema 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
@@ -420,6 +528,10 @@
   sync schema 10:body_bound RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   sync schema 11:root_min RequestEncodingError:('items', 0) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   sync schema 12:property_min RequestEncodingError:('items', 1) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  sync schema 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]}'
+  sync schema 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]'
   sync none 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   sync none 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
@@ -446,90 +558,110 @@
     body=b'[{"id":"i0","wire-label":"","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   sync none 12:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"","tier":"basic","secret":"sent"}]}'
+  sync none 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]}'
+  sync none 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]'
   async-Iterable schema 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable schema 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   async-Iterable schema 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable schema 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   async-Iterable schema 2:property_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 2:property_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 3:root_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 3:root_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 4:property_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 4:property_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 5:root_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 5:root_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 6:property_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 6:property_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 7:root_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 7:root_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 8:root_contains RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 8:root_contains RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable schema 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   async-Iterable schema 10:body_bound RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 10:body_bound RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 11:root_min RequestEncodingError:('items', 0) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 11:root_min RequestEncodingError:('items', 0) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 12:property_min RequestEncodingError:('items', 1) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 12:property_min RequestEncodingError:('items', 1) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-Iterable schema 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]}'
+  async-AsyncIterable schema 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]}'
+  async-Iterable schema 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]'
+  async-AsyncIterable schema 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]'
   async-Iterable none 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable none 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   async-Iterable none 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   async-Iterable none 2:property_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable none 2:property_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]}'
   async-Iterable none 3:root_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 3:root_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]'
   async-Iterable none 4:property_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable none 4:property_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   async-Iterable none 5:root_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 5:root_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   async-Iterable none 6:property_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable none 6:property_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]}'
   async-Iterable none 7:root_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 7:root_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]'
   async-Iterable none 8:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"one","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 8:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"one","tier":"basic","secret":"sent"}]'
   async-Iterable none 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   async-Iterable none 10:body_bound ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable none 10:body_bound ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   async-Iterable none 11:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-Iterable none 12:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable schema 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable schema 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable schema 2:property_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 3:root_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 4:property_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 5:root_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 6:property_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 7:root_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 8:root_contains RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable schema 10:body_bound RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 11:root_min RequestEncodingError:('items', 0) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 12:property_min RequestEncodingError:('items', 1) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable none 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable none 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 2:property_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable none 3:root_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 4:property_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable none 5:root_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 6:property_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable none 7:root_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 8:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"one","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 10:body_bound ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   async-AsyncIterable none 11:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-Iterable none 12:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"","tier":"basic","secret":"sent"}]}'
   async-AsyncIterable none 12:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"","tier":"basic","secret":"sent"}]}'
+  async-Iterable none 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]}'
+  async-AsyncIterable none 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]}'
+  async-Iterable none 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]'
+  async-AsyncIterable none 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]'
   retry property_min ok indices=[0, 1] arrivals=2 admissions=2 sends=2 budget=2
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
@@ -538,6 +670,18 @@
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
     same-body=True same-key=True key-present=True
+  getters schema property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]}'
+    original-field-reads={'id': 2, 'wire_label': 2}
+  getters schema root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]'
+    original-field-reads={'id': 2, 'wire_label': 2}
+  getters none property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]}'
+    original-field-reads={'id': 2, 'wire_label': 2}
+  getters none root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one"},{"id":"i1","wire-label":"two"}]'
+    original-field-reads={'id': 2, 'wire_label': 2}
 # batch-schema msgspec.Struct
   sync schema 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
@@ -555,6 +699,10 @@
   sync schema 10:body_bound RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   sync schema 11:root_min RequestEncodingError:('items', 0) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   sync schema 12:property_min RequestEncodingError:('items', 1) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  sync schema 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]}'
+  sync schema 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]'
   sync none 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   sync none 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
@@ -581,90 +729,110 @@
     body=b'[{"id":"i0","wire-label":"","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   sync none 12:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"","tier":"basic","secret":"sent"}]}'
+  sync none 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]}'
+  sync none 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]'
   async-Iterable schema 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable schema 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   async-Iterable schema 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable schema 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   async-Iterable schema 2:property_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 2:property_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 3:root_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 3:root_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 4:property_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 4:property_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 5:root_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 5:root_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 6:property_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 6:property_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 7:root_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 7:root_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 8:root_contains RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 8:root_contains RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable schema 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   async-Iterable schema 10:body_bound RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 10:body_bound RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 11:root_min RequestEncodingError:('items', 0) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 11:root_min RequestEncodingError:('items', 0) indices=[] arrivals=0 admissions=0 sends=0 budget=0
   async-Iterable schema 12:property_min RequestEncodingError:('items', 1) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-AsyncIterable schema 12:property_min RequestEncodingError:('items', 1) indices=[] arrivals=0 admissions=0 sends=0 budget=0
+  async-Iterable schema 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]}'
+  async-AsyncIterable schema 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]}'
+  async-Iterable schema 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]'
+  async-AsyncIterable schema 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]'
   async-Iterable none 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable none 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   async-Iterable none 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   async-Iterable none 2:property_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable none 2:property_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]}'
   async-Iterable none 3:root_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 3:root_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]'
   async-Iterable none 4:property_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable none 4:property_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   async-Iterable none 5:root_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 5:root_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   async-Iterable none 6:property_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable none 6:property_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]}'
   async-Iterable none 7:root_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 7:root_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]'
   async-Iterable none 8:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"one","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 8:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"one","tier":"basic","secret":"sent"}]'
   async-Iterable none 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-AsyncIterable none 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
   async-Iterable none 10:body_bound ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
+  async-AsyncIterable none 10:body_bound ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   async-Iterable none 11:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-Iterable none 12:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable schema 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable schema 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable schema 2:property_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 3:root_min RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 4:property_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 5:root_max RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 6:property_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 7:root_unique RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 8:root_contains RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable schema 10:body_bound RequestEncodingError:('body',) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 11:root_min RequestEncodingError:('items', 0) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable schema 12:property_min RequestEncodingError:('items', 1) indices=[] arrivals=0 admissions=0 sends=0 budget=0
-  async-AsyncIterable none 0:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable none 1:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 2:property_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable none 3:root_min ok indices=[0] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 4:property_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable none 5:root_max ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 6:property_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]}'
-  async-AsyncIterable none 7:root_unique ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"same","wire-label":"one","tier":"basic","secret":"sent"},{"id":"same","wire-label":"one","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 8:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"one","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 9:root_contains ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
-  async-AsyncIterable none 10:body_bound ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
-    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
   async-AsyncIterable none 11:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'[{"id":"i0","wire-label":"","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
+  async-Iterable none 12:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"","tier":"basic","secret":"sent"}]}'
   async-AsyncIterable none 12:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"","tier":"basic","secret":"sent"}]}'
+  async-Iterable none 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]}'
+  async-AsyncIterable none 13:property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]}'
+  async-Iterable none 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]'
+  async-AsyncIterable none 14:root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]'
   retry property_min ok indices=[0, 1] arrivals=2 admissions=2 sends=2 budget=2
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
     body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]}'
@@ -673,3 +841,15 @@
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
     body=b'[{"id":"i0","wire-label":"one","tier":"basic","secret":"sent"},{"id":"i1","wire-label":"two","tier":"basic","secret":"sent"}]'
     same-body=True same-key=True key-present=True
+  getters schema property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]}'
+    original-field-reads={'id': 2, 'wire_label': 2}
+  getters schema root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]'
+    original-field-reads={'id': 2, 'wire_label': 2}
+  getters none property_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'{"item-list":[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]}'
+    original-field-reads={'id': 2, 'wire_label': 2}
+  getters none root_min ok indices=[0, 1] arrivals=1 admissions=1 sends=1 budget=1
+    body=b'[{"id":"i0","wire-label":"one","tier":"basic"},{"id":"i1","wire-label":"two","tier":"basic"}]'
+    original-field-reads={'id': 2, 'wire_label': 2}
