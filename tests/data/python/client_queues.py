@@ -309,6 +309,24 @@ class _Stubborn(_Store):
         return self.first
 
 
+class _Recancelling(_Store):
+    """A store where a cancel is requested of an entry each time a claim returns it again."""
+
+    def __init__(self, protocols: ModuleType) -> None:
+        """Start empty, without claimed entries."""
+        super().__init__(protocols)
+        self.claimed: set[str] = set()
+
+    def claim(self, *, now: datetime, lease_until: datetime, limit: int) -> tuple[Any, ...]:
+        """Lease ready entries, requesting a cancel of any claimed before."""
+        leases = super().claim(now=now, lease_until=lease_until, limit=limit)
+        for lease in leases:
+            if (entry_id := lease.entry.entry_id) in self.claimed:
+                self.tamper(entry_id, cancel_requested=True)
+            self.claimed.add(entry_id)
+        return leases
+
+
 class _AsyncStore:
     """The asynchronous face of a scenario store."""
 
@@ -700,6 +718,14 @@ def _holding(queue: _Queues, native: httpx2.Client) -> None:
         store.later["compare_exchange"] = (3, OSError("release"))
         step("release fails", outbox.drain)
         server.flush(lines)
+    recancelling = _Recancelling(protocols)
+    with _client(queue, native, recancelling) as api:
+        outbox = _helpers(api)[0]
+        held = step("held and cancelled", lambda: outbox.operations.create_order.enqueue(body=queue.order, queue_options=soon))
+        queue.exchange.respond(queue.stepping(503))
+        step("drain held", outbox.drain)
+        step("inspect held", lambda: outbox.inspect(held.entry_id))
+        server.flush(lines)
 
 
 def _waits(queue: _Queues, native: httpx2.Client) -> None:
@@ -958,6 +984,13 @@ def _malformed(queue: _Queues, native: httpx2.Client) -> None:
             receipt = outbox.operations.create_order.enqueue(body=queue.order)
             store.tamper(receipt.entry_id, payload=payload)
             step(f"drain {label}", outbox.drain)
+        bodiless = outbox.operations.create_order.enqueue(body=queue.order)
+        store.tamper(bodiless.entry_id, payload=b'{"arguments":[[],[]],"body":[],"version":1}')
+        step("drain without its body", outbox.drain)
+        pathless = outbox.operations.refresh.enqueue(order_id=queue.argument("GetOrder", "path", "orderId", "o1"))
+        store.tamper(pathless.entry_id, payload=b'{"arguments":[[],[]],"body":[],"version":1}')
+        step("drain without its path", outbox.drain)
+        step("inspect without its path", lambda: outbox.inspect(pathless.entry_id))
         keyed = outbox.operations.create_order.enqueue(body=queue.order)
         store.tamper(keyed.entry_id, idempotency_key=" bad key")
         step("drain bad key", outbox.drain)

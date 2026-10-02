@@ -166,6 +166,7 @@ def test_client_protocols(case: str, tmp_path: Path) -> None:
         ("webhooks-adapters", "webhooks-adapters-python", "webhook-adapter-records"),
         ("caching", "caching-python", "cache-records"),
         ("queues", "queues-python", "queue-records"),
+        ("queues", "queues-schema", "queue-schema"),
     ],
 )
 def test_client_helper_digests(first: str, second: str, expected: str, tmp_path: Path) -> None:
