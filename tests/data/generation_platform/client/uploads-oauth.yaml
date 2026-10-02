@@ -1,0 +1,157 @@
+openapi: 3.2.0
+info:
+  title: Resumable uploads
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+paths:
+  /files:
+    post:
+      operationId: createFile
+      tags: [files]
+      parameters:
+        - name: Upload-Length
+          in: header
+          required: true
+          schema: {type: integer}
+        - name: Tus-Resumable
+          in: header
+          required: true
+          schema: {type: string}
+        - name: X-Name
+          in: header
+          schema: {type: string}
+      responses:
+        '201':
+          description: The upload was created.
+          headers:
+            Upload-Expires:
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Upload'}
+  /files/{fileId}:
+    head:
+      operationId: probeFile
+      tags: [files]
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema: {type: string}
+        - name: Tus-Resumable
+          in: header
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: The offset the server holds.
+          headers:
+            Upload-Offset:
+              schema: {type: integer}
+    patch:
+      operationId: appendFile
+      tags: [files]
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema: {type: string}
+        - name: Upload-Offset
+          in: header
+          required: true
+          schema: {type: integer}
+        - name: Tus-Resumable
+          in: header
+          required: true
+          schema: {type: string}
+        - name: X-Chunk-Length
+          in: header
+          schema: {type: integer}
+      requestBody:
+        required: true
+        content:
+          application/offset+octet-stream:
+            schema: {type: string, format: binary}
+      responses:
+        '204':
+          description: The chunk was appended.
+          headers:
+            Upload-Offset:
+              schema: {type: integer}
+    put:
+      operationId: putFileChunk
+      tags: [files]
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema: {type: string}
+        - name: offset
+          in: query
+          required: true
+          schema: {type: integer}
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: {type: string, format: binary}
+      responses:
+        '204':
+          description: The chunk was stored.
+  /files/{fileId}/status:
+    get:
+      operationId: getFileStatus
+      tags: [files]
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: The offset the server holds.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Status'}
+  /files/{fileId}/complete:
+    post:
+      security: [{oauth: []}]
+      operationId: completeFile
+      tags: [files]
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: The stored file.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Stored'}
+components:
+  securitySchemes:
+    oauth:
+      type: oauth2
+      flows:
+        clientCredentials: {tokenUrl: 'https://auth.example.com/token', scopes: {}}
+  schemas:
+    Upload:
+      type: object
+      required: [id]
+      properties:
+        id: {type: string}
+        expires: {}
+    Status:
+      type: object
+      required: [offset]
+      properties:
+        offset: {type: integer}
+    Stored:
+      type: object
+      required: [id, size, sha256]
+      properties:
+        id: {type: string}
+        size: {type: integer}
+        sha256: {type: string}

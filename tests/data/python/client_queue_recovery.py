@@ -421,18 +421,19 @@ async def _matrix(package: ModuleType, lines: list[str], asynchronous: bool, pat
             await observed(f"cancelled expired lease intent={intent}", outbox.drain)
             await observed("cancelled lease entry", partial(outbox.inspect, receipt.entry_id))
         for category in inputs["records"]:
-            receipt = await _value(partial(outbox.operations.create_order.enqueue, body=queue.order))
-            entry = store.get(receipt.entry_id)
-            now = queue.time.now()
-            leased = store.claim(now=now, lease_until=now + timedelta(seconds=1), limit=1)[0].entry
-            store.compare_exchange(
-                receipt.entry_id,
-                leased.version,
-                replace(leased, result=queue.protocols.QueueOutcome(category=category)),
-            )
-            queue.time.advance(2)
-            await observed(f"record {category} no reclaim", outbox.drain)
-            await observed(f"record {category} entry", partial(outbox.inspect, entry.entry_id))
+            for cancelled in (False, True):
+                receipt = await _value(partial(outbox.operations.create_order.enqueue, body=queue.order))
+                entry = store.get(receipt.entry_id)
+                now = queue.time.now()
+                leased = store.claim(now=now, lease_until=now + timedelta(seconds=1), limit=1)[0].entry
+                store.compare_exchange(
+                    receipt.entry_id,
+                    leased.version,
+                    replace(leased, result=queue.protocols.QueueOutcome(category=category), cancel_requested=cancelled),
+                )
+                queue.time.advance(2)
+                await observed(f"record {category} cancel={cancelled} no reclaim", outbox.drain)
+                await observed(f"record {category} cancel={cancelled} entry", partial(outbox.inspect, entry.entry_id))
         queue.server.flush(lines)
         await shut(instance)
 
@@ -452,6 +453,24 @@ async def _restoration(package: ModuleType, lines: list[str], asynchronous: bool
     lines.append("async restoration" if asynchronous else "sync restoration")
     async with _native(queue, asynchronous) as native:
         client = package.AsyncClient if asynchronous else package.Client
+        for prior in (False, True):
+            store = _Store(queue.protocols)
+            instance = client(http_client=native, options=queue.settings(_AsyncStore(store) if asynchronous else store))
+            outbox = instance.protocols.orders.outbox
+            receipt = await _value(partial(outbox.operations.create_order.enqueue, body=queue.order))
+            store.tamper(receipt.entry_id, send_intent=prior, delivery_count=int(prior))
+            queue_recovery_adapter.restoring = partial(queue.time.advance, 299)
+            try:
+                report = await _value(outbox.drain)
+            finally:
+                queue_recovery_adapter.restoring = None
+            entry = await _value(partial(outbox.inspect, receipt.entry_id))
+            lines.append(
+                f"  remaining restoration prior={prior}: {dict(report.counts)} "
+                f"{entry.state} {entry.result.category} count={entry.delivery_count}"
+            )
+            queue.server.flush(lines)
+            await _value(instance.aclose if asynchronous else instance.close)
         for prior in (False, True):
             store = _Store(queue.protocols)
             instance = client(http_client=native, options=queue.settings(_AsyncStore(store) if asynchronous else store))

@@ -103,14 +103,22 @@ sync
   cancelled lease entry: cancelled count=0 intent=False outcome=cancelled/None
   cancelled expired lease intent=True: {}
   cancelled lease entry: delivery_unknown count=0 intent=False outcome=cancelled/None
-  record success no reclaim: {}
-  record success entry: succeeded count=0 intent=False outcome=success/None
-  record unknown no reclaim: {}
-  record unknown entry: delivery_unknown count=0 intent=False outcome=unknown/None
-  record permanent no reclaim: {}
-  record permanent entry: dead count=0 intent=False outcome=permanent/None
-  record cancelled no reclaim: {}
-  record cancelled entry: cancelled count=0 intent=False outcome=cancelled/None
+  record success cancel=False no reclaim: {}
+  record success cancel=False entry: succeeded count=0 intent=False outcome=success/None
+  record success cancel=True no reclaim: {}
+  record success cancel=True entry: succeeded count=0 intent=False outcome=success/None
+  record unknown cancel=False no reclaim: {}
+  record unknown cancel=False entry: delivery_unknown count=0 intent=False outcome=unknown/None
+  record unknown cancel=True no reclaim: {}
+  record unknown cancel=True entry: delivery_unknown count=0 intent=False outcome=unknown/None
+  record permanent cancel=False no reclaim: {}
+  record permanent cancel=False entry: dead count=0 intent=False outcome=permanent/None
+  record permanent cancel=True no reclaim: {}
+  record permanent cancel=True entry: dead count=0 intent=False outcome=permanent/None
+  record cancelled cancel=False no reclaim: {}
+  record cancelled cancel=False entry: cancelled count=0 intent=False outcome=cancelled/None
+  record cancelled cancel=True no reclaim: {}
+  record cancelled cancel=True entry: cancelled count=0 intent=False outcome=cancelled/None
 async
   before_intent drain: {'succeeded': 1}
   before_intent entry: succeeded count=1 intent=False outcome=success/None
@@ -215,11 +223,19 @@ async
   cancelled lease entry: cancelled count=0 intent=False outcome=cancelled/None
   cancelled expired lease intent=True: {}
   cancelled lease entry: delivery_unknown count=0 intent=False outcome=cancelled/None
-  record success no reclaim: {}
-  record success entry: succeeded count=0 intent=False outcome=success/None
-  record unknown no reclaim: {}
-  record unknown entry: delivery_unknown count=0 intent=False outcome=unknown/None
-  record permanent no reclaim: {}
-  record permanent entry: dead count=0 intent=False outcome=permanent/None
-  record cancelled no reclaim: {}
-  record cancelled entry: cancelled count=0 intent=False outcome=cancelled/None
+  record success cancel=False no reclaim: {}
+  record success cancel=False entry: succeeded count=0 intent=False outcome=success/None
+  record success cancel=True no reclaim: {}
+  record success cancel=True entry: succeeded count=0 intent=False outcome=success/None
+  record unknown cancel=False no reclaim: {}
+  record unknown cancel=False entry: delivery_unknown count=0 intent=False outcome=unknown/None
+  record unknown cancel=True no reclaim: {}
+  record unknown cancel=True entry: delivery_unknown count=0 intent=False outcome=unknown/None
+  record permanent cancel=False no reclaim: {}
+  record permanent cancel=False entry: dead count=0 intent=False outcome=permanent/None
+  record permanent cancel=True no reclaim: {}
+  record permanent cancel=True entry: dead count=0 intent=False outcome=permanent/None
+  record cancelled cancel=False no reclaim: {}
+  record cancelled cancel=False entry: cancelled count=0 intent=False outcome=cancelled/None
+  record cancelled cancel=True no reclaim: {}
+  record cancelled cancel=True entry: cancelled count=0 intent=False outcome=cancelled/None
