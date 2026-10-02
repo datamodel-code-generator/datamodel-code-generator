@@ -74,8 +74,26 @@
   > PUT https://api.example.com/blobs
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-encoding: gzip, content-length: <gzip>, x-signed: yes] gzip b'signed'
     signed digest of the sent bytes True
+    signed framing correct True
   signed bytes = None
   signed file ! BodyNotReplayableError: BodyNotReplayableError(operation_id='putBlob', call_id='<call>', source_kind='stream', condition='digest_unavailable') [operation_id='putBlob', condition='digest_unavailable'] body_not_replayable_error
+# framing
+  > PUT https://api.example.com/blobs
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-encoding: gzip, content-length: <gzip>] gzip b'framed'
+    compressed length correct True
+  typed bytes length = None
+  > PUT https://api.example.com/blobs
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-encoding: gzip, transfer-encoding: chunked] gzip again b'framed'
+    streamed length absent True chunked=True
+  typed file length = None
+  > PUT https://api.example.com/blobs
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-encoding: gzip, content-length: <gzip>] gzip again b'framed'
+    compressed length correct True
+  async typed bytes length = None
+  > PUT https://api.example.com/blobs
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-encoding: gzip, transfer-encoding: chunked] gzip again b'framed'
+    streamed length absent True chunked=True
+  async typed file length = None
 # explicit
   > POST https://api.example.com/items
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip b'{"name":"n"}'

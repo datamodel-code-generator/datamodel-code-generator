@@ -45,7 +45,7 @@ render pydantic_v2.BaseModel
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['items.search_all', 'items.feed_all', 'items.listing', 'jobs.run', 'events.watch', 'checks.run'] bindings 20
+  namespace client helpers ['items.search_all', 'items.feed_all', 'items.listing', 'jobs.run', 'events.watch', 'checks.run'] bindings 21
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   helper items.search_all pagination enabled True /inputs/target_config/protocol_metadata/helpers/items.search_all 82875108af8ecb1bcd16e0e968d16b1f5f9d55fcdbb08e1367da78ec112d20ae
   helper items.feed_all pagination enabled True /inputs/target_config/protocol_metadata/helpers/items.feed_all fd13cb9a239fb0be12362ed222cb4b2671841700ae9464ea9584f910a41c878a
@@ -306,7 +306,7 @@ render pydantic_v2.BaseModel
   /selection/selected_operations/2 items.create_note()
     exports client.types.items.CreateNoteResponse client.types.items.CreateNoteErrorData client.types.items.CreateNoteHTTPError
     exports client.types.items.CreateNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/3 items.put_blob()
+  /selection/selected_operations/3 items.put_blob(header:Content-Length=content_length)
     exports client.types.items.PutBlobResponse client.types.items.PutBlobErrorData client.types.items.PutBlobHTTPError
     exports client.types.items.PutBlobRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
   /selection/selected_operations/4 items.search(query:cursor=cursor)

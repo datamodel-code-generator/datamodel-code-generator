@@ -34,6 +34,7 @@ class _Harness:
         self.bodies = importlib.import_module(f"{package.__name__}.bodies")
         self.protocols = importlib.import_module(f"{package.__name__}.protocols")
         self.models = importlib.import_module(f"{package.__name__}_models")
+        self.codecs = importlib.import_module(f"{package.__name__}.types.items").PutBlobRequestCodecs
 
     def settings(self, compression: object = None, **options: Any) -> Any:
         options.setdefault("retry", self.options.RetryOptions(max_retries=1, initial_delay=0))
@@ -56,6 +57,10 @@ class _Harness:
     def call(self, *compression: object, **options: Any) -> Any:
         """Return call options, selecting a coding only when one is given."""
         return self.options.RequestOptions(**dict(zip(("compression",), compression, strict=False)), **options)
+
+    def length(self, value: int) -> Any:
+        """Return a typed Content-Length parameter whose value compression must replace."""
+        return self.codecs.parameter(location="header", name="Content-Length").from_wire(value)
 
     def query(self, text: str = "q") -> Any:
         return self.models.Query(text=text)
@@ -159,15 +164,62 @@ def _signed(harness: _Harness, lines: list[str]) -> None:
     signer = _DigestSigner(auth)
 
     def digested(request: httpx2.Request) -> httpx2.Response:
-        lines.append(f"    signed digest of the sent bytes {hashlib.sha256(request.content).digest() == signer.digests[-1]}")
+        lines.append(
+            f"    signed digest of the sent bytes {hashlib.sha256(request.content).digest() == signer.digests[-1]}"
+        )
+        lengths = request.headers.get_list("content-length")
+        lines.append(f"    signed framing correct {lengths == [str(len(request.content))]}")
         return httpx2.Response(204)
 
-    config = auth.AuthConfig({}, send_on_anonymous=True, allowed_origins=("https://api.example.com",), signers=(signer,))
+    config = auth.AuthConfig(
+        {}, send_on_anonymous=True, allowed_origins=("https://api.example.com",), signers=(signer,)
+    )
     with harness.client("gzip", auth=config) as api:
         exchange.respond(digested)
-        record(lines, "signed bytes", lambda: api.items.put_blob(body=b"signed"))
+        record(lines, "signed bytes", lambda: api.items.put_blob(body=b"signed", content_length=harness.length(6)))
         file = harness.bodies.FileBody(io.BytesIO(b"file"))
         record(lines, "signed file", lambda: api.items.put_blob(body=file))
+
+
+def _framing(harness: _Harness, lines: list[str]) -> None:
+    """Replace a typed length after compression, keeping bytes sized and streamed bodies chunked."""
+    exchange, bodies = harness.exchange, harness.bodies
+
+    def sized(request: httpx2.Request) -> httpx2.Response:
+        lengths = request.headers.get_list("content-length")
+        lines.append(f"    compressed length correct {lengths == [str(len(request.content))]}")
+        return httpx2.Response(204)
+
+    def chunked(request: httpx2.Request) -> httpx2.Response:
+        lengths = request.headers.get_list("content-length")
+        lines.append(
+            f"    streamed length absent {not lengths} chunked={request.headers.get('transfer-encoding') == 'chunked'}"
+        )
+        return httpx2.Response(204)
+
+    length = harness.length(6)
+    with harness.client("gzip") as api:
+        exchange.respond(sized, chunked)
+        record(lines, "typed bytes length", lambda: api.items.put_blob(body=b"framed", content_length=length))
+        record(
+            lines,
+            "typed file length",
+            lambda: api.items.put_blob(body=bodies.FileBody(io.BytesIO(b"framed")), content_length=length),
+        )
+
+    async def asynchronous() -> None:
+        async with harness.async_client("gzip") as api:
+            exchange.respond(sized, chunked)
+            await arecord(
+                lines, "async typed bytes length", lambda: api.items.put_blob(body=b"framed", content_length=length)
+            )
+            await arecord(
+                lines,
+                "async typed file length",
+                lambda: api.items.put_blob(body=bodies.AsyncFileBody(io.BytesIO(b"framed")), content_length=length),
+            )
+
+    run(asynchronous)
 
 
 def _explicit(harness: _Harness, lines: list[str]) -> None:
@@ -288,7 +340,7 @@ def compression(package: ModuleType, lines: list[str]) -> None:
     """Select gzip on clients, views, calls, and helpers, and report which requests are sent compressed."""
     exchange = Exchange(lines)
     harness = _Harness(package, exchange)
-    for step in (_values, _inherited, _signed, _explicit, _helpers):
+    for step in (_values, _inherited, _signed, _framing, _explicit, _helpers):
         lines.append(f"# {step.__name__.strip('_')}")
         step(harness, lines)
     lines.append("# async")
