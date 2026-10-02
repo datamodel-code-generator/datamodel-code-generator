@@ -138,7 +138,7 @@ class _Resumes:
         options = self.harness.options
         return options.RequestOptions(redirects=options.RedirectOptions(enabled=True))
 
-    def argument(self, location: str, name: str, wire: str, operation: str = "events.StreamEvents") -> object:
+    def argument(self, location: str, name: str, wire: object, operation: str = "events.StreamEvents") -> object:
         """Return an argument of an operation, the events one unless told otherwise, for a wire value."""
         resource, codecs = operation.split(".")
         types = importlib.import_module(f"{self.harness.package.__name__}.types.{resource}")
@@ -171,6 +171,8 @@ def stream_resume(package: ModuleType, lines: list[str]) -> None:
     run(lambda: _async_resume(package, lines))
     _clocked(package, lines)
     run(lambda: _aclocked(package, lines))
+    _write_guards(package, lines)
+    run(lambda: _awrite_guards(package, lines))
 
 
 def _clock_options(resumes: _Resumes) -> Any:
@@ -380,12 +382,12 @@ def _ineligible(resumes: _Resumes, api: Any) -> None:
     try:
         next(stream)
     except Stop:
-        lines.append(f"  stopped ! Stop then {describe(_failure(lambda: next(stream)))}")
+        lines.append(f"  stopped ! Stop then {describe(_failure(partial(next, stream)))}")
     resumes.reply(first, b'data: {"text": "b"}\n\n')
     stream = helper.open(stream_options=resumes.reconnect)
     next(stream)
     stream.close()
-    lines.append(f"  closed {describe(_failure(lambda: next(stream)))}")
+    lines.append(f"  closed {describe(_failure(partial(next, stream)))}")
     resumes.reply(first, harness.interrupted())
     resumes.reply(b'{"detail": "gone"}', status=404, media="application/json")
     stream = helper.open(stream_options=resumes.reconnect)
@@ -769,3 +771,270 @@ async def _async_tracked(resumes: _Resumes, tracked: Any) -> None:
     await opened.aclose()
     resumes.reply(b"event: done\ndata: {}\n\n")
     await arecord(lines, "async resume without the token", lambda: tracked.resume(state))
+
+
+def _guard_failure(lines: list[str], error: Exception) -> None:
+    """Report the public identity and cause of a refused stream operation."""
+    operation = getattr(error, "operation", None)
+    lines.append(
+        f"  refused {type(error).__name__} condition={getattr(error, 'condition', None)!r} "
+        f"path={getattr(error, 'field_path', ())!r} operation={getattr(operation, 'pointer', None)!r} "
+        f"operation_id={getattr(error, 'operation_id', None)!r} "
+        f"cause={type(getattr(error, 'cause', None)).__name__} context={type(error.__context__).__name__}"
+    )
+    if (progress := getattr(error, "progress", None)) is not None:
+        lines.append(f"  admission progress {dict(progress)}")
+
+
+def _guarded(lines: list[str], label: str, action: Callable[[], Any]) -> None:
+    """Observe a refused public call and the requests its transport reports."""
+    sends = sum(line.startswith("  >") for line in lines)
+    lines.append(label)
+    try:
+        result = action()
+    except Exception as error:  # noqa: BLE001
+        _guard_failure(lines, error)
+    else:
+        lines.append(f"  returned {type(result).__name__}")
+    lines.append(f"  new sends={sum(line.startswith('  >') for line in lines) - sends}")
+
+
+async def _aguarded(lines: list[str], label: str, action: Callable[[], Any]) -> None:
+    """Observe the same refusals through asynchronous public calls."""
+    sends = sum(line.startswith("  >") for line in lines)
+    lines.append(label)
+    try:
+        result = await action()
+    except Exception as error:  # noqa: BLE001
+        _guard_failure(lines, error)
+    else:
+        lines.append(f"  returned {type(result).__name__}")
+    lines.append(f"  new sends={sum(line.startswith('  >') for line in lines) - sends}")
+
+
+def _query_patches(resumes: _Resumes) -> Iterable[tuple[str, str, str, Any]]:
+    """Give collisions at each options origin and both known and dynamic expanded property names."""
+    options = resumes.harness.options
+    for helper, names in (
+        ("scoped", ("scope", "after", "page")),
+        ("named", ("after",)),
+        ("deep", ("scope[after]", "scope[page]", "scope[tag]")),
+    ):
+        for name in names:
+            for origin in ("client", "view", "call"):
+                kind = options.ClientOptions if origin == "client" else options.RequestOptions
+                yield helper, name, origin, kind(query=((name, "STALE"), ("tag", "kept")))
+
+
+def _guard_auth(resumes: _Resumes, *, asynchronous: bool, authenticated: bool) -> Any:
+    """Configure the active query scheme explicitly when exercising the authenticated control."""
+    options = resumes.harness.options
+    settings = {"retry": options.RetryOptions(initial_delay=0, max_delay=0)}
+    if authenticated:
+        auth = importlib.import_module(f"{resumes.harness.package.__name__}.auth")
+        kind = auth.AsyncStaticCredentialProvider if asynchronous else auth.StaticCredentialProvider
+        settings["auth"] = auth.AuthConfig(
+            credentials={"query_key": kind(auth.ApiKeyCredential("CLIENT_KEY"))},
+            send_on_anonymous=True,
+            anonymous_schemes=("query_key",),
+        )
+    return options.ClientOptions(**settings)
+
+
+def _write_guards(package: ModuleType, lines: list[str]) -> None:
+    """Refuse credential writes and query defaults before reopening, preserving independent query fields."""
+    transports = importlib.import_module(f"{package.__name__}.transports")
+    resumes = _Resumes(package, lines, _Reopens(transports, lines))
+    options = resumes.harness.options
+    lines.append("stream write guards")
+    for authenticated in (False, True):
+        with package.Client(
+            transport_adapter=resumes.adapter,
+            options=_guard_auth(resumes, asynchronous=False, authenticated=authenticated),
+        ) as api:
+            for name in ("scoped", "bound"):
+                resumes.reply(b'id: 1\ndata: {"scope": {"api_key": "SERVER_KEY"}}\n\n', resumes.harness.interrupted())
+                stream = getattr(api.protocols.marks, name).open(stream_options=resumes.reconnect)
+                next(stream)
+                _guarded(lines, f"credential reconnect {name} authenticated={authenticated}", partial(next, stream))
+                _guarded(lines, "credential checkpoint", stream.checkpoint)
+                stream.close()
+            if authenticated:
+                scope = resumes.argument("query", "scope", {"api_key": "SERVER_KEY"}, "marks.StreamMarks")
+                _guarded(lines, "active auth collision on open", partial(api.protocols.marks.scoped.open, scope=scope))
+    for name, field, origin, patch in _query_patches(resumes):
+        settings = patch if origin == "client" else resumes.client_options()
+        with package.Client(transport_adapter=resumes.adapter, options=settings) as api:
+            owner = api.with_options(patch) if origin == "view" else api
+            helper = getattr(owner.protocols.marks, name)
+            _guarded(
+                lines,
+                f"query patch {name} {field} {origin}",
+                partial(helper.open, options=patch if origin == "call" else None),
+            )
+    with package.Client(transport_adapter=resumes.adapter, options=resumes.client_options()) as api:
+        _cleared_guards(resumes, api)
+        resumes.reply(b'id: 1\ndata: {"text": "a"}\n\n', headers=_TRACKED)
+        stream = api.protocols.events.tracked.open()
+        next(stream)
+        state = stream.checkpoint()
+        stream.close()
+        _guarded(
+            lines,
+            "tracked zero-budget resume",
+            lambda: api.protocols.events.tracked.resume(
+                state, session_options=options.SessionOptions(max_network_sends=0)
+            ),
+        )
+        _guarded(
+            lines,
+            "tracked zero-budget open",
+            lambda: api.protocols.events.tracked.open(session_options=options.SessionOptions(max_network_sends=0)),
+        )
+        resumes.reply(b'event: tick\ndata: {"seq": 1}\n\n', b"data: [DONE]\n\n")
+        query = resumes.harness.models.FeedQuery(topic="t")
+        with api.protocols.feed.ticks.open(
+            body=query, options=options.RequestOptions(query=(("tag", "kept"),))
+        ) as stream:
+            next(stream)
+            state = stream.checkpoint()
+        resumes.reply(b"data: [DONE]\n\n")
+        api.protocols.feed.ticks.resume(state, options=options.RequestOptions(query=(("tag", "kept"),))).close()
+        patch = options.RequestOptions(query=(("tag", "kept"),))
+        resumes.reply(b'{"id": "r1", "text": "a"}\n', media=_NDJSON)
+        with api.protocols.records.all.open(options=patch) as stream:
+            next(stream)
+            state = stream.checkpoint()
+        resumes.reply(media=_NDJSON)
+        api.protocols.records.all.resume(state, options=patch).close()
+
+
+def _cleared_guards(resumes: _Resumes, api: Any) -> None:
+    """Clear known and dynamic cursor fields on explicit and automatic reopens while keeping another parameter."""
+    lines, options = resumes.lines, resumes.harness.options
+    for name in ("scoped", "named", "deep"):
+        helper = getattr(api.with_options(options.RequestOptions(query=(("tag", "kept"),))).protocols.marks, name)
+        cursor = {"after": "5"} if name == "named" else {"after": "5", "page": "dynamic"}
+        resumes.reply(f"data: {json.dumps({'scope': cursor})}\n\n".encode())
+        stream = helper.open()
+        next(stream)
+        state = stream.checkpoint()
+        stream.close()
+        resumes.reply(b'data: {"scope": null}\n\n', resumes.harness.interrupted())
+        resumed = helper.resume(state, stream_options=resumes.reconnect)
+        next(resumed)
+        cleared = resumed.checkpoint()
+        lines.append(f"  {name} saved cleared cursor={json.loads(cleared.export())['state']['cursor']!r}")
+        resumes.reply(b'data: {"scope": {"after": "6"}}\n\n')
+        next(resumed)
+        resumed.close()
+        resumes.reply()
+        helper.resume(cleared).close()
+        for field in ("after", "page") if name == "scoped" else ("scope[after]",) if name == "deep" else ("after",):
+            _guarded(
+                lines,
+                f"cleared resume patch {name} {field}",
+                partial(helper.resume, cleared, options=options.RequestOptions(query=((field, "STALE"),))),
+            )
+    helper = api.protocols.marks.named
+    patch = options.RequestOptions(query=(("page", "unrelated"),))
+    resumes.reply(b'data: {"scope": {"after": "5"}}\n\n')
+    stream = helper.open(options=patch)
+    next(stream)
+    state = stream.checkpoint()
+    stream.close()
+    resumes.reply()
+    helper.resume(state, options=patch).close()
+    helper = api.protocols.marks.deep
+    for field in ("scope[after", "other"):
+        resumes.reply(b'data: {"scope": {"after": "5"}}\n\n')
+        stream = helper.open(options=options.RequestOptions(query=((field, "unrelated"),)))
+        next(stream)
+        stream.checkpoint()
+        stream.close()
+
+
+async def _awrite_guards(package: ModuleType, lines: list[str]) -> None:
+    """Exercise identical credential, patch, clearing, and child admission contracts with asyncio."""
+    transports = importlib.import_module(f"{package.__name__}.transports")
+    resumes = _Resumes(package, lines, _AsyncReopens(transports, lines), AsyncResponse)
+    options = resumes.harness.options
+    lines.append("async stream write guards")
+    for authenticated in (False, True):
+        async with package.AsyncClient(
+            transport_adapter=resumes.adapter,
+            options=_guard_auth(resumes, asynchronous=True, authenticated=authenticated),
+        ) as api:
+            for name in ("scoped", "bound"):
+                resumes.reply(b'id: 1\ndata: {"scope": {"api_key": "SERVER_KEY"}}\n\n', resumes.harness.interrupted())
+                stream = await getattr(api.protocols.marks, name).open(stream_options=resumes.reconnect)
+                await anext(stream)
+                await _aguarded(
+                    lines, f"credential reconnect {name} authenticated={authenticated}", partial(anext, stream)
+                )
+                _guarded(lines, "credential checkpoint", stream.checkpoint)
+                await stream.aclose()
+            if authenticated:
+                scope = resumes.argument("query", "scope", {"api_key": "SERVER_KEY"}, "marks.StreamMarks")
+                await _aguarded(
+                    lines, "active auth collision on open", partial(api.protocols.marks.scoped.open, scope=scope)
+                )
+    for name, field, origin, patch in _query_patches(resumes):
+        settings = patch if origin == "client" else resumes.client_options()
+        async with package.AsyncClient(transport_adapter=resumes.adapter, options=settings) as api:
+            owner = api.with_options(patch) if origin == "view" else api
+            helper = getattr(owner.protocols.marks, name)
+            await _aguarded(
+                lines,
+                f"query patch {name} {field} {origin}",
+                partial(helper.open, options=patch if origin == "call" else None),
+            )
+    async with package.AsyncClient(transport_adapter=resumes.adapter, options=resumes.client_options()) as api:
+        for name in ("scoped", "named", "deep"):
+            helper = getattr(api.with_options(options.RequestOptions(query=(("tag", "kept"),))).protocols.marks, name)
+            cursor = {"after": "5"} if name == "named" else {"after": "5", "page": "dynamic"}
+            resumes.reply(f"data: {json.dumps({'scope': cursor})}\n\n".encode())
+            stream = await helper.open()
+            await anext(stream)
+            state = stream.checkpoint()
+            await stream.aclose()
+            resumes.reply(b'data: {"scope": null}\n\n', resumes.harness.interrupted())
+            resumed = await helper.resume(state, stream_options=resumes.reconnect)
+            await anext(resumed)
+            cleared = resumed.checkpoint()
+            lines.append(f"  {name} saved cleared cursor={json.loads(cleared.export())['state']['cursor']!r}")
+            resumes.reply(b'data: {"scope": {"after": "6"}}\n\n')
+            await anext(resumed)
+            await resumed.aclose()
+            resumes.reply()
+            await (await helper.resume(cleared)).aclose()
+            for field in ("after", "page") if name == "scoped" else ("scope[after]",) if name == "deep" else ("after",):
+                await _aguarded(
+                    lines,
+                    f"cleared resume patch {name} {field}",
+                    partial(helper.resume, cleared, options=options.RequestOptions(query=((field, "STALE"),))),
+                )
+        resumes.reply(b'id: 1\ndata: {"text": "a"}\n\n', headers=_TRACKED)
+        stream = await api.protocols.events.tracked.open()
+        await anext(stream)
+        state = stream.checkpoint()
+        await stream.aclose()
+        await _aguarded(
+            lines,
+            "tracked zero-budget resume",
+            lambda: api.protocols.events.tracked.resume(
+                state, session_options=options.SessionOptions(max_network_sends=0)
+            ),
+        )
+        await _aguarded(
+            lines,
+            "tracked zero-budget open",
+            lambda: api.protocols.events.tracked.open(session_options=options.SessionOptions(max_network_sends=0)),
+        )
+        patch = options.RequestOptions(query=(("tag", "kept"),))
+        resumes.reply(b'{"id": "r1", "text": "a"}\n', media=_NDJSON)
+        async with await api.protocols.records.all.open(options=patch) as stream:
+            await anext(stream)
+            state = stream.checkpoint()
+        resumes.reply(media=_NDJSON)
+        await (await api.protocols.records.all.resume(state, options=patch)).aclose()

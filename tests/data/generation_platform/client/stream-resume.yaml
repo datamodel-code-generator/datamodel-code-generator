@@ -140,9 +140,67 @@ paths:
       operationId: streamMarks
       tags: [marks]
       parameters:
+        - name: tag
+          in: query
+          schema: {type: string}
+        - name: Last-Event-ID
+          in: header
+          schema: {type: string}
         - name: scope
           in: query
           style: form
+          explode: true
+          schema:
+            type: object
+            properties:
+              after: {type: string}
+            additionalProperties: {type: string}
+      responses:
+        '200':
+          description: The marks of a scope.
+          content:
+            text/event-stream:
+              schema: {type: string}
+  /named-marks:
+    get:
+      operationId: streamNamedMarks
+      tags: [marks]
+      parameters:
+        - name: tag
+          in: query
+          schema: {type: string}
+        - name: Last-Event-ID
+          in: header
+          schema: {type: string}
+        - name: scope
+          in: query
+          style: form
+          explode: true
+          schema:
+            type: object
+            properties:
+              after: {type: string}
+            additionalProperties: false
+      responses:
+        '200':
+          description: The marks of a scope.
+          content:
+            text/event-stream:
+              schema: {type: string}
+  /deep-marks:
+    get:
+      operationId: streamDeepMarks
+      tags: [marks]
+      parameters:
+        - name: tag
+          in: query
+          schema: {type: string}
+        - name: Last-Event-ID
+          in: header
+          schema: {type: string}
+        - name: scope
+          in: query
+          style: deepObject
           explode: true
           schema:
             type: object

@@ -593,7 +593,7 @@ def _unpatched(
                 raise _invalid(plan, ("options", "headers", name), "invalid_value")
     for patch in queries:
         for name, _ in patch:
-            if name in resume.queries or query_written(resume.call, resume.writes, name):
+            if query_written(resume.call, resume.writes, name):
                 raise _invalid(plan, ("options", "query", name), "invalid_value")
 
 

@@ -64,7 +64,7 @@
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['events.live', 'events.plain', 'events.tracked', 'rooms.live', 'records.all', 'feed.ticks', 'topics.marks', 'marks.scoped'] bindings 36
+  namespace client helpers ['events.live', 'events.plain', 'events.tracked', 'rooms.live', 'records.all', 'feed.ticks', 'topics.marks', 'marks.scoped', 'marks.named', 'marks.deep', 'marks.bound'] bindings 48
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   helper events.live sse enabled True /inputs/target_config/protocol_metadata/helpers/events.live fe9d46bf6146c8ad370b9e120eebaa7a97ce69791b82e42dc42fb36df7d8d89b
   helper events.plain sse enabled True /inputs/target_config/protocol_metadata/helpers/events.plain bb4bb5c8c5cbe3809e0cde61598b05446f9667463353a95c362eae717c7baaf9
@@ -73,7 +73,10 @@
   helper records.all ndjson enabled True /inputs/target_config/protocol_metadata/helpers/records.all 0be49633d4172954b6470e209d25f77bde0e1e664b68c1bc0afbc93ec6002286
   helper feed.ticks sse enabled True /inputs/target_config/protocol_metadata/helpers/feed.ticks 25b1534b79b168ed861fcb9eb40248e67166dec73ec511b1d877f9dab321d951
   helper topics.marks sse enabled True /inputs/target_config/protocol_metadata/helpers/topics.marks 229677d4f9f10623e0aa9378cbf121c4f7520d62042812013b68f342dbdd3e35
-  helper marks.scoped sse enabled True /inputs/target_config/protocol_metadata/helpers/marks.scoped 09a517b2f2e8aace34750156daf595160da06fe86a11bc767f7c791d91ee42e9
+  helper marks.scoped sse enabled True /inputs/target_config/protocol_metadata/helpers/marks.scoped a01333878552febd3667547eec5aa2c095a1468476b1b1e316587674b40503d2
+  helper marks.named sse enabled True /inputs/target_config/protocol_metadata/helpers/marks.named 17ebe9633ae00f38397b430af67dd1cd2cb5b78d7deae0c5292cfad0d38131a2
+  helper marks.deep sse enabled True /inputs/target_config/protocol_metadata/helpers/marks.deep 8057681cc8f3e3c26dc367491ead6daa5b993c29143247624afb3c8e97fbbf43
+  helper marks.bound sse enabled True /inputs/target_config/protocol_metadata/helpers/marks.bound 8db2caef70358490b9dc41878beef4e5ac47e2195d6b75a55061f02b13b0621e
   {
     "helpers": {
       "events.live": {
@@ -271,6 +274,133 @@
           }
         },
         "unknown": "raw"
+      },
+      "marks.bound": {
+        "completion": {
+          "kind": "eof"
+        },
+        "enabled": true,
+        "error_events": {},
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Mark"
+        },
+        "kind": "sse",
+        "media": "text/event-stream",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1marks/get"
+        },
+        "resume": {
+          "bindings": [
+            {
+              "target": {
+                "in": "query",
+                "name": "scope"
+              },
+              "value": {
+                "literal": {
+                  "api_key": "SERVER_KEY"
+                }
+              }
+            }
+          ],
+          "cursor": "event_id",
+          "delivery": "at_least_once",
+          "enabled": true,
+          "reconnect_on": [
+            "transport_interruption"
+          ],
+          "reopen_operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1marks/get"
+          },
+          "write": {
+            "in": "header",
+            "name": "Last-Event-ID"
+          }
+        },
+        "unknown": "error"
+      },
+      "marks.deep": {
+        "completion": {
+          "kind": "eof"
+        },
+        "enabled": true,
+        "error_events": {},
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Mark"
+        },
+        "kind": "sse",
+        "media": "text/event-stream",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1deep-marks/get"
+        },
+        "resume": {
+          "bindings": [],
+          "cursor": {
+            "from": "body",
+            "pointer": "/scope"
+          },
+          "delivery": "at_least_once",
+          "enabled": true,
+          "missing": "inherit",
+          "null": "clear",
+          "reconnect_on": [
+            "transport_interruption"
+          ],
+          "reopen_operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1deep-marks/get"
+          },
+          "write": {
+            "in": "query",
+            "name": "scope"
+          }
+        },
+        "unknown": "error"
+      },
+      "marks.named": {
+        "completion": {
+          "kind": "eof"
+        },
+        "enabled": true,
+        "error_events": {},
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Mark"
+        },
+        "kind": "sse",
+        "media": "text/event-stream",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1named-marks/get"
+        },
+        "resume": {
+          "bindings": [],
+          "cursor": {
+            "from": "body",
+            "pointer": "/scope"
+          },
+          "delivery": "at_least_once",
+          "enabled": true,
+          "missing": "inherit",
+          "null": "clear",
+          "reconnect_on": [
+            "transport_interruption"
+          ],
+          "reopen_operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1named-marks/get"
+          },
+          "write": {
+            "in": "query",
+            "name": "scope"
+          }
+        },
+        "unknown": "error"
       },
       "marks.scoped": {
         "completion": {
@@ -471,13 +601,19 @@
   /selection/selected_operations/5 feed.stream_feed()
     exports client.types.feed.StreamFeedResponse client.types.feed.StreamFeedErrorData client.types.feed.StreamFeedHTTPError
     exports client.types.feed.StreamFeedRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/6 marks.stream_marks(query:scope=scope)
+  /selection/selected_operations/6 marks.stream_marks(query:tag=tag, header:Last-Event-ID=last_event_id, query:scope=scope)
     exports client.types.marks.StreamMarksResponse client.types.marks.StreamMarksErrorData client.types.marks.StreamMarksHTTPError
     exports client.types.marks.StreamMarksRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/7 marks.stream_keyed_marks(query:keyed=keyed)
+  /selection/selected_operations/7 marks.stream_named_marks(query:tag=tag, header:Last-Event-ID=last_event_id, query:scope=scope)
+    exports client.types.marks.StreamNamedMarksResponse client.types.marks.StreamNamedMarksErrorData client.types.marks.StreamNamedMarksHTTPError
+    exports client.types.marks.StreamNamedMarksRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/8 marks.stream_deep_marks(query:tag=tag, header:Last-Event-ID=last_event_id, query:scope=scope)
+    exports client.types.marks.StreamDeepMarksResponse client.types.marks.StreamDeepMarksErrorData client.types.marks.StreamDeepMarksHTTPError
+    exports client.types.marks.StreamDeepMarksRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/9 marks.stream_keyed_marks(query:keyed=keyed)
     exports client.types.marks.StreamKeyedMarksResponse client.types.marks.StreamKeyedMarksErrorData client.types.marks.StreamKeyedMarksHTTPError
     exports client.types.marks.StreamKeyedMarksRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  /selection/selected_operations/8 status.get_status()
+  /selection/selected_operations/10 status.get_status()
     exports client.types.status.GetStatusResponse client.types.status.GetStatusErrorData client.types.status.GetStatusHTTPError
     exports client.types.status.GetStatusRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
@@ -595,6 +731,28 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
     "auth_challenge_less_401": false
   },
   {
+    "operation": "marks.stream_named_marks",
+    "method": "GET",
+    "path": "/named-marks",
+    "retry_safety": "method_default",
+    "idempotency": null,
+    "retry_after_ms_header": null,
+    "should_retry_header": null,
+    "security": null,
+    "auth_challenge_less_401": false
+  },
+  {
+    "operation": "marks.stream_deep_marks",
+    "method": "GET",
+    "path": "/deep-marks",
+    "retry_safety": "method_default",
+    "idempotency": null,
+    "retry_after_ms_header": null,
+    "should_retry_header": null,
+    "security": null,
+    "auth_challenge_less_401": false
+  },
+  {
     "operation": "marks.stream_keyed_marks",
     "method": "GET",
     "path": "/keyed-marks",
@@ -685,6 +843,27 @@ See the runtime reference for their limits.
   },
   {
     "helper": "marks.scoped",
+    "kind": "sse",
+    "operation": "marks.stream_marks",
+    "method": "GET",
+    "path": "/marks"
+  },
+  {
+    "helper": "marks.named",
+    "kind": "sse",
+    "operation": "marks.stream_named_marks",
+    "method": "GET",
+    "path": "/named-marks"
+  },
+  {
+    "helper": "marks.deep",
+    "kind": "sse",
+    "operation": "marks.stream_deep_marks",
+    "method": "GET",
+    "path": "/deep-marks"
+  },
+  {
+    "helper": "marks.bound",
     "kind": "sse",
     "operation": "marks.stream_marks",
     "method": "GET",

@@ -352,9 +352,9 @@ cursors a reopen cannot encode
 cursors written as exploded query fields
   > GET https://api.example.com/marks last-event-id=None
   1 message id=None retry=None data=Mark{'scope': {'after': '5'}} raw='{"scope": {"after": "5"}}'
-  scope saved {"arguments": [[]], "body": [], "bound": [], "cursor": {"after": "5"}, "reconnects": 0, "retry_ms": null, "sequence": 1} expires_at=None
+  scope saved {"arguments": [[], [], []], "body": [], "bound": [], "cursor": {"after": "5"}, "reconnects": 0, "retry_ms": null, "sequence": 1} expires_at=None
   2 message id=None retry=None data=Mark{'scope': {'api_key': 'k'}} raw='{"scope": {"api_key": "k"}}'
-  checkpoint of a credential field ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('arguments', 'query', 'scope'), condition='wrong_capability'] protocol_configuration_error
+  checkpoint of a credential field ! ProtocolConfigurationError: ProtocolConfigurationError(operation_id='streamMarks', condition='wrong_capability') [operation_id='streamMarks', field_path=('arguments', 'query', 'scope'), condition='wrong_capability'] protocol_configuration_error
   < closed
   resume a credential field ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   > GET https://api.example.com/marks?after=5 last-event-id=None
@@ -388,7 +388,7 @@ refusals
   < closed
   ticks cleared cursor ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   ticks cursor replaced by an object ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  resume without send slots ! SessionLimitError: SessionLimitError(kind='network_sends', limit=0) [kind='network_sends', limit=0] session_limit_error
+  resume without send slots ! SessionLimitError: SessionLimitError(operation_id='streamEvents', kind='network_sends', limit=0) [operation_id='streamEvents', kind='network_sends', limit=0] session_limit_error
   > GET https://api.example.com/events?topic=news last-event-id='1'
   < closed
   resume redirected past the sends ! SessionLimitError: SessionLimitError(operation_id='streamEvents', call_id='<call>', kind='network_sends', limit=1) [operation_id='streamEvents', kind='network_sends', limit=1, cause=BudgetExceededError()] session_limit_error
@@ -485,3 +485,319 @@ async stepped client clock
     end
   clock checkpoint saved {"arguments": [], "body": [], "bound": ["s1", "t1", "resume"], "cursor": "3", "reconnects": 1, "retry_ms": 6000, "sequence": 4} expires_at=2000-01-01T00:00:00+00:00
   clock progress {'reconnects': 1, 'network_send_count': 2, 'network_send_budget_used': 2}
+stream write guards
+  > GET https://api.example.com/marks last-event-id=None
+credential reconnect scoped authenticated=False
+  < closed
+  refused ProtocolConfigurationError condition='wrong_capability' path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
+  new sends=0
+credential checkpoint
+  refused ProtocolConfigurationError condition='wrong_capability' path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
+  new sends=0
+  > GET https://api.example.com/marks last-event-id=None
+credential reconnect bound authenticated=False
+  < closed
+  refused ProtocolConfigurationError condition='wrong_capability' path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
+  new sends=0
+credential checkpoint
+  refused ProtocolConfigurationError condition='wrong_capability' path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
+  new sends=0
+  > GET https://api.example.com/marks?api_key=CLIENT_KEY last-event-id=None
+credential reconnect scoped authenticated=True
+  < closed
+  refused ProtocolConfigurationError condition='wrong_capability' path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
+  new sends=0
+credential checkpoint
+  refused ProtocolConfigurationError condition='wrong_capability' path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
+  new sends=0
+  > GET https://api.example.com/marks?api_key=CLIENT_KEY last-event-id=None
+credential reconnect bound authenticated=True
+  < closed
+  refused ProtocolConfigurationError condition='wrong_capability' path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
+  new sends=0
+credential checkpoint
+  refused ProtocolConfigurationError condition='wrong_capability' path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
+  new sends=0
+active auth collision on open
+  refused AuthConfigurationError condition='name_collision' path=('auth',) operation=None operation_id='streamMarks' cause=NoneType context=NoneType
+  new sends=0
+query patch scoped scope client
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'scope') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch scoped scope view
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'scope') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch scoped scope call
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'scope') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch scoped after client
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'after') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch scoped after view
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'after') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch scoped after call
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'after') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch scoped page client
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'page') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch scoped page view
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'page') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch scoped page call
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'page') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch named after client
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'after') operation='/paths/~1named-marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch named after view
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'after') operation='/paths/~1named-marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch named after call
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'after') operation='/paths/~1named-marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch deep scope[after] client
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'scope[after]') operation='/paths/~1deep-marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch deep scope[after] view
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'scope[after]') operation='/paths/~1deep-marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch deep scope[after] call
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'scope[after]') operation='/paths/~1deep-marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch deep scope[page] client
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'scope[page]') operation='/paths/~1deep-marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch deep scope[page] view
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'scope[page]') operation='/paths/~1deep-marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch deep scope[page] call
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'scope[page]') operation='/paths/~1deep-marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch deep scope[tag] client
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'scope[tag]') operation='/paths/~1deep-marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch deep scope[tag] view
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'scope[tag]') operation='/paths/~1deep-marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch deep scope[tag] call
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'scope[tag]') operation='/paths/~1deep-marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+  > GET https://api.example.com/marks?tag=kept last-event-id=None
+  < closed
+  > GET https://api.example.com/marks?tag=kept&after=5&page=dynamic last-event-id=None
+  scoped saved cleared cursor=None
+  < closed
+  > GET https://api.example.com/marks?tag=kept last-event-id=None
+  < closed
+  > GET https://api.example.com/marks?tag=kept last-event-id=None
+  < closed
+cleared resume patch scoped after
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'after') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+cleared resume patch scoped page
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'page') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+  > GET https://api.example.com/named-marks?tag=kept last-event-id=None
+  < closed
+  > GET https://api.example.com/named-marks?tag=kept&after=5 last-event-id=None
+  named saved cleared cursor=None
+  < closed
+  > GET https://api.example.com/named-marks?tag=kept last-event-id=None
+  < closed
+  > GET https://api.example.com/named-marks?tag=kept last-event-id=None
+  < closed
+cleared resume patch named after
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'after') operation='/paths/~1named-marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+  > GET https://api.example.com/deep-marks?tag=kept last-event-id=None
+  < closed
+  > GET https://api.example.com/deep-marks?tag=kept&scope%5Bafter%5D=5&scope%5Bpage%5D=dynamic last-event-id=None
+  deep saved cleared cursor=None
+  < closed
+  > GET https://api.example.com/deep-marks?tag=kept last-event-id=None
+  < closed
+  > GET https://api.example.com/deep-marks?tag=kept last-event-id=None
+  < closed
+cleared resume patch deep scope[after]
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'scope[after]') operation='/paths/~1deep-marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+  > GET https://api.example.com/named-marks?page=unrelated last-event-id=None
+  < closed
+  > GET https://api.example.com/named-marks?after=5&page=unrelated last-event-id=None
+  < closed
+  > GET https://api.example.com/deep-marks?scope%5Bafter=unrelated last-event-id=None
+  < closed
+  > GET https://api.example.com/deep-marks?other=unrelated last-event-id=None
+  < closed
+  > GET https://api.example.com/events last-event-id=None
+  < closed
+tracked zero-budget resume
+  refused SessionLimitError condition=None path=() operation='/paths/~1streams~1{streamId}/get' operation_id='reopenStream' cause=NoneType context=NoneType
+  admission progress {'reconnects': 0, 'network_send_count': 0, 'network_send_budget_used': 0}
+  new sends=0
+tracked zero-budget open
+  refused SessionLimitError condition=None path=() operation='/paths/~1events/get' operation_id='streamEvents' cause=NoneType context=NoneType
+  admission progress {'reconnects': 0, 'network_send_count': 0, 'network_send_budget_used': 0}
+  new sends=0
+  > POST https://api.example.com/feed?tag=kept last-event-id=None body=b'{"topic":"t"}'
+  < closed
+  > POST https://api.example.com/feed?tag=kept last-event-id=None body=b'{"topic":"t","after":1}'
+  < closed
+  > GET https://api.example.com/records?tag=kept last-event-id=None
+  < closed
+  > GET https://api.example.com/records?after=r1&tag=kept last-event-id=None
+  < closed
+async stream write guards
+  > GET https://api.example.com/marks last-event-id=None
+credential reconnect scoped authenticated=False
+  < closed
+  refused ProtocolConfigurationError condition='wrong_capability' path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
+  new sends=0
+credential checkpoint
+  refused ProtocolConfigurationError condition='wrong_capability' path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
+  new sends=0
+  > GET https://api.example.com/marks last-event-id=None
+credential reconnect bound authenticated=False
+  < closed
+  refused ProtocolConfigurationError condition='wrong_capability' path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
+  new sends=0
+credential checkpoint
+  refused ProtocolConfigurationError condition='wrong_capability' path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
+  new sends=0
+  > GET https://api.example.com/marks?api_key=CLIENT_KEY last-event-id=None
+credential reconnect scoped authenticated=True
+  < closed
+  refused ProtocolConfigurationError condition='wrong_capability' path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
+  new sends=0
+credential checkpoint
+  refused ProtocolConfigurationError condition='wrong_capability' path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
+  new sends=0
+  > GET https://api.example.com/marks?api_key=CLIENT_KEY last-event-id=None
+credential reconnect bound authenticated=True
+  < closed
+  refused ProtocolConfigurationError condition='wrong_capability' path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
+  new sends=0
+credential checkpoint
+  refused ProtocolConfigurationError condition='wrong_capability' path=('arguments', 'query', 'scope') operation='/paths/~1marks/get' operation_id='streamMarks' cause=NoneType context=NoneType
+  new sends=0
+active auth collision on open
+  refused AuthConfigurationError condition='name_collision' path=('auth',) operation=None operation_id='streamMarks' cause=NoneType context=NoneType
+  new sends=0
+query patch scoped scope client
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'scope') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch scoped scope view
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'scope') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch scoped scope call
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'scope') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch scoped after client
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'after') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch scoped after view
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'after') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch scoped after call
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'after') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch scoped page client
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'page') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch scoped page view
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'page') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch scoped page call
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'page') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch named after client
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'after') operation='/paths/~1named-marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch named after view
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'after') operation='/paths/~1named-marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch named after call
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'after') operation='/paths/~1named-marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch deep scope[after] client
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'scope[after]') operation='/paths/~1deep-marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch deep scope[after] view
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'scope[after]') operation='/paths/~1deep-marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch deep scope[after] call
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'scope[after]') operation='/paths/~1deep-marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch deep scope[page] client
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'scope[page]') operation='/paths/~1deep-marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch deep scope[page] view
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'scope[page]') operation='/paths/~1deep-marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch deep scope[page] call
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'scope[page]') operation='/paths/~1deep-marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch deep scope[tag] client
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'scope[tag]') operation='/paths/~1deep-marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch deep scope[tag] view
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'scope[tag]') operation='/paths/~1deep-marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+query patch deep scope[tag] call
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'scope[tag]') operation='/paths/~1deep-marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+  > GET https://api.example.com/marks?tag=kept last-event-id=None
+  < closed
+  > GET https://api.example.com/marks?tag=kept&after=5&page=dynamic last-event-id=None
+  scoped saved cleared cursor=None
+  < closed
+  > GET https://api.example.com/marks?tag=kept last-event-id=None
+  < closed
+  > GET https://api.example.com/marks?tag=kept last-event-id=None
+  < closed
+cleared resume patch scoped after
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'after') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+cleared resume patch scoped page
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'page') operation='/paths/~1marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+  > GET https://api.example.com/named-marks?tag=kept last-event-id=None
+  < closed
+  > GET https://api.example.com/named-marks?tag=kept&after=5 last-event-id=None
+  named saved cleared cursor=None
+  < closed
+  > GET https://api.example.com/named-marks?tag=kept last-event-id=None
+  < closed
+  > GET https://api.example.com/named-marks?tag=kept last-event-id=None
+  < closed
+cleared resume patch named after
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'after') operation='/paths/~1named-marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+  > GET https://api.example.com/deep-marks?tag=kept last-event-id=None
+  < closed
+  > GET https://api.example.com/deep-marks?tag=kept&scope%5Bafter%5D=5&scope%5Bpage%5D=dynamic last-event-id=None
+  deep saved cleared cursor=None
+  < closed
+  > GET https://api.example.com/deep-marks?tag=kept last-event-id=None
+  < closed
+  > GET https://api.example.com/deep-marks?tag=kept last-event-id=None
+  < closed
+cleared resume patch deep scope[after]
+  refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'scope[after]') operation='/paths/~1deep-marks/get' operation_id=None cause=NoneType context=NoneType
+  new sends=0
+  > GET https://api.example.com/events last-event-id=None
+  < closed
+tracked zero-budget resume
+  refused SessionLimitError condition=None path=() operation='/paths/~1streams~1{streamId}/get' operation_id='reopenStream' cause=NoneType context=NoneType
+  admission progress {'reconnects': 0, 'network_send_count': 0, 'network_send_budget_used': 0}
+  new sends=0
+tracked zero-budget open
+  refused SessionLimitError condition=None path=() operation='/paths/~1events/get' operation_id='streamEvents' cause=NoneType context=NoneType
+  admission progress {'reconnects': 0, 'network_send_count': 0, 'network_send_budget_used': 0}
+  new sends=0
+  > GET https://api.example.com/records?tag=kept last-event-id=None
+  < closed
+  > GET https://api.example.com/records?after=r1&tag=kept last-event-id=None
+  < closed

@@ -35,7 +35,7 @@ STREAM_0: Final[EventPlan[_dcg_type_0]] = EventPlan(
     call=_operations.OPERATION_0,
     media='text/event-stream',
     fingerprint='fe9d46bf6146c8ad370b9e120eebaa7a97ce69791b82e42dc42fb36df7d8d89b',
-    event=native_value(model_bindings.codec_29, model_bindings.CONTEXT_29),
+    event=native_value(model_bindings.codec_39, model_bindings.CONTEXT_39),
     resume=StreamResumePlan(
         operation=OperationRef(pointer='/paths/~1events/get'),
         call=_operations.OPERATION_0,
@@ -52,7 +52,7 @@ STREAM_1: Final[EventPlan[_dcg_type_0]] = EventPlan(
     call=_operations.OPERATION_0,
     media='text/event-stream',
     fingerprint='bb4bb5c8c5cbe3809e0cde61598b05446f9667463353a95c362eae717c7baaf9',
-    event=native_value(model_bindings.codec_29, model_bindings.CONTEXT_29),
+    event=native_value(model_bindings.codec_39, model_bindings.CONTEXT_39),
 )
 
 
@@ -63,11 +63,11 @@ STREAM_2: Final[EventPlan[_dcg_type_1 | UnknownEvent]] = EventPlan(
     media='text/event-stream',
     fingerprint='232c5953c24399dd4c254772dababfe778d0e461afbd363f2ad354cafe88ccaf',
     routes=(
-        ('created', native_value(model_bindings.codec_30, model_bindings.CONTEXT_30)),
+        ('created', native_value(model_bindings.codec_40, model_bindings.CONTEXT_40)),
     ),
     unknown=unknown_event,
     errors=(
-        ('error', native_value(model_bindings.codec_31, model_bindings.CONTEXT_31)),
+        ('error', native_value(model_bindings.codec_41, model_bindings.CONTEXT_41)),
     ),
     completion='event_type',
     terminal='done',
@@ -104,7 +104,7 @@ STREAM_3: Final[EventPlan[_dcg_type_0]] = EventPlan(
     call=_operations.OPERATION_2,
     media='text/event-stream',
     fingerprint='43fcb00a6c594945f0cff5207c7f6b56715c2e167232866a8b2c3ecdb8fce84a',
-    event=native_value(model_bindings.codec_32, model_bindings.CONTEXT_32),
+    event=native_value(model_bindings.codec_42, model_bindings.CONTEXT_42),
     resume=StreamResumePlan(
         operation=OperationRef(pointer='/paths/~1rooms~1{room}{shard}/get'),
         call=_operations.OPERATION_2,
@@ -128,7 +128,7 @@ STREAM_4: Final[EventPlan[_dcg_type_2]] = EventPlan(
     call=_operations.OPERATION_4,
     media='application/x-ndjson',
     fingerprint='0be49633d4172954b6470e209d25f77bde0e1e664b68c1bc0afbc93ec6002286',
-    event=native_value(model_bindings.codec_33, model_bindings.CONTEXT_33),
+    event=native_value(model_bindings.codec_43, model_bindings.CONTEXT_43),
     kind='ndjson',
     resume=StreamResumePlan(
         operation=OperationRef(pointer='/paths/~1records/get'),
@@ -148,7 +148,7 @@ STREAM_5: Final[EventPlan[_dcg_type_3 | UnknownEvent]] = EventPlan(
     media='text/event-stream',
     fingerprint='25b1534b79b168ed861fcb9eb40248e67166dec73ec511b1d877f9dab321d951',
     routes=(
-        ('tick', native_value(model_bindings.codec_34, model_bindings.CONTEXT_34)),
+        ('tick', native_value(model_bindings.codec_44, model_bindings.CONTEXT_44)),
     ),
     unknown=unknown_event,
     completion='sentinel',
@@ -174,7 +174,7 @@ STREAM_6: Final[EventPlan[_dcg_type_1 | UnknownEvent]] = EventPlan(
     media='text/event-stream',
     fingerprint='229677d4f9f10623e0aa9378cbf121c4f7520d62042812013b68f342dbdd3e35',
     routes=(
-        ('created', native_value(model_bindings.codec_30, model_bindings.CONTEXT_30)),
+        ('created', native_value(model_bindings.codec_40, model_bindings.CONTEXT_40)),
     ),
     unknown=unknown_event,
     resume=StreamResumePlan(
@@ -193,8 +193,8 @@ STREAM_7: Final[EventPlan[_dcg_type_4]] = EventPlan(
     operation=OperationRef(pointer='/paths/~1marks/get'),
     call=_operations.OPERATION_6,
     media='text/event-stream',
-    fingerprint='09a517b2f2e8aace34750156daf595160da06fe86a11bc767f7c791d91ee42e9',
-    event=native_value(model_bindings.codec_35, model_bindings.CONTEXT_35),
+    fingerprint='a01333878552febd3667547eec5aa2c095a1468476b1b1e316587674b40503d2',
+    event=native_value(model_bindings.codec_45, model_bindings.CONTEXT_45),
     resume=StreamResumePlan(
         operation=OperationRef(pointer='/paths/~1marks/get'),
         call=_operations.OPERATION_6,
@@ -202,5 +202,64 @@ STREAM_7: Final[EventPlan[_dcg_type_4]] = EventPlan(
         write=ParameterTarget(location='query', name='scope'),
         own=True,
         cursor=BodySelector(pointer='/scope'),
+    ),
+)
+
+
+STREAM_8: Final[EventPlan[_dcg_type_4]] = EventPlan(
+    helper_id='marks.named',
+    operation=OperationRef(pointer='/paths/~1named-marks/get'),
+    call=_operations.OPERATION_7,
+    media='text/event-stream',
+    fingerprint='17ebe9633ae00f38397b430af67dd1cd2cb5b78d7deae0c5292cfad0d38131a2',
+    event=native_value(model_bindings.codec_46, model_bindings.CONTEXT_46),
+    resume=StreamResumePlan(
+        operation=OperationRef(pointer='/paths/~1named-marks/get'),
+        call=_operations.OPERATION_7,
+        media='text/event-stream',
+        write=ParameterTarget(location='query', name='scope'),
+        own=True,
+        cursor=BodySelector(pointer='/scope'),
+    ),
+)
+
+
+STREAM_9: Final[EventPlan[_dcg_type_4]] = EventPlan(
+    helper_id='marks.deep',
+    operation=OperationRef(pointer='/paths/~1deep-marks/get'),
+    call=_operations.OPERATION_8,
+    media='text/event-stream',
+    fingerprint='8057681cc8f3e3c26dc367491ead6daa5b993c29143247624afb3c8e97fbbf43',
+    event=native_value(model_bindings.codec_47, model_bindings.CONTEXT_47),
+    resume=StreamResumePlan(
+        operation=OperationRef(pointer='/paths/~1deep-marks/get'),
+        call=_operations.OPERATION_8,
+        media='text/event-stream',
+        write=ParameterTarget(location='query', name='scope'),
+        own=True,
+        cursor=BodySelector(pointer='/scope'),
+    ),
+)
+
+
+STREAM_10: Final[EventPlan[_dcg_type_4]] = EventPlan(
+    helper_id='marks.bound',
+    operation=OperationRef(pointer='/paths/~1marks/get'),
+    call=_operations.OPERATION_6,
+    media='text/event-stream',
+    fingerprint='8db2caef70358490b9dc41878beef4e5ac47e2195d6b75a55061f02b13b0621e',
+    event=native_value(model_bindings.codec_45, model_bindings.CONTEXT_45),
+    resume=StreamResumePlan(
+        operation=OperationRef(pointer='/paths/~1marks/get'),
+        call=_operations.OPERATION_6,
+        media='text/event-stream',
+        write=ParameterTarget(location='header', name='Last-Event-ID'),
+        own=True,
+        bindings=(
+            PageBinding(
+                target=ParameterTarget(location='query', name='scope'),
+                literal={'api_key': 'SERVER_KEY'},
+            ),
+        ),
     ),
 )

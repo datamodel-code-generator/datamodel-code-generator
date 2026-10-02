@@ -122,3 +122,45 @@ helpers:
       write: {in: query, name: scope}
       reopen_operation: /paths/~1marks/get
       delivery: at_least_once
+  marks.named:
+    kind: sse
+    operation: /paths/~1named-marks/get
+    media: text/event-stream
+    event_schema: {pointer: /components/schemas/Mark}
+    completion: {kind: eof}
+    resume:
+      enabled: true
+      cursor: {from: body, pointer: /scope}
+      missing: inherit
+      'null': clear
+      write: {in: query, name: scope}
+      reopen_operation: /paths/~1named-marks/get
+      delivery: at_least_once
+  marks.deep:
+    kind: sse
+    operation: /paths/~1deep-marks/get
+    media: text/event-stream
+    event_schema: {pointer: /components/schemas/Mark}
+    completion: {kind: eof}
+    resume:
+      enabled: true
+      cursor: {from: body, pointer: /scope}
+      missing: inherit
+      'null': clear
+      write: {in: query, name: scope}
+      reopen_operation: /paths/~1deep-marks/get
+      delivery: at_least_once
+  marks.bound:
+    kind: sse
+    operation: /paths/~1marks/get
+    media: text/event-stream
+    event_schema: {pointer: /components/schemas/Mark}
+    completion: {kind: eof}
+    resume:
+      enabled: true
+      cursor: event_id
+      write: {in: header, name: Last-Event-ID}
+      reopen_operation: /paths/~1marks/get
+      delivery: at_least_once
+      bindings:
+        - {target: {in: query, name: scope}, value: {literal: {api_key: SERVER_KEY}}}

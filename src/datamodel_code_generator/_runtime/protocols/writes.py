@@ -164,7 +164,7 @@ def query_written(call: OperationPlan[T, object], writes: Writes, name: str) -> 
             continue
         if name == plan.name:
             return True
-        if plan.shape != "object" or not plan.explode or plan.content_media_type is not None:
+        if plan.shape != "object" or not plan.explode or plan.style not in {"form", "deepObject"}:
             continue
         member = name
         if plan.style == "deepObject":
@@ -172,10 +172,8 @@ def query_written(call: OperationPlan[T, object], writes: Writes, name: str) -> 
             if not name.startswith(prefix) or not name.endswith("]"):
                 continue
             member = name[len(prefix) : -1]
-        elif plan.style != "form":
-            continue
         if any(item.name == member for item in plan.fields) or (
-            plan.additional is not None and member not in plan.reserved_names
+            plan.additional is not None and (plan.style == "deepObject" or member not in plan.reserved_names)
         ):
             return True
     return False
