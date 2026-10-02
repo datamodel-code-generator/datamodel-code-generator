@@ -230,8 +230,8 @@ booleans. Durations are finite numbers of seconds, excluding booleans; integers 
 
 | Type | Field | Effective default | Valid values |
 |---|---|---|---|
-| `PaginationOptions` | `max_pages` | `1000` | Positive integer or `None` |
-| | `max_items` | `100000` | Nonnegative integer or `None`; `0` ends without sending |
+| `PaginationOptions` | `max_pages` | `None` (no limit) | Positive integer or `None` |
+| | `max_items` | `None` (no limit) | Nonnegative integer or `None`; `0` ends without sending |
 | | `max_page_bytes` | `8388608` | Positive integer |
 | | `max_cursor_bytes` | `65536` | Positive integer |
 | `PollOptions` | `max_polls` | `1000` | Positive integer or `None` |
@@ -794,13 +794,13 @@ call's options, then the helper's `ProtocolDefaults` in `ProtocolClientOptions.d
 
 | Limit | Default | None |
 |---|---|---|
-| `PaginationOptions.max_pages` | 1000 pages | Removes the limit |
-| `PaginationOptions.max_items` | 100000 items; 0 ends a pager at once without sending | Removes the limit |
+| `PaginationOptions.max_pages` | No limit | Removes the limit |
+| `PaginationOptions.max_items` | No limit; 0 ends a pager at once without sending | Removes the limit |
 | `PaginationOptions.max_page_bytes` | 8 MiB of decoded body per page | Not allowed |
 | `PaginationOptions.max_cursor_bytes` | 64 KiB, UTF-8 for a string and canonical JSON otherwise; also a next URL's bytes, within 8 KiB, and a page's Link values | Not allowed |
-| `SessionOptions.total_timeout` | 300 seconds from the first fetch | Removes the limit |
+| `SessionOptions.total_timeout` | No limit | Removes the limit |
 | `SessionOptions.deadline` | None | No deadline |
-| `SessionOptions.max_network_sends` | 3000 sends | Removes the limit |
+| `SessionOptions.max_network_sends` | No limit | Removes the limit |
 
 A limit reached while pages remain raises `SessionLimitError` with the progress so far; the last page ends normally
 even exactly at a limit. An item limit is exact for items, while `iter_pages` checks it before each fetch, so a page
@@ -1487,7 +1487,7 @@ bounds all of them. Each limit comes from the call's options, then the helper's 
 | `UploadOptions.max_parts` | 10000 chunks | Removes the limit |
 | `UploadOptions.parallelism` | 4, unused by the offset profile | Not allowed |
 | `UploadOptions.max_uncertain_probes` | 3 probes; 0 probes none | Not allowed |
-| `SessionOptions.total_timeout` | 600 seconds | Removes the limit |
+| `SessionOptions.total_timeout` | No limit | Removes the limit |
 | `SessionOptions.deadline` | None | No deadline |
 | `SessionOptions.max_network_sends` | 10000 sends | Removes the limit |
 
