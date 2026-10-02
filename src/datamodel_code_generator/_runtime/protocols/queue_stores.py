@@ -63,7 +63,14 @@ class _Entries:
         with self._lock:
             for key, entry in entries.items():
                 if entry.state == "leased" and entry.lease_until is not None and entry.lease_until <= now:
-                    entries[key] = replace(entry, state="pending", lease_id=None, lease_until=None, version=uuid4().hex)
+                    entries[key] = replace(
+                        entry,
+                        state="delivery_unknown" if entry.send_intent else "pending",
+                        send_intent=False,
+                        lease_id=None,
+                        lease_until=None,
+                        version=uuid4().hex,
+                    )
             ready = sorted(
                 (entry for entry in entries.values() if entry.state == "pending" and entry.not_before <= now),
                 key=lambda entry: (entry.created_at, entry.entry_id),
@@ -109,8 +116,9 @@ class _Entries:
 class MemoryQueueStore:
     """A bounded memory queue store of one process; a full store refuses new entries instead of evicting any.
 
-    Claims recover expired leases, then lease ready pending entries in creation-time and ID order; every write gives
-    the entry a new version. Payload bytes count toward `max_bytes`.
+    Claims recover expired leases with send intent to delivery_unknown and unsent ones to pending, then lease ready
+    pending entries in creation-time and ID order; every write gives the entry a new version. Payload bytes count
+    toward `max_bytes`.
     """
 
     __slots__ = ("_entries",)

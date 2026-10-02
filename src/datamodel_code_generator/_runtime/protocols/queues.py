@@ -291,7 +291,10 @@ class QueueStore(Protocol):
         ...
 
     def claim(self, *, now: datetime, lease_until: datetime, limit: int) -> tuple[QueueLease, ...]:
-        """Recover expired leases, then lease up to `limit` ready pending entries in creation-time and ID order."""
+        """Recover expired leases, then lease up to `limit` ready pending entries in creation-time and ID order.
+
+        Recover entries with send intent to delivery_unknown, and only unsent entries to pending.
+        """
         ...
 
     def compare_exchange(self, entry_id: str, expected_version: str, entry: QueueEntry) -> bool:
@@ -314,7 +317,10 @@ class AsyncQueueStore(Protocol):
         ...
 
     async def claim(self, *, now: datetime, lease_until: datetime, limit: int) -> tuple[QueueLease, ...]:
-        """Recover expired leases, then lease up to `limit` ready pending entries in creation-time and ID order."""
+        """Recover expired leases, then lease up to `limit` ready pending entries in creation-time and ID order.
+
+        Recover entries with send intent to delivery_unknown, and only unsent entries to pending.
+        """
         ...
 
     async def compare_exchange(self, entry_id: str, expected_version: str, entry: QueueEntry) -> bool:
