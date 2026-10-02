@@ -10,6 +10,7 @@ from contextlib import asynccontextmanager
 from dataclasses import asdict, replace
 from datetime import datetime, timedelta
 from functools import partial
+from importlib import import_module
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any
@@ -457,6 +458,34 @@ async def _restoration(package: ModuleType, lines: list[str], asynchronous: bool
             f"  sends: {len(queue.server.log)}",
         ))
         await _value(instance.aclose if asynchronous else instance.close)
+
+        public = import_module(package.__name__ + ".model_codecs")
+        for prior in (False, True):
+            store = _Store(queue.protocols)
+            instance = client(http_client=native, options=queue.settings(_AsyncStore(store) if asynchronous else store))
+            outbox = instance.protocols.orders.outbox
+            receipt = await _value(partial(outbox.operations.create_order.enqueue, body=queue.order, x_trace=trace))
+            store.tamper(receipt.entry_id, send_intent=prior, delivery_count=int(prior))
+            calls = 0
+
+            def refused() -> None:
+                nonlocal calls
+                calls += 1
+                if calls == 2:
+                    message = "Controlled public adapter refusal"
+                    raise public.ParameterEncodingError(message)
+
+            queue_recovery_adapter.encoding = refused
+            try:
+                report = await _value(outbox.drain)
+            finally:
+                queue_recovery_adapter.encoding = None
+            entry = await _value(partial(outbox.inspect, receipt.entry_id))
+            lines.extend((
+                f"  prior={prior} preparation refused: {dict(report.counts)} {entry.state} {entry.result.category}",
+                f"  sends: {len(queue.server.log)}",
+            ))
+            await _value(instance.aclose if asynchronous else instance.close)
 
 
 def queue_restoration(package: ModuleType, lines: list[str]) -> None:
