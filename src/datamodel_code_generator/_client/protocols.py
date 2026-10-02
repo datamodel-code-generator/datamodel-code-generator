@@ -118,7 +118,6 @@ KINDS: Final = (
     "batch",
     "queue",
 )
-_LATER: Final[frozenset[str]] = frozenset()
 _HMAC_SIGNATURES: Final = ("hmac-sha256", "hmac-sha512")
 _PUBLIC_KEY_SIGNATURES: Final = ("ed25519", "rsa-pss-sha256")
 _SIGNATURES: Final = (*_HMAC_SIGNATURES, *_PUBLIC_KEY_SIGNATURES)
@@ -1328,7 +1327,7 @@ class _Validator:  # noqa: PLR0904
         return tuple(helpers)
 
     def helper(self, name: str, value: object, at: str) -> Helper | None:  # noqa: PLR0912
-        """Validate one helper; kinds of later stages are refused without reading their settings."""
+        """Validate one helper's kind and settings."""
         if not isinstance(value, Mapping):
             self.value(at, f"{at} must be a helper definition")
             return None
@@ -1337,10 +1336,6 @@ class _Validator:  # noqa: PLR0904
             return None
         if not isinstance(kind := value["kind"], str) or kind not in KINDS:
             self.value(f"{at}.kind", f"{at}.kind must be {_choices(KINDS)}")
-            return None
-        if kind in _LATER:
-            message = f"The {kind} helper {name!r} is not supported yet"
-            self.problems.append(_unsupported(at, message))
             return None
         self.schemas = []
         match kind:
