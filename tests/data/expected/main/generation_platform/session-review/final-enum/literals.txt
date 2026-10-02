@@ -1,2 +1,0 @@
-RequestV1.version: "v1"
-RequestV2.version: "v2"

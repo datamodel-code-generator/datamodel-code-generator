@@ -728,16 +728,20 @@ def _credentials(
         for index, entry in enumerate(tree["bindings"])
     )
     for at, what, target in targets:
-        if (place := credential_place(target, headers, queries)) is not None:
+        if (place := credential_place(target, headers, queries, spec)) is not None:
             message = f"The {what} of {helper.name!r} writes {place}, which carries credentials no helper writes"
             yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
 
 
-def credential_place(target: Mapping[str, Any], headers: frozenset[str], queries: frozenset[str]) -> str | None:
+def credential_place(
+    target: Mapping[str, Any], headers: frozenset[str], queries: frozenset[str], operation: OperationSpec
+) -> str | None:
     """Return the credential position a request target writes, or None: a cookie or a credential header or query field.
 
     `headers` are the credential header names, folded to lower case, and `queries` the query names of the package's
-    security schemes, which a querystring property may name too.
+    security schemes, which a querystring property may name too, and so may a declared property of an exploded form
+    object query parameter, which the request sends as a query field of its own. The names its additional properties
+    give are known only once written, which a checkpoint refuses.
     """
     name = target.get("name", "")
     field = next(iter(_tokens(target.get("pointer", ""))), None)
@@ -751,9 +755,22 @@ def credential_place(target: Mapping[str, Any], headers: frozenset[str], queries
             place = f"the query parameter {name!r}"
         case "querystring" if field in queries:
             place = f"the query field {field!r}"
+        case "query" if (sent := _sent_field(operation, name, queries)) is not None:
+            place = f"the query field {sent!r}"
         case _:
             pass
     return place
+
+
+def _sent_field(operation: OperationSpec, name: str, queries: frozenset[str]) -> str | None:
+    """Return a declared property an exploded form object query parameter sends as a scheme's query field, or None."""
+    plan = next(
+        (item.plan for item in operation.parameters if item.location == "query" and item.wire_name == name), None
+    )
+    fields = (
+        plan.fields if plan is not None and plan.shape == "object" and plan.explode and plan.style == "form" else ()
+    )
+    return next((item.name for item in fields if item.name in queries), None)
 
 
 def _unsent(target: Mapping[str, Any], continuation: Mapping[str, Any]) -> str | None:

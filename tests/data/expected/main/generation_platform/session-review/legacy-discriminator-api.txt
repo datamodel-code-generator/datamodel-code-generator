@@ -1,7 +1,0 @@
-{
-  "type": {
-    "node": "GeneratedSymbolType",
-    "symbol": "Cat"
-  },
-  "diagnostics": []
-}

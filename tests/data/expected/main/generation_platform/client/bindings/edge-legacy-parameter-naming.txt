@@ -1,0 +1,5 @@
+# edge-legacy-parameter-naming
+render pydantic_v2.BaseModel default
+  diagnostic APIGenerationError
+  diagnostic BND_AMBIGUOUS_REPLACEMENT binding /paths/~1pets/get/parameters/0: The use has no generated native type
+  diagnostic BND_AMBIGUOUS_REPLACEMENT binding /paths/~1toys/get/parameters/0: The use has no generated native type

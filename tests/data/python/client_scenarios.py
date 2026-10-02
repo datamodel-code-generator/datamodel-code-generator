@@ -22,6 +22,7 @@ from tests.data.python.client_caching import cache_backends, cache_stores, cachi
 from tests.data.python.client_body_digest import body_digest
 from tests.data.python.client_body_replay import body_replay, multipart_replay
 from tests.data.python.client_body_replay_faults import body_replay_faults
+from tests.data.python.client_caching import cache_backends, cache_stores, caching
 from tests.data.python.client_deadline_cleanup import deadline_cleanup
 from tests.data.python.client_deadline_files import deadline_files
 from tests.data.python.client_deadline_options import deadline_options
@@ -64,6 +65,7 @@ from tests.data.python.client_protocol_errors import protocol_errors
 from tests.data.python.client_query import query
 from tests.data.python.client_raw import raw
 from tests.data.python.client_redirects import head_redirects, redirects
+from tests.data.python.client_regressions import json_decode_errors, no_success
 from tests.data.python.client_retry_boundaries import retry_boundaries
 from tests.data.python.client_retry_calls import retry_calls
 from tests.data.python.client_retry_errors import retry_errors
@@ -89,6 +91,7 @@ from tests.data.python.client_signatures import keywords, signatures
 from tests.data.python.client_socket_connectors import socket_connectors
 from tests.data.python.client_sockets import sockets
 from tests.data.python.client_stream_lifetimes import stream_lifetimes
+from tests.data.python.client_stream_resume import stream_resume
 from tests.data.python.client_streams import ndjson, ndjson_backends, ndjson_split, stream_backends, streams
 from tests.data.python.client_streams import stream_lifetimes as event_stream_lifetimes
 from tests.data.python.client_transports import lifecycle, transports
@@ -743,6 +746,10 @@ BACKENDS: Final = (
 ALL_BUT_MSGSPEC: Final = BACKENDS[:-1]
 STRUCTURAL: Final = BACKENDS[2:]
 SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, list[str]], None]]]] = {
+    "no-success": ("no-success", BACKENDS, no_success),
+    "no-success-unpack": ("no-success-unpack", BACKENDS, no_success),
+    "json-decode-errors-sse": ("streams", ("pydantic_v2.BaseModel",), json_decode_errors),
+    "json-decode-errors-ndjson": ("ndjson", ("pydantic_v2.BaseModel",), json_decode_errors),
     "pets": ("pets", ("pydantic_v2.BaseModel", "typing.TypedDict"), pets),
     "auth-errors": ("pets", ("pydantic_v2.BaseModel",), auth_errors),
     "auth-values": ("auth", BACKENDS, auth_values),
@@ -828,6 +835,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "stream-backends": ("streams", BACKENDS, stream_backends),
     "ndjson": ("ndjson", ("pydantic_v2.BaseModel",), ndjson),
     "ndjson-backends": ("ndjson", BACKENDS, ndjson_backends),
+    "stream-resume": ("stream-resume", ("pydantic_v2.BaseModel",), stream_resume),
     "ndjson-split": ("ndjson-split", STRUCTURAL, ndjson_split),
     "sockets": ("sockets", ("pydantic_v2.BaseModel",), sockets),
     "socket-connectors": ("sockets", ("pydantic_v2.BaseModel",), socket_connectors),

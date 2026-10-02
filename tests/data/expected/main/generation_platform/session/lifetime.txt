@@ -1,3 +1,0 @@
-retained graph: 0
-unavailable origins: 0
-unavailable field facts: 0

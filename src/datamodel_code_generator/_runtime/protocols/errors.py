@@ -748,7 +748,7 @@ class StreamDecodeError(ProtocolDataError):
         auth_refresh_pending: int = 0,
         wire_send_count: int | None = None,
     ) -> None:
-        """Keep the record's sequence and at most 64 KiB of its raw bytes, which never appear in messages."""
+        """Keep the sequence, at most 64 KiB of raw bytes, and decode cause without its traceback."""
         error_count(sequence, "sequence")
         _raw_prefix(raw_prefix)
         _flag(truncated, "truncated")
@@ -761,7 +761,7 @@ class StreamDecodeError(ProtocolDataError):
             call_id=call_id,
             parent_session_id=parent_session_id,
             info=info,
-            cause=cause,
+            cause=None if cause is None else cause.with_traceback(None),
             secondary_errors=secondary_errors,
             resource_attempt_count=resource_attempt_count,
             redirect_count=redirect_count,

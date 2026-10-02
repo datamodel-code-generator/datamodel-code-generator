@@ -74,7 +74,7 @@ protocols/public_keys.py: .records, .signatures, .webhook_keys, __future__, coll
 protocols/records.py: ..client.responses, ..model_codecs.errors, ..model_codecs.media, ..model_codecs.wire, __future__, collections.abc, dataclasses, decimal, re, typing, typing_extensions
 protocols/references.py: __future__, dataclasses
 protocols/replay.py: ..client.errors, .options, __future__, datetime, heapq, threading, time, typing
-protocols/resume.py: ..client.errors, ..client.responses, ..model_codecs.errors, ..model_codecs.media, ..model_codecs.wire, .records, .references, __future__, base64, collections.abc, datetime, hashlib, re, typing
+protocols/resume.py: ..client.errors, ..client.responses, ..client.retry, ..model_codecs.errors, ..model_codecs.media, ..model_codecs.wire, .records, .references, __future__, base64, collections.abc, datetime, hashlib, re, typing
 protocols/signatures.py: .webhook_keys, __future__, base64, collections.abc, dataclasses, enum, hmac, re, typing, typing_extensions
 protocols/sources.py: .records, __future__, contextlib, dataclasses, typing
 protocols/streams.py: ..client.client, ..client.codecs, ..client.errors, ..client.logical, ..client.operations, ..client.options, ..client.raw, ..client.responses, ..client.timing, ..model_codecs.errors, ..model_codecs.media, ..model_codecs.selectors, ..model_codecs.unset, ..model_codecs.wire, .errors, .options, .records, .references, .values, __future__, collections.abc, dataclasses, enum, re, threading, types, typing, typing_extensions

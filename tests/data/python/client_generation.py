@@ -34,6 +34,8 @@ from tests.data.python.codec_declarations import declaration
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
+    from datamodel_code_generator._api_generation import TargetRender, TargetRequest
+
 SOURCE = Path(__file__).parents[1] / "generation_platform" / "client"
 PACKAGE = "client"
 MANIFEST = ".dcg-target-manifest.json"
@@ -123,6 +125,20 @@ def client_config(values: dict[str, Any], root: Path) -> ClientGenerationConfig:
     return ClientGenerationConfig(**converted)
 
 
+def model_config(output: Path, backend: str, options: Mapping[str, Any]) -> GenerateConfig:
+    """Build the model settings of a client case: one models module for a backend, with fixture option values."""
+    return GenerateConfig(**{
+        "output": output,
+        "input_file_type": "openapi",
+        "target_python_version": "3.11",
+        "openapi_scopes": [OpenAPIScope.Schemas, OpenAPIScope.Api],
+        "output_model_type": DataModelType(backend),
+        "disable_timestamp": True,
+        "formatters": [Formatter.BUILTIN],
+        **options,
+    })
+
+
 def generate_client(
     source: Path,
     root: Path,
@@ -134,16 +150,7 @@ def generate_client(
     """Generate a client package and its `<package>_models` module under a root, from fixture option values."""
     generate_target(
         source,
-        model_config=GenerateConfig(**{
-            "output": root / f"{package}_models.py",
-            "input_file_type": "openapi",
-            "target_python_version": "3.11",
-            "openapi_scopes": [OpenAPIScope.Schemas, OpenAPIScope.Api],
-            "output_model_type": DataModelType(backend),
-            "disable_timestamp": True,
-            "formatters": [Formatter.BUILTIN],
-            **(model or {}),
-        }),
+        model_config=model_config(root / f"{package}_models.py", backend, model or {}),
         config=client_config(
             {"output": package, "package": package, "model_package": f"{package}_models", **(config or {})}, root
         ),
@@ -197,16 +204,6 @@ def copy_references(case: dict[str, Any], root: Path) -> None:
 def _render(
     case: dict[str, Any], backend: str, root: Path, modules: Modules, *, documents: dict[str, str] | None = None
 ) -> list[str]:
-    model = {
-        "output": root / "models.py",
-        "input_file_type": "openapi",
-        "target_python_version": "3.11",
-        "openapi_scopes": [OpenAPIScope.Schemas, OpenAPIScope.Api],
-        "output_model_type": DataModelType(backend),
-        "disable_timestamp": True,
-        "formatters": [Formatter.BUILTIN],
-        **case.get("model", {}),
-    }
     root.mkdir(parents=True, exist_ok=True)
     source = shutil.copy2(SOURCE / case["input"], root / case["input"])
     copy_references(case, root)
@@ -219,7 +216,10 @@ def _render(
             else:
                 config = client_config(case.get("config", {}), root)
             project = render_target(
-                source, model_config=GenerateConfig(**model), config=config, generator=ClientTarget()
+                source,
+                model_config=model_config(root / "models.py", backend, case.get("model", {})),
+                config=config,
+                generator=ClientTarget(),
             )
     except APIGenerationError as error:
         return ["  APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)]
@@ -244,24 +244,64 @@ def _render(
     return lines
 
 
+class _BindingDiagnosticsTarget(ClientTarget):
+    """Render a client package and keep the binding diagnostics of the batch it renders from."""
+
+    def __init__(self) -> None:
+        self.binding_diagnostics: list[str] = []
+
+    def render(self, request: TargetRequest) -> TargetRender:
+        """Keep the batch's binding diagnostics, then render as the client target does."""
+        self.binding_diagnostics = [
+            " ".join(["binding", item.code, *(f"{key}={value}" for key, value in item.details)])
+            for item in request.batch.diagnostics
+        ]
+        return super().render(request)
+
+
+def render_client(
+    source: Path,
+    root: Path,
+    backend: str,
+    model: Mapping[str, Any],
+    config: Mapping[str, Any],
+    *,
+    models: str = "models.py",
+    binding_diagnostics: bool = False,
+) -> tuple[list[str], Modules]:
+    """Render a document's client package under a root, returning the refusal or diagnostics and the Python modules.
+
+    The models go to the module or package path models names under the root. With binding_diagnostics, the
+    diagnostics also hold those of the model binding batch, which no package shows.
+    """
+    target = _BindingDiagnosticsTarget()
+    try:
+        project = render_target(
+            source,
+            model_config=model_config(root / models, backend, model),
+            config=client_config(dict(config), root),
+            generator=target,
+        )
+    except APIGenerationError as error:
+        lines = ["APIGenerationError", *(_diagnostic(item).strip() for item in error.diagnostics)]
+        return [*lines, *(target.binding_diagnostics if binding_diagnostics else ())], {}
+    modules: Modules = {
+        path.parts: (artifact.content or b"").decode()
+        for artifact in project.artifacts
+        if (path := artifact.path.relative_to(root)).suffix == ".py" and "_runtime" not in path.parts
+    }
+    lines = [_diagnostic(item).strip() for item in project.diagnostics]
+    return [*lines, *(target.binding_diagnostics if binding_diagnostics else ())], modules
+
+
 def _manifest(case: dict[str, Any], root: Path) -> tuple[dict[str, Any], bytes]:
     """Return the client data in the manifest of a rendered case, and its models."""
     root.mkdir(parents=True)
     copy_references(case, root)
     config = client_config(case.get("config", {}), root)
-    model = {
-        "output": root / "models.py",
-        "input_file_type": "openapi",
-        "target_python_version": "3.11",
-        "openapi_scopes": [OpenAPIScope.Schemas, OpenAPIScope.Api],
-        "output_model_type": DataModelType.PydanticV2BaseModel,
-        "disable_timestamp": True,
-        "formatters": [Formatter.BUILTIN],
-        **case.get("model", {}),
-    }
     project = render_target(
         shutil.copy2(SOURCE / case["input"], root / case["input"]),
-        model_config=GenerateConfig(**model),
+        model_config=model_config(root / "models.py", "pydantic_v2.BaseModel", case.get("model", {})),
         config=config,
         generator=ClientTarget(),
     )
@@ -294,9 +334,10 @@ def client_helper_digest_report(first: str, second: str, root: Path) -> str:
         {item["name"]: item["contract_sha256"] for item in _manifest(cases[name], root / name)[0]["protocol_helpers"]}
         for name in (first, second)
     )
-    return "".join(
-        [f"# {first} and {second}\n", *(f"  {name} same {left[name] == digest}\n" for name, digest in right.items())]
-    )
+    return "".join([
+        f"# {first} and {second}\n",
+        *(f"  {name} same {left[name] == digest}\n" for name, digest in right.items()),
+    ])
 
 
 def client_render(case_name: str, root: Path) -> tuple[str, dict[str, Modules]]:

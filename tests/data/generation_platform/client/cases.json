@@ -3003,6 +3003,42 @@
     },
     "modules": false
   },
+  "stream-resume": {
+    "input": "stream-resume.yaml",
+    "references": [
+      "protocols/stream-resume.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/stream-resume.yaml"
+    },
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ]
+    ]
+  },
+  "protocols-stream-resume-checks": {
+    "input": "stream-resume.yaml",
+    "references": [
+      "protocols/stream-resume-checks.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/stream-resume-checks.yaml"
+    },
+    "modules": false
+  },
   "parameter-adapters": {
     "input": "parameter-adapters.yaml",
     "references": [
@@ -3789,6 +3825,16 @@
           ]
         }
       ]
+    }
+  },
+  "no-success": {
+    "input": "no-success.yaml",
+    "config": {}
+  },
+  "no-success-unpack": {
+    "input": "no-success.yaml",
+    "config": {
+      "signature_style": "unpack"
     }
   },
   "caching": {

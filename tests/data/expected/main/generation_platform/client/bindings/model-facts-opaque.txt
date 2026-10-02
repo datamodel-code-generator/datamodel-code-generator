@@ -1,0 +1,5 @@
+# model-facts-opaque
+render msgspec.Struct default
+  diagnostic APIGenerationError
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~10/post/requestBody: The Record model needs a builtin compatibility declaration or a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~10/post/responses/200: The Record model needs a builtin compatibility declaration or a model adapter

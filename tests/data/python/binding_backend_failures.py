@@ -46,11 +46,9 @@ def backend_failure(
         body = str(parser.parse())
         model = parser.results[0]
         name = binding_backend_name(backend)
-        context = ModelProjectionContext(name, builtin_semantics=case != "custom-model")
+        context = ModelProjectionContext(name)
         internal = model._internal_template_data
         match case:
-            case "dataclass-invalid":
-                model.dataclass_arguments = {0: True}
             case "dataclass-opaque-init":
                 model.dataclass_arguments = {"init": object()}
             case "msgspec-raw":
@@ -65,14 +63,6 @@ def backend_failure(
                 internal["typed_dict_kwargs"] = {"closed": 0}
             case "typeddict-extra":
                 internal["typed_dict_kwargs"] = {"extra_items": "str"}
-            case "config-container":
-                internal["config_items"] = object()
-            case "config-item":
-                internal["config_items"] = [["strict", "True"]]
-            case "config-arity":
-                internal["config_items"] = [("strict",)]
-            case "config-name":
-                internal["config_items"] = [(0, "True")]
             case "config-unknown":
                 internal["config_items"] = [("unobserved", "True")]
             case "config-value":
@@ -85,7 +75,6 @@ def backend_failure(
             projection = FieldProjectionContext(
                 original_required=model.fields[0].required,
                 backend=name,
-                builtin_semantics=True,
                 schema_default=False,
                 explicit_model_default=False,
                 explicit_nullable=False,
@@ -96,8 +85,6 @@ def backend_failure(
             )
             if case == "field-backend":
                 projection = replace(projection, backend=None)
-            elif case == "field-custom":
-                projection = replace(projection, builtin_semantics=False)
             else:
                 model.fields[0].alias = object()
             field = freeze_builtin_field_facts(model.fields[0], emitted=index.fields[0].facts, projection=projection)
