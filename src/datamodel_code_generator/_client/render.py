@@ -457,6 +457,7 @@ if TYPE_CHECKING:
     from .._runtime.protocols.pagination import AsyncPager, Page, Pager
     from .._runtime.protocols.polling import AsyncLroHandle, LroHandle
     from .._runtime.protocols.queue_stores import AsyncMemoryQueueStore, MemoryQueueStore
+    from .._runtime.protocols.sqlite_queue_stores import AsyncSQLiteQueueStore, SQLiteQueueStore
     from .._runtime.protocols.replay import AsyncMemoryReplayStore, MemoryReplayStore
     from .._runtime.protocols.streams import AsyncEventStream, EventStream, StreamEvent, UnknownEvent
     from .._runtime.protocols.upload_sources import (
@@ -478,6 +479,7 @@ __all__ = [
     "AsyncMemoryCacheStore",
     "AsyncMemoryCircuitStore",
     "AsyncMemoryQueueStore",
+    "AsyncSQLiteQueueStore",
     "AsyncMemoryReplayStore",
     "AsyncPager",
     "AsyncQueueStore",
@@ -512,6 +514,7 @@ __all__ = [
     "MemoryCacheStore",
     "MemoryCircuitStore",
     "MemoryQueueStore",
+    "SQLiteQueueStore",
     "MemoryReplayStore",
     "Message",
     "OperationRef",
@@ -607,6 +610,10 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import queue_stores
 
         return getattr(queue_stores, name)
+    if name in {"AsyncSQLiteQueueStore", "SQLiteQueueStore"}:
+        from .._runtime.protocols import sqlite_queue_stores
+
+        return getattr(sqlite_queue_stores, name)
     if name == "MemoryReplayStore":
         from .._runtime.protocols.replay import MemoryReplayStore
 
@@ -4351,7 +4358,7 @@ response metadata with known credential header positions removed, never response
 
 - `{self.config.package}.protocols`: `QueueOptions`, `QueueStore`, `AsyncQueueStore`, `QueueEntry`, `QueueLease`,
   `QueueOutcome`, `QueueReceipt`, `DrainReport`, `ResolvedQueueOptions`, `BlobRef`, and the builtin
-  `MemoryQueueStore` and `AsyncMemoryQueueStore`
+  `MemoryQueueStore`, `AsyncMemoryQueueStore`, `SQLiteQueueStore`, and `AsyncSQLiteQueueStore`
 - `{self.config.package}.options`: `ProtocolClientOptions(queue_stores=...)` and `SessionOptions`
 
 `ProtocolClientOptions.queue_stores[name]` lends each queue helper its store; the client never creates or closes one,
@@ -4377,6 +4384,16 @@ default above. `max_entries` and `parallelism` bound one drain, so `enqueue` ref
 entry's policy, fixed when it is enqueued, so `drain` refuses them; both raise `QueuePolicyConflictError`. A store
 that is full raises `QueueFullError` and discards nothing; any other store failure raises `QueueStoreError` with its
 cause, and no request is sent again because of it.
+
+`SQLiteQueueStore(path, max_entries=10000, max_bytes=268435456)` persists complete records in an explicit database.
+`AsyncSQLiteQueueStore` uses the same path and limits with native coroutine methods and one lazy database worker.
+Construction, unawaited calls, and closing an unused store create no file or thread. Both use schema version 1,
+WAL and a five-second SQLite busy timeout; unknown versions and unrelated or malformed databases are refused.
+Capacity includes terminal rows and counts the raw opaque payload bytes until purge; both stores refuse CAS
+growth beyond capacity with `QueueFullError(action='compare_exchange')`. Close explicit sync stores with `close()`
+and async stores with `await aclose()`; close is idempotent. The async worker admits at most 64 pending jobs in FIFO
+order, with async backpressure. Cancellation skips pending work; a started transaction settles commit or rollback,
+and committed queue writes remain inspectable. Close rejects new work and drains accepted uncancelled jobs.
 
 `drain` claims ready entries in creation-time and ID order, in waves of `parallelism`, each delivery one child call of
 the drain's session with the shared retries inside it. Before the first send it saves the entry's send intent and

@@ -7,26 +7,18 @@ from threading import Lock
 from typing import TYPE_CHECKING, Final
 from uuid import uuid4
 
-from ..client.errors import ProtocolConfigurationError
 from .errors import QueueFullError, QueueStoreError
 from .options import positive_count
-from .queues import TERMINAL_STATES, QueueEntry, QueueLease, QueueOutcome
+from .queue_state import entry_value, instant, recover
+from .queues import TERMINAL_STATES, QueueEntry, QueueLease
 
 if TYPE_CHECKING:
     from datetime import datetime
-
-    from .queues import QueueState
 
 __all__ = ("AsyncMemoryQueueStore", "MemoryQueueStore")
 
 _MAX_ENTRIES: Final = 10000
 _MAX_BYTES: Final = 268435456
-
-
-def _entry(entry: object) -> QueueEntry:
-    if not isinstance(entry, QueueEntry):
-        raise ProtocolConfigurationError(field_path=("entry",), condition="invalid_value")
-    return entry
 
 
 class _Entries:
@@ -43,15 +35,17 @@ class _Entries:
         self._lock = Lock()
 
     def put(self, entry: QueueEntry) -> None:
-        entry = _entry(entry)
+        entry = entry_value(entry)
         size = len(entry.payload)
         with self._lock:
             if entry.entry_id in self._entries:
                 raise QueueStoreError(action="put", entry_id=entry.entry_id)
             if (count := len(self._entries)) >= self._max_entries:
-                raise QueueFullError(kind="entries", limit=self._max_entries, observed=count + 1)
+                raise QueueFullError(
+                    kind="entries", limit=self._max_entries, observed=count + 1, entry_id=entry.entry_id
+                )
             if (total := self._bytes + size) > self._max_bytes:
-                raise QueueFullError(kind="bytes", limit=self._max_bytes, observed=total)
+                raise QueueFullError(kind="bytes", limit=self._max_bytes, observed=total, entry_id=entry.entry_id)
             self._entries[entry.entry_id] = replace(entry, version=uuid4().hex)
             self._bytes = total
 
@@ -61,32 +55,11 @@ class _Entries:
 
     def claim(self, now: datetime, lease_until: datetime, limit: int) -> tuple[QueueLease, ...]:
         positive_count(limit, "limit")
+        now, lease_until = instant(now, "now"), instant(lease_until, "lease_until")
         entries = self._entries
         with self._lock:
             for key, entry in entries.items():
-                if entry.state == "leased" and entry.lease_until is not None and entry.lease_until <= now:
-                    state: QueueState = "pending"
-                    result = entry.result
-                    if result is not None and result.category != "retryable":
-                        recorded: dict[str, QueueState] = {
-                            "success": "succeeded",
-                            "permanent": "dead",
-                            "unknown": "delivery_unknown",
-                            "cancelled": "delivery_unknown" if entry.send_intent else "cancelled",
-                        }
-                        state = recorded[result.category]
-                    elif entry.cancel_requested:
-                        state = "delivery_unknown" if entry.send_intent else "cancelled"
-                        result = QueueOutcome(category="cancelled")
-                    entries[key] = replace(
-                        entry,
-                        state=state,
-                        result=result,
-                        send_intent=entry.send_intent if state == "pending" else False,
-                        lease_id=None,
-                        lease_until=None,
-                        version=uuid4().hex,
-                    )
+                entries[key] = recover(entry, now)
             ready = sorted(
                 (entry for entry in entries.values() if entry.state == "pending" and entry.not_before <= now),
                 key=lambda entry: (entry.created_at, entry.entry_id),
@@ -101,7 +74,7 @@ class _Entries:
             return tuple(leases)
 
     def compare_exchange(self, entry_id: str, expected_version: str, entry: QueueEntry) -> bool:
-        entry = _entry(entry)
+        entry = entry_value(entry)
         if entry.entry_id != entry_id:
             raise QueueStoreError(action="compare_exchange", entry_id=entry_id)
         with self._lock:
@@ -109,11 +82,20 @@ class _Entries:
                 return False
             if entry.state == "leased" and current.state == "leased" and entry.lease_id != current.lease_id:
                 return False
+            if (total := self._bytes + len(entry.payload) - len(current.payload)) > self._max_bytes:
+                raise QueueFullError(
+                    kind="bytes",
+                    limit=self._max_bytes,
+                    observed=total,
+                    action="compare_exchange",
+                    entry_id=entry_id,
+                )
             self._entries[entry_id] = replace(entry, version=uuid4().hex)
-            self._bytes += len(entry.payload) - len(current.payload)
+            self._bytes = total
             return True
 
     def purge_terminal(self, before: datetime) -> tuple[QueueEntry, ...]:
+        before = instant(before, "before")
         with self._lock:
             purged = sorted(
                 (

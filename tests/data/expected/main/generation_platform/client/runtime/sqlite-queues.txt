@@ -1,0 +1,239 @@
+# queues pydantic_v2.BaseModel
+SQLiteQueueStore lazy True/True
+SQLiteQueueStore unused-close True/True
+SQLiteQueueStore closed-use QueueStoreError:get/missing/ValueError
+AsyncSQLiteQueueStore lazy True/True
+AsyncSQLiteQueueStore unused-close True/True
+AsyncSQLiteQueueStore closed-use QueueStoreError:get/missing/ValueError
+MemoryQueueStore metadata {"blob":[17,"000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f","independent-lease"],"blob_owned":true,"cancel_requested":true,"created_at":"2025-02-03T04:05:06.123456+00:00","delivery_count":4,"entry_id":"original-entry","expires_at":"2025-02-04T04:05:06.123456+00:00","helper_fingerprint":"helper-contract-42","idempotency_key":"stable-idempotency","lease_id":"original-lease","lease_until":"2025-02-03T04:06:06.123456+00:00","not_before":"2025-02-03T04:05:07.123456+00:00","operation_alias":"independent-operation","payload":"00ff6f70617175652d6e6f2d6a736f6e0d0a","policy":{"entry_ttl":86400.5,"lease_grace":31.25,"lease_min":91.5,"max_deliveries":7,"max_delivery_timeout":299.5,"max_entries":19,"max_entry_body_bytes":12345,"parallelism":3,"retry_initial_delay":2.5,"retry_max_delay":77.5},"result":{"category":"success","error_code":"safe-code","response":{"auth_exchange_budget_used":5,"auth_exchange_count":3,"auth_refresh_ids":["refresh-b","refresh-a","refresh-b"],"auth_refresh_pending":2,"call_id":"original-call","content_type":"application/problem+json","elapsed":3.25,"headers":[["X-Duplicate","first"],["x-duplicate","second"],["X-Last","third"]],"network_send_budget_used":13,"network_send_count":11,"redirect_count":2,"request_id":"original-request","resource_attempt_count":6,"status_code":207,"wire_send_count":17},"retry_at":"2025-02-03T04:06:06.123456+00:00"},"saved_wait_seconds":17.25,"security_fingerprint":"partition-tenant-b","send_intent":true,"state":"leased"}
+MemoryQueueStore put-version True missing None
+MemoryQueueStore duplicate QueueStoreError:put/original-entry/NoneType
+MemoryQueueStore recovered-claimed ['crash-unsent', 'crash-intent', 'retry-unsent', 'retry-intent']
+MemoryQueueStore recovery crash-unsent leased/False/4/None
+MemoryQueueStore recovery crash-intent leased/True/4/None
+MemoryQueueStore recovery cancel-unsent cancelled/False/4/cancelled
+MemoryQueueStore recovery cancel-intent delivery_unknown/False/4/cancelled
+MemoryQueueStore recovery retry-unsent leased/False/4/retryable
+MemoryQueueStore recovery retry-intent leased/True/4/retryable
+MemoryQueueStore recovery retry-cancel-unsent cancelled/False/4/cancelled
+MemoryQueueStore recovery retry-cancel-intent delivery_unknown/False/4/cancelled
+MemoryQueueStore recovery success succeeded/False/4/success
+MemoryQueueStore recovery success-cancel succeeded/False/4/success
+MemoryQueueStore recovery permanent dead/False/4/permanent
+MemoryQueueStore recovery permanent-cancel dead/False/4/permanent
+MemoryQueueStore recovery unknown delivery_unknown/False/4/unknown
+MemoryQueueStore recovery unknown-cancel delivery_unknown/False/4/unknown
+MemoryQueueStore recovery cancelled-unsent cancelled/False/4/cancelled
+MemoryQueueStore recovery cancelled-unsent-cancel cancelled/False/4/cancelled
+MemoryQueueStore recovery cancelled-intent delivery_unknown/False/4/cancelled
+MemoryQueueStore recovery cancelled-intent-cancel delivery_unknown/False/4/cancelled
+MemoryQueueStore wrong-lease False
+MemoryQueueStore release True stale False
+MemoryQueueStore immutable ['stable-idempotency', '2025-02-03T04:58:20+00:00', 4, '00ff6f70617175652d6e6f2d6a736f6e0d0a', True]
+MemoryQueueStore terminal-capacity QueueFullError:put/c/NoneType
+MemoryQueueStore stale-growth False
+MemoryQueueStore growth QueueFullError:compare_exchange/a/NoneType
+MemoryQueueStore growth-unchanged True
+MemoryQueueStore mismatched-id QueueStoreError:compare_exchange/a/NoneType
+MemoryQueueStore purge-boundary []
+MemoryQueueStore purge-strict ['a'] metadata True
+MemoryQueueStore reclaimed-capacity None ['c', 'b']
+AsyncMemoryQueueStore metadata {"blob":[17,"000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f","independent-lease"],"blob_owned":true,"cancel_requested":true,"created_at":"2025-02-03T04:05:06.123456+00:00","delivery_count":4,"entry_id":"original-entry","expires_at":"2025-02-04T04:05:06.123456+00:00","helper_fingerprint":"helper-contract-42","idempotency_key":"stable-idempotency","lease_id":"original-lease","lease_until":"2025-02-03T04:06:06.123456+00:00","not_before":"2025-02-03T04:05:07.123456+00:00","operation_alias":"independent-operation","payload":"00ff6f70617175652d6e6f2d6a736f6e0d0a","policy":{"entry_ttl":86400.5,"lease_grace":31.25,"lease_min":91.5,"max_deliveries":7,"max_delivery_timeout":299.5,"max_entries":19,"max_entry_body_bytes":12345,"parallelism":3,"retry_initial_delay":2.5,"retry_max_delay":77.5},"result":{"category":"success","error_code":"safe-code","response":{"auth_exchange_budget_used":5,"auth_exchange_count":3,"auth_refresh_ids":["refresh-b","refresh-a","refresh-b"],"auth_refresh_pending":2,"call_id":"original-call","content_type":"application/problem+json","elapsed":3.25,"headers":[["X-Duplicate","first"],["x-duplicate","second"],["X-Last","third"]],"network_send_budget_used":13,"network_send_count":11,"redirect_count":2,"request_id":"original-request","resource_attempt_count":6,"status_code":207,"wire_send_count":17},"retry_at":"2025-02-03T04:06:06.123456+00:00"},"saved_wait_seconds":17.25,"security_fingerprint":"partition-tenant-b","send_intent":true,"state":"leased"}
+AsyncMemoryQueueStore put-version True missing None
+AsyncMemoryQueueStore duplicate QueueStoreError:put/original-entry/NoneType
+AsyncMemoryQueueStore recovered-claimed ['crash-unsent', 'crash-intent', 'retry-unsent', 'retry-intent']
+AsyncMemoryQueueStore recovery crash-unsent leased/False/4/None
+AsyncMemoryQueueStore recovery crash-intent leased/True/4/None
+AsyncMemoryQueueStore recovery cancel-unsent cancelled/False/4/cancelled
+AsyncMemoryQueueStore recovery cancel-intent delivery_unknown/False/4/cancelled
+AsyncMemoryQueueStore recovery retry-unsent leased/False/4/retryable
+AsyncMemoryQueueStore recovery retry-intent leased/True/4/retryable
+AsyncMemoryQueueStore recovery retry-cancel-unsent cancelled/False/4/cancelled
+AsyncMemoryQueueStore recovery retry-cancel-intent delivery_unknown/False/4/cancelled
+AsyncMemoryQueueStore recovery success succeeded/False/4/success
+AsyncMemoryQueueStore recovery success-cancel succeeded/False/4/success
+AsyncMemoryQueueStore recovery permanent dead/False/4/permanent
+AsyncMemoryQueueStore recovery permanent-cancel dead/False/4/permanent
+AsyncMemoryQueueStore recovery unknown delivery_unknown/False/4/unknown
+AsyncMemoryQueueStore recovery unknown-cancel delivery_unknown/False/4/unknown
+AsyncMemoryQueueStore recovery cancelled-unsent cancelled/False/4/cancelled
+AsyncMemoryQueueStore recovery cancelled-unsent-cancel cancelled/False/4/cancelled
+AsyncMemoryQueueStore recovery cancelled-intent delivery_unknown/False/4/cancelled
+AsyncMemoryQueueStore recovery cancelled-intent-cancel delivery_unknown/False/4/cancelled
+AsyncMemoryQueueStore wrong-lease False
+AsyncMemoryQueueStore release True stale False
+AsyncMemoryQueueStore immutable ['stable-idempotency', '2025-02-03T04:58:20+00:00', 4, '00ff6f70617175652d6e6f2d6a736f6e0d0a', True]
+AsyncMemoryQueueStore terminal-capacity QueueFullError:put/c/NoneType
+AsyncMemoryQueueStore stale-growth False
+AsyncMemoryQueueStore growth QueueFullError:compare_exchange/a/NoneType
+AsyncMemoryQueueStore growth-unchanged True
+AsyncMemoryQueueStore mismatched-id QueueStoreError:compare_exchange/a/NoneType
+AsyncMemoryQueueStore purge-boundary []
+AsyncMemoryQueueStore purge-strict ['a'] metadata True
+AsyncMemoryQueueStore reclaimed-capacity None ['c', 'b']
+SQLiteQueueStore metadata {"blob":[17,"000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f","independent-lease"],"blob_owned":true,"cancel_requested":true,"created_at":"2025-02-03T04:05:06.123456+00:00","delivery_count":4,"entry_id":"original-entry","expires_at":"2025-02-04T04:05:06.123456+00:00","helper_fingerprint":"helper-contract-42","idempotency_key":"stable-idempotency","lease_id":"original-lease","lease_until":"2025-02-03T04:06:06.123456+00:00","not_before":"2025-02-03T04:05:07.123456+00:00","operation_alias":"independent-operation","payload":"00ff6f70617175652d6e6f2d6a736f6e0d0a","policy":{"entry_ttl":86400.5,"lease_grace":31.25,"lease_min":91.5,"max_deliveries":7,"max_delivery_timeout":299.5,"max_entries":19,"max_entry_body_bytes":12345,"parallelism":3,"retry_initial_delay":2.5,"retry_max_delay":77.5},"result":{"category":"success","error_code":"safe-code","response":{"auth_exchange_budget_used":5,"auth_exchange_count":3,"auth_refresh_ids":["refresh-b","refresh-a","refresh-b"],"auth_refresh_pending":2,"call_id":"original-call","content_type":"application/problem+json","elapsed":3.25,"headers":[["X-Duplicate","first"],["x-duplicate","second"],["X-Last","third"]],"network_send_budget_used":13,"network_send_count":11,"redirect_count":2,"request_id":"original-request","resource_attempt_count":6,"status_code":207,"wire_send_count":17},"retry_at":"2025-02-03T04:06:06.123456+00:00"},"saved_wait_seconds":17.25,"security_fingerprint":"partition-tenant-b","send_intent":true,"state":"leased"}
+SQLiteQueueStore put-version True missing None
+SQLiteQueueStore duplicate QueueStoreError:put/original-entry/NoneType
+SQLiteQueueStore restart True
+SQLiteQueueStore recovered-claimed ['crash-unsent', 'crash-intent', 'retry-unsent', 'retry-intent']
+SQLiteQueueStore recovery crash-unsent leased/False/4/None
+SQLiteQueueStore recovery crash-intent leased/True/4/None
+SQLiteQueueStore recovery cancel-unsent cancelled/False/4/cancelled
+SQLiteQueueStore recovery cancel-intent delivery_unknown/False/4/cancelled
+SQLiteQueueStore recovery retry-unsent leased/False/4/retryable
+SQLiteQueueStore recovery retry-intent leased/True/4/retryable
+SQLiteQueueStore recovery retry-cancel-unsent cancelled/False/4/cancelled
+SQLiteQueueStore recovery retry-cancel-intent delivery_unknown/False/4/cancelled
+SQLiteQueueStore recovery success succeeded/False/4/success
+SQLiteQueueStore recovery success-cancel succeeded/False/4/success
+SQLiteQueueStore recovery permanent dead/False/4/permanent
+SQLiteQueueStore recovery permanent-cancel dead/False/4/permanent
+SQLiteQueueStore recovery unknown delivery_unknown/False/4/unknown
+SQLiteQueueStore recovery unknown-cancel delivery_unknown/False/4/unknown
+SQLiteQueueStore recovery cancelled-unsent cancelled/False/4/cancelled
+SQLiteQueueStore recovery cancelled-unsent-cancel cancelled/False/4/cancelled
+SQLiteQueueStore recovery cancelled-intent delivery_unknown/False/4/cancelled
+SQLiteQueueStore recovery cancelled-intent-cancel delivery_unknown/False/4/cancelled
+SQLiteQueueStore wrong-lease False
+SQLiteQueueStore release True stale False
+SQLiteQueueStore immutable ['stable-idempotency', '2025-02-03T04:58:20+00:00', 4, '00ff6f70617175652d6e6f2d6a736f6e0d0a', True]
+SQLiteQueueStore terminal-capacity QueueFullError:put/c/NoneType
+SQLiteQueueStore stale-growth False
+SQLiteQueueStore growth QueueFullError:compare_exchange/a/NoneType
+SQLiteQueueStore growth-unchanged True
+SQLiteQueueStore mismatched-id QueueStoreError:compare_exchange/a/NoneType
+SQLiteQueueStore purge-boundary []
+SQLiteQueueStore purge-strict ['a'] metadata True
+SQLiteQueueStore reclaimed-capacity None ['c', 'b']
+AsyncSQLiteQueueStore metadata {"blob":[17,"000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f","independent-lease"],"blob_owned":true,"cancel_requested":true,"created_at":"2025-02-03T04:05:06.123456+00:00","delivery_count":4,"entry_id":"original-entry","expires_at":"2025-02-04T04:05:06.123456+00:00","helper_fingerprint":"helper-contract-42","idempotency_key":"stable-idempotency","lease_id":"original-lease","lease_until":"2025-02-03T04:06:06.123456+00:00","not_before":"2025-02-03T04:05:07.123456+00:00","operation_alias":"independent-operation","payload":"00ff6f70617175652d6e6f2d6a736f6e0d0a","policy":{"entry_ttl":86400.5,"lease_grace":31.25,"lease_min":91.5,"max_deliveries":7,"max_delivery_timeout":299.5,"max_entries":19,"max_entry_body_bytes":12345,"parallelism":3,"retry_initial_delay":2.5,"retry_max_delay":77.5},"result":{"category":"success","error_code":"safe-code","response":{"auth_exchange_budget_used":5,"auth_exchange_count":3,"auth_refresh_ids":["refresh-b","refresh-a","refresh-b"],"auth_refresh_pending":2,"call_id":"original-call","content_type":"application/problem+json","elapsed":3.25,"headers":[["X-Duplicate","first"],["x-duplicate","second"],["X-Last","third"]],"network_send_budget_used":13,"network_send_count":11,"redirect_count":2,"request_id":"original-request","resource_attempt_count":6,"status_code":207,"wire_send_count":17},"retry_at":"2025-02-03T04:06:06.123456+00:00"},"saved_wait_seconds":17.25,"security_fingerprint":"partition-tenant-b","send_intent":true,"state":"leased"}
+AsyncSQLiteQueueStore put-version True missing None
+AsyncSQLiteQueueStore duplicate QueueStoreError:put/original-entry/NoneType
+AsyncSQLiteQueueStore restart True
+AsyncSQLiteQueueStore recovered-claimed ['crash-unsent', 'crash-intent', 'retry-unsent', 'retry-intent']
+AsyncSQLiteQueueStore recovery crash-unsent leased/False/4/None
+AsyncSQLiteQueueStore recovery crash-intent leased/True/4/None
+AsyncSQLiteQueueStore recovery cancel-unsent cancelled/False/4/cancelled
+AsyncSQLiteQueueStore recovery cancel-intent delivery_unknown/False/4/cancelled
+AsyncSQLiteQueueStore recovery retry-unsent leased/False/4/retryable
+AsyncSQLiteQueueStore recovery retry-intent leased/True/4/retryable
+AsyncSQLiteQueueStore recovery retry-cancel-unsent cancelled/False/4/cancelled
+AsyncSQLiteQueueStore recovery retry-cancel-intent delivery_unknown/False/4/cancelled
+AsyncSQLiteQueueStore recovery success succeeded/False/4/success
+AsyncSQLiteQueueStore recovery success-cancel succeeded/False/4/success
+AsyncSQLiteQueueStore recovery permanent dead/False/4/permanent
+AsyncSQLiteQueueStore recovery permanent-cancel dead/False/4/permanent
+AsyncSQLiteQueueStore recovery unknown delivery_unknown/False/4/unknown
+AsyncSQLiteQueueStore recovery unknown-cancel delivery_unknown/False/4/unknown
+AsyncSQLiteQueueStore recovery cancelled-unsent cancelled/False/4/cancelled
+AsyncSQLiteQueueStore recovery cancelled-unsent-cancel cancelled/False/4/cancelled
+AsyncSQLiteQueueStore recovery cancelled-intent delivery_unknown/False/4/cancelled
+AsyncSQLiteQueueStore recovery cancelled-intent-cancel delivery_unknown/False/4/cancelled
+AsyncSQLiteQueueStore wrong-lease False
+AsyncSQLiteQueueStore release True stale False
+AsyncSQLiteQueueStore immutable ['stable-idempotency', '2025-02-03T04:58:20+00:00', 4, '00ff6f70617175652d6e6f2d6a736f6e0d0a', True]
+AsyncSQLiteQueueStore terminal-capacity QueueFullError:put/c/NoneType
+AsyncSQLiteQueueStore stale-growth False
+AsyncSQLiteQueueStore growth QueueFullError:compare_exchange/a/NoneType
+AsyncSQLiteQueueStore growth-unchanged True
+AsyncSQLiteQueueStore mismatched-id QueueStoreError:compare_exchange/a/NoneType
+AsyncSQLiteQueueStore purge-boundary []
+AsyncSQLiteQueueStore purge-strict ['a'] metadata True
+AsyncSQLiteQueueStore reclaimed-capacity None ['c', 'b']
+SQLiteQueueStore unknown-version QueueStoreError:get/missing/ValueError
+SQLiteQueueStore unknown-version-unchanged True
+AsyncSQLiteQueueStore unknown-version QueueStoreError:get/missing/ValueError
+AsyncSQLiteQueueStore unknown-version-unchanged True
+SQLiteQueueStore unrelated QueueStoreError:get/missing/ValueError
+SQLiteQueueStore unrelated-unchanged True
+AsyncSQLiteQueueStore unrelated QueueStoreError:get/missing/ValueError
+AsyncSQLiteQueueStore unrelated-unchanged True
+SQLiteQueueStore malformed QueueStoreError:get/missing/ValueError
+SQLiteQueueStore malformed-unchanged True
+AsyncSQLiteQueueStore malformed QueueStoreError:get/missing/ValueError
+AsyncSQLiteQueueStore malformed-unchanged True
+SQLiteQueueStore corrupt invalid-json QueueStoreError:claim/corrupted/JSONDecodeError atomic True
+SQLiteQueueStore corrupt unknown-version QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore corrupt bool-version QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore corrupt unknown-envelope-field QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore corrupt unknown-entry-field QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore corrupt bad-base64 QueueStoreError:claim/corrupted/Error atomic True
+SQLiteQueueStore corrupt noncanonical-base64 QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore corrupt naive-date QueueStoreError:claim/corrupted/ProtocolConfigurationError atomic True
+SQLiteQueueStore corrupt wrong-date QueueStoreError:claim/corrupted/TypeError atomic True
+SQLiteQueueStore corrupt bad-date QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore corrupt bool-count QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore corrupt negative-count QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore corrupt string-count QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore corrupt unknown-state QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore corrupt bad-boolean QueueStoreError:claim/corrupted/TypeError atomic True
+SQLiteQueueStore corrupt negative-wait QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore corrupt bool-wait QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore corrupt bad-policy-field QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore corrupt bad-policy-count QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore corrupt bad-policy-duration QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore corrupt bad-policy-delay QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore corrupt bad-outcome-field QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore corrupt bad-category QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore corrupt bad-response-field QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore corrupt bad-status QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore corrupt bad-headers QueueStoreError:claim/corrupted/TypeError atomic True
+SQLiteQueueStore corrupt bad-header-pair QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore corrupt bad-header-type QueueStoreError:claim/corrupted/TypeError atomic True
+SQLiteQueueStore corrupt bad-refresh-list QueueStoreError:claim/corrupted/TypeError atomic True
+SQLiteQueueStore corrupt bad-refresh-item QueueStoreError:claim/corrupted/TypeError atomic True
+SQLiteQueueStore corrupt negative-elapsed QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore corrupt bad-blob-field QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore corrupt bad-blob-size QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore corrupt bad-blob-digest QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore corrupt empty-blob-key QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore corrupt missing-lease-time QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore valid-after-corruption ['healthy']
+AsyncSQLiteQueueStore corrupt invalid-json QueueStoreError:claim/corrupted/JSONDecodeError atomic True
+AsyncSQLiteQueueStore corrupt unknown-version QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore corrupt bool-version QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore corrupt unknown-envelope-field QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore corrupt unknown-entry-field QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore corrupt bad-base64 QueueStoreError:claim/corrupted/Error atomic True
+AsyncSQLiteQueueStore corrupt noncanonical-base64 QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore corrupt naive-date QueueStoreError:claim/corrupted/ProtocolConfigurationError atomic True
+AsyncSQLiteQueueStore corrupt wrong-date QueueStoreError:claim/corrupted/TypeError atomic True
+AsyncSQLiteQueueStore corrupt bad-date QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore corrupt bool-count QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore corrupt negative-count QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore corrupt string-count QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore corrupt unknown-state QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore corrupt bad-boolean QueueStoreError:claim/corrupted/TypeError atomic True
+AsyncSQLiteQueueStore corrupt negative-wait QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore corrupt bool-wait QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore corrupt bad-policy-field QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore corrupt bad-policy-count QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore corrupt bad-policy-duration QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore corrupt bad-policy-delay QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore corrupt bad-outcome-field QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore corrupt bad-category QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore corrupt bad-response-field QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore corrupt bad-status QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore corrupt bad-headers QueueStoreError:claim/corrupted/TypeError atomic True
+AsyncSQLiteQueueStore corrupt bad-header-pair QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore corrupt bad-header-type QueueStoreError:claim/corrupted/TypeError atomic True
+AsyncSQLiteQueueStore corrupt bad-refresh-list QueueStoreError:claim/corrupted/TypeError atomic True
+AsyncSQLiteQueueStore corrupt bad-refresh-item QueueStoreError:claim/corrupted/TypeError atomic True
+AsyncSQLiteQueueStore corrupt negative-elapsed QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore corrupt bad-blob-field QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore corrupt bad-blob-size QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore corrupt bad-blob-digest QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore corrupt empty-blob-key QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore corrupt missing-lease-time QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore valid-after-corruption ['healthy']
+worker close-native True
+worker pending-cancel native-cancel:True
+worker bounded True rejected=True cancellation-excluded=True
+worker retained-close QueueStoreError:get/missing/ValueError
+worker FIFO True
+processes populated=False ready=['ready', 'ready'] batches=[[], []] exits=[0, 0]
+processes schema 1/wal/(1, 0)
+processes stale=[]
+processes populated=True ready=['ready', 'ready'] batches=[['a', 'b'], ['c', 'd']] exits=[0, 0]
+processes schema 1/wal/(1, 0)
+processes stale=[False, False, False, False]
+worker closed-loop subsequent-use True

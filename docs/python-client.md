@@ -2519,9 +2519,27 @@ operation declares from its `created_at`, whatever `expires_at` the store return
 the declared request, a required argument or body missing included, ends the entry `dead` without a send.
 
 `MemoryQueueStore(*, max_entries=10000, max_bytes=268435456)` and `AsyncMemoryQueueStore` keep entries of one process
-under one lock, count payload bytes toward `max_bytes`, and refuse a new entry over either limit with `QueueFullError`.
-A store that outlives the process, such as one backed by a database, is the caller's own implementation of the same
-methods; builtin SQLite stores are not supported yet.
+under one lock. `SQLiteQueueStore(path, *, max_entries=10000, max_bytes=268435456)` and `AsyncSQLiteQueueStore` persist
+the same complete public records at an explicit path, using standard-library SQLite. Each store counts every entry,
+including terminal rows until purge, and its raw opaque payload bytes toward capacity. New entries and successful
+CAS replacements that would exceed capacity raise `QueueFullError`, with action `put` or `compare_exchange`, without
+eviction or partial changes. Ordered claims include expired-lease recovery in one transaction; stale versions and
+leases cannot overwrite a newer claim. Purge removes and returns terminal records created strictly before `before`.
+
+SQLite stores use schema version 1, WAL, a five-second busy timeout and a persistent namespace shared with the
+planned builtin blob adapters. They refuse unknown versions, unrelated databases and malformed schemas without
+repairing or modifying those databases. Records use a closed JSON field inventory and base64 bytes, preserve every
+`ResponseInfo` field and ordered duplicate safe headers, and normalize aware instants to UTC. Corrupt rows raise an
+action- and entry-aware `QueueStoreError`; a failed transaction changes nothing.
+
+Construction creates no file, connection or thread. Sync operations use one lazy locked connection; close it with
+`store.close()`. Async methods are native coroutines; an unawaited call allocates no database resources. Each explicit
+async store owns one lazy worker solely for database work and admits at most 64 pending jobs in FIFO order with
+async backpressure. Cancellation skips work that has not started; a started transaction completes commit or rollback,
+and any committed queue mutation remains inspectable. `await store.aclose()` rejects new work, drains accepted
+uncancelled jobs and closes the connection and worker. Repeated or cancelled close calls share retained shutdown.
+Closing an unused store creates no resources. Stores perform no HTTP work or automatic drains; clients borrow them
+and never close them. Callers own the explicit stores' close lifecycle.
 
 ### Draining
 

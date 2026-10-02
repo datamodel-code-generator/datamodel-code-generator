@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
-from pets import AsyncClient, Client
-from pets.errors import QueueBindingError, QueueFullError, QueuePolicyConflictError, QueueStoreError
 from pets.options import ClientOptions, ProtocolClientOptions, RequestOptions, SessionOptions
 from pets.protocols import (
     AsyncMemoryQueueStore,
     AsyncQueueStore,
+    AsyncSQLiteQueueStore,
     BlobRef,
     DrainReport,
     MemoryQueueStore,
@@ -20,10 +20,15 @@ from pets.protocols import (
     QueueReceipt,
     QueueStore,
     ResolvedQueueOptions,
+    SQLiteQueueStore,
 )
 from pets.responses import ResponseInfo
-from pets_models import Account, NewOrder
 from typing_extensions import assert_type
+
+if TYPE_CHECKING:
+    from pets import AsyncClient, Client
+    from pets.errors import QueueBindingError, QueueFullError, QueuePolicyConflictError, QueueStoreError
+    from pets_models import Account, NewOrder
 
 
 class Store:
@@ -65,8 +70,12 @@ def stores() -> ClientOptions:
     own: QueueStore = Store()
     builtin: QueueStore = MemoryQueueStore(max_entries=10, max_bytes=1024)
     asynchronous: AsyncQueueStore = AsyncMemoryQueueStore()
-    del asynchronous
-    return ClientOptions(protocols=ProtocolClientOptions(queue_stores={"orders.outbox": own, "account.offline": builtin}))
+    persistent: QueueStore = SQLiteQueueStore("queue.db", max_entries=10, max_bytes=1024)
+    async_persistent: AsyncQueueStore = AsyncSQLiteQueueStore("async-queue.db")
+    del asynchronous, persistent, async_persistent
+    return ClientOptions(
+        protocols=ProtocolClientOptions(queue_stores={"orders.outbox": own, "account.offline": builtin})
+    )
 
 
 def queued(client: Client, order: NewOrder, account: Account) -> None:
@@ -119,3 +128,22 @@ async def async_queued(client: AsyncClient, order: NewOrder) -> None:
     assert_type(await outbox.cancel(receipt.entry_id), QueueEntry | None)
     assert_type(await outbox.retry_unknown(receipt.entry_id), QueueEntry | None)
     assert_type(await outbox.purge_terminal(datetime.now(timezone.utc)), tuple[QueueEntry, ...])
+
+
+async def persistent_stores(entry: QueueEntry) -> None:
+    """Use each persistent adapter structurally and preserve ordinary sync versus native coroutine methods."""
+    sync = SQLiteQueueStore("queue.db")
+    asynchronous = AsyncSQLiteQueueStore("async-queue.db")
+    now = datetime.now(timezone.utc)
+    assert_type(sync.put(entry), None)
+    assert_type(sync.get(entry.entry_id), QueueEntry | None)
+    assert_type(sync.claim(now=now, lease_until=now, limit=1), tuple[QueueLease, ...])
+    assert_type(sync.compare_exchange(entry.entry_id, entry.version, entry), bool)
+    assert_type(sync.purge_terminal(now), tuple[QueueEntry, ...])
+    assert_type(sync.close(), None)
+    assert_type(await asynchronous.put(entry), None)
+    assert_type(await asynchronous.get(entry.entry_id), QueueEntry | None)
+    assert_type(await asynchronous.claim(now=now, lease_until=now, limit=1), tuple[QueueLease, ...])
+    assert_type(await asynchronous.compare_exchange(entry.entry_id, entry.version, entry), bool)
+    assert_type(await asynchronous.purge_terminal(now), tuple[QueueEntry, ...])
+    assert_type(await asynchronous.aclose(), None)
