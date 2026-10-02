@@ -1873,7 +1873,7 @@ class PartsUploadHandle(_Parts[T], UploadHandle[T]):
 
     def _step(self) -> None:
         if self._verify:
-            self._reconcile_parts()
+            self._reconcile_parts(acknowledged=True)
         if self._confirmed < self._identity.size:
             try:
                 self._upload_wave()
@@ -1998,7 +1998,7 @@ class AsyncPartsUploadHandle(_Parts[T], AsyncUploadHandle[T]):
 
     async def _step(self) -> None:
         if self._verify:
-            await self._reconcile_parts()
+            await self._reconcile_parts(acknowledged=True)
         if self._confirmed < self._identity.size:
             try:
                 await self._upload_wave()

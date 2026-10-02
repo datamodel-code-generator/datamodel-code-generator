@@ -1,0 +1,89 @@
+# uploads pydantic_v2.BaseModel
+sync fail: UploadFilePartHTTPError sent=[1, 2] lists=1
+  explicit next entry: confirmed=8 sent=[1, 2, 2] lists=3
+  completed result reused: True
+  server: creates=1 lists=5 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+sync after: UploadDeliveryUnknownError sent=[1, 2] lists=1
+  explicit next entry: confirmed=12 sent=[1, 2, 3] lists=3
+  completed result reused: True
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async fail: UploadFilePartHTTPError sent=[1, 2] lists=1
+  explicit next entry: confirmed=8 sent=[1, 2, 2] lists=3
+  completed result reused: True
+  server: creates=1 lists=5 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async after: UploadDeliveryUnknownError sent=[1, 2] lists=1
+  explicit next entry: confirmed=12 sent=[1, 2, 3] lists=3
+  completed result reused: True
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+
+# uploads pydantic_v2.dataclass
+sync fail: UploadFilePartHTTPError sent=[1, 2] lists=1
+  explicit next entry: confirmed=8 sent=[1, 2, 2] lists=3
+  completed result reused: True
+  server: creates=1 lists=5 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+sync after: UploadDeliveryUnknownError sent=[1, 2] lists=1
+  explicit next entry: confirmed=12 sent=[1, 2, 3] lists=3
+  completed result reused: True
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async fail: UploadFilePartHTTPError sent=[1, 2] lists=1
+  explicit next entry: confirmed=8 sent=[1, 2, 2] lists=3
+  completed result reused: True
+  server: creates=1 lists=5 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async after: UploadDeliveryUnknownError sent=[1, 2] lists=1
+  explicit next entry: confirmed=12 sent=[1, 2, 3] lists=3
+  completed result reused: True
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+
+# uploads dataclasses.dataclass
+sync fail: UploadFilePartHTTPError sent=[1, 2] lists=1
+  explicit next entry: confirmed=8 sent=[1, 2, 2] lists=3
+  completed result reused: True
+  server: creates=1 lists=5 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+sync after: UploadDeliveryUnknownError sent=[1, 2] lists=1
+  explicit next entry: confirmed=12 sent=[1, 2, 3] lists=3
+  completed result reused: True
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async fail: UploadFilePartHTTPError sent=[1, 2] lists=1
+  explicit next entry: confirmed=8 sent=[1, 2, 2] lists=3
+  completed result reused: True
+  server: creates=1 lists=5 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async after: UploadDeliveryUnknownError sent=[1, 2] lists=1
+  explicit next entry: confirmed=12 sent=[1, 2, 3] lists=3
+  completed result reused: True
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+
+# uploads typing.TypedDict
+sync fail: UploadFilePartHTTPError sent=[1, 2] lists=1
+  explicit next entry: confirmed=8 sent=[1, 2, 2] lists=3
+  completed result reused: True
+  server: creates=1 lists=5 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+sync after: UploadDeliveryUnknownError sent=[1, 2] lists=1
+  explicit next entry: confirmed=12 sent=[1, 2, 3] lists=3
+  completed result reused: True
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async fail: UploadFilePartHTTPError sent=[1, 2] lists=1
+  explicit next entry: confirmed=8 sent=[1, 2, 2] lists=3
+  completed result reused: True
+  server: creates=1 lists=5 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async after: UploadDeliveryUnknownError sent=[1, 2] lists=1
+  explicit next entry: confirmed=12 sent=[1, 2, 3] lists=3
+  completed result reused: True
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+
+# uploads msgspec.Struct
+sync fail: UploadFilePartHTTPError sent=[1, 2] lists=1
+  explicit next entry: confirmed=8 sent=[1, 2, 2] lists=3
+  completed result reused: True
+  server: creates=1 lists=5 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+sync after: UploadDeliveryUnknownError sent=[1, 2] lists=1
+  explicit next entry: confirmed=12 sent=[1, 2, 3] lists=3
+  completed result reused: True
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async fail: UploadFilePartHTTPError sent=[1, 2] lists=1
+  explicit next entry: confirmed=8 sent=[1, 2, 2] lists=3
+  completed result reused: True
+  server: creates=1 lists=5 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async after: UploadDeliveryUnknownError sent=[1, 2] lists=1
+  explicit next entry: confirmed=12 sent=[1, 2, 3] lists=3
+  completed result reused: True
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True

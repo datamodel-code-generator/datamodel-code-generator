@@ -2436,3 +2436,72 @@ async def _async_completion_end_control(harness: _Uploads, api: Any, resource: A
         result = await handle.run()
         lines.append(f"  cancelled after decoded completion: retained={result.size} resource={resource.methods}")
     await handle.aclose()
+
+
+def parts_zero_probe_recovery(package: ModuleType, lines: list[str]) -> None:
+    """List once at an explicit next entry while retaining zero immediate uncertain probes."""
+    harness = _Uploads(package)
+    exchange = Exchange([])
+    options = harness.options.RequestOptions(retry=harness.options.RetryOptions(max_retries=0))
+    limits = harness.uploads(parallelism=1, max_uncertain_probes=0)
+    with exchange.client() as native, package.Client(http_client=native) as api:
+        for mode in ("fail", "after"):
+            server = _PartsServer()
+            _respond(exchange, server)
+            with api.protocols.files.parts.start(
+                harness.source(_PART_CONTENT), tus_resumable=harness.tus, upload_options=limits, options=options
+            ) as handle:
+                handle.advance()
+                server.failure = mode
+                try:
+                    handle.advance()
+                except (harness.errors.UploadFilePartHTTPError, harness.errors.UploadDeliveryUnknownError) as error:
+                    lines.append(f"sync {mode}: {type(error).__name__} sent={server.sent} lists={server.lists}")
+                progress = handle.advance()
+                lines.append(
+                    f"  explicit next entry: confirmed={progress.confirmed_bytes} "
+                    f"sent={server.sent} lists={server.lists}"
+                )
+                handle.run()
+                before = (tuple(server.sent), server.lists, server.completes)
+                handle.run()
+                lines.append(
+                    f"  completed result reused: {before == (tuple(server.sent), server.lists, server.completes)}"
+                )
+                server.report(lines, "server")
+            exchange.responders.clear()
+    run(lambda: _parts_zero_probe_recovery_async(harness, package, lines))
+
+
+async def _parts_zero_probe_recovery_async(harness: _Uploads, package: ModuleType, lines: list[str]) -> None:
+    """Keep the async next-entry listing and successful-part receipt checks observable."""
+    exchange = Exchange([])
+    options = harness.options.RequestOptions(retry=harness.options.RetryOptions(max_retries=0))
+    limits = harness.uploads(parallelism=1, max_uncertain_probes=0)
+    async with exchange.async_client() as native, package.AsyncClient(http_client=native) as api:
+        for mode in ("fail", "after"):
+            server = _PartsServer()
+            _respond(exchange, server)
+            source = harness.protocols.AsyncBytesUploadSource.from_bytes(_PART_CONTENT)
+            async with await api.protocols.files.parts.start(
+                source, tus_resumable=harness.tus, upload_options=limits, options=options
+            ) as handle:
+                await handle.advance()
+                server.failure = mode
+                try:
+                    await handle.advance()
+                except (harness.errors.UploadFilePartHTTPError, harness.errors.UploadDeliveryUnknownError) as error:
+                    lines.append(f"async {mode}: {type(error).__name__} sent={server.sent} lists={server.lists}")
+                progress = await handle.advance()
+                lines.append(
+                    f"  explicit next entry: confirmed={progress.confirmed_bytes} "
+                    f"sent={server.sent} lists={server.lists}"
+                )
+                await handle.run()
+                before = (tuple(server.sent), server.lists, server.completes)
+                await handle.run()
+                lines.append(
+                    f"  completed result reused: {before == (tuple(server.sent), server.lists, server.completes)}"
+                )
+                server.report(lines, "server")
+            exchange.responders.clear()
