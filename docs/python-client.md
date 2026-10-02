@@ -2488,7 +2488,7 @@ An entry's `state` is `pending`, `leased`, or one of the ended states `succeeded
 |---|---|
 | `put(entry)` | Keeps a new entry atomically; a full store raises `QueueFullError` and evicts nothing |
 | `get(entry_id)` | Returns the entry, or None |
-| `claim(*, now, lease_until, limit)` | Returns expired leases to pending, then leases up to `limit` pending entries whose `not_before` has come, in `created_at` and ID order, as `QueueLease` records |
+| `claim(*, now, lease_until, limit)` | Recovers expired leases with saved send intent to `delivery_unknown` and unsent ones to pending, then leases up to `limit` pending entries whose `not_before` has come, in `created_at` and ID order, as `QueueLease` records |
 | `compare_exchange(entry_id, expected_version, entry)` | Replaces the entry only when its stored version is `expected_version`, giving it a new version, and returns whether it did |
 | `purge_terminal(before)` | Removes and returns the ended entries created before `before` |
 
