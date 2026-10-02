@@ -182,10 +182,7 @@
         "name": "part"
       }
     ],
-    "package_snapshots": [
-      "pydantic_v2.BaseModel",
-      "pydantic_v2.dataclass"
-    ]
+    "package_snapshots": []
   },
   "parameters": {
     "input": "server-parameters.yaml",
@@ -349,7 +346,8 @@
         "method": "GET",
         "url": "/items/1?kind=c"
       }
-    ]
+    ],
+    "package_snapshots": []
   },
   "bodies": {
     "input": "server-bodies.yaml",
@@ -525,7 +523,7 @@
       {
         "method": "PUT",
         "url": "/documents",
-        "content": "ÿ",
+        "content": "\u00ff",
         "headers": {
           "Content-Type": "text/plain; charset=utf-8"
         }
@@ -654,7 +652,8 @@
           "any": "thing"
         }
       }
-    ]
+    ],
+    "package_snapshots": []
   },
   "results": {
     "input": "server-results.yaml",
@@ -904,7 +903,8 @@
         "facade": "GetNothingResponseCodecs",
         "status_code": 200
       }
-    ]
+    ],
+    "package_snapshots": []
   },
   "security": {
     "input": "server-security.yaml",
@@ -1172,7 +1172,8 @@
           }
         ]
       }
-    ]
+    ],
+    "package_snapshots": []
   },
   "customized": {
     "input": "services.yaml",
@@ -1197,7 +1198,8 @@
         "method": "GET",
         "url": "/health"
       }
-    ]
+    ],
+    "package_snapshots": []
   },
   "variants": {
     "input": "server-variants.yaml",
@@ -1249,7 +1251,8 @@
         "method": "GET",
         "url": "/owners"
       }
-    ]
+    ],
+    "package_snapshots": []
   },
   "variants-request-response": {
     "input": "server-variants.yaml",
@@ -1660,7 +1663,8 @@
           ]
         ]
       }
-    ]
+    ],
+    "package_snapshots": []
   },
   "responses": {
     "input": "server-responses.yaml",
@@ -1827,7 +1831,8 @@
           }
         ]
       }
-    ]
+    ],
+    "package_snapshots": []
   },
   "adapters": {
     "input": "server-parameter-adapters.yaml",
@@ -2167,6 +2172,7 @@
         "method": "GET",
         "url": "/search?a=y"
       }
-    ]
+    ],
+    "package_snapshots": []
   }
 }
