@@ -1,4 +1,3 @@
 schema_version: 1
 helpers:
   users.bulk: {kind: batch}
-  users.queue: {kind: queue}

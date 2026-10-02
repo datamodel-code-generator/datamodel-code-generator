@@ -36,6 +36,7 @@ from pets.protocols import (
     ProtocolProgress,
     ProtocolSecurityContext,
     QuerystringTarget,
+    QueueOptions,
     RequestTarget,
     ResumeState,
     Selector,
@@ -96,7 +97,8 @@ def options(origin: Origin) -> ClientOptions:
     assert_type(security.allowed_origins, tuple[Origin, ...])
     defaults = ProtocolDefaults(session=SessionOptions(max_network_sends=3), options=pagination)
     assert_type(
-        defaults.options, PaginationOptions | PollOptions | StreamOptions | CacheOptions | WSOptions | UploadOptions | Unset
+        defaults.options,
+        PaginationOptions | PollOptions | StreamOptions | CacheOptions | WSOptions | UploadOptions | QueueOptions | Unset,
     )
     protocols = ProtocolClientOptions(security=security, defaults={"users.all": defaults, "jobs": ProtocolDefaults()})
     assert_type(protocols.security, ProtocolSecurityContext | Unset | None)

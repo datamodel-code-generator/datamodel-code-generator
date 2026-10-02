@@ -26,6 +26,7 @@ from ..client.errors import (
     error_count,
     error_string,
     error_time,
+    is_sequence,
 )
 from ..client.responses import HeadersView, ResponseInfo
 from ..model_codecs.unset import UNSET, Unset
@@ -59,6 +60,10 @@ __all__ = (
     "PollingStateError",
     "ProtocolDataError",
     "ProtocolStateError",
+    "QueueBindingError",
+    "QueueFullError",
+    "QueuePolicyConflictError",
+    "QueueStoreError",
     "ResumeStateError",
     "ResumeStateTooLargeError",
     "SessionLimitError",
@@ -1729,3 +1734,124 @@ class NonResumableSourceError(ProtocolConfigurationError):
 
     def _details(self) -> tuple[tuple[str, object], ...]:
         return (*super()._details(), ("source_kind", self.source_kind))
+
+
+class QueueStoreError(ProtocolStoreError):
+    """A queue store operation that failed; no request is sent again because of it."""
+
+
+class QueueFullError(QueueStoreError):
+    """A queue store without room for a new entry; no unprocessed entry is discarded to make room."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        kind: Literal["entries", "bytes"],
+        limit: int,
+        observed: int,
+        action: Literal["put", "compare_exchange"] = "put",
+        entry_id: str | None = None,
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+    ) -> None:
+        """Keep which capacity ran out, the limit, and what storing the entry would take."""
+        error_choice(kind, ("entries", "bytes"), "kind")
+        super().__init__(
+            action=action,
+            entry_id=entry_id,
+            helper_id=helper_id,
+            operation=operation,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+        )
+        self.kind = kind
+        self.limit = error_count(limit, "limit")
+        self.observed = error_count(observed, "observed")
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("kind", self.kind), ("limit", self.limit), ("observed", self.observed))
+
+
+class QueueBindingError(ProtocolConfigurationError):
+    """A queued entry saved for another helper contract, partition, or auth; it is never migrated automatically."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        entry_id: str,
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+    ) -> None:
+        """Keep the entry; the condition is binding_mismatch at the entry identifier."""
+        error_string(entry_id, "entry_id")
+        super().__init__(
+            field_path=("entry_id",),
+            condition="binding_mismatch",
+            helper_id=helper_id,
+            operation=operation,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+        )
+        self.entry_id = entry_id
+
+
+def _policy_fields(value: object) -> None:
+    if not is_sequence(value) or isinstance(value, list) or not value or not all(isinstance(n, str) for n in value):
+        msg = "fields must be a nonempty tuple of field names"
+        raise ValueError(msg)
+
+
+class QueuePolicyConflictError(ProtocolConfigurationError):
+    """Queue options naming a field the call cannot set: a drain field at enqueue, or an entry policy at drain."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        fields: tuple[str, ...],
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+    ) -> None:
+        """Keep the misplaced fields; the condition is invalid_value at the queue options."""
+        _policy_fields(fields)
+        super().__init__(
+            field_path=("queue_options",),
+            condition="invalid_value",
+            helper_id=helper_id,
+            operation=operation,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+        )
+        self.fields = fields
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("fields", self.fields))
