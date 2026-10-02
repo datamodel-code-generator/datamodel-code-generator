@@ -65,12 +65,11 @@ from .resume import (
     ResumeState,
     helper_state,
     require_state,
-    server_expiry,
     state_array,
     state_count,
     state_fields,
 )
-from .values import MISSING, Missing, Patch, RepeatedValueError, resolve, selected, written
+from .values import MISSING, Missing, Patch, RepeatedValueError, resolve, selected, server_expiry, written
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterator
@@ -207,15 +206,16 @@ class StreamResumePlan:
 
         The header and query parameters it writes are those a call's options must not patch.
         """
-        from .writes import read_paths, targeted  # noqa: PLC0415 - Only a plan loads the operation runtime.
+        from .writes import targeted_writes  # noqa: PLC0415 - Only a plan loads the operation runtime.
 
         sources = tuple((binding.target, binding.selector) for binding in self.bindings)
-        reopened, writes, headers, queries = targeted(self.call, (*(target for target, _ in sources), self.write))
+        targeted = targeted_writes(self.call, sources, (self.write,))
+        reopened, writes, headers, queries = targeted.call, targeted.writes, targeted.headers, targeted.queries
         object.__setattr__(self, "reopened", reopened)
         object.__setattr__(self, "writes", writes)
         object.__setattr__(self, "headers", headers)
         object.__setattr__(self, "queries", queries)
-        object.__setattr__(self, "dotted", read_paths(self.call, sources))
+        object.__setattr__(self, "dotted", targeted.dotted)
         parameters = self.call.parameters
         object.__setattr__(
             self,

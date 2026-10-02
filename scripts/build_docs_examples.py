@@ -424,6 +424,31 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
+            example_id="python-client.uploads.helper",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "python",
+                blocks(
+                    CLIENT_PACKAGES / "uploads" / "pydantic_v2_BaseModel" / "client" / "protocols" / "_helpers.py",
+                    "    def start(",
+                    "    def resume(",
+                    limit=2,
+                ),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.uploads.diagnostics",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "text",
+                "\n".join(
+                    line.strip()
+                    for line in read_text(EXPECTED_CLIENT / "protocols" / "protocols-upload-checks.txt").splitlines()
+                    if line.lstrip().startswith("E_")
+                ),
+            ),
+        ),
+        DocsExample(
             example_id="python-client.streams.helper",
             path=DOCS / "python-client.md",
             render=lambda: fenced(

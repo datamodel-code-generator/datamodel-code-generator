@@ -19,6 +19,8 @@ python-client.polling.helper: python-client.md
 python-client.polling.handle: python-client.md
 python-client.polling.tracked: python-client.md
 python-client.polling.diagnostics: python-client.md
+python-client.uploads.helper: python-client.md
+python-client.uploads.diagnostics: python-client.md
 python-client.streams.helper: python-client.md
 python-client.streams.diagnostics: python-client.md
 python-client.streams.resume-yaml: python-client.md

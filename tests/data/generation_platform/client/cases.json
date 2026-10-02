@@ -2688,6 +2688,77 @@
     },
     "modules": false
   },
+  "uploads": {
+    "input": "uploads.yaml",
+    "references": [
+      "protocols/uploads.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/uploads.yaml"
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ]
+    ]
+  },
+  "uploads-plans": {
+    "input": "uploads.yaml",
+    "references": [
+      "protocols/uploads.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/uploads.yaml"
+    },
+    "backends": [
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
+  "protocols-upload-checks": {
+    "input": "upload-checks.yaml",
+    "references": [
+      "protocols/upload-checks.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/upload-checks.yaml"
+    },
+    "modules": false
+  },
+  "protocols-upload-errors": {
+    "input": "uploads.yaml",
+    "references": [
+      "protocols/upload-errors.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/upload-errors.yaml"
+    },
+    "modules": false
+  },
   "streams": {
     "input": "streams.yaml",
     "references": [
@@ -3867,5 +3938,17 @@
       }
     },
     "modules": false
+  },
+  "uploads-oauth": {
+    "input": "uploads-oauth.yaml",
+    "references": [
+      "protocols/uploads-oauth.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/uploads-oauth.yaml"
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ]
   }
 }

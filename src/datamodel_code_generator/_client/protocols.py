@@ -54,12 +54,14 @@ __all__ = (
     "HmacSignature",
     "ImmediateResult",
     "InlineResult",
+    "LengthCompletion",
     "Link",
     "LinkContinuation",
     "LiteralValue",
     "NextUrlContinuation",
     "NoResult",
     "NoSignature",
+    "OperationCompletion",
     "OperationResult",
     "PaginationHelper",
     "PollInterval",
@@ -67,6 +69,7 @@ __all__ = (
     "ProtocolConfiguration",
     "PublicKeySignature",
     "RemoteCancel",
+    "ResumableUploadHelper",
     "SignedLiteral",
     "Source",
     "SourceValue",
@@ -76,6 +79,10 @@ __all__ = (
     "StreamResume",
     "TimestampHeader",
     "Tree",
+    "UploadAbort",
+    "UploadAppend",
+    "UploadCreate",
+    "UploadProbe",
     "WebSocketHelper",
     "WebSocketMessage",
     "WebhookHelper",
@@ -105,7 +112,7 @@ KINDS: Final = (
     "batch",
     "queue",
 )
-_LATER: Final = frozenset({"resumable_upload", "batch", "queue"})
+_LATER: Final = frozenset({"batch", "queue"})
 _HMAC_SIGNATURES: Final = ("hmac-sha256", "hmac-sha512")
 _PUBLIC_KEY_SIGNATURES: Final = ("ed25519", "rsa-pss-sha256")
 _SIGNATURES: Final = (*_HMAC_SIGNATURES, *_PUBLIC_KEY_SIGNATURES)
@@ -542,8 +549,86 @@ class CacheHelper:
         object.__setattr__(self, "mutations", _frozen(self.mutations))
 
 
+@dataclass(frozen=True, slots=True, kw_only=True)
+class UploadCreate:
+    """The operation that starts an upload, where it writes the content's size, and what its response gives."""
+
+    operation: OperationSelector
+    size: RequestTarget | None = None
+    session_url: Selector | None = None
+    expires_at: Selector | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class UploadProbe:
+    """The operation that reads the server's offset of an upload."""
+
+    operation: OperationSelector
+    remote_offset: Selector
+    bindings: tuple[Binding, ...] = ()
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class UploadAppend:
+    """The operation that appends one chunk, and where it writes the chunk's offset and length."""
+
+    operation: OperationSelector
+    offset: RequestTarget
+    length: RequestTarget | None = None
+    bindings: tuple[Binding, ...] = ()
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class LengthCompletion:
+    """Complete an upload once the server holds every byte."""
+
+    kind: ClassVar[Literal["length"]] = "length"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class OperationCompletion:
+    """Complete an upload with an operation, whose response is the upload's result."""
+
+    kind: ClassVar[Literal["operation"]] = "operation"
+
+    operation: OperationSelector
+    result_schema: SchemaRef
+    bindings: tuple[Binding, ...] = ()
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class UploadAbort:
+    """The operation that aborts an upload remotely."""
+
+    operation: OperationSelector
+    bindings: tuple[Binding, ...] = ()
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ResumableUploadHelper:
+    """Upload content in chunks the server confirms, resuming from its confirmed offset."""
+
+    kind: ClassVar[Literal["resumable_upload"]] = "resumable_upload"
+
+    profile: Literal["offset", "parts"]
+    create: UploadCreate
+    probe: UploadProbe
+    append: UploadAppend
+    max_chunk_bytes: int
+    partial_commit: Literal["allowed", "forbidden"]
+    completion: LengthCompletion | OperationCompletion
+    abort: UploadAbort | None = None
+    enabled: bool = True
+
+
 HelperDefinition: TypeAlias = (
-    PaginationHelper | PollingHelper | StreamHelper | WebhookHelper | WebSocketHelper | CacheHelper
+    PaginationHelper
+    | PollingHelper
+    | StreamHelper
+    | WebhookHelper
+    | WebSocketHelper
+    | CacheHelper
+    | ResumableUploadHelper
 )
 
 
@@ -593,6 +678,13 @@ _RECORDS: Final = frozenset({
     WebSocketHelper,
     CacheMutation,
     CacheHelper,
+    UploadCreate,
+    UploadProbe,
+    UploadAppend,
+    LengthCompletion,
+    OperationCompletion,
+    UploadAbort,
+    ResumableUploadHelper,
     ProtocolConfiguration,
 })
 _ROLES: Final[Mapping[tuple[type, str], str]] = {
@@ -1175,6 +1267,8 @@ class _Validator:  # noqa: PLR0904
                 tree = self.websocket(value, at)
             case "cache":
                 tree = self.cache(value, at)
+            case "resumable_upload":
+                tree = self.upload(value, at, name)
             case _:
                 tree = self.stream(value, at, sse=kind == "sse")
         if tree is INVALID:
@@ -1314,6 +1408,67 @@ class _Validator:  # noqa: PLR0904
             "schema": (self.schema, REQUIRED),
         }
         return self.record(value, at, spec, "an immediate result")
+
+    def upload(self, value: Mapping[object, object], at: str, name: str) -> Tree | _Invalid:
+        """Convert a resumable upload helper of the offset profile; the parts profile is not supported yet."""
+        if value.get("profile") == "parts":
+            message = f"The parts profile of the resumable_upload helper {name!r} is not supported yet"
+            self.problems.append(_unsupported(f"{at}.profile", message))
+            return INVALID
+        return self.record(
+            value,
+            at,
+            {
+                "kind": (_keep, REQUIRED),
+                "enabled": (self.boolean, True),
+                "profile": (self.choice("offset"), REQUIRED),
+                "create": (self.upload_create, REQUIRED),
+                "probe": (self.upload_probe, REQUIRED),
+                "append": (self.upload_append, REQUIRED),
+                "max_chunk_bytes": (self.positive, REQUIRED),
+                "partial_commit": (self.choice("allowed", "forbidden"), REQUIRED),
+                "completion": (self.upload_completion, REQUIRED),
+                "abort": (self.remote_cancel, OMITTED),
+            },
+            "a helper definition",
+        )
+
+    def upload_create(self, value: object, at: str) -> object:
+        spec: Spec = {
+            "operation": (self.operation, REQUIRED),
+            "size": (self.target, OMITTED),
+            "session_url": (self.selector, OMITTED),
+            "expires_at": (self.selector, OMITTED),
+        }
+        return self.record(value, at, spec, "an upload create")
+
+    def upload_probe(self, value: object, at: str) -> object:
+        spec: Spec = {
+            "operation": (self.operation, REQUIRED),
+            "bindings": (self.bindings, ()),
+            "remote_offset": (self.selector, REQUIRED),
+        }
+        return self.record(value, at, spec, "an upload probe")
+
+    def upload_append(self, value: object, at: str) -> object:
+        spec: Spec = {
+            "operation": (self.operation, REQUIRED),
+            "bindings": (self.bindings, ()),
+            "offset": (self.target, REQUIRED),
+            "length": (self.target, OMITTED),
+        }
+        return self.record(value, at, spec, "an upload append")
+
+    def upload_completion(self, value: object, at: str) -> object:
+        variants: dict[str, Spec] = {
+            "length": {},
+            "operation": {
+                "operation": (self.operation, REQUIRED),
+                "bindings": (self.bindings, ()),
+                "result_schema": (self.schema, REQUIRED),
+            },
+        }
+        return self.tagged(value, at, "kind", variants, "a completion")
 
     def stream(self, value: object, at: str, *, sse: bool) -> Tree | _Invalid:
         """Convert an SSE or NDJSON helper, refusing raw and error events without a discriminator."""
@@ -1697,6 +1852,8 @@ def _links(kind: str, tree: Tree, at: str) -> Iterator[Link]:
             yield Link(at=f"{at}.operation", ref=tree["operation"])
             for name, mutation in tree["mutations"].items():
                 yield Link(at=f"{at}.mutations[{name!r}].operation", ref=mutation["operation"])
+        case "resumable_upload":
+            yield from _upload_links(tree, at)
         case "polling":
             yield Link(at=f"{at}.create", ref=tree["create"])
             yield Link(at=f"{at}.poll", ref=tree["poll"], targets=_targets(tree["bindings"], f"{at}.bindings"))
@@ -1714,3 +1871,27 @@ def _links(kind: str, tree: Tree, at: str) -> Iterator[Link]:
                 where = f"{at}.resume"
                 targets = ((f"{where}.write", resume["write"]), *_targets(resume["bindings"], f"{where}.bindings"))
                 yield Link(at=f"{where}.reopen_operation", ref=resume["reopen_operation"], targets=targets)
+
+
+def _upload_links(tree: Tree, at: str) -> Iterator[Link]:
+    """Yield the operations an upload helper sends, its create operation first, with the targets each one takes."""
+    create = tree["create"]
+    sized = ((f"{at}.create.size", create["size"]),) if "size" in create else ()
+    yield Link(at=f"{at}.create.operation", ref=create["operation"], targets=sized)
+    probe = tree["probe"]
+    yield Link(
+        at=f"{at}.probe.operation", ref=probe["operation"], targets=_targets(probe["bindings"], f"{at}.probe.bindings")
+    )
+    append = tree["append"]
+    written = tuple((f"{at}.append.{name}", append[name]) for name in ("offset", "length") if name in append)
+    yield Link(
+        at=f"{at}.append.operation",
+        ref=append["operation"],
+        targets=(*written, *_targets(append["bindings"], f"{at}.append.bindings")),
+    )
+    for name in ("completion", "abort"):
+        if (part := tree.get(name)) is not None and "operation" in part:
+            where = f"{at}.{name}"
+            yield Link(
+                at=f"{where}.operation", ref=part["operation"], targets=_targets(part["bindings"], f"{where}.bindings")
+            )

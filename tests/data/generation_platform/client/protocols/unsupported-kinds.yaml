@@ -1,5 +1,5 @@
 schema_version: 1
 helpers:
-  files.upload: {kind: resumable_upload}
+  files.upload: {kind: resumable_upload, profile: parts}
   users.bulk: {kind: batch}
   users.queue: {kind: queue}

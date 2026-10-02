@@ -49,6 +49,12 @@ _STREAM: Final = (
     ("max_reconnects", False, True, True),
     ("max_reconnect_wait", True, True, False),
 )
+_UPLOAD: Final = (
+    ("chunk_bytes", False, False, False),
+    ("max_parts", False, True, False),
+    ("parallelism", False, False, False),
+    ("max_uncertain_probes", False, False, True),
+)
 _WS: Final = (
     ("open_timeout", True, True, False),
     ("idle_timeout", True, True, False),
@@ -213,6 +219,23 @@ class StreamOptions:
         """Reject booleans as limits, a nonboolean reconnect switch, and every forbidden None or zero."""
         check_limits(self, _STREAM)
         _instance(self.reconnect, (bool, Unset), "reconnect")
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class UploadOptions:
+    """Upload limits; only max_parts takes None, and only max_uncertain_probes takes 0.
+
+    The offset profile always sends one chunk at a time, whatever the parallelism.
+    """
+
+    chunk_bytes: int | Unset = UNSET
+    max_parts: int | Unset | None = UNSET
+    parallelism: int | Unset = UNSET
+    max_uncertain_probes: int | Unset = UNSET
+
+    def __post_init__(self) -> None:
+        """Reject booleans, other types, and every forbidden None or zero."""
+        check_limits(self, _UPLOAD)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -385,13 +408,15 @@ class ProtocolDefaults:
     """Defaults of one helper, below its call arguments and above the kind's effective defaults."""
 
     session: SessionOptions | Unset = UNSET
-    options: PaginationOptions | PollOptions | StreamOptions | CacheOptions | WSOptions | Unset = UNSET
+    options: PaginationOptions | PollOptions | StreamOptions | CacheOptions | WSOptions | UploadOptions | Unset = UNSET
 
     def __post_init__(self) -> None:
         """Refuse values other than session options and one kind's options."""
         _instance(self.session, (SessionOptions, Unset), "session")
         _instance(
-            self.options, (PaginationOptions, PollOptions, StreamOptions, CacheOptions, WSOptions, Unset), "options"
+            self.options,
+            (PaginationOptions, PollOptions, StreamOptions, CacheOptions, WSOptions, UploadOptions, Unset),
+            "options",
         )
 
 
@@ -441,6 +466,7 @@ _KIND_OPTIONS: Final[Mapping[str, type]] = MappingProxyType({
     "polling": PollOptions,
     "sse": StreamOptions,
     "ndjson": StreamOptions,
+    "resumable_upload": UploadOptions,
     "cache": CacheOptions,
     "websocket": WSOptions,
 })
