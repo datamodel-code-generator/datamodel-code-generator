@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import gzip
+from contextlib import suppress
+from functools import partial
+from itertools import product
 from typing import TYPE_CHECKING, Any
 
 import httpx2
@@ -161,4 +164,145 @@ async def _async_parts_compression(harness: _Uploads, exchange: Exchange, lines:
                 f"async empty inherited={token is harness.options.UNSET} size={_field(result, 'size')} "
                 f"wire={wire.rows!r}"
             )
+        exchange.responders.clear()
+
+
+def parts_probe_compression(package: ModuleType, lines: list[str]) -> None:
+    """Admit only remaining saved-state body probes, preserving empty, inherited, and completed semantics."""
+    harness = _Uploads(package)
+    exchange = Exchange([])
+    tokens = (("explicit", "gzip"), ("inherited", harness.options.UNSET), ("off", None))
+    for content, mode, (label, token) in product((_PART_CONTENT, b""), ("uploading", "unknown", "complete"), tokens):
+        wire = _CodedParts()
+        source = _Counting(harness.source(content))
+        exchange.respond(*(wire for _ in range(60)))
+        with (
+            exchange.client() as native,
+            package.Client(http_client=native, options=harness.options.ClientOptions(compression="gzip")) as api,
+        ):
+            helper = api.protocols.files.parts_probe
+            with helper.start(
+                source,
+                tus_resumable=harness.tus,
+                upload_options=harness.uploads(parallelism=1),
+                options=harness.options.RequestOptions(compression=None),
+            ) as handle:
+                if mode == "uploading" and content:
+                    handle.advance()
+                elif mode == "unknown":
+                    wire.server.failure = "complete"
+                    with suppress(harness.errors.UploadDeliveryUnknownError):
+                        handle.run()
+                elif mode == "complete":
+                    handle.run()
+                state = handle.checkpoint()
+            wire.server.failure = None
+            reads, sends = source.opened, len(wire.rows)
+            prefix = f"sync {mode} empty={not content} {label}"
+            if mode == "complete" and label == "explicit":
+                record(
+                    lines,
+                    prefix,
+                    partial(helper.resume, source, state, options=harness.options.RequestOptions(compression=token)),
+                )
+                lines.append(f"{prefix} reads={source.opened - reads} sends={len(wire.rows) - sends}")
+            else:
+                with helper.resume(source, state, options=harness.options.RequestOptions(compression=token)) as resumed:
+                    result = resumed.run()
+                    before_repeat = len(wire.rows)
+                    resumed.run()
+                    lines.append(
+                        f"{prefix} size={_field(result, 'size')} sha256={_field(result, 'sha256')} "
+                        f"creates={wire.server.creates - 1} repeat={len(wire.rows) - before_repeat} "
+                        f"wire={wire.rows[sends:]!r}"
+                    )
+        exchange.responders.clear()
+    run(lambda: _async_probe_compression(harness, exchange, lines))
+    for content in (_PART_CONTENT, b""):
+        wire = _CodedParts()
+        source = _Counting(harness.source(content))
+        exchange.respond(*(wire for _ in range(4)))
+        with exchange.client() as native, package.Client(http_client=native) as api:
+            record(
+                lines,
+                f"sync start empty={not content}",
+                partial(
+                    api.protocols.files.parts_probe.start,
+                    source,
+                    tus_resumable=harness.tus,
+                    options=harness.options.RequestOptions(compression="gzip"),
+                ),
+            )
+            lines.append(f"sync start empty={not content} reads={source.opened} sends={len(wire.rows)}")
+        exchange.responders.clear()
+
+
+async def _async_probe_compression(harness: _Uploads, exchange: Exchange, lines: list[str]) -> None:
+    """Repeat each saved body-probe admission through asyncio source and helper entry points."""
+    tokens = (("explicit", "gzip"), ("inherited", harness.options.UNSET), ("off", None))
+    for content, mode, (label, token) in product((_PART_CONTENT, b""), ("uploading", "unknown", "complete"), tokens):
+        wire = _CodedParts()
+        source = _AsyncCounting(harness.protocols.AsyncBytesUploadSource.from_bytes(content))
+        exchange.respond(*(wire for _ in range(60)))
+        async with (
+            exchange.async_client() as native,
+            harness.package.AsyncClient(
+                http_client=native, options=harness.options.ClientOptions(compression="gzip")
+            ) as api,
+        ):
+            helper = api.protocols.files.parts_probe
+            async with await helper.start(
+                source,
+                tus_resumable=harness.tus,
+                upload_options=harness.uploads(parallelism=1),
+                options=harness.options.RequestOptions(compression=None),
+            ) as handle:
+                if mode == "uploading" and content:
+                    await handle.advance()
+                elif mode == "unknown":
+                    wire.server.failure = "complete"
+                    with suppress(harness.errors.UploadDeliveryUnknownError):
+                        await handle.run()
+                elif mode == "complete":
+                    await handle.run()
+                state = handle.checkpoint()
+            wire.server.failure = None
+            reads, sends = source.opened, len(wire.rows)
+            prefix = f"async {mode} empty={not content} {label}"
+            if mode == "complete" and label == "explicit":
+                await arecord(
+                    lines,
+                    prefix,
+                    partial(helper.resume, source, state, options=harness.options.RequestOptions(compression=token)),
+                )
+                lines.append(f"{prefix} reads={source.opened - reads} sends={len(wire.rows) - sends}")
+            else:
+                async with await helper.resume(
+                    source, state, options=harness.options.RequestOptions(compression=token)
+                ) as resumed:
+                    result = await resumed.run()
+                    before_repeat = len(wire.rows)
+                    await resumed.run()
+                    lines.append(
+                        f"{prefix} size={_field(result, 'size')} sha256={_field(result, 'sha256')} "
+                        f"creates={wire.server.creates - 1} repeat={len(wire.rows) - before_repeat} "
+                        f"wire={wire.rows[sends:]!r}"
+                    )
+        exchange.responders.clear()
+    for content in (_PART_CONTENT, b""):
+        wire = _CodedParts()
+        source = _AsyncCounting(harness.protocols.AsyncBytesUploadSource.from_bytes(content))
+        exchange.respond(*(wire for _ in range(4)))
+        async with exchange.async_client() as native, harness.package.AsyncClient(http_client=native) as api:
+            await arecord(
+                lines,
+                f"async start empty={not content}",
+                partial(
+                    api.protocols.files.parts_probe.start,
+                    source,
+                    tus_resumable=harness.tus,
+                    options=harness.options.RequestOptions(compression="gzip"),
+                ),
+            )
+            lines.append(f"async start empty={not content} reads={source.opened} sends={len(wire.rows)}")
         exchange.responders.clear()
