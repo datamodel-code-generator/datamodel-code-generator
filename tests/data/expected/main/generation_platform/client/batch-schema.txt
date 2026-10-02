@@ -1,0 +1,1961 @@
+# batch-schema
+render pydantic_v2.BaseModel
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/schema/__init__.py
+  write client/resources/schema/_sync.py
+  write client/resources/schema/_async.py
+  write client/types/__init__.py
+  write client/types/schema/__init__.py
+  write client/types/schema/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/protocols/_plans.py
+  write client/protocols/batches.py
+  write client/protocols/_helpers.py
+  write client/protocols/_async_helpers.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['schema.property_min', 'schema.root_min', 'schema.property_max', 'schema.root_max', 'schema.property_unique', 'schema.root_unique', 'schema.root_contains', 'schema.body_bound'] bindings 24
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper schema.property_min batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.property_min 1659757b2a08ae0bad475ac393cb25a632fe0cabe9a49131b3ce8f5152dfbbec
+  helper schema.root_min batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.root_min 73f86d107fa59e034302b7204c3d8389406265658c43621c451b25c49a94d6b7
+  helper schema.property_max batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.property_max f1bdbc2245511e75561f1014facdef30d8387b1529a11f63fac75e003b1163e1
+  helper schema.root_max batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.root_max 23b097fd2c131fa544ed2755aa20ffcc7334c20af9e3b38b3f2e985b3daa025e
+  helper schema.property_unique batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.property_unique 094e35caec1a2c514e0571bb4af5755245b15c63f4af586a24fde3d0319518c3
+  helper schema.root_unique batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.root_unique 1383987df9fce008779f46f1c51f0658f10a7a176b2f63d21491e4d460b6228f
+  helper schema.root_contains batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.root_contains b7d9754d39f52274b46880685f94a0cbfaa2391d17b63d00cb18d34b3cc9cb4f
+  helper schema.body_bound batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.body_bound 5686744b24ec13e610dce0b5c10747a914443e9d18ea9a8cdc5df375bbd5bd1b
+  {
+    "helpers": {
+      "schema.body_bound": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1body-bound/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": "/item-list"
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.property_max": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1property-max/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": "/item-list"
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.property_min": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1property-min/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": "/item-list"
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.property_unique": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1property-unique/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": "/item-list"
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.root_contains": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1root-contains/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.root_max": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1root-max/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.root_min": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1root-min/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.root_unique": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1root-unique/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 schema.property_min()
+    exports client.types.schema.PropertyMinResponse client.types.schema.PropertyMinErrorData client.types.schema.PropertyMinHTTPError
+    exports client.types.schema.PropertyMinRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 schema.root_min()
+    exports client.types.schema.RootMinResponse client.types.schema.RootMinErrorData client.types.schema.RootMinHTTPError
+    exports client.types.schema.RootMinRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/2 schema.property_max()
+    exports client.types.schema.PropertyMaxResponse client.types.schema.PropertyMaxErrorData client.types.schema.PropertyMaxHTTPError
+    exports client.types.schema.PropertyMaxRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/3 schema.root_max()
+    exports client.types.schema.RootMaxResponse client.types.schema.RootMaxErrorData client.types.schema.RootMaxHTTPError
+    exports client.types.schema.RootMaxRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/4 schema.property_unique()
+    exports client.types.schema.PropertyUniqueResponse client.types.schema.PropertyUniqueErrorData client.types.schema.PropertyUniqueHTTPError
+    exports client.types.schema.PropertyUniqueRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/5 schema.root_unique()
+    exports client.types.schema.RootUniqueResponse client.types.schema.RootUniqueErrorData client.types.schema.RootUniqueHTTPError
+    exports client.types.schema.RootUniqueRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/6 schema.root_contains()
+    exports client.types.schema.RootContainsResponse client.types.schema.RootContainsErrorData client.types.schema.RootContainsHTTPError
+    exports client.types.schema.RootContainsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/7 schema.body_bound()
+    exports client.types.schema.BodyBoundResponse client.types.schema.BodyBoundErrorData client.types.schema.BodyBoundHTTPError
+    exports client.types.schema.BodyBoundRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+render pydantic_v2.dataclass
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/schema/__init__.py
+  write client/resources/schema/_sync.py
+  write client/resources/schema/_async.py
+  write client/types/__init__.py
+  write client/types/schema/__init__.py
+  write client/types/schema/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/protocols/_plans.py
+  write client/protocols/batches.py
+  write client/protocols/_helpers.py
+  write client/protocols/_async_helpers.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['schema.property_min', 'schema.root_min', 'schema.property_max', 'schema.root_max', 'schema.property_unique', 'schema.root_unique', 'schema.root_contains', 'schema.body_bound'] bindings 24
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper schema.property_min batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.property_min 006148ca37eb68cd40c0d8299ee60e2bdfac04d2487d48e8b151232f3fb94c17
+  helper schema.root_min batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.root_min 88434f8393e6cdc5e7d401f7a7f7f15d9f7f49165ffd5c8feb3d8b0a9e9481ba
+  helper schema.property_max batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.property_max a8e86693d8dfe433abf0decf115aca906fa03a085a910a629a8defc185a6b52b
+  helper schema.root_max batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.root_max 4011872302745ec892c9842175ddb8c2a166f837ab2f874afa3519d9f7d87e52
+  helper schema.property_unique batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.property_unique 4bbc54f7405f4d99547ba487526a5cd017c96562560ea696dbb06fd5100cce15
+  helper schema.root_unique batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.root_unique 43b7494bc1a757bd7857907f04c7b6ccc7d14e8c0e36c53bdb2d00422e6114a1
+  helper schema.root_contains batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.root_contains f796d74beeab2dd88482b54627f06201165cabf3c1f9f1bb21d16cabc9663a8a
+  helper schema.body_bound batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.body_bound 481389e804f7b334b8317488539054dbbd404a4f7a54801c26baa14193f72dad
+  {
+    "helpers": {
+      "schema.body_bound": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1body-bound/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": "/item-list"
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.property_max": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1property-max/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": "/item-list"
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.property_min": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1property-min/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": "/item-list"
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.property_unique": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1property-unique/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": "/item-list"
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.root_contains": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1root-contains/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.root_max": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1root-max/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.root_min": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1root-min/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.root_unique": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1root-unique/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 schema.property_min()
+    exports client.types.schema.PropertyMinResponse client.types.schema.PropertyMinErrorData client.types.schema.PropertyMinHTTPError
+    exports client.types.schema.PropertyMinRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 schema.root_min()
+    exports client.types.schema.RootMinResponse client.types.schema.RootMinErrorData client.types.schema.RootMinHTTPError
+    exports client.types.schema.RootMinRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/2 schema.property_max()
+    exports client.types.schema.PropertyMaxResponse client.types.schema.PropertyMaxErrorData client.types.schema.PropertyMaxHTTPError
+    exports client.types.schema.PropertyMaxRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/3 schema.root_max()
+    exports client.types.schema.RootMaxResponse client.types.schema.RootMaxErrorData client.types.schema.RootMaxHTTPError
+    exports client.types.schema.RootMaxRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/4 schema.property_unique()
+    exports client.types.schema.PropertyUniqueResponse client.types.schema.PropertyUniqueErrorData client.types.schema.PropertyUniqueHTTPError
+    exports client.types.schema.PropertyUniqueRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/5 schema.root_unique()
+    exports client.types.schema.RootUniqueResponse client.types.schema.RootUniqueErrorData client.types.schema.RootUniqueHTTPError
+    exports client.types.schema.RootUniqueRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/6 schema.root_contains()
+    exports client.types.schema.RootContainsResponse client.types.schema.RootContainsErrorData client.types.schema.RootContainsHTTPError
+    exports client.types.schema.RootContainsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/7 schema.body_bound()
+    exports client.types.schema.BodyBoundResponse client.types.schema.BodyBoundErrorData client.types.schema.BodyBoundHTTPError
+    exports client.types.schema.BodyBoundRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+render dataclasses.dataclass
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/schema/__init__.py
+  write client/resources/schema/_sync.py
+  write client/resources/schema/_async.py
+  write client/types/__init__.py
+  write client/types/schema/__init__.py
+  write client/types/schema/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/protocols/_plans.py
+  write client/protocols/batches.py
+  write client/protocols/_helpers.py
+  write client/protocols/_async_helpers.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['schema.property_min', 'schema.root_min', 'schema.property_max', 'schema.root_max', 'schema.property_unique', 'schema.root_unique', 'schema.root_contains', 'schema.body_bound'] bindings 24
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper schema.property_min batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.property_min 46677f2b4ebff1def75dffd7e997253840e08fdb7f7a3c8d4e37797d7cb4ef9e
+  helper schema.root_min batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.root_min 188f0c8d13b8894734e04b440e7f61552e38676dd9af1d06f5d7f367611b086d
+  helper schema.property_max batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.property_max f7c56e5b3b88979c5473dd5cd4cec1f531be7f03d76fa96592a1036537ca6ba1
+  helper schema.root_max batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.root_max 5e42b26fbf0d03565cbe97ac9a47c8be2c87deb8f592fd65c0f8bfb7da0e7015
+  helper schema.property_unique batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.property_unique c2a8b574bc8145edfdc32889f9a9a895ff1ae830643bc8e354ca51c300183f61
+  helper schema.root_unique batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.root_unique 2b57650584d3630cf34347d82c7d1a550125999b26f2017b2f37acd536b7f62a
+  helper schema.root_contains batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.root_contains cb4e0302aca8e8065fc9e92c9a93d6fc2bb473586ea6a46a8d45f32658099ea1
+  helper schema.body_bound batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.body_bound 0da19a38de180fd02ce8d495a16ceb178caa3e64eb0336b7bf13d0958749e847
+  {
+    "helpers": {
+      "schema.body_bound": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1body-bound/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": "/item-list"
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.property_max": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1property-max/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": "/item-list"
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.property_min": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1property-min/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": "/item-list"
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.property_unique": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1property-unique/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": "/item-list"
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.root_contains": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1root-contains/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.root_max": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1root-max/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.root_min": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1root-min/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.root_unique": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1root-unique/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 schema.property_min()
+    exports client.types.schema.PropertyMinResponse client.types.schema.PropertyMinErrorData client.types.schema.PropertyMinHTTPError
+    exports client.types.schema.PropertyMinRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 schema.root_min()
+    exports client.types.schema.RootMinResponse client.types.schema.RootMinErrorData client.types.schema.RootMinHTTPError
+    exports client.types.schema.RootMinRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/2 schema.property_max()
+    exports client.types.schema.PropertyMaxResponse client.types.schema.PropertyMaxErrorData client.types.schema.PropertyMaxHTTPError
+    exports client.types.schema.PropertyMaxRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/3 schema.root_max()
+    exports client.types.schema.RootMaxResponse client.types.schema.RootMaxErrorData client.types.schema.RootMaxHTTPError
+    exports client.types.schema.RootMaxRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/4 schema.property_unique()
+    exports client.types.schema.PropertyUniqueResponse client.types.schema.PropertyUniqueErrorData client.types.schema.PropertyUniqueHTTPError
+    exports client.types.schema.PropertyUniqueRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/5 schema.root_unique()
+    exports client.types.schema.RootUniqueResponse client.types.schema.RootUniqueErrorData client.types.schema.RootUniqueHTTPError
+    exports client.types.schema.RootUniqueRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/6 schema.root_contains()
+    exports client.types.schema.RootContainsResponse client.types.schema.RootContainsErrorData client.types.schema.RootContainsHTTPError
+    exports client.types.schema.RootContainsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/7 schema.body_bound()
+    exports client.types.schema.BodyBoundResponse client.types.schema.BodyBoundErrorData client.types.schema.BodyBoundHTTPError
+    exports client.types.schema.BodyBoundRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
+render typing.TypedDict
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/schema/__init__.py
+  write client/resources/schema/_sync.py
+  write client/resources/schema/_async.py
+  write client/types/__init__.py
+  write client/types/schema/__init__.py
+  write client/types/schema/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/protocols/_plans.py
+  write client/protocols/batches.py
+  write client/protocols/_helpers.py
+  write client/protocols/_async_helpers.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['schema.property_min', 'schema.root_min', 'schema.property_max', 'schema.root_max', 'schema.property_unique', 'schema.root_unique', 'schema.root_contains', 'schema.body_bound'] bindings 24
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper schema.property_min batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.property_min eb3c122f8b727c2a27058be752a66928725209419e4c6ea4e03bb8260d3cc6d5
+  helper schema.root_min batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.root_min 74de5a52fbcb75280ba903b0b425705b9d9368dfbf456aa3cbe22b71e83a6c5b
+  helper schema.property_max batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.property_max 140a4f3238b51f53d0f419a0fee3013e631c49150041d849fbb7fdeada586186
+  helper schema.root_max batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.root_max 1bffa3f5cd36dc31bfbea4e0ac9c03f845b724ccda4e9f56b9e6f88a090ba307
+  helper schema.property_unique batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.property_unique 3c96a5c4dbac9a86165d68eb362063a5c4c0fb4b66ddeb4f2e0b254af02205c8
+  helper schema.root_unique batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.root_unique f1e4a8aa12eff6a1b39e367d5a664b23a267d4aff81e58da1fa0daf981c4f942
+  helper schema.root_contains batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.root_contains 20f3dbd5b0613bcd808c6ec4bb49a4984e19cd35df3f50916866f274611272f9
+  helper schema.body_bound batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.body_bound 76fefcaa89795298689ffb6545e550c2d392f099e3a26b1a77930e72b46b3d5e
+  {
+    "helpers": {
+      "schema.body_bound": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1body-bound/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": "/item-list"
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.property_max": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1property-max/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": "/item-list"
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.property_min": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1property-min/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": "/item-list"
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.property_unique": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1property-unique/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": "/item-list"
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.root_contains": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1root-contains/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.root_max": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1root-max/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.root_min": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1root-min/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.root_unique": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1root-unique/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 schema.property_min()
+    exports client.types.schema.PropertyMinResponse client.types.schema.PropertyMinErrorData client.types.schema.PropertyMinHTTPError
+    exports client.types.schema.PropertyMinRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 schema.root_min()
+    exports client.types.schema.RootMinResponse client.types.schema.RootMinErrorData client.types.schema.RootMinHTTPError
+    exports client.types.schema.RootMinRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/2 schema.property_max()
+    exports client.types.schema.PropertyMaxResponse client.types.schema.PropertyMaxErrorData client.types.schema.PropertyMaxHTTPError
+    exports client.types.schema.PropertyMaxRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/3 schema.root_max()
+    exports client.types.schema.RootMaxResponse client.types.schema.RootMaxErrorData client.types.schema.RootMaxHTTPError
+    exports client.types.schema.RootMaxRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/4 schema.property_unique()
+    exports client.types.schema.PropertyUniqueResponse client.types.schema.PropertyUniqueErrorData client.types.schema.PropertyUniqueHTTPError
+    exports client.types.schema.PropertyUniqueRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/5 schema.root_unique()
+    exports client.types.schema.RootUniqueResponse client.types.schema.RootUniqueErrorData client.types.schema.RootUniqueHTTPError
+    exports client.types.schema.RootUniqueRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/6 schema.root_contains()
+    exports client.types.schema.RootContainsResponse client.types.schema.RootContainsErrorData client.types.schema.RootContainsHTTPError
+    exports client.types.schema.RootContainsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/7 schema.body_bound()
+    exports client.types.schema.BodyBoundResponse client.types.schema.BodyBoundErrorData client.types.schema.BodyBoundHTTPError
+    exports client.types.schema.BodyBoundRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
+render msgspec.Struct
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/schema/__init__.py
+  write client/resources/schema/_sync.py
+  write client/resources/schema/_async.py
+  write client/types/__init__.py
+  write client/types/schema/__init__.py
+  write client/types/schema/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/protocols/_plans.py
+  write client/protocols/batches.py
+  write client/protocols/_helpers.py
+  write client/protocols/_async_helpers.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['schema.property_min', 'schema.root_min', 'schema.property_max', 'schema.root_max', 'schema.property_unique', 'schema.root_unique', 'schema.root_contains', 'schema.body_bound'] bindings 24
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper schema.property_min batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.property_min 16e19eb860a9489f8c5006ac3c6df694ef2d3571a32b745c0edbab82db3aee55
+  helper schema.root_min batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.root_min e34cfabbd683507a3458e47d66d83e7143ca3aef88361eb2c8f6e9173b870502
+  helper schema.property_max batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.property_max 879936cb1411287d8f6d9bf3134158116b2a52a79a3acf977e495d4b92a2243e
+  helper schema.root_max batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.root_max df5ef4610fb0dd96cb1170a52667ff588dbf9219f91ae5cedcc84b33dd5e4d2e
+  helper schema.property_unique batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.property_unique 8b4490cab8dbf2b3c49a27fabd0c38b18b6456fd10c5c48846617f36d43ebf5b
+  helper schema.root_unique batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.root_unique e4a9d6b1c010f336d317f4a8f2f8a2aca67276cc62c675c7b2241f8157473034
+  helper schema.root_contains batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.root_contains 1f98de2a8e8dcb2578c9d0f712505f8126c50354b4d278385fc458cd7417e913
+  helper schema.body_bound batch enabled True /inputs/target_config/protocol_metadata/helpers/schema.body_bound fc03e6d3f457081975ce27039ab0d7267f109ebdf5ae3eacf96b392292259bb9
+  {
+    "helpers": {
+      "schema.body_bound": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1body-bound/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": "/item-list"
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.property_max": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1property-max/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": "/item-list"
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.property_min": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1property-min/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": "/item-list"
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.property_unique": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1property-unique/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": "/item-list"
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.root_contains": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1root-contains/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.root_max": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1root-max/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.root_min": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1root-min/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      },
+      "schema.root_unique": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Item"
+        },
+        "kind": "batch",
+        "max_items": 10,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1root-unique/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/value",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Success"
+          }
+        }
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 schema.property_min()
+    exports client.types.schema.PropertyMinResponse client.types.schema.PropertyMinErrorData client.types.schema.PropertyMinHTTPError
+    exports client.types.schema.PropertyMinRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 schema.root_min()
+    exports client.types.schema.RootMinResponse client.types.schema.RootMinErrorData client.types.schema.RootMinHTTPError
+    exports client.types.schema.RootMinRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/2 schema.property_max()
+    exports client.types.schema.PropertyMaxResponse client.types.schema.PropertyMaxErrorData client.types.schema.PropertyMaxHTTPError
+    exports client.types.schema.PropertyMaxRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/3 schema.root_max()
+    exports client.types.schema.RootMaxResponse client.types.schema.RootMaxErrorData client.types.schema.RootMaxHTTPError
+    exports client.types.schema.RootMaxRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/4 schema.property_unique()
+    exports client.types.schema.PropertyUniqueResponse client.types.schema.PropertyUniqueErrorData client.types.schema.PropertyUniqueHTTPError
+    exports client.types.schema.PropertyUniqueRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/5 schema.root_unique()
+    exports client.types.schema.RootUniqueResponse client.types.schema.RootUniqueErrorData client.types.schema.RootUniqueHTTPError
+    exports client.types.schema.RootUniqueRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/6 schema.root_contains()
+    exports client.types.schema.RootContainsResponse client.types.schema.RootContainsErrorData client.types.schema.RootContainsHTTPError
+    exports client.types.schema.RootContainsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/7 schema.body_bound()
+    exports client.types.schema.BodyBoundResponse client.types.schema.BodyBoundErrorData client.types.schema.BodyBoundHTTPError
+    exports client.types.schema.BodyBoundRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'msgspec>=0.18']
