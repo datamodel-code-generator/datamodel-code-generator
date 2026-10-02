@@ -24,17 +24,10 @@ from ..client.errors import (
 )
 from ..client.urls import request_origin
 from ..model_codecs.unset import Unset
+from .circuit_records import CircuitKey, CircuitOutcome, CircuitPermit, CircuitSnapshot, CircuitState
 from .errors import CircuitOpenError
-from .options import (
-    CircuitKey,
-    CircuitOutcome,
-    CircuitPermit,
-    CircuitSnapshot,
-    CircuitState,
-    Origin,
-    ProtocolSecurityContext,
-    ResolvedCircuitBreakerOptions,
-)
+from .options import ProtocolSecurityContext, ResolvedCircuitBreakerOptions
+from .origins import Origin
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
@@ -109,16 +102,14 @@ class _Circuits:
             circuit = self._circuits.setdefault(key, _Circuit())
             circuit.options = options
             probe = circuit.state != "closed"
-            if circuit.state == "open":
+            if circuit.state == "open" or circuit.probe is not None:
                 assert circuit.retry_at is not None
                 if now < circuit.retry_at:
                     raise CircuitOpenError(key=key, retry_at=circuit.retry_at)
                 circuit.move("half_open")
-            elif circuit.probe is not None:
-                raise CircuitOpenError(key=key, retry_at=now)
             permit_id = str(next(self._ids))
             if probe:
-                circuit.probe = permit_id
+                circuit.probe, circuit.retry_at = permit_id, now + options.cooldown
             return CircuitPermit(key=key, generation=circuit.generation, probe=probe, permit_id=permit_id)
 
     def record(self, permit: CircuitPermit, result: CircuitOutcome, now: float) -> None:
@@ -130,7 +121,7 @@ class _Circuits:
             if permit.probe:
                 if circuit.probe != permit.permit_id:
                     return
-                circuit.probe = None
+                circuit.probe = circuit.retry_at = None
             if result == "success":
                 circuit.failures = 0
                 if permit.probe:
@@ -161,8 +152,9 @@ class MemoryCircuitStore:
     """Keep the circuits of one client in this process; a store passed to several clients shares their circuits.
 
     Each operation is atomic under one lock. A circuit opens after the threshold of consecutive failures, admits one
-    probe once its cooldown passed, and closes when that probe succeeds; every transition and reset advances its
-    generation, so outcomes of calls admitted before it are ignored.
+    probe once its cooldown passed, and closes when that probe succeeds; a probe that records no outcome within another
+    cooldown is replaced by the next call. Every transition and reset advances its generation, so outcomes of calls
+    admitted before it are ignored.
     """
 
     __slots__ = ("_circuits",)

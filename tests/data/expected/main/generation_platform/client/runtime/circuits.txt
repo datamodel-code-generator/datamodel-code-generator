@@ -25,6 +25,9 @@
   value store error = CircuitStoreError: CircuitStoreError(action='admit') [] circuit_store_error
   open error fields backend 2.5 None
   store repeated probe half_open failures=1 retry_at=None generation=2
+  store probe running ! CircuitOpenError: CircuitOpenError(group='backend') [] circuit_open_error
+  store probe replaced 3 half_open failures=1 retry_at=4.0 generation=3
+  store replaced probe closed closed failures=0 retry_at=None generation=4
   store admit key ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('key',), condition='invalid_value'] protocol_configuration_error
   store record permit ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('permit',), condition='invalid_value'] protocol_configuration_error
   store reset key ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('key',), condition='invalid_value'] protocol_configuration_error

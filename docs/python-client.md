@@ -3076,10 +3076,10 @@ A streaming call completes when its response is handed over; a later read failur
 |---|---|---|
 | Closed | Every call | A success resets the consecutive failures to 0; reaching `failure_threshold` opens the circuit for `cooldown` seconds |
 | Open | `CircuitOpenError` until the cooldown ends, then one probe | The first call after the cooldown becomes the probe and the circuit half-open |
-| Half-open | `CircuitOpenError` while the probe runs | A successful probe closes the circuit; a failed probe reopens it for another cooldown; a neutral or cancelled probe frees the slot for the next call |
+| Half-open | `CircuitOpenError` while the probe runs, for at most one more cooldown | A successful probe closes the circuit; a failed probe reopens it for another cooldown; a neutral or cancelled probe frees the slot for the next call, and so does a probe that records nothing within the cooldown |
 
 `CircuitOpenError` keeps the circuit's `key` and `retry_at`, the monotonic time of its next admission; while a probe
-runs, `retry_at` is the time of the refusal. The refused call consumes no send, attempt, token exchange, or limiter
+runs, `retry_at` is the end of that probe's cooldown. The refused call consumes no send, attempt, token exchange, or limiter
 permit, and is never retried. Every transition and reset advances the circuit's generation, and an outcome of a call
 admitted in an earlier generation is ignored, so a call admitted before the circuit opened cannot close it.
 

@@ -282,6 +282,13 @@ def _values(harness: _Harness, lines: list[str]) -> None:
     probed.record(probe, "neutral", now=1.0)
     probed.record(probe, "success", now=1.0)
     lines.append(f"  store repeated probe {_snapshot(probed.snapshot(harness.key()))}")
+    abandoned = probed.admit(harness.key(), now=2.0, options=once)
+    record(lines, "store probe running", lambda: probed.admit(harness.key(), now=2.5, options=once))
+    replaced = probed.admit(harness.key(), now=3.0, options=once)
+    probed.record(abandoned, "failure", now=3.0)
+    lines.append(f"  store probe replaced {replaced.generation} {_snapshot(probed.snapshot(harness.key()))}")
+    probed.record(replaced, "success", now=3.0)
+    lines.append(f"  store replaced probe closed {_snapshot(probed.snapshot(harness.key()))}")
     for label, build in (
         ("store admit key", lambda: store.admit("k", now=0.0, options=breaker().resolved())),
         ("store record permit", lambda: store.record("p", "failure", now=0.0)),

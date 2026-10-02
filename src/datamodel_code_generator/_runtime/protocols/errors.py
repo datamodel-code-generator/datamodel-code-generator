@@ -29,7 +29,7 @@ from ..client.errors import (
 from ..client.responses import HeadersView, ResponseInfo
 from ..model_codecs.unset import UNSET, Unset
 from .caches import string_tuple
-from .options import CircuitKey
+from .circuit_records import CircuitKey
 from .records import (
     PROGRESS_KEYS,
     PollSnapshot,
