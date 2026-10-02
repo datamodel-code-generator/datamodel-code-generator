@@ -4323,9 +4323,11 @@ or auth raises `QueueBindingError` and is never migrated. A drain ends when noth
 its session has no time or sends left, and returns a `DrainReport` of entry IDs: `succeeded`, `rescheduled`, `dead`,
 `unknown`, `deferred`, and `cancelled`. An entry is delivered at most once per drain.
 
-A claim leases its entries. When a lease expires, an unsent entry returns to pending; an entry with saved send intent
-becomes `delivery_unknown` and is never sent again automatically. Only explicit `retry_unknown` can redeliver it with
-the same key within its expiry. `cancel` ends a pending entry at once, cancelled, or of unknown delivery when a crash
+A claim leases its entries. Outcome-free crash leases without cancellation return to pending when expired, keeping
+the request, key, creation time, delivery count and send intent. The next explicit drain redelivers within TTL and
+delivery limits, providing bounded at-least-once delivery through trusted server deduplication. The SDK does not
+guarantee exactly-once effects. Recorded success and terminal unknown never recover automatically; unknown requires
+explicit `retry_unknown`. `cancel` ends a pending entry at once, cancelled, or of unknown delivery when a crash
 may have sent it, and asks the drain holding a leased one to end it at its next boundary. `purge_terminal(before)`
 removes the ended entries created before an instant and returns them.
 """

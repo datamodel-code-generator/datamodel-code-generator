@@ -16,7 +16,7 @@ PLAN_0: Final[QueuePlan] = QueuePlan(
             alias='create_order',
             operation=OperationRef(pointer='/paths/~1orders/post'),
             call=_operations.OPERATION_0,
-            fingerprint='ab6ab953b6bcd05fc0137255494972db6530188214324cd0debe1f0cd572957f',
+            fingerprint='4d0c3bc4b537c3e6d25e902f6ff8736b8d286c948233fee3ab21a7e7b7f14c91',
             dedupe_ttl=3600.0,
         ),
         QueuedPlan(
@@ -42,7 +42,7 @@ PLAN_1: Final[QueuePlan] = QueuePlan(
             alias='rename',
             operation=OperationRef(pointer='/paths/~1account/patch'),
             call=_operations.OPERATION_5,
-            fingerprint='742d5405e83e163fac342e7e175e30abb72a7325158b7901911fe7440056e63b',
+            fingerprint='3dcb7234aeee548e943d2261d6873a957a224bfeb2d4082d3b2f6a0c3573a6ff',
             dedupe_ttl=600.0,
         ),
     ),
