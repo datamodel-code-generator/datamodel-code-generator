@@ -66,8 +66,9 @@ class SQLiteWorker:
         with self._lock:
             self._pending -= 1
             admitted = self._admit()
+            cancelled = job.cancelled
         self._callbacks(admitted)
-        return self._connection.run(job.operation)
+        return None if cancelled else self._connection.run(job.operation)
 
     def _admit(self) -> list[_Job]:
         admitted: list[_Job] = []
@@ -86,15 +87,9 @@ class SQLiteWorker:
         for job in jobs:
             job.settlement.add_done_callback(partial(self._settled, job))
 
-    def _settled(self, job: _Job, settlement: Future[object]) -> None:
-        admitted: list[_Job] = []
-        with self._lock:
-            if settlement.cancelled():
-                self._pending -= 1
-                admitted = self._admit()
-        self._callbacks(admitted)
-        if not settlement.cancelled():
-            _notify(job.loop, lambda: _completion(job.notification, settlement))
+    @staticmethod
+    def _settled(job: _Job, settlement: Future[object]) -> None:
+        _notify(job.loop, lambda: _completion(job.notification, settlement))
 
     async def run(self, operation: Callable[[sqlite3.Connection], T]) -> T:
         """Await a FIFO job; cancellation skips pending work and leaves started work to settle independently."""
@@ -111,8 +106,6 @@ class SQLiteWorker:
         except asyncio.CancelledError:
             with self._lock:
                 job.cancelled = True
-                settlement = job.settlement
-            settlement.cancel()
             raise
 
     @staticmethod

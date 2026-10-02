@@ -421,7 +421,7 @@ async def _worker(protocols: ModuleType, entry: Any, root: Path, lines: list[str
         refused = [index for index, outcome in enumerate(outcomes) if outcome.startswith("QueueStoreError")]
         lines.extend((
             (
-                f"worker bounded {len(saved) in {64, 65}} rejected={len(refused) in {2, 3}} "
+                f"worker bounded {len(saved) in {63, 64}} rejected={len(refused) in {3, 4}} "
                 f"cancellation-excluded={30 not in saved}"
             ),
             f"worker retained-close {await _error(store, 'get', 'missing')}",
