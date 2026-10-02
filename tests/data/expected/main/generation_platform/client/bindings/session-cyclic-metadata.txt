@@ -1,0 +1,3 @@
+# session-cyclic-metadata
+render pydantic_v2.BaseModel default
+  diagnostic BindingCaptureError: Binding capture freeze failed

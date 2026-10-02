@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import io
 import json
+import os
 import tempfile
 import threading
 from datetime import datetime, timezone
@@ -309,6 +310,7 @@ def uploads(package: ModuleType, lines: list[str]) -> None:
             section(harness, api, server, exchange, lines)
             _drained(exchange, lines)
     run(lambda: _async_uploads(harness, server, lines))
+    run(lambda: _fifo_ranges(harness, lines))
 
 
 def _drained(exchange: Exchange, lines: list[str]) -> None:
@@ -1079,6 +1081,35 @@ async def _async_uploads(harness: _Uploads, server: _Server, lines: list[str]) -
                 lines.append(f"  hash a missing file ! {type(error).__name__}")
         lines.append(f"  async ranges: {await _async_ranges(content)}")
         _drained(exchange, lines)
+
+
+async def _fifo_ranges(harness: _Uploads, lines: list[str]) -> None:
+    """Refuse ranges after FIFO replacement without a writer; use a changed file where FIFOs are unsupported."""
+    lines.append("file ranges after FIFO replacement (where supported)")
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory, "content.bin")
+        await asyncio.to_thread(path.write_bytes, _CONTENT)
+        source = harness.protocols.FileUploadSource.from_path(path)
+
+        def opened() -> bytes:
+            with source.open_range(2, 3) as synchronous:
+                return synchronous.read(3)
+
+        async with (
+            await harness.protocols.AsyncFileUploadSource.from_path(path) as asynchronous,
+            asynchronous.open_range(2, 3) as reader,
+        ):
+            if mkfifo := getattr(os, "mkfifo", None):
+                await asyncio.to_thread(path.unlink)
+                await asyncio.to_thread(mkfifo, path)
+            else:
+                await asyncio.to_thread(path.write_bytes, _CONTENT + b"!")
+            step(lines, "sync open_range", opened)
+            await astep(lines, "async open_range", lambda: _async_ranges(asynchronous))
+            lines.append(f"  existing async range {await reader.read(3)!r}")
+            await reader.aclose()
+            lines.append(f"  existing async range after close {await reader.read(1)!r}")
+        lines.append("  async source closed")
 
 
 async def _async_ranges(source: Any) -> str:

@@ -1652,11 +1652,159 @@ options, then the helper's `ProtocolDefaults` in `ProtocolClientOptions.defaults
 | `SessionOptions.total_timeout` | None | No session deadline |
 | `SessionOptions.deadline` | None | No deadline |
 | `SessionOptions.max_network_sends` | 16 sends | Removes the limit |
+| `StreamOptions.reconnect` | False | Not allowed |
+| `StreamOptions.max_reconnects` | 5 reconnections, counted across resumes; 0 allows none | Removes the limit |
+| `StreamOptions.max_reconnect_wait` | 60 seconds | No wait limit |
 
 A line or event over its limit raises `ProtocolSizeError` with the kind `line` or `event` before it is kept, and a
-session without a send slot raises `SessionLimitError` without sending. Streams never reconnect yet, so
-`StreamOptions(reconnect=True)` raises `ProtocolConfigurationError` with the condition `missing_metadata`, and
-`max_reconnects` and `max_reconnect_wait` have no effect. Options of another type raise `ProtocolConfigurationError`.
+session without a send slot raises `SessionLimitError` without sending. Only a helper that declares `resume` reconnects:
+for any other, `StreamOptions(reconnect=True)` raises `ProtocolConfigurationError` with the condition
+`missing_metadata`. Options of another type raise `ProtocolConfigurationError`.
+
+### Checkpoints, resume, and reconnection
+
+A helper whose metadata enables `resume` names the cursor of its events, `cursor: event_id` for the SSE event ID or a
+`{from: body, pointer}` selector for a value in each event's JSON data, the request target its reopen writes it to, the
+`reopen_operation`, and `delivery: at_least_once`. A body cursor also says what a missing value does, `missing:
+inherit` keeping the cursor before or `error`, and what null does, `null: clear` or `error`. `bindings` write values
+into the reopen request, read from the open response for `initial` or the latest open or reopen response for
+`previous`, and `expires_at` reads the server's expiry from a header of the open response:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.streams.resume-yaml -->
+<!-- fmt: off -->
+
+```yaml
+schema_version: 1
+helpers:
+  events.live:
+    kind: sse
+    operation: /paths/~1events/get
+    media: text/event-stream
+    event_schema: {pointer: /components/schemas/Message}
+    completion: {kind: eof}
+    resume:
+      enabled: true
+      cursor: event_id
+      write: {in: header, name: Last-Event-ID}
+      reopen_operation: /paths/~1events/get
+      delivery: at_least_once
+  events.tracked:
+    kind: sse
+    operation: /paths/~1events/get
+    media: text/event-stream
+    event_schema:
+      discriminator: {from: event_type}
+      mapping:
+        created: {pointer: /components/schemas/Created}
+    unknown: raw
+    error_events:
+      error: {pointer: /components/schemas/StreamError}
+    completion: {kind: event_type, value: done}
+    resume:
+      enabled: true
+      cursor: event_id
+      write: {in: header, name: Last-Event-ID}
+      reopen_operation: /paths/~1streams~1{streamId}/get
+      delivery: at_least_once
+      bindings:
+        - {target: {in: path, name: streamId}, value: {source: initial, selector: {from: header, name: X-Stream-Id}}}
+        - {target: {in: query, name: token}, value: {source: previous, selector: {from: header, name: X-Resume-Token}}}
+        - {target: {in: query, name: mode}, value: {literal: resume}}
+      reconnect_on: [transport_interruption, incomplete_eof]
+      expires_at: {from: header, name: X-Stream-Expires}
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.streams.resume-yaml -->
+
+The helper then also has `resume`, which takes a `ResumeState` and the options `open` takes; the asyncio one is awaited
+once and returns the stream:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.streams.resume -->
+<!-- fmt: off -->
+
+```python
+    def resume(
+        self,
+        state: ResumeState,
+        *,
+        stream_options: StreamOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> EventStream[_dcg_type_3]:
+        """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
+        return resume_events(
+            self._core,
+            _plans.STREAM_0,
+            state,
+            stream_options=stream_options,
+            options=options,
+            session_options=session_options,
+        )
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.streams.resume -->
+
+```python
+with Client() as client, client.protocols.events.live.open() as stream:
+    for event in stream:
+        handle(event)
+        save(stream.checkpoint().export())
+with Client() as client, client.protocols.events.live.resume(import_state(load())) as stream:
+    for event in stream:
+        handle(event)
+```
+
+The cursor is that of the last event the stream returned, never of a terminal, error, refused, or cut event: an SSE
+event without an `id` keeps the ID before, an empty `id` clears it, and a body cursor follows its `missing` and `null`
+settings, raising `StreamDecodeError` with the condition `missing` or `null` before the event under `error`. An
+unknown event kept raw gives its body cursor from its data when the data is JSON. A cursor is never limited apart from
+its event.
+
+`checkpoint()` sends nothing and works on an open, ended, failed, or closed stream once a cursor was delivered; before
+that, and while another step runs, it raises `ProtocolStateError`, and on a stream of a helper without resume metadata
+`ProtocolConfigurationError` with the condition `missing_metadata`. It saves the cursor, the number of events dispatched
+and of reconnections, the last valid `retry` time, the bindings' values, and, when the reopen operation is the helper's
+own, the wire values of the caller's first request, never events, responses, the session, the call's options, or what
+its auth adds; the caller's value of an optional parameter the reopen writes, such as its own `Last-Event-ID`, is left
+out. A call that gives a cookie, a credential header, or a security scheme's query parameter cannot be checkpointed and
+raises `ProtocolConfigurationError` with the condition `wrong_capability`, and so does a stream whose cursor or binding
+value the reopen sends as such a query field, a property of an exploded form object query parameter included. A cursor
+the reopen request cannot encode, such as an event ID ending in a space or an object written to a query parameter,
+raises `ProtocolDataError` with the condition `value` and the cursor's selector, or for an event ID the target it is
+written to, as `location`, from `checkpoint()` and from a reconnection, which keeps no `resume_state` and has the
+interruption as its context. The state is bound to the helper's fingerprint and to the security of the reopen operation,
+and exports as pagination and polling checkpoints do.
+
+`resume` creates a session of its own and sends the reopen at once: the helper's own operation repeats the caller's
+first request, another one sends only what is written, each binding's value first and then the cursor, whose
+parameter is omitted once the cursor is cleared, so a cleared SSE cursor sends no `Last-Event-ID`. The request then
+returns once its response is a declared success, as `open` does; sequences and reconnections count on from the
+checkpoint, the session's deadline and sends start afresh, and the reopen counts as no reconnection. Before sending it
+refuses a value that is not a `ResumeState` with `ProtocolConfigurationError`, and with `ResumeStateError` another
+helper's state, one made under other security, an expired one, and one that does not fit the helper or whose request
+does not encode. The saved cursor and bindings' values are written into the saved request and validated with it as a
+saved request is, its body whole, so a value that does not fit its target is refused too; a saved dot segment for a
+path parameter raises `ProtocolDataError` as a server's would.
+
+With `StreamOptions(reconnect=True)`, a stream that has delivered a cursor reopens itself within the same step after a
+read-phase transport failure the shared retry classification retries, or a read timeout the call's own
+`TimeoutOptions(read=...)` set rather than the stream's idle limit, which wins a tie; after a cut frame or an end before
+the declared completion it does so only when `reconnect_on` lists `incomplete_eof`. Each reopen is one more child call
+of the stream's session: its own retries, Retry-After included, follow the call's retry options, and its sends count
+toward the session's. Before a reopen the stream waits the retry backoff, and at least the last `retry` time the server
+sent, in the session's deadline. When the backoff's cap or that `retry` time is longer than `max_reconnect_wait`,
+whatever the jitter draws below the cap, or the wait is not shorter than the session's remaining time, the wait is not
+begun and the interruption is raised with its `resume_state`. Running out of reconnections raises
+`StreamResumeExhaustedError` with the kind `reconnects`, and out of the session's sends with the kind `network_sends`,
+each with a checkpoint as `resume_state` and never as a normal end. A decode, size, remote, idle, or deadline failure,
+the declared end, a reopen answered with an error, and closing never reconnect. Events the server sends again after a
+reopen are delivered again, numbered on: nothing removes duplicates. Every open and reopen reports its own hook events,
+so an interrupted response reports `stream_end` with the outcome `error` before its reopen starts. A
+`StreamInterruptedError` that does not reconnect keeps a checkpoint as `resume_state`, or None before any cursor. No
+options of a resuming helper, the client's, a view's, or the call's, may patch a header or query parameter its reopen
+writes or fix an idempotency key.
 
 ### Stream generation checks
 
@@ -1665,7 +1813,7 @@ response of its operation must declare an event stream media type, which the hel
 event and error schema must exist and decode natively, without an envelope; a schema outside the selected model scopes
 fails with `BND_MODEL_SCOPE_REQUIRED`. A body discriminator must name a declared property of each mapped and error schema
 whose values can be strings, and an `event_type` completion cannot be a key of the event type mapping or the error
-events. Resuming a stream is not supported yet:
+events:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.streams.diagnostics -->
 <!-- fmt: off -->
@@ -1673,7 +1821,6 @@ events. Resuming a stream is not supported yet:
 ```text
 E_CONFIG_VALUE config protocols.helpers['checks.media'].media /paths/~1events/get: The media type 'text/plain' of 'checks.media' is not text/event-stream
 E_CONFIG_VALUE config protocols.helpers['checks.response'].operation /paths/~1status/get: GET /status declares no text/event-stream success response for the SSE helper 'checks.response'
-E_CLIENT_UNSUPPORTED target protocols.helpers['checks.resume'].resume /paths/~1events/get: The SSE helper 'checks.resume' resumes its stream, which is not supported yet
 E_CONFIG_VALUE config protocols.helpers['checks.schema'].event_schema /paths/~1events/get: The schema '/components/schemas/Nobody' of 'checks.schema' does not exist in its document
 E_CONFIG_CONFLICT config protocols.helpers['checks.terminal_event'].completion.value /paths/~1events/get: The completion event type 'done' of 'checks.terminal_event' is also a key of its event_schema.mapping
 E_CONFIG_CONFLICT config protocols.helpers['checks.terminal_error'].completion.value /paths/~1events/get: The completion event type 'stop' of 'checks.terminal_error' is also a key of its error_events
@@ -1684,6 +1831,39 @@ E_CONFIG_VALUE config protocols.helpers['checks.discriminator_type'].event_schem
 
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.streams.diagnostics -->
+
+A resumption is checked against its reopen operation, which must declare a success response of the helper's media type.
+A cursor is never written to a cookie, a credential header, a security scheme's position, an exploded form object query
+parameter declaring a property at such a position, or a path parameter, and one that can be cleared, an event ID or a
+body cursor with `null: clear`, only to an optional header or query parameter; a body cursor must read a declared
+property of an event schema, of every one under `missing: error`, whose types fit its target. Bindings are checked as
+polling bindings are, reading only the headers and status of the stream responses, and a reopen with another operation
+must write each of its required parameters and its body:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.streams.resume-diagnostics -->
+<!-- fmt: off -->
+
+```text
+E_CONFIG_VALUE config protocols.helpers['checks.cursor_header'].resume.cursor /paths/~1events/get: The cursor of 'checks.cursor_header' reads a header, where only a body pointer reads an event's cursor
+E_CONFIG_VALUE config protocols.helpers['checks.cursor_absent'].resume.cursor.pointer /paths/~1events/get: The cursor pointer '/id' of 'checks.cursor_absent' names no property of any event schema
+E_CONFIG_VALUE config protocols.helpers['checks.cursor_required'].resume.cursor.pointer /paths/~1events/get: The cursor pointer '/seq' of 'checks.cursor_required' names no property of '/components/schemas/Created'
+E_CONFIG_VALUE config protocols.helpers['checks.cursor_types'].resume.write /paths/~1events/get: The cursor of 'checks.cursor_types' reads integer values, which the header parameter 'Last-Event-ID' of GET /events does not accept
+E_CONFIG_VALUE config protocols.helpers['checks.cursor_cookie'].resume.write /paths/~1events/get: The cursor of 'checks.cursor_cookie' writes the cookie 'session', which carries credentials no helper writes
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.cursor_path'].resume.write /paths/~1streams~1{streamId}/get: The cursor of 'checks.cursor_path' is written to the path parameter 'streamId' of GET /streams/{streamId}, which is not supported yet
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.cleared_body'].resume.write /paths/~1feed/post: The cursor of 'checks.cleared_body' can be cleared, which only a header or query parameter can omit; writing it to the request body of POST /feed is not supported yet
+E_CONFIG_VALUE config protocols.helpers['checks.cleared_required'].resume.write /paths/~1replay/get: The cursor of 'checks.cleared_required' can be cleared, which the query parameter 'from' of GET /replay, a required one, cannot omit
+E_CONFIG_VALUE config protocols.helpers['checks.reopen_media'].resume.reopen_operation /paths/~1records/get: GET /records declares no text/event-stream success response for the SSE helper 'checks.reopen_media' to reopen its stream with
+E_CONFIG_VALUE config protocols.helpers['checks.bindings'].resume.bindings[0].value.selector /paths/~1events/get: The binding 0 of 'checks.bindings' reads the body of the 200 response of GET /events, which is no JSON model
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.bindings'].resume.bindings[1].value.source /paths/~1streams~1{streamId}/get: The binding 1 of 'checks.bindings' reads the helper's input, which is not supported yet
+E_CONFIG_CONFLICT config protocols.helpers['checks.bindings'].resume.bindings[2].target /paths/~1streams~1{streamId}/get: The binding 2 of 'checks.bindings' writes the same target as its cursor
+E_CONFIG_VALUE config protocols.helpers['checks.bindings'].resume.bindings[3].value.selector /paths/~1streams~1{streamId}/get: The binding 3 of 'checks.bindings' reads the header 'X-Stream-Id', which GET /streams/{streamId} does not declare
+E_CONFIG_VALUE config protocols.helpers['checks.bindings'].resume.expires_at /paths/~1events/get: The expiry of 'checks.bindings' reads a body, where only a header of a stream gives one
+E_CONFIG_VALUE config protocols.helpers['checks.expiry'].resume.expires_at /paths/~1events/get: The expiry of 'checks.expiry' reads the header 'Expires', which GET /events does not declare
+E_CONFIG_VALUE config protocols.helpers['checks.cursor_exploded'].resume.write /paths/~1keyed-marks/get: The cursor of 'checks.cursor_exploded' writes the query field 'api_key', which carries credentials no helper writes
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.streams.resume-diagnostics -->
 
 ## NDJSON stream helpers
 
@@ -1762,7 +1942,7 @@ Bytes are searched for a line end at most twice, so a line split over many reads
 The helper's `media` must be `application/x-ndjson`, `application/ndjson`, `application/jsonl`, `application/x-jsonl`,
 `application/jsonlines`, or `application/x-jsonlines`, compared without case and with any parameters allowed, and a
 success response of its operation must declare that media type, which the helper then requests as declared. The schema
-checks are those of SSE helpers, and resuming a stream is not supported yet:
+and resumption checks are those of SSE helpers, and an NDJSON cursor is always a body pointer:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.ndjson.diagnostics -->
 <!-- fmt: off -->
@@ -1771,7 +1951,6 @@ checks are those of SSE helpers, and resuming a stream is not supported yet:
 E_CONFIG_VALUE config protocols.helpers['checks.media'].media /paths/~1records/get: The media type 'application/json' of 'checks.media' is not one of application/jsonl, application/jsonlines, application/ndjson, application/x-jsonl, application/x-jsonlines, or application/x-ndjson
 E_CONFIG_VALUE config protocols.helpers['checks.response'].operation /paths/~1status/get: GET /status declares no application/x-ndjson success response for the NDJSON helper 'checks.response'
 E_CONFIG_VALUE config protocols.helpers['checks.other_media'].operation /paths/~1search/post: POST /search declares no application/x-ndjson success response for the NDJSON helper 'checks.other_media'
-E_CLIENT_UNSUPPORTED target protocols.helpers['checks.resume'].resume /paths/~1records/get: The NDJSON helper 'checks.resume' resumes its stream, which is not supported yet
 E_CLIENT_UNSUPPORTED target protocols.helpers['checks.envelope'].event_schema /paths/~1records/get: The NDJSON helper 'checks.envelope' decodes an envelope-projected event, which is not supported yet
 E_CONFIG_VALUE config protocols.helpers['checks.discriminator_absent'].event_schema.discriminator.pointer /paths/~1records/get: The discriminator pointer '/kind' of 'checks.discriminator_absent' names no property of '/components/schemas/Created'
 ```

@@ -1,0 +1,11 @@
+# inherited-no-merge-boolean-false-literal
+render pydantic_v2.BaseModel default
+  diagnostic SchemaParseError: Error at schema path 'allof_no_merge_boolean_false_literal.json/#/components/schemas/Derived/value/#-datamodel-code-generator-#-allOf-#-special-#': allOf contains a boolean false schema that makes the schema unsatisfiable
+render pydantic_v2.dataclass default
+  diagnostic SchemaParseError: Error at schema path 'allof_no_merge_boolean_false_literal.json/#/components/schemas/Derived/value/#-datamodel-code-generator-#-allOf-#-special-#': allOf contains a boolean false schema that makes the schema unsatisfiable
+render dataclasses.dataclass default
+  diagnostic SchemaParseError: Error at schema path 'allof_no_merge_boolean_false_literal.json/#/components/schemas/Derived/value/#-datamodel-code-generator-#-allOf-#-special-#': allOf contains a boolean false schema that makes the schema unsatisfiable
+render typing.TypedDict default
+  diagnostic SchemaParseError: Error at schema path 'allof_no_merge_boolean_false_literal.json/#/components/schemas/Derived/value/#-datamodel-code-generator-#-allOf-#-special-#': allOf contains a boolean false schema that makes the schema unsatisfiable
+render msgspec.Struct default
+  diagnostic SchemaParseError: Error at schema path 'allof_no_merge_boolean_false_literal.json/#/components/schemas/Derived/value/#-datamodel-code-generator-#-allOf-#-special-#': allOf contains a boolean false schema that makes the schema unsatisfiable

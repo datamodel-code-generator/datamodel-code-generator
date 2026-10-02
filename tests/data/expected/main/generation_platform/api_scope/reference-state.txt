@@ -1,6 +1,0 @@
-{
-  "foo_keys": [
-    "reference-declarations.json#/components/schemas/Foo"
-  ],
-  "stable_paths": true
-}

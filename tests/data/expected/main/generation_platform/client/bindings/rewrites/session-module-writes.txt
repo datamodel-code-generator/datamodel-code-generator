@@ -1,0 +1,10 @@
+# session-module-writes
+rewrite pydantic_v2.BaseModel default if-assignment
+  @@ -0,0 +1,2 @@
+  +diagnostic binding BND_SYMBOL_NOT_EMITTED symbol=0 artifact=models.py
+  +diagnostic binding BND_TYPE_EXPRESSION_UNSUPPORTED symbol=0 artifact=models.py
+  @@ -14,0 +17,4 @@
+  +
+  +if True:
+  +    Model = int
+  +

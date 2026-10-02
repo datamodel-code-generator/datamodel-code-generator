@@ -509,6 +509,44 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
+            example_id="python-client.streams.resume-yaml",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "yaml", yaml_helpers(CLIENT_DATA / "protocols" / "stream-resume.yaml", "events.live", "events.tracked")
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.streams.resume",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "python",
+                blocks(
+                    CLIENT_PACKAGES
+                    / "stream-resume"
+                    / "pydantic_v2_BaseModel"
+                    / "client"
+                    / "protocols"
+                    / "_helpers.py",
+                    "    def resume(",
+                    limit=1,
+                ),
+            ),
+        ),
+        DocsExample(
+            example_id="python-client.streams.resume-diagnostics",
+            path=DOCS / "python-client.md",
+            render=lambda: fenced(
+                "text",
+                "\n".join(
+                    line.strip()
+                    for line in read_text(
+                        EXPECTED_CLIENT / "protocols" / "protocols-stream-resume-checks.txt"
+                    ).splitlines()
+                    if line.lstrip().startswith("E_")
+                ),
+            ),
+        ),
+        DocsExample(
             example_id="python-client.ndjson.helper",
             path=DOCS / "python-client.md",
             render=lambda: fenced(

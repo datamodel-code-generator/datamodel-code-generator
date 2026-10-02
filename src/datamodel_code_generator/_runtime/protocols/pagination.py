@@ -55,7 +55,7 @@ from .resume import require_state as _require
 from .resume import state_array as _array
 from .resume import state_count as _count
 from .resume import state_text as _text
-from .values import MISSING, Missing, Patch, RepeatedValueError, resolve, selected
+from .values import MISSING, Missing, RepeatedValueError, resolve, selected, written
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Generator, Iterator, Sequence
@@ -89,7 +89,9 @@ __all__ = (
     "first_page",
     "following_page",
     "iterate_pages",
+    "resent",
     "resume_pages",
+    "saved_request",
 )
 
 T = TypeVar("T")
@@ -937,21 +939,9 @@ class _Walk(Generic[T, P]):
             return request.arguments, request.body, None
         plan = self.plan
         follows = plan.follows
-        arguments = list(request.arguments)
-        patches: dict[int | None, list[tuple[str, WireValue]]] = {}
         values = link.bound if follows else (*link.bound, link.cursor)
-        for (position, pointer), value in zip(plan.writes, values, strict=True):
-            if pointer is None:
-                arguments[cast("int", position)] = value
-            else:
-                patches.setdefault(position, []).append((pointer, value))
-        body = request.body
-        for position, writes in patches.items():
-            if position is None:
-                body = Patch(body, tuple(writes))
-            else:
-                arguments[position] = Patch(arguments[position], tuple(writes))
-        return tuple(arguments), body, cast("str", link.cursor) if follows else None
+        arguments, body = written(plan.writes, request.arguments, request.body, values)
+        return arguments, body, cast("str", link.cursor) if follows else None
 
     def bound(self, wire: WireValue, info: ResponseInfo) -> tuple[WireValue, ...]:
         """Return the values of the helper's bindings the request after a page writes, refusing a missing one.
@@ -1099,11 +1089,8 @@ class _Walk(Generic[T, P]):
                 tuple((digest, index) for index, digest in history),
                 None if saved is None else (remaining, *saved[1:]),
             )
-        state: WireValue = {
-            "arguments": tuple(() if isinstance(value, Unset) else (value,) for value in arguments),
-            "body": () if saved_body is None else saved_body,
-            "page": page,
-        }
+        kept = saved_request(arguments, saved_body)
+        state: WireValue = {"arguments": kept[0], "body": kept[1], "page": page}
         return helper_state(
             helper_fingerprint=plan.fingerprint,
             security_fingerprint=sha256(canonical_json(facts)).hexdigest(),
@@ -1178,15 +1165,24 @@ def _restored(
         raise _resume_error(plan, "malformed") from None
 
 
-def _resent(
-    core: ClientCore | AsyncClientCore, plan: PaginationPlan[T, P], arguments: WireValue, body: WireValue
+def saved_request(
+    arguments: tuple[WireValue | Unset, ...], body: tuple[WireValue, str, str | None] | None
+) -> tuple[WireValue, WireValue]:
+    """Return how a checkpoint keeps a request's wire values: each argument in an array, empty when omitted.
+
+    The body is kept as its wire value with its declared and concrete media types, or as an empty array without one.
+    """
+    return tuple(() if isinstance(value, Unset) else (value,) for value in arguments), () if body is None else body
+
+
+def resent(
+    core: ClientCore | AsyncClientCore, call: OperationPlan[object, object], arguments: WireValue, body: WireValue
 ) -> _Request:
     """Return the request a checkpoint saved, its arguments and any JSON body built as a caller builds them.
 
     An argument a checkpoint never saves is refused, and so is a value its codec refuses, path arguments that make a
     segment a dot segment once encoded, a body the operation does not take, and a media type its select method refuses.
     """
-    call = plan.call
     saved = [_array(argument) for argument in _array(arguments)]
     _require(len(saved) == len(call.parameters) and all(len(argument) <= 1 for argument in saved))
     wire = tuple(argument[0] if argument else UNSET for argument in saved)
@@ -1236,7 +1232,7 @@ def _walked(
     """
     _require(isinstance(state, Mapping) and frozenset(state) == _STATE)
     fields = cast("Mapping[str, WireValue]", state)
-    request = _resent(core, plan, fields["arguments"], fields["body"])
+    request = resent(core, plan.call, fields["arguments"], fields["body"])
     first = _Walk(plan, request, limits, core)
     if (page := fields["page"]) is None or not plan.follows or plan.continued.body is not None:
         first.sent(*_checked(core, first))

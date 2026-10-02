@@ -1,0 +1,8 @@
+# edge-legacy-media-reuse
+render pydantic_v2.BaseModel default
+  diagnostic APIGenerationError
+  diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1scalar/post/responses/200: The use has no generated native type
+  diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1enum/post/responses/200: The use has no generated native type
+  diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1union/post/responses/200: The use has no generated native type
+  diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1any/post/responses/200: The use has no generated native type
+  diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1empty/post/responses/200: The use has no generated native type
