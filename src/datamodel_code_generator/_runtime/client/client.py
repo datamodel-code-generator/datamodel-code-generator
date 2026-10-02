@@ -317,10 +317,10 @@ def _protocol_options(
         from ..protocols.options import checked_defaults  # noqa: PLC0415 - Only helper defaults load the helper settings.
 
         checked_defaults(helpers, defaults.helpers)
-    if not isinstance(stores := protocols.queue_stores, Unset) and stores:
+    if not isinstance(queues := protocols.queue_stores, Unset) and queues:
         from ..protocols.options import checked_stores  # noqa: PLC0415 - Only queue stores load the helper settings.
 
-        checked_stores(stores, defaults.helpers, asynchronous=asynchronous, kind="queue")
+        checked_stores(queues, defaults.helpers, asynchronous=asynchronous, kind="queue")
     if not isinstance(stores := protocols.cache_stores, Unset) and stores:
         from ..protocols.options import checked_stores  # noqa: PLC0415 - Only cache stores load the helper settings.
 
