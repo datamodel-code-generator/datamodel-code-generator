@@ -4079,7 +4079,10 @@
               "replay_safe_with_key": true,
               "retention_seconds": 86400.0,
               "scope": "orders-v1"
-            }
+            },
+            "accepted_content_encodings": [
+              "gzip"
+            ]
           }
         },
         {
