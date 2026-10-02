@@ -2455,7 +2455,7 @@ def parts_zero_probe_recovery(package: ModuleType, lines: list[str]) -> None:
                 server.failure = mode
                 try:
                     handle.advance()
-                except (harness.errors.UploadFilePartHTTPError, harness.errors.UploadDeliveryUnknownError) as error:
+                except (harness.errors.HTTPStatusError, harness.errors.UploadDeliveryUnknownError) as error:
                     lines.append(f"sync {mode}: {type(error).__name__} sent={server.sent} lists={server.lists}")
                 progress = handle.advance()
                 lines.append(
@@ -2490,7 +2490,7 @@ async def _parts_zero_probe_recovery_async(harness: _Uploads, package: ModuleTyp
                 server.failure = mode
                 try:
                     await handle.advance()
-                except (harness.errors.UploadFilePartHTTPError, harness.errors.UploadDeliveryUnknownError) as error:
+                except (harness.errors.HTTPStatusError, harness.errors.UploadDeliveryUnknownError) as error:
                     lines.append(f"async {mode}: {type(error).__name__} sent={server.sent} lists={server.lists}")
                 progress = await handle.advance()
                 lines.append(
