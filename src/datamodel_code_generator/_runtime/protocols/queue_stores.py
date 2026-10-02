@@ -10,7 +10,7 @@ from uuid import uuid4
 from ..client.errors import ProtocolConfigurationError
 from .errors import QueueFullError, QueueStoreError
 from .options import positive_count
-from .queues import TERMINAL_STATES, QueueEntry, QueueLease
+from .queues import TERMINAL_STATES, QueueEntry, QueueLease, QueueOutcome
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -63,10 +63,22 @@ class _Entries:
         with self._lock:
             for key, entry in entries.items():
                 if entry.state == "leased" and entry.lease_until is not None and entry.lease_until <= now:
+                    state = "pending"
+                    result = entry.result
+                    if entry.cancel_requested:
+                        state = "delivery_unknown" if entry.send_intent else "cancelled"
+                        result = QueueOutcome(category="cancelled")
+                    elif result is not None and result.category != "retryable":
+                        state = {
+                            "success": "succeeded",
+                            "permanent": "dead",
+                            "unknown": "delivery_unknown",
+                            "cancelled": "delivery_unknown" if entry.send_intent else "cancelled",
+                        }[result.category]
                     entries[key] = replace(
                         entry,
-                        state="delivery_unknown" if entry.send_intent else "pending",
-                        send_intent=False,
+                        state=state,
+                        result=result,
                         lease_id=None,
                         lease_until=None,
                         version=uuid4().hex,
@@ -116,9 +128,9 @@ class _Entries:
 class MemoryQueueStore:
     """A bounded memory queue store of one process; a full store refuses new entries instead of evicting any.
 
-    Claims recover expired leases with send intent to delivery_unknown and unsent ones to pending, then lease ready
-    pending entries in creation-time and ID order; every write gives the entry a new version. Payload bytes count
-    toward `max_bytes`.
+    Claims recover expired leases without a recorded outcome or cancellation to pending, retaining send intent,
+    then lease ready pending entries in creation-time and ID order; every write gives the entry a new version.
+    Payload bytes count toward `max_bytes`.
     """
 
     __slots__ = ("_entries",)

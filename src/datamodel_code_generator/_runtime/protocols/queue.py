@@ -1,7 +1,7 @@
 """Explicit offline queues: enqueue saves a call in a borrowed store, and only an explicit drain sends what it holds.
 
 Each operation of a queue helper is either side-effect free or written with a stable idempotency key. Saved send
-intent after a crash is of unknown delivery until an explicit retry reuses the key. Every store and
+intent without a recorded outcome recovers under the same identity on the next explicit drain. Every store and
 network step is a value one shared plan yields, run by the synchronous or asyncio driver.
 """
 
@@ -97,7 +97,7 @@ _UNSENT: Final = frozenset({DeliveryState.NOT_SENT})
 _STOPS: Final = (RequestCancelledError, ClientClosedError)
 _TOTAL_TIMEOUT: Final = 300.0
 _MAX_NETWORK_SENDS: Final = 1000
-_PAYLOAD: Final = frozenset({"version", "arguments", "body"})
+_PAYLOAD: Final = frozenset({"version", "arguments", "body", "request", "key", "created_at"})
 
 
 @final
@@ -159,6 +159,8 @@ class _Send:
     media_type: str | MediaSelector | None
     options: RequestOptions | None
     deadline: Deadline
+    lease: QueueLease
+    identity: WireValue
 
 
 _Step = _Store | _Send
@@ -314,8 +316,14 @@ def _new_entry(  # noqa: PLR0913, PLR0917
         )
     scope = _Scope(plan.helper_id, queued.operation)
     saved, saved_body = core.saved_request(scope, queued.call, arguments, body, media_type, None)
+    now = _now(core.clock)
+    key = None if queued.dedupe_ttl is None else str(uuid4())
+    identity = core.saved_queue_request(queued.call, arguments, body, media_type, None)
     payload = canonical_json({
         "version": _VERSION,
+        "request": identity,
+        "key": key,
+        "created_at": now.isoformat(),
         "arguments": tuple(() if isinstance(value, Unset) else (value,) for value in saved),
         "body": () if saved_body is None else saved_body,
     })
@@ -323,7 +331,6 @@ def _new_entry(  # noqa: PLR0913, PLR0917
         raise ProtocolSizeError(
             kind="body", limit=limit, observed=size, unit="bytes", helper_id=plan.helper_id, operation=queued.operation
         )
-    now = _now(core.clock)
     ttl = policy.entry_ttl if queued.dedupe_ttl is None else min(policy.entry_ttl, queued.dedupe_ttl)
     return QueueEntry(
         entry_id=str(uuid4()),
@@ -334,7 +341,7 @@ def _new_entry(  # noqa: PLR0913, PLR0917
         payload=payload,
         blob=None,
         blob_owned=False,
-        idempotency_key=None if queued.dedupe_ttl is None else str(uuid4()),
+        idempotency_key=key,
         created_at=now,
         expires_at=now + timedelta(seconds=ttl),
         not_before=now,
@@ -370,19 +377,21 @@ def _require(condition: bool) -> None:  # noqa: FBT001
 
 
 def _restored(
-    core: ClientCore | AsyncClientCore, call: OperationPlan[object, object], payload: bytes
-) -> tuple[tuple[object, ...], object, str | MediaSelector | None]:
+    core: ClientCore | AsyncClientCore, call: OperationPlan[object, object], entry: QueueEntry
+) -> tuple[tuple[object, ...], object, str | MediaSelector | None, WireValue]:
     """Return the arguments, body, and media type a payload saved, built and checked as a caller's are.
 
     A payload of another shape or version, an argument a payload never saves, a missing required argument or body, and
     a value its codec refuses are malformed.
     """
     try:
-        saved = decode_json(payload)
+        saved = decode_json(entry.payload)
     except CodecError:
         raise _MalformedError from None
     _require(isinstance(saved, Mapping) and frozenset(saved) == _PAYLOAD and saved["version"] == _VERSION)
     fields = cast("Mapping[str, WireValue]", saved)
+    _require(fields["key"] == entry.idempotency_key and fields["created_at"] == entry.created_at.isoformat())
+    _require(isinstance(fields["request"], Mapping))
     arguments, body = fields["arguments"], fields["body"]
     _require(isinstance(arguments, tuple) and len(arguments) == len(call.parameters) and isinstance(body, tuple))
     items = cast("tuple[WireValue, ...]", arguments)
@@ -403,7 +412,7 @@ def _restored(
         and (given is not None or (request := call.body) is None or not request.required)
     )
     try:
-        return core.restored_request(call, wire, given)
+        return (*core.restored_request(call, wire, given), fields["request"])
     except (SDKError, CodecError):
         raise _MalformedError from None
 
@@ -425,8 +434,10 @@ class _Ended:
     failure: BaseException | None = None
 
 
-def _dead(code: str, response: ResponseInfo | None = None) -> _Ended:
-    return _Ended("dead", "dead", QueueOutcome(category="permanent", response=response, error_code=code))
+def _dead(code: str, response: ResponseInfo | None = None, *, prior: bool = False) -> _Ended:
+    return _Ended(
+        "dead", "dead", QueueOutcome(category="unknown" if prior else "permanent", response=response, error_code=code)
+    )
 
 
 def _cancelled(intent: bool, response: ResponseInfo | None = None) -> _Ended:  # noqa: FBT001
@@ -455,7 +466,7 @@ def _applied(current: QueueEntry, ended: _Ended, *, prior: bool) -> tuple[QueueE
         current,
         state=ended.state,
         delivery_count=count,
-        send_intent=prior if ended.reverted and ended.state == "pending" else False,
+        send_intent=prior if ended.state == "pending" else False,
         lease_id=None,
         lease_until=None,
         result=current.result if ended.outcome is None else ended.outcome,
@@ -698,8 +709,12 @@ class _Drain:
     def options(self, queued: QueuedPlan, entry: QueueEntry) -> RequestOptions | None:
         """Return the call options of a delivery: the drain's, sending a keyed entry's stable idempotency key."""
         base = self.limits.options
-        if queued.dedupe_ttl is None or (value := entry.idempotency_key) is None:
+        if queued.dedupe_ttl is None:
+            if entry.idempotency_key is not None:
+                raise _MalformedError
             return base
+        if (value := entry.idempotency_key) is None:
+            raise _MalformedError
         try:
             key = IdempotencyKey(value, first_used_at=entry.created_at)
         except ConfigurationError:
@@ -756,33 +771,40 @@ class _Drain:
                 operation=None if queued is None else queued.operation,
             )
         prior, now, clock = entry.send_intent, _now(self.clock), self.clock
-        expires = _expiry(entry, queued)
+        expires = min(_expiry(entry, queued), entry.created_at + timedelta(seconds=entry.policy.entry_ttl))
         if entry.cancel_requested:
             return (yield from self.settle(lease, entry, _cancelled(prior), prior=prior))
+        if now < entry.created_at or expires <= entry.created_at:
+            return (yield from self.settle(lease, entry, _dead("malformed_entry", prior=prior), prior=prior))
         if now >= expires:
-            return (yield from self.settle(lease, entry, _dead("expired"), prior=prior))
+            return (yield from self.settle(lease, entry, _dead("expired", prior=prior), prior=prior))
         if entry.delivery_count >= entry.policy.max_deliveries:
-            return (yield from self.settle(lease, entry, _dead("max_deliveries"), prior=prior))
-        try:
-            arguments, body, media_type = _restored(self.core, queued.call, entry.payload)
-            options = self.options(queued, entry)
-        except _MalformedError:
-            return (yield from self.settle(lease, entry, _dead("malformed_entry"), prior=prior))
+            return (yield from self.settle(lease, entry, _dead("max_deliveries", prior=prior), prior=prior))
         policy = entry.policy
-        window = self.window(policy)
-        expiry = None
-        if queued.dedupe_ttl is not None:
-            left = (expires - now).total_seconds()
-            window, expiry = min(window, left), clock.monotonic() + left
+        window = min(self.window(policy), (expires - now).total_seconds())
         deadline = absolute_deadline(clock.monotonic() + window, clock=clock)
-        until = now + timedelta(seconds=max(policy.lease_min, window + policy.lease_grace))
+        try:
+            arguments, body, media_type, identity = _restored(self.core, queued.call, entry)
+            options = self.options(queued, entry)
+            actual = self.core.saved_queue_request(queued.call, arguments, body, media_type, options)
+        except (_MalformedError, SDKError, CodecError):
+            return (yield from self.settle(lease, entry, _dead("malformed_entry", prior=prior), prior=prior))
+        if actual != identity:
+            yield from _write(entry, _released(entry))
+            raise QueueBindingError(entry_id=entry.entry_id, helper_id=plan.helper_id, operation=queued.operation)
+        if deadline.remaining() <= 0:
+            return (yield from self.settle(lease, entry, _dead("expired", prior=prior), prior=prior))
+        now = _now(clock)
+        until = now + timedelta(seconds=max(policy.lease_min, deadline.remaining() + policy.lease_grace))
         current: QueueEntry | None = entry
         for _ in range(_ROUNDS):
             if current is None or not _ours(current, lease):
                 return None
             if current.cancel_requested:
                 return (yield from self.settle(lease, current, _cancelled(prior), prior=prior))
-            intended = replace(current, send_intent=True, delivery_count=current.delivery_count + 1, lease_until=until)
+            intended = replace(
+                current, send_intent=True, delivery_count=current.delivery_count + 1, lease_until=until, result=None
+            )
             written, current = yield from _write(current, intended, reload=True)
             if written:
                 break
@@ -792,12 +814,21 @@ class _Drain:
             return None
         if current.cancel_requested:
             return (yield from self.settle(lease, current, replace(_cancelled(prior), reverted=True), prior=prior))
-        if expiry is not None and expiry <= clock.monotonic():
-            return (yield from self.settle(lease, current, replace(_dead("expired"), reverted=True), prior=prior))
+        if deadline.remaining() <= 0:
+            return (
+                yield from self.settle(
+                    lease, current, replace(_dead("expired", prior=prior), reverted=True), prior=prior
+                )
+            )
         try:
-            info = cast("ResponseInfo", (yield _Send(queued.call, arguments, body, media_type, options, deadline)))
+            info = cast(
+                "ResponseInfo",
+                (yield _Send(queued.call, arguments, body, media_type, options, deadline, lease, identity)),
+            )
         except SDKError as error:
             ended = _ended(error, current, queued, _now(clock), self.retry[queued.alias], clock)
+            if prior and ended.state == "dead" and ended.outcome is not None:
+                ended = replace(ended, outcome=replace(ended.outcome, category="unknown"))
         except _InterruptedError:
             ended = _cancelled(intent=True)
         else:
@@ -852,11 +883,18 @@ def _retry(plan: QueuePlan, entry_id: str, clock: Clock) -> Generator[_Step, obj
             raise ProtocolStateError(state=current.state, action="retry_unknown", helper_id=plan.helper_id)
         now = _now(clock)
         if now >= _expiry(current, plan.aliases.get(current.operation_alias)):
-            entry = _applied(current, _dead("expired"), prior=False)[0]
+            entry = _applied(current, _dead("expired", prior=True), prior=False)[0]
         elif current.delivery_count >= current.policy.max_deliveries:
-            entry = _applied(current, _dead("max_deliveries"), prior=False)[0]
+            entry = _applied(current, _dead("max_deliveries", prior=True), prior=False)[0]
         else:
-            entry = replace(current, state="pending", not_before=now, saved_wait_seconds=0.0, cancel_requested=False)
+            entry = replace(
+                current,
+                state="pending",
+                not_before=now,
+                saved_wait_seconds=0.0,
+                cancel_requested=False,
+                send_intent=True,
+            )
         written, current = yield from _write(current, entry, reload=True)
         if written:
             return current  # noqa: B901 - Its runner receives the outcome.
@@ -901,6 +939,19 @@ async def _ainterrupted(
         add_secondary(error, failure)
 
 
+def _admission(step: _Send, current: QueueEntry | None, clock: Clock) -> None:
+    """Refuse a lost, expired, or cancelled lease before child provider or resource admission."""
+    if (
+        not _ours(current, step.lease)
+        or current is None
+        or current.lease_until is None
+        or current.lease_until <= _now(clock)
+    ):
+        raise ProtocolStateError(state="lease_lost", action="drain")
+    if current.cancel_requested:
+        raise ProtocolStateError(state="cancel_requested", action="drain")
+
+
 def _driven(
     plan: QueuePlan,
     core: ClientCore,
@@ -923,6 +974,12 @@ def _driven(
         reply, failure = None, None
         try:
             if isinstance(step, _Send):
+
+                def admission(step: _Send = step) -> None:
+                    _admission(
+                        step, cast("QueueEntry | None", _call(plan, store, _get(step.lease.entry.entry_id))), core.clock
+                    )
+
                 reply = core.execute(
                     step.call,
                     step.arguments,
@@ -931,6 +988,8 @@ def _driven(
                     options=step.options,
                     session=session,
                     deadline=step.deadline,
+                    replay_identity=step.identity,
+                    admission=admission,
                 ).info
             else:
                 reply = _call(plan, store, step)
@@ -960,6 +1019,14 @@ async def _adriven(
         reply, failure = None, None
         try:
             if isinstance(step, _Send):
+
+                async def admission(step: _Send = step) -> None:
+                    _admission(
+                        step,
+                        cast("QueueEntry | None", await _acall(plan, store, _get(step.lease.entry.entry_id))),
+                        core.clock,
+                    )
+
                 reply = (
                     await core.execute(
                         step.call,
@@ -969,6 +1036,8 @@ async def _adriven(
                         options=step.options,
                         session=session,
                         deadline=step.deadline,
+                        replay_identity=step.identity,
+                        admission=admission,
                     )
                 ).info
             else:

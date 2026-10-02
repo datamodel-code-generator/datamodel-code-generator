@@ -484,7 +484,12 @@ class _TargetData:
                 else (body.required, [(media.media_type, self.type(media.use)) for media in body.media]),
                 "idempotency": None
                 if idempotency is None
-                else (idempotency.header_name, idempotency.replay_safe_with_key, idempotency.retention_seconds),
+                else (
+                    idempotency.header_name,
+                    idempotency.replay_safe_with_key,
+                    idempotency.retention_seconds,
+                    idempotency.scope,
+                ),
                 "settings": aliases[queued.alias],
             }
             uses = () if body is None else tuple(self.contract(media.use) for media in body.media)
