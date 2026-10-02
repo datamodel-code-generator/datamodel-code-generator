@@ -171,17 +171,16 @@ class _Guard:
         for signal in self._signals:
             signal.add_done_callback(self._closing)
 
-    def stop(self, reason: StopReason) -> None:
+    def stop(self, reason: StopReason, error: BaseException | None = None) -> None:
         """Cancel the awaiting task once, for the first reason that stops the call."""
         if self._armed and self.reason is None and self.task is not None:
             self.reason = reason
+            self.error = error
             self.task.cancel()
 
     def _interrupt(self, signal: asyncio.Future[BaseException]) -> None:
         """Wake owned work for a published native interruption, retaining the original exception."""
-        if self._armed and self.reason is None:
-            self.error = signal.result()
-            self.stop("interruption")
+        self.stop("interruption", signal.result())
 
     def _closing(self, _signal: asyncio.Future[None]) -> None:
         self.stop("closing")
@@ -782,15 +781,8 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
         as a response whose close a callback delayed, is released through cleanup. Stream work that waits for no
         bytes, such as a download's disk write, passes `idle=False` to stay outside the stream's idle limit.
         """
-        if interruption is not None and interruption.done():
-            raise interruption.result()
         self.check(phase, delivery_state)
-        if (
-            self._guard is not None
-            and interruption is None
-            and idle_timeout is None
-            and not (self.streaming and phase == "stream")
-        ):
+        if self._guard is not None and idle_timeout is None and not (self.streaming and phase == "stream"):
             return await self._nested(operation, phase, delivery_state, cleanup)
         if self.streaming and phase == "stream" and idle_timeout is None and idle:
             read, limit = self.settings.stream_read_timeout, self.settings.stream_idle_timeout
