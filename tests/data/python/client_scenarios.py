@@ -176,7 +176,8 @@ def _errors(package: ModuleType, lines: list[str]) -> None:
     record(lines, "error condition", lambda: errors.ConfigurationError(condition="Invalid Condition"))
     error = errors.SDKError()
     lines.append(
-        f"  error bare {error} {error.reason_code} {errors.TransportError(delivery_state=errors.DeliveryState.NOT_SENT)}"
+        f"  error bare {error} {error.reason_code} "
+        f"{errors.TransportError(delivery_state=errors.DeliveryState.NOT_SENT)}"
     )
 
 
@@ -240,7 +241,7 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
             exchange.respond(raw_response(302, b"", Location="https://elsewhere.example.com"))
             try:
                 api.pets.list_pets(x_trace=trace)
-            except Exception as failure:  # noqa: BLE001
+            except Exception as failure:  # ruff: ignore[blind-except]
                 lines.append(f"  redirect info {failure.status_code} {failure.headers!r}")
         if error is None and label == "error":
             exchange.respond(*((json_response(500, {"code": 7}),) * 3))
@@ -248,7 +249,8 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
                 api.pets.list_pets(x_trace=trace)
             except types.ListPetsHTTPError as failure:
                 lines.append(
-                    f"  error info {failure.status_code} {failure.headers!r} {failure.reason_code} {failure.error_data!r}"
+                    f"  error info {failure.status_code} {failure.headers!r} "
+                    f"{failure.reason_code} {failure.error_data!r}"
                 )
                 record(
                     lines,
@@ -291,7 +293,7 @@ def _create_pet(package: ModuleType, api: Any, exchange: Exchange, lines: list[s
     record(lines, "create invalid body", lambda: api.pets.create_pet(body=object(), media_type="application/json"))
     exchange.respond(json_response(422, {"code": 22}))
     record(lines, "create rejected", lambda: api.pets.create_pet(body=native, media_type="application/json"))
-    record(lines, "create codec default", lambda: codecs.body())
+    record(lines, "create codec default", codecs.body)
     record(lines, "create codec media", lambda: codecs.body(media_type="text/csv"))
 
 
@@ -453,7 +455,7 @@ async def _async_pets(package: ModuleType, exchange: Exchange, lines: list[str])
 
 
 def _async_invalid(package: ModuleType) -> Callable[[], Any]:
-    async def build() -> object:
+    async def build() -> object:  # ruff: ignore[unused-async] - The scenario calls this factory through the async entry point.
         return package.AsyncClient(http_client=httpx2.Client())
 
     return build
@@ -476,7 +478,7 @@ def media(package: ModuleType, lines: list[str]) -> None:
             raw_response(200, b"a=%zz", "application/x-www-form-urlencoded"),
         )
         record(lines, "pairs", lambda: api.forms.submit_pairs(body=(("a", "1"), ("a", "2"), ("b", " "))))
-        record(lines, "pairs invalid", lambda: api.forms.submit_pairs())
+        record(lines, "pairs invalid", api.forms.submit_pairs)
         record(lines, "pairs body", lambda: api.forms.submit_pairs(body=[("a", "1")]))
         search = forms.SubmitSearchRequestCodecs.body().from_wire({
             "term": "a b",
@@ -531,7 +533,7 @@ def _documents(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
         exchange.respond(responder)
         record(lines, label, call)
     record(lines, "store value", lambda: api.documents.store_document(body={1, 2}))
-    record(lines, "store codec", lambda: codecs.body())
+    record(lines, "store codec", codecs.body)
     record(lines, "store codec media", lambda: codecs.body(media_type="application/json"))
     read = documents.ReadDocumentRequestCodecs.parameter(location="path", name="id").from_wire({"key": "a/b"})
     exchange.respond(
@@ -545,7 +547,7 @@ def _documents(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
     record(lines, "read header", lambda: documents.decode_read_document_header(response.info, name="X-Draft"))
     exchange.respond(raw_response(204), raw_response(204), raw_response(204))
     record(lines, "note", lambda: api.documents.store_note(body=[1], media_type="application/vnd.note+json"))
-    record(lines, "note replace", lambda: api.documents.replace_note())
+    record(lines, "note replace", api.documents.replace_note)
     record(lines, "note replace text", lambda: api.documents.replace_note(body="n", media_type="text/plain"))
     record(lines, "note replace value", lambda: api.documents.replace_note(body=5, media_type="text/plain"))
     del package
@@ -562,7 +564,7 @@ def querystring(package: ModuleType, lines: list[str]) -> None:
     with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
         exchange.respond(json_response(200, ["a"]), json_response(200, []))
         record(lines, "search", lambda: api.default.search(criteria=criteria))
-        record(lines, "search all", lambda: api.default.search())
+        record(lines, "search all", api.default.search)
         patched = options.RequestOptions(query=(("page", "3"),))
         record(lines, "search with a query patch", lambda: api.default.search(criteria=criteria, options=patched))
 
@@ -573,8 +575,8 @@ def servers(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
         exchange.respond(raw_response(204), raw_response(204), raw_response(204))
-        record(lines, "status", lambda: api.default.get_status())
-        record(lines, "regional", lambda: api.default.get_regional())
+        record(lines, "status", api.default.get_status)
+        record(lines, "regional", api.default.get_regional)
         backup = options.RequestOptions(server=options.ServerSelection(index=1))
         record(lines, "regional backup", lambda: api.default.get_regional(options=backup))
 
@@ -584,7 +586,7 @@ def default_server(package: ModuleType, lines: list[str]) -> None:
     exchange = Exchange(lines)
     with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
         exchange.respond(raw_response(204))
-        record(lines, "status", lambda: api.default.get_status())
+        record(lines, "status", api.default.get_status)
 
 
 _DOTS: Final = (".", "..", "...", ".a", "%2e", "")
@@ -659,7 +661,7 @@ def _limit(call: Callable[[], object]) -> Callable[[], str]:
     def limited() -> str:
         try:
             call()
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:  # ruff: ignore[blind-except]
             over = error.observed > error.limit >= 1024 * 1024
             return f"{type(error).__name__} layer={error.layer} ratio={error.max_ratio} over={over}"
         return "decoded"

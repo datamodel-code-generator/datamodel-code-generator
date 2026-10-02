@@ -10,6 +10,7 @@ import asyncio
 import io
 import json
 import os
+import string
 import tempfile
 import threading
 from datetime import datetime, timezone
@@ -43,7 +44,7 @@ _EXPIRED: Final = datetime(2015, 10, 21, 7, 28, tzinfo=timezone.utc)
 
 
 class _Server:
-    """An independent upload server: it keeps each upload's bytes and answers creates, probes, appends, and completes."""
+    """Keep each upload's bytes and answer creates, probes, appends, and completions independently."""
 
     def __init__(self) -> None:
         """Start without uploads."""
@@ -161,7 +162,7 @@ class _Counting:
 
     def open_range(self, offset: int, length: int) -> Any:
         """Open a range of the wrapped source, counting it."""
-        from contextlib import contextmanager  # noqa: PLC0415
+        from contextlib import contextmanager
 
         @contextmanager
         def counted() -> Iterator[Any]:
@@ -280,7 +281,7 @@ def step(lines: list[str], label: str, call: Callable[[], object]) -> object:
     """Report a step's result or failure."""
     try:
         result = call()
-    except Exception as error:  # noqa: BLE001
+    except Exception as error:  # ruff: ignore[blind-except]
         lines.append(f"  {label} ! {_progress(error)}")
         return None
     lines.append(f"  {label} = {_progress(result)}")
@@ -291,7 +292,7 @@ async def astep(lines: list[str], label: str, call: Callable[[], Any]) -> object
     """Report an asyncio step's result or failure."""
     try:
         result = await call()
-    except Exception as error:  # noqa: BLE001
+    except Exception as error:  # ruff: ignore[blind-except]
         lines.append(f"  {label} ! {_progress(error)}")
         return None
     lines.append(f"  {label} = {_progress(result)}")
@@ -422,15 +423,16 @@ def _runs(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, line
         step(lines, "advance", handle.advance)
     step(lines, "advance after completion", handle.advance)
     step(lines, "run after completion", handle.run)
-    lines.append(f"  {server.stored('u1')}")
-    lines.append("run with a completion operation")
+    lines.extend((f"  {server.stored('u1')}", "run with a completion operation"))
     exchange.respond(*[server] * 4)
     with api.protocols.files.finish.start(harness.source(), tus_resumable=harness.tus) as finished:
         result = step(lines, "run", finished.run)
         step(lines, "run again", finished.run)
     stored = getattr(result, "sha256", None)
-    lines.append(f"  completion digest is the original's: {stored == sha256(_CONTENT).hexdigest()}")
-    lines.append("append with PUT, the size given by the caller")
+    lines.extend((
+        f"  completion digest is the original's: {stored == sha256(_CONTENT).hexdigest()}",
+        "append with PUT, the size given by the caller",
+    ))
     exchange.respond(*[server] * 4)
     put = api.protocols.files.put
     length = harness.argument("files", "CreateFile", "header", "Upload-Length", 10)
@@ -441,8 +443,7 @@ def _runs(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, line
         lambda: put.start(harness.source(), upload_length=length, tus_resumable=harness.tus, options=trace),
     )
     step(lines, "run", handle.run)
-    lines.append(f"  {server.stored(f'u{len(server.uploads)}')}")
-    lines.append("upload empty content")
+    lines.extend((f"  {server.stored(f'u{len(server.uploads)}')}", "upload empty content"))
     exchange.respond(server)
     empty = step(lines, "start", lambda: helper.start(harness.source(b""), tus_resumable=harness.tus))
     step(lines, "run", empty.run)
@@ -466,21 +467,18 @@ def _recoveries(harness: _Uploads, api: Any, server: _Server, exchange: Exchange
     handle = helper.start(harness.source(), tus_resumable=harness.tus)
     step(lines, "advance", handle.advance)
     step(lines, "run", handle.run)
-    lines.append(f"  {server.stored('u5')}")
-    lines.append("an append lost before it was stored, then part of one stored")
+    lines.extend((f"  {server.stored('u5')}", "an append lost before it was stored, then part of one stored"))
     exchange.respond(server, failing(httpx2.ReadError), server, server, server.lost(2), server, server, server)
     handle = helper.start(harness.source(), tus_resumable=harness.tus)
     step(lines, "advance", handle.advance)
     step(lines, "advance", handle.advance)
     step(lines, "run", handle.run)
-    lines.append(f"  {server.stored('u6')}")
-    lines.append("an append refused while connecting")
+    lines.extend((f"  {server.stored('u6')}", "an append refused while connecting"))
     exchange.respond(server, failing(httpx2.ConnectError), server, server, server, server)
     handle = helper.start(harness.source(), tus_resumable=harness.tus)
     step(lines, "advance", handle.advance)
     step(lines, "run", handle.run)
-    lines.append(f"  {server.stored('u7')}")
-    lines.append("probes that never answer")
+    lines.extend((f"  {server.stored('u7')}", "probes that never answer"))
     unretried = harness.options.RequestOptions(retry=harness.options.RetryOptions(max_retries=0))
     exchange.respond(server, server.lost(), failing(httpx2.ConnectError), failing(httpx2.ConnectError))
     handle = helper.start(
@@ -492,8 +490,7 @@ def _recoveries(harness: _Uploads, api: Any, server: _Server, exchange: Exchange
     step(lines, "advance", handle.advance)
     exchange.respond(server, server, server)
     step(lines, "run probes first", handle.run)
-    lines.append(f"  {server.stored('u8')}")
-    lines.append("the last append stored but answered with an error")
+    lines.extend((f"  {server.stored('u8')}", "the last append stored but answered with an error"))
     exchange.respond(server, server, server, server.refused, server)
     handle = helper.start(harness.source(), tus_resumable=harness.tus)
     step(lines, "advance", handle.advance)
@@ -531,7 +528,7 @@ def _offsets(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
         ("missing", raw_response(200)),
         ("not digits", raw_response(200, b"", None, **{"Upload-Offset": "+4"})),
         ("too many digits", raw_response(200, b"", None, **{"Upload-Offset": "9" * 5000})),
-        ("repeated", lambda request: httpx2.Response(200, headers=[("Upload-Offset", "4"), ("Upload-Offset", "4")])),
+        ("repeated", lambda _request: httpx2.Response(200, headers=[("Upload-Offset", "4"), ("Upload-Offset", "4")])),
     ):
         exchange.respond(server, failing(httpx2.ReadError), responder)
         handle = upload.start(harness.source(), tus_resumable=harness.tus)
@@ -566,7 +563,7 @@ def _completions(harness: _Uploads, api: Any, server: _Server, exchange: Exchang
         step(lines, "run again", handle.run)
         step(lines, "advance again", handle.advance)
         state = handle.checkpoint()
-        step(lines, "resume", lambda: helper.resume(harness.source(), state))
+        step(lines, "resume", lambda state=state: helper.resume(harness.source(), state))
     lines.append("a completion the server answered with a body that does not decode")
     exchange.respond(server, server, server, json_response(200, {"id": 5}))
     handle = helper.start(harness.source(), tus_resumable=harness.tus)
@@ -603,14 +600,14 @@ def _sources(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
     """Refuse one-shot inputs and invalid sources before sending, and stop at content that changed."""
     helper, protocols = api.protocols.files.upload, harness.protocols
 
-    async def stream() -> AsyncIterator[bytes]:
+    async def stream() -> AsyncIterator[bytes]:  # ruff: ignore[unused-async] - Exercise rejection of an async iterator.
         yield _CONTENT
 
     class Ranges:
         identity = harness.source().identity
         max_parallel_ranges = 0
 
-        def open_range(self, offset: int, length: int) -> object:
+        def open_range(self, _offset: int, _length: int) -> object:
             return self
 
     class Unidentified(Ranges):
@@ -632,10 +629,10 @@ def _sources(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
     class Texts(Ranges):
         max_parallel_ranges = 1
 
-        def open_range(self, offset: int, length: int) -> Any:
-            from contextlib import nullcontext  # noqa: PLC0415
+        def open_range(self, _offset: int, _length: int) -> Any:
+            from contextlib import nullcontext
 
-            return nullcontext(io.StringIO("0123456789"))
+            return nullcontext(io.StringIO(string.digits))
 
     lines.append("sources that cannot resume or are invalid")
     stream_source = stream()
@@ -679,18 +676,20 @@ def _sources(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
 def _ranges(source: Any) -> str:
     """Describe what out-of-range and invalid reads of a builtin source raise."""
     found = []
-    for label, call in (
-        ("past the end", lambda: source.open_range(5, 10).__enter__()),
-        ("a negative offset", lambda: source.open_range(-1, 1).__enter__()),
-    ):
-        try:
-            call()
-        except ValueError:
-            found.append(f"{label} refused")
+    try:
+        with source.open_range(5, 10):
+            pass
+    except ValueError:
+        found.append("past the end refused")
+    try:
+        with source.open_range(-1, 1):
+            pass
+    except ValueError:
+        found.append("a negative offset refused")
     return ", ".join(found)
 
 
-def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lines: list[str]) -> None:
+def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lines: list[str]) -> None:  # ruff: ignore[too-many-locals]
     """Resume a checkpoint with zero creates after checking its source, and refuse checkpoints of another kind."""
     helper, finish, protocols = api.protocols.files.upload, api.protocols.files.finish, harness.protocols
     lines.append("checkpoint, export, import, and resume")
@@ -703,8 +702,10 @@ def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
     exchange.respond(server, server, server)
     resumed = step(lines, "resume", lambda: helper.resume(harness.source(), state))
     step(lines, "run", resumed.run)
-    lines.append(f"  {server.stored(f'u{len(server.uploads)}')}")
-    lines.append("resume a checkpoint whose remote upload went further")
+    lines.extend((
+        f"  {server.stored(f'u{len(server.uploads)}')}",
+        "resume a checkpoint whose remote upload went further",
+    ))
     exchange.respond(server, server)
     handle = helper.start(harness.source(), tus_resumable=harness.tus)
     state = handle.checkpoint()
@@ -771,8 +772,8 @@ def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
     dotted = protocols.ResumeState(**fingerprints, state=dots, payload=state_payload(exported))
     record(lines, "resume with a path value of dots and bytes for a source", lambda: helper.resume(_CONTENT, dotted))
     digests = state_payload(exported)
-    other = protocols.ResumeState(**fingerprints, state=saved, payload=digests[:32] + bytes(32) + digests[64:])
-    step(lines, "resume with digests of other content", lambda: helper.resume(harness.source(), other))
+    mismatched = protocols.ResumeState(**fingerprints, state=saved, payload=digests[:32] + bytes(32) + digests[64:])
+    step(lines, "resume with digests of other content", lambda: helper.resume(harness.source(), mismatched))
     lines.append("a checkpoint of another security partition")
     secured = harness.client_options(
         protocols=harness.options.ProtocolClientOptions(
@@ -785,7 +786,7 @@ def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
 
 def state_payload(exported: bytes) -> bytes:
     """Return the payload of an exported checkpoint."""
-    from base64 import b64decode  # noqa: PLC0415
+    from base64 import b64decode
 
     return b64decode(json.loads(exported)["payload"])
 
@@ -947,7 +948,7 @@ def _steps(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lin
     lines.append(f"  handle {handle!r}")
 
 
-async def _async_uploads(harness: _Uploads, server: _Server, lines: list[str]) -> None:
+async def _async_uploads(harness: _Uploads, server: _Server, lines: list[str]) -> None:  # ruff: ignore[too-many-locals]
     """Upload, recover, and resume with asyncio, from bytes and from a file read on its own worker."""
     package, protocols = harness.package, harness.protocols
     exchange = Exchange(lines)
@@ -1056,7 +1057,7 @@ async def _async_uploads(harness: _Uploads, server: _Server, lines: list[str]) -
         lines.append("async file source")
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory, "content.bin")
-            path.write_bytes(_CONTENT)
+            await asyncio.to_thread(path.write_bytes, _CONTENT)
             async with await protocols.AsyncFileUploadSource.from_path(path) as source:
                 lines.append(f"  source {source!r}")
                 exchange.respond(*[server] * 4)
@@ -1067,7 +1068,7 @@ async def _async_uploads(harness: _Uploads, server: _Server, lines: list[str]) -
                     first = await reader.read(3)
                     await reader.aclose()
                     lines.append(f"  file range {first!r}, after close {await reader.read(1)!r}")
-                path.write_bytes(b"0123456789abc")
+                await asyncio.to_thread(path.write_bytes, b"0123456789abc")
                 await arecord(
                     lines, "start after the file changed", lambda: helper.start(source, tus_resumable=harness.tus)
                 )
