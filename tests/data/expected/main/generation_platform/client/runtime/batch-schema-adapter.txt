@@ -1,0 +1,35 @@
+# batch-schema-adapter pydantic_v2.BaseModel
+  sync two ok arrivals=1
+  sync one RequestEncodingError arrivals=0
+  sync invalid RequestEncodingError arrivals=0
+  async two ok arrivals=1
+  async one RequestEncodingError arrivals=0
+  async invalid RequestEncodingError arrivals=0
+# batch-schema-adapter pydantic_v2.dataclass
+  sync two ok arrivals=1
+  sync one RequestEncodingError arrivals=0
+  sync invalid RequestEncodingError arrivals=0
+  async two ok arrivals=1
+  async one RequestEncodingError arrivals=0
+  async invalid RequestEncodingError arrivals=0
+# batch-schema-adapter dataclasses.dataclass
+  sync two ok arrivals=1
+  sync one RequestEncodingError arrivals=0
+  sync invalid RequestEncodingError arrivals=0
+  async two ok arrivals=1
+  async one RequestEncodingError arrivals=0
+  async invalid RequestEncodingError arrivals=0
+# batch-schema-adapter typing.TypedDict
+  sync two ok arrivals=1
+  sync one RequestEncodingError arrivals=0
+  sync invalid RequestEncodingError arrivals=0
+  async two ok arrivals=1
+  async one RequestEncodingError arrivals=0
+  async invalid RequestEncodingError arrivals=0
+# batch-schema-adapter msgspec.Struct
+  sync two ok arrivals=1
+  sync one RequestEncodingError arrivals=0
+  sync invalid RequestEncodingError arrivals=0
+  async two ok arrivals=1
+  async one RequestEncodingError arrivals=0
+  async invalid RequestEncodingError arrivals=0
