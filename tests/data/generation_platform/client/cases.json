@@ -3902,5 +3902,15 @@
       }
     },
     "modules": false
+  },
+  "protocols-parts-checks": {
+    "input": "uploads.yaml",
+    "references": [
+      "protocols/parts-checks.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/parts-checks.yaml"
+    },
+    "modules": false
   }
 }

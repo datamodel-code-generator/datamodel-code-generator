@@ -25,6 +25,8 @@ paths:
         '201':
           description: The upload was created.
           headers:
+            Location:
+              schema: {type: string}
             Upload-Expires:
               schema: {type: string}
           content:
@@ -129,6 +131,157 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Stored'}
+  /files/{fileId}/parts:
+    get:
+      operationId: listFileParts
+      tags: [files]
+      parameters:
+        - {name: fileId, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Stored parts in any order.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PartList'}
+  /files/{fileId}/parts/{index}:
+    put:
+      operationId: uploadFilePart
+      tags: [files]
+      parameters:
+        - {name: fileId, in: path, required: true, schema: {type: string}}
+        - {name: index, in: path, required: true, schema: {type: integer}}
+        - {name: Digest, in: header, required: false, schema: {type: string}}
+        - {name: Cookie, in: header, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: {type: string, format: binary}
+      responses:
+        '204': {description: Part stored.}
+  /files/{fileId}/assemble:
+    post:
+      operationId: assembleFile
+      tags: [files]
+      parameters:
+        - {name: fileId, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CompletionParts'}
+      responses:
+        '200':
+          description: Assembled content.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Stored'}
+  /files/{fileId}/completion:
+    get:
+      operationId: probeFileCompletion
+      tags: [files]
+      parameters:
+        - {name: fileId, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Confirmed completion state and result.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CompletionState'}
+  /files/{fileId}/abort:
+    delete:
+      operationId: abortFile
+      tags: [files]
+      parameters:
+        - {name: fileId, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Abort receipt.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Aborted'}
+  /files/{fileId}/assemble-binary:
+    post:
+      operationId: assembleBinaryFile
+      tags:
+      - files
+      parameters:
+      - name: fileId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: Assembled content.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stored'
+  /files/{fileId}/assemble-untyped:
+    post:
+      operationId: assembleUntypedFile
+      tags:
+      - files
+      parameters:
+      - name: fileId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json: {}
+      responses:
+        '200':
+          description: Assembled content.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stored'
+  /files/{fileId}/url-part:
+    put:
+      operationId: uploadURLFilePart
+      tags:
+      - files
+      parameters:
+      - name: fileId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: X-Part-Index
+        in: header
+        required: true
+        schema:
+          type: integer
+      - name: Digest
+        in: header
+        required: false
+        schema:
+          type: string
+      - name: Cookie
+        in: header
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '204':
+          description: Part stored.
 components:
   schemas:
     Upload:
@@ -136,6 +289,7 @@ components:
       required: [id]
       properties:
         id: {type: string}
+        url: {}
         expires: {}
     Status:
       type: object
@@ -149,3 +303,43 @@ components:
         id: {type: string}
         size: {type: integer}
         sha256: {type: string}
+    Part:
+      type: object
+      required: [index, receipt, digest]
+      properties:
+        index: {type: integer}
+        receipt: {}
+        digest: {type: string}
+    PartList:
+      type: object
+      required: [parts]
+      properties:
+        opaque: {type: array}
+        parts:
+          anyOf: [{}]
+          items: {$ref: '#/components/schemas/Part'}
+    CompletionPart:
+      type: object
+      required: [index, receipt]
+      properties:
+        index: {type: integer}
+        receipt: {type: string}
+    CompletionParts:
+      type: object
+      required: [parts]
+      properties:
+        opaque: {type: array}
+        parts:
+          type: array
+          items: {$ref: '#/components/schemas/CompletionPart'}
+    CompletionState:
+      type: object
+      required: [state]
+      properties:
+        state: {type: string}
+        result: {$ref: '#/components/schemas/Stored'}
+    Aborted:
+      type: object
+      required: [aborted]
+      properties:
+        aborted: {type: boolean}

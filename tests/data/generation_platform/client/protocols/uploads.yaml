@@ -78,3 +78,766 @@ helpers:
     max_chunk_bytes: 4
     partial_commit: forbidden
     completion: {kind: length}
+  files.parts:
+    kind: resumable_upload
+    profile: parts
+    create:
+      operation: /paths/~1files/post
+      size:
+        in: header
+        name: Upload-Length
+      expires_at:
+        from: body
+        pointer: /expires
+    list_parts:
+      operation: /paths/~1files~1{fileId}~1parts/get
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      items:
+        from: body
+        pointer: /parts
+      index:
+        from: body
+        pointer: /index
+      receipt:
+        from: body
+        pointer: /receipt
+      digest:
+        from: body
+        pointer: /digest
+    upload_part:
+      operation: /paths/~1files~1{fileId}~1parts~1{index}/put
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      index:
+        in: path
+        name: index
+      digest:
+        target:
+          in: header
+          name: Digest
+        algorithm: sha256
+        encoding: hex
+    complete:
+      operation: /paths/~1files~1{fileId}~1assemble/post
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      parts:
+        in: body
+        pointer: /parts
+      index_field: index
+      receipt_field: receipt
+      result_schema:
+        pointer: /components/schemas/Stored
+    limits:
+      max_parts: 10
+      max_part_bytes: 4
+      min_part_bytes: 3
+      last_part_may_be_smaller: true
+  files.parts_abort:
+    kind: resumable_upload
+    profile: parts
+    create:
+      operation: /paths/~1files/post
+      size:
+        in: header
+        name: Upload-Length
+      expires_at:
+        from: body
+        pointer: /expires
+    list_parts:
+      operation: /paths/~1files~1{fileId}~1parts/get
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      items:
+        from: body
+        pointer: /parts
+      index:
+        from: body
+        pointer: /index
+      receipt:
+        from: body
+        pointer: /receipt
+      digest:
+        from: body
+        pointer: /digest
+    upload_part:
+      operation: /paths/~1files~1{fileId}~1parts~1{index}/put
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      index:
+        in: path
+        name: index
+      digest:
+        target:
+          in: header
+          name: Digest
+        algorithm: sha256
+        encoding: hex
+    complete:
+      operation: /paths/~1files~1{fileId}~1assemble/post
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      parts:
+        in: body
+        pointer: /parts
+      index_field: index
+      receipt_field: receipt
+      result_schema:
+        pointer: /components/schemas/Stored
+    limits:
+      max_parts: 10
+      max_part_bytes: 4
+      min_part_bytes: 3
+      last_part_may_be_smaller: true
+    abort:
+      operation: /paths/~1files~1{fileId}~1abort/delete
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+  files.parts_probe:
+    kind: resumable_upload
+    profile: parts
+    create:
+      operation: /paths/~1files/post
+      size:
+        in: header
+        name: Upload-Length
+      expires_at:
+        from: body
+        pointer: /expires
+    list_parts:
+      operation: /paths/~1files~1{fileId}~1parts/get
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      items:
+        from: body
+        pointer: /parts
+      index:
+        from: body
+        pointer: /index
+      receipt:
+        from: body
+        pointer: /receipt
+      digest:
+        from: body
+        pointer: /digest
+    upload_part:
+      operation: /paths/~1files~1{fileId}~1parts~1{index}/put
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      index:
+        in: path
+        name: index
+      digest:
+        target:
+          in: header
+          name: Digest
+        algorithm: sha256
+        encoding: hex
+    complete:
+      operation: /paths/~1files~1{fileId}~1assemble/post
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      parts:
+        in: body
+        pointer: /parts
+      index_field: index
+      receipt_field: receipt
+      result_schema:
+        pointer: /components/schemas/Stored
+    limits:
+      max_parts: 10
+      max_part_bytes: 4
+      min_part_bytes: 3
+      last_part_may_be_smaller: true
+    completion_probe:
+      operation: /paths/~1files~1{fileId}~1completion/get
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      state:
+        from: body
+        pointer: /state
+      completed_values:
+      - complete
+      result:
+        from: body
+        pointer: /result
+  files.url:
+    kind: resumable_upload
+    profile: offset
+    create:
+      operation: /paths/~1files/post
+      size:
+        in: header
+        name: Upload-Length
+      expires_at:
+        from: header
+        name: Upload-Expires
+      session_url:
+        from: header
+        name: Location
+    probe:
+      operation: /paths/~1files~1{fileId}/head
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      - target:
+          in: header
+          name: Tus-Resumable
+        value:
+          literal: 1.0.0
+      remote_offset:
+        from: header
+        name: Upload-Offset
+    append:
+      operation: /paths/~1files~1{fileId}/patch
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      - target:
+          in: header
+          name: Tus-Resumable
+        value:
+          literal: 1.0.0
+      offset:
+        in: header
+        name: Upload-Offset
+      length:
+        in: header
+        name: X-Chunk-Length
+    max_chunk_bytes: 4
+    partial_commit: allowed
+    completion:
+      kind: length
+  files.abort:
+    kind: resumable_upload
+    profile: offset
+    create:
+      operation: /paths/~1files/post
+      size:
+        in: header
+        name: Upload-Length
+      expires_at:
+        from: header
+        name: Upload-Expires
+    probe:
+      operation: /paths/~1files~1{fileId}/head
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      - target:
+          in: header
+          name: Tus-Resumable
+        value:
+          literal: 1.0.0
+      remote_offset:
+        from: header
+        name: Upload-Offset
+    append:
+      operation: /paths/~1files~1{fileId}/patch
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      - target:
+          in: header
+          name: Tus-Resumable
+        value:
+          literal: 1.0.0
+      offset:
+        in: header
+        name: Upload-Offset
+      length:
+        in: header
+        name: X-Chunk-Length
+    max_chunk_bytes: 4
+    partial_commit: allowed
+    completion:
+      kind: length
+    abort:
+      operation: /paths/~1files~1{fileId}~1abort/delete
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+  files.parts_base64:
+    kind: resumable_upload
+    profile: parts
+    create:
+      operation: /paths/~1files/post
+      size:
+        in: header
+        name: Upload-Length
+      expires_at:
+        from: body
+        pointer: /expires
+    list_parts:
+      operation: /paths/~1files~1{fileId}~1parts/get
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      items:
+        from: body
+        pointer: /parts
+      index:
+        from: body
+        pointer: /index
+      receipt:
+        from: body
+        pointer: /receipt
+      digest:
+        from: body
+        pointer: /digest
+    upload_part:
+      operation: /paths/~1files~1{fileId}~1parts~1{index}/put
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      index:
+        in: path
+        name: index
+      digest:
+        target:
+          in: header
+          name: Digest
+        algorithm: sha256
+        encoding: base64
+    complete:
+      operation: /paths/~1files~1{fileId}~1assemble/post
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      parts:
+        in: body
+        pointer: /parts
+      index_field: index
+      receipt_field: receipt
+      result_schema:
+        pointer: /components/schemas/Stored
+    limits:
+      max_parts: 10
+      max_part_bytes: 4
+      min_part_bytes: 3
+      last_part_may_be_smaller: true
+  files.parts_bare:
+    kind: resumable_upload
+    profile: parts
+    create:
+      operation: /paths/~1files/post
+      size:
+        in: header
+        name: Upload-Length
+      expires_at:
+        from: body
+        pointer: /expires
+    list_parts:
+      operation: /paths/~1files~1{fileId}~1parts/get
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      items:
+        from: body
+        pointer: /parts
+      index:
+        from: body
+        pointer: /index
+      receipt:
+        from: body
+        pointer: /receipt
+    upload_part:
+      operation: /paths/~1files~1{fileId}~1parts~1{index}/put
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      index:
+        in: path
+        name: index
+    complete:
+      operation: /paths/~1files~1{fileId}~1assemble/post
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      parts:
+        in: body
+        pointer: /parts
+      index_field: index
+      receipt_field: receipt
+      result_schema:
+        pointer: /components/schemas/Stored
+    limits:
+      max_parts: 10
+      max_part_bytes: 4
+      min_part_bytes: 3
+      last_part_may_be_smaller: true
+  files.parts_strict:
+    kind: resumable_upload
+    profile: parts
+    create:
+      operation: /paths/~1files/post
+      size:
+        in: header
+        name: Upload-Length
+      expires_at:
+        from: body
+        pointer: /expires
+    list_parts:
+      operation: /paths/~1files~1{fileId}~1parts/get
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      items:
+        from: body
+        pointer: /parts
+      index:
+        from: body
+        pointer: /index
+      receipt:
+        from: body
+        pointer: /receipt
+      digest:
+        from: body
+        pointer: /digest
+    upload_part:
+      operation: /paths/~1files~1{fileId}~1parts~1{index}/put
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      index:
+        in: path
+        name: index
+      digest:
+        target:
+          in: header
+          name: Digest
+        algorithm: sha256
+        encoding: hex
+    complete:
+      operation: /paths/~1files~1{fileId}~1assemble/post
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      parts:
+        in: body
+        pointer: /parts
+      index_field: index
+      receipt_field: receipt
+      result_schema:
+        pointer: /components/schemas/Stored
+    limits:
+      max_parts: 10
+      max_part_bytes: 4
+      min_part_bytes: 3
+      last_part_may_be_smaller: false
+  files.parts_unlimited:
+    kind: resumable_upload
+    profile: parts
+    create:
+      operation: /paths/~1files/post
+      size:
+        in: header
+        name: Upload-Length
+      expires_at:
+        from: body
+        pointer: /expires
+    list_parts:
+      operation: /paths/~1files~1{fileId}~1parts/get
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      items:
+        from: body
+        pointer: /parts
+      index:
+        from: body
+        pointer: /index
+      receipt:
+        from: body
+        pointer: /receipt
+      digest:
+        from: body
+        pointer: /digest
+    upload_part:
+      operation: /paths/~1files~1{fileId}~1parts~1{index}/put
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      index:
+        in: path
+        name: index
+      digest:
+        target:
+          in: header
+          name: Digest
+        algorithm: sha256
+        encoding: hex
+    complete:
+      operation: /paths/~1files~1{fileId}~1assemble/post
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      parts:
+        in: body
+        pointer: /parts
+      index_field: index
+      receipt_field: receipt
+      result_schema:
+        pointer: /components/schemas/Stored
+    limits:
+      last_part_may_be_smaller: true
+  files.parts_url:
+    kind: resumable_upload
+    profile: parts
+    create:
+      operation: /paths/~1files/post
+      size:
+        in: header
+        name: Upload-Length
+      expires_at:
+        from: body
+        pointer: /expires
+      session_url:
+        from: body
+        pointer: /url
+    list_parts:
+      operation: /paths/~1files~1{fileId}~1parts/get
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      items:
+        from: body
+        pointer: /parts
+      index:
+        from: body
+        pointer: /index
+      receipt:
+        from: body
+        pointer: /receipt
+      digest:
+        from: body
+        pointer: /digest
+    upload_part:
+      operation: /paths/~1files~1{fileId}~1url-part/put
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      index:
+        in: header
+        name: X-Part-Index
+      digest:
+        target:
+          in: header
+          name: Digest
+        algorithm: sha256
+        encoding: hex
+    complete:
+      operation: /paths/~1files~1{fileId}~1assemble/post
+      bindings:
+      - target:
+          in: path
+          name: fileId
+        value:
+          source: initial
+          selector:
+            from: body
+            pointer: /id
+      parts:
+        in: body
+        pointer: /parts
+      index_field: index
+      receipt_field: receipt
+      result_schema:
+        pointer: /components/schemas/Stored
+    limits:
+      max_parts: 10
+      max_part_bytes: 4
+      min_part_bytes: 3
+      last_part_may_be_smaller: true

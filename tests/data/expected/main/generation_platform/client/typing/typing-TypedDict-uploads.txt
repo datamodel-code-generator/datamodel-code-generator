@@ -1,43 +1,61 @@
 mypy pets and uploads.py: clean
 pyright pets and uploads.py: clean
 ty pets and uploads.py: clean
-uploads_negative.py 12 marked lines
-mypy uploads_negative.py: 12/12 marked lines with one error, 0 elsewhere, 0 in other files
-  16 assignment
-  17 arg-type
-  18 arg-type
-  19 call-arg
-  20 arg-type
-  21 call-arg
-  22 assignment
-  23 assignment
+uploads_negative.py 18 marked lines
+mypy uploads_negative.py: 18/18 marked lines with one error, 0 elsewhere, 0 in other files
+  20 assignment
+  21 arg-type
+  22 arg-type
+  23 call-arg
   24 arg-type
   25 call-arg
-  26 misc
-  27 arg-type
-pyright uploads_negative.py: 12/12 marked lines with one error, 0 elsewhere, 0 in other files
-  16 reportAssignmentType
-  17 reportArgumentType
-  18 reportArgumentType
-  19 reportCallIssue
-  20 reportArgumentType
-  21 reportCallIssue
-  22 reportAssignmentType
-  23 reportAssignmentType
+  26 assignment
+  27 assignment
+  28 arg-type
+  29 call-arg
+  30 misc
+  31 arg-type
+  32 attr-defined
+  33 attr-defined
+  34 call-arg
+  35 assignment
+  36 arg-type
+  38 attr-defined
+pyright uploads_negative.py: 18/18 marked lines with one error, 0 elsewhere, 0 in other files
+  20 reportAssignmentType
+  21 reportArgumentType
+  22 reportArgumentType
+  23 reportCallIssue
   24 reportArgumentType
   25 reportCallIssue
-  26 reportAttributeAccessIssue
-  27 reportArgumentType
-ty uploads_negative.py: 12/12 marked lines with one error, 0 elsewhere, 0 in other files
-  16 invalid-assignment
-  17 invalid-argument-type
-  18 invalid-argument-type
-  19 missing-argument
-  20 invalid-argument-type
-  21 unknown-argument
-  22 invalid-assignment
-  23 invalid-assignment
+  26 reportAssignmentType
+  27 reportAssignmentType
+  28 reportArgumentType
+  29 reportCallIssue
+  30 reportAttributeAccessIssue
+  31 reportArgumentType
+  32 reportAttributeAccessIssue
+  33 reportAttributeAccessIssue
+  34 reportCallIssue
+  35 reportAssignmentType
+  36 reportArgumentType
+  38 reportAttributeAccessIssue
+ty uploads_negative.py: 18/18 marked lines with one error, 0 elsewhere, 0 in other files
+  20 invalid-assignment
+  21 invalid-argument-type
+  22 invalid-argument-type
+  23 missing-argument
   24 invalid-argument-type
-  25 too-many-positional-arguments
+  25 unknown-argument
   26 invalid-assignment
-  27 invalid-argument-type
+  27 invalid-assignment
+  28 invalid-argument-type
+  29 too-many-positional-arguments
+  30 invalid-assignment
+  31 invalid-argument-type
+  32 unresolved-attribute
+  33 unresolved-attribute
+  34 too-many-positional-arguments
+  35 invalid-assignment
+  36 invalid-argument-type
+  38 unresolved-attribute

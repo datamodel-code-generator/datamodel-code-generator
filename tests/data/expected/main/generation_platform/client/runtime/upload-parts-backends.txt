@@ -1,0 +1,1376 @@
+# uploads typing.TypedDict
+parts ranges capacity=4 shared=False
+  run = {'id': 'parts', 'size': 16, 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0'}
+  ranges: most=4 opened=5 closed=5 part_limit=4 read_limit=17
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts ranges capacity=1 shared=False
+  run = {'id': 'parts', 'size': 16, 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0'}
+  ranges: most=1 opened=5 closed=5 part_limit=4 read_limit=17
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts ranges capacity=4 shared=True
+  run: UploadSourceChangedError secondary []
+  ranges: most=4 opened=5 closed=5 part_limit=4 read_limit=17
+  server: creates=1 lists=0 sends=[] completes=0 aborts=0 ordered=[] original=False
+parts failure before
+  first part = progress 4/16 complete=False
+  failed wave = progress 4/16 complete=False
+  run resumed = {'id': 'parts', 'size': 16, 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0'}
+  zero creates on resume=True receipts=[1, 2, 3, 4]
+  server: creates=1 lists=4 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts failure during
+  first part = progress 4/16 complete=False
+  failed wave = progress 4/16 complete=False
+  run resumed = {'id': 'parts', 'size': 16, 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0'}
+  zero creates on resume=True receipts=[1, 2, 3, 4]
+  server: creates=1 lists=4 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts failure after
+  first part = progress 4/16 complete=False
+  failed wave = progress 8/16 complete=False
+  run resumed = {'id': 'parts', 'size': 16, 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0'}
+  zero creates on resume=True receipts=[1, 2, 3, 4]
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts failure fail
+  first part = progress 4/16 complete=False
+  failed wave ! UploadFilePartHTTPError: UploadFilePartHTTPError(status_code=503, operation_id='uploadFilePart', call_id='<call>', retry_stop_reason='operation_never') [operation_id='uploadFilePart', status_code=503, error_decoded=False, body_bytes=b'', truncated=False] upload_file_part_http_error
+  run resumed = {'id': 'parts', 'size': 16, 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0'}
+  zero creates on resume=True receipts=[1, 2, 3, 4]
+  server: creates=1 lists=3 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts failure list
+  first part = progress 4/16 complete=False
+  failed wave ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='part') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='part'] upload_delivery_unknown_error [phase='part'] resume_state=True
+  run resumed = {'id': 'parts', 'size': 16, 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0'}
+  zero creates on resume=True receipts=[1, 2, 3, 4]
+  server: creates=1 lists=6 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts completion parts complete
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete', cause=TransportError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts completion parts decode
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=ResponseValidationError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts completion parts token
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError(phase='complete', uncertain_delivery=True, resume_state=True)
+  complete again ! UploadDeliveryUnknownError(phase='complete', uncertain_delivery=True, resume_state=True)
+  resume completion ! UploadDeliveryUnknownError(phase='complete', uncertain_delivery=True, resume_state=True)
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts completion parts gateway
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=AssembleFileHTTPError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts completion parts_probe complete
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete', cause=TransportError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion = PartsUploadHandle(phase='complete', confirmed_bytes=16, total_bytes=16)
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts completion parts_probe decode
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=ResponseValidationError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion = PartsUploadHandle(phase='complete', confirmed_bytes=16, total_bytes=16)
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts changed source and layout
+  changed part ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', offset=0) [condition='inconsistent'] upload_source_changed_error [offset=0] expected=4 actual=4
+  changed again ! ProtocolStateError: ProtocolStateError(state='source_changed', action='run') [] protocol_state_error
+  changed: creates=1 lists=0 sends=[] completes=0 aborts=0 ordered=[] original=False
+  impossible layout ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('upload_options', 'chunk_bytes'), condition='invalid_value'] protocol_configuration_error
+  impossible layout ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('upload_options', 'max_parts'), condition='invalid_value'] protocol_configuration_error
+  expired resume ! UploadExpiredError: UploadExpiredError(condition='expired') [condition='expired'] upload_expired_error
+parts variant parts_base64 size=16
+  run = {'id': 'parts', 'size': 16, 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0'}
+  complete resume = {'id': 'parts', 'size': 16, 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0'}
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts variant parts_bare size=16
+  run = {'id': 'parts', 'size': 16, 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0'}
+  complete resume = {'id': 'parts', 'size': 16, 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0'}
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts variant parts_strict size=16
+  run = {'id': 'parts', 'size': 16, 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0'}
+  complete resume = {'id': 'parts', 'size': 16, 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0'}
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts variant parts_unlimited size=16
+  run = {'id': 'parts', 'size': 16, 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0'}
+  complete resume = {'id': 'parts', 'size': 16, 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0'}
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts variant parts_url size=16
+  run = {'id': 'parts', 'size': 16, 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0'}
+  complete resume = {'id': 'parts', 'size': 16, 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0'}
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts variant parts size=0
+  run = {'id': 'parts', 'size': 0, 'sha256': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'}
+  complete resume = {'id': 'parts', 'size': 0, 'sha256': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'}
+  server: creates=1 lists=0 sends=[] completes=1 aborts=0 ordered=[] original=False
+parts variant parts size=5
+  run = {'id': 'parts', 'size': 5, 'sha256': '0004c44dc96c76174b1b34802de9a798022572f65d52ee31a72892c31e1f834e'}
+  complete resume = {'id': 'parts', 'size': 5, 'sha256': '0004c44dc96c76174b1b34802de9a798022572f65d52ee31a72892c31e1f834e'}
+  server: creates=1 lists=1 sends=[1, 2] completes=1 aborts=0 ordered=[1, 2] original=False
+  API layout refused before create ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('source', 'size'), condition='invalid_value'] protocol_configuration_error
+  API layout refused before create ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('limits', 'max_parts'), condition='invalid_value'] protocol_configuration_error
+parts resume invalid digest
+  wave = progress 16/16 complete=False
+  resume ! ProtocolDataError: ProtocolDataError(operation_id='listFileParts', call_id='<call>', condition='value') [operation_id='listFileParts', condition='value', location=BodySelector(pointer='/digest')] protocol_data_error
+  server: creates=1 lists=2 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts resume invalid missing
+  wave = progress 16/16 complete=False
+  resume ! ProtocolDataError: ProtocolDataError(operation_id='listFileParts', call_id='<call>', condition='value') [operation_id='listFileParts', condition='value', location=BodySelector(pointer='/parts')] protocol_data_error
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts resume invalid receipt
+  wave = progress 16/16 complete=False
+  resume ! ProtocolDataError: ProtocolDataError(operation_id='listFileParts', call_id='<call>', condition='value') [operation_id='listFileParts', condition='value', location=BodySelector(pointer='/receipt')] protocol_data_error
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts resume invalid receipt type
+  wave = progress 16/16 complete=False
+  resume ! ProtocolDataError: ProtocolDataError(operation_id='listFileParts', call_id='<call>', condition='type') [operation_id='listFileParts', condition='type', location=BodySelector(pointer='/receipt')] protocol_data_error
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts resume invalid array type
+  wave = progress 16/16 complete=False
+  resume ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listFileParts', call_id='<call>') [operation_id='listFileParts', body_bytes=b'{"parts":7}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.list_type) at /parts')] response_validation_error
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts resume invalid duplicate
+  wave = progress 16/16 complete=False
+  resume ! ProtocolDataError: ProtocolDataError(operation_id='listFileParts', call_id='<call>', condition='value') [operation_id='listFileParts', condition='value', location=BodySelector(pointer='/index')] protocol_data_error
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts resume invalid index
+  wave = progress 16/16 complete=False
+  resume ! ProtocolDataError: ProtocolDataError(operation_id='listFileParts', call_id='<call>', condition='value') [operation_id='listFileParts', condition='value', location=BodySelector(pointer='/index')] protocol_data_error
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts resume invalid malformed checkpoint
+  wave = progress 16/16 complete=False
+  resume ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts failed step retries its listing before sends
+  first part = progress 4/16 complete=False
+  failed part ! UploadFilePartHTTPError: UploadFilePartHTTPError(status_code=503, operation_id='uploadFilePart', call_id='<call>', retry_stop_reason='operation_never') [operation_id='uploadFilePart', status_code=503, error_decoded=False, body_bytes=b'', truncated=False] upload_file_part_http_error
+  next step = progress 8/16 complete=False
+  close again = None
+  server: creates=1 lists=3 sends=[1, 2, 2] completes=0 aborts=0 ordered=[] original=False
+parts explicit close releases ranges
+  wave = progress 16/16 complete=False
+  closed run ! ProtocolStateError: ProtocolStateError(state='closed', action='run') [] protocol_state_error
+  ranges: most=4 opened=5 closed=5 part_limit=4 read_limit=17
+parts completion probe stays pending
+  run ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete', cause=TransportError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume pending ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error
+  confirmed completion = {'id': 'parts', 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0', 'size': 16}
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts body session URL has the wrong type
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='type') [operation_id='createFile', condition='type', location=BodySelector(pointer='/url')] protocol_data_error
+parts reader gives an extra byte
+  advance ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', offset=0) [condition='inconsistent'] upload_source_changed_error [offset=0] expected=4 actual=5
+  ranges: most=1 opened=2 closed=2 part_limit=4 read_limit=17
+  server: creates=1 lists=0 sends=[] completes=0 aborts=0 ordered=[] original=False
+part cancelled by its responder
+  first part = progress 4/16 complete=False
+  cancelled part ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='part') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='part', cause=RequestCancelledError()] upload_delivery_unknown_error [phase='part'] resume_state=True
+  run resumed = {'id': 'parts', 'size': 16, 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0'}
+  server: creates=1 lists=3 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+remote abort
+  parts_abort = {'aborted': True}
+  run aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='run') [] protocol_state_error
+  resume aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='resume') [] protocol_state_error
+  abort closed ! ProtocolStateError: ProtocolStateError(state='closed', action='abort_remote') [] protocol_state_error
+  abort = {'aborted': True}
+  run aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='run') [] protocol_state_error
+  resume aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='resume') [] protocol_state_error
+  abort closed ! ProtocolStateError: ProtocolStateError(state='closed', action='abort_remote') [] protocol_state_error
+  finish = {'id': 'parts', 'size': 16, 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0'}
+  abort complete ! ProtocolStateError: ProtocolStateError(state='complete', action='abort_remote') [] protocol_state_error
+  undeclared abort absent=True
+session URL /sessions/u1
+  start = UploadHandle(phase='uploading', confirmed_bytes=0, total_bytes=10)
+  advance = progress 4/10 complete=False
+  run resumed = None
+  resume unsafe saved URL ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  resume unsafe saved URL ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  resume unsafe saved URL ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  resume unsafe saved URL ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  paths=['/files', '/sessions/u1', '/sessions/u1', '/sessions/u1', '/sessions/u1']
+session URL https://other.example.com/u1
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  paths=['/files']
+session URL https://user:secret@api.example.com/u1
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  paths=['/files']
+session URL /sessions/u1#part
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  paths=['/files']
+session URL bad space
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='malformed') [operation_id='createFile', condition='malformed', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  paths=['/files']
+session URL oversized
+  start ! ProtocolSizeError: ProtocolSizeError(operation_id='createFile', call_id='<call>', kind='cursor', limit=8192, observed=8217) [operation_id='createFile', kind='cursor', unit='bytes', limit=8192] protocol_size_error
+  paths=['/files']
+allowed cross-origin session URL strips credentials
+  run = None
+  cross-origin headers=[('other.example.com', False, False), ('other.example.com', False, False), ('other.example.com', False, False)]
+async parts ranges capacity=4 shared=False
+  run = {'id': 'parts', 'size': 16, 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0'}
+  ranges: most=4 opened=5 closed=5 part_limit=4 read_limit=17
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts ranges capacity=1 shared=False
+  run = {'id': 'parts', 'size': 16, 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0'}
+  ranges: most=1 opened=5 closed=5 part_limit=4 read_limit=17
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts ranges capacity=4 shared=True
+  run: UploadSourceChangedError secondary []
+  ranges: most=4 opened=5 closed=5 part_limit=4 read_limit=17
+  server: creates=1 lists=0 sends=[] completes=0 aborts=0 ordered=[] original=False
+async parts failure before
+  first part = progress 4/16 complete=False
+  failed wave = progress 4/16 complete=False
+  run resumed = {'id': 'parts', 'size': 16, 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0'}
+  zero creates on resume=True
+  server: creates=1 lists=4 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts failure during
+  first part = progress 4/16 complete=False
+  failed wave = progress 4/16 complete=False
+  run resumed = {'id': 'parts', 'size': 16, 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0'}
+  zero creates on resume=True
+  server: creates=1 lists=4 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts failure after
+  first part = progress 4/16 complete=False
+  failed wave = progress 8/16 complete=False
+  run resumed = {'id': 'parts', 'size': 16, 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0'}
+  zero creates on resume=True
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts failure fail
+  first part = progress 4/16 complete=False
+  failed wave ! UploadFilePartHTTPError: UploadFilePartHTTPError(status_code=503, operation_id='uploadFilePart', call_id='<call>', retry_stop_reason='operation_never') [operation_id='uploadFilePart', status_code=503, error_decoded=False, body_bytes=b'', truncated=False] upload_file_part_http_error
+  run resumed = {'id': 'parts', 'size': 16, 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0'}
+  zero creates on resume=True
+  server: creates=1 lists=3 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts failure list
+  first part = progress 4/16 complete=False
+  failed wave ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='part') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='part'] upload_delivery_unknown_error [phase='part'] resume_state=True
+  run resumed = {'id': 'parts', 'size': 16, 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0'}
+  zero creates on resume=True
+  server: creates=1 lists=6 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts completion parts complete
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete', cause=TransportError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts completion parts decode
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=ResponseValidationError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts completion parts token
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError(phase='complete', uncertain_delivery=True, resume_state=True)
+  complete again ! UploadDeliveryUnknownError(phase='complete', uncertain_delivery=True, resume_state=True)
+  resume completion ! UploadDeliveryUnknownError(phase='complete', uncertain_delivery=True, resume_state=True)
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts completion parts gateway
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=AssembleFileHTTPError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts completion parts_probe complete
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete', cause=TransportError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion = AsyncPartsUploadHandle(phase='complete', confirmed_bytes=16, total_bytes=16)
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts completion parts_probe decode
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=ResponseValidationError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion = AsyncPartsUploadHandle(phase='complete', confirmed_bytes=16, total_bytes=16)
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts task cancellation part
+  part cancelled
+  next step = progress 4/16 complete=False
+  resume = AsyncPartsUploadHandle(phase='uploading', confirmed_bytes=4, total_bytes=16)
+  run resumed = {'id': 'parts', 'size': 16, 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0'}
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts task cancellation complete
+  wave = progress 4/16 complete=False
+  wave = progress 8/16 complete=False
+  wave = progress 12/16 complete=False
+  wave = progress 16/16 complete=False
+  complete cancelled
+  next step ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+async part cancelled by its responder
+  first part = progress 4/16 complete=False
+  cancelled part ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='part') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='part', cause=RequestCancelledError()] upload_delivery_unknown_error [phase='part'] resume_state=True
+  run resumed = {'id': 'parts', 'size': 16, 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0'}
+  server: creates=1 lists=3 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts source change and expiration
+  changed ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', offset=0) [condition='inconsistent'] upload_source_changed_error [offset=0] expected=4 actual=4
+  changed again ! ProtocolStateError: ProtocolStateError(state='source_changed', action='run') [] protocol_state_error
+  server: creates=1 lists=0 sends=[] completes=0 aborts=0 ordered=[] original=False
+  expired resume ! UploadExpiredError: UploadExpiredError(condition='expired') [condition='expired'] upload_expired_error
+async remote abort parts_abort
+  abort = {'aborted': True}
+  run aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='run') [] protocol_state_error
+  resume aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='resume') [] protocol_state_error
+  abort closed ! ProtocolStateError: ProtocolStateError(state='closed', action='abort_remote') [] protocol_state_error
+  finish = {'id': 'parts', 'size': 16, 'sha256': '669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0'}
+  abort complete ! ProtocolStateError: ProtocolStateError(state='complete', action='abort_remote') [] protocol_state_error
+  server: creates=2 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=1 ordered=[1, 2, 3, 4] original=True
+async remote abort abort
+  abort = {'aborted': True}
+  run aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='run') [] protocol_state_error
+  resume aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='resume') [] protocol_state_error
+  abort closed ! ProtocolStateError: ProtocolStateError(state='closed', action='abort_remote') [] protocol_state_error
+  server: creates=1 lists=0 sends=[] completes=0 aborts=1 ordered=[] original=False
+async session URL /sessions/u1
+  start = AsyncUploadHandle(phase='uploading', confirmed_bytes=0, total_bytes=10)
+  advance = progress 4/10 complete=False
+  run resumed = None
+  paths=['/files', '/sessions/u1', '/sessions/u1', '/sessions/u1', '/sessions/u1']
+async session URL https://other.example.com/u1
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  paths=['/files']
+async session URL https://user:secret@api.example.com/u1
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  paths=['/files']
+async session URL /sessions/u1#part
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  paths=['/files']
+# uploads dataclasses.dataclass
+parts ranges capacity=4 shared=False
+  run = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  ranges: most=4 opened=5 closed=5 part_limit=4 read_limit=17
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts ranges capacity=1 shared=False
+  run = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  ranges: most=1 opened=5 closed=5 part_limit=4 read_limit=17
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts ranges capacity=4 shared=True
+  run: UploadSourceChangedError secondary []
+  ranges: most=4 opened=5 closed=5 part_limit=4 read_limit=17
+  server: creates=1 lists=0 sends=[] completes=0 aborts=0 ordered=[] original=False
+parts failure before
+  first part = progress 4/16 complete=False
+  failed wave = progress 4/16 complete=False
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True receipts=[1, 2, 3, 4]
+  server: creates=1 lists=4 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts failure during
+  first part = progress 4/16 complete=False
+  failed wave = progress 4/16 complete=False
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True receipts=[1, 2, 3, 4]
+  server: creates=1 lists=4 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts failure after
+  first part = progress 4/16 complete=False
+  failed wave = progress 8/16 complete=False
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True receipts=[1, 2, 3, 4]
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts failure fail
+  first part = progress 4/16 complete=False
+  failed wave ! UploadFilePartHTTPError: UploadFilePartHTTPError(status_code=503, operation_id='uploadFilePart', call_id='<call>', retry_stop_reason='operation_never') [operation_id='uploadFilePart', status_code=503, error_decoded=False, body_bytes=b'', truncated=False] upload_file_part_http_error
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True receipts=[1, 2, 3, 4]
+  server: creates=1 lists=3 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts failure list
+  first part = progress 4/16 complete=False
+  failed wave ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='part') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='part'] upload_delivery_unknown_error [phase='part'] resume_state=True
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True receipts=[1, 2, 3, 4]
+  server: creates=1 lists=6 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts completion parts complete
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete', cause=TransportError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts completion parts decode
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=ResponseValidationError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts completion parts token
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError(phase='complete', uncertain_delivery=True, resume_state=True)
+  complete again ! UploadDeliveryUnknownError(phase='complete', uncertain_delivery=True, resume_state=True)
+  resume completion ! UploadDeliveryUnknownError(phase='complete', uncertain_delivery=True, resume_state=True)
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts completion parts gateway
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=AssembleFileHTTPError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts completion parts_probe complete
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete', cause=TransportError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion = PartsUploadHandle(phase='complete', confirmed_bytes=16, total_bytes=16)
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts completion parts_probe decode
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=ResponseValidationError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion = PartsUploadHandle(phase='complete', confirmed_bytes=16, total_bytes=16)
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts changed source and layout
+  changed part ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', offset=0) [condition='inconsistent'] upload_source_changed_error [offset=0] expected=4 actual=4
+  changed again ! ProtocolStateError: ProtocolStateError(state='source_changed', action='run') [] protocol_state_error
+  changed: creates=1 lists=0 sends=[] completes=0 aborts=0 ordered=[] original=False
+  impossible layout ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('upload_options', 'chunk_bytes'), condition='invalid_value'] protocol_configuration_error
+  impossible layout ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('upload_options', 'max_parts'), condition='invalid_value'] protocol_configuration_error
+  expired resume ! UploadExpiredError: UploadExpiredError(condition='expired') [condition='expired'] upload_expired_error
+parts variant parts_base64 size=16
+  run = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  complete resume = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts variant parts_bare size=16
+  run = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  complete resume = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts variant parts_strict size=16
+  run = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  complete resume = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts variant parts_unlimited size=16
+  run = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  complete resume = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts variant parts_url size=16
+  run = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  complete resume = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts variant parts size=0
+  run = Stored(id='parts', size=0, sha256='e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')
+  complete resume = Stored(id='parts', size=0, sha256='e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')
+  server: creates=1 lists=0 sends=[] completes=1 aborts=0 ordered=[] original=False
+parts variant parts size=5
+  run = Stored(id='parts', size=5, sha256='0004c44dc96c76174b1b34802de9a798022572f65d52ee31a72892c31e1f834e')
+  complete resume = Stored(id='parts', size=5, sha256='0004c44dc96c76174b1b34802de9a798022572f65d52ee31a72892c31e1f834e')
+  server: creates=1 lists=1 sends=[1, 2] completes=1 aborts=0 ordered=[1, 2] original=False
+  API layout refused before create ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('source', 'size'), condition='invalid_value'] protocol_configuration_error
+  API layout refused before create ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('limits', 'max_parts'), condition='invalid_value'] protocol_configuration_error
+parts resume invalid digest
+  wave = progress 16/16 complete=False
+  resume ! ProtocolDataError: ProtocolDataError(operation_id='listFileParts', call_id='<call>', condition='value') [operation_id='listFileParts', condition='value', location=BodySelector(pointer='/digest')] protocol_data_error
+  server: creates=1 lists=2 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts resume invalid missing
+  wave = progress 16/16 complete=False
+  resume ! ProtocolDataError: ProtocolDataError(operation_id='listFileParts', call_id='<call>', condition='value') [operation_id='listFileParts', condition='value', location=BodySelector(pointer='/parts')] protocol_data_error
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts resume invalid receipt
+  wave = progress 16/16 complete=False
+  resume ! ProtocolDataError: ProtocolDataError(operation_id='listFileParts', call_id='<call>', condition='value') [operation_id='listFileParts', condition='value', location=BodySelector(pointer='/receipt')] protocol_data_error
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts resume invalid receipt type
+  wave = progress 16/16 complete=False
+  resume ! ProtocolDataError: ProtocolDataError(operation_id='listFileParts', call_id='<call>', condition='type') [operation_id='listFileParts', condition='type', location=BodySelector(pointer='/receipt')] protocol_data_error
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts resume invalid array type
+  wave = progress 16/16 complete=False
+  resume ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listFileParts', call_id='<call>') [operation_id='listFileParts', body_bytes=b'{"parts":7}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.list_type) at /parts')] response_validation_error
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts resume invalid duplicate
+  wave = progress 16/16 complete=False
+  resume ! ProtocolDataError: ProtocolDataError(operation_id='listFileParts', call_id='<call>', condition='value') [operation_id='listFileParts', condition='value', location=BodySelector(pointer='/index')] protocol_data_error
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts resume invalid index
+  wave = progress 16/16 complete=False
+  resume ! ProtocolDataError: ProtocolDataError(operation_id='listFileParts', call_id='<call>', condition='value') [operation_id='listFileParts', condition='value', location=BodySelector(pointer='/index')] protocol_data_error
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts resume invalid malformed checkpoint
+  wave = progress 16/16 complete=False
+  resume ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts failed step retries its listing before sends
+  first part = progress 4/16 complete=False
+  failed part ! UploadFilePartHTTPError: UploadFilePartHTTPError(status_code=503, operation_id='uploadFilePart', call_id='<call>', retry_stop_reason='operation_never') [operation_id='uploadFilePart', status_code=503, error_decoded=False, body_bytes=b'', truncated=False] upload_file_part_http_error
+  next step = progress 8/16 complete=False
+  close again = None
+  server: creates=1 lists=3 sends=[1, 2, 2] completes=0 aborts=0 ordered=[] original=False
+parts explicit close releases ranges
+  wave = progress 16/16 complete=False
+  closed run ! ProtocolStateError: ProtocolStateError(state='closed', action='run') [] protocol_state_error
+  ranges: most=4 opened=5 closed=5 part_limit=4 read_limit=17
+parts completion probe stays pending
+  run ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete', cause=TransportError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume pending ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error
+  confirmed completion = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts body session URL has the wrong type
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='type') [operation_id='createFile', condition='type', location=BodySelector(pointer='/url')] protocol_data_error
+parts reader gives an extra byte
+  advance ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', offset=0) [condition='inconsistent'] upload_source_changed_error [offset=0] expected=4 actual=5
+  ranges: most=1 opened=2 closed=2 part_limit=4 read_limit=17
+  server: creates=1 lists=0 sends=[] completes=0 aborts=0 ordered=[] original=False
+part cancelled by its responder
+  first part = progress 4/16 complete=False
+  cancelled part ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='part') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='part', cause=RequestCancelledError()] upload_delivery_unknown_error [phase='part'] resume_state=True
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  server: creates=1 lists=3 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+remote abort
+  parts_abort = Aborted(aborted=True)
+  run aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='run') [] protocol_state_error
+  resume aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='resume') [] protocol_state_error
+  abort closed ! ProtocolStateError: ProtocolStateError(state='closed', action='abort_remote') [] protocol_state_error
+  abort = Aborted(aborted=True)
+  run aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='run') [] protocol_state_error
+  resume aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='resume') [] protocol_state_error
+  abort closed ! ProtocolStateError: ProtocolStateError(state='closed', action='abort_remote') [] protocol_state_error
+  finish = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  abort complete ! ProtocolStateError: ProtocolStateError(state='complete', action='abort_remote') [] protocol_state_error
+  undeclared abort absent=True
+session URL /sessions/u1
+  start = UploadHandle(phase='uploading', confirmed_bytes=0, total_bytes=10)
+  advance = progress 4/10 complete=False
+  run resumed = None
+  resume unsafe saved URL ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  resume unsafe saved URL ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  resume unsafe saved URL ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  resume unsafe saved URL ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  paths=['/files', '/sessions/u1', '/sessions/u1', '/sessions/u1', '/sessions/u1']
+session URL https://other.example.com/u1
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  paths=['/files']
+session URL https://user:secret@api.example.com/u1
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  paths=['/files']
+session URL /sessions/u1#part
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  paths=['/files']
+session URL bad space
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='malformed') [operation_id='createFile', condition='malformed', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  paths=['/files']
+session URL oversized
+  start ! ProtocolSizeError: ProtocolSizeError(operation_id='createFile', call_id='<call>', kind='cursor', limit=8192, observed=8217) [operation_id='createFile', kind='cursor', unit='bytes', limit=8192] protocol_size_error
+  paths=['/files']
+allowed cross-origin session URL strips credentials
+  run = None
+  cross-origin headers=[('other.example.com', False, False), ('other.example.com', False, False), ('other.example.com', False, False)]
+async parts ranges capacity=4 shared=False
+  run = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  ranges: most=4 opened=5 closed=5 part_limit=4 read_limit=17
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts ranges capacity=1 shared=False
+  run = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  ranges: most=1 opened=5 closed=5 part_limit=4 read_limit=17
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts ranges capacity=4 shared=True
+  run: UploadSourceChangedError secondary []
+  ranges: most=4 opened=5 closed=5 part_limit=4 read_limit=17
+  server: creates=1 lists=0 sends=[] completes=0 aborts=0 ordered=[] original=False
+async parts failure before
+  first part = progress 4/16 complete=False
+  failed wave = progress 4/16 complete=False
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True
+  server: creates=1 lists=4 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts failure during
+  first part = progress 4/16 complete=False
+  failed wave = progress 4/16 complete=False
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True
+  server: creates=1 lists=4 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts failure after
+  first part = progress 4/16 complete=False
+  failed wave = progress 8/16 complete=False
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts failure fail
+  first part = progress 4/16 complete=False
+  failed wave ! UploadFilePartHTTPError: UploadFilePartHTTPError(status_code=503, operation_id='uploadFilePart', call_id='<call>', retry_stop_reason='operation_never') [operation_id='uploadFilePart', status_code=503, error_decoded=False, body_bytes=b'', truncated=False] upload_file_part_http_error
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True
+  server: creates=1 lists=3 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts failure list
+  first part = progress 4/16 complete=False
+  failed wave ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='part') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='part'] upload_delivery_unknown_error [phase='part'] resume_state=True
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True
+  server: creates=1 lists=6 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts completion parts complete
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete', cause=TransportError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts completion parts decode
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=ResponseValidationError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts completion parts token
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError(phase='complete', uncertain_delivery=True, resume_state=True)
+  complete again ! UploadDeliveryUnknownError(phase='complete', uncertain_delivery=True, resume_state=True)
+  resume completion ! UploadDeliveryUnknownError(phase='complete', uncertain_delivery=True, resume_state=True)
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts completion parts gateway
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=AssembleFileHTTPError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts completion parts_probe complete
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete', cause=TransportError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion = AsyncPartsUploadHandle(phase='complete', confirmed_bytes=16, total_bytes=16)
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts completion parts_probe decode
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=ResponseValidationError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion = AsyncPartsUploadHandle(phase='complete', confirmed_bytes=16, total_bytes=16)
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts task cancellation part
+  part cancelled
+  next step = progress 4/16 complete=False
+  resume = AsyncPartsUploadHandle(phase='uploading', confirmed_bytes=4, total_bytes=16)
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts task cancellation complete
+  wave = progress 4/16 complete=False
+  wave = progress 8/16 complete=False
+  wave = progress 12/16 complete=False
+  wave = progress 16/16 complete=False
+  complete cancelled
+  next step ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+async part cancelled by its responder
+  first part = progress 4/16 complete=False
+  cancelled part ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='part') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='part', cause=RequestCancelledError()] upload_delivery_unknown_error [phase='part'] resume_state=True
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  server: creates=1 lists=3 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts source change and expiration
+  changed ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', offset=0) [condition='inconsistent'] upload_source_changed_error [offset=0] expected=4 actual=4
+  changed again ! ProtocolStateError: ProtocolStateError(state='source_changed', action='run') [] protocol_state_error
+  server: creates=1 lists=0 sends=[] completes=0 aborts=0 ordered=[] original=False
+  expired resume ! UploadExpiredError: UploadExpiredError(condition='expired') [condition='expired'] upload_expired_error
+async remote abort parts_abort
+  abort = Aborted(aborted=True)
+  run aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='run') [] protocol_state_error
+  resume aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='resume') [] protocol_state_error
+  abort closed ! ProtocolStateError: ProtocolStateError(state='closed', action='abort_remote') [] protocol_state_error
+  finish = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  abort complete ! ProtocolStateError: ProtocolStateError(state='complete', action='abort_remote') [] protocol_state_error
+  server: creates=2 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=1 ordered=[1, 2, 3, 4] original=True
+async remote abort abort
+  abort = Aborted(aborted=True)
+  run aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='run') [] protocol_state_error
+  resume aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='resume') [] protocol_state_error
+  abort closed ! ProtocolStateError: ProtocolStateError(state='closed', action='abort_remote') [] protocol_state_error
+  server: creates=1 lists=0 sends=[] completes=0 aborts=1 ordered=[] original=False
+async session URL /sessions/u1
+  start = AsyncUploadHandle(phase='uploading', confirmed_bytes=0, total_bytes=10)
+  advance = progress 4/10 complete=False
+  run resumed = None
+  paths=['/files', '/sessions/u1', '/sessions/u1', '/sessions/u1', '/sessions/u1']
+async session URL https://other.example.com/u1
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  paths=['/files']
+async session URL https://user:secret@api.example.com/u1
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  paths=['/files']
+async session URL /sessions/u1#part
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  paths=['/files']
+# uploads msgspec.Struct
+parts ranges capacity=4 shared=False
+  run = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  ranges: most=4 opened=5 closed=5 part_limit=4 read_limit=17
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts ranges capacity=1 shared=False
+  run = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  ranges: most=1 opened=5 closed=5 part_limit=4 read_limit=17
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts ranges capacity=4 shared=True
+  run: UploadSourceChangedError secondary []
+  ranges: most=4 opened=5 closed=5 part_limit=4 read_limit=17
+  server: creates=1 lists=0 sends=[] completes=0 aborts=0 ordered=[] original=False
+parts failure before
+  first part = progress 4/16 complete=False
+  failed wave = progress 4/16 complete=False
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True receipts=[1, 2, 3, 4]
+  server: creates=1 lists=4 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts failure during
+  first part = progress 4/16 complete=False
+  failed wave = progress 4/16 complete=False
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True receipts=[1, 2, 3, 4]
+  server: creates=1 lists=4 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts failure after
+  first part = progress 4/16 complete=False
+  failed wave = progress 8/16 complete=False
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True receipts=[1, 2, 3, 4]
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts failure fail
+  first part = progress 4/16 complete=False
+  failed wave ! UploadFilePartHTTPError: UploadFilePartHTTPError(status_code=503, operation_id='uploadFilePart', call_id='<call>', retry_stop_reason='operation_never') [operation_id='uploadFilePart', status_code=503, error_decoded=False, body_bytes=b'', truncated=False] upload_file_part_http_error
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True receipts=[1, 2, 3, 4]
+  server: creates=1 lists=3 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts failure list
+  first part = progress 4/16 complete=False
+  failed wave ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='part') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='part'] upload_delivery_unknown_error [phase='part'] resume_state=True
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True receipts=[1, 2, 3, 4]
+  server: creates=1 lists=6 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts completion parts complete
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete', cause=TransportError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts completion parts decode
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=ResponseValidationError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts completion parts token
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError(phase='complete', uncertain_delivery=True, resume_state=True)
+  complete again ! UploadDeliveryUnknownError(phase='complete', uncertain_delivery=True, resume_state=True)
+  resume completion ! UploadDeliveryUnknownError(phase='complete', uncertain_delivery=True, resume_state=True)
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts completion parts gateway
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=AssembleFileHTTPError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts completion parts_probe complete
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete', cause=TransportError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion = PartsUploadHandle(phase='complete', confirmed_bytes=16, total_bytes=16)
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts completion parts_probe decode
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=ResponseValidationError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion = PartsUploadHandle(phase='complete', confirmed_bytes=16, total_bytes=16)
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts changed source and layout
+  changed part ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', offset=0) [condition='inconsistent'] upload_source_changed_error [offset=0] expected=4 actual=4
+  changed again ! ProtocolStateError: ProtocolStateError(state='source_changed', action='run') [] protocol_state_error
+  changed: creates=1 lists=0 sends=[] completes=0 aborts=0 ordered=[] original=False
+  impossible layout ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('upload_options', 'chunk_bytes'), condition='invalid_value'] protocol_configuration_error
+  impossible layout ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('upload_options', 'max_parts'), condition='invalid_value'] protocol_configuration_error
+  expired resume ! UploadExpiredError: UploadExpiredError(condition='expired') [condition='expired'] upload_expired_error
+parts variant parts_base64 size=16
+  run = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  complete resume = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts variant parts_bare size=16
+  run = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  complete resume = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts variant parts_strict size=16
+  run = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  complete resume = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts variant parts_unlimited size=16
+  run = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  complete resume = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts variant parts_url size=16
+  run = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  complete resume = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts variant parts size=0
+  run = Stored(id='parts', size=0, sha256='e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')
+  complete resume = Stored(id='parts', size=0, sha256='e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')
+  server: creates=1 lists=0 sends=[] completes=1 aborts=0 ordered=[] original=False
+parts variant parts size=5
+  run = Stored(id='parts', size=5, sha256='0004c44dc96c76174b1b34802de9a798022572f65d52ee31a72892c31e1f834e')
+  complete resume = Stored(id='parts', size=5, sha256='0004c44dc96c76174b1b34802de9a798022572f65d52ee31a72892c31e1f834e')
+  server: creates=1 lists=1 sends=[1, 2] completes=1 aborts=0 ordered=[1, 2] original=False
+  API layout refused before create ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('source', 'size'), condition='invalid_value'] protocol_configuration_error
+  API layout refused before create ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('limits', 'max_parts'), condition='invalid_value'] protocol_configuration_error
+parts resume invalid digest
+  wave = progress 16/16 complete=False
+  resume ! ProtocolDataError: ProtocolDataError(operation_id='listFileParts', call_id='<call>', condition='value') [operation_id='listFileParts', condition='value', location=BodySelector(pointer='/digest')] protocol_data_error
+  server: creates=1 lists=2 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts resume invalid missing
+  wave = progress 16/16 complete=False
+  resume ! ProtocolDataError: ProtocolDataError(operation_id='listFileParts', call_id='<call>', condition='value') [operation_id='listFileParts', condition='value', location=BodySelector(pointer='/parts')] protocol_data_error
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts resume invalid receipt
+  wave = progress 16/16 complete=False
+  resume ! ProtocolDataError: ProtocolDataError(operation_id='listFileParts', call_id='<call>', condition='value') [operation_id='listFileParts', condition='value', location=BodySelector(pointer='/receipt')] protocol_data_error
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts resume invalid receipt type
+  wave = progress 16/16 complete=False
+  resume ! ProtocolDataError: ProtocolDataError(operation_id='listFileParts', call_id='<call>', condition='type') [operation_id='listFileParts', condition='type', location=BodySelector(pointer='/receipt')] protocol_data_error
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts resume invalid array type
+  wave = progress 16/16 complete=False
+  resume ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listFileParts', call_id='<call>') [operation_id='listFileParts', body_bytes=b'{"parts":7}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.validation_error) at /parts')] response_validation_error
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts resume invalid duplicate
+  wave = progress 16/16 complete=False
+  resume ! ProtocolDataError: ProtocolDataError(operation_id='listFileParts', call_id='<call>', condition='value') [operation_id='listFileParts', condition='value', location=BodySelector(pointer='/index')] protocol_data_error
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts resume invalid index
+  wave = progress 16/16 complete=False
+  resume ! ProtocolDataError: ProtocolDataError(operation_id='listFileParts', call_id='<call>', condition='value') [operation_id='listFileParts', condition='value', location=BodySelector(pointer='/index')] protocol_data_error
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts resume invalid malformed checkpoint
+  wave = progress 16/16 complete=False
+  resume ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts failed step retries its listing before sends
+  first part = progress 4/16 complete=False
+  failed part ! UploadFilePartHTTPError: UploadFilePartHTTPError(status_code=503, operation_id='uploadFilePart', call_id='<call>', retry_stop_reason='operation_never') [operation_id='uploadFilePart', status_code=503, error_decoded=False, body_bytes=b'', truncated=False] upload_file_part_http_error
+  next step = progress 8/16 complete=False
+  close again = None
+  server: creates=1 lists=3 sends=[1, 2, 2] completes=0 aborts=0 ordered=[] original=False
+parts explicit close releases ranges
+  wave = progress 16/16 complete=False
+  closed run ! ProtocolStateError: ProtocolStateError(state='closed', action='run') [] protocol_state_error
+  ranges: most=4 opened=5 closed=5 part_limit=4 read_limit=17
+parts completion probe stays pending
+  run ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete', cause=TransportError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume pending ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error
+  confirmed completion = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts body session URL has the wrong type
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='type') [operation_id='createFile', condition='type', location=BodySelector(pointer='/url')] protocol_data_error
+parts reader gives an extra byte
+  advance ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', offset=0) [condition='inconsistent'] upload_source_changed_error [offset=0] expected=4 actual=5
+  ranges: most=1 opened=2 closed=2 part_limit=4 read_limit=17
+  server: creates=1 lists=0 sends=[] completes=0 aborts=0 ordered=[] original=False
+part cancelled by its responder
+  first part = progress 4/16 complete=False
+  cancelled part ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='part') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='part', cause=RequestCancelledError()] upload_delivery_unknown_error [phase='part'] resume_state=True
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  server: creates=1 lists=3 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+remote abort
+  parts_abort = Aborted(aborted=True)
+  run aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='run') [] protocol_state_error
+  resume aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='resume') [] protocol_state_error
+  abort closed ! ProtocolStateError: ProtocolStateError(state='closed', action='abort_remote') [] protocol_state_error
+  abort = Aborted(aborted=True)
+  run aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='run') [] protocol_state_error
+  resume aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='resume') [] protocol_state_error
+  abort closed ! ProtocolStateError: ProtocolStateError(state='closed', action='abort_remote') [] protocol_state_error
+  finish = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  abort complete ! ProtocolStateError: ProtocolStateError(state='complete', action='abort_remote') [] protocol_state_error
+  undeclared abort absent=True
+session URL /sessions/u1
+  start = UploadHandle(phase='uploading', confirmed_bytes=0, total_bytes=10)
+  advance = progress 4/10 complete=False
+  run resumed = None
+  resume unsafe saved URL ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  resume unsafe saved URL ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  resume unsafe saved URL ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  resume unsafe saved URL ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  paths=['/files', '/sessions/u1', '/sessions/u1', '/sessions/u1', '/sessions/u1']
+session URL https://other.example.com/u1
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  paths=['/files']
+session URL https://user:secret@api.example.com/u1
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  paths=['/files']
+session URL /sessions/u1#part
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  paths=['/files']
+session URL bad space
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='malformed') [operation_id='createFile', condition='malformed', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  paths=['/files']
+session URL oversized
+  start ! ProtocolSizeError: ProtocolSizeError(operation_id='createFile', call_id='<call>', kind='cursor', limit=8192, observed=8217) [operation_id='createFile', kind='cursor', unit='bytes', limit=8192] protocol_size_error
+  paths=['/files']
+allowed cross-origin session URL strips credentials
+  run = None
+  cross-origin headers=[('other.example.com', False, False), ('other.example.com', False, False), ('other.example.com', False, False)]
+async parts ranges capacity=4 shared=False
+  run = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  ranges: most=4 opened=5 closed=5 part_limit=4 read_limit=17
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts ranges capacity=1 shared=False
+  run = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  ranges: most=1 opened=5 closed=5 part_limit=4 read_limit=17
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts ranges capacity=4 shared=True
+  run: UploadSourceChangedError secondary []
+  ranges: most=4 opened=5 closed=5 part_limit=4 read_limit=17
+  server: creates=1 lists=0 sends=[] completes=0 aborts=0 ordered=[] original=False
+async parts failure before
+  first part = progress 4/16 complete=False
+  failed wave = progress 4/16 complete=False
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True
+  server: creates=1 lists=4 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts failure during
+  first part = progress 4/16 complete=False
+  failed wave = progress 4/16 complete=False
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True
+  server: creates=1 lists=4 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts failure after
+  first part = progress 4/16 complete=False
+  failed wave = progress 8/16 complete=False
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts failure fail
+  first part = progress 4/16 complete=False
+  failed wave ! UploadFilePartHTTPError: UploadFilePartHTTPError(status_code=503, operation_id='uploadFilePart', call_id='<call>', retry_stop_reason='operation_never') [operation_id='uploadFilePart', status_code=503, error_decoded=False, body_bytes=b'', truncated=False] upload_file_part_http_error
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True
+  server: creates=1 lists=3 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts failure list
+  first part = progress 4/16 complete=False
+  failed wave ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='part') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='part'] upload_delivery_unknown_error [phase='part'] resume_state=True
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True
+  server: creates=1 lists=6 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts completion parts complete
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete', cause=TransportError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts completion parts decode
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=ResponseValidationError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts completion parts token
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError(phase='complete', uncertain_delivery=True, resume_state=True)
+  complete again ! UploadDeliveryUnknownError(phase='complete', uncertain_delivery=True, resume_state=True)
+  resume completion ! UploadDeliveryUnknownError(phase='complete', uncertain_delivery=True, resume_state=True)
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts completion parts gateway
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=AssembleFileHTTPError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts completion parts_probe complete
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete', cause=TransportError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion = AsyncPartsUploadHandle(phase='complete', confirmed_bytes=16, total_bytes=16)
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts completion parts_probe decode
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=ResponseValidationError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion = AsyncPartsUploadHandle(phase='complete', confirmed_bytes=16, total_bytes=16)
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts task cancellation part
+  part cancelled
+  next step = progress 4/16 complete=False
+  resume = AsyncPartsUploadHandle(phase='uploading', confirmed_bytes=4, total_bytes=16)
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts task cancellation complete
+  wave = progress 4/16 complete=False
+  wave = progress 8/16 complete=False
+  wave = progress 12/16 complete=False
+  wave = progress 16/16 complete=False
+  complete cancelled
+  next step ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+async part cancelled by its responder
+  first part = progress 4/16 complete=False
+  cancelled part ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='part') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='part', cause=RequestCancelledError()] upload_delivery_unknown_error [phase='part'] resume_state=True
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  server: creates=1 lists=3 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts source change and expiration
+  changed ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', offset=0) [condition='inconsistent'] upload_source_changed_error [offset=0] expected=4 actual=4
+  changed again ! ProtocolStateError: ProtocolStateError(state='source_changed', action='run') [] protocol_state_error
+  server: creates=1 lists=0 sends=[] completes=0 aborts=0 ordered=[] original=False
+  expired resume ! UploadExpiredError: UploadExpiredError(condition='expired') [condition='expired'] upload_expired_error
+async remote abort parts_abort
+  abort = Aborted(aborted=True)
+  run aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='run') [] protocol_state_error
+  resume aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='resume') [] protocol_state_error
+  abort closed ! ProtocolStateError: ProtocolStateError(state='closed', action='abort_remote') [] protocol_state_error
+  finish = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  abort complete ! ProtocolStateError: ProtocolStateError(state='complete', action='abort_remote') [] protocol_state_error
+  server: creates=2 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=1 ordered=[1, 2, 3, 4] original=True
+async remote abort abort
+  abort = Aborted(aborted=True)
+  run aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='run') [] protocol_state_error
+  resume aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='resume') [] protocol_state_error
+  abort closed ! ProtocolStateError: ProtocolStateError(state='closed', action='abort_remote') [] protocol_state_error
+  server: creates=1 lists=0 sends=[] completes=0 aborts=1 ordered=[] original=False
+async session URL /sessions/u1
+  start = AsyncUploadHandle(phase='uploading', confirmed_bytes=0, total_bytes=10)
+  advance = progress 4/10 complete=False
+  run resumed = None
+  paths=['/files', '/sessions/u1', '/sessions/u1', '/sessions/u1', '/sessions/u1']
+async session URL https://other.example.com/u1
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  paths=['/files']
+async session URL https://user:secret@api.example.com/u1
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  paths=['/files']
+async session URL /sessions/u1#part
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  paths=['/files']
+# uploads pydantic_v2.dataclass
+parts ranges capacity=4 shared=False
+  run = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  ranges: most=4 opened=5 closed=5 part_limit=4 read_limit=17
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts ranges capacity=1 shared=False
+  run = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  ranges: most=1 opened=5 closed=5 part_limit=4 read_limit=17
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts ranges capacity=4 shared=True
+  run: UploadSourceChangedError secondary []
+  ranges: most=4 opened=5 closed=5 part_limit=4 read_limit=17
+  server: creates=1 lists=0 sends=[] completes=0 aborts=0 ordered=[] original=False
+parts failure before
+  first part = progress 4/16 complete=False
+  failed wave = progress 4/16 complete=False
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True receipts=[1, 2, 3, 4]
+  server: creates=1 lists=4 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts failure during
+  first part = progress 4/16 complete=False
+  failed wave = progress 4/16 complete=False
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True receipts=[1, 2, 3, 4]
+  server: creates=1 lists=4 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts failure after
+  first part = progress 4/16 complete=False
+  failed wave = progress 8/16 complete=False
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True receipts=[1, 2, 3, 4]
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts failure fail
+  first part = progress 4/16 complete=False
+  failed wave ! UploadFilePartHTTPError: UploadFilePartHTTPError(status_code=503, operation_id='uploadFilePart', call_id='<call>', retry_stop_reason='operation_never') [operation_id='uploadFilePart', status_code=503, error_decoded=False, body_bytes=b'', truncated=False] upload_file_part_http_error
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True receipts=[1, 2, 3, 4]
+  server: creates=1 lists=3 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts failure list
+  first part = progress 4/16 complete=False
+  failed wave ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='part') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='part'] upload_delivery_unknown_error [phase='part'] resume_state=True
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True receipts=[1, 2, 3, 4]
+  server: creates=1 lists=6 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts completion parts complete
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete', cause=TransportError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts completion parts decode
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=ResponseValidationError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts completion parts token
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError(phase='complete', uncertain_delivery=True, resume_state=True)
+  complete again ! UploadDeliveryUnknownError(phase='complete', uncertain_delivery=True, resume_state=True)
+  resume completion ! UploadDeliveryUnknownError(phase='complete', uncertain_delivery=True, resume_state=True)
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts completion parts gateway
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=AssembleFileHTTPError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts completion parts_probe complete
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete', cause=TransportError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion = PartsUploadHandle(phase='complete', confirmed_bytes=16, total_bytes=16)
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts completion parts_probe decode
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=ResponseValidationError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion = PartsUploadHandle(phase='complete', confirmed_bytes=16, total_bytes=16)
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts changed source and layout
+  changed part ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', offset=0) [condition='inconsistent'] upload_source_changed_error [offset=0] expected=4 actual=4
+  changed again ! ProtocolStateError: ProtocolStateError(state='source_changed', action='run') [] protocol_state_error
+  changed: creates=1 lists=0 sends=[] completes=0 aborts=0 ordered=[] original=False
+  impossible layout ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('upload_options', 'chunk_bytes'), condition='invalid_value'] protocol_configuration_error
+  impossible layout ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('upload_options', 'max_parts'), condition='invalid_value'] protocol_configuration_error
+  expired resume ! UploadExpiredError: UploadExpiredError(condition='expired') [condition='expired'] upload_expired_error
+parts variant parts_base64 size=16
+  run = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  complete resume = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts variant parts_bare size=16
+  run = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  complete resume = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts variant parts_strict size=16
+  run = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  complete resume = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts variant parts_unlimited size=16
+  run = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  complete resume = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts variant parts_url size=16
+  run = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  complete resume = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts variant parts size=0
+  run = Stored(id='parts', size=0, sha256='e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')
+  complete resume = Stored(id='parts', size=0, sha256='e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')
+  server: creates=1 lists=0 sends=[] completes=1 aborts=0 ordered=[] original=False
+parts variant parts size=5
+  run = Stored(id='parts', size=5, sha256='0004c44dc96c76174b1b34802de9a798022572f65d52ee31a72892c31e1f834e')
+  complete resume = Stored(id='parts', size=5, sha256='0004c44dc96c76174b1b34802de9a798022572f65d52ee31a72892c31e1f834e')
+  server: creates=1 lists=1 sends=[1, 2] completes=1 aborts=0 ordered=[1, 2] original=False
+  API layout refused before create ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('source', 'size'), condition='invalid_value'] protocol_configuration_error
+  API layout refused before create ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('limits', 'max_parts'), condition='invalid_value'] protocol_configuration_error
+parts resume invalid digest
+  wave = progress 16/16 complete=False
+  resume ! ProtocolDataError: ProtocolDataError(operation_id='listFileParts', call_id='<call>', condition='value') [operation_id='listFileParts', condition='value', location=BodySelector(pointer='/digest')] protocol_data_error
+  server: creates=1 lists=2 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts resume invalid missing
+  wave = progress 16/16 complete=False
+  resume ! ProtocolDataError: ProtocolDataError(operation_id='listFileParts', call_id='<call>', condition='value') [operation_id='listFileParts', condition='value', location=BodySelector(pointer='/parts')] protocol_data_error
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts resume invalid receipt
+  wave = progress 16/16 complete=False
+  resume ! ProtocolDataError: ProtocolDataError(operation_id='listFileParts', call_id='<call>', condition='value') [operation_id='listFileParts', condition='value', location=BodySelector(pointer='/receipt')] protocol_data_error
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts resume invalid receipt type
+  wave = progress 16/16 complete=False
+  resume ! ProtocolDataError: ProtocolDataError(operation_id='listFileParts', call_id='<call>', condition='type') [operation_id='listFileParts', condition='type', location=BodySelector(pointer='/receipt')] protocol_data_error
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts resume invalid array type
+  wave = progress 16/16 complete=False
+  resume ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listFileParts', call_id='<call>') [operation_id='listFileParts', body_bytes=b'{"parts":7}', truncated=False, cause=NativeValidationError('The native type rejected the value (native.list_type) at /parts')] response_validation_error
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts resume invalid duplicate
+  wave = progress 16/16 complete=False
+  resume ! ProtocolDataError: ProtocolDataError(operation_id='listFileParts', call_id='<call>', condition='value') [operation_id='listFileParts', condition='value', location=BodySelector(pointer='/index')] protocol_data_error
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts resume invalid index
+  wave = progress 16/16 complete=False
+  resume ! ProtocolDataError: ProtocolDataError(operation_id='listFileParts', call_id='<call>', condition='value') [operation_id='listFileParts', condition='value', location=BodySelector(pointer='/index')] protocol_data_error
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts resume invalid malformed checkpoint
+  wave = progress 16/16 complete=False
+  resume ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+parts failed step retries its listing before sends
+  first part = progress 4/16 complete=False
+  failed part ! UploadFilePartHTTPError: UploadFilePartHTTPError(status_code=503, operation_id='uploadFilePart', call_id='<call>', retry_stop_reason='operation_never') [operation_id='uploadFilePart', status_code=503, error_decoded=False, body_bytes=b'', truncated=False] upload_file_part_http_error
+  next step = progress 8/16 complete=False
+  close again = None
+  server: creates=1 lists=3 sends=[1, 2, 2] completes=0 aborts=0 ordered=[] original=False
+parts explicit close releases ranges
+  wave = progress 16/16 complete=False
+  closed run ! ProtocolStateError: ProtocolStateError(state='closed', action='run') [] protocol_state_error
+  ranges: most=4 opened=5 closed=5 part_limit=4 read_limit=17
+parts completion probe stays pending
+  run ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete', cause=TransportError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume pending ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error
+  confirmed completion = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+parts body session URL has the wrong type
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='type') [operation_id='createFile', condition='type', location=BodySelector(pointer='/url')] protocol_data_error
+parts reader gives an extra byte
+  advance ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', offset=0) [condition='inconsistent'] upload_source_changed_error [offset=0] expected=4 actual=5
+  ranges: most=1 opened=2 closed=2 part_limit=4 read_limit=17
+  server: creates=1 lists=0 sends=[] completes=0 aborts=0 ordered=[] original=False
+part cancelled by its responder
+  first part = progress 4/16 complete=False
+  cancelled part ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='part') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='part', cause=RequestCancelledError()] upload_delivery_unknown_error [phase='part'] resume_state=True
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  server: creates=1 lists=3 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+remote abort
+  parts_abort = Aborted(aborted=True)
+  run aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='run') [] protocol_state_error
+  resume aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='resume') [] protocol_state_error
+  abort closed ! ProtocolStateError: ProtocolStateError(state='closed', action='abort_remote') [] protocol_state_error
+  abort = Aborted(aborted=True)
+  run aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='run') [] protocol_state_error
+  resume aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='resume') [] protocol_state_error
+  abort closed ! ProtocolStateError: ProtocolStateError(state='closed', action='abort_remote') [] protocol_state_error
+  finish = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  abort complete ! ProtocolStateError: ProtocolStateError(state='complete', action='abort_remote') [] protocol_state_error
+  undeclared abort absent=True
+session URL /sessions/u1
+  start = UploadHandle(phase='uploading', confirmed_bytes=0, total_bytes=10)
+  advance = progress 4/10 complete=False
+  run resumed = None
+  resume unsafe saved URL ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  resume unsafe saved URL ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  resume unsafe saved URL ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  resume unsafe saved URL ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  paths=['/files', '/sessions/u1', '/sessions/u1', '/sessions/u1', '/sessions/u1']
+session URL https://other.example.com/u1
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  paths=['/files']
+session URL https://user:secret@api.example.com/u1
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  paths=['/files']
+session URL /sessions/u1#part
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  paths=['/files']
+session URL bad space
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='malformed') [operation_id='createFile', condition='malformed', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  paths=['/files']
+session URL oversized
+  start ! ProtocolSizeError: ProtocolSizeError(operation_id='createFile', call_id='<call>', kind='cursor', limit=8192, observed=8217) [operation_id='createFile', kind='cursor', unit='bytes', limit=8192] protocol_size_error
+  paths=['/files']
+allowed cross-origin session URL strips credentials
+  run = None
+  cross-origin headers=[('other.example.com', False, False), ('other.example.com', False, False), ('other.example.com', False, False)]
+async parts ranges capacity=4 shared=False
+  run = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  ranges: most=4 opened=5 closed=5 part_limit=4 read_limit=17
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts ranges capacity=1 shared=False
+  run = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  ranges: most=1 opened=5 closed=5 part_limit=4 read_limit=17
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts ranges capacity=4 shared=True
+  run: UploadSourceChangedError secondary []
+  ranges: most=4 opened=5 closed=5 part_limit=4 read_limit=17
+  server: creates=1 lists=0 sends=[] completes=0 aborts=0 ordered=[] original=False
+async parts failure before
+  first part = progress 4/16 complete=False
+  failed wave = progress 4/16 complete=False
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True
+  server: creates=1 lists=4 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts failure during
+  first part = progress 4/16 complete=False
+  failed wave = progress 4/16 complete=False
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True
+  server: creates=1 lists=4 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts failure after
+  first part = progress 4/16 complete=False
+  failed wave = progress 8/16 complete=False
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts failure fail
+  first part = progress 4/16 complete=False
+  failed wave ! UploadFilePartHTTPError: UploadFilePartHTTPError(status_code=503, operation_id='uploadFilePart', call_id='<call>', retry_stop_reason='operation_never') [operation_id='uploadFilePart', status_code=503, error_decoded=False, body_bytes=b'', truncated=False] upload_file_part_http_error
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True
+  server: creates=1 lists=3 sends=[1, 2, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts failure list
+  first part = progress 4/16 complete=False
+  failed wave ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='part') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='part'] upload_delivery_unknown_error [phase='part'] resume_state=True
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  zero creates on resume=True
+  server: creates=1 lists=6 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts completion parts complete
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete', cause=TransportError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts completion parts decode
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=ResponseValidationError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts completion parts token
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError(phase='complete', uncertain_delivery=True, resume_state=True)
+  complete again ! UploadDeliveryUnknownError(phase='complete', uncertain_delivery=True, resume_state=True)
+  resume completion ! UploadDeliveryUnknownError(phase='complete', uncertain_delivery=True, resume_state=True)
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts completion parts gateway
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=AssembleFileHTTPError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts completion parts_probe complete
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete', cause=TransportError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion = AsyncPartsUploadHandle(phase='complete', confirmed_bytes=16, total_bytes=16)
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts completion parts_probe decode
+  wave = progress 16/16 complete=False
+  complete ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete', cause=ResponseValidationError()] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  complete again ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='RESPONSE_STARTED', phase='complete') [delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume completion = AsyncPartsUploadHandle(phase='complete', confirmed_bytes=16, total_bytes=16)
+  server: creates=1 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts task cancellation part
+  part cancelled
+  next step = progress 4/16 complete=False
+  resume = AsyncPartsUploadHandle(phase='uploading', confirmed_bytes=4, total_bytes=16)
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts task cancellation complete
+  wave = progress 4/16 complete=False
+  wave = progress 8/16 complete=False
+  wave = progress 12/16 complete=False
+  wave = progress 16/16 complete=False
+  complete cancelled
+  next step ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  resume ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='complete') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='complete'] upload_delivery_unknown_error [phase='complete'] resume_state=True
+  server: creates=1 lists=4 sends=[1, 2, 3, 4] completes=0 aborts=0 ordered=[] original=False
+async part cancelled by its responder
+  first part = progress 4/16 complete=False
+  cancelled part ! UploadDeliveryUnknownError: UploadDeliveryUnknownError(delivery_state='MAYBE_SENT', phase='part') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='part', cause=RequestCancelledError()] upload_delivery_unknown_error [phase='part'] resume_state=True
+  run resumed = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  server: creates=1 lists=3 sends=[1, 2, 3, 4] completes=1 aborts=0 ordered=[1, 2, 3, 4] original=True
+async parts source change and expiration
+  changed ! UploadSourceChangedError: UploadSourceChangedError(condition='inconsistent', offset=0) [condition='inconsistent'] upload_source_changed_error [offset=0] expected=4 actual=4
+  changed again ! ProtocolStateError: ProtocolStateError(state='source_changed', action='run') [] protocol_state_error
+  server: creates=1 lists=0 sends=[] completes=0 aborts=0 ordered=[] original=False
+  expired resume ! UploadExpiredError: UploadExpiredError(condition='expired') [condition='expired'] upload_expired_error
+async remote abort parts_abort
+  abort = Aborted(aborted=True)
+  run aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='run') [] protocol_state_error
+  resume aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='resume') [] protocol_state_error
+  abort closed ! ProtocolStateError: ProtocolStateError(state='closed', action='abort_remote') [] protocol_state_error
+  finish = Stored(id='parts', size=16, sha256='669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0')
+  abort complete ! ProtocolStateError: ProtocolStateError(state='complete', action='abort_remote') [] protocol_state_error
+  server: creates=2 lists=1 sends=[1, 2, 3, 4] completes=1 aborts=1 ordered=[1, 2, 3, 4] original=True
+async remote abort abort
+  abort = Aborted(aborted=True)
+  run aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='run') [] protocol_state_error
+  resume aborted ! ProtocolStateError: ProtocolStateError(state='aborted', action='resume') [] protocol_state_error
+  abort closed ! ProtocolStateError: ProtocolStateError(state='closed', action='abort_remote') [] protocol_state_error
+  server: creates=1 lists=0 sends=[] completes=0 aborts=1 ordered=[] original=False
+async session URL /sessions/u1
+  start = AsyncUploadHandle(phase='uploading', confirmed_bytes=0, total_bytes=10)
+  advance = progress 4/10 complete=False
+  run resumed = None
+  paths=['/files', '/sessions/u1', '/sessions/u1', '/sessions/u1', '/sessions/u1']
+async session URL https://other.example.com/u1
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  paths=['/files']
+async session URL https://user:secret@api.example.com/u1
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  paths=['/files']
+async session URL /sessions/u1#part
+  start ! ProtocolDataError: ProtocolDataError(operation_id='createFile', call_id='<call>', condition='value') [operation_id='createFile', condition='value', location=HeaderSelector(name='Location', occurrence='single')] protocol_data_error
+  paths=['/files']

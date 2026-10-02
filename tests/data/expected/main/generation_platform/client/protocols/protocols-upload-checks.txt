@@ -1,8 +1,8 @@
 # protocols-upload-checks
 render pydantic_v2.BaseModel
   APIGenerationError
-  E_CLIENT_UNSUPPORTED target protocols.helpers['checks.later'].abort /paths/~1files/post: The resumable_upload helper 'checks.later' declares remote abort, which is not supported yet
-  E_CLIENT_UNSUPPORTED target protocols.helpers['checks.later'].create.session_url /paths/~1files/post: The resumable_upload helper 'checks.later' declares a session URL, which is not supported yet
+  E_CONFIG_VALUE config protocols.helpers['checks.later'].create.session_url /paths/~1files/post: The session URL of 'checks.later' reads the header 'Location', which POST /files does not declare
+  E_CONFIG_VALUE config protocols.helpers['checks.later'].abort.operation /paths/~1files~1{fileId}~1gone/delete: DELETE /files/{fileId}/gone must declare a success response for the upload helper 'checks.later'
   E_CONFIG_VALUE config protocols.helpers['checks.created'].create.operation /paths/~1drafts/post: POST /drafts must declare a success response for the upload helper 'checks.created'
   E_CONFIG_VALUE config protocols.helpers['checks.size'].create.size /paths/~1files/post: The size of 'checks.size' writes the cookie 'session', which carries credentials no helper writes
   E_CONFIG_VALUE config protocols.helpers['checks.size_body'].create.size /paths/~1files~1{fileId}~1status/post: The size of 'checks.size_body' writes 'body', where only a path, query, or header parameter takes it

@@ -9,8 +9,10 @@ from __future__ import annotations
 import asyncio
 import io
 import json
+import string
 import tempfile
 import threading
+from contextlib import asynccontextmanager, contextmanager
 from datetime import datetime, timezone
 from hashlib import sha256
 from pathlib import Path
@@ -21,11 +23,13 @@ import httpx2
 from tests.data.python.client_pagination import Harness
 from tests.data.python.client_runtime import (
     Exchange,
+    aoutcome,
     arecord,
     describe,
     failing,
     injected,
     json_response,
+    outcome,
     raw_response,
     record,
     run,
@@ -42,7 +46,7 @@ _EXPIRED: Final = datetime(2015, 10, 21, 7, 28, tzinfo=timezone.utc)
 
 
 class _Server:
-    """An independent upload server: it keeps each upload's bytes and answers creates, probes, appends, and completes."""
+    """Store each upload's bytes and answer its create, probe, append, and complete calls."""
 
     def __init__(self) -> None:
         """Start without uploads."""
@@ -160,7 +164,7 @@ class _Counting:
 
     def open_range(self, offset: int, length: int) -> Any:
         """Open a range of the wrapped source, counting it."""
-        from contextlib import contextmanager  # noqa: PLC0415
+        from contextlib import contextmanager
 
         @contextmanager
         def counted() -> Iterator[Any]:
@@ -253,12 +257,19 @@ class _Uploads(Harness):
         return self.options.SessionOptions(**settings)
 
 
-def _progress(value: object) -> str:
+def _progress(value: object, *, uncertain_delivery: bool = False) -> str:
     """Describe an upload step's outcome: progress, an upload error with its own fields, or anything else."""
     if hasattr(value, "confirmed_bytes") and hasattr(value, "total_bytes"):
         progress: Any = value
         return f"progress {progress.confirmed_bytes}/{progress.total_bytes} complete={progress.complete}"
     if isinstance(value, BaseException):
+        if uncertain_delivery and getattr(value, "phase", None) == "complete":
+            delivery = getattr(getattr(value, "delivery_state", None), "value", None)
+            unknown = delivery in {"MAYBE_SENT", "RESPONSE_STARTED"}
+            return (
+                f"{type(value).__name__}(phase='complete', uncertain_delivery={unknown}, "
+                f"resume_state={getattr(value, 'resume_state', None) is not None})"
+            )
         fields = ", ".join(
             f"{name}={getattr(value, name)!r}"
             for name in ("phase", "confirmed_offset", "expected_offset", "remote_offset", "size", "offset")
@@ -275,23 +286,23 @@ def _progress(value: object) -> str:
     return describe(value)
 
 
-def step(lines: list[str], label: str, call: Callable[[], object]) -> object:
+def step(lines: list[str], label: str, call: Callable[[], object], *, uncertain_delivery: bool = False) -> object:
     """Report a step's result or failure."""
     try:
         result = call()
     except Exception as error:  # noqa: BLE001
-        lines.append(f"  {label} ! {_progress(error)}")
+        lines.append(f"  {label} ! {_progress(error, uncertain_delivery=uncertain_delivery)}")
         return None
     lines.append(f"  {label} = {_progress(result)}")
     return result
 
 
-async def astep(lines: list[str], label: str, call: Callable[[], Any]) -> object:
+async def astep(lines: list[str], label: str, call: Callable[[], Any], *, uncertain_delivery: bool = False) -> object:
     """Report an asyncio step's result or failure."""
     try:
         result = await call()
     except Exception as error:  # noqa: BLE001
-        lines.append(f"  {label} ! {_progress(error)}")
+        lines.append(f"  {label} ! {_progress(error, uncertain_delivery=uncertain_delivery)}")
         return None
     lines.append(f"  {label} = {_progress(result)}")
     return result
@@ -309,6 +320,7 @@ def uploads(package: ModuleType, lines: list[str]) -> None:
             section(harness, api, server, exchange, lines)
             _drained(exchange, lines)
     run(lambda: _async_uploads(harness, server, lines))
+    parts_uploads(package, lines)
 
 
 def _drained(exchange: Exchange, lines: list[str]) -> None:
@@ -420,15 +432,16 @@ def _runs(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, line
         step(lines, "advance", handle.advance)
     step(lines, "advance after completion", handle.advance)
     step(lines, "run after completion", handle.run)
-    lines.append(f"  {server.stored('u1')}")
-    lines.append("run with a completion operation")
+    lines.extend((f"  {server.stored('u1')}", "run with a completion operation"))
     exchange.respond(*[server] * 4)
     with api.protocols.files.finish.start(harness.source(), tus_resumable=harness.tus) as finished:
         result = step(lines, "run", finished.run)
         step(lines, "run again", finished.run)
     stored = getattr(result, "sha256", None)
-    lines.append(f"  completion digest is the original's: {stored == sha256(_CONTENT).hexdigest()}")
-    lines.append("append with PUT, the size given by the caller")
+    lines.extend((
+        f"  completion digest is the original's: {stored == sha256(_CONTENT).hexdigest()}",
+        "append with PUT, the size given by the caller",
+    ))
     exchange.respond(*[server] * 4)
     put = api.protocols.files.put
     length = harness.argument("files", "CreateFile", "header", "Upload-Length", 10)
@@ -439,8 +452,7 @@ def _runs(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, line
         lambda: put.start(harness.source(), upload_length=length, tus_resumable=harness.tus, options=trace),
     )
     step(lines, "run", handle.run)
-    lines.append(f"  {server.stored(f'u{len(server.uploads)}')}")
-    lines.append("upload empty content")
+    lines.extend((f"  {server.stored(f'u{len(server.uploads)}')}", "upload empty content"))
     exchange.respond(server)
     empty = step(lines, "start", lambda: helper.start(harness.source(b""), tus_resumable=harness.tus))
     step(lines, "run", empty.run)
@@ -464,21 +476,18 @@ def _recoveries(harness: _Uploads, api: Any, server: _Server, exchange: Exchange
     handle = helper.start(harness.source(), tus_resumable=harness.tus)
     step(lines, "advance", handle.advance)
     step(lines, "run", handle.run)
-    lines.append(f"  {server.stored('u5')}")
-    lines.append("an append lost before it was stored, then part of one stored")
+    lines.extend((f"  {server.stored('u5')}", "an append lost before it was stored, then part of one stored"))
     exchange.respond(server, failing(httpx2.ReadError), server, server, server.lost(2), server, server, server)
     handle = helper.start(harness.source(), tus_resumable=harness.tus)
     step(lines, "advance", handle.advance)
     step(lines, "advance", handle.advance)
     step(lines, "run", handle.run)
-    lines.append(f"  {server.stored('u6')}")
-    lines.append("an append refused while connecting")
+    lines.extend((f"  {server.stored('u6')}", "an append refused while connecting"))
     exchange.respond(server, failing(httpx2.ConnectError), server, server, server, server)
     handle = helper.start(harness.source(), tus_resumable=harness.tus)
     step(lines, "advance", handle.advance)
     step(lines, "run", handle.run)
-    lines.append(f"  {server.stored('u7')}")
-    lines.append("probes that never answer")
+    lines.extend((f"  {server.stored('u7')}", "probes that never answer"))
     unretried = harness.options.RequestOptions(retry=harness.options.RetryOptions(max_retries=0))
     exchange.respond(server, server.lost(), failing(httpx2.ConnectError), failing(httpx2.ConnectError))
     handle = helper.start(
@@ -490,8 +499,7 @@ def _recoveries(harness: _Uploads, api: Any, server: _Server, exchange: Exchange
     step(lines, "advance", handle.advance)
     exchange.respond(server, server, server)
     step(lines, "run probes first", handle.run)
-    lines.append(f"  {server.stored('u8')}")
-    lines.append("the last append stored but answered with an error")
+    lines.extend((f"  {server.stored('u8')}", "the last append stored but answered with an error"))
     exchange.respond(server, server, server, server.refused, server)
     handle = helper.start(harness.source(), tus_resumable=harness.tus)
     step(lines, "advance", handle.advance)
@@ -529,7 +537,7 @@ def _offsets(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
         ("missing", raw_response(200)),
         ("not digits", raw_response(200, b"", None, **{"Upload-Offset": "+4"})),
         ("too many digits", raw_response(200, b"", None, **{"Upload-Offset": "9" * 5000})),
-        ("repeated", lambda request: httpx2.Response(200, headers=[("Upload-Offset", "4"), ("Upload-Offset", "4")])),
+        ("repeated", lambda _request: httpx2.Response(200, headers=[("Upload-Offset", "4"), ("Upload-Offset", "4")])),
     ):
         exchange.respond(server, failing(httpx2.ReadError), responder)
         handle = upload.start(harness.source(), tus_resumable=harness.tus)
@@ -592,7 +600,7 @@ def _sources(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
     """Refuse one-shot inputs and invalid sources before sending, and stop at content that changed."""
     helper, protocols = api.protocols.files.upload, harness.protocols
 
-    async def stream() -> AsyncIterator[bytes]:
+    async def stream() -> AsyncIterator[bytes]:  # ruff: ignore[unused-async]
         yield _CONTENT
 
     class Ranges:
@@ -600,6 +608,7 @@ def _sources(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
         max_parallel_ranges = 0
 
         def open_range(self, offset: int, length: int) -> object:
+            del offset, length
             return self
 
     class Unidentified(Ranges):
@@ -622,9 +631,10 @@ def _sources(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
         max_parallel_ranges = 1
 
         def open_range(self, offset: int, length: int) -> Any:
-            from contextlib import nullcontext  # noqa: PLC0415
+            del offset, length
+            from contextlib import nullcontext
 
-            return nullcontext(io.StringIO("0123456789"))
+            return nullcontext(io.StringIO(string.digits))
 
     lines.append("sources that cannot resume or are invalid")
     stream_source = stream()
@@ -669,17 +679,17 @@ def _ranges(source: Any) -> str:
     """Describe what out-of-range and invalid reads of a builtin source raise."""
     found = []
     for label, call in (
-        ("past the end", lambda: source.open_range(5, 10).__enter__()),
-        ("a negative offset", lambda: source.open_range(-1, 1).__enter__()),
+        ("past the end", lambda: source.open_range(5, 10).__enter__()),  # ruff: ignore[unnecessary-dunder-call]
+        ("a negative offset", lambda: source.open_range(-1, 1).__enter__()),  # ruff: ignore[unnecessary-dunder-call]
     ):
         try:
             call()
-        except ValueError:
+        except ValueError:  # ruff: ignore[try-except-in-loop]
             found.append(f"{label} refused")
     return ", ".join(found)
 
 
-def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lines: list[str]) -> None:
+def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lines: list[str]) -> None:  # ruff: ignore[too-many-locals]
     """Resume a checkpoint with zero creates after checking its source, and refuse checkpoints of another kind."""
     helper, finish, protocols = api.protocols.files.upload, api.protocols.files.finish, harness.protocols
     lines.append("checkpoint, export, import, and resume")
@@ -692,8 +702,10 @@ def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
     exchange.respond(server, server, server)
     resumed = step(lines, "resume", lambda: helper.resume(harness.source(), state))
     step(lines, "run", resumed.run)
-    lines.append(f"  {server.stored(f'u{len(server.uploads)}')}")
-    lines.append("resume a checkpoint whose remote upload went further")
+    lines.extend((
+        f"  {server.stored(f'u{len(server.uploads)}')}",
+        "resume a checkpoint whose remote upload went further",
+    ))
     exchange.respond(server, server)
     handle = helper.start(harness.source(), tus_resumable=harness.tus)
     state = handle.checkpoint()
@@ -728,8 +740,14 @@ def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
         ("another helper", lambda: finish.resume(harness.source(), state)),
         ("not a state", lambda: helper.resume(harness.source(), "state")),
         ("bytes", lambda: helper.resume(_CONTENT, state)),
-        ("a smaller chunk size", lambda: helper.resume(harness.source(), state, upload_options=harness.uploads(chunk_bytes=2))),
-        ("fewer chunks allowed", lambda: helper.resume(harness.source(), state, upload_options=harness.uploads(max_parts=2))),
+        (
+            "a smaller chunk size",
+            lambda: helper.resume(harness.source(), state, upload_options=harness.uploads(chunk_bytes=2)),
+        ),
+        (
+            "fewer chunks allowed",
+            lambda: helper.resume(harness.source(), state, upload_options=harness.uploads(max_parts=2)),
+        ),
     ):
         record(lines, f"resume with {label}", call)
     envelope = json.loads(exported)
@@ -762,13 +780,13 @@ def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
             security=protocols.ProtocolSecurityContext(credential_partition="tenant-a")
         )
     )
-    with exchange.client() as native, harness.package.Client(http_client=native, options=secured) as other:
-        record(lines, "resume", lambda: other.protocols.files.upload.resume(harness.source(), state))
+    with exchange.client() as native, harness.package.Client(http_client=native, options=secured) as secured_client:
+        record(lines, "resume", lambda: secured_client.protocols.files.upload.resume(harness.source(), state))
 
 
 def state_payload(exported: bytes) -> bytes:
     """Return the payload of an exported checkpoint."""
-    from base64 import b64decode  # noqa: PLC0415
+    from base64 import b64decode
 
     return b64decode(json.loads(exported)["payload"])
 
@@ -787,7 +805,8 @@ def _expiry(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, li
     for label, value in (
         ("no date", "tomorrow"),
         ("no day", "2999-02-30T00:00:00Z"),
-        ("a leap second", "2999-12-31T23:59:60Z"), ("a fraction", "2999-01-01t00:00:00.123456789z"),
+        ("a leap second", "2999-12-31T23:59:60Z"),
+        ("a fraction", "2999-01-01t00:00:00.123456789z"),
     ):
         server.expires = value
         exchange.respond(server)
@@ -819,7 +838,9 @@ def _clock(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lin
         handle = helper.start(harness.source(), tus_resumable=harness.tus)
         step(lines, "advance", handle.advance)
         state = handle.checkpoint()
-        record(lines, "resume a checkpoint whose expiry the clock passed", lambda: helper.resume(harness.source(), state))
+        record(
+            lines, "resume a checkpoint whose expiry the clock passed", lambda: helper.resume(harness.source(), state)
+        )
         ticks[0] += 601
         step(lines, "advance once the clock passed the session's total timeout", handle.advance)
 
@@ -927,7 +948,7 @@ def _steps(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lin
     lines.append(f"  handle {handle!r}")
 
 
-async def _async_uploads(harness: _Uploads, server: _Server, lines: list[str]) -> None:
+async def _async_uploads(harness: _Uploads, server: _Server, lines: list[str]) -> None:  # ruff: ignore[too-many-locals]
     """Upload, recover, and resume with asyncio, from bytes and from a file read on its own worker."""
     package, protocols = harness.package, harness.protocols
     exchange = Exchange(lines)
@@ -1036,7 +1057,7 @@ async def _async_uploads(harness: _Uploads, server: _Server, lines: list[str]) -
         lines.append("async file source")
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory, "content.bin")
-            path.write_bytes(_CONTENT)
+            path.write_bytes(_CONTENT)  # ruff: ignore[blocking-path-method-in-async-function]
             async with await protocols.AsyncFileUploadSource.from_path(path) as source:
                 lines.append(f"  source {source!r}")
                 exchange.respond(*[server] * 4)
@@ -1047,7 +1068,7 @@ async def _async_uploads(harness: _Uploads, server: _Server, lines: list[str]) -
                     first = await reader.read(3)
                     await reader.aclose()
                     lines.append(f"  file range {first!r}, after close {await reader.read(1)!r}")
-                path.write_bytes(b"0123456789abc")
+                path.write_bytes(b"0123456789abc")  # ruff: ignore[blocking-path-method-in-async-function]
                 await arecord(
                     lines, "start after the file changed", lambda: helper.start(source, tus_resumable=harness.tus)
                 )
@@ -1075,3 +1096,818 @@ async def _async_ranges(source: Any) -> str:
     except ValueError:
         refused = "refused"
     return f"{first!r} {rest!r} {end!r} after close {closed!r}, past the end {refused}"
+
+
+_PART_CONTENT = b"AAAABBBBCCCCDDDD"
+
+
+class _PartsServer:
+    """Store each indexed part, then assemble only the receipt list a completion supplies."""
+
+    def __init__(self) -> None:
+        self.lock = threading.Lock()
+        self.parts: dict[int, bytes] = {}
+        self.creates = self.completes = self.aborts = self.lists = 0
+        self.sent: list[int] = []
+        self.order: list[int] = []
+        self.stored = b""
+        self.failure: str | None = None
+        self.bad_digest = False
+        self.expiry = _FUTURE
+        self.url: str | None = None
+        self.complete_token: Any = None
+        self.encoding = "hex"
+        self.pending = False
+        self.part_token: Any = None
+
+    def __call__(self, request: httpx2.Request) -> httpx2.Response:  # ruff: ignore[too-many-return-statements, too-many-branches]
+        """Answer creates, part sends, reverse-order listings, completion, and abort."""
+        path = request.url.path
+        with self.lock:
+            if request.method == "POST" and path == "/files":
+                self.creates += 1
+                headers = {"Upload-Expires": self.expiry}
+                if self.url is not None:
+                    headers["Location"] = self.url
+                return json_response(201, {"id": "parts", "expires": self.expiry, "url": self.url}, **headers)(request)
+            if request.method == "PUT":
+                index = int(
+                    request.headers["X-Part-Index"] if "X-Part-Index" in request.headers else path.rsplit("/", 1)[1]
+                )
+                self.sent.append(index)
+                mode = self.failure if index == 2 else None
+                if mode in {"before", "during", "after", "fail"}:
+                    self.failure = None
+                if mode == "before":
+                    msg = "lost before part"
+                    raise httpx2.WriteError(msg, request=request)
+                if mode == "fail":
+                    return raw_response(503)(request)
+                content = request.content
+                if "Digest" in request.headers and request.headers["Digest"] != self.digest(content):
+                    return raw_response(400)(request)
+                if mode == "during":
+                    msg = "lost during part"
+                    raise httpx2.WriteError(msg, request=request)
+                self.parts[index] = content
+                if self.part_token is not None and index == 2:
+                    self.part_token.cancel()
+                if mode == "after":
+                    msg = "lost after part ACK"
+                    raise httpx2.ReadError(msg, request=request)
+                return raw_response(204)(request)
+            if request.method == "GET" and (path.endswith("/parts") or path == "/sessions/parts"):
+                self.lists += 1
+                if self.failure == "list":
+                    msg = "list unavailable"
+                    raise httpx2.ReadError(msg, request=request)
+                values = [
+                    {
+                        "index": index,
+                        "receipt": f"part-{index}",
+                        "digest": "wrong" if self.bad_digest else self.digest(content),
+                    }
+                    for index, content in sorted(self.parts.items(), reverse=True)
+                ]
+                return json_response(200, {"parts": values})(request)
+            if request.method == "POST":
+                self.completes += 1
+                parts = json.loads(request.content)["parts"]
+                self.order = [item["index"] for item in parts]
+                self.stored = b"".join(
+                    self.parts[item["index"]] for item in parts if item["receipt"] == f"part-{item['index']}"
+                )
+                if self.complete_token is not None:
+                    self.complete_token.cancel()
+                if self.failure == "complete":
+                    msg = "completion applied"
+                    raise httpx2.ReadError(msg, request=request)
+                if self.failure == "decode":
+                    return json_response(200, {"id": "parts"})(request)
+                if self.failure == "gateway":
+                    return raw_response(502)(request)
+                return self.result(request)
+            if request.method == "DELETE":
+                self.aborts += 1
+                return json_response(200, {"aborted": True})(request)
+            return json_response(
+                200,
+                {
+                    "state": "complete" if self.completes and not self.pending else "pending",
+                    "result": self.result_value(),
+                },
+            )(request)
+
+    def digest(self, content: bytes) -> str:
+        """Spell the stored digest in the advertised encoding."""
+        from base64 import b64encode
+
+        digest = sha256(content).digest()
+        return digest.hex() if self.encoding == "hex" else b64encode(digest).decode("ascii")
+
+    def result_value(self) -> dict[str, object]:
+        return {"id": "parts", "size": len(self.stored), "sha256": sha256(self.stored).hexdigest()}
+
+    def result(self, request: httpx2.Request) -> httpx2.Response:
+        return json_response(200, self.result_value())(request)
+
+    def report(self, lines: list[str], label: str) -> None:
+        lines.append(
+            f"  {label}: creates={self.creates} lists={self.lists} sends={sorted(self.sent)} "
+            f"completes={self.completes} aborts={self.aborts} ordered={self.order} "
+            f"original={sha256(self.stored).digest() == sha256(_PART_CONTENT).digest()}"
+        )
+
+
+class _Ranges:
+    """Independent readers with a four-reader barrier and observable bounds."""
+
+    def __init__(self, protocols: Any, *, capacity: int = 4, shared: bool = False) -> None:
+        self.identity = protocols.BytesUploadSource.from_bytes(_PART_CONTENT).identity
+        self.max_parallel_ranges = capacity
+        self.barrier = threading.Barrier(capacity)
+        self.lock = threading.Lock()
+        self.shared = shared
+        self.extra = False
+        self.position = 0
+        self.opened = self.closed = self.most = self.largest = self.read_limit = 0
+
+    @contextmanager
+    def open_range(self, offset: int, length: int) -> Iterator[Any]:
+        self.position = offset
+        with self.lock:
+            self.opened += 1
+            self.most = max(self.most, self.opened - self.closed)
+            self.largest = max(self.largest, length if length != len(_PART_CONTENT) else 0)
+        source = self
+
+        class Reader:
+            def __init__(self) -> None:
+                self.position = offset
+                self.first = True
+
+            def read(self, max_bytes: int) -> bytes:
+                source.read_limit = max(source.read_limit, max_bytes)
+                if self.first and length != len(_PART_CONTENT):
+                    self.first = False
+                    source.barrier.wait(10)
+                position = source.position if source.shared and length != len(_PART_CONTENT) else self.position
+                limit = min(max_bytes, 4) if source.extra and length != len(_PART_CONTENT) else max_bytes
+                stop = offset + length + int(source.extra and length != len(_PART_CONTENT))
+                value = (_PART_CONTENT + b"!")[position : min(position + limit, stop)]
+                self.position += len(value)
+                if source.shared and length != len(_PART_CONTENT):
+                    source.position += len(value)
+                return value
+
+            def close(self) -> None:
+                pass
+
+        try:
+            yield Reader()
+        finally:
+            with self.lock:
+                self.closed += 1
+
+    def report(self, lines: list[str]) -> None:
+        lines.append(
+            f"  ranges: most={self.most} opened={self.opened} closed={self.closed} "
+            f"part_limit={self.largest} read_limit={self.read_limit}"
+        )
+
+
+class _AsyncRanges:
+    """Native async readers whose first part reads meet through an event."""
+
+    def __init__(self, protocols: Any, *, capacity: int = 4, shared: bool = False) -> None:
+        self.identity = protocols.BytesUploadSource.from_bytes(_PART_CONTENT).identity
+        self.max_parallel_ranges = capacity
+        self.shared = shared
+        self.position = self.waiting = 0
+        self.barrier = asyncio.Event()
+        self.opened = self.closed = self.most = self.largest = self.read_limit = 0
+
+    @asynccontextmanager
+    async def open_range(self, offset: int, length: int) -> AsyncIterator[Any]:
+        self.position = offset
+        self.opened += 1
+        self.most = max(self.most, self.opened - self.closed)
+        self.largest = max(self.largest, length if length != len(_PART_CONTENT) else 0)
+        source = self
+
+        class Reader:
+            def __init__(self) -> None:
+                self.position = offset
+                self.first = True
+
+            async def read(self, max_bytes: int) -> bytes:
+                source.read_limit = max(source.read_limit, max_bytes)
+                if self.first and length != len(_PART_CONTENT):
+                    self.first = False
+                    source.waiting += 1
+                    if source.waiting == source.max_parallel_ranges:
+                        source.barrier.set()
+                    await source.barrier.wait()
+                position = source.position if source.shared and length != len(_PART_CONTENT) else self.position
+                value = _PART_CONTENT[position : min(position + max_bytes, offset + length)]
+                self.position += len(value)
+                if source.shared and length != len(_PART_CONTENT):
+                    source.position += len(value)
+                return value
+
+            async def aclose(self) -> None:
+                pass
+
+        try:
+            yield Reader()
+        finally:
+            self.closed += 1
+
+    def report(self, lines: list[str]) -> None:
+        lines.append(
+            f"  ranges: most={self.most} opened={self.opened} closed={self.closed} "
+            f"part_limit={self.largest} read_limit={self.read_limit}"
+        )
+
+
+def _respond(exchange: Exchange, server: _PartsServer) -> None:
+    exchange.respond(*[server] * 40)
+
+
+def parts_uploads(package: ModuleType, lines: list[str]) -> None:
+    """Exercise parts waves, resumption, uncertainty, abort, and source limits in both modes."""
+    harness = _Uploads(package)
+    quiet: list[str] = []
+    exchange = Exchange(quiet)
+    with exchange.client() as native, package.Client(http_client=native, options=harness.client_options()) as api:
+        helper = api.protocols.files.parts
+        for capacity, shared in ((4, False), (1, False), (4, True)):
+            lines.append(f"parts ranges capacity={capacity} shared={shared}")
+            server = _PartsServer()
+            _respond(exchange, server)
+            source = _Ranges(harness.protocols, capacity=capacity, shared=shared)
+            with helper.start(source, tus_resumable=harness.tus) as handle:
+                if shared:
+                    lines.append(f"  run: {outcome(handle.run)}")
+                else:
+                    step(lines, "run", handle.run)
+                source.report(lines)
+                server.report(lines, "server")
+            exchange.responders.clear()
+        for mode in ("before", "during", "after", "fail", "list"):
+            lines.append(f"parts failure {mode}")
+            server = _PartsServer()
+            _respond(exchange, server)
+            source = harness.source(_PART_CONTENT)
+            with helper.start(
+                source,
+                tus_resumable=harness.tus,
+                upload_options=harness.uploads(parallelism=1),
+                options=harness.options.RequestOptions(retry=harness.options.RetryOptions(max_retries=0)),
+            ) as handle:
+                step(lines, "first part", handle.advance)
+                server.failure = mode
+                step(lines, "failed wave", handle.advance)
+                state = handle.checkpoint()
+            server.failure = None
+            before = server.creates
+            with helper.resume(source, state) as resumed:
+                step(lines, "run resumed", resumed.run)
+                lines.append(
+                    f"  zero creates on resume={server.creates == before} "
+                    f"receipts={[part.index for part in resumed.advance().confirmed_parts]}"
+                )
+            server.report(lines, "server")
+            exchange.responders.clear()
+        for helper_name, mode in (
+            ("parts", "complete"),
+            ("parts", "decode"),
+            ("parts", "token"),
+            ("parts", "gateway"),
+            ("parts_probe", "complete"),
+            ("parts_probe", "decode"),
+        ):
+            lines.append(f"parts completion {helper_name} {mode}")
+            server = _PartsServer()
+            _respond(exchange, server)
+            token = harness.options.CancelToken()
+            selected = getattr(api.protocols.files, helper_name)
+            with selected.start(
+                harness.source(_PART_CONTENT),
+                tus_resumable=harness.tus,
+                options=harness.options.RequestOptions(cancel_token=token),
+            ) as handle:
+                step(lines, "wave", handle.advance)
+                server.failure = mode
+                server.complete_token = token if mode == "token" else None
+                step(lines, "complete", handle.run, uncertain_delivery=mode == "token")
+                step(lines, "complete again", handle.run, uncertain_delivery=mode == "token")
+                state = handle.checkpoint()
+            restored = step(
+                lines,
+                "resume completion",
+                lambda selected=selected, state=state: selected.resume(harness.source(_PART_CONTENT), state),
+                uncertain_delivery=mode == "token",
+            )
+            if restored is not None:
+                restored.close()
+            server.report(lines, "server")
+            exchange.responders.clear()
+        lines.append("parts changed source and layout")
+        server = _PartsServer()
+        _respond(exchange, server)
+        source = _Changing(harness.protocols, _PART_CONTENT, b"x" + _PART_CONTENT[1:])
+        with helper.start(source, tus_resumable=harness.tus) as handle:
+            step(lines, "changed part", handle.advance)
+            step(lines, "changed again", handle.run)
+        server.report(lines, "changed")
+        for settings in ({"chunk_bytes": 2}, {"chunk_bytes": 4, "max_parts": 3}):
+            record(
+                lines,
+                "impossible layout",
+                lambda settings=settings: helper.start(
+                    harness.source(_PART_CONTENT), tus_resumable=harness.tus, upload_options=harness.uploads(**settings)
+                ),
+            )
+        server.expiry = "2015-10-21T07:28:00Z"
+        with helper.start(harness.source(_PART_CONTENT), tus_resumable=harness.tus) as handle:
+            record(lines, "expired resume", lambda: helper.resume(harness.source(_PART_CONTENT), handle.checkpoint()))
+        exchange.responders.clear()
+        _parts_variants(harness, api, exchange, lines)
+        _abort_rows(harness, api, exchange, lines)
+    _session_urls(harness, lines)
+    run(lambda: _async_parts(harness, lines))
+    run(lambda: _async_session_urls(harness, lines))
+
+
+def _abort_rows(harness: _Uploads, api: Any, exchange: Exchange, lines: list[str]) -> None:
+    lines.append("remote abort")
+    server = _PartsServer()
+    _respond(exchange, server)
+    source = harness.source(_PART_CONTENT)
+    for name in ("parts_abort", "abort"):
+        helper = getattr(api.protocols.files, name)
+        with helper.start(source, tus_resumable=harness.tus) as handle:
+            step(lines, name, handle.abort_remote)
+            step(lines, "run aborted", handle.run)
+            state = handle.checkpoint()
+            record(lines, "resume aborted", lambda helper=helper, state=state: helper.resume(source, state))
+        step(lines, "abort closed", handle.abort_remote)
+    helper = api.protocols.files.parts_abort
+    with helper.start(source, tus_resumable=harness.tus) as handle:
+        step(lines, "finish", handle.run)
+        step(lines, "abort complete", handle.abort_remote)
+    with api.protocols.files.parts.start(source, tus_resumable=harness.tus) as handle:
+        lines.append(f"  undeclared abort absent={not hasattr(handle, 'abort_remote')}")
+    exchange.responders.clear()
+
+
+async def _async_parts(harness: _Uploads, lines: list[str]) -> None:
+    exchange = Exchange([])
+    async with (
+        exchange.async_client() as native,
+        harness.package.AsyncClient(http_client=native, options=harness.client_options()) as api,
+    ):
+        helper = api.protocols.files.parts
+        for capacity, shared in ((4, False), (1, False), (4, True)):
+            lines.append(f"async parts ranges capacity={capacity} shared={shared}")
+            server = _PartsServer()
+            _respond(exchange, server)
+            source = _AsyncRanges(harness.protocols, capacity=capacity, shared=shared)
+            async with await helper.start(source, tus_resumable=harness.tus) as handle:
+                if shared:
+                    lines.append(f"  run: {await aoutcome(handle.run)}")
+                else:
+                    await astep(lines, "run", handle.run)
+                source.report(lines)
+                server.report(lines, "server")
+            exchange.responders.clear()
+        source = harness.protocols.AsyncBytesUploadSource.from_bytes(_PART_CONTENT)
+        for mode in ("before", "during", "after", "fail", "list"):
+            lines.append(f"async parts failure {mode}")
+            server = _PartsServer()
+            _respond(exchange, server)
+            async with await helper.start(
+                source,
+                tus_resumable=harness.tus,
+                upload_options=harness.uploads(parallelism=1),
+                options=harness.options.RequestOptions(retry=harness.options.RetryOptions(max_retries=0)),
+            ) as handle:
+                await astep(lines, "first part", handle.advance)
+                server.failure = mode
+                await astep(lines, "failed wave", handle.advance)
+                state = handle.checkpoint()
+            server.failure = None
+            before = server.creates
+            async with await helper.resume(source, state) as resumed:
+                await astep(lines, "run resumed", resumed.run)
+                lines.append(f"  zero creates on resume={server.creates == before}")
+            server.report(lines, "server")
+            exchange.responders.clear()
+        for helper_name, mode in (
+            ("parts", "complete"),
+            ("parts", "decode"),
+            ("parts", "token"),
+            ("parts", "gateway"),
+            ("parts_probe", "complete"),
+            ("parts_probe", "decode"),
+        ):
+            lines.append(f"async parts completion {helper_name} {mode}")
+            server = _PartsServer()
+            _respond(exchange, server)
+            token = harness.options.CancelToken()
+            selected = getattr(api.protocols.files, helper_name)
+            async with await selected.start(
+                source,
+                tus_resumable=harness.tus,
+                options=harness.options.RequestOptions(cancel_token=token),
+            ) as handle:
+                await astep(lines, "wave", handle.advance)
+                server.failure = mode
+                server.complete_token = token if mode == "token" else None
+                await astep(lines, "complete", handle.run, uncertain_delivery=mode == "token")
+                await astep(lines, "complete again", handle.run, uncertain_delivery=mode == "token")
+                state = handle.checkpoint()
+            restored = await astep(
+                lines,
+                "resume completion",
+                lambda selected=selected, state=state: selected.resume(source, state),
+                uncertain_delivery=mode == "token",
+            )
+            if restored is not None:
+                await restored.aclose()
+            server.report(lines, "server")
+            exchange.responders.clear()
+        for phase in ("part", "complete"):
+            lines.append(f"async parts task cancellation {phase}")
+            server = _PartsServer()
+            _respond(exchange, server)
+            async with await helper.start(
+                source, tus_resumable=harness.tus, upload_options=harness.uploads(parallelism=1)
+            ) as handle:
+                if phase == "complete":
+                    for _ in range(4):
+                        await astep(lines, "wave", handle.advance)
+                exchange.responders.clear()
+                await _cancelled(lines, phase, exchange, handle.advance)
+                _respond(exchange, server)
+                state = handle.checkpoint()
+                await astep(lines, "next step", handle.advance)
+                resumed = await astep(lines, "resume", lambda state=state: helper.resume(source, state))
+                if resumed is not None:
+                    async with resumed:
+                        await astep(lines, "run resumed", resumed.run)
+            server.report(lines, "server")
+            exchange.responders.clear()
+        lines.append("async part cancelled by its responder")
+        server = _PartsServer()
+        token = harness.options.CancelToken()
+        server.part_token = token
+        _respond(exchange, server)
+        async with await helper.start(
+            source,
+            tus_resumable=harness.tus,
+            upload_options=harness.uploads(parallelism=1, max_uncertain_probes=0),
+            options=harness.options.RequestOptions(cancel_token=token),
+        ) as handle:
+            await astep(lines, "first part", handle.advance)
+            await astep(lines, "cancelled part", handle.advance)
+            state = handle.checkpoint()
+        async with await helper.resume(source, state) as resumed:
+            await astep(lines, "run resumed", resumed.run)
+        server.report(lines, "server")
+        exchange.responders.clear()
+        lines.append("async parts source change and expiration")
+        server = _PartsServer()
+        _respond(exchange, server)
+        changing = _Changing(harness.protocols, _PART_CONTENT, b"x" + _PART_CONTENT[1:])
+        changing.sources = iter((source,))
+        changing.changed = harness.protocols.AsyncBytesUploadSource.from_bytes(b"x" + _PART_CONTENT[1:])
+        async with await helper.start(changing, tus_resumable=harness.tus) as handle:
+            await astep(lines, "changed", handle.advance)
+            await astep(lines, "changed again", handle.run)
+        server.report(lines, "server")
+        server.expiry = "2015-10-21T07:28:00Z"
+        async with await helper.start(source, tus_resumable=harness.tus) as handle:
+            await astep(lines, "expired resume", lambda: helper.resume(source, handle.checkpoint()))
+        exchange.responders.clear()
+        for name in ("parts_abort", "abort"):
+            lines.append(f"async remote abort {name}")
+            server = _PartsServer()
+            _respond(exchange, server)
+            selected = getattr(api.protocols.files, name)
+            async with await selected.start(source, tus_resumable=harness.tus) as handle:
+                await astep(lines, "abort", handle.abort_remote)
+                await astep(lines, "run aborted", handle.run)
+                await astep(
+                    lines, "resume aborted", lambda selected=selected: selected.resume(source, handle.checkpoint())
+                )
+            await astep(lines, "abort closed", handle.abort_remote)
+            if name == "parts_abort":
+                async with await selected.start(source, tus_resumable=harness.tus) as handle:
+                    await astep(lines, "finish", handle.run)
+                    await astep(lines, "abort complete", handle.abort_remote)
+            server.report(lines, "server")
+            exchange.responders.clear()
+
+
+def _session_urls(harness: _Uploads, lines: list[str]) -> None:
+    """Follow relative session URLs and reject unsafe or unapproved destinations before later sends."""
+    for reference in (
+        "/sessions/u1",
+        "https://other.example.com/u1",
+        "https://user:secret@api.example.com/u1",
+        "/sessions/u1#part",
+        "bad space",
+        "x" * 8193,
+    ):
+        lines.append(f"session URL {reference if len(reference) < 100 else 'oversized'}")
+        exchange = Exchange([])
+        server = _Server()
+        paths: list[str] = []
+
+        def respond(
+            request: httpx2.Request, paths: list[str] = paths, reference: str = reference, server: _Server = server
+        ) -> httpx2.Response:
+            paths.append(request.url.path)
+            if request.method == "POST":
+                result = server.create(request)
+                result.headers["Location"] = reference
+                return result
+            translated = httpx2.Request(
+                request.method, "https://api.example.com/files/u1", headers=request.headers, content=request.content
+            )
+            return server(translated)
+
+        exchange.respond(*[injected(respond)] * 10)
+        with (
+            exchange.client() as native,
+            harness.package.Client(http_client=native, options=harness.client_options()) as api,
+        ):
+            helper = api.protocols.files.url
+            handle = step(
+                lines, "start", lambda helper=helper: helper.start(harness.source(), tus_resumable=harness.tus)
+            )
+            if handle is not None:
+                with handle:
+                    step(lines, "advance", handle.advance)
+                    state = handle.checkpoint()
+                with helper.resume(harness.source(), state) as resumed:
+                    step(lines, "run resumed", resumed.run)
+                envelope = json.loads(state.export())
+                for changed in (
+                    "https://other.example.com/u1",
+                    "https://user:secret@api.example.com/u1",
+                    "/sessions/u1#part",
+                    None,
+                ):
+                    broken = harness.protocols.ResumeState(
+                        **{name: envelope[name] for name in ("helper_fingerprint", "security_fingerprint")},
+                        state={**envelope["state"], "url": changed},
+                        payload=state_payload(state.export()),
+                    )
+                    record(
+                        lines,
+                        "resume unsafe saved URL",
+                        lambda broken=broken, helper=helper: helper.resume(harness.source(), broken),
+                    )
+            lines.append(f"  paths={paths}")
+        exchange.responders.clear()
+    lines.append("allowed cross-origin session URL strips credentials")
+    exchange = Exchange([])
+    server = _Server()
+    received: list[tuple[str, bool, bool]] = []
+
+    def followed(request: httpx2.Request) -> httpx2.Response:
+        if request.method == "POST":
+            result = server.create(request)
+            result.headers["Location"] = "https://other.example.com/session"
+            return result
+        received.append((request.url.host, "Authorization" in request.headers, "Cookie" in request.headers))
+        translated = httpx2.Request(
+            request.method, "https://api.example.com/files/u1", headers=request.headers, content=request.content
+        )
+        return server(translated)
+
+    exchange.respond(*[injected(followed)] * 10)
+    security = harness.protocols.ProtocolSecurityContext(
+        credential_partition="tenant",
+        allowed_origins=(harness.protocols.Origin(scheme="https", host="other.example.com", port=443),),
+    )
+    options = harness.client_options(
+        headers=(("Authorization", "Bearer secret"), ("Cookie", "secret=value")),
+        protocols=harness.options.ProtocolClientOptions(security=security),
+    )
+    with (
+        exchange.client() as native,
+        harness.package.Client(http_client=native, options=options) as api,
+        api.protocols.files.url.start(harness.source(), tus_resumable=harness.tus) as handle,
+    ):
+        step(lines, "run", handle.run)
+    lines.append(f"  cross-origin headers={received}")
+    exchange.responders.clear()
+
+
+async def _async_session_urls(harness: _Uploads, lines: list[str]) -> None:
+    """Follow and resume the saved session URL with asyncio, rechecking unsafe references."""
+    source = harness.protocols.AsyncBytesUploadSource.from_bytes(_CONTENT)
+    for reference in (
+        "/sessions/u1",
+        "https://other.example.com/u1",
+        "https://user:secret@api.example.com/u1",
+        "/sessions/u1#part",
+    ):
+        lines.append(f"async session URL {reference}")
+        exchange = Exchange([])
+        server = _Server()
+        paths: list[str] = []
+
+        def respond(
+            request: httpx2.Request, paths: list[str] = paths, reference: str = reference, server: _Server = server
+        ) -> httpx2.Response:
+            paths.append(request.url.path)
+            if request.method == "POST":
+                result = server.create(request)
+                result.headers["Location"] = reference
+                return result
+            translated = httpx2.Request(
+                request.method, "https://api.example.com/files/u1", headers=request.headers, content=request.content
+            )
+            return server(translated)
+
+        exchange.respond(*[injected(respond)] * 10)
+        async with (
+            exchange.async_client() as native,
+            harness.package.AsyncClient(http_client=native, options=harness.client_options()) as api,
+        ):
+            helper = api.protocols.files.url
+            handle = await astep(lines, "start", lambda helper=helper: helper.start(source, tus_resumable=harness.tus))
+            if handle is not None:
+                async with handle:
+                    await astep(lines, "advance", handle.advance)
+                    state = handle.checkpoint()
+                async with await helper.resume(source, state) as resumed:
+                    await astep(lines, "run resumed", resumed.run)
+            lines.append(f"  paths={paths}")
+        exchange.responders.clear()
+
+
+def _parts_variants(harness: _Uploads, api: Any, exchange: Exchange, lines: list[str]) -> None:
+    """Exercise digest encodings, optional digests, layout bounds, and receipt checks."""
+    for name, content in (
+        ("parts_base64", _PART_CONTENT),
+        ("parts_bare", _PART_CONTENT),
+        ("parts_strict", _PART_CONTENT),
+        ("parts_unlimited", _PART_CONTENT),
+        ("parts_url", _PART_CONTENT),
+        ("parts", b""),
+        ("parts", b"AAAAB"),
+    ):
+        lines.append(f"parts variant {name} size={len(content)}")
+        server = _PartsServer()
+        server.encoding = "base64" if name == "parts_base64" else "hex"
+        server.url = "/sessions/parts" if name == "parts_url" else None
+        _respond(exchange, server)
+        selected = getattr(api.protocols.files, name)
+        source = harness.source(content)
+        with selected.start(source, tus_resumable=harness.tus, upload_options=harness.uploads(chunk_bytes=4)) as handle:
+            step(lines, "run", handle.run)
+            state = handle.checkpoint()
+        with selected.resume(source, state) as handle:
+            step(lines, "complete resume", handle.run)
+        server.report(lines, "server")
+        exchange.responders.clear()
+    for name, content in (("parts_strict", b"AAAAB"), ("parts", bytes(41))):
+        record(
+            lines,
+            "API layout refused before create",
+            lambda content=content, name=name: getattr(api.protocols.files, name).start(
+                harness.source(content), tus_resumable=harness.tus
+            ),
+        )
+    for label in (
+        "digest",
+        "missing",
+        "receipt",
+        "receipt type",
+        "array type",
+        "duplicate",
+        "index",
+        "malformed checkpoint",
+    ):
+        lines.append(f"parts resume invalid {label}")
+        server = _PartsServer()
+        _respond(exchange, server)
+        helper = api.protocols.files.parts
+        source = harness.source(_PART_CONTENT)
+        with helper.start(source, tus_resumable=harness.tus) as handle:
+            step(lines, "wave", handle.advance)
+            state = handle.checkpoint()
+        exchange.responders.clear()
+        if label == "digest":
+            server.bad_digest = True
+            _respond(exchange, server)
+        elif label == "malformed checkpoint":
+            envelope = json.loads(state.export())
+            state = harness.protocols.ResumeState(
+                **{name: envelope[name] for name in ("helper_fingerprint", "security_fingerprint")},
+                state={**envelope["state"], "parts": [[0, "receipt"]]},
+                payload=state_payload(state.export()),
+            )
+        else:
+            values = [
+                {"index": index, "receipt": f"part-{index}", "digest": server.digest(content)}
+                for index, content in sorted(server.parts.items())
+            ]
+            if label == "missing":
+                values.pop()
+            elif label == "receipt":
+                values[0]["receipt"] = "changed"
+            elif label == "receipt type":
+                values[0]["receipt"] = 7
+            elif label == "duplicate":
+                values.append(values[0])
+            elif label == "index":
+                values[0]["index"] = 9
+            exchange.respond(json_response(200, {"parts": 7 if label == "array type" else values}))
+        record(lines, "resume", lambda helper=helper, source=source, state=state: helper.resume(source, state))
+        server.report(lines, "server")
+        exchange.responders.clear()
+
+    lines.append("parts failed step retries its listing before sends")
+    server = _PartsServer()
+    _respond(exchange, server)
+    with api.protocols.files.parts.start(
+        harness.source(_PART_CONTENT), tus_resumable=harness.tus, upload_options=harness.uploads(parallelism=1)
+    ) as handle:
+        step(lines, "first part", handle.advance)
+        server.failure = "fail"
+        step(lines, "failed part", handle.advance)
+        step(lines, "next step", handle.advance)
+    handle.close()
+    step(lines, "close again", handle.close)
+    server.report(lines, "server")
+    exchange.responders.clear()
+    lines.append("parts explicit close releases ranges")
+    server = _PartsServer()
+    _respond(exchange, server)
+    source = _Ranges(harness.protocols)
+    handle = api.protocols.files.parts.start(source, tus_resumable=harness.tus)
+    step(lines, "wave", handle.advance)
+    handle.close()
+    step(lines, "closed run", handle.run)
+    source.report(lines)
+    exchange.responders.clear()
+    lines.append("parts completion probe stays pending")
+    server = _PartsServer()
+    server.failure, server.pending = "complete", True
+    _respond(exchange, server)
+    selected = api.protocols.files.parts_probe
+    with selected.start(harness.source(_PART_CONTENT), tus_resumable=harness.tus) as handle:
+        step(lines, "run", handle.run)
+        state = handle.checkpoint()
+    record(lines, "resume pending", lambda: selected.resume(harness.source(_PART_CONTENT), state))
+    server.pending = False
+    with selected.resume(harness.source(_PART_CONTENT), state) as resumed:
+        step(lines, "confirmed completion", resumed.run)
+    server.report(lines, "server")
+    exchange.responders.clear()
+    lines.append("parts body session URL has the wrong type")
+    exchange.respond(json_response(201, {"id": "parts", "url": 7, "expires": _FUTURE}))
+    record(
+        lines,
+        "start",
+        lambda: api.protocols.files.parts_url.start(harness.source(_PART_CONTENT), tus_resumable=harness.tus),
+    )
+
+    lines.append("parts reader gives an extra byte")
+    server = _PartsServer()
+    _respond(exchange, server)
+    source = _Ranges(harness.protocols, capacity=1)
+    source.extra = True
+    with api.protocols.files.parts.start(source, tus_resumable=harness.tus) as handle:
+        step(lines, "advance", handle.advance)
+    source.report(lines)
+    server.report(lines, "server")
+    exchange.responders.clear()
+
+    lines.append("part cancelled by its responder")
+    server = _PartsServer()
+    token = harness.options.CancelToken()
+    server.part_token = token
+    _respond(exchange, server)
+    helper = api.protocols.files.parts
+    source = harness.source(_PART_CONTENT)
+    with helper.start(
+        source,
+        tus_resumable=harness.tus,
+        upload_options=harness.uploads(parallelism=1, max_uncertain_probes=0),
+        options=harness.options.RequestOptions(cancel_token=token),
+    ) as handle:
+        step(lines, "first part", handle.advance)
+        step(lines, "cancelled part", handle.advance)
+        state = handle.checkpoint()
+    with helper.resume(source, state) as resumed:
+        step(lines, "run resumed", resumed.run)
+    server.report(lines, "server")
+    exchange.responders.clear()

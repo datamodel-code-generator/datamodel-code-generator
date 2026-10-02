@@ -1,7 +1,7 @@
 # protocols-upload-errors
 render pydantic_v2.BaseModel
   APIGenerationError
-  E_CONFIG_VALUE config protocols.helpers['errors.profile'].profile: protocols.helpers['errors.profile'].profile must be 'offset'
+  E_CONFIG_VALUE config protocols.helpers['errors.profile'].profile: protocols.helpers['errors.profile'].profile must be 'offset' or 'parts'
   E_CONFIG_VALUE config protocols.helpers['errors.missing'].create: protocols.helpers['errors.missing'] needs 'create'
   E_CONFIG_VALUE config protocols.helpers['errors.missing'].probe: protocols.helpers['errors.missing'] needs 'probe'
   E_CONFIG_VALUE config protocols.helpers['errors.missing'].append: protocols.helpers['errors.missing'] needs 'append'
@@ -17,3 +17,16 @@ render pydantic_v2.BaseModel
   E_CONFIG_VALUE config protocols.helpers['errors.values'].completion.kind: protocols.helpers['errors.values'].completion.kind must be 'length' or 'operation'
   E_CONFIG_VALUE config protocols.helpers['errors.completion'].completion.result_schema: protocols.helpers['errors.completion'].completion needs 'result_schema'
   E_CONFIG_VALUE config protocols.helpers['errors.completion'].abort.operation: protocols.helpers['errors.completion'].abort needs 'operation'
+  E_CONFIG_VALUE config protocols.helpers['errors.max_parts'].limits.max_parts: protocols.helpers['errors.max_parts'].limits.max_parts must be a positive integer
+  E_CONFIG_VALUE config protocols.helpers['errors.max_bytes'].limits.max_part_bytes: protocols.helpers['errors.max_bytes'].limits.max_part_bytes must be a positive integer
+  E_CONFIG_VALUE config protocols.helpers['errors.min_bytes'].limits.min_part_bytes: protocols.helpers['errors.min_bytes'].limits.min_part_bytes must be a positive integer
+  E_CONFIG_VALUE config protocols.helpers['errors.layout'].limits.min_part_bytes: protocols.helpers['errors.layout'].limits.min_part_bytes must not exceed max_part_bytes
+  E_CONFIG_VALUE config protocols.helpers['errors.last_missing'].limits.last_part_may_be_smaller: protocols.helpers['errors.last_missing'].limits needs 'last_part_may_be_smaller'
+  E_CONFIG_VALUE config protocols.helpers['errors.items_missing'].list_parts.items: protocols.helpers['errors.items_missing'].list_parts needs 'items'
+  E_CONFIG_VALUE config protocols.helpers['errors.index_missing'].list_parts.index: protocols.helpers['errors.index_missing'].list_parts needs 'index'
+  E_CONFIG_VALUE config protocols.helpers['errors.receipt_missing'].list_parts.receipt: protocols.helpers['errors.receipt_missing'].list_parts needs 'receipt'
+  E_CONFIG_VALUE config protocols.helpers['errors.parts_target'].complete.parts: protocols.helpers['errors.parts_target'].complete.parts must write the JSON body
+  E_CONFIG_VALUE config protocols.helpers['errors.probe_state'].completion_probe.state: protocols.helpers['errors.probe_state'].completion_probe needs 'state'
+  E_CONFIG_VALUE config protocols.helpers['errors.probe_values'].completion_probe.completed_values: protocols.helpers['errors.probe_values'].completion_probe.completed_values must be a nonempty list
+  E_CONFIG_VALUE config protocols.helpers['errors.algorithm'].upload_part.digest.algorithm: protocols.helpers['errors.algorithm'].upload_part.digest.algorithm must be 'sha256'
+  E_CONFIG_VALUE config protocols.helpers['errors.encoding'].upload_part.digest.encoding: protocols.helpers['errors.encoding'].upload_part.digest.encoding must be 'base64' or 'hex'

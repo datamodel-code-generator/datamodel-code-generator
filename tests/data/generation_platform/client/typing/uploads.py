@@ -23,7 +23,7 @@ from pets.protocols import (
     UploadProgress,
     UploadSource,
 )
-from pets.types.files import CompleteFileResponse
+from pets.types.files import AbortFileResponse, AssembleFileResponse, CompleteFileResponse
 from pets_models import FieldFilesPostHeaderTusResumableParameter
 from typing_extensions import assert_type
 
@@ -74,3 +74,32 @@ async def async_uploads(client: AsyncClient, version: FieldFilesPostHeaderTusRes
     async with source.open_range(0, 1) as reader:
         read: AsyncRangeReader = reader
         assert_type(await read.read(1), bytes)
+
+
+def parts_and_abort(client: Client, version: FieldFilesPostHeaderTusResumableParameter) -> None:
+    """Keep parts completion and remote abort responses concrete."""
+    source = BytesUploadSource.from_bytes(b"content")
+    with client.protocols.files.parts.start(source, tus_resumable=version) as parts:
+        assert_type(parts.run(), AssembleFileResponse)
+        assert_type(parts.advance().confirmed_parts, tuple[PartReceipt, ...])
+    with client.protocols.files.parts_abort.start(source, tus_resumable=version) as abortable:
+        assert_type(abortable.abort_remote(), AbortFileResponse)
+        assert_type(abortable.run(), AssembleFileResponse)
+        assert_type(client.protocols.files.parts_abort.resume(source, abortable.checkpoint()).abort_remote(), AbortFileResponse)
+    with client.protocols.files.abort.start(source, tus_resumable=version) as offset:
+        assert_type(offset.abort_remote(), AbortFileResponse)
+        assert_type(offset.run(), None)
+
+
+async def async_parts_and_abort(client: AsyncClient, version: FieldFilesPostHeaderTusResumableParameter) -> None:
+    """Keep native async parts and abort result types."""
+    source = AsyncBytesUploadSource.from_bytes(b"content")
+    async with await client.protocols.files.parts.start(source, tus_resumable=version) as parts:
+        assert_type(await parts.run(), AssembleFileResponse)
+    async with await client.protocols.files.parts_abort.start(source, tus_resumable=version) as abortable:
+        assert_type(await abortable.abort_remote(), AbortFileResponse)
+        assert_type(await abortable.run(), AssembleFileResponse)
+        resumed = await client.protocols.files.parts_abort.resume(source, abortable.checkpoint())
+        assert_type(await resumed.abort_remote(), AbortFileResponse)
+    async with await client.protocols.files.abort.start(source, tus_resumable=version) as offset:
+        assert_type(await offset.abort_remote(), AbortFileResponse)

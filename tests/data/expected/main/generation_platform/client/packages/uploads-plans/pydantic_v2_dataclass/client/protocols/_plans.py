@@ -7,10 +7,25 @@ from typing import Final
 
 from .. import _operations
 from .._runtime.protocols.pagination import PageBinding
-from .._runtime.protocols.records import BodySelector, HeaderSelector, ParameterTarget
+from .._runtime.protocols.records import (
+    BodySelector,
+    BodyTarget,
+    HeaderSelector,
+    ParameterTarget,
+)
 from .._runtime.protocols.references import OperationRef
-from .._runtime.protocols.uploads import UploadPlan
-from ..types.files import CompleteFileResponse, CreateFileResponse
+from .._runtime.protocols.uploads import (
+    UploadAbortPlan,
+    UploadCompletionProbePlan,
+    UploadPartsPlan,
+    UploadPlan,
+)
+from ..types.files import (
+    AbortFileResponse,
+    AssembleFileResponse,
+    CompleteFileResponse,
+    CreateFileResponse,
+)
 
 PLAN_0: Final[UploadPlan[None, CreateFileResponse]] = UploadPlan(
     helper_id='files.upload',
@@ -24,7 +39,7 @@ PLAN_0: Final[UploadPlan[None, CreateFileResponse]] = UploadPlan(
     offset=ParameterTarget(location='header', name='Upload-Offset'),
     max_chunk_bytes=4,
     partial_commit=True,
-    fingerprint='124b9ec5eabb15994ebfc65ee1ddabbbff2a87df94db360255c9f913da981a55',
+    fingerprint='8686f70d830ef6cdf673c7151e90f18461a3ac4c09e41fef75b78698eaf90aab',
     size=ParameterTarget(location='header', name='Upload-Length'),
     expires_at=HeaderSelector(name='Upload-Expires'),
     probe_bindings=(
@@ -65,7 +80,7 @@ PLAN_1: Final[UploadPlan[CompleteFileResponse, CreateFileResponse]] = UploadPlan
     offset=ParameterTarget(location='header', name='Upload-Offset'),
     max_chunk_bytes=8,
     partial_commit=False,
-    fingerprint='8fe2950f21284689cd6f005ea23a886e8c2a72e508f9bbc384af5950f2fab4c0',
+    fingerprint='0ca591c1a29731a6b884095480504eb5e6d52019ed57d71b23ba4ebda57084cc',
     size=ParameterTarget(location='header', name='Upload-Length'),
     expires_at=BodySelector(pointer='/expires'),
     probe_bindings=(
@@ -110,7 +125,7 @@ PLAN_2: Final[UploadPlan[None, CreateFileResponse]] = UploadPlan(
     offset=ParameterTarget(location='query', name='offset'),
     max_chunk_bytes=4,
     partial_commit=False,
-    fingerprint='7186c0578e3ba5e5009242b1b30b049ab85b52aa1cf7499772d9f9701fde756c',
+    fingerprint='0c549be5907d7f857c05d41d0dba7de350da3ca2923efd7c9c9db4eaa8e2456d',
     probe_bindings=(
         PageBinding(
             target=ParameterTarget(location='path', name='fileId'),
@@ -128,5 +143,567 @@ PLAN_2: Final[UploadPlan[None, CreateFileResponse]] = UploadPlan(
             source='initial',
             selector=BodySelector(pointer='/id'),
         ),
+    ),
+)
+
+
+PLAN_3: Final[UploadPlan[AssembleFileResponse, CreateFileResponse]] = UploadPlan(
+    helper_id='files.parts',
+    operation=OperationRef(pointer='/paths/~1files/post'),
+    create=_operations.OPERATION_0,
+    probe_operation=OperationRef(pointer='/paths/~1files~1{fileId}~1parts/get'),
+    probe=_operations.OPERATION_6,
+    remote_offset=BodySelector(pointer='/parts'),
+    append_operation=OperationRef(pointer='/paths/~1files~1{fileId}~1parts~1{index}/put'),
+    append=_operations.OPERATION_7,
+    offset=ParameterTarget(location='path', name='index'),
+    max_chunk_bytes=4,
+    partial_commit=False,
+    fingerprint='62477cad704efbede1592ae6eb79bf4d653f22aba13e3e52d9c4afedf92df68b',
+    size=ParameterTarget(location='header', name='Upload-Length'),
+    expires_at=BodySelector(pointer='/expires'),
+    probe_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+    ),
+    append_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+    ),
+    completion_operation=OperationRef(pointer='/paths/~1files~1{fileId}~1assemble/post'),
+    completion=_operations.OPERATION_8,
+    completion_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+    ),
+    parts=UploadPartsPlan(
+        items=BodySelector(pointer='/parts'),
+        index=BodySelector(pointer='/index'),
+        receipt=BodySelector(pointer='/receipt'),
+        digest=BodySelector(pointer='/digest'),
+        parts=BodyTarget(pointer='/parts'),
+        index_field='index',
+        receipt_field='receipt',
+        max_parts=10,
+        min_part_bytes=3,
+        last_part_may_be_smaller=True,
+        digest_target=ParameterTarget(location='header', name='Digest'),
+        digest_encoding='hex',
+    ),
+)
+
+
+ABORT_4: Final[UploadAbortPlan[AbortFileResponse]] = UploadAbortPlan(
+    operation=OperationRef(pointer='/paths/~1files~1{fileId}~1abort/delete'),
+    call=_operations.OPERATION_10,
+    bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+    ),
+)
+
+
+PLAN_4: Final[UploadPlan[AssembleFileResponse, CreateFileResponse]] = UploadPlan(
+    helper_id='files.parts_abort',
+    operation=OperationRef(pointer='/paths/~1files/post'),
+    create=_operations.OPERATION_0,
+    probe_operation=OperationRef(pointer='/paths/~1files~1{fileId}~1parts/get'),
+    probe=_operations.OPERATION_6,
+    remote_offset=BodySelector(pointer='/parts'),
+    append_operation=OperationRef(pointer='/paths/~1files~1{fileId}~1parts~1{index}/put'),
+    append=_operations.OPERATION_7,
+    offset=ParameterTarget(location='path', name='index'),
+    max_chunk_bytes=4,
+    partial_commit=False,
+    fingerprint='4df49763602fc01c2b837b6dae4dfd96f3b5bbe0947dce3e50a35559b1e2715d',
+    size=ParameterTarget(location='header', name='Upload-Length'),
+    expires_at=BodySelector(pointer='/expires'),
+    probe_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+    ),
+    append_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+    ),
+    completion_operation=OperationRef(pointer='/paths/~1files~1{fileId}~1assemble/post'),
+    completion=_operations.OPERATION_8,
+    completion_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+    ),
+    parts=UploadPartsPlan(
+        items=BodySelector(pointer='/parts'),
+        index=BodySelector(pointer='/index'),
+        receipt=BodySelector(pointer='/receipt'),
+        digest=BodySelector(pointer='/digest'),
+        parts=BodyTarget(pointer='/parts'),
+        index_field='index',
+        receipt_field='receipt',
+        max_parts=10,
+        min_part_bytes=3,
+        last_part_may_be_smaller=True,
+        digest_target=ParameterTarget(location='header', name='Digest'),
+        digest_encoding='hex',
+    ),
+    abort=ABORT_4,
+)
+
+
+PLAN_5: Final[UploadPlan[AssembleFileResponse, CreateFileResponse]] = UploadPlan(
+    helper_id='files.parts_probe',
+    operation=OperationRef(pointer='/paths/~1files/post'),
+    create=_operations.OPERATION_0,
+    probe_operation=OperationRef(pointer='/paths/~1files~1{fileId}~1parts/get'),
+    probe=_operations.OPERATION_6,
+    remote_offset=BodySelector(pointer='/parts'),
+    append_operation=OperationRef(pointer='/paths/~1files~1{fileId}~1parts~1{index}/put'),
+    append=_operations.OPERATION_7,
+    offset=ParameterTarget(location='path', name='index'),
+    max_chunk_bytes=4,
+    partial_commit=False,
+    fingerprint='9c8d6cd1dab18c6d3b18670213c4ba0d4193dc298084253497d793b8e8e9b877',
+    size=ParameterTarget(location='header', name='Upload-Length'),
+    expires_at=BodySelector(pointer='/expires'),
+    probe_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+    ),
+    append_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+    ),
+    completion_operation=OperationRef(pointer='/paths/~1files~1{fileId}~1assemble/post'),
+    completion=_operations.OPERATION_8,
+    completion_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+    ),
+    parts=UploadPartsPlan(
+        items=BodySelector(pointer='/parts'),
+        index=BodySelector(pointer='/index'),
+        receipt=BodySelector(pointer='/receipt'),
+        digest=BodySelector(pointer='/digest'),
+        parts=BodyTarget(pointer='/parts'),
+        index_field='index',
+        receipt_field='receipt',
+        max_parts=10,
+        min_part_bytes=3,
+        last_part_may_be_smaller=True,
+        digest_target=ParameterTarget(location='header', name='Digest'),
+        digest_encoding='hex',
+    ),
+    completion_probe=UploadCompletionProbePlan(
+        call=_operations.OPERATION_9,
+        state=BodySelector(pointer='/state'),
+        completed_values=('complete',),
+        result=BodySelector(pointer='/result'),
+        result_status=200,
+        result_media='application/json',
+        bindings=(
+            PageBinding(
+                target=ParameterTarget(location='path', name='fileId'),
+                source='initial',
+                selector=BodySelector(pointer='/id'),
+            ),
+        ),
+    ),
+)
+
+
+PLAN_6: Final[UploadPlan[None, CreateFileResponse]] = UploadPlan(
+    helper_id='files.url',
+    operation=OperationRef(pointer='/paths/~1files/post'),
+    create=_operations.OPERATION_0,
+    probe_operation=OperationRef(pointer='/paths/~1files~1{fileId}/head'),
+    probe=_operations.OPERATION_1,
+    remote_offset=HeaderSelector(name='Upload-Offset'),
+    append_operation=OperationRef(pointer='/paths/~1files~1{fileId}/patch'),
+    append=_operations.OPERATION_2,
+    offset=ParameterTarget(location='header', name='Upload-Offset'),
+    max_chunk_bytes=4,
+    partial_commit=True,
+    fingerprint='1a652a54486ebf74a3cb402ec30cce7a8cd343c0238363ce8465a2d16ad9f5ac',
+    size=ParameterTarget(location='header', name='Upload-Length'),
+    expires_at=HeaderSelector(name='Upload-Expires'),
+    session_url=HeaderSelector(name='Location'),
+    probe_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+        PageBinding(
+            target=ParameterTarget(location='header', name='Tus-Resumable'),
+            literal='1.0.0',
+        ),
+    ),
+    append_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+        PageBinding(
+            target=ParameterTarget(location='header', name='Tus-Resumable'),
+            literal='1.0.0',
+        ),
+    ),
+    length=ParameterTarget(location='header', name='X-Chunk-Length'),
+)
+
+
+ABORT_7: Final[UploadAbortPlan[AbortFileResponse]] = UploadAbortPlan(
+    operation=OperationRef(pointer='/paths/~1files~1{fileId}~1abort/delete'),
+    call=_operations.OPERATION_10,
+    bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+    ),
+)
+
+
+PLAN_7: Final[UploadPlan[None, CreateFileResponse]] = UploadPlan(
+    helper_id='files.abort',
+    operation=OperationRef(pointer='/paths/~1files/post'),
+    create=_operations.OPERATION_0,
+    probe_operation=OperationRef(pointer='/paths/~1files~1{fileId}/head'),
+    probe=_operations.OPERATION_1,
+    remote_offset=HeaderSelector(name='Upload-Offset'),
+    append_operation=OperationRef(pointer='/paths/~1files~1{fileId}/patch'),
+    append=_operations.OPERATION_2,
+    offset=ParameterTarget(location='header', name='Upload-Offset'),
+    max_chunk_bytes=4,
+    partial_commit=True,
+    fingerprint='9cf1cad9d2c4c3e8df2595c301ec4f78ef6a9dcb3502474604fb8b967ab82f4c',
+    size=ParameterTarget(location='header', name='Upload-Length'),
+    expires_at=HeaderSelector(name='Upload-Expires'),
+    probe_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+        PageBinding(
+            target=ParameterTarget(location='header', name='Tus-Resumable'),
+            literal='1.0.0',
+        ),
+    ),
+    append_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+        PageBinding(
+            target=ParameterTarget(location='header', name='Tus-Resumable'),
+            literal='1.0.0',
+        ),
+    ),
+    length=ParameterTarget(location='header', name='X-Chunk-Length'),
+    abort=ABORT_7,
+)
+
+
+PLAN_8: Final[UploadPlan[AssembleFileResponse, CreateFileResponse]] = UploadPlan(
+    helper_id='files.parts_base64',
+    operation=OperationRef(pointer='/paths/~1files/post'),
+    create=_operations.OPERATION_0,
+    probe_operation=OperationRef(pointer='/paths/~1files~1{fileId}~1parts/get'),
+    probe=_operations.OPERATION_6,
+    remote_offset=BodySelector(pointer='/parts'),
+    append_operation=OperationRef(pointer='/paths/~1files~1{fileId}~1parts~1{index}/put'),
+    append=_operations.OPERATION_7,
+    offset=ParameterTarget(location='path', name='index'),
+    max_chunk_bytes=4,
+    partial_commit=False,
+    fingerprint='6f9af306936854fca938ea1be3bd6f8e3588a1f0cbfa1f1a26532cdb493e5af5',
+    size=ParameterTarget(location='header', name='Upload-Length'),
+    expires_at=BodySelector(pointer='/expires'),
+    probe_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+    ),
+    append_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+    ),
+    completion_operation=OperationRef(pointer='/paths/~1files~1{fileId}~1assemble/post'),
+    completion=_operations.OPERATION_8,
+    completion_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+    ),
+    parts=UploadPartsPlan(
+        items=BodySelector(pointer='/parts'),
+        index=BodySelector(pointer='/index'),
+        receipt=BodySelector(pointer='/receipt'),
+        digest=BodySelector(pointer='/digest'),
+        parts=BodyTarget(pointer='/parts'),
+        index_field='index',
+        receipt_field='receipt',
+        max_parts=10,
+        min_part_bytes=3,
+        last_part_may_be_smaller=True,
+        digest_target=ParameterTarget(location='header', name='Digest'),
+        digest_encoding='base64',
+    ),
+)
+
+
+PLAN_9: Final[UploadPlan[AssembleFileResponse, CreateFileResponse]] = UploadPlan(
+    helper_id='files.parts_bare',
+    operation=OperationRef(pointer='/paths/~1files/post'),
+    create=_operations.OPERATION_0,
+    probe_operation=OperationRef(pointer='/paths/~1files~1{fileId}~1parts/get'),
+    probe=_operations.OPERATION_6,
+    remote_offset=BodySelector(pointer='/parts'),
+    append_operation=OperationRef(pointer='/paths/~1files~1{fileId}~1parts~1{index}/put'),
+    append=_operations.OPERATION_7,
+    offset=ParameterTarget(location='path', name='index'),
+    max_chunk_bytes=4,
+    partial_commit=False,
+    fingerprint='94696dce58293a00abae99e4b5152ea9d9ac88b64815935ddd848dd74c7fc1d8',
+    size=ParameterTarget(location='header', name='Upload-Length'),
+    expires_at=BodySelector(pointer='/expires'),
+    probe_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+    ),
+    append_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+    ),
+    completion_operation=OperationRef(pointer='/paths/~1files~1{fileId}~1assemble/post'),
+    completion=_operations.OPERATION_8,
+    completion_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+    ),
+    parts=UploadPartsPlan(
+        items=BodySelector(pointer='/parts'),
+        index=BodySelector(pointer='/index'),
+        receipt=BodySelector(pointer='/receipt'),
+        parts=BodyTarget(pointer='/parts'),
+        index_field='index',
+        receipt_field='receipt',
+        max_parts=10,
+        min_part_bytes=3,
+        last_part_may_be_smaller=True,
+    ),
+)
+
+
+PLAN_10: Final[UploadPlan[AssembleFileResponse, CreateFileResponse]] = UploadPlan(
+    helper_id='files.parts_strict',
+    operation=OperationRef(pointer='/paths/~1files/post'),
+    create=_operations.OPERATION_0,
+    probe_operation=OperationRef(pointer='/paths/~1files~1{fileId}~1parts/get'),
+    probe=_operations.OPERATION_6,
+    remote_offset=BodySelector(pointer='/parts'),
+    append_operation=OperationRef(pointer='/paths/~1files~1{fileId}~1parts~1{index}/put'),
+    append=_operations.OPERATION_7,
+    offset=ParameterTarget(location='path', name='index'),
+    max_chunk_bytes=4,
+    partial_commit=False,
+    fingerprint='ecfe1d9a680c201437047e933c8dff1486af2b70c2ae8b87817a6578c4c88459',
+    size=ParameterTarget(location='header', name='Upload-Length'),
+    expires_at=BodySelector(pointer='/expires'),
+    probe_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+    ),
+    append_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+    ),
+    completion_operation=OperationRef(pointer='/paths/~1files~1{fileId}~1assemble/post'),
+    completion=_operations.OPERATION_8,
+    completion_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+    ),
+    parts=UploadPartsPlan(
+        items=BodySelector(pointer='/parts'),
+        index=BodySelector(pointer='/index'),
+        receipt=BodySelector(pointer='/receipt'),
+        digest=BodySelector(pointer='/digest'),
+        parts=BodyTarget(pointer='/parts'),
+        index_field='index',
+        receipt_field='receipt',
+        max_parts=10,
+        min_part_bytes=3,
+        last_part_may_be_smaller=False,
+        digest_target=ParameterTarget(location='header', name='Digest'),
+        digest_encoding='hex',
+    ),
+)
+
+
+PLAN_11: Final[UploadPlan[AssembleFileResponse, CreateFileResponse]] = UploadPlan(
+    helper_id='files.parts_unlimited',
+    operation=OperationRef(pointer='/paths/~1files/post'),
+    create=_operations.OPERATION_0,
+    probe_operation=OperationRef(pointer='/paths/~1files~1{fileId}~1parts/get'),
+    probe=_operations.OPERATION_6,
+    remote_offset=BodySelector(pointer='/parts'),
+    append_operation=OperationRef(pointer='/paths/~1files~1{fileId}~1parts~1{index}/put'),
+    append=_operations.OPERATION_7,
+    offset=ParameterTarget(location='path', name='index'),
+    max_chunk_bytes=9223372036854775807,
+    partial_commit=False,
+    fingerprint='0b4d8b834cddc9d309da11bd9896a8804be96825609d21dad94028c19fe55bf1',
+    size=ParameterTarget(location='header', name='Upload-Length'),
+    expires_at=BodySelector(pointer='/expires'),
+    probe_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+    ),
+    append_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+    ),
+    completion_operation=OperationRef(pointer='/paths/~1files~1{fileId}~1assemble/post'),
+    completion=_operations.OPERATION_8,
+    completion_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+    ),
+    parts=UploadPartsPlan(
+        items=BodySelector(pointer='/parts'),
+        index=BodySelector(pointer='/index'),
+        receipt=BodySelector(pointer='/receipt'),
+        digest=BodySelector(pointer='/digest'),
+        parts=BodyTarget(pointer='/parts'),
+        index_field='index',
+        receipt_field='receipt',
+        last_part_may_be_smaller=True,
+        digest_target=ParameterTarget(location='header', name='Digest'),
+        digest_encoding='hex',
+    ),
+)
+
+
+PLAN_12: Final[UploadPlan[AssembleFileResponse, CreateFileResponse]] = UploadPlan(
+    helper_id='files.parts_url',
+    operation=OperationRef(pointer='/paths/~1files/post'),
+    create=_operations.OPERATION_0,
+    probe_operation=OperationRef(pointer='/paths/~1files~1{fileId}~1parts/get'),
+    probe=_operations.OPERATION_6,
+    remote_offset=BodySelector(pointer='/parts'),
+    append_operation=OperationRef(pointer='/paths/~1files~1{fileId}~1url-part/put'),
+    append=_operations.OPERATION_13,
+    offset=ParameterTarget(location='header', name='X-Part-Index'),
+    max_chunk_bytes=4,
+    partial_commit=False,
+    fingerprint='7af312141393a7984f802e845dbdd918e90083fd4333eb043863a8b6251a5ac5',
+    size=ParameterTarget(location='header', name='Upload-Length'),
+    expires_at=BodySelector(pointer='/expires'),
+    session_url=BodySelector(pointer='/url'),
+    probe_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+    ),
+    append_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+    ),
+    completion_operation=OperationRef(pointer='/paths/~1files~1{fileId}~1assemble/post'),
+    completion=_operations.OPERATION_8,
+    completion_bindings=(
+        PageBinding(
+            target=ParameterTarget(location='path', name='fileId'),
+            source='initial',
+            selector=BodySelector(pointer='/id'),
+        ),
+    ),
+    parts=UploadPartsPlan(
+        items=BodySelector(pointer='/parts'),
+        index=BodySelector(pointer='/index'),
+        receipt=BodySelector(pointer='/receipt'),
+        digest=BodySelector(pointer='/digest'),
+        parts=BodyTarget(pointer='/parts'),
+        index_field='index',
+        receipt_field='receipt',
+        max_parts=10,
+        min_part_bytes=3,
+        last_part_may_be_smaller=True,
+        digest_target=ParameterTarget(location='header', name='Digest'),
+        digest_encoding='hex',
     ),
 )

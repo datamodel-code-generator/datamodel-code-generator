@@ -133,6 +133,7 @@ def test_client_render(case: str, tmp_path: Path) -> None:
         "protocols-polling-checks",
         "protocols-upload-errors",
         "protocols-upload-checks",
+        "protocols-parts-checks",
         "protocols-pagination-link-checks",
         "protocols-pagination-resume-checks",
         "protocols-webhook-errors",
