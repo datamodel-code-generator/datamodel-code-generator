@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
-from pets import AsyncClient, Client
+from typing import TYPE_CHECKING
+
 from pets.options import SessionOptions
 from pets.protocols import AsyncBytesUploadSource, AsyncUploadHandle, BytesUploadSource, UploadHandle, UploadIdentity
-from pets.types.files import CompleteFileResponse
-from pets_models import FieldFilesPostHeaderTusResumableParameter
+
+if TYPE_CHECKING:
+    from pets import AsyncClient, Client
+    from pets.types.files import CompleteFileResponse
+    from pets_models import FieldFilesPostHeaderTusResumableParameter
 
 
 async def wrong_uploads(

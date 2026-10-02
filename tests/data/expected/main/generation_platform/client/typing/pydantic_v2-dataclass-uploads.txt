@@ -3,59 +3,59 @@ pyright pets and uploads.py: clean
 ty pets and uploads.py: clean
 uploads_negative.py 18 marked lines
 mypy uploads_negative.py: 18/18 marked lines with one error, 0 elsewhere, 0 in other files
-  20 assignment
-  21 arg-type
-  22 arg-type
-  23 call-arg
-  24 arg-type
-  25 call-arg
-  26 assignment
-  27 assignment
+  24 assignment
+  25 arg-type
+  26 arg-type
+  27 call-arg
   28 arg-type
   29 call-arg
-  30 misc
-  31 arg-type
-  32 attr-defined
-  33 attr-defined
-  34 call-arg
-  35 assignment
-  36 arg-type
-  38 attr-defined
+  30 assignment
+  31 assignment
+  32 arg-type
+  33 call-arg
+  34 misc
+  35 arg-type
+  36 attr-defined
+  37 attr-defined
+  38 call-arg
+  39 assignment
+  40 arg-type
+  42 attr-defined
 pyright uploads_negative.py: 18/18 marked lines with one error, 0 elsewhere, 0 in other files
-  20 reportAssignmentType
-  21 reportArgumentType
-  22 reportArgumentType
-  23 reportCallIssue
-  24 reportArgumentType
-  25 reportCallIssue
-  26 reportAssignmentType
-  27 reportAssignmentType
+  24 reportAssignmentType
+  25 reportArgumentType
+  26 reportArgumentType
+  27 reportCallIssue
   28 reportArgumentType
   29 reportCallIssue
-  30 reportAttributeAccessIssue
-  31 reportArgumentType
-  32 reportAttributeAccessIssue
-  33 reportAttributeAccessIssue
-  34 reportCallIssue
-  35 reportAssignmentType
-  36 reportArgumentType
-  38 reportAttributeAccessIssue
+  30 reportAssignmentType
+  31 reportAssignmentType
+  32 reportArgumentType
+  33 reportCallIssue
+  34 reportAttributeAccessIssue
+  35 reportArgumentType
+  36 reportAttributeAccessIssue
+  37 reportAttributeAccessIssue
+  38 reportCallIssue
+  39 reportAssignmentType
+  40 reportArgumentType
+  42 reportAttributeAccessIssue
 ty uploads_negative.py: 18/18 marked lines with one error, 0 elsewhere, 0 in other files
-  20 invalid-assignment
-  21 invalid-argument-type
-  22 invalid-argument-type
-  23 missing-argument
-  24 invalid-argument-type
-  25 unknown-argument
-  26 invalid-assignment
-  27 invalid-assignment
+  24 invalid-assignment
+  25 invalid-argument-type
+  26 invalid-argument-type
+  27 missing-argument
   28 invalid-argument-type
-  29 too-many-positional-arguments
+  29 unknown-argument
   30 invalid-assignment
-  31 invalid-argument-type
-  32 unresolved-attribute
-  33 unresolved-attribute
-  34 too-many-positional-arguments
-  35 invalid-assignment
-  36 invalid-argument-type
-  38 unresolved-attribute
+  31 invalid-assignment
+  32 invalid-argument-type
+  33 too-many-positional-arguments
+  34 invalid-assignment
+  35 invalid-argument-type
+  36 unresolved-attribute
+  37 unresolved-attribute
+  38 too-many-positional-arguments
+  39 invalid-assignment
+  40 invalid-argument-type
+  42 unresolved-attribute
