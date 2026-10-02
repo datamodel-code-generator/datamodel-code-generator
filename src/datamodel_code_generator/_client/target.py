@@ -683,6 +683,8 @@ class _TargetData:
                 for item in body.media
             ],
         }
+        if spec.circuit_group is not None:
+            request["circuit_group"] = spec.circuit_group
         response = {
             "success_statuses": spec.success_statuses,
             "request_id_header": spec.request_id_header,

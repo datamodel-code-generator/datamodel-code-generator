@@ -21,6 +21,7 @@ from tests.data.python.client_body_digest import body_digest
 from tests.data.python.client_body_replay import body_replay, multipart_replay
 from tests.data.python.client_body_replay_faults import body_replay_faults
 from tests.data.python.client_caching import cache_backends, cache_stores, caching
+from tests.data.python.client_circuits import circuits
 from tests.data.python.client_deadline_cleanup import deadline_cleanup
 from tests.data.python.client_deadline_files import deadline_files
 from tests.data.python.client_deadline_options import deadline_options
@@ -832,6 +833,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "uploads": ("uploads", ("pydantic_v2.BaseModel",), uploads),
     "uploads-oauth": ("uploads-oauth", ("pydantic_v2.BaseModel",), uploads_oauth),
     "polling-resume": ("polling", ("pydantic_v2.BaseModel",), polling_resume),
+    "circuits": ("circuits", ("pydantic_v2.BaseModel",), circuits),
     "queue-credentials": ("queue-credentials", ("pydantic_v2.BaseModel",), queue_credentials),
     "queue-order": ("queue-order", ("pydantic_v2.BaseModel",), queue_order),
     "queues": ("queues", ("pydantic_v2.BaseModel",), queues),

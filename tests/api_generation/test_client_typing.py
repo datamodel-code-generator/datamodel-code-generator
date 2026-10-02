@@ -335,3 +335,13 @@ def test_client_typing_unions(backend: DataModelType, tmp_path: Path) -> None:
         client_typing_report(tmp_path, backend, "unions-schema", ("unions",)),
         EXPECTED / f"{backend.value.replace('.', '-')}-unions.txt",
     )
+
+
+def test_client_typing_circuits(tmp_path: Path) -> None:
+    """Check circuit breaker settings, records, stores, and the declared groups of a package's resets."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(
+        client_typing_report(tmp_path, DataModelType.PydanticV2BaseModel, "circuits", ("circuits",)),
+        EXPECTED / "pydantic_v2-BaseModel-circuits.txt",
+    )

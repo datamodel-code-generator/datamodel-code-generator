@@ -10,7 +10,7 @@ from inspect import iscoroutinefunction
 from keyword import iskeyword
 from sys import float_info
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Final, Literal, cast
+from typing import TYPE_CHECKING, Final, Literal, Protocol, cast
 
 from typing_extensions import TypeIs, TypeVar
 
@@ -18,8 +18,14 @@ from ..client.errors import ProtocolConfigurationError, is_sequence
 from ..client.timing import SessionOptions
 from ..model_codecs.unset import UNSET, Unset
 from .caches import AsyncCacheStore, CacheStore  # noqa: TC001 - Public annotations support get_type_hints().
+from .circuit_records import (  # noqa: TC001 - Public annotations support get_type_hints().
+    CircuitKey,
+    CircuitOutcome,
+    CircuitPermit,
+    CircuitSnapshot,
+)
+from .origins import Origin
 from .queues import AsyncQueueStore, QueueStore, ResolvedQueueOptions
-from .records import record_string
 from .websocket_types import (
     AsyncWebSocketConnector,
     ResolvedWebSocketTransportOptions,
@@ -149,39 +155,6 @@ def check_limits(options: object, rules: tuple[tuple[str, bool, bool, bool], ...
 def _instance(value: object, kinds: tuple[type, ...], name: str) -> None:
     if not isinstance(value, kinds):
         raise ProtocolConfigurationError(field_path=(name,), condition="invalid_value")
-
-
-def _origin(scheme: object, host: object, port: object) -> None:
-    from ..client.urls import URLValidationError, canonical_origin, origin_text  # noqa: PLC0415 - Parse URLs only here.
-
-    names = (record_string(scheme, "scheme"), record_string(host, "host"))
-    if type(port) is not int:
-        msg = "port must be an integer"
-        raise TypeError(msg)
-    origin = (*names, port)
-    try:
-        valid = canonical_origin.__wrapped__(origin_text.__wrapped__(origin)) == origin
-    except URLValidationError:
-        valid = False
-    if not valid:
-        msg = "origin must be the scheme, host, and port that the client's URL rules produce"
-        raise ValueError(msg)
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class Origin:
-    """An effective HTTP origin exactly as the client's URL rules produce it; other spellings are rejected.
-
-    The host is lowercase ASCII, with IDNA labels already encoded, and an IPv6 address has no brackets.
-    """
-
-    scheme: str
-    host: str
-    port: int
-
-    def __post_init__(self) -> None:
-        """Require the scheme, host, and effective port that interpreting this origin's URL gives back unchanged."""
-        _origin(self.scheme, self.host, self.port)
 
 
 def _partition(value: object) -> None:
@@ -432,6 +405,73 @@ class ProtocolSecurityContext:
         object.__setattr__(self, "allowed_origins", _origins(self.allowed_origins))
 
 
+@dataclass(frozen=True, slots=True, kw_only=True)
+class CircuitBreakerOptions:
+    """Circuit breaking of operations that declare a circuit group; off unless enabled.
+
+    failure_threshold consecutive failed calls open a group's circuit for cooldown seconds, after which one probe call
+    may close it again. Only one probe runs at a time, and no option changes that.
+    """
+
+    enabled: bool = False
+    failure_threshold: int = 5
+    cooldown: float = 30.0
+
+    def __post_init__(self) -> None:
+        """Require a boolean switch, a positive threshold, and a positive finite cooldown."""
+        _instance(self.enabled, (bool,), "enabled")
+        positive_count(self.failure_threshold, "failure_threshold")
+        checked_seconds(self.cooldown, "cooldown")
+
+    def resolved(self) -> ResolvedCircuitBreakerOptions:
+        """Return the limits a circuit store applies."""
+        return ResolvedCircuitBreakerOptions(failure_threshold=self.failure_threshold, cooldown=float(self.cooldown))
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class ResolvedCircuitBreakerOptions:
+    """The limits a circuit store applies to one admission: the opening threshold and the cooldown in seconds."""
+
+    failure_threshold: int
+    cooldown: float
+
+
+class CircuitStore(Protocol):
+    """A borrowed store of circuit states; each method is atomic, and `now` is the caller's monotonic time."""
+
+    def admit(self, key: CircuitKey, *, now: float, options: ResolvedCircuitBreakerOptions) -> CircuitPermit:
+        """Admit one call, taking the single half-open probe slot when due, or raise CircuitOpenError."""
+        ...
+
+    def record(self, permit: CircuitPermit, outcome: CircuitOutcome, *, now: float) -> None:
+        """Apply a call's outcome once, ignoring a permit of another generation."""
+
+    def reset(self, key: CircuitKey) -> None:
+        """Close a circuit and advance its generation, so permits admitted before cannot change it."""
+
+    def snapshot(self, key: CircuitKey) -> CircuitSnapshot:
+        """Return the circuit's current state."""
+        ...
+
+
+class AsyncCircuitStore(Protocol):
+    """A borrowed asynchronous store of circuit states with the same atomic contract."""
+
+    async def admit(self, key: CircuitKey, *, now: float, options: ResolvedCircuitBreakerOptions) -> CircuitPermit:
+        """Admit one call, taking the single half-open probe slot when due, or raise CircuitOpenError."""
+        ...
+
+    async def record(self, permit: CircuitPermit, outcome: CircuitOutcome, *, now: float) -> None:
+        """Apply a call's outcome once, ignoring a permit of another generation."""
+
+    async def reset(self, key: CircuitKey) -> None:
+        """Close a circuit and advance its generation, so permits admitted before cannot change it."""
+
+    async def snapshot(self, key: CircuitKey) -> CircuitSnapshot:
+        """Return the circuit's current state."""
+        ...
+
+
 def _helper_defaults(value: object) -> Mapping[str, ProtocolDefaults]:
     if not _is_mapping(value):
         raise ProtocolConfigurationError(field_path=("defaults",), condition="invalid_value")
@@ -505,16 +545,20 @@ class ProtocolClientOptions:
     cache_stores: Mapping[str, CacheStore | AsyncCacheStore] | Unset = UNSET
     websocket_connector: WebSocketConnector | AsyncWebSocketConnector | Unset | None = UNSET
     websocket_transport: WebSocketTransportOptions | Unset = UNSET
+    circuit: CircuitBreakerOptions | Unset = UNSET
+    circuit_store: CircuitStore | AsyncCircuitStore | Unset | None = field(default=UNSET, repr=False)
     queue_stores: Mapping[str, QueueStore | AsyncQueueStore] | Unset = UNSET
 
     def __post_init__(self) -> None:
         """Refuse another security value, helper names that are not dotted identifiers, and other default values.
 
-        A connector needs an `open` method, and the transport settings their own type.
+        A connector needs an `open` method, and the transport settings their own type. The circuit store is only
+        borrowed here; whether its methods suit the client's mode is checked by the client.
         """
         _instance(self.security, (ProtocolSecurityContext, Unset, type(None)), "security")
         if not isinstance(self.defaults, Unset):
             object.__setattr__(self, "defaults", _helper_defaults(self.defaults))
+        _instance(self.circuit, (CircuitBreakerOptions, Unset), "circuit")
         if not isinstance(self.cache_stores, Unset):
             object.__setattr__(self, "cache_stores", _stores(self.cache_stores, "cache_stores"))
         if not isinstance(self.queue_stores, Unset):
