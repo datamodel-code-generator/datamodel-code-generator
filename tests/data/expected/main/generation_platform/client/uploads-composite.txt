@@ -1,0 +1,1650 @@
+# uploads-composite
+render pydantic_v2.BaseModel
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/files/__init__.py
+  write client/resources/files/_sync.py
+  write client/resources/files/_async.py
+  write client/types/__init__.py
+  write client/types/files/__init__.py
+  write client/types/files/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/protocols/_plans.py
+  write client/protocols/_helpers.py
+  write client/protocols/_async_helpers.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['files.upload', 'files.finish', 'files.put', 'files.parts', 'files.parts_abort', 'files.parts_probe', 'files.url', 'files.abort', 'files.parts_base64', 'files.parts_bare', 'files.parts_strict', 'files.parts_unlimited', 'files.parts_url'] bindings 42
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper files.upload resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.upload 0542d402e404a7235e32a97be0fb69fd55c9e1e82db3c76fda8d99716282b897
+  helper files.finish resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.finish 16665394b9c62b92f53fce4683f8af5abd4a53ecb9e0379d1c8c73baa7afd415
+  helper files.put resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.put 2a6d95f846973a7ed9ac865d75737c9198d4219977b4f84627bafa43ca684116
+  helper files.parts resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.parts 9a4f5c32ef33d89612cf692e09f20ee1f93802ab8471616946c00754da3de225
+  helper files.parts_abort resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.parts_abort 62f38ba75d76cc15a5e923158b9897931559d379f4deb57f15fefa6b14b711ad
+  helper files.parts_probe resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.parts_probe ef38e445fd8f3fb5fd3ca3ff4e4e93a578a1d432059f900d77bc9e2969178480
+  helper files.url resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.url 312fa9159ce0e4bacce5affa19f702a8193f89b6e8b3383ad73ae730116cf29c
+  helper files.abort resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.abort 4b9d080650844d1d3088c59cecdaad255ad344bc399e6fa0a0e40ddffb6eb504
+  helper files.parts_base64 resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.parts_base64 3dcff47205be77ec365b335a7eb78dccc0dc53c7a7803de4dbd7af745cf0a1d0
+  helper files.parts_bare resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.parts_bare 9d82ae832eebb1b307f78a27bd55ea1d6f8fd23687cfc4ea4eb375d5f3d24cb2
+  helper files.parts_strict resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.parts_strict 5190f97afdfbad51234b7608061fcfca893b04aadd8b63b87f75fceb0abd968b
+  helper files.parts_unlimited resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.parts_unlimited c74b60117273e733ecc936111415abe3bbaae496e05141beed5e1cfcac42dd2c
+  helper files.parts_url resumable_upload enabled True /inputs/target_config/protocol_metadata/helpers/files.parts_url ec0c540f5bf8bd8833347cabdbf5de195625782439c0c7bafd09d49f71d0514c
+  {
+    "helpers": {
+      "files.abort": {
+        "abort": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1abort/delete"
+          }
+        },
+        "append": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "Tus-Resumable"
+              },
+              "value": {
+                "literal": "1.0.0"
+              }
+            }
+          ],
+          "length": {
+            "in": "header",
+            "name": "X-Chunk-Length"
+          },
+          "offset": {
+            "in": "header",
+            "name": "Upload-Offset"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/patch"
+          }
+        },
+        "completion": {
+          "kind": "length"
+        },
+        "create": {
+          "expires_at": {
+            "from": "header",
+            "name": "Upload-Expires",
+            "occurrence": "single"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files/post"
+          },
+          "size": {
+            "in": "header",
+            "name": "Upload-Length"
+          }
+        },
+        "enabled": true,
+        "kind": "resumable_upload",
+        "max_chunk_bytes": 4,
+        "partial_commit": "allowed",
+        "probe": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "Tus-Resumable"
+              },
+              "value": {
+                "literal": "1.0.0"
+              }
+            }
+          ],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/head"
+          },
+          "remote_offset": {
+            "from": "header",
+            "name": "Upload-Offset",
+            "occurrence": "single"
+          }
+        },
+        "profile": "offset"
+      },
+      "files.finish": {
+        "append": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "Tus-Resumable"
+              },
+              "value": {
+                "literal": "1.0.0"
+              }
+            }
+          ],
+          "offset": {
+            "in": "header",
+            "name": "Upload-Offset"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/patch"
+          }
+        },
+        "completion": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "kind": "operation",
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1complete/post"
+          },
+          "result_schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Stored"
+          }
+        },
+        "create": {
+          "expires_at": {
+            "from": "body",
+            "pointer": "/expires"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files/post"
+          },
+          "size": {
+            "in": "header",
+            "name": "Upload-Length"
+          }
+        },
+        "enabled": true,
+        "kind": "resumable_upload",
+        "max_chunk_bytes": 8,
+        "partial_commit": "forbidden",
+        "probe": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1status/get"
+          },
+          "remote_offset": {
+            "from": "body",
+            "pointer": "/offset"
+          }
+        },
+        "profile": "offset"
+      },
+      "files.parts": {
+        "complete": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "index_field": "index",
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1assemble/post"
+          },
+          "parts": {
+            "in": "body",
+            "pointer": "/parts"
+          },
+          "receipt_field": "receipt",
+          "result_schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Stored"
+          }
+        },
+        "create": {
+          "expires_at": {
+            "from": "body",
+            "pointer": "/expires"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files/post"
+          },
+          "size": {
+            "in": "header",
+            "name": "Upload-Length"
+          }
+        },
+        "enabled": true,
+        "kind": "resumable_upload",
+        "limits": {
+          "last_part_may_be_smaller": true,
+          "max_part_bytes": 4,
+          "max_parts": 10,
+          "min_part_bytes": 3
+        },
+        "list_parts": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "digest": {
+            "from": "body",
+            "pointer": "/digest"
+          },
+          "index": {
+            "from": "body",
+            "pointer": "/index"
+          },
+          "items": {
+            "from": "body",
+            "pointer": "/parts"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1parts/get"
+          },
+          "receipt": {
+            "from": "body",
+            "pointer": "/receipt"
+          }
+        },
+        "profile": "parts",
+        "upload_part": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "digest": {
+            "algorithm": "sha256",
+            "encoding": "hex",
+            "target": {
+              "in": "header",
+              "name": "Digest"
+            }
+          },
+          "index": {
+            "in": "path",
+            "name": "index"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}-{index}~1part/put"
+          }
+        }
+      },
+      "files.parts_abort": {
+        "abort": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1abort/delete"
+          }
+        },
+        "complete": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "index_field": "index",
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1assemble/post"
+          },
+          "parts": {
+            "in": "body",
+            "pointer": "/parts"
+          },
+          "receipt_field": "receipt",
+          "result_schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Stored"
+          }
+        },
+        "create": {
+          "expires_at": {
+            "from": "body",
+            "pointer": "/expires"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files/post"
+          },
+          "size": {
+            "in": "header",
+            "name": "Upload-Length"
+          }
+        },
+        "enabled": true,
+        "kind": "resumable_upload",
+        "limits": {
+          "last_part_may_be_smaller": true,
+          "max_part_bytes": 4,
+          "max_parts": 10,
+          "min_part_bytes": 3
+        },
+        "list_parts": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "digest": {
+            "from": "body",
+            "pointer": "/digest"
+          },
+          "index": {
+            "from": "body",
+            "pointer": "/index"
+          },
+          "items": {
+            "from": "body",
+            "pointer": "/parts"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1parts/get"
+          },
+          "receipt": {
+            "from": "body",
+            "pointer": "/receipt"
+          }
+        },
+        "profile": "parts",
+        "upload_part": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "digest": {
+            "algorithm": "sha256",
+            "encoding": "hex",
+            "target": {
+              "in": "header",
+              "name": "Digest"
+            }
+          },
+          "index": {
+            "in": "path",
+            "name": "index"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}-{index}~1part/put"
+          }
+        }
+      },
+      "files.parts_bare": {
+        "complete": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "index_field": "index",
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1assemble/post"
+          },
+          "parts": {
+            "in": "body",
+            "pointer": "/parts"
+          },
+          "receipt_field": "receipt",
+          "result_schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Stored"
+          }
+        },
+        "create": {
+          "expires_at": {
+            "from": "body",
+            "pointer": "/expires"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files/post"
+          },
+          "size": {
+            "in": "header",
+            "name": "Upload-Length"
+          }
+        },
+        "enabled": true,
+        "kind": "resumable_upload",
+        "limits": {
+          "last_part_may_be_smaller": true,
+          "max_part_bytes": 4,
+          "max_parts": 10,
+          "min_part_bytes": 3
+        },
+        "list_parts": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "index": {
+            "from": "body",
+            "pointer": "/index"
+          },
+          "items": {
+            "from": "body",
+            "pointer": "/parts"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1parts/get"
+          },
+          "receipt": {
+            "from": "body",
+            "pointer": "/receipt"
+          }
+        },
+        "profile": "parts",
+        "upload_part": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "index": {
+            "in": "path",
+            "name": "index"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}-{index}~1part/put"
+          }
+        }
+      },
+      "files.parts_base64": {
+        "complete": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "index_field": "index",
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1assemble/post"
+          },
+          "parts": {
+            "in": "body",
+            "pointer": "/parts"
+          },
+          "receipt_field": "receipt",
+          "result_schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Stored"
+          }
+        },
+        "create": {
+          "expires_at": {
+            "from": "body",
+            "pointer": "/expires"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files/post"
+          },
+          "size": {
+            "in": "header",
+            "name": "Upload-Length"
+          }
+        },
+        "enabled": true,
+        "kind": "resumable_upload",
+        "limits": {
+          "last_part_may_be_smaller": true,
+          "max_part_bytes": 4,
+          "max_parts": 10,
+          "min_part_bytes": 3
+        },
+        "list_parts": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "digest": {
+            "from": "body",
+            "pointer": "/digest"
+          },
+          "index": {
+            "from": "body",
+            "pointer": "/index"
+          },
+          "items": {
+            "from": "body",
+            "pointer": "/parts"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1parts/get"
+          },
+          "receipt": {
+            "from": "body",
+            "pointer": "/receipt"
+          }
+        },
+        "profile": "parts",
+        "upload_part": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "digest": {
+            "algorithm": "sha256",
+            "encoding": "base64",
+            "target": {
+              "in": "header",
+              "name": "Digest"
+            }
+          },
+          "index": {
+            "in": "path",
+            "name": "index"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}-{index}~1part/put"
+          }
+        }
+      },
+      "files.parts_probe": {
+        "complete": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "index_field": "index",
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1assemble/post"
+          },
+          "parts": {
+            "in": "body",
+            "pointer": "/parts"
+          },
+          "receipt_field": "receipt",
+          "result_schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Stored"
+          }
+        },
+        "completion_probe": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "completed_values": [
+            "complete"
+          ],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1completion/get"
+          },
+          "result": {
+            "from": "body",
+            "pointer": "/result"
+          },
+          "state": {
+            "from": "body",
+            "pointer": "/state"
+          }
+        },
+        "create": {
+          "expires_at": {
+            "from": "body",
+            "pointer": "/expires"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files/post"
+          },
+          "size": {
+            "in": "header",
+            "name": "Upload-Length"
+          }
+        },
+        "enabled": true,
+        "kind": "resumable_upload",
+        "limits": {
+          "last_part_may_be_smaller": true,
+          "max_part_bytes": 4,
+          "max_parts": 10,
+          "min_part_bytes": 3
+        },
+        "list_parts": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "digest": {
+            "from": "body",
+            "pointer": "/digest"
+          },
+          "index": {
+            "from": "body",
+            "pointer": "/index"
+          },
+          "items": {
+            "from": "body",
+            "pointer": "/parts"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1parts/get"
+          },
+          "receipt": {
+            "from": "body",
+            "pointer": "/receipt"
+          }
+        },
+        "profile": "parts",
+        "upload_part": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "digest": {
+            "algorithm": "sha256",
+            "encoding": "hex",
+            "target": {
+              "in": "header",
+              "name": "Digest"
+            }
+          },
+          "index": {
+            "in": "path",
+            "name": "index"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}-{index}~1part/put"
+          }
+        }
+      },
+      "files.parts_strict": {
+        "complete": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "index_field": "index",
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1assemble/post"
+          },
+          "parts": {
+            "in": "body",
+            "pointer": "/parts"
+          },
+          "receipt_field": "receipt",
+          "result_schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Stored"
+          }
+        },
+        "create": {
+          "expires_at": {
+            "from": "body",
+            "pointer": "/expires"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files/post"
+          },
+          "size": {
+            "in": "header",
+            "name": "Upload-Length"
+          }
+        },
+        "enabled": true,
+        "kind": "resumable_upload",
+        "limits": {
+          "last_part_may_be_smaller": false,
+          "max_part_bytes": 4,
+          "max_parts": 10,
+          "min_part_bytes": 3
+        },
+        "list_parts": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "digest": {
+            "from": "body",
+            "pointer": "/digest"
+          },
+          "index": {
+            "from": "body",
+            "pointer": "/index"
+          },
+          "items": {
+            "from": "body",
+            "pointer": "/parts"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1parts/get"
+          },
+          "receipt": {
+            "from": "body",
+            "pointer": "/receipt"
+          }
+        },
+        "profile": "parts",
+        "upload_part": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "digest": {
+            "algorithm": "sha256",
+            "encoding": "hex",
+            "target": {
+              "in": "header",
+              "name": "Digest"
+            }
+          },
+          "index": {
+            "in": "path",
+            "name": "index"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}-{index}~1part/put"
+          }
+        }
+      },
+      "files.parts_unlimited": {
+        "complete": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "index_field": "index",
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1assemble/post"
+          },
+          "parts": {
+            "in": "body",
+            "pointer": "/parts"
+          },
+          "receipt_field": "receipt",
+          "result_schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Stored"
+          }
+        },
+        "create": {
+          "expires_at": {
+            "from": "body",
+            "pointer": "/expires"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files/post"
+          },
+          "size": {
+            "in": "header",
+            "name": "Upload-Length"
+          }
+        },
+        "enabled": true,
+        "kind": "resumable_upload",
+        "limits": {
+          "last_part_may_be_smaller": true
+        },
+        "list_parts": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "digest": {
+            "from": "body",
+            "pointer": "/digest"
+          },
+          "index": {
+            "from": "body",
+            "pointer": "/index"
+          },
+          "items": {
+            "from": "body",
+            "pointer": "/parts"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1parts/get"
+          },
+          "receipt": {
+            "from": "body",
+            "pointer": "/receipt"
+          }
+        },
+        "profile": "parts",
+        "upload_part": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "digest": {
+            "algorithm": "sha256",
+            "encoding": "hex",
+            "target": {
+              "in": "header",
+              "name": "Digest"
+            }
+          },
+          "index": {
+            "in": "path",
+            "name": "index"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}-{index}~1part/put"
+          }
+        }
+      },
+      "files.parts_url": {
+        "complete": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "index_field": "index",
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1assemble/post"
+          },
+          "parts": {
+            "in": "body",
+            "pointer": "/parts"
+          },
+          "receipt_field": "receipt",
+          "result_schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Stored"
+          }
+        },
+        "create": {
+          "expires_at": {
+            "from": "body",
+            "pointer": "/expires"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files/post"
+          },
+          "session_url": {
+            "from": "body",
+            "pointer": "/url"
+          },
+          "size": {
+            "in": "header",
+            "name": "Upload-Length"
+          }
+        },
+        "enabled": true,
+        "kind": "resumable_upload",
+        "limits": {
+          "last_part_may_be_smaller": true,
+          "max_part_bytes": 4,
+          "max_parts": 10,
+          "min_part_bytes": 3
+        },
+        "list_parts": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "digest": {
+            "from": "body",
+            "pointer": "/digest"
+          },
+          "index": {
+            "from": "body",
+            "pointer": "/index"
+          },
+          "items": {
+            "from": "body",
+            "pointer": "/parts"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1parts/get"
+          },
+          "receipt": {
+            "from": "body",
+            "pointer": "/receipt"
+          }
+        },
+        "profile": "parts",
+        "upload_part": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "digest": {
+            "algorithm": "sha256",
+            "encoding": "hex",
+            "target": {
+              "in": "header",
+              "name": "Digest"
+            }
+          },
+          "index": {
+            "in": "header",
+            "name": "X-Part-Index"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}~1url-part/put"
+          }
+        }
+      },
+      "files.put": {
+        "append": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            }
+          ],
+          "offset": {
+            "in": "query",
+            "name": "offset"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/put"
+          }
+        },
+        "completion": {
+          "kind": "length"
+        },
+        "create": {
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files/post"
+          }
+        },
+        "enabled": true,
+        "kind": "resumable_upload",
+        "max_chunk_bytes": 4,
+        "partial_commit": "forbidden",
+        "probe": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "Tus-Resumable"
+              },
+              "value": {
+                "literal": "1.0.0"
+              }
+            }
+          ],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/head"
+          },
+          "remote_offset": {
+            "from": "header",
+            "name": "Upload-Offset",
+            "occurrence": "single"
+          }
+        },
+        "profile": "offset"
+      },
+      "files.upload": {
+        "append": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "Tus-Resumable"
+              },
+              "value": {
+                "literal": "1.0.0"
+              }
+            }
+          ],
+          "length": {
+            "in": "header",
+            "name": "X-Chunk-Length"
+          },
+          "offset": {
+            "in": "header",
+            "name": "Upload-Offset"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/patch"
+          }
+        },
+        "completion": {
+          "kind": "length"
+        },
+        "create": {
+          "expires_at": {
+            "from": "header",
+            "name": "Upload-Expires",
+            "occurrence": "single"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files/post"
+          },
+          "size": {
+            "in": "header",
+            "name": "Upload-Length"
+          }
+        },
+        "enabled": true,
+        "kind": "resumable_upload",
+        "max_chunk_bytes": 4,
+        "partial_commit": "allowed",
+        "probe": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "Tus-Resumable"
+              },
+              "value": {
+                "literal": "1.0.0"
+              }
+            }
+          ],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/head"
+          },
+          "remote_offset": {
+            "from": "header",
+            "name": "Upload-Offset",
+            "occurrence": "single"
+          }
+        },
+        "profile": "offset"
+      },
+      "files.url": {
+        "append": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "Tus-Resumable"
+              },
+              "value": {
+                "literal": "1.0.0"
+              }
+            }
+          ],
+          "length": {
+            "in": "header",
+            "name": "X-Chunk-Length"
+          },
+          "offset": {
+            "in": "header",
+            "name": "Upload-Offset"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/patch"
+          }
+        },
+        "completion": {
+          "kind": "length"
+        },
+        "create": {
+          "expires_at": {
+            "from": "header",
+            "name": "Upload-Expires",
+            "occurrence": "single"
+          },
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files/post"
+          },
+          "session_url": {
+            "from": "header",
+            "name": "Location",
+            "occurrence": "single"
+          },
+          "size": {
+            "in": "header",
+            "name": "Upload-Length"
+          }
+        },
+        "enabled": true,
+        "kind": "resumable_upload",
+        "max_chunk_bytes": 4,
+        "partial_commit": "allowed",
+        "probe": {
+          "bindings": [
+            {
+              "target": {
+                "in": "path",
+                "name": "fileId"
+              },
+              "value": {
+                "selector": {
+                  "from": "body",
+                  "pointer": "/id"
+                },
+                "source": "initial"
+              }
+            },
+            {
+              "target": {
+                "in": "header",
+                "name": "Tus-Resumable"
+              },
+              "value": {
+                "literal": "1.0.0"
+              }
+            }
+          ],
+          "operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1files~1{fileId}/head"
+          },
+          "remote_offset": {
+            "from": "header",
+            "name": "Upload-Offset",
+            "occurrence": "single"
+          }
+        },
+        "profile": "offset"
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 files.create_file(header:Upload-Length=upload_length, header:Tus-Resumable=tus_resumable, header:X-Name=x_name)
+    exports client.types.files.CreateFileResponse client.types.files.CreateFileErrorData client.types.files.CreateFileHTTPError
+    exports client.types.files.CreateFileRequestCodecs client.types.files.decode_create_file_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 files.probe_file(path:fileId=file_id, header:Tus-Resumable=tus_resumable)
+    exports client.types.files.ProbeFileResponse client.types.files.ProbeFileErrorData client.types.files.ProbeFileHTTPError
+    exports client.types.files.ProbeFileRequestCodecs client.types.files.decode_probe_file_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/2 files.append_file(path:fileId=file_id, header:Upload-Offset=upload_offset, header:Tus-Resumable=tus_resumable, header:X-Chunk-Length=x_chunk_length)
+    exports client.types.files.AppendFileResponse client.types.files.AppendFileErrorData client.types.files.AppendFileHTTPError
+    exports client.types.files.AppendFileRequestCodecs client.types.files.decode_append_file_header digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/3 files.put_file_chunk(path:fileId=file_id, query:offset=offset)
+    exports client.types.files.PutFileChunkResponse client.types.files.PutFileChunkErrorData client.types.files.PutFileChunkHTTPError
+    exports client.types.files.PutFileChunkRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/4 files.get_file_status(path:fileId=file_id)
+    exports client.types.files.GetFileStatusResponse client.types.files.GetFileStatusErrorData client.types.files.GetFileStatusHTTPError
+    exports client.types.files.GetFileStatusRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/5 files.complete_file(path:fileId=file_id)
+    exports client.types.files.CompleteFileResponse client.types.files.CompleteFileErrorData client.types.files.CompleteFileHTTPError
+    exports client.types.files.CompleteFileRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/6 files.list_file_parts(path:fileId=file_id)
+    exports client.types.files.ListFilePartsResponse client.types.files.ListFilePartsErrorData client.types.files.ListFilePartsHTTPError
+    exports client.types.files.ListFilePartsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/7 files.upload_file_part(path:fileId=file_id, path:index=index, header:Digest=digest, header:Cookie=cookie)
+    exports client.types.files.UploadFilePartResponse client.types.files.UploadFilePartErrorData client.types.files.UploadFilePartHTTPError
+    exports client.types.files.UploadFilePartRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/8 files.assemble_file(path:fileId=file_id)
+    exports client.types.files.AssembleFileResponse client.types.files.AssembleFileErrorData client.types.files.AssembleFileHTTPError
+    exports client.types.files.AssembleFileRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/9 files.probe_file_completion(path:fileId=file_id)
+    exports client.types.files.ProbeFileCompletionResponse client.types.files.ProbeFileCompletionErrorData client.types.files.ProbeFileCompletionHTTPError
+    exports client.types.files.ProbeFileCompletionRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/10 files.refused_completion_probe(path:fileId=file_id)
+    exports client.types.files.RefusedCompletionProbeResponse client.types.files.RefusedCompletionProbeErrorData client.types.files.RefusedCompletionProbeHTTPError
+    exports client.types.files.RefusedCompletionProbeRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/11 files.abort_file(path:fileId=file_id)
+    exports client.types.files.AbortFileResponse client.types.files.AbortFileErrorData client.types.files.AbortFileHTTPError
+    exports client.types.files.AbortFileRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/12 files.assemble_binary_file(path:fileId=file_id)
+    exports client.types.files.AssembleBinaryFileResponse client.types.files.AssembleBinaryFileErrorData client.types.files.AssembleBinaryFileHTTPError
+    exports client.types.files.AssembleBinaryFileRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/13 files.assemble_untyped_file(path:fileId=file_id)
+    exports client.types.files.AssembleUntypedFileResponse client.types.files.AssembleUntypedFileErrorData client.types.files.AssembleUntypedFileHTTPError
+    exports client.types.files.AssembleUntypedFileRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/14 files.upload_url_file_part(path:fileId=file_id, header:X-Part-Index=x_part_index, header:Digest=digest, header:Cookie=cookie)
+    exports client.types.files.UploadUrlFilePartResponse client.types.files.UploadUrlFilePartErrorData client.types.files.UploadUrlFilePartHTTPError
+    exports client.types.files.UploadUrlFilePartRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
