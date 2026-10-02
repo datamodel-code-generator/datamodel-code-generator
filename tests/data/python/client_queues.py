@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import importlib
+import json
 import re
 import threading
 from dataclasses import replace
@@ -263,8 +264,12 @@ class _Store:
                     self.entries[key] = self._next(
                         replace(
                             entry,
-                            state="delivery_unknown" if entry.send_intent else "pending",
-                            send_intent=False,
+                            state=("delivery_unknown" if entry.send_intent else "cancelled")
+                            if entry.cancel_requested
+                            else "pending",
+                            result=self.protocols.QueueOutcome(category="cancelled")
+                            if entry.cancel_requested
+                            else entry.result,
                             lease_id=None,
                             lease_until=None,
                         )
@@ -573,7 +578,9 @@ def _enqueue(queue: _Queues, native: httpx2.Client) -> None:
             lambda: outbox.operations.refresh.enqueue(order_id=queue.argument("GetOrder", "path", "orderId", "o9")),
         )
         entry = store.entries[receipt.entry_id]
-        lines.append(f"  saved payload {entry.payload.decode()}")
+        payload = json.loads(entry.payload)
+        payload["key"], payload["created_at"] = "<stable key>", "<creation instant>"
+        lines.append(f"  saved payload {json.dumps(payload, sort_keys=True, separators=(',', ':'))}")
         lines.append(f"  saved key {entry.idempotency_key is not None} blob {entry.blob} owned {entry.blob_owned}")
         lines.append(f"  saved policy {entry.policy}")
         hidden = ("payload", "idempotency_key", "fingerprint", "version", "lease_id")
@@ -884,7 +891,7 @@ def _waits(queue: _Queues, native: httpx2.Client) -> None:  # ruff: ignore[too-m
 
 
 def _recovery(queue: _Queues, native: httpx2.Client) -> None:
-    """Keep unknown delivery after a crash with send intent; redeliver only an unsent expired lease."""
+    """Recover outcome-free crash leases using the original key and request."""
     lines, step, server = queue.lines, queue.step, queue.server
     lines.append("recovery")
     store = _Store(queue.protocols)
@@ -1080,8 +1087,13 @@ def _malformed(queue: _Queues, native: httpx2.Client) -> None:
                 b'{"arguments":[[],["s1"]],"body":[{"item":"tea","quantity":2},"application/json",null],"version":1}'
             ),
         }
-        for label, payload in cases.items():
+        for label, corrupt in cases.items():
+            payload = corrupt
             receipt = outbox.operations.create_order.enqueue(body=queue.order)
+            if label != "not json":
+                fields = json.loads(store.entries[receipt.entry_id].payload)
+                fields.update(json.loads(payload))
+                payload = json.dumps(fields).encode()
             store.tamper(receipt.entry_id, payload=payload)
             step(f"drain {label}", outbox.drain)
         bodiless = outbox.operations.create_order.enqueue(body=queue.order)

@@ -29,3 +29,7 @@ helpers:
     operations:
       order: {operation: "/paths/~1orders~1{orderId}/get", side_effects: false}
       filtered: {operation: /paths/~1filtered/get, side_effects: false}
+  checks.reserved_first:
+    kind: queue
+    operations:
+      filtered: {operation: /paths/~1filtered/get, side_effects: false}

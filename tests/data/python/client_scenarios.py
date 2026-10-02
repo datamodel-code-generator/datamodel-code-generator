@@ -63,6 +63,7 @@ from tests.data.python.client_polling_resume import polling_resume
 from tests.data.python.client_protocol_contracts import protocol_contracts
 from tests.data.python.client_protocol_errors import protocol_errors
 from tests.data.python.client_query import query
+from tests.data.python.client_queue_recovery import queue_recovery, queue_restoration, queue_scope
 from tests.data.python.client_queues import queue_compression, queues
 from tests.data.python.client_raw import raw
 from tests.data.python.client_redirects import head_redirects, redirects
@@ -836,6 +837,9 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "compression": ("compression", ("pydantic_v2.BaseModel",), compression),
     "queues": ("queues", ("pydantic_v2.BaseModel",), queues),
     "queue-compression": ("queues", ("pydantic_v2.BaseModel",), queue_compression),
+    "queue-recovery": ("queues", ("pydantic_v2.BaseModel",), queue_recovery),
+    "queue-restoration": ("queues-restoration", ("pydantic_v2.BaseModel",), queue_restoration),
+    "queue-scope": ("queues", ("pydantic_v2.BaseModel",), queue_scope),
     "streams": ("streams", ("pydantic_v2.BaseModel",), streams),
     "stream-events": ("streams", ("pydantic_v2.BaseModel",), event_stream_lifetimes),
     "stream-backends": ("streams", BACKENDS, stream_backends),
