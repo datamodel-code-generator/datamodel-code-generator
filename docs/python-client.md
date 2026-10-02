@@ -1288,7 +1288,7 @@ E_CONFIG_VALUE config protocols.helpers['checks.cancel'].remote_cancel.bindings 
 
 ## Upload helpers
 
-An enabled `resumable_upload` helper of the `offset` profile is generated at `client.protocols.<name>` on `Client`
+An enabled `resumable_upload` helper of the `offset` or `parts` profile is generated at `client.protocols.<name>` on `Client`
 and `AsyncClient` alike. Its `start` takes the upload source, then the `create` operation's parameters and its body as
 keywords, never field arguments, without the parameter the helper writes the content's size to, then
 `upload_options`, `options`, and `session_options`; `resume` takes the source and a checkpoint. Both are coroutines on
@@ -1387,7 +1387,7 @@ spooled to disk.
 
 Before anything is sent, `start` and `resume` read the whole source once through one reader and record the SHA-256 of
 each chunk; content that does not match the identity, by its length or its digest, raises `UploadSourceChangedError`.
-Each append reads its chunk again into a buffer of its own, one byte longer than the chunk, hashing it as it reads, and
+Each append or part reads its chunk again into a buffer no larger than the chunk, hashing it as it reads, and
 sends it only when its length and digest match what the scan recorded; otherwise it raises `UploadSourceChangedError`
 with the chunk's offset, and the handle sends nothing more: every later step raises `ProtocolStateError` with
 `state='source_changed'`, though `checkpoint()` still works. The body is sent from that buffer in 64 KiB slices, so an
@@ -1426,11 +1426,51 @@ earlier session sent, so it accepts any offset up to the size.
 An upload completed by `length` completes when the server holds every byte. A completion `operation` is sent once with
 its bindings; its response is the result. A completion whose outcome is unknown is never sent again: it raises
 `UploadDeliveryUnknownError(phase='complete')`, and so does every later step and every resume of its checkpoint,
-without sending. A completion that fails with a response may be sent again by the next step.
+without sending. A completion refused with a non-success status other than 502/504, or proven not sent, may be sent again by the next
+step. A 2xx whose body fails decoding, a cancellation after transmission, or any SDK error with uncertain delivery
+keeps completion unknown.
 
 `close()` or `aclose()`, or leaving a `with` or `async with` block, stops only local uploading; the remote upload
 stays, and every later step raises `ProtocolStateError` with `state='closed'`. Calling `advance`, `run`, `close`, or
 `aclose` while another step runs raises `ProtocolStateError` with `state='uploading'`.
+
+### Parts, parallelism, and remote abort
+
+The `parts` profile declares `list_parts`, `upload_part`, `complete`, and `limits` instead of the offset profile's
+`probe`, `append`, and `completion`. `list_parts.items` selects an array; its `index`, `receipt`, and optional `digest`
+selectors read each item. `upload_part.index` writes a one-based part index, its body is binary, and its optional
+`digest` declares a target, `algorithm: sha256`, and `encoding: hex` or `base64`. `complete.parts` writes a JSON array
+of objects whose wire fields are `index_field` and `receipt_field`; the result schema is the completion response's.
+
+`limits` declares optional `max_parts`, `max_part_bytes`, and `min_part_bytes`, and required
+`last_part_may_be_smaller`. The effective chunk size is reduced by `max_part_bytes`. A chunk below the minimum, a
+last part below the minimum without the exception, or too many parts raises `ProtocolConfigurationError` before
+create. The checkpoint fixes that layout; resume cannot enlarge its buffers beyond the caller's chunk limit.
+
+`advance()` sends one wave of up to `min(UploadOptions.parallelism, source.max_parallel_ranges)` parts. Each range
+has its own checked buffer; memory is bounded by that parallelism times the chunk size plus fixed read buffers and
+the digest manifest. Sync handles own a bounded thread pool, released by close; asyncio handles use native tasks.
+A failed wave stops further scheduling and cancels in-flight work, retaining uncertain indices. Before another
+send, `list_parts` reconciles those indices. A digest or receipt mismatch raises `ProtocolDataError`; exhausted
+probes raise `UploadDeliveryUnknownError(phase='part')`. Progress contains `PartReceipt(index, receipt)` values in
+index order. Resume skips stored parts, and complete sends one ordered receipt list, including when the server's
+listing arrives in a different order.
+
+An unknown completion stays unknown. Only a declared
+`completion_probe: {operation, bindings, state, completed_values, result}` lets resume read a confirmed result. Its
+state must exactly match a completed value, including JSON type, and its result selector must select the declared
+completion schema. A pending probe never authorizes another completion request.
+
+Either profile may declare `abort: {operation, bindings}`. The helper then returns its own concrete handle class
+with `abort_remote()`, returning the abort operation's response type. Completed or closed handles refuse abort;
+a successful abort enters the checkpoint, and resume of that checkpoint raises `ProtocolStateError`. Local close
+and cancellation leave the remote state intact.
+
+`create.session_url` may select the upload URL from the create response, such as a `Location` header. Subsequent
+calls follow it, resolving relative references against that response's URL. The shared pagination policy rejects
+userinfo, fragments, oversized URLs, and origins outside the client's explicit allow-list. For another permitted
+origin it strips credentials and cookies; authorized providers apply their own origin policy. The checkpoint saves
+the URL and resume validates it again before sending.
 
 ### Checkpoints and resume
 
@@ -1495,15 +1535,14 @@ operation takes exactly one binary request media and declares a success response
 `probe` declares a success response. Bindings read the create response with `source: initial`, or give a literal, and
 fit their targets as polling bindings do; every required parameter of the probe, the append, and the completion must
 be written. A completion operation declares exactly one JSON success response whose schema is its `result_schema`, and
-a body its bindings write is JSON with a default media type. The `parts` profile, `abort`, `create.session_url`, and
-bindings that read the previous response or the helper's input are not supported yet:
+a body its bindings write is JSON with a default media type. Binding sources `previous` and `input` remain unsupported:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.uploads.diagnostics -->
 <!-- fmt: off -->
 
 ```text
-E_CLIENT_UNSUPPORTED target protocols.helpers['checks.later'].abort /paths/~1files/post: The resumable_upload helper 'checks.later' declares remote abort, which is not supported yet
-E_CLIENT_UNSUPPORTED target protocols.helpers['checks.later'].create.session_url /paths/~1files/post: The resumable_upload helper 'checks.later' declares a session URL, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['checks.later'].create.session_url /paths/~1files/post: The session URL of 'checks.later' reads the header 'Location', which POST /files does not declare
+E_CONFIG_VALUE config protocols.helpers['checks.later'].abort.operation /paths/~1files~1{fileId}~1gone/delete: DELETE /files/{fileId}/gone must declare a success response for the upload helper 'checks.later'
 E_CONFIG_VALUE config protocols.helpers['checks.created'].create.operation /paths/~1drafts/post: POST /drafts must declare a success response for the upload helper 'checks.created'
 E_CONFIG_VALUE config protocols.helpers['checks.size'].create.size /paths/~1files/post: The size of 'checks.size' writes the cookie 'session', which carries credentials no helper writes
 E_CONFIG_VALUE config protocols.helpers['checks.size_body'].create.size /paths/~1files~1{fileId}~1status/post: The size of 'checks.size_body' writes 'body', where only a path, query, or header parameter takes it
