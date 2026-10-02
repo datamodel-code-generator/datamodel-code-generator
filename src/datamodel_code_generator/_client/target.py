@@ -68,7 +68,12 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.streams import StreamSpec
     from datamodel_code_generator._client.uploads import UploadSpec
     from datamodel_code_generator._client.webhooks import WebhookSpec
-    from datamodel_code_generator._generation_contract import GeneratedTypeContractBatch, TypeUseBinding, TypeUseId
+    from datamodel_code_generator._generation_contract import (
+        GeneratedTypeContractBatch,
+        SourceLocation,
+        TypeUseBinding,
+        TypeUseId,
+    )
     from datamodel_code_generator._openapi_codec_plan import CodecBackend, CodecPlan
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
@@ -551,11 +556,9 @@ class _TargetData:
         """Return a use's final type spelled with the import locations of its names, or None without a schema."""
         return None if use is None or use.type is None else self.spelling.static(use.type)
 
-    def contract(self, use: TypeUseBinding | None) -> object:
-        """Return a use's codec binding and the normalized schema at its site, or None without a schema."""
-        if use is None or use.schema is None:
-            return None
-        return (self.bindings.get(use.id), self.wire.schema(use.schema)[1])
+    def contract(self, use: TypeUseBinding) -> object:
+        """Return a retained helper use's codec binding and the normalized schema at its site."""
+        return (self.bindings.get(use.id), self.wire.schema(cast("SourceLocation", use.schema))[1])
 
 
 def _digest(value: object) -> str:

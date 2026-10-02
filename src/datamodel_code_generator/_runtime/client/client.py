@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, ClassVar, Final, Generic, Literal, TypeVar
 from urllib.parse import quote, unquote_plus, urlsplit
 
 import httpx2
-from typing_extensions import Self, TypeIs, cast  # noqa: UP035 - Preserve the existing Generic import.
+from typing_extensions import Self, TypeIs
 
 from ..model_codecs.errors import ParameterEncodingError
 from ..model_codecs.parameters import FragmentContribution, QueryStringContribution, encode_parameter
@@ -3669,7 +3669,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             if recovering:
                 auth.pending = rejected
 
-    def _send(  # noqa: PLR0912, PLR0915
+    def _send(
         self,
         request: PreparedRequest[BodyAttempt],
         source: BodySource | None,
@@ -4678,7 +4678,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             if recovering:
                 auth.pending = rejected
 
-    async def _send(  # noqa: PLR0912, PLR0915
+    async def _send(
         self,
         request: PreparedRequest[AsyncBodyAttempt],
         source: AsyncBodySource | None,

@@ -67,6 +67,7 @@ TokenStoreAction: TypeAlias = Literal["store", "retry_store", "replace", "load"]
 TokenPersistencePurpose: TypeAlias = Literal[TokenLoadPurpose, "store", "retry_store", "replace"]
 PERSISTENCE_PURPOSES: Final = get_args(TokenPersistencePurpose)
 AuthAction: TypeAlias = Literal[
+    "get",
     "refresh",
     "retry_store",
     "replace_token_set",
@@ -74,6 +75,7 @@ AuthAction: TypeAlias = Literal[
     "exchange_code",
     "begin",
     "poll",
+    "close",
     "aclose",
 ]
 _ProtocolCondition: TypeAlias = Literal[

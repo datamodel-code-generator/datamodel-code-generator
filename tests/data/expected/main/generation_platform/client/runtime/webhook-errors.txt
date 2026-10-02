@@ -79,12 +79,6 @@
   store action: delete entry=None
   store action: invalidate entry=None
   store action: claim entry=None
-  store action: put entry=None
-  store action: get entry=None
-  store action: open entry=None
-  store action: read entry=None
-  store action: close entry=None
-  store action: purge_terminal entry=None
   store action: admit entry=None
   store action: record entry=None
   store action: reset entry=None

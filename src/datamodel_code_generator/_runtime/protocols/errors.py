@@ -26,7 +26,6 @@ from ..client.errors import (
     error_count,
     error_string,
     error_time,
-    is_sequence,
 )
 from ..client.responses import HeadersView, ResponseInfo
 from ..model_codecs.unset import UNSET, Unset

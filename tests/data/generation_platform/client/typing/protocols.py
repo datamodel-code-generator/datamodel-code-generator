@@ -145,7 +145,7 @@ def errors(snapshot: PollSnapshot[Pet], state: ResumeState) -> None:
     except StreamRemoteError as caught_remote:
         remote_event(caught_remote)
     try:
-        raise ResumeStateError(condition="expired")
+        raise ResumeStateError(condition="expired")  # ruff: ignore[raise-within-try] - Exercise exception type narrowing.
     except ProtocolDataError as data_error:
         assert_type(data_error.location, Selector | RequestTarget | None)
     except ResumeStateError as resume_error:
