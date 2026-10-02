@@ -162,9 +162,9 @@ def query_written(call: OperationPlan[T, object], writes: Writes, name: str) -> 
     for position, _ in writes:
         if position is None or (plan := call.parameters[position].plan).location != "query":
             continue
-        if name == plan.name:
-            return True
         if plan.shape != "object" or not plan.explode or plan.style not in {"form", "deepObject"}:
+            if name == plan.name:
+                return True
             continue
         member = name
         if plan.style == "deepObject":

@@ -674,6 +674,14 @@ cleared resume patch deep scope[after]
   < closed
   > GET https://api.example.com/named-marks?after=5&page=unrelated last-event-id=None
   < closed
+  > GET https://api.example.com/named-marks?scope=unrelated last-event-id=None
+  < closed
+  > GET https://api.example.com/named-marks?after=5&scope=unrelated last-event-id=None
+  < closed
+  > GET https://api.example.com/deep-marks?scope=unrelated last-event-id=None
+  < closed
+  > GET https://api.example.com/deep-marks?scope%5Bafter%5D=5&scope=unrelated last-event-id=None
+  < closed
   > GET https://api.example.com/deep-marks?scope%5Bafter=unrelated last-event-id=None
   < closed
   > GET https://api.example.com/deep-marks?other=unrelated last-event-id=None
@@ -881,6 +889,18 @@ cleared resume patch named after
 cleared resume patch deep scope[after]
   refused ProtocolConfigurationError condition='invalid_value' path=('options', 'query', 'scope[after]') operation='/paths/~1deep-marks/get' operation_id=None cause=NoneType context=NoneType
   new sends=0
+  > GET https://api.example.com/named-marks?page=unrelated last-event-id=None
+  < closed
+  > GET https://api.example.com/named-marks?after=5&page=unrelated last-event-id=None
+  < closed
+  > GET https://api.example.com/named-marks?scope=unrelated last-event-id=None
+  < closed
+  > GET https://api.example.com/named-marks?after=5&scope=unrelated last-event-id=None
+  < closed
+  > GET https://api.example.com/deep-marks?scope=unrelated last-event-id=None
+  < closed
+  > GET https://api.example.com/deep-marks?scope%5Bafter%5D=5&scope=unrelated last-event-id=None
+  < closed
   > GET https://api.example.com/events last-event-id=None
   < closed
 tracked zero-budget resume

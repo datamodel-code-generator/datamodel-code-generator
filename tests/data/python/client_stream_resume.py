@@ -944,15 +944,16 @@ def _cleared_guards(resumes: _Resumes, api: Any) -> None:
                 f"cleared resume patch {name} {field}",
                 partial(helper.resume, cleared, options=options.RequestOptions(query=((field, "STALE"),))),
             )
-    helper = api.protocols.marks.named
-    patch = options.RequestOptions(query=(("page", "unrelated"),))
-    resumes.reply(b'data: {"scope": {"after": "5"}}\n\n')
-    stream = helper.open(options=patch)
-    next(stream)
-    state = stream.checkpoint()
-    stream.close()
-    resumes.reply()
-    helper.resume(state, options=patch).close()
+    for name, field in (("named", "page"), ("named", "scope"), ("deep", "scope")):
+        helper = getattr(api.protocols.marks, name)
+        patch = options.RequestOptions(query=((field, "unrelated"),))
+        resumes.reply(b'data: {"scope": {"after": "5"}}\n\n')
+        stream = helper.open(options=patch)
+        next(stream)
+        state = stream.checkpoint()
+        stream.close()
+        resumes.reply()
+        helper.resume(state, options=patch).close()
     helper = api.protocols.marks.deep
     for field in ("scope[after", "other"):
         resumes.reply(b'data: {"scope": {"after": "5"}}\n\n')
@@ -1030,6 +1031,16 @@ async def _awrite_guards(package: ModuleType, lines: list[str]) -> None:
                     f"cleared resume patch {name} {field}",
                     partial(helper.resume, cleared, options=options.RequestOptions(query=((field, "STALE"),))),
                 )
+        for name, field in (("named", "page"), ("named", "scope"), ("deep", "scope")):
+            helper = getattr(api.protocols.marks, name)
+            patch = options.RequestOptions(query=((field, "unrelated"),))
+            resumes.reply(b'data: {"scope": {"after": "5"}}\n\n')
+            stream = await helper.open(options=patch)
+            await anext(stream)
+            state = stream.checkpoint()
+            await stream.aclose()
+            resumes.reply()
+            await (await helper.resume(state, options=patch)).aclose()
         resumes.reply(b'id: 1\ndata: {"text": "a"}\n\n', headers=_TRACKED)
         stream = await api.protocols.events.tracked.open()
         await anext(stream)
