@@ -84,6 +84,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "uploads-compression",
         "uploads-plans",
         "queues",
+        "queues-schema-absent",
         "webhooks",
         "webhooks-schema",
         "webhooks-public-keys",
@@ -183,6 +184,7 @@ def test_client_protocols(case: str, tmp_path: Path) -> None:
         ("webhooks-adapters", "webhooks-adapters-python", "webhook-adapter-records"),
         ("caching", "caching-python", "cache-records"),
         ("queues", "queues-python", "queue-records"),
+        ("queues-schema-absent", "queues-schema-absent-python", "queue-schema-absent-records"),
         ("queues", "queues-schema", "queue-schema"),
     ],
 )
