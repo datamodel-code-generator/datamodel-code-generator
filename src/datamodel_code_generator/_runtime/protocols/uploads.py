@@ -62,7 +62,7 @@ from .sources import PartReceipt, UploadIdentity, UploadProgress
 from .values import MISSING, RepeatedValueError, selected, server_expiry
 
 if TYPE_CHECKING:
-    import asyncio
+    from asyncio import Task
     from collections.abc import AsyncIterator, Callable, Generator, Iterator
     from concurrent.futures import Future, ThreadPoolExecutor
     from datetime import datetime
@@ -1006,9 +1006,8 @@ class _Upload(Generic[T]):
             expires_at=self._expires_at,
         )
 
-    def _checkpoint_extra(self, state: WireValue) -> None:  # noqa: PLR6301
+    def _checkpoint_extra(self, state: WireValue) -> None:
         """Keep no additional offset-profile state."""
-        del state
 
     def _core_security(
         self, call: OperationPlan[Any, object], options: RequestOptions | None
@@ -1969,7 +1968,7 @@ class AsyncPartsUploadHandle(_Parts[T], AsyncUploadHandle[T]):
 
         indices = self._wave()
         readers = [asyncio.create_task(self._part_buffer(index)) for index in indices]
-        tasks: list[asyncio.Task[Any]] = list(readers)
+        tasks: list[Task[Any]] = list(readers)
         for task in tasks:
             task.add_done_callback(_observed)
         try:
@@ -2020,7 +2019,7 @@ class AsyncPartsUploadHandle(_Parts[T], AsyncUploadHandle[T]):
         self._settled()
 
 
-def _observed(task: asyncio.Task[Any]) -> None:
+def _observed(task: Task[Any]) -> None:
     """Retrieve failures even when the wave's caller was cancelled."""
     if not task.cancelled():
         task.exception()
