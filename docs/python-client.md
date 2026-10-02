@@ -4038,7 +4038,8 @@ def configured_client(ca_file: str) -> Client:
 ```
 
 Use the returned client in a `with` block. The supplied CA bundle controls TLS verification; this example leaves
-verification enabled and does not inherit proxy configuration from the environment.
+verification enabled. Omitting `trust_env` keeps its default of `True`, so native environment proxy settings remain
+effective. Set `trust_env=False` on `TransportOptions` to opt out explicitly.
 
 An injected native client's pool/proxy/TLS settings remain its own, and incompatible SDK construction settings are
 rejected. Borrowed clients and adapters are not closed; `OwnedTransportAdapter` transfers adapter ownership.
