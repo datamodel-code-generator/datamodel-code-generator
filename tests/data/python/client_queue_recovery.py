@@ -554,6 +554,41 @@ async def _restoration(package: ModuleType, lines: list[str], asynchronous: bool
             ))
             await _value(instance.aclose if asynchronous else instance.close)
 
+        for version in json.loads(_INPUT.read_text(encoding="utf-8"))["payload_versions"]:
+            store = _Store(queue.protocols)
+            adapter = _AsyncStore(store) if asynchronous else store
+            provider = _Provider(queue, asynchronous, lambda: None)
+            settings = replace(
+                queue.settings(adapter),
+                auth=queue.auth.AuthConfig({"bearer": provider}, send_on_anonymous=True, anonymous_schemes=("bearer",)),
+            )
+            instance = client(http_client=native, options=settings)
+            outbox = instance.protocols.orders.outbox
+            receipt = await _value(partial(outbox.operations.create_order.enqueue, body=queue.order))
+            entry = await _value(partial(adapter.get, receipt.entry_id))
+            payload = json.loads(entry.payload)
+            payload["version"] = version
+            await _value(
+                partial(
+                    adapter.compare_exchange,
+                    receipt.entry_id,
+                    entry.version,
+                    replace(entry, payload=json.dumps(payload).encode()),
+                )
+            )
+            await _value(instance.aclose if asynchronous else instance.close)
+            instance = client(http_client=native, options=settings)
+            outbox = instance.protocols.orders.outbox
+            await _value(outbox.drain)
+            entry = await _value(partial(outbox.inspect, receipt.entry_id))
+            lines.append(
+                f"  payload version={version!r}: {entry.state} {entry.result.category}/{entry.result.error_code} "
+                f"providers={provider.calls} sends={len(queue.server.log)} "
+                f"count={entry.delivery_count} intent={entry.send_intent}"
+            )
+            queue.server.log.clear()
+            await _value(instance.aclose if asynchronous else instance.close)
+
 
 def queue_restoration(package: ModuleType, lines: list[str]) -> None:
     """Consume the entry deadline in a registered restoration adapter before any resource/provider admission."""

@@ -20,11 +20,11 @@ from contextlib import (
 from dataclasses import dataclass, replace
 from functools import partial
 from time import monotonic
-from typing import TYPE_CHECKING, ClassVar, Final, Generic, Literal, TypeVar, cast
+from typing import TYPE_CHECKING, ClassVar, Final, Generic, Literal, TypeVar
 from urllib.parse import quote, unquote_plus, urlsplit
 
 import httpx2
-from typing_extensions import Self, TypeIs
+from typing_extensions import Self, TypeIs, cast  # noqa: UP035 - Preserve the existing Generic import.
 
 from ..model_codecs.errors import ParameterEncodingError
 from ..model_codecs.parameters import FragmentContribution, QueryStringContribution, encode_parameter
@@ -514,8 +514,8 @@ def _auth_identity(auth: AuthConfig) -> WireValue:
 def _secret(spec: ParameterSpec, value: WireValue, headers: frozenset[str], queries: frozenset[str]) -> bool:
     """Return whether an argument carries credentials: a cookie, a credential header, or a scheme's query field.
 
-    Exploded form and deepObject query parameters send their properties as fields of their own, with brackets around
-    deepObject properties, an additional property included.
+    Exploded form and deepObject query parameters send only their property names or bracketed names, including
+    additional properties. Other query serializers retain the declaration name as their emitted field.
     """
     plan = spec.plan
     name = plan.name
@@ -526,7 +526,6 @@ def _secret(spec: ParameterSpec, value: WireValue, headers: frozenset[str], quer
         case "header":
             secret = name.lower() in headers
         case "query":
-            secret = name in queries
             if (
                 plan.shape == "object"
                 and plan.explode
@@ -534,9 +533,11 @@ def _secret(spec: ParameterSpec, value: WireValue, headers: frozenset[str], quer
                 and isinstance(value, Mapping)
             ):
                 if plan.style == "form":
-                    secret = secret or not queries.isdisjoint(value)
+                    secret = not queries.isdisjoint(value)
                 else:
-                    secret = secret or any(f"{name}[{member}]" in queries for member in value)
+                    secret = any(f"{name}[{member}]" in queries for member in value)
+            else:
+                secret = name in queries
         case "querystring":
             secret = isinstance(value, Mapping) and not queries.isdisjoint(value)
         case _:
