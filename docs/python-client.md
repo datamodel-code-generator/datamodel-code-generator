@@ -242,13 +242,13 @@ booleans. Durations are finite numbers of seconds, excluding booleans; integers 
 | | `max_event_bytes` | `1048576` | Positive integer |
 | | `reconnect` | `False` | `bool` |
 | | `max_reconnects` | `5` | Nonnegative integer or `None` |
+| | `max_reconnect_wait` | `60` seconds | Positive duration or `None` |
 | `BatchOptions` | `batch_size` | `100`, fewer when the server allows fewer | Positive integer |
 | | `parallelism` | `4` | Positive integer |
 | | `max_items` | `100000` | Nonnegative integer or `None` |
 | | `max_item_bytes` | `8388608` | Positive integer |
 | | `max_buffer_bytes` | `33554432` | Positive integer |
 | | `raise_on_error` | `False` | `bool` |
-| | `max_reconnect_wait` | `60` seconds | Positive duration or `None` |
 | `UploadOptions` | `chunk_bytes` | `8388608`, at most the helper's `max_chunk_bytes` | Positive integer |
 | | `max_parts` | `10000` | Positive integer or `None` |
 | | `parallelism` | `4` | Positive integer |
