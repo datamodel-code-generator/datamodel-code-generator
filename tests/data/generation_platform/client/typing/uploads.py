@@ -88,6 +88,11 @@ def parts_and_abort(client: Client, version: FieldFilesPostHeaderTusResumablePar
     with client.protocols.files.parts.start(source, tus_resumable=version) as parts:
         assert_type(parts.run(), AssembleFileResponse)
         assert_type(parts.advance().confirmed_parts, tuple[PartReceipt, ...])
+    with client.protocols.files.parts_url.start(source, tus_resumable=version) as url:
+        assert_type(url.run(), AssembleFileResponse)
+        assert_type(
+            client.protocols.files.parts_url.resume(source, url.checkpoint()), UploadHandle[AssembleFileResponse]
+        )
     with client.protocols.files.parts_abort.start(source, tus_resumable=version) as abortable:
         assert_type(abortable.abort_remote(), AbortFileResponse)
         assert_type(abortable.run(), AssembleFileResponse)
@@ -104,6 +109,10 @@ async def async_parts_and_abort(client: AsyncClient, version: FieldFilesPostHead
     source = AsyncBytesUploadSource.from_bytes(b"content")
     async with await client.protocols.files.parts.start(source, tus_resumable=version) as parts:
         assert_type(await parts.run(), AssembleFileResponse)
+    async with await client.protocols.files.parts_url.start(source, tus_resumable=version) as url:
+        assert_type(await url.run(), AssembleFileResponse)
+        resumed_url = await client.protocols.files.parts_url.resume(source, url.checkpoint())
+        assert_type(resumed_url, AsyncUploadHandle[AssembleFileResponse])
     async with await client.protocols.files.parts_abort.start(source, tus_resumable=version) as abortable:
         assert_type(await abortable.abort_remote(), AbortFileResponse)
         assert_type(await abortable.run(), AssembleFileResponse)

@@ -1,0 +1,85 @@
+# uploads-assemble-compression pydantic_v2.BaseModel
+sync result size=16 sha256=669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0 resume creates=0 repeat sends=0
+  sync completed ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+sync completed reads=0 sends=0
+sync plain completed size=16 sends=0
+sync wire=[('POST', None, b''), ('PUT', None, b'AAAA'), ('GET', None, b''), ('GET', None, b''), ('PUT', None, b'BBBB'), ('GET', None, b''), ('PUT', None, b'CCCC'), ('GET', None, b''), ('PUT', None, b'DDDD'), ('GET', None, b''), ('POST', 'gzip', b'{"parts":[{"index":1,"receipt":"part-1"},{"index":2,"receipt":"part-2"},{"index":3,"receipt":"part-3"},{"index":4,"receipt":"part-4"}]}')]
+sync empty explicit size=0
+async result size=16 sha256=669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0 resume creates=0 repeat sends=0
+  async completed ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+async completed reads=0 sends=0
+async plain completed size=16 sends=0
+async wire=[('POST', None, b''), ('PUT', None, b'AAAA'), ('GET', None, b''), ('GET', None, b''), ('PUT', None, b'BBBB'), ('GET', None, b''), ('PUT', None, b'CCCC'), ('GET', None, b''), ('PUT', None, b'DDDD'), ('GET', None, b''), ('POST', 'gzip', b'{"parts":[{"index":1,"receipt":"part-1"},{"index":2,"receipt":"part-2"},{"index":3,"receipt":"part-3"},{"index":4,"receipt":"part-4"}]}')]
+async empty explicit size=0
+async empty inherited=True size=0 wire=[('POST', None, b''), ('POST', 'gzip', b'{"parts":[]}')]
+async empty inherited=False size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]
+sync empty inherited=True size=0 wire=[('POST', None, b''), ('POST', 'gzip', b'{"parts":[]}')]
+sync empty inherited=False size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]
+# uploads-assemble-compression pydantic_v2.dataclass
+sync result size=16 sha256=669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0 resume creates=0 repeat sends=0
+  sync completed ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+sync completed reads=0 sends=0
+sync plain completed size=16 sends=0
+sync wire=[('POST', None, b''), ('PUT', None, b'AAAA'), ('GET', None, b''), ('GET', None, b''), ('PUT', None, b'BBBB'), ('GET', None, b''), ('PUT', None, b'CCCC'), ('GET', None, b''), ('PUT', None, b'DDDD'), ('GET', None, b''), ('POST', 'gzip', b'{"parts":[{"index":1,"receipt":"part-1"},{"index":2,"receipt":"part-2"},{"index":3,"receipt":"part-3"},{"index":4,"receipt":"part-4"}]}')]
+sync empty explicit size=0
+async result size=16 sha256=669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0 resume creates=0 repeat sends=0
+  async completed ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+async completed reads=0 sends=0
+async plain completed size=16 sends=0
+async wire=[('POST', None, b''), ('PUT', None, b'AAAA'), ('GET', None, b''), ('GET', None, b''), ('PUT', None, b'BBBB'), ('GET', None, b''), ('PUT', None, b'CCCC'), ('GET', None, b''), ('PUT', None, b'DDDD'), ('GET', None, b''), ('POST', 'gzip', b'{"parts":[{"index":1,"receipt":"part-1"},{"index":2,"receipt":"part-2"},{"index":3,"receipt":"part-3"},{"index":4,"receipt":"part-4"}]}')]
+async empty explicit size=0
+async empty inherited=True size=0 wire=[('POST', None, b''), ('POST', 'gzip', b'{"parts":[]}')]
+async empty inherited=False size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]
+sync empty inherited=True size=0 wire=[('POST', None, b''), ('POST', 'gzip', b'{"parts":[]}')]
+sync empty inherited=False size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]
+# uploads-assemble-compression dataclasses.dataclass
+sync result size=16 sha256=669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0 resume creates=0 repeat sends=0
+  sync completed ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+sync completed reads=0 sends=0
+sync plain completed size=16 sends=0
+sync wire=[('POST', None, b''), ('PUT', None, b'AAAA'), ('GET', None, b''), ('GET', None, b''), ('PUT', None, b'BBBB'), ('GET', None, b''), ('PUT', None, b'CCCC'), ('GET', None, b''), ('PUT', None, b'DDDD'), ('GET', None, b''), ('POST', 'gzip', b'{"parts":[{"index":1,"receipt":"part-1"},{"index":2,"receipt":"part-2"},{"index":3,"receipt":"part-3"},{"index":4,"receipt":"part-4"}]}')]
+sync empty explicit size=0
+async result size=16 sha256=669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0 resume creates=0 repeat sends=0
+  async completed ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+async completed reads=0 sends=0
+async plain completed size=16 sends=0
+async wire=[('POST', None, b''), ('PUT', None, b'AAAA'), ('GET', None, b''), ('GET', None, b''), ('PUT', None, b'BBBB'), ('GET', None, b''), ('PUT', None, b'CCCC'), ('GET', None, b''), ('PUT', None, b'DDDD'), ('GET', None, b''), ('POST', 'gzip', b'{"parts":[{"index":1,"receipt":"part-1"},{"index":2,"receipt":"part-2"},{"index":3,"receipt":"part-3"},{"index":4,"receipt":"part-4"}]}')]
+async empty explicit size=0
+async empty inherited=True size=0 wire=[('POST', None, b''), ('POST', 'gzip', b'{"parts":[]}')]
+async empty inherited=False size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]
+sync empty inherited=True size=0 wire=[('POST', None, b''), ('POST', 'gzip', b'{"parts":[]}')]
+sync empty inherited=False size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]
+# uploads-assemble-compression typing.TypedDict
+sync result size=16 sha256=669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0 resume creates=0 repeat sends=0
+  sync completed ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+sync completed reads=0 sends=0
+sync plain completed size=16 sends=0
+sync wire=[('POST', None, b''), ('PUT', None, b'AAAA'), ('GET', None, b''), ('GET', None, b''), ('PUT', None, b'BBBB'), ('GET', None, b''), ('PUT', None, b'CCCC'), ('GET', None, b''), ('PUT', None, b'DDDD'), ('GET', None, b''), ('POST', 'gzip', b'{"parts":[{"index":1,"receipt":"part-1"},{"index":2,"receipt":"part-2"},{"index":3,"receipt":"part-3"},{"index":4,"receipt":"part-4"}]}')]
+sync empty explicit size=0
+async result size=16 sha256=669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0 resume creates=0 repeat sends=0
+  async completed ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+async completed reads=0 sends=0
+async plain completed size=16 sends=0
+async wire=[('POST', None, b''), ('PUT', None, b'AAAA'), ('GET', None, b''), ('GET', None, b''), ('PUT', None, b'BBBB'), ('GET', None, b''), ('PUT', None, b'CCCC'), ('GET', None, b''), ('PUT', None, b'DDDD'), ('GET', None, b''), ('POST', 'gzip', b'{"parts":[{"index":1,"receipt":"part-1"},{"index":2,"receipt":"part-2"},{"index":3,"receipt":"part-3"},{"index":4,"receipt":"part-4"}]}')]
+async empty explicit size=0
+async empty inherited=True size=0 wire=[('POST', None, b''), ('POST', 'gzip', b'{"parts":[]}')]
+async empty inherited=False size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]
+sync empty inherited=True size=0 wire=[('POST', None, b''), ('POST', 'gzip', b'{"parts":[]}')]
+sync empty inherited=False size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]
+# uploads-assemble-compression msgspec.Struct
+sync result size=16 sha256=669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0 resume creates=0 repeat sends=0
+  sync completed ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+sync completed reads=0 sends=0
+sync plain completed size=16 sends=0
+sync wire=[('POST', None, b''), ('PUT', None, b'AAAA'), ('GET', None, b''), ('GET', None, b''), ('PUT', None, b'BBBB'), ('GET', None, b''), ('PUT', None, b'CCCC'), ('GET', None, b''), ('PUT', None, b'DDDD'), ('GET', None, b''), ('POST', 'gzip', b'{"parts":[{"index":1,"receipt":"part-1"},{"index":2,"receipt":"part-2"},{"index":3,"receipt":"part-3"},{"index":4,"receipt":"part-4"}]}')]
+sync empty explicit size=0
+async result size=16 sha256=669c164f44198b43b7175ac0dff496fe43393717428747ccb44c294fbeaca6e0 resume creates=0 repeat sends=0
+  async completed ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+async completed reads=0 sends=0
+async plain completed size=16 sends=0
+async wire=[('POST', None, b''), ('PUT', None, b'AAAA'), ('GET', None, b''), ('GET', None, b''), ('PUT', None, b'BBBB'), ('GET', None, b''), ('PUT', None, b'CCCC'), ('GET', None, b''), ('PUT', None, b'DDDD'), ('GET', None, b''), ('POST', 'gzip', b'{"parts":[{"index":1,"receipt":"part-1"},{"index":2,"receipt":"part-2"},{"index":3,"receipt":"part-3"},{"index":4,"receipt":"part-4"}]}')]
+async empty explicit size=0
+async empty inherited=True size=0 wire=[('POST', None, b''), ('POST', 'gzip', b'{"parts":[]}')]
+async empty inherited=False size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]
+sync empty inherited=True size=0 wire=[('POST', None, b''), ('POST', 'gzip', b'{"parts":[]}')]
+sync empty inherited=False size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]

@@ -1,0 +1,75 @@
+# uploads pydantic_v2.BaseModel
+  sync undeclared ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+sync refused reads=0 sends=0
+sync wire=[]
+  sync empty ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+sync empty reads=0 sends=0
+  async undeclared ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+async refused reads=0 sends=0
+async wire=[]
+  async empty ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+async empty reads=0 sends=0
+async empty inherited=True size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]
+async empty inherited=False size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]
+sync empty inherited=True size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]
+sync empty inherited=False size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]
+# uploads pydantic_v2.dataclass
+  sync undeclared ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+sync refused reads=0 sends=0
+sync wire=[]
+  sync empty ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+sync empty reads=0 sends=0
+  async undeclared ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+async refused reads=0 sends=0
+async wire=[]
+  async empty ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+async empty reads=0 sends=0
+async empty inherited=True size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]
+async empty inherited=False size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]
+sync empty inherited=True size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]
+sync empty inherited=False size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]
+# uploads dataclasses.dataclass
+  sync undeclared ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+sync refused reads=0 sends=0
+sync wire=[]
+  sync empty ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+sync empty reads=0 sends=0
+  async undeclared ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+async refused reads=0 sends=0
+async wire=[]
+  async empty ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+async empty reads=0 sends=0
+async empty inherited=True size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]
+async empty inherited=False size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]
+sync empty inherited=True size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]
+sync empty inherited=False size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]
+# uploads typing.TypedDict
+  sync undeclared ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+sync refused reads=0 sends=0
+sync wire=[]
+  sync empty ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+sync empty reads=0 sends=0
+  async undeclared ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+async refused reads=0 sends=0
+async wire=[]
+  async empty ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+async empty reads=0 sends=0
+async empty inherited=True size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]
+async empty inherited=False size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]
+sync empty inherited=True size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]
+sync empty inherited=False size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]
+# uploads msgspec.Struct
+  sync undeclared ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+sync refused reads=0 sends=0
+sync wire=[]
+  sync empty ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+sync empty reads=0 sends=0
+  async undeclared ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+async refused reads=0 sends=0
+async wire=[]
+  async empty ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+async empty reads=0 sends=0
+async empty inherited=True size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]
+async empty inherited=False size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]
+sync empty inherited=True size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]
+sync empty inherited=False size=0 wire=[('POST', None, b''), ('POST', None, b'{"parts":[]}')]

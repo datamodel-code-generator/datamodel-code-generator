@@ -4698,5 +4698,51 @@
       "pydantic_v2.BaseModel"
     ],
     "modules": false
+  },
+  "uploads-parts-compression": {
+    "input": "uploads.yaml",
+    "references": [
+      "protocols/uploads.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/uploads.yaml",
+      "operations": [
+        {
+          "ref": "/paths/~1files~1{fileId}~1parts~1{index}/put",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        }
+      ]
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": []
+  },
+  "uploads-assemble-compression": {
+    "input": "uploads.yaml",
+    "references": [
+      "protocols/uploads.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/uploads.yaml",
+      "operations": [
+        {
+          "ref": "/paths/~1files~1{fileId}~1assemble/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        }
+      ]
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": []
   }
 }

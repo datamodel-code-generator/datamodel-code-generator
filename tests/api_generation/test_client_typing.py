@@ -159,12 +159,13 @@ def test_client_typing_queues(backend: DataModelType, tmp_path: Path) -> None:
         DataModelType.MsgspecStruct,
     ],
 )
-def test_client_typing_uploads(backend: DataModelType, tmp_path: Path) -> None:
+@pytest.mark.parametrize("case", ["uploads", "uploads-composite"])
+def test_client_typing_uploads(backend: DataModelType, case: str, tmp_path: Path) -> None:
     """Check upload helpers: typed results, sync and asyncio handles and sources, and misuses of each."""
     if not os.environ.get(ENABLED):
         pytest.skip(f"{ENABLED} enables type checking generated packages")
     assert_output(
-        client_typing_report(tmp_path, backend, "uploads", ("uploads",)),
+        client_typing_report(tmp_path, backend, case, ("uploads",)),
         EXPECTED / f"{backend.value.replace('.', '-')}-uploads.txt",
     )
 
