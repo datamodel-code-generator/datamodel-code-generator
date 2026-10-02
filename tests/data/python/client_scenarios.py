@@ -60,7 +60,7 @@ from tests.data.python.client_pagination_targets import (
     path_arguments,
 )
 from tests.data.python.client_parameter_adapters import parameter_adapters
-from tests.data.python.client_parts_compression import parts_compression
+from tests.data.python.client_parts_compression import parts_compression, parts_probe_compression
 from tests.data.python.client_polling import polling
 from tests.data.python.client_polling_resume import polling_resume
 from tests.data.python.client_protocol_contracts import protocol_contracts
@@ -887,6 +887,11 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
             "msgspec.Struct",
         ),
         partial(parts_compression, declaration="complete"),
+    ),
+    "upload-probe-compression": (
+        "uploads-probe-compression",
+        ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"),
+        parts_probe_compression,
     ),
     "uploads-oauth": ("uploads-oauth", ("pydantic_v2.BaseModel",), uploads_oauth),
     "polling-resume": ("polling", ("pydantic_v2.BaseModel",), polling_resume),

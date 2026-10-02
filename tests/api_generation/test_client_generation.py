@@ -81,6 +81,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
         "uploads-compression",
         "uploads-parts-compression",
         "uploads-assemble-compression",
+        "uploads-probe-compression",
         "uploads-plans",
         "uploads-completion-required",
         "uploads-default",

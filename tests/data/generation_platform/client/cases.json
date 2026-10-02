@@ -4744,5 +4744,36 @@
       "pydantic_v2.BaseModel"
     ],
     "modules": []
+  },
+  "uploads-probe-compression": {
+    "input": "uploads-probe-compression.yaml",
+    "references": [
+      "protocols/uploads-probe-compression.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/uploads-probe-compression.yaml",
+      "operations": [
+        {
+          "ref": "/paths/~1files~1{fileId}~1parts/get",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1files~1{fileId}~1completion/get",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        }
+      ]
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": []
   }
 }
