@@ -6,5 +6,6 @@
   "body": {"item": "tea", "quantity": 2},
   "lease_seconds": 400,
   "ttl_seconds": 3,
-  "backoff_seconds": 120
+  "backoff_seconds": 120,
+  "payload_versions": [1, true, 1.0, "1", 2]
 }

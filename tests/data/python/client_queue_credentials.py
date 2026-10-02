@@ -53,7 +53,7 @@ class _Signer:
         self.capabilities = auth.SignerCapabilities(
             allowed_origins=("https://api.example.com",),
             managed_headers=("X-Signature",),
-            managed_query=("signed",),
+            managed_query=("signed", "signed[token]"),
             requires_body_digest=False,
         )
         if asynchronous:
@@ -162,7 +162,9 @@ async def _mode(package: ModuleType, lines: list[str], asynchronous: bool) -> No
     for control in inputs["arguments"]:
         operation = control["operation"]
         name, location = (
-            ("whole", "querystring")
+            (control["parameter"], "query")
+            if "parameter" in control
+            else ("whole", "querystring")
             if operation == "whole"
             else (
                 ("X-Catalog-Key", "header")
@@ -174,10 +176,11 @@ async def _mode(package: ModuleType, lines: list[str], asynchronous: bool) -> No
                 )
             )
         )
-        codec = getattr(codecs, f"Get{operation.title()}RequestCodecs").parameter(location=location, name=name)
+        title = "".join(part.title() for part in operation.split("_"))
+        codec = getattr(codecs, f"Get{title}RequestCodecs").parameter(location=location, name=name)
         argument = codec.from_wire(control["value"])
         argument_name = name.lower().replace("-", "_")
-        for restored in (False, True) if control["refused"] else (False,):
+        for restored in (False, True) if control["refused"] or control.get("restore") else (False,):
             store = _Store(public)
             api = client(store)
             queue = api.protocols.outbox
@@ -185,13 +188,27 @@ async def _mode(package: ModuleType, lines: list[str], asynchronous: bool) -> No
             status = "accepted"
             try:  # ruff: ignore[too-many-statements-in-try-clause]
                 if restored:
-                    safe = {"public": "tea"} if isinstance(control["value"], dict) else ""
-                    seed = {argument_name: codec.from_wire(safe)} if isinstance(safe, dict) else {}
+                    safe = (
+                        ({"public": "tea"} if isinstance(control["value"], dict) else "")
+                        if control["refused"]
+                        else control["value"]
+                    )
+                    seed = (
+                        {argument_name: codec.from_wire(safe)}
+                        if isinstance(safe, dict) and not control.get("seed_empty")
+                        else {}
+                    )
                     receipt = await _value(getattr(queue.operations, operation).enqueue(**seed))
-                    entry = await _value(queue.inspect(receipt.entry_id))
-                    payload = json.loads(entry.payload)
-                    payload["arguments"] = [[control["value"]]]
-                    store.tamper(receipt.entry_id, payload=json.dumps(payload).encode())
+                    if control["refused"]:
+                        entry = await _value(queue.inspect(receipt.entry_id))
+                        payload = json.loads(entry.payload)
+                        payload["arguments"] = [[control["value"]]]
+                        store.tamper(receipt.entry_id, payload=json.dumps(payload).encode())
+                    await close(api)
+                    api = client(store)
+                    queue = api.protocols.outbox
+                    if not control["refused"]:
+                        exchange.respond(raw_response(204))
                     await _value(queue.drain())
                     status = (await _value(queue.inspect(receipt.entry_id))).state
                 else:
@@ -206,6 +223,16 @@ async def _mode(package: ModuleType, lines: list[str], asynchronous: bool) -> No
                 f"providers={provider.calls - before_provider} signers={signer.calls - before_signer} "
                 f"sends={(len(exchange.lines) - before_sends) // 2}"
             )
+            if control.get("wire") and store.entries:
+                entry = await _value(queue.inspect(receipt.entry_id))
+                result = entry.result
+                lines.append(
+                    f"    result={None if result is None else f'{result.category}/{result.error_code}'} "
+                    f"payload_secret={b'argument-secret' in entry.payload}"
+                )
+                if len(exchange.lines) > before_sends:
+                    lines.append(exchange.lines[-2])
+            exchange.responders.clear()
             await close(api)
 
     for control in inputs["outcomes"]:
