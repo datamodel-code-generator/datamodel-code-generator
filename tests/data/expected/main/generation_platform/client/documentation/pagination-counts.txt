@@ -540,7 +540,7 @@ sets and tuples replace the inherited collection. `retry=None` and `redirects=No
 | allowed redirect origins / HTTPS downgrade | empty tuple (initial origin only) / False |
 | network send slots | 1 + max_retries + (max_redirects if redirects) + (max_token_exchanges if SDK OAuth) |
 | stream idle / stream total / cleanup | 60 seconds / None / 5 seconds |
-| maximum response / error body / stream bytes | 16 MiB / 64 KiB / None |
+| maximum response / error prefix / stream bytes | None / 64 KiB / None |
 
 Zero retries permits only the initial resource attempt. A zero send budget refuses all sends. Reservations are not
 refunded. `Deadline.after(seconds)` shares an absolute monotonic expiry across calls; the earlier of that expiry and
