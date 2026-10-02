@@ -334,10 +334,9 @@ def client_helper_digest_report(first: str, second: str, root: Path) -> str:
         {item["name"]: item["contract_sha256"] for item in _manifest(cases[name], root / name)[0]["protocol_helpers"]}
         for name in (first, second)
     )
-    return "".join([
-        f"# {first} and {second}\n",
-        *(f"  {name} same {left[name] == digest}\n" for name, digest in right.items()),
-    ])
+    return "".join(
+        [f"# {first} and {second}\n", *(f"  {name} same {left[name] == digest}\n" for name, digest in right.items())]
+    )
 
 
 def client_render(case_name: str, root: Path) -> tuple[str, dict[str, Modules]]:

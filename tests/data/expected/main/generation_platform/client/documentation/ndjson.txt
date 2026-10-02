@@ -491,3 +491,8 @@ blank line or one that is not UTF-8 or JSON raises `StreamDecodeError`. A record
 counts toward both the line and the event data size. Bytes after the last line end raise `IncompleteFrameError` unless
 the helper's `final_line` is `allow_eof`, which decodes them as the last record. A record has the empty string as its
 event type and no event ID, and a declared error record raises `StreamRemoteError` with the event type None.
+
+## Request compression
+
+No operation of this package declares a request content coding, so `compression` in `ClientOptions` and views turns
+off for every call, and a call's own `RequestOptions(compression="gzip")` raises `ConfigurationError` before sending.

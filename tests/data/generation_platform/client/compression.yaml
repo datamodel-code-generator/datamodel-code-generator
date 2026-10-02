@@ -44,6 +44,12 @@ components:
       properties:
         value:
           type: string
+    CheckQuery:
+      type: object
+      properties:
+        id:
+          type: string
+      required: [id]
     Message:
       type: object
       properties:
@@ -179,6 +185,45 @@ paths:
       responses:
         '200':
           description: The job
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+  /profile:
+    get:
+      operationId: getProfile
+      tags: [profiles]
+      responses:
+        '200':
+          description: The profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+  /checks:
+    post:
+      operationId: createCheck
+      tags: [checks]
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+  /checks/status:
+    post:
+      operationId: checkStatus
+      tags: [checks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckQuery'
+      responses:
+        '200':
+          description: The check
           content:
             application/json:
               schema:

@@ -3940,6 +3940,22 @@
               "gzip"
             ]
           }
+        },
+        {
+          "ref": "/paths/~1checks~1status/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1profile/get",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
         }
       ]
     },

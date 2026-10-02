@@ -53,3 +53,24 @@ helpers:
     media: text/event-stream
     event_schema: {pointer: /components/schemas/Message}
     completion: {kind: eof}
+  checks.run:
+    kind: polling
+    create: /paths/~1checks/post
+    accepted_statuses: [202]
+    poll: /paths/~1checks~1status/post
+    bindings:
+      - target: {in: body, pointer: /id}
+        value: {source: initial, selector: {from: body, pointer: /id}}
+    state: {from: body, pointer: /status}
+    pending: [running]
+    succeeded: [done]
+    result:
+      kind: inline
+      selector: {from: body, pointer: /result}
+      schema: {pointer: /components/schemas/Outcome}
+    interval: {seconds: 1}
+  profiles.current:
+    kind: cache
+    operation: /paths/~1profile/get
+    validator: etag
+    authenticated: false

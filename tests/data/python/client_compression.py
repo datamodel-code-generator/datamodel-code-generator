@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import hashlib
 import importlib
 import io
 from typing import TYPE_CHECKING, Any
+
+import httpx2
 
 from tests.data.python.client_pagination import adrained, drained
 from tests.data.python.client_runtime import (
@@ -126,6 +129,45 @@ def _inherited(harness: _Harness, lines: list[str]) -> None:
             "redirect drops the body",
             lambda: api.items.with_raw_response.put_blob(body=b"x", options=moved).info.status_code,
         )
+        exchange.respond(raw_response(307, Location="https://api.example.com/blobs?moved=1"), _stored())
+        record(lines, "redirect keeps the body", lambda: api.items.put_blob(body=b"kept" * 50, options=moved))
+    with harness.client("gzip", headers=(("Content-Encoding", "br"),)) as api:
+        record(lines, "client header conflict", lambda: api.items.create_item(body=harness.item()))
+
+
+class _DigestSigner:
+    """A signer that needs the body digest; it keeps each digest and adds a fixed header."""
+
+    def __init__(self, auth: ModuleType) -> None:
+        self.auth = auth
+        self.digests: list[bytes] = []
+        self.capabilities = auth.SignerCapabilities(
+            allowed_origins=("https://api.example.com",),
+            managed_headers=("x-signed",),
+            managed_query=(),
+            requires_body_digest=True,
+        )
+
+    def sign(self, request: Any) -> Any:
+        self.digests.append(request.body_digest)
+        return self.auth.SignatureFields(headers=(("x-signed", "yes"),), query=())
+
+
+def _signed(harness: _Harness, lines: list[str]) -> None:
+    exchange = harness.exchange
+    auth = importlib.import_module(f"{harness.package.__name__}.auth")
+    signer = _DigestSigner(auth)
+
+    def digested(request: httpx2.Request) -> httpx2.Response:
+        lines.append(f"    signed digest of the sent bytes {hashlib.sha256(request.content).digest() == signer.digests[-1]}")
+        return httpx2.Response(204)
+
+    config = auth.AuthConfig({}, send_on_anonymous=True, allowed_origins=("https://api.example.com",), signers=(signer,))
+    with harness.client("gzip", auth=config) as api:
+        exchange.respond(digested)
+        record(lines, "signed bytes", lambda: api.items.put_blob(body=b"signed"))
+        file = harness.bodies.FileBody(io.BytesIO(b"file"))
+        record(lines, "signed file", lambda: api.items.put_blob(body=file))
 
 
 def _explicit(harness: _Harness, lines: list[str]) -> None:
@@ -195,6 +237,11 @@ def _helpers(harness: _Harness, lines: list[str]) -> None:
         fast = protocols.PollOptions(interval=0.000001)
         handle = api.protocols.jobs.run.start(body=harness.query(), options=gzip, poll_options=fast)
         record(lines, "job", handle.wait)
+        exchange.respond(
+            json_response(202, {"id": "c1", "status": "running"}),
+            json_response(200, {"id": "c1", "status": "done", "result": {"value": "ok"}}),
+        )
+        record(lines, "check", api.protocols.checks.run.start(options=gzip, poll_options=fast).wait)
         exchange.respond(raw_response(200, b'data: {"text":"a"}\n\n', "text/event-stream"))
         with api.protocols.events.watch.open(body=harness.query(), options=gzip) as stream:
             lines.append(f"  events {[event.data for event in stream]}")
@@ -237,11 +284,26 @@ async def _async(harness: _Harness, lines: list[str]) -> None:
         )
 
 
+def _cached(harness: _Harness, lines: list[str]) -> None:
+    exchange, protocols = harness.exchange, harness.protocols
+    gzip = harness.call("gzip")
+    stores = harness.options.ProtocolClientOptions(cache_stores={"profiles.current": protocols.MemoryCacheStore()})
+    with harness.client(protocols=stores) as api:
+        cache = api.protocols.profiles.current
+        exchange.respond(json_response(200, {"name": "p"}, ETag='"v1"', **{"Cache-Control": "max-age=60"}))
+        record(lines, "cache fill", lambda: cache.fetch().source)
+        record(lines, "cache hit with a coding", lambda: cache.fetch(options=gzip))
+        record(lines, "cache hit", lambda: cache.fetch().source)
+    empty = harness.options.ProtocolClientOptions(cache_stores={"profiles.current": protocols.MemoryCacheStore()})
+    with harness.client(protocols=empty) as api:
+        record(lines, "cache miss with a coding", lambda: api.protocols.profiles.current.fetch(options=gzip))
+
+
 def compression(package: ModuleType, lines: list[str]) -> None:
     """Select gzip on clients, views, calls, and helpers, and report which requests are sent compressed."""
     exchange = Exchange(lines)
     harness = _Harness(package, exchange)
-    for step in (_values, _inherited, _explicit, _helpers):
+    for step in (_values, _inherited, _signed, _explicit, _helpers, _cached):
         lines.append(f"# {step.__name__.strip('_')}")
         step(harness, lines)
     lines.append("# async")

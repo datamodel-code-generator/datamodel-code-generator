@@ -3128,7 +3128,17 @@ the generation settings declare that an operation accepts the coding, and a clie
 `RuntimeOperationMetadata.accepted_content_encodings: tuple[str, ...] = ()` lists the request content codings an
 operation accepts. Values are HTTP tokens compared in lowercase, without duplicates; `gzip` is the only coding with a
 builtin encoder, so another value, including `identity`, receives `E_CONFIG_VALUE`, and a repeated one
-`E_CONFIG_CONFLICT`.
+`E_CONFIG_CONFLICT`. With the internal generator entry point shown in
+[Declare API guarantees during generation](#declare-api-guarantees-during-generation):
+
+```python
+ClientOperationConfig(
+    ref="/paths/~1items/post",
+    runtime=RuntimeOperationMetadata(accepted_content_encodings=("gzip",)),
+)
+```
+
+The flat target-file entry is:
 
 ```toml
 [[operations]]
@@ -3189,15 +3199,16 @@ Then each request the helper sends is compressed only when it has such a body:
 
 | Helper | Requests that can be compressed |
 |---|---|
-| Pagination `page` and `iterate` | The first request, and later ones that send the body again with the same operation; Next-URL and Link requests are `GET`s without a body unless `repeat_request_body` is set |
+| Pagination `page` and `iterate` | The first request, and later ones that send the body again, or a body their bindings or cursor write, with the same operation; Next-URL and Link requests are `GET`s without a body unless `repeat_request_body` is set |
 | Pagination `next_page` and `resume` | Only the next request; a call after the last page, or with `max_items=0`, has none |
-| Polling `start` | The create request; polls and the result fetch send no body |
-| Polling `resume` | None, so a selected coding raises: a resumed handle never creates the operation again |
+| Polling `start` | The create request, and a poll or the result fetch whose bindings write into its body |
+| Polling `resume` | Only a poll or result fetch whose bindings write into its body: a resumed handle never creates the operation again |
 | SSE and NDJSON `open` | The stream's request |
 | WebSocket `connect` | None: a handshake sends no body |
 
-A cache helper's `fetch` sends a bodyless GET, so a coding its call selects raises the ordinary
-`ConfigurationError(field_path=('compression',), condition='not_applicable')`; its mutations follow their operation.
+A cache helper's `fetch` sends a bodyless GET, so a coding its call selects raises
+`ConfigurationError(field_path=('options', 'compression'), condition='no_applicable_helper_child')` before the cache is
+looked up, whether the entry is stored or not; its mutations follow their operation.
 
 A coding the helper inherits from the client or a view is not checked and turns off where it does not apply.
 

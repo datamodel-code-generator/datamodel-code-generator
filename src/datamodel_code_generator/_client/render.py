@@ -3673,9 +3673,14 @@ wait for retained cleanup; it does not authorize another send or restore an expi
 {self.helper_runtime()}{self.stream_runtime()}{self.socket_runtime()}{self.circuit_runtime()}{self._compression_runtime()}"""  # noqa: S608
 
     def _compression_runtime(self) -> str:
-        """Describe request compression, or nothing for a package whose operations accept no request coding."""
+        """Describe request compression, or that no operation of the package accepts a request coding."""
         if not self._accepted_encodings():
-            return ""
+            return """
+## Request compression
+
+No operation of this package declares a request content coding, so `compression` in `ClientOptions` and views turns
+off for every call, and a call's own `RequestOptions(compression="gzip")` raises `ConfigurationError` before sending.
+"""
         return """
 ## Request compression
 
