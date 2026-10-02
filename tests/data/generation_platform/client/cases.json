@@ -4043,7 +4043,6 @@
   "uploads-oauth": {
     "input": "uploads-oauth.yaml",
     "references": [
-      "uploads.yaml",
       "protocols/uploads.yaml"
     ],
     "config": {
