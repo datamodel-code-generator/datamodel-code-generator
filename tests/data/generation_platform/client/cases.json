@@ -3939,6 +3939,7 @@
     },
     "modules": false
   },
+<<<<<<< HEAD
   "protocols-parts-checks": {
     "input": "uploads.yaml",
     "references": [
@@ -4010,6 +4011,8 @@
     ],
     "modules": false
   },
+=======
+>>>>>>> generation-platform-client-replay-queues
   "queues": {
     "input": "queues.yaml",
     "references": [
@@ -4336,6 +4339,7 @@
         ],
         "reason": "Filtered listings are not queued"
       }
+<<<<<<< HEAD
     },
     "backends": [
       "pydantic_v2.BaseModel"
@@ -4348,9 +4352,63 @@
     ],
     "config": {
       "protocols": "protocols/uploads-oauth.yaml"
+=======
+>>>>>>> generation-platform-client-replay-queues
     },
     "backends": [
       "pydantic_v2.BaseModel"
     ]
+  },
+  "uploads-oauth": {
+    "input": "uploads-oauth.yaml",
+    "references": [
+      "protocols/uploads-oauth.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/uploads-oauth.yaml"
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ]
+  },
+  "queue-credentials": {
+    "input": "queue-credentials.json",
+    "references": [
+      "protocols/queue-credentials.json"
+    ],
+    "config": {
+      "protocols": "protocols/queue-credentials.json",
+      "operations": [
+        {
+          "ref": "/paths/~1matrix/get",
+          "runtime": {
+            "request_id_header": "X-Catalog-Key"
+          }
+        },
+        {
+          "ref": "/paths/~1safe/get",
+          "runtime": {
+            "request_id_header": "X-Request-ID"
+          }
+        }
+      ]
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": false
+  },
+  "queue-order": {
+    "input": "queue-order.json",
+    "references": [
+      "protocols/queue-order.json"
+    ],
+    "config": {
+      "protocols": "protocols/queue-order.json"
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": false
   }
 }
