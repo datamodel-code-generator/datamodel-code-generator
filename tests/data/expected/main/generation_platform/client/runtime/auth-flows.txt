@@ -35,16 +35,16 @@
   provider get raises = ('AuthProviderExecutionError', None, 'get', None, 'ValueError', (), 0, 'NOT_SENT', 0)
   provider returns a coroutine = ('AuthConfigurationError', 'invalid_material', None, None, 'NoneType', (), 0, None, 0)
   environment missing = ('AuthConfigurationError', 'missing_value', None, None, 'NoneType', (), 0, None, 0)
-  known read grants=('read',) status=200 callbacks=['get'] resource_arrivals=1
-  known read grants=('read',) status=403 callbacks=['get'] resource_arrivals=1
-  known empty grants=() status=200 callbacks=['get'] resource_arrivals=1
-  known empty grants=() status=403 callbacks=['get'] resource_arrivals=1
-  known write grants=('write',) status=200 callbacks=['get'] resource_arrivals=1
-  known write grants=('write',) status=403 callbacks=['get'] resource_arrivals=1
-  hierarchical grants=('read:all',) status=200 callbacks=['get'] resource_arrivals=1
-  hierarchical grants=('read:all',) status=403 callbacks=['get'] resource_arrivals=1
-  unknown grants=None status=200 callbacks=['get'] resource_arrivals=1
-  unknown grants=None status=403 callbacks=['get'] resource_arrivals=1
+  known read grants=('read',) status=200 callbacks=['get'] provider_calls=1 resource_arrivals=1
+  known read grants=('read',) status=403 callbacks=['get'] provider_calls=1 resource_arrivals=1
+  known empty grants=() status=200 callbacks=['get'] provider_calls=1 resource_arrivals=1
+  known empty grants=() status=403 callbacks=['get'] provider_calls=1 resource_arrivals=1
+  known write grants=('write',) status=200 callbacks=['get'] provider_calls=1 resource_arrivals=1
+  known write grants=('write',) status=403 callbacks=['get'] provider_calls=1 resource_arrivals=1
+  hierarchical grants=('read:all',) status=200 callbacks=['get'] provider_calls=1 resource_arrivals=1
+  hierarchical grants=('read:all',) status=403 callbacks=['get'] provider_calls=1 resource_arrivals=1
+  unknown grants=None status=200 callbacks=['get'] provider_calls=1 resource_arrivals=1
+  unknown grants=None status=403 callbacks=['get'] provider_calls=1 resource_arrivals=1
   environment bearer version same value=True changed value=True
   async provider on sync client construction = ('AuthConfigurationError', 'invalid_mode', None, None, 'NoneType', (), 0, None, 0)
   partial refresh capability construction = ('AuthConfigurationError', 'invalid_refresh_capability', None, None, 'NoneType', (), 0, None, 0)
@@ -158,16 +158,16 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer narrowed] b''
   refresh grants known empty scopes = ('OauthReadHTTPError', None, None, 'status_not_retryable', 'NoneType', (), 2, None, 9)
     callbacks=['get', 'invalidate', 'get', 'refresh'] resource_arrivals=2
-  async known read grants=('read',) status=200 callbacks=['get'] resource_arrivals=1
-  async known read grants=('read',) status=403 callbacks=['get'] resource_arrivals=1
-  async known empty grants=() status=200 callbacks=['get'] resource_arrivals=1
-  async known empty grants=() status=403 callbacks=['get'] resource_arrivals=1
-  async known write grants=('write',) status=200 callbacks=['get'] resource_arrivals=1
-  async known write grants=('write',) status=403 callbacks=['get'] resource_arrivals=1
-  async hierarchical grants=('read:all',) status=200 callbacks=['get'] resource_arrivals=1
-  async hierarchical grants=('read:all',) status=403 callbacks=['get'] resource_arrivals=1
-  async unknown grants=None status=200 callbacks=['get'] resource_arrivals=1
-  async unknown grants=None status=403 callbacks=['get'] resource_arrivals=1
+  async known read grants=('read',) status=200 callbacks=['get'] provider_calls=1 resource_arrivals=1
+  async known read grants=('read',) status=403 callbacks=['get'] provider_calls=1 resource_arrivals=1
+  async known empty grants=() status=200 callbacks=['get'] provider_calls=1 resource_arrivals=1
+  async known empty grants=() status=403 callbacks=['get'] provider_calls=1 resource_arrivals=1
+  async known write grants=('write',) status=200 callbacks=['get'] provider_calls=1 resource_arrivals=1
+  async known write grants=('write',) status=403 callbacks=['get'] provider_calls=1 resource_arrivals=1
+  async hierarchical grants=('read:all',) status=200 callbacks=['get'] provider_calls=1 resource_arrivals=1
+  async hierarchical grants=('read:all',) status=403 callbacks=['get'] provider_calls=1 resource_arrivals=1
+  async unknown grants=None status=200 callbacks=['get'] provider_calls=1 resource_arrivals=1
+  async unknown grants=None status=403 callbacks=['get'] provider_calls=1 resource_arrivals=1
   > GET https://api.example.com/bearer
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/octet-stream, authorization: Bearer static] b''
   async static token rejected = ('BearerHTTPError', None, None, 'auth_unrefreshable', 'NoneType', (), 1, None, 8)

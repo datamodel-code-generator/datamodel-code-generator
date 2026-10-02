@@ -488,7 +488,7 @@ def _placement(package: ModuleType, auth: ModuleType, options: ModuleType, lines
             arrivals = sum(line.startswith("  > GET https://api.example.com/oauth/scopes") for line in exchange.lines)
             lines.append(
                 f"  {case['label']} grants={grants} status={actual}"
-                f" callbacks={provider.calls} resource_arrivals={arrivals}"
+                f" callbacks={provider.calls} provider_calls={len(provider.calls)} resource_arrivals={arrivals}"
             )
 
 
@@ -986,7 +986,7 @@ async def _agates(package: ModuleType, auth: ModuleType, options: ModuleType, li
             arrivals = sum(line.startswith("  > GET https://api.example.com/oauth/scopes") for line in exchange.lines)
             lines.append(
                 f"  async {case['label']} grants={grants} status={actual}"
-                f" callbacks={provider.calls} resource_arrivals={arrivals}"
+                f" callbacks={provider.calls} provider_calls={len(provider.calls)} resource_arrivals={arrivals}"
             )
     for label, method, provider, retry, replies in _gate_cases(
         auth, options, auth.AsyncStaticTokenProvider, _AsyncProvider, _AsyncPublishing
