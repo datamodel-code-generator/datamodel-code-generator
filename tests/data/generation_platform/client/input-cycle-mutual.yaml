@@ -1,0 +1,17 @@
+openapi: 3.0.3
+info:
+  title: Input metadata
+  version: 1.0.0
+servers:
+  - url: https://example.test
+paths:
+  /items:
+    get:
+      operationId: listItems
+      responses:
+        "204":
+          description: None
+x-outer:
+  nested: &outer
+    child: &inner
+      "back/to~outer": [*outer]

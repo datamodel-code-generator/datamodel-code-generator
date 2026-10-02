@@ -597,5 +597,261 @@
       {"render": {"model": {"target_python_version": "3.12"}}}
     ],
     "config": {"templates": "templates/misplaced"}
+  },
+  "input-cycles": {
+    "input": {
+      "path": "input-cycle-dict.yaml"
+    },
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "steps": [
+      {
+        "render": {
+          "input": {
+            "path": "input-cycle-dict.yaml"
+          },
+          "model": {
+            "output_model_type": "pydantic_v2.BaseModel"
+          }
+        }
+      },
+      {
+        "tree": null
+      },
+      {
+        "generate": {
+          "input": {
+            "path": "input-cycle-dict.yaml"
+          },
+          "model": {
+            "output_model_type": "pydantic_v2.BaseModel"
+          }
+        }
+      },
+      {
+        "tree": null
+      },
+      {
+        "render": {
+          "input": {
+            "path": "input-cycle-dict.yaml"
+          },
+          "model": {
+            "output_model_type": "pydantic_v2.dataclass"
+          }
+        }
+      },
+      {
+        "tree": null
+      },
+      {
+        "generate": {
+          "input": {
+            "path": "input-cycle-dict.yaml"
+          },
+          "model": {
+            "output_model_type": "pydantic_v2.dataclass"
+          }
+        }
+      },
+      {
+        "tree": null
+      },
+      {
+        "render": {
+          "input": {
+            "path": "input-cycle-list.yaml"
+          },
+          "model": {
+            "output_model_type": "pydantic_v2.BaseModel"
+          }
+        }
+      },
+      {
+        "tree": null
+      },
+      {
+        "generate": {
+          "input": {
+            "path": "input-cycle-list.yaml"
+          },
+          "model": {
+            "output_model_type": "pydantic_v2.BaseModel"
+          }
+        }
+      },
+      {
+        "tree": null
+      },
+      {
+        "render": {
+          "input": {
+            "path": "input-cycle-list.yaml"
+          },
+          "model": {
+            "output_model_type": "pydantic_v2.dataclass"
+          }
+        }
+      },
+      {
+        "tree": null
+      },
+      {
+        "generate": {
+          "input": {
+            "path": "input-cycle-list.yaml"
+          },
+          "model": {
+            "output_model_type": "pydantic_v2.dataclass"
+          }
+        }
+      },
+      {
+        "tree": null
+      },
+      {
+        "render": {
+          "input": {
+            "path": "input-cycle-mutual.yaml"
+          },
+          "model": {
+            "output_model_type": "pydantic_v2.BaseModel"
+          }
+        }
+      },
+      {
+        "tree": null
+      },
+      {
+        "generate": {
+          "input": {
+            "path": "input-cycle-mutual.yaml"
+          },
+          "model": {
+            "output_model_type": "pydantic_v2.BaseModel"
+          }
+        }
+      },
+      {
+        "tree": null
+      },
+      {
+        "render": {
+          "input": {
+            "path": "input-cycle-mutual.yaml"
+          },
+          "model": {
+            "output_model_type": "pydantic_v2.dataclass"
+          }
+        }
+      },
+      {
+        "tree": null
+      },
+      {
+        "generate": {
+          "input": {
+            "path": "input-cycle-mutual.yaml"
+          },
+          "model": {
+            "output_model_type": "pydantic_v2.dataclass"
+          }
+        }
+      },
+      {
+        "tree": null
+      }
+    ]
+  },
+  "input-aliases": {
+    "input": {
+      "path": "input-aliases.yaml"
+    },
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "steps": [
+      {
+        "render": {}
+      },
+      {
+        "manifest": null
+      },
+      {
+        "generate": {}
+      },
+      {
+        "tree": null
+      }
+    ]
+  },
+  "input-cycle-reference": {
+    "input": {
+      "path": "input-cycle-reference.yaml"
+    },
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "steps": [
+      {
+        "render": {
+          "input": {
+            "path": "input-cycle-reference.yaml"
+          },
+          "model": {
+            "output_model_type": "pydantic_v2.BaseModel"
+          }
+        }
+      },
+      {
+        "tree": null
+      },
+      {
+        "generate": {
+          "input": {
+            "path": "input-cycle-reference.yaml"
+          },
+          "model": {
+            "output_model_type": "pydantic_v2.BaseModel"
+          }
+        }
+      },
+      {
+        "tree": null
+      },
+      {
+        "render": {
+          "input": {
+            "path": "input-cycle-reference.yaml"
+          },
+          "model": {
+            "output_model_type": "pydantic_v2.dataclass"
+          }
+        }
+      },
+      {
+        "tree": null
+      },
+      {
+        "generate": {
+          "input": {
+            "path": "input-cycle-reference.yaml"
+          },
+          "model": {
+            "output_model_type": "pydantic_v2.dataclass"
+          }
+        }
+      },
+      {
+        "tree": null
+      }
+    ]
   }
 }

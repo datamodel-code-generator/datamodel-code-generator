@@ -4489,5 +4489,59 @@
       "pydantic_v2.BaseModel"
     ],
     "modules": false
+  },
+  "input-cycle-dict": {
+    "input": "input-cycle-dict.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ]
+  },
+  "input-cycle-list": {
+    "input": "input-cycle-list.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ]
+  },
+  "input-cycle-mutual": {
+    "input": "input-cycle-mutual.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ]
+  },
+  "input-aliases": {
+    "input": "input-aliases.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ]
+  },
+  "input-cycle-reference": {
+    "input": "input-cycle-reference.yaml",
+    "references": [
+      "input-cycle-reference-model.yaml"
+    ],
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model_only": true
   }
 }

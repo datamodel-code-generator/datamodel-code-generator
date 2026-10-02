@@ -10,9 +10,9 @@ from dataclasses import fields
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any, TypeAlias
 
-from datamodel_code_generator import DataModelType, GenerateConfig
+from datamodel_code_generator import DataModelType, GenerateConfig, generate
 from datamodel_code_generator._api_generation import generate_target, render_target
-from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationSelection
+from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, GeneratedProject, OperationSelection
 from datamodel_code_generator._client.config import (
     BodyFieldName,
     ClientGenerationConfig,
@@ -166,12 +166,15 @@ def _diagnostic(item: Diagnostic) -> str:
 
 
 def _public_api(content: bytes) -> list[str]:
+    """Report the operations and helper identities of a rendered client manifest."""
     manifest = json.loads(content)
     data = manifest["target_data"]["client"]
     helpers = data["protocol_helpers"]
     lines = [
-        f"  namespace {data['namespace']} helpers {[item['name'] for item in helpers]} "
-        f"bindings {len(data['binding_refs'])}",
+        (
+            f"  namespace {data['namespace']} helpers {[item['name'] for item in helpers]} "
+            f"bindings {len(data['binding_refs'])}"
+        ),
         f"  refs {data['runtime_defaults_ref']} {data['selection_ref']} {data['extension_refs']}",
         *(
             f"  helper {item['name']} {item['kind']} enabled {item['enabled']} {item['metadata_ref']} "
@@ -353,6 +356,57 @@ def client_render(case_name: str, root: Path) -> tuple[str, dict[str, Modules]]:
         if modules and (kept := case.get("modules", True)):
             rendered[name] = modules if kept is True else {parts: modules[parts] for parts in map(tuple, kept)}
     return "\n".join(lines).replace(root.resolve().as_posix(), "<root>") + "\n", rendered
+
+
+def client_input_report(case_name: str, root: Path) -> str:
+    """Render and publish an input for each backend, reporting diagnostics, digests, and the resulting files."""
+    case = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))[case_name]
+    lines = [f"# {case_name}"]
+    for backend in case["backends"]:
+        for name, entry in (("render", render_target), ("generate", generate_target)):
+            attempt = root / backend.replace(".", "_") / name
+            attempt.mkdir(parents=True)
+            source = shutil.copy2(SOURCE / case["input"], attempt / case["input"])
+            copy_references(case, attempt)
+            config = client_config(case.get("config", {}), attempt)
+            lines.append(f"{name} {backend}")
+            try:
+                result = entry(
+                    source,
+                    model_config=model_config(attempt / "models.py", backend, case.get("model", {})),
+                    config=config,
+                    generator=ClientTarget(),
+                )
+            except APIGenerationError as error:
+                lines.extend(("  APIGenerationError", *(_diagnostic(item) for item in error.diagnostics)))
+                lines.extend(f"  source {item.source_uri}" for item in error.diagnostics)
+            else:
+                if isinstance(result, GeneratedProject):
+                    manifest = next(item.content for item in result.artifacts if item.path.name == MANIFEST)
+                else:
+                    manifest = (config.output / MANIFEST).read_bytes()
+                document = json.loads(manifest or b"")["inputs"]["root"]
+                lines.append(f"  source {document['uri']} digest {document['digest']}")
+            files = sorted(
+                _DIGEST.sub("<sha256>", path.relative_to(attempt).as_posix())
+                for path in attempt.rglob("*")
+                if path.is_file()
+                and path.relative_to(attempt).as_posix() not in {case["input"], *case.get("references", ())}
+            )
+            lines.extend((
+                f"  files {[path for path in files if '_runtime' not in Path(path).parts]}",
+                f"  runtime files {sum('_runtime' in Path(path).parts for path in files)}",
+            ))
+        if case.get("model_only"):
+            attempt = root / backend.replace(".", "_") / "models-only"
+            attempt.mkdir(parents=True)
+            source = shutil.copy2(SOURCE / case["input"], attempt / case["input"])
+            copy_references(case, attempt)
+            output = attempt / "models.py"
+            generate(source, config=model_config(output, backend, case.get("model", {})))
+            lines.append(f"model-only {backend}")
+            lines.extend(f"  | {line}" for line in output.read_text(encoding="utf-8").splitlines())
+    return "\n".join(lines) + "\n"
 
 
 def client_documentation_report(case_name: str, root: Path) -> str:

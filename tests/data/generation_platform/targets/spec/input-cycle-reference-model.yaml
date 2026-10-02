@@ -1,0 +1,7 @@
+Item:
+  type: object
+  properties:
+    id:
+      type: integer
+x-cycle: &cycle
+  self: *cycle

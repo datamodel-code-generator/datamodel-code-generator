@@ -1,0 +1,49 @@
+# input-cycles
+render
+  APIGenerationError
+  E_INPUT_CYCLE error input /x-cycle/self: The input document contains a cyclic mapping or sequence
+tree
+generate
+  APIGenerationError
+  E_INPUT_CYCLE error input /x-cycle/self: The input document contains a cyclic mapping or sequence
+tree
+render
+  APIGenerationError
+  E_INPUT_CYCLE error input /x-cycle/self: The input document contains a cyclic mapping or sequence
+tree
+generate
+  APIGenerationError
+  E_INPUT_CYCLE error input /x-cycle/self: The input document contains a cyclic mapping or sequence
+tree
+render
+  APIGenerationError
+  E_INPUT_CYCLE error input /x-cycle/0: The input document contains a cyclic mapping or sequence
+tree
+generate
+  APIGenerationError
+  E_INPUT_CYCLE error input /x-cycle/0: The input document contains a cyclic mapping or sequence
+tree
+render
+  APIGenerationError
+  E_INPUT_CYCLE error input /x-cycle/0: The input document contains a cyclic mapping or sequence
+tree
+generate
+  APIGenerationError
+  E_INPUT_CYCLE error input /x-cycle/0: The input document contains a cyclic mapping or sequence
+tree
+render
+  APIGenerationError
+  E_INPUT_CYCLE error input /x-outer/nested/child/back~1to~0outer/0: The input document contains a cyclic mapping or sequence
+tree
+generate
+  APIGenerationError
+  E_INPUT_CYCLE error input /x-outer/nested/child/back~1to~0outer/0: The input document contains a cyclic mapping or sequence
+tree
+render
+  APIGenerationError
+  E_INPUT_CYCLE error input /x-outer/nested/child/back~1to~0outer/0: The input document contains a cyclic mapping or sequence
+tree
+generate
+  APIGenerationError
+  E_INPUT_CYCLE error input /x-outer/nested/child/back~1to~0outer/0: The input document contains a cyclic mapping or sequence
+tree
