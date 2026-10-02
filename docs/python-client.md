@@ -1692,6 +1692,8 @@ a key contract, and each request has its own idempotency key. A request that may
 answer the helper can read becomes one `<Helper>DeliveryUnknown` record per item, never resent: a failure whose
 `delivery_state` is `MAYBE_SENT` or `RESPONSE_STARTED`, such as a transport failure, a deadline, or a cancellation
 during the call, and a success response whose body fails to decode or validate, since the server applied the request.
+A failure before resource admission creates no unknown records, even when it carries delivery metadata from
+earlier work.
 With `BatchOptions(raise_on_error=True)` the iterator raises `BatchDeliveryUnknownError` instead, whose `cause` is
 that failure, `partial_results` that request's records, and `batch_indices` its items' indices. A deadline, a
 cancellation, or a closed client also ends the iteration: it is raised after those records.

@@ -580,11 +580,23 @@ sync boundary controls
     ! after 0: BatchDeliveryUnknownError state=DeliveryState.MAYBE_SENT partial=[(0, 'delivery_unknown')] cause=KeyboardInterrupt nested=None
     ! after 0: ProtocolStateError state=None partial=[] cause=None nested=None
     sends=1 closed=[]
-  pre-send SDK with old response info raising=False: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+  pre-send ResponseDecodeError raising=False: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
     ! after 0: ResponseDecodeError state=None partial=[] cause=None nested=None
     sends=0 closed=[]
-  pre-send SDK with old response info raising=True: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+  pre-send ResponseDecodeError raising=True: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
     ! after 0: ResponseDecodeError state=None partial=[] cause=None nested=None
+    sends=0 closed=[]
+  pre-send DeadlineExceededError raising=False: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: DeadlineExceededError state=DeliveryState.MAYBE_SENT partial=[] cause=None nested=None
+    sends=0 closed=[]
+  pre-send DeadlineExceededError raising=True: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: DeadlineExceededError state=DeliveryState.MAYBE_SENT partial=[] cause=None nested=None
+    sends=0 closed=[]
+  pre-send RequestCancelledError raising=False: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: RequestCancelledError state=DeliveryState.RESPONSE_STARTED partial=[] cause=None nested=None
+    sends=0 closed=[]
+  pre-send RequestCancelledError raising=True: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: RequestCancelledError state=DeliveryState.RESPONSE_STARTED partial=[] cause=None nested=None
     sends=0 closed=[]
   client close active=False raising=False
   closed: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
@@ -750,11 +762,23 @@ async boundary controls
     ! after 0: BatchDeliveryUnknownError state=DeliveryState.MAYBE_SENT partial=[(0, 'delivery_unknown')] cause=CancelledError nested=None
     ! after 0: ProtocolStateError state=None partial=[] cause=None nested=None
     sends=1 closed=[]
-  pre-send SDK with old response info raising=False: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+  pre-send ResponseDecodeError raising=False: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
     ! after 0: ResponseDecodeError state=None partial=[] cause=None nested=None
     sends=0 closed=[]
-  pre-send SDK with old response info raising=True: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+  pre-send ResponseDecodeError raising=True: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
     ! after 0: ResponseDecodeError state=None partial=[] cause=None nested=None
+    sends=0 closed=[]
+  pre-send DeadlineExceededError raising=False: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: DeadlineExceededError state=DeliveryState.MAYBE_SENT partial=[] cause=None nested=None
+    sends=0 closed=[]
+  pre-send DeadlineExceededError raising=True: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: DeadlineExceededError state=DeliveryState.MAYBE_SENT partial=[] cause=None nested=None
+    sends=0 closed=[]
+  pre-send RequestCancelledError raising=False: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: RequestCancelledError state=DeliveryState.RESPONSE_STARTED partial=[] cause=None nested=None
+    sends=0 closed=[]
+  pre-send RequestCancelledError raising=True: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}
+    ! after 0: RequestCancelledError state=DeliveryState.RESPONSE_STARTED partial=[] cause=None nested=None
     sends=0 closed=[]
   client close active=False raising=False
   closed: 0 results in order True {'success': 0, 'error': 0, 'delivery_unknown': 0}

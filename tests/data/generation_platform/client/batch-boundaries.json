@@ -88,5 +88,27 @@
   "presend_sdk": [
     false,
     true
+  ],
+  "presend_errors": [
+    {
+      "name": "ResponseDecodeError",
+      "arguments": {}
+    },
+    {
+      "name": "DeadlineExceededError",
+      "arguments": {
+        "deadline_at": 90,
+        "elapsed": 10,
+        "delivery_state": "MAYBE_SENT",
+        "phase": "encode"
+      }
+    },
+    {
+      "name": "RequestCancelledError",
+      "arguments": {
+        "source": "cancel_token",
+        "delivery_state": "RESPONSE_STARTED"
+      }
+    }
   ]
 }

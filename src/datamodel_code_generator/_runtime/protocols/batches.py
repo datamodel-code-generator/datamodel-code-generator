@@ -540,7 +540,11 @@ class _Batches(Generic[R]):
             return self._unknown_records(batch, error, batch.delivery, terminal=True)
         if isinstance(error, BudgetExceededError) and error.budget_kind == "parent_network":
             raise self._refused(error) from None
-        if isinstance(error, SDKError) and (state := getattr(error, "delivery_state", None)) in _UNKNOWN:
+        if (
+            batch.delivery in _UNKNOWN
+            and isinstance(error, SDKError)
+            and (state := getattr(error, "delivery_state", None)) in _UNKNOWN
+        ):
             return self._unknown_records(batch, error, state, terminal=not isinstance(error, TransportError))
         if batch.delivery == DeliveryState.RESPONSE_STARTED and _applied(error):
             return self._unknown_records(batch, error, DeliveryState.RESPONSE_STARTED, terminal=False)

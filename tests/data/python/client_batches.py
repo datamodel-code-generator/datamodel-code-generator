@@ -9,6 +9,7 @@ import json
 import threading
 from contextlib import suppress
 from functools import partial
+from itertools import product
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final, get_origin, get_type_hints
 
@@ -1047,12 +1048,20 @@ def _presend_source(items: list[Any], clock: _PresendClock) -> Iterator[Any]:
     yield from items
 
 
-def _presend_error(harness: _Batches, transport: Any) -> tuple[_PresendClock, Any]:
+def _presend_error(
+    harness: _Batches, transport: Any, control: dict[str, Any] | None = None
+) -> tuple[_PresendClock, Any]:
     responses = importlib.import_module(f"{harness.package.__name__}.responses")
     info = responses.ResponseInfo(
         status_code=200, headers=transport.headers(()), call_id="earlier-call", elapsed=0, content_type=None
     )
-    clock = _PresendClock(harness.errors.ResponseDecodeError(info=info))
+    selected = control or {"name": "ResponseDecodeError", "arguments": {}}
+    arguments = dict(selected["arguments"])
+    if selected["name"] == "ResponseDecodeError":
+        arguments["info"] = info
+    if "delivery_state" in arguments:
+        arguments["delivery_state"] = harness.errors.DeliveryState(arguments["delivery_state"])
+    clock = _PresendClock(getattr(harness.errors, selected["name"])(**arguments))
     return clock, harness.options.Clock(monotonic=clock)
 
 
@@ -1089,9 +1098,9 @@ def _boundary_controls(harness: _Batches, lines: list[str]) -> None:
                 continued(lines, "retained after interruption", iterator, failure_description=_boundary_failure)
                 iterator.close()
             _boundary_report(lines, transport)
-    for raising in cases["presend_sdk"]:
+    for control, raising in product(cases["presend_errors"], cases["presend_sdk"]):
         transport = _BoundaryTransport(harness, {})
-        clock, option = _presend_error(harness, transport)
+        clock, option = _presend_error(harness, transport, control)
         with harness.package.Client(transport_adapter=transport, options=harness.client_options(clock=option)) as api:
             iterator = api.protocols.users.create.iterate(
                 _presend_source(harness.users(2), clock),
@@ -1099,7 +1108,7 @@ def _boundary_controls(harness: _Batches, lines: list[str]) -> None:
             )
             continued(
                 lines,
-                f"pre-send SDK with old response info raising={raising}",
+                f"pre-send {control['name']} raising={raising}",
                 iterator,
                 failure_description=_boundary_failure,
             )
@@ -1190,9 +1199,9 @@ async def _async_boundary_controls(harness: _Batches, lines: list[str]) -> None:
                 await acontinued(lines, "retained after interruption", iterator, failure_description=_boundary_failure)
                 await iterator.aclose()
             _boundary_report(lines, transport)
-    for raising in cases["presend_sdk"]:
+    for control, raising in product(cases["presend_errors"], cases["presend_sdk"]):
         transport = _AsyncBoundaryTransport(harness, {}, asynchronous=True)
-        clock, option = _presend_error(harness, transport)
+        clock, option = _presend_error(harness, transport, control)
         async with harness.package.AsyncClient(
             transport_adapter=transport, options=harness.client_options(clock=option)
         ) as api:
@@ -1202,7 +1211,7 @@ async def _async_boundary_controls(harness: _Batches, lines: list[str]) -> None:
             )
             await acontinued(
                 lines,
-                f"pre-send SDK with old response info raising={raising}",
+                f"pre-send {control['name']} raising={raising}",
                 iterator,
                 failure_description=_boundary_failure,
             )
