@@ -648,6 +648,7 @@ class _Drain:
     __slots__ = (
         "claimed",
         "clock",
+        "coding",
         "core",
         "held",
         "limits",
@@ -664,6 +665,8 @@ class _Drain:
         from ..client.logical import OperationSession  # noqa: PLC0415 - Only a drain loads the call runtime.
 
         self.core, self.plan, self.limits, self.clock = core, plan, limits, core.clock
+        options = limits.options
+        self.coding = options.compression if options is not None and isinstance(options.compression, str) else None
         self.session: OperationSession = OperationSession(
             total_timeout=limits.total_timeout,
             deadline=limits.deadline,
@@ -697,7 +700,7 @@ class _Drain:
     def claim(self, left: int) -> _Store:
         """Return the claim of the next wave, leased for a whole delivery and its grace."""
         policy = self.limits.policy
-        limit = min(policy.parallelism, left)
+        limit = left if self.coding is not None else min(policy.parallelism, left)
         now = _now(self.clock)
         until = now + timedelta(seconds=max(policy.lease_min, self.window(policy) + policy.lease_grace))
 
@@ -706,6 +709,44 @@ class _Drain:
             return items is not None and len(items) <= limit and all(isinstance(item, QueueLease) for item in items)
 
         return _Store("claim", None, (), {"now": now, "lease_until": until, "limit": limit}, valid)
+
+    def admit(self, leases: list[QueueLease]) -> None:
+        """Inspect the fixed claim's saved requests without reading bodies, returning all leases if admission fails."""
+        from ..client.compression import helper_children  # noqa: PLC0415 - Only an explicit coding loads admission.
+
+        self.held.extend(leases)
+        children: list[tuple[OperationPlan[object, object], bool]] = []
+        for lease in leases:
+            entry = lease.entry
+            queued = self.plan.aliases.get(entry.operation_alias)
+            if (
+                queued is None
+                or entry.helper_fingerprint != queued.fingerprint
+                or entry.security_fingerprint != self.security[queued.alias]
+            ):
+                raise QueueBindingError(
+                    entry_id=entry.entry_id,
+                    helper_id=self.plan.helper_id,
+                    operation=None if queued is None else queued.operation,
+                )
+            try:
+                payload = decode_json(entry.payload)
+                _require(
+                    isinstance(payload, Mapping) and frozenset(payload) == _PAYLOAD and payload["version"] == _VERSION
+                )
+                body = cast("Mapping[str, WireValue]", payload)["body"]
+                _require(isinstance(body, tuple) and len(body) in {0, _BODY_FIELDS})
+            except (CodecError, _MalformedError) as error:
+                raise QueueStoreError(
+                    action="claim", entry_id=entry.entry_id, helper_id=self.plan.helper_id, cause=error
+                ) from None
+            if (
+                token := self.core.call_settings(self.limits.options, queued.call).cancel_token
+            ) is not None and token.cancelled:
+                raise RequestCancelledError(source="cancel_token", delivery_state=DeliveryState.NOT_SENT)
+            if not entry.cancel_requested and _now(self.clock) < _expiry(entry, queued):
+                children.append((queued.call, bool(body) or entry.blob is not None))
+        helper_children(cast("str", self.coding), children)
 
     def accept(self, leases: tuple[QueueLease, ...]) -> list[QueueLease]:
         """Return the leases of entries this drain has not handled yet, holding the others until it ends."""
@@ -731,7 +772,7 @@ class _Drain:
         """
         for lease in self.held:
             current: QueueEntry | None = lease.entry
-            for _ in range(_ROUNDS):
+            for _ in range(2 if self.coding is not None else _ROUNDS):
                 if current is None or not _ours(current, lease):
                     break
                 if current.cancel_requested:
@@ -741,6 +782,11 @@ class _Drain:
                 written, current = yield from _write(self.core, self.plan, current, entry, options=self.limits.options)
                 if written:
                     break
+            else:
+                if self.coding is not None and _ours(current, lease):
+                    raise QueueStoreError(
+                        action="compare_exchange", entry_id=lease.entry.entry_id, helper_id=self.plan.helper_id
+                    )
 
     def report(self) -> DrainReport:
         """Return the drain's report."""
@@ -866,6 +912,8 @@ class _Drain:
         for _ in range(_ROUNDS):
             if current is None or not _ours(current, lease):
                 return None
+            if self.coding is not None and current.lease_until is not None and current.lease_until <= _now(clock):
+                return "deferred"
             if current.cancel_requested:
                 return (yield from self.settle(lease, current, _cancelled(prior), prior=prior))
             intended = replace(
@@ -1229,7 +1277,22 @@ def drain_queue(
     store: QueueStore = _store(core, plan)
     drain = _Drain(core, plan, _limits(core, plan, queue_options, options, session_options))
     try:
-        for _ in range(2 * drain.limits.policy.max_entries + 1):
+        if drain.coding is not None:
+            leases = (
+                ()
+                if not (left := drain.left())
+                else cast("tuple[QueueLease, ...]", _call(plan, store, drain.claim(left)))
+            )
+            fresh = drain.accept(leases)
+            drain.admit(fresh)
+            parallelism = drain.limits.policy.parallelism
+            for start in range(0, len(fresh), parallelism):
+                if not drain.session.room() or (
+                    drain.session.deadline is not None and drain.session.deadline.remaining() <= 0
+                ):
+                    break
+                _wave(drain, store, fresh[start : start + parallelism])
+        for _ in range(0 if drain.coding is not None else 2 * drain.limits.policy.max_entries + 1):
             if not (left := drain.left()) or not (
                 leases := cast("tuple[QueueLease, ...]", _call(plan, store, drain.claim(left)))
             ):
@@ -1258,7 +1321,22 @@ async def adrain_queue(
     store: AsyncQueueStore = _store(core, plan)
     drain = _Drain(core, plan, _limits(core, plan, queue_options, options, session_options))
     try:
-        for _ in range(2 * drain.limits.policy.max_entries + 1):
+        if drain.coding is not None:
+            leases = (
+                ()
+                if not (left := drain.left())
+                else cast("tuple[QueueLease, ...]", await _acall(plan, store, drain.claim(left)))
+            )
+            fresh = drain.accept(leases)
+            drain.admit(fresh)
+            parallelism = drain.limits.policy.parallelism
+            for start in range(0, len(fresh), parallelism):
+                if not drain.session.room() or (
+                    drain.session.deadline is not None and drain.session.deadline.remaining() <= 0
+                ):
+                    break
+                await _awave(drain, store, fresh[start : start + parallelism])
+        for _ in range(0 if drain.coding is not None else 2 * drain.limits.policy.max_entries + 1):
             if not (left := drain.left()) or not (
                 leases := cast("tuple[QueueLease, ...]", await _acall(plan, store, drain.claim(left)))
             ):

@@ -642,5 +642,66 @@
   },
   "toml-circuit-type": {
     "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/get\"\n[operations.runtime]\ncircuit_group = 5\n"
+  },
+  "compression-values": {
+    "operations": [
+      {
+        "ref": "/paths/~1pets/post",
+        "runtime": {
+          "accepted_content_encodings": [
+            "GZIP"
+          ]
+        }
+      }
+    ]
+  },
+  "compression-invalid": {
+    "operations": [
+      {
+        "ref": "/paths/~1pets/post",
+        "runtime": {
+          "accepted_content_encodings": [
+            "br"
+          ]
+        }
+      },
+      {
+        "ref": "/paths/~1pets/post",
+        "runtime": {
+          "accepted_content_encodings": [
+            "identity"
+          ]
+        }
+      },
+      {
+        "ref": "/paths/~1pets/post",
+        "runtime": {
+          "accepted_content_encodings": [
+            "gzip",
+            "GZIP"
+          ]
+        }
+      },
+      {
+        "ref": "/paths/~1pets/post",
+        "runtime": {
+          "accepted_content_encodings": [
+            "not token"
+          ]
+        }
+      },
+      {
+        "ref": "/paths/~1pets/post",
+        "runtime": {
+          "accepted_content_encodings": "gzip"
+        }
+      }
+    ]
+  },
+  "toml-compression-values": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime]\naccepted_content_encodings = [\"gzip\"]\n"
+  },
+  "toml-compression-type": {
+    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n[[operations]]\nref = \"/paths/~1pets/post\"\n[operations.runtime]\naccepted_content_encodings = \"gzip\"\n"
   }
 }

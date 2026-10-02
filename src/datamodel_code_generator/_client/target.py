@@ -685,6 +685,8 @@ class _TargetData:
         }
         if spec.circuit_group is not None:
             request["circuit_group"] = spec.circuit_group
+        if spec.accepted_content_encodings:
+            request["accepted_content_encodings"] = spec.accepted_content_encodings
         response = {
             "success_statuses": spec.success_statuses,
             "request_id_header": spec.request_id_header,

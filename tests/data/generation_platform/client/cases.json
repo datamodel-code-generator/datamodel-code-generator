@@ -3955,7 +3955,10 @@
               "replay_safe_with_key": true,
               "retention_seconds": 86400.0,
               "scope": "orders-v1"
-            }
+            },
+            "accepted_content_encodings": [
+              "gzip"
+            ]
           }
         },
         {
@@ -4174,6 +4177,126 @@
       [
         "client",
         "_operations.py"
+      ]
+    ]
+  },
+  "compression": {
+    "input": "compression.yaml",
+    "references": [
+      "protocols/compression.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/compression.yaml",
+      "operations": [
+        {
+          "ref": "/paths/~1items/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1items/get",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1blobs/put",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1search/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1feed/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1jobs/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1events/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1checks~1status/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        }
+      ]
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "uploads-compression": {
+    "input": "uploads.yaml",
+    "references": [
+      "protocols/uploads.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/uploads.yaml",
+      "operations": [
+        {
+          "ref": "/paths/~1files~1{fileId}/patch",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        }
+      ]
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
       ]
     ]
   },

@@ -377,3 +377,8 @@ client's clock, `ClientOptions(clock=...)`, which is process local. A store fail
 becomes a secondary error of a call that already failed; no request is resent because of it.
 `reset_circuit(group, origin=Origin(...))` closes one circuit of this client's partition without sending anything,
 and permits admitted before it cannot change the state after it.
+
+## Request compression
+
+No operation of this package declares a request content coding, so `compression` in `ClientOptions` and views turns
+off for every call, and a call's own `RequestOptions(compression="gzip")` raises `ConfigurationError` before sending.

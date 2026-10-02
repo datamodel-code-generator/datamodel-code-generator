@@ -1417,6 +1417,28 @@ def _sized(
     return (*arguments[:position], value, *arguments[position:])
 
 
+def _coded(
+    plan: UploadPlan[T, C],
+    limits: _Limits,
+    remaining: int,
+    body: object = UNSET,
+    *,
+    saved: _Saved | None = None,
+) -> None:
+    """Admit explicit compression only for reachable requests with a declared coding and a provable body."""
+    if (options := limits.options) is not None and isinstance(selected := options.compression, str):
+        from ..client.compression import helper_children  # noqa: PLC0415 - Only a selected coding loads the encoder.
+
+        children: list[tuple[OperationPlan[Any, object], bool]] = (
+            [] if saved is not None else [(plan.create, body is not UNSET)]
+        )
+        if remaining:
+            children.append((plan.append, True))
+        if (saved is None or saved.phase is _Phase.UPLOADING) and (completed := plan.completed) is not None:
+            children.append((completed.call, any(position is None for position, _ in completed.writes)))
+        helper_children(selected, children)
+
+
 def start_upload(  # noqa: PLR0913
     core: ClientCore,
     plan: UploadPlan[T, C],
@@ -1433,6 +1455,7 @@ def start_upload(  # noqa: PLR0913
     limits = _limits(core, plan, upload_options, options, session_options)
     identity = _identity(plan, source)
     chunk = _layout(plan, limits, identity.size, min(limits.chunk_bytes, plan.max_chunk_bytes))
+    _coded(plan, limits, identity.size, body)
     handle = UploadHandle(core, plan, limits, _session(limits), cast("UploadSource", source), identity, chunk, b"")
     handle._digests = handle._scan()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     handle._create(_sized(core, plan, arguments, identity.size), body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
@@ -1455,6 +1478,7 @@ async def astart_upload(  # noqa: PLR0913
     limits = _limits(core, plan, upload_options, options, session_options)
     identity = _identity(plan, source)
     chunk = _layout(plan, limits, identity.size, min(limits.chunk_bytes, plan.max_chunk_bytes))
+    _coded(plan, limits, identity.size, body)
     handle = AsyncUploadHandle(
         core, plan, limits, _session(limits), cast("AsyncUploadSource", source), identity, chunk, b""
     )
@@ -1638,6 +1662,12 @@ def _resume_start(
     identity = _identity(plan, source)
     if identity != saved.identity:
         raise _changed(plan, saved.identity, identity)
+    _coded(
+        plan,
+        limits,
+        saved.identity.size - saved.confirmed,
+        saved=saved,
+    )
     return saved, identity
 
 

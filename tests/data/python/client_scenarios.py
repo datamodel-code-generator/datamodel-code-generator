@@ -22,6 +22,7 @@ from tests.data.python.client_body_replay import body_replay, multipart_replay
 from tests.data.python.client_body_replay_faults import body_replay_faults
 from tests.data.python.client_caching import cache_backends, cache_stores, caching
 from tests.data.python.client_circuits import circuits
+from tests.data.python.client_compression import compression
 from tests.data.python.client_deadline_cleanup import deadline_cleanup
 from tests.data.python.client_deadline_files import deadline_files
 from tests.data.python.client_deadline_options import deadline_options
@@ -65,7 +66,7 @@ from tests.data.python.client_query import query
 from tests.data.python.client_queue_credentials import queue_credentials
 from tests.data.python.client_queue_order import queue_order
 from tests.data.python.client_queue_recovery import queue_recovery, queue_restoration, queue_scope
-from tests.data.python.client_queues import queues
+from tests.data.python.client_queues import queue_compression, queues
 from tests.data.python.client_raw import raw
 from tests.data.python.client_redirects import head_redirects, redirects
 from tests.data.python.client_regressions import json_decode_errors, no_success
@@ -99,7 +100,7 @@ from tests.data.python.client_streams import ndjson, ndjson_backends, ndjson_spl
 from tests.data.python.client_streams import stream_lifetimes as event_stream_lifetimes
 from tests.data.python.client_transports import lifecycle, transports
 from tests.data.python.client_unions import schema_unions, split_unions, unions
-from tests.data.python.client_uploads import uploads, uploads_oauth
+from tests.data.python.client_uploads import upload_compression, uploads, uploads_oauth
 from tests.data.python.client_validation import arguments, validation
 from tests.data.python.client_webhook_adapters import (
     webhook_adapter_imports,
@@ -831,12 +832,16 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "pagination-resume": ("pagination-resume", ("pydantic_v2.BaseModel",), pagination_resume),
     "polling": ("polling", ("pydantic_v2.BaseModel",), polling),
     "uploads": ("uploads", ("pydantic_v2.BaseModel",), uploads),
+    "upload-compression-off": ("uploads", ("pydantic_v2.BaseModel",), upload_compression),
+    "upload-compression": ("uploads-compression", ("pydantic_v2.BaseModel",), upload_compression),
     "uploads-oauth": ("uploads-oauth", ("pydantic_v2.BaseModel",), uploads_oauth),
     "polling-resume": ("polling", ("pydantic_v2.BaseModel",), polling_resume),
     "circuits": ("circuits", ("pydantic_v2.BaseModel",), circuits),
+    "compression": ("compression", ("pydantic_v2.BaseModel",), compression),
     "queue-credentials": ("queue-credentials", ("pydantic_v2.BaseModel",), queue_credentials),
     "queue-order": ("queue-order", ("pydantic_v2.BaseModel",), queue_order),
     "queues": ("queues", ("pydantic_v2.BaseModel",), queues),
+    "queue-compression": ("queues", ("pydantic_v2.BaseModel",), queue_compression),
     "queue-recovery": ("queues", ("pydantic_v2.BaseModel",), queue_recovery),
     "queue-restoration": ("queues-restoration", ("pydantic_v2.BaseModel",), queue_restoration),
     "queue-scope": ("queues", ("pydantic_v2.BaseModel",), queue_scope),

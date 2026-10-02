@@ -2192,8 +2192,7 @@ class _Registry(_Typing):
             entries.append(("security=", f"{module.local('_generated', 'security')}.OPERATION_{spec.index}"))
         if spec.auth_challenge_less_401:
             entries.append(("auth_challenge_less_401=", "True"))
-        if spec.circuit_group is not None:
-            entries.append(("circuit_group=", repr(spec.circuit_group)))
+        entries.extend(self.protection_metadata(spec))
         if (spec.body is not None and spec.body.media) or success_media(spec.responses, ranges=True):
             entries.append(("codecs=", module.local(f"types.{spec.resource}", f"{spec.pascal}RequestCodecs")))
         if self.checks is not None and (branches := self.checks.branches.get(spec.index)):
@@ -2202,6 +2201,16 @@ class _Registry(_Typing):
         if spec.fields:
             entries.append(("fields=", self.field_arguments(module, spec)))
         return _call(module.local(_RUNTIME, "OperationPlan"), entries)
+
+    @staticmethod
+    def protection_metadata(spec: OperationSpec) -> list[tuple[str, Doc]]:
+        """Return an operation's circuit group and accepted request codings, when it declares them."""
+        entries: list[tuple[str, Doc]] = []
+        if spec.circuit_group is not None:
+            entries.append(("circuit_group=", repr(spec.circuit_group)))
+        if spec.accepted_content_encodings:
+            entries.append(("accepted_content_encodings=", _tuple(map(repr, spec.accepted_content_encodings))))
+        return entries
 
     @staticmethod
     def retry_metadata(module: Module, spec: OperationSpec) -> list[tuple[str, Doc]]:
@@ -3809,7 +3818,30 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
 ```json
 {json.dumps(metadata, indent=2, ensure_ascii=True)}
 ```
-{self.helper_readme()}{self._circuit_readme()}"""
+{self.helper_readme()}{self._circuit_readme()}{self._compression_readme()}"""
+
+    def _compression_readme(self) -> str:
+        """List the operations that accept compressed request bodies, or nothing when none declares a coding."""
+        if not (accepted := self._accepted_encodings()):
+            return ""
+        return f"""
+## Request compression
+
+These operations accept the request content codings listed; `compression="gzip"` in `ClientOptions`, a view, or a
+call's `RequestOptions` compresses their bodies. See the runtime reference.
+
+```json
+{json.dumps(accepted, indent=2, ensure_ascii=True)}
+```
+"""
+
+    def _accepted_encodings(self) -> dict[str, list[str]]:
+        """Return the request codings each operation accepts, by its resource and method name."""
+        return {
+            f"{spec.resource}.{spec.name}": list(spec.accepted_content_encodings)
+            for spec in self.plan.operations
+            if spec.accepted_content_encodings
+        }
 
     def _circuit_readme(self) -> str:
         """Describe the package's circuit groups, or nothing when no operation declares one."""
@@ -4107,7 +4139,42 @@ A limiter permit is acquired before opening a body and released when its respons
 bounded wait, retains unfinished owned work, and preserves the primary error, attaching secondary failures where
 possible. Client/view closure refuses new work and interrupts active calls at observation points. Retrying close can
 wait for retained cleanup; it does not authorize another send or restore an expired logical deadline.
-{self.helper_runtime()}{self.stream_runtime()}{self.socket_runtime()}{self._circuit_runtime()}"""  # noqa: S608
+{self.helper_runtime()}{self.stream_runtime()}{self.socket_runtime()}{self._circuit_runtime()}{self._compression_runtime()}"""  # noqa: S608
+
+    def _compression_runtime(self) -> str:
+        """Describe request compression, or that no operation of the package accepts a request coding."""
+        if not self._accepted_encodings():
+            return """
+## Request compression
+
+No operation of this package declares a request content coding, so `compression` in `ClientOptions` and views turns
+off for every call, and a call's own `RequestOptions(compression="gzip")` raises `ConfigurationError` before sending.
+"""
+        return """
+## Request compression
+
+`compression: str | None` in `ClientOptions`, `RequestOptions` views, and calls selects a request content coding;
+`gzip` is the only coding with an encoder, `UNSET` inherits, and `None` turns compression off. Another value raises
+`ConfigurationError` when the options are made. A selected coding applies to a call only when it sends a body,
+including empty bytes and JSON null, and its operation accepts the coding; then the body is sent gzip-compressed
+(level 6, no file name, zero modification time) with `Content-Encoding: gzip`, and a Content-Encoding header the call
+already sends raises `ConfigurationError`. A coding the client or a view selects turns off for other calls, including
+`request_raw`; one a call selects raises `ConfigurationError` before sending for a call it cannot apply to.
+
+Bytes and encoded bodies are compressed once and every retry resends the same bytes. File, stream, factory, and
+multipart bodies are compressed as each attempt streams, without a Content-Length, and replay exactly as they would
+uncompressed; a one-shot body stays one-shot. A signer that needs a body digest digests the compressed bytes, so it
+accepts only bodies encoded once. A redirect that drops the body also drops Content-Encoding.
+
+A protocol helper given a coding in its `options` checks once, before sending anything, that one of its requests can
+apply it, or raises `ConfigurationError(field_path=('options', 'compression'),
+condition='no_applicable_helper_child')`; then only its requests with a body whose operation accepts the coding are
+compressed, and its bodyless polls and followed URLs are not. Token requests are never compressed.
+
+Queue `enqueue` accepts no request `options`; passing them raises `TypeError` without storing or sending. Queue
+`drain` refuses an explicit coding with `no_applicable_helper_child` before claiming entries or sending. Entries
+save no coding; inherited client or view codings apply only to declared queued operations with bodies.
+"""
 
     def _circuit_runtime(self) -> str:
         """Describe circuit breaking, or nothing for a package whose operations declare no circuit group."""

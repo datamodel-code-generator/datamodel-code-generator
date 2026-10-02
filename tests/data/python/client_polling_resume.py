@@ -186,6 +186,7 @@ def _pending(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -
     _saved(lines, "before any poll", fresh)
     exchange.respond(job("done"), report(4))
     step(lines, "resumed before any poll", helper.resume(fresh).wait)
+    step(lines, "resumed with a coding", lambda: helper.resume(fresh, options=harness.request(compression="gzip")))
     reports = api.protocols.jobs.report
     exchange.respond(job("queued", 202))
     posted = reports.start(body=body).checkpoint()
@@ -549,6 +550,11 @@ async def _async_resume(harness: Polling, lines: list[str]) -> None:
         state = handle.checkpoint()
         resumed = helper.resume(state)
         lines.append(f"  resumed {resumed!r}")
+        step(
+            lines,
+            "async resumed with a coding",
+            lambda: helper.resume(state, options=harness.request(compression="gzip")),
+        )
         exchange.respond(job("done"), report(3))
         await astep(lines, "resumed wait", resumed.wait)
         once = harness.request(retry=harness.options.RetryOptions(max_retries=0))

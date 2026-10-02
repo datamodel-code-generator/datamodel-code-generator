@@ -231,6 +231,7 @@ class OperationSpec:
     security: SecurityBinding | None = None
     auth_challenge_less_401: bool = False
     circuit_group: str | None = None
+    accepted_content_encodings: tuple[str, ...] = ()
 
     @property
     def head(self) -> bool:
@@ -446,6 +447,7 @@ class Planner:
             security=security,
             auth_challenge_less_401=False if runtime is None else runtime.auth_challenge_less_401,
             circuit_group=None if runtime is None else runtime.circuit_group,
+            accepted_content_encodings=() if runtime is None else runtime.accepted_content_encodings,
         )
 
     def _idempotency_header(

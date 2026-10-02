@@ -345,3 +345,13 @@ def test_client_typing_circuits(tmp_path: Path) -> None:
         client_typing_report(tmp_path, DataModelType.PydanticV2BaseModel, "circuits", ("circuits",)),
         EXPECTED / "pydantic_v2-BaseModel-circuits.txt",
     )
+
+
+def test_client_typing_compression(tmp_path: Path) -> None:
+    """Check request coding settings on client, view, call, and helper options."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(
+        client_typing_report(tmp_path, DataModelType.PydanticV2BaseModel, "compression", ("compression",)),
+        EXPECTED / "pydantic_v2-BaseModel-compression.txt",
+    )

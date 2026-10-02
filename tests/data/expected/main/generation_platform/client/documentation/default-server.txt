@@ -259,6 +259,11 @@ bounded wait, retains unfinished owned work, and preserves the primary error, at
 possible. Client/view closure refuses new work and interrupts active calls at observation points. Retrying close can
 wait for retained cleanup; it does not authorize another send or restore an expired logical deadline.
 
+## Request compression
+
+No operation of this package declares a request content coding, so `compression` in `ClientOptions` and views turns
+off for every call, and a call's own `RequestOptions(compression="gzip")` raises `ConfigurationError` before sending.
+
 
 # artifact client/pyproject.toml
 [build-system]

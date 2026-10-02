@@ -977,3 +977,8 @@ A helper that declares `remote_cancel` returns a handle of its own class whose `
 request once, while the operation is pending, and returns a `CancelReceipt` of its response; it also runs while
 another thread or task waits in `status` or `wait`. It does not change the handle, which keeps its last poll until it
 polls again; closing sends nothing.
+
+## Request compression
+
+No operation of this package declares a request content coding, so `compression` in `ClientOptions` and views turns
+off for every call, and a call's own `RequestOptions(compression="gzip")` raises `ConfigurationError` before sending.

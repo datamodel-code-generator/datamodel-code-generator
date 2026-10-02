@@ -452,3 +452,8 @@ as does `WSOptions(compression="deflate")` for a helper that does not permit com
 opens its connections with the `websockets` library, a dependency of this package. `websocket_transport` sets the TLS
 context, an HTTP or HTTPS proxy, and whether environment proxies apply; both reach a borrowed connector too. Closing a
 session sends the code and reason given, 1000 by default, and drops the connection when the closing handshake fails.
+
+## Request compression
+
+No operation of this package declares a request content coding, so `compression` in `ClientOptions` and views turns
+off for every call, and a call's own `RequestOptions(compression="gzip")` raises `ConfigurationError` before sending.
