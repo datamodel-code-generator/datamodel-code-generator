@@ -498,38 +498,38 @@ render pydantic_v2.dataclass
   }
   /selection/selected_operations/0 jobs.create_job()
     exports client.types.jobs.CreateJobResponse client.types.jobs.CreateJobErrorData client.types.jobs.CreateJobHTTPError
-    exports client.types.jobs.CreateJobRequestCodecs client.types.jobs.decode_create_job_header digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.jobs.CreateJobRequestCodecs client.types.jobs.decode_create_job_header
   /selection/selected_operations/1 jobs.get_job(path:jobId=job_id, header:X-Trace=x_trace, query:verbose=verbose, query:since=since, cookie:session=session, header:X-Api-Key=x_api_key, query:api_key=api_key)
     exports client.types.jobs.GetJobResponse client.types.jobs.GetJobErrorData client.types.jobs.GetJobHTTPError
-    exports client.types.jobs.GetJobRequestCodecs client.types.jobs.decode_get_job_header digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.jobs.GetJobRequestCodecs client.types.jobs.decode_get_job_header
   /selection/selected_operations/2 jobs.cancel_job(path:jobId=job_id, header:X-Reason=x_reason)
     exports client.types.jobs.CancelJobResponse client.types.jobs.CancelJobErrorData client.types.jobs.CancelJobHTTPError
-    exports client.types.jobs.CancelJobRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.jobs.CancelJobRequestCodecs None
   /selection/selected_operations/3 jobs.get_report(path:jobId=job_id)
     exports client.types.jobs.GetReportResponse client.types.jobs.GetReportErrorData client.types.jobs.GetReportHTTPError
-    exports client.types.jobs.GetReportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.jobs.GetReportRequestCodecs None
   /selection/selected_operations/4 reports.find_report()
     exports client.types.reports.FindReportResponse client.types.reports.FindReportErrorData client.types.reports.FindReportHTTPError
-    exports client.types.reports.FindReportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.reports.FindReportRequestCodecs None
   /selection/selected_operations/5 reports.latest_report()
     exports client.types.reports.LatestReportResponse client.types.reports.LatestReportErrorData client.types.reports.LatestReportHTTPError
-    exports client.types.reports.LatestReportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.reports.LatestReportRequestCodecs None
   /selection/selected_operations/6 exports.start_export()
     exports client.types.exports.StartExportResponse client.types.exports.StartExportErrorData client.types.exports.StartExportHTTPError
-    exports client.types.exports.StartExportRequestCodecs client.types.exports.decode_start_export_header digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.exports.StartExportRequestCodecs client.types.exports.decode_start_export_header
   /selection/selected_operations/7 exports.cancel_exports()
     exports client.types.exports.CancelExportsResponse client.types.exports.CancelExportsErrorData client.types.exports.CancelExportsHTTPError
-    exports client.types.exports.CancelExportsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.exports.CancelExportsRequestCodecs None
   /selection/selected_operations/8 exports.export_status(querystring:criteria=criteria)
     exports client.types.exports.ExportStatusResponse client.types.exports.ExportStatusErrorData client.types.exports.ExportStatusHTTPError
-    exports client.types.exports.ExportStatusRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.exports.ExportStatusRequestCodecs None
   /selection/selected_operations/9 exports.find_export(querystring:filter=filter)
     exports client.types.exports.FindExportResponse client.types.exports.FindExportErrorData client.types.exports.FindExportHTTPError
-    exports client.types.exports.FindExportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.exports.FindExportRequestCodecs None
   /selection/selected_operations/10 reports.add_note()
     exports client.types.reports.AddNoteResponse client.types.reports.AddNoteErrorData client.types.reports.AddNoteHTTPError
-    exports client.types.reports.AddNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+    exports client.types.reports.AddNoteRequestCodecs None
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
   S_OPERATION_EXCLUDED selection /paths/~1archives/post: POST /archives is excluded by exclude_tags 'archives': Archives have no success response
   S_OPERATION_EXCLUDED selection /paths/~1archives~1search/post: POST /archives/search is excluded by exclude_tags 'archives': Archives have no success response
 render dataclasses.dataclass
@@ -1031,38 +1031,38 @@ render dataclasses.dataclass
   }
   /selection/selected_operations/0 jobs.create_job()
     exports client.types.jobs.CreateJobResponse client.types.jobs.CreateJobErrorData client.types.jobs.CreateJobHTTPError
-    exports client.types.jobs.CreateJobRequestCodecs client.types.jobs.decode_create_job_header digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.jobs.CreateJobRequestCodecs client.types.jobs.decode_create_job_header
   /selection/selected_operations/1 jobs.get_job(path:jobId=job_id, header:X-Trace=x_trace, query:verbose=verbose, query:since=since, cookie:session=session, header:X-Api-Key=x_api_key, query:api_key=api_key)
     exports client.types.jobs.GetJobResponse client.types.jobs.GetJobErrorData client.types.jobs.GetJobHTTPError
-    exports client.types.jobs.GetJobRequestCodecs client.types.jobs.decode_get_job_header digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.jobs.GetJobRequestCodecs client.types.jobs.decode_get_job_header
   /selection/selected_operations/2 jobs.cancel_job(path:jobId=job_id, header:X-Reason=x_reason)
     exports client.types.jobs.CancelJobResponse client.types.jobs.CancelJobErrorData client.types.jobs.CancelJobHTTPError
-    exports client.types.jobs.CancelJobRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.jobs.CancelJobRequestCodecs None
   /selection/selected_operations/3 jobs.get_report(path:jobId=job_id)
     exports client.types.jobs.GetReportResponse client.types.jobs.GetReportErrorData client.types.jobs.GetReportHTTPError
-    exports client.types.jobs.GetReportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.jobs.GetReportRequestCodecs None
   /selection/selected_operations/4 reports.find_report()
     exports client.types.reports.FindReportResponse client.types.reports.FindReportErrorData client.types.reports.FindReportHTTPError
-    exports client.types.reports.FindReportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.reports.FindReportRequestCodecs None
   /selection/selected_operations/5 reports.latest_report()
     exports client.types.reports.LatestReportResponse client.types.reports.LatestReportErrorData client.types.reports.LatestReportHTTPError
-    exports client.types.reports.LatestReportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.reports.LatestReportRequestCodecs None
   /selection/selected_operations/6 exports.start_export()
     exports client.types.exports.StartExportResponse client.types.exports.StartExportErrorData client.types.exports.StartExportHTTPError
-    exports client.types.exports.StartExportRequestCodecs client.types.exports.decode_start_export_header digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.exports.StartExportRequestCodecs client.types.exports.decode_start_export_header
   /selection/selected_operations/7 exports.cancel_exports()
     exports client.types.exports.CancelExportsResponse client.types.exports.CancelExportsErrorData client.types.exports.CancelExportsHTTPError
-    exports client.types.exports.CancelExportsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.exports.CancelExportsRequestCodecs None
   /selection/selected_operations/8 exports.export_status(querystring:criteria=criteria)
     exports client.types.exports.ExportStatusResponse client.types.exports.ExportStatusErrorData client.types.exports.ExportStatusHTTPError
-    exports client.types.exports.ExportStatusRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.exports.ExportStatusRequestCodecs None
   /selection/selected_operations/9 exports.find_export(querystring:filter=filter)
     exports client.types.exports.FindExportResponse client.types.exports.FindExportErrorData client.types.exports.FindExportHTTPError
-    exports client.types.exports.FindExportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.exports.FindExportRequestCodecs None
   /selection/selected_operations/10 reports.add_note()
     exports client.types.reports.AddNoteResponse client.types.reports.AddNoteErrorData client.types.reports.AddNoteHTTPError
-    exports client.types.reports.AddNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
+    exports client.types.reports.AddNoteRequestCodecs None
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
   S_OPERATION_EXCLUDED selection /paths/~1archives/post: POST /archives is excluded by exclude_tags 'archives': Archives have no success response
   S_OPERATION_EXCLUDED selection /paths/~1archives~1search/post: POST /archives/search is excluded by exclude_tags 'archives': Archives have no success response
 render typing.TypedDict
@@ -1564,38 +1564,38 @@ render typing.TypedDict
   }
   /selection/selected_operations/0 jobs.create_job()
     exports client.types.jobs.CreateJobResponse client.types.jobs.CreateJobErrorData client.types.jobs.CreateJobHTTPError
-    exports client.types.jobs.CreateJobRequestCodecs client.types.jobs.decode_create_job_header digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.jobs.CreateJobRequestCodecs client.types.jobs.decode_create_job_header
   /selection/selected_operations/1 jobs.get_job(path:jobId=job_id, header:X-Trace=x_trace, query:verbose=verbose, query:since=since, cookie:session=session, header:X-Api-Key=x_api_key, query:api_key=api_key)
     exports client.types.jobs.GetJobResponse client.types.jobs.GetJobErrorData client.types.jobs.GetJobHTTPError
-    exports client.types.jobs.GetJobRequestCodecs client.types.jobs.decode_get_job_header digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.jobs.GetJobRequestCodecs client.types.jobs.decode_get_job_header
   /selection/selected_operations/2 jobs.cancel_job(path:jobId=job_id, header:X-Reason=x_reason)
     exports client.types.jobs.CancelJobResponse client.types.jobs.CancelJobErrorData client.types.jobs.CancelJobHTTPError
-    exports client.types.jobs.CancelJobRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.jobs.CancelJobRequestCodecs None
   /selection/selected_operations/3 jobs.get_report(path:jobId=job_id)
     exports client.types.jobs.GetReportResponse client.types.jobs.GetReportErrorData client.types.jobs.GetReportHTTPError
-    exports client.types.jobs.GetReportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.jobs.GetReportRequestCodecs None
   /selection/selected_operations/4 reports.find_report()
     exports client.types.reports.FindReportResponse client.types.reports.FindReportErrorData client.types.reports.FindReportHTTPError
-    exports client.types.reports.FindReportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.reports.FindReportRequestCodecs None
   /selection/selected_operations/5 reports.latest_report()
     exports client.types.reports.LatestReportResponse client.types.reports.LatestReportErrorData client.types.reports.LatestReportHTTPError
-    exports client.types.reports.LatestReportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.reports.LatestReportRequestCodecs None
   /selection/selected_operations/6 exports.start_export()
     exports client.types.exports.StartExportResponse client.types.exports.StartExportErrorData client.types.exports.StartExportHTTPError
-    exports client.types.exports.StartExportRequestCodecs client.types.exports.decode_start_export_header digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.exports.StartExportRequestCodecs client.types.exports.decode_start_export_header
   /selection/selected_operations/7 exports.cancel_exports()
     exports client.types.exports.CancelExportsResponse client.types.exports.CancelExportsErrorData client.types.exports.CancelExportsHTTPError
-    exports client.types.exports.CancelExportsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.exports.CancelExportsRequestCodecs None
   /selection/selected_operations/8 exports.export_status(querystring:criteria=criteria)
     exports client.types.exports.ExportStatusResponse client.types.exports.ExportStatusErrorData client.types.exports.ExportStatusHTTPError
-    exports client.types.exports.ExportStatusRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.exports.ExportStatusRequestCodecs None
   /selection/selected_operations/9 exports.find_export(querystring:filter=filter)
     exports client.types.exports.FindExportResponse client.types.exports.FindExportErrorData client.types.exports.FindExportHTTPError
-    exports client.types.exports.FindExportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.exports.FindExportRequestCodecs None
   /selection/selected_operations/10 reports.add_note()
     exports client.types.reports.AddNoteResponse client.types.reports.AddNoteErrorData client.types.reports.AddNoteHTTPError
-    exports client.types.reports.AddNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
+    exports client.types.reports.AddNoteRequestCodecs None
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
   S_OPERATION_EXCLUDED selection /paths/~1archives/post: POST /archives is excluded by exclude_tags 'archives': Archives have no success response
   S_OPERATION_EXCLUDED selection /paths/~1archives~1search/post: POST /archives/search is excluded by exclude_tags 'archives': Archives have no success response
 render msgspec.Struct
@@ -2097,37 +2097,37 @@ render msgspec.Struct
   }
   /selection/selected_operations/0 jobs.create_job()
     exports client.types.jobs.CreateJobResponse client.types.jobs.CreateJobErrorData client.types.jobs.CreateJobHTTPError
-    exports client.types.jobs.CreateJobRequestCodecs client.types.jobs.decode_create_job_header digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.jobs.CreateJobRequestCodecs client.types.jobs.decode_create_job_header
   /selection/selected_operations/1 jobs.get_job(path:jobId=job_id, header:X-Trace=x_trace, query:verbose=verbose, query:since=since, cookie:session=session, header:X-Api-Key=x_api_key, query:api_key=api_key)
     exports client.types.jobs.GetJobResponse client.types.jobs.GetJobErrorData client.types.jobs.GetJobHTTPError
-    exports client.types.jobs.GetJobRequestCodecs client.types.jobs.decode_get_job_header digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.jobs.GetJobRequestCodecs client.types.jobs.decode_get_job_header
   /selection/selected_operations/2 jobs.cancel_job(path:jobId=job_id, header:X-Reason=x_reason)
     exports client.types.jobs.CancelJobResponse client.types.jobs.CancelJobErrorData client.types.jobs.CancelJobHTTPError
-    exports client.types.jobs.CancelJobRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.jobs.CancelJobRequestCodecs None
   /selection/selected_operations/3 jobs.get_report(path:jobId=job_id)
     exports client.types.jobs.GetReportResponse client.types.jobs.GetReportErrorData client.types.jobs.GetReportHTTPError
-    exports client.types.jobs.GetReportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.jobs.GetReportRequestCodecs None
   /selection/selected_operations/4 reports.find_report()
     exports client.types.reports.FindReportResponse client.types.reports.FindReportErrorData client.types.reports.FindReportHTTPError
-    exports client.types.reports.FindReportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.reports.FindReportRequestCodecs None
   /selection/selected_operations/5 reports.latest_report()
     exports client.types.reports.LatestReportResponse client.types.reports.LatestReportErrorData client.types.reports.LatestReportHTTPError
-    exports client.types.reports.LatestReportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.reports.LatestReportRequestCodecs None
   /selection/selected_operations/6 exports.start_export()
     exports client.types.exports.StartExportResponse client.types.exports.StartExportErrorData client.types.exports.StartExportHTTPError
-    exports client.types.exports.StartExportRequestCodecs client.types.exports.decode_start_export_header digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.exports.StartExportRequestCodecs client.types.exports.decode_start_export_header
   /selection/selected_operations/7 exports.cancel_exports()
     exports client.types.exports.CancelExportsResponse client.types.exports.CancelExportsErrorData client.types.exports.CancelExportsHTTPError
-    exports client.types.exports.CancelExportsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.exports.CancelExportsRequestCodecs None
   /selection/selected_operations/8 exports.export_status(querystring:criteria=criteria)
     exports client.types.exports.ExportStatusResponse client.types.exports.ExportStatusErrorData client.types.exports.ExportStatusHTTPError
-    exports client.types.exports.ExportStatusRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.exports.ExportStatusRequestCodecs None
   /selection/selected_operations/9 exports.find_export(querystring:filter=filter)
     exports client.types.exports.FindExportResponse client.types.exports.FindExportErrorData client.types.exports.FindExportHTTPError
-    exports client.types.exports.FindExportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.exports.FindExportRequestCodecs None
   /selection/selected_operations/10 reports.add_note()
     exports client.types.reports.AddNoteResponse client.types.reports.AddNoteErrorData client.types.reports.AddNoteHTTPError
-    exports client.types.reports.AddNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'msgspec>=0.18']
+    exports client.types.reports.AddNoteRequestCodecs None
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'msgspec>=0.18']
   S_OPERATION_EXCLUDED selection /paths/~1archives/post: POST /archives is excluded by exclude_tags 'archives': Archives have no success response
   S_OPERATION_EXCLUDED selection /paths/~1archives~1search/post: POST /archives/search is excluded by exclude_tags 'archives': Archives have no success response

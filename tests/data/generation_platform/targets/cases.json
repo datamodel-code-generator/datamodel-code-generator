@@ -361,39 +361,6 @@
       {"generate": {}}
     ]
   },
-  "busy": {
-    "input": {"path": "api.yaml"},
-    "model": {"openapi_scopes": ["api"]},
-    "steps": [
-      {"generate": {}},
-      {"hold": "thread"},
-      {"generate": {}},
-      {"release": null},
-      {"hold": "os"},
-      {"generate": {}},
-      {"release": null},
-      {"generate": {}}
-    ]
-  },
-  "busy-metadata": {
-    "input": {"path": "api.yaml"},
-    "model": {"openapi_scopes": ["api"], "emit_model_metadata": "meta/models.json"},
-    "steps": [
-      {"generate": {}},
-      {"hold": "thread:meta/models.json"},
-      {"generate": {}},
-      {"generate": {"config": {"model_mode": "verify"}}},
-      {"release": null},
-      {
-        "generate": {
-          "input": {"path": "modular.yaml"},
-          "model": {"output": "models", "emit_model_metadata": "models/meta.json"},
-          "config": {"output": "modular"}
-        }
-      },
-      {"tree": null}
-    ]
-  },
   "collision": {
     "input": {"path": "api.yaml"},
     "model": {"openapi_scopes": ["api"]},
@@ -463,18 +430,13 @@
       {"tree": null}
     ]
   },
-  "lock-unsupported": {
-    "input": {"path": "api.yaml"},
-    "model": {"openapi_scopes": ["api"]},
-    "steps": [
-      {"generate": {}}
-    ]
-  },
   "state-changed": {
     "input": {"path": "api.yaml"},
-    "model": {"openapi_scopes": ["api"]},
+    "model": {"openapi_scopes": ["api"], "lockfile": "remote.lock", "update_lock": true},
     "steps": [
-      {"generate": {}}
+      {"generate": {}},
+      {"tree": null},
+      {"show": "models.py"}
     ]
   },
   "layout-embedded": {
@@ -851,6 +813,86 @@
       },
       {
         "tree": null
+      }
+    ]
+  },
+  "rollback-transaction": {
+    "input": {
+      "path": "api.yaml"
+    },
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ],
+      "emit_model_metadata": "meta/models.json",
+      "lockfile": "remote.lock",
+      "update_lock": true
+    },
+    "steps": [
+      {
+        "generate": {}
+      },
+      {
+        "tree": null
+      },
+      {
+        "generate": {
+          "input": {
+            "path": "contacts.yaml"
+          }
+        }
+      },
+      {
+        "tree": null
+      },
+      {
+        "render": {}
+      }
+    ]
+  },
+  "publication-modes": {
+    "input": {
+      "path": "api.yaml"
+    },
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "steps": [
+      {
+        "chmod": [
+          ".",
+          "0750"
+        ]
+      },
+      {
+        "generate": {}
+      },
+      {
+        "file_modes": [
+          "models.py",
+          "server/__init__.py",
+          "server/.dcg-target-manifest.json"
+        ]
+      },
+      {
+        "chmod": [
+          "models.py",
+          "0604"
+        ]
+      },
+      {
+        "generate": {
+          "input": {
+            "path": "contacts.yaml"
+          }
+        }
+      },
+      {
+        "file_modes": [
+          "models.py"
+        ]
       }
     ]
   }

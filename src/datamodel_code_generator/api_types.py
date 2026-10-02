@@ -13,6 +13,7 @@ from datamodel_code_generator._api_types import (
     GeneratedProject,
     GenerationReport,
     OperationSelection,
+    PublicationRollbackError,
 )
 from datamodel_code_generator._codec_declarations import (
     BuiltinCodecCompatibility,
@@ -23,7 +24,6 @@ from datamodel_code_generator._codec_declarations import (
     SchemaRef,
     TypeUseRef,
 )
-from datamodel_code_generator._publication import PublicationRollbackError
 from datamodel_code_generator._runtime.model_codecs.capabilities import (
     ClientMediaCodecCapabilities,
     CodecCapabilities,

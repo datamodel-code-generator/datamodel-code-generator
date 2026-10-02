@@ -17,7 +17,6 @@ from datamodel_code_generator._runtime.client.security import (
 
 if TYPE_CHECKING:
     from datamodel_code_generator._generation_contract import (
-        FrozenLiteral,
         GeneratedTypeContractBatch,
         OperationContract,
         SourceDocumentId,
@@ -137,59 +136,3 @@ class SecurityPlanner:
                 requirements.append(SecurityRequirement(scheme=scheme, required_scopes=required))
             alternatives.append(tuple(requirements))
         return SecurityBinding(schemes=tuple(schemes.values()), alternatives=tuple(alternatives))
-
-
-def _mapping(value: FrozenLiteral | None) -> dict[str, FrozenLiteral]:
-    if not isinstance(value, LiteralMapping):
-        return {}
-    return {
-        key.value: item for key, item in value.entries if isinstance(key, LiteralScalar) and isinstance(key.value, str)
-    }
-
-
-def _flow_contract(value: FrozenLiteral | None) -> object:
-    return tuple(
-        (
-            name,
-            tuple(
-                (key, item.value)
-                for key, item in _mapping(flow).items()
-                if key in {"authorizationUrl", "tokenUrl", "refreshUrl"} and isinstance(item, LiteralScalar)
-            ),
-            tuple(sorted(_mapping(_mapping(flow).get("scopes")))),
-        )
-        for name, flow in _mapping(value).items()
-    )
-
-
-def security_contract(
-    batch: GeneratedTypeContractBatch,
-    operation: OperationContract,
-    binding: SecurityBinding | None,
-    *,
-    challenge_less: bool,
-) -> object:
-    """Project only effective requirements, wire facts, flow semantics, and the explicit 401 declaration."""
-    if binding is None and not challenge_less:
-        return None
-    declarations = {
-        item.name: item for item in batch.security_schemes if item.use_site.document == _document(operation)
-    }
-    schemes: list[object] = []
-    alternatives = (
-        None
-        if binding is None
-        else tuple(
-            tuple((item.scheme.name, item.required_scopes) for item in alternative)
-            for alternative in binding.alternatives
-        )
-    )
-    for name in dict.fromkeys(name for alternative in alternatives or () for name, _ in alternative):
-        declaration = declarations[name]
-        facts = _facts(declaration)
-        schemes.append((
-            name,
-            tuple((key, facts[key]) for key in ("type", "in", "name", "scheme", "openIdConnectUrl") if key in facts),
-            _flow_contract(dict(declaration.facts).get("flows")),
-        ))
-    return {"alternatives": alternatives, "schemes": tuple(schemes), "auth_challenge_less_401": challenge_less}

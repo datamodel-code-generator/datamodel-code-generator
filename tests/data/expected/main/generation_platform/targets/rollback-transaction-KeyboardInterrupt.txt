@@ -1,4 +1,4 @@
-# busy
+# rollback-transaction
 generate
   target=fastapi schema_version=1
   written model models.py
@@ -19,20 +19,62 @@ generate
   written target server/services.py (target)
   written target server/README.md (target)
   written target server/py.typed (target)
+  written model_metadata meta/models.json
+  written remote_lock remote.lock
   written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
   26 runtime modules ['written']
-hold thread lock on server
+tree
+  meta/models.json
+  models.py
+  remote.lock
+  server/.dcg-state/model-artifacts.json
+  server/.dcg-target-manifest.json
+  server/README.md
+  server/__init__.py
+  server/_generated/__init__.py
+  server/_generated/contract.py
+  server/_generated/model_bindings.py
+  server/_generated/openapi.py
+  server/application.py
+  server/auth_types.py
+  server/errors.py
+  server/model_codecs.py
+  server/py.typed
+  server/responses.py
+  server/routers/__init__.py
+  server/routers/pets.py
+  server/routers/store.py
+  server/routers/untagged.py
+  server/services.py
+  26 runtime modules ['present']
 generate
-  APIGenerationError
-  E_OUTPUT_BUSY error publication <root>/server: Another generation in this process holds the output lock
-release
-hold os lock on server
-generate
-  APIGenerationError
-  E_OUTPUT_BUSY error publication <root>/server: Another generation holds the output lock
-release
-generate
+  KeyboardInterrupt: 
+tree
+  meta/models.json
+  models.py
+  remote.lock
+  server/.dcg-state/model-artifacts.json
+  server/.dcg-target-manifest.json
+  server/README.md
+  server/__init__.py
+  server/_generated/__init__.py
+  server/_generated/contract.py
+  server/_generated/model_bindings.py
+  server/_generated/openapi.py
+  server/application.py
+  server/auth_types.py
+  server/errors.py
+  server/model_codecs.py
+  server/py.typed
+  server/responses.py
+  server/routers/__init__.py
+  server/routers/pets.py
+  server/routers/store.py
+  server/routers/untagged.py
+  server/services.py
+  26 runtime modules ['present']
+render
   target=fastapi schema_version=1
   unchanged model models.py
   unchanged target server/__init__.py (target)
@@ -52,6 +94,8 @@ generate
   unchanged target server/services.py (target)
   unchanged target server/README.md (target)
   unchanged target server/py.typed (target)
+  unchanged model_metadata meta/models.json
+  unchanged remote_lock remote.lock
   unchanged model_inventory server/.dcg-state/model-artifacts.json (target)
   unchanged target_manifest server/.dcg-target-manifest.json (target)
   26 runtime modules ['unchanged']
