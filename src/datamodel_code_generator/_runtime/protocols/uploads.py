@@ -881,12 +881,6 @@ def _refused(error: BaseException) -> bool:
     )
 
 
-def _delivery_of(error: BaseException) -> DeliveryState | None:
-    """Return how far a failed call got, when its error says."""
-    delivery: object = getattr(error, "delivery_state", None)
-    return delivery if isinstance(delivery, DeliveryState) else None
-
-
 def _probed_again(error: Exception) -> bool:
     """Return whether a probe failed in a way another probe may settle: a transport error or an error status."""
     return isinstance(error, (TransportError, HTTPStatusError, UnexpectedStatusError))

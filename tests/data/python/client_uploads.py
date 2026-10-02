@@ -1184,7 +1184,7 @@ class _CompletionTransport:
             status = 200
         else:
             wire = self.server(httpx2.Request(request.method, request.url, content=b""))
-            status, content = wire.status_code, wire.content
+            status, content = wire.status_code, wire.read()
         reply = self.kind(self.headers, status, content)
         self.responses.append(reply)
         context.trace.response_headers_received(http_version="HTTP/1.1", status_code=status, headers=reply.headers)
