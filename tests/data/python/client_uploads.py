@@ -10,9 +10,9 @@ import asyncio
 import io
 import json
 import os
-import string
 import tempfile
 import threading
+from contextlib import suppress
 from datetime import datetime, timezone
 from hashlib import sha256
 from pathlib import Path
@@ -44,7 +44,7 @@ _EXPIRED: Final = datetime(2015, 10, 21, 7, 28, tzinfo=timezone.utc)
 
 
 class _Server:
-    """Keep each upload's bytes and answer creates, probes, appends, and completions independently."""
+    """Keep each upload's bytes and answer creates, probes, appends, and completes independently."""
 
     def __init__(self) -> None:
         """Start without uploads."""
@@ -281,7 +281,7 @@ def step(lines: list[str], label: str, call: Callable[[], object]) -> object:
     """Report a step's result or failure."""
     try:
         result = call()
-    except Exception as error:  # ruff: ignore[blind-except]
+    except Exception as error:  # noqa: BLE001 - Report failures from public calls.
         lines.append(f"  {label} ! {_progress(error)}")
         return None
     lines.append(f"  {label} = {_progress(result)}")
@@ -292,7 +292,7 @@ async def astep(lines: list[str], label: str, call: Callable[[], Any]) -> object
     """Report an asyncio step's result or failure."""
     try:
         result = await call()
-    except Exception as error:  # ruff: ignore[blind-except]
+    except Exception as error:  # noqa: BLE001 - Report failures from public calls.
         lines.append(f"  {label} ! {_progress(error)}")
         return None
     lines.append(f"  {label} = {_progress(result)}")
@@ -456,7 +456,7 @@ def _runs(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, line
         handle = step(lines, "start", lambda: helper.start(source, tus_resumable=harness.tus))
         step(lines, "run", handle.run)
         lines.append(f"  readers opened {source.opened}, closed {source.closed}, most at once {source.most}")
-    lines.append(f"  {server.stored('u4')}")
+    lines.append(f"  {server.stored(f'u{len(server.uploads)}')}")
 
 
 def _recoveries(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lines: list[str]) -> None:
@@ -467,18 +467,21 @@ def _recoveries(harness: _Uploads, api: Any, server: _Server, exchange: Exchange
     handle = helper.start(harness.source(), tus_resumable=harness.tus)
     step(lines, "advance", handle.advance)
     step(lines, "run", handle.run)
-    lines.extend((f"  {server.stored('u5')}", "an append lost before it was stored, then part of one stored"))
+    lines.extend((
+        f"  {server.stored(f'u{len(server.uploads)}')}",
+        "an append lost before it was stored, then part of one stored",
+    ))
     exchange.respond(server, failing(httpx2.ReadError), server, server, server.lost(2), server, server, server)
     handle = helper.start(harness.source(), tus_resumable=harness.tus)
     step(lines, "advance", handle.advance)
     step(lines, "advance", handle.advance)
     step(lines, "run", handle.run)
-    lines.extend((f"  {server.stored('u6')}", "an append refused while connecting"))
+    lines.extend((f"  {server.stored(f'u{len(server.uploads)}')}", "an append refused while connecting"))
     exchange.respond(server, failing(httpx2.ConnectError), server, server, server, server)
     handle = helper.start(harness.source(), tus_resumable=harness.tus)
     step(lines, "advance", handle.advance)
     step(lines, "run", handle.run)
-    lines.extend((f"  {server.stored('u7')}", "probes that never answer"))
+    lines.extend((f"  {server.stored(f'u{len(server.uploads)}')}", "probes that never answer"))
     unretried = harness.options.RequestOptions(retry=harness.options.RetryOptions(max_retries=0))
     exchange.respond(server, server.lost(), failing(httpx2.ConnectError), failing(httpx2.ConnectError))
     handle = helper.start(
@@ -490,7 +493,7 @@ def _recoveries(harness: _Uploads, api: Any, server: _Server, exchange: Exchange
     step(lines, "advance", handle.advance)
     exchange.respond(server, server, server)
     step(lines, "run probes first", handle.run)
-    lines.extend((f"  {server.stored('u8')}", "the last append stored but answered with an error"))
+    lines.extend((f"  {server.stored(f'u{len(server.uploads)}')}", "the last append stored but answered with an error"))
     exchange.respond(server, server, server, server.refused, server)
     handle = helper.start(harness.source(), tus_resumable=harness.tus)
     step(lines, "advance", handle.advance)
@@ -528,7 +531,7 @@ def _offsets(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
         ("missing", raw_response(200)),
         ("not digits", raw_response(200, b"", None, **{"Upload-Offset": "+4"})),
         ("too many digits", raw_response(200, b"", None, **{"Upload-Offset": "9" * 5000})),
-        ("repeated", lambda _request: httpx2.Response(200, headers=[("Upload-Offset", "4"), ("Upload-Offset", "4")])),
+        ("repeated", lambda _: httpx2.Response(200, headers=[("Upload-Offset", "4"), ("Upload-Offset", "4")])),
     ):
         exchange.respond(server, failing(httpx2.ReadError), responder)
         handle = upload.start(harness.source(), tus_resumable=harness.tus)
@@ -549,7 +552,7 @@ def _completions(harness: _Uploads, api: Any, server: _Server, exchange: Exchang
     step(lines, "run again", handle.run)
     step(lines, "advance again", handle.advance)
     state = handle.checkpoint()
-    step(lines, "resume", lambda: helper.resume(harness.source(), state))
+    step(lines, "resume", lambda state=state: helper.resume(harness.source(), state))
     lines.append("a completion an error answered")
     exchange.respond(server, server, server, raw_response(500), server)
     handle = helper.start(harness.source(), tus_resumable=harness.tus)
@@ -600,14 +603,14 @@ def _sources(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
     """Refuse one-shot inputs and invalid sources before sending, and stop at content that changed."""
     helper, protocols = api.protocols.files.upload, harness.protocols
 
-    async def stream() -> AsyncIterator[bytes]:  # ruff: ignore[unused-async] - Exercise rejection of an async iterator.
+    async def stream() -> AsyncIterator[bytes]:  # noqa: RUF029 - The public adapter requires an async callback.
         yield _CONTENT
 
     class Ranges:
         identity = harness.source().identity
         max_parallel_ranges = 0
 
-        def open_range(self, _offset: int, _length: int) -> object:
+        def open_range(self, offset: int, length: int) -> object:  # noqa: ARG002 - Keep the public range-source method signature.
             return self
 
     class Unidentified(Ranges):
@@ -629,10 +632,10 @@ def _sources(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
     class Texts(Ranges):
         max_parallel_ranges = 1
 
-        def open_range(self, _offset: int, _length: int) -> Any:
+        def open_range(self, offset: int, length: int) -> Any:  # noqa: ARG002 - Keep the public range-source method signature.
             from contextlib import nullcontext
 
-            return nullcontext(io.StringIO(string.digits))
+            return nullcontext(io.StringIO(_CONTENT.decode()))
 
     lines.append("sources that cannot resume or are invalid")
     stream_source = stream()
@@ -676,20 +679,18 @@ def _sources(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
 def _ranges(source: Any) -> str:
     """Describe what out-of-range and invalid reads of a builtin source raise."""
     found = []
-    try:
-        with source.open_range(5, 10):
-            pass
-    except ValueError:
-        found.append("past the end refused")
-    try:
-        with source.open_range(-1, 1):
-            pass
-    except ValueError:
-        found.append("a negative offset refused")
+    for label, call in (
+        ("past the end", lambda: source.open_range(5, 10).__enter__()),  # noqa: PLC2801 - Exercise errors raised on context entry.
+        ("a negative offset", lambda: source.open_range(-1, 1).__enter__()),  # noqa: PLC2801 - Exercise errors raised on context entry.
+    ):
+        try:
+            call()
+        except ValueError:  # noqa: PERF203 - Each step must report failures and continue to sibling outcomes.
+            found.append(f"{label} refused")
     return ", ".join(found)
 
 
-def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lines: list[str]) -> None:  # ruff: ignore[too-many-locals]
+def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lines: list[str]) -> None:  # noqa: PLR0914 - Exercise the upload lifecycle in one scenario.
     """Resume a checkpoint with zero creates after checking its source, and refuse checkpoints of another kind."""
     helper, finish, protocols = api.protocols.files.upload, api.protocols.files.finish, harness.protocols
     lines.append("checkpoint, export, import, and resume")
@@ -772,16 +773,16 @@ def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
     dotted = protocols.ResumeState(**fingerprints, state=dots, payload=state_payload(exported))
     record(lines, "resume with a path value of dots and bytes for a source", lambda: helper.resume(_CONTENT, dotted))
     digests = state_payload(exported)
-    mismatched = protocols.ResumeState(**fingerprints, state=saved, payload=digests[:32] + bytes(32) + digests[64:])
-    step(lines, "resume with digests of other content", lambda: helper.resume(harness.source(), mismatched))
+    other = protocols.ResumeState(**fingerprints, state=saved, payload=digests[:32] + bytes(32) + digests[64:])
+    step(lines, "resume with digests of other content", lambda: helper.resume(harness.source(), other))
     lines.append("a checkpoint of another security partition")
     secured = harness.client_options(
         protocols=harness.options.ProtocolClientOptions(
             security=protocols.ProtocolSecurityContext(credential_partition="tenant-a")
         )
     )
-    with exchange.client() as native, harness.package.Client(http_client=native, options=secured) as other:
-        record(lines, "resume", lambda: other.protocols.files.upload.resume(harness.source(), state))
+    with exchange.client() as native, harness.package.Client(http_client=native, options=secured) as secured_api:
+        record(lines, "resume", lambda: secured_api.protocols.files.upload.resume(harness.source(), state))
 
 
 def state_payload(exported: bytes) -> bytes:
@@ -948,7 +949,7 @@ def _steps(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lin
     lines.append(f"  handle {handle!r}")
 
 
-async def _async_uploads(harness: _Uploads, server: _Server, lines: list[str]) -> None:  # ruff: ignore[too-many-locals]
+async def _async_uploads(harness: _Uploads, server: _Server, lines: list[str]) -> None:  # noqa: PLR0914 - Exercise the upload lifecycle in one scenario.
     """Upload, recover, and resume with asyncio, from bytes and from a file read on its own worker."""
     package, protocols = harness.package, harness.protocols
     exchange = Exchange(lines)
@@ -1125,3 +1126,211 @@ async def _async_ranges(source: Any) -> str:
     except ValueError:
         refused = "refused"
     return f"{first!r} {rest!r} {end!r} after close {closed!r}, past the end {refused}"
+
+
+class _CompletionResponse:
+    """An independently authored response for token/create/probe/completion resource controls."""
+
+    def __init__(self, headers: Any, status: int, content: bytes) -> None:
+        self.status_code = status
+        self.headers = headers((("content-type", "application/json"),))
+        self.content = content
+        self.closed = False
+
+    def iter_raw_bytes(self) -> Iterator[bytes]:
+        yield self.content
+
+    def close(self) -> None:
+        self.closed = True
+
+
+class _AsyncCompletionResponse(_CompletionResponse):
+    async def iter_raw_bytes(self) -> AsyncIterator[bytes]:
+        yield self.content
+
+    async def aclose(self) -> None:
+        self.close()
+
+
+class _CompletionTransport:
+    """Count actual token and resource sends separately, holding token traffic before resource admission."""
+
+    def __init__(self, harness: _Uploads, *, token: bool = False, asynchronous: bool = False) -> None:
+        import importlib
+
+        transports = importlib.import_module(f"{harness.package.__name__}.transports")
+        responses = importlib.import_module(f"{harness.package.__name__}.responses")
+        self.capabilities = transports.TransportCapabilities(
+            internal_retry_limit=0, delivery_evidence=True, http_versions=("HTTP/1.1",)
+        )
+        self.headers = responses.HeadersView
+        self.token = token
+        event = asyncio.Event if asynchronous else threading.Event
+        self.started, self.release = event(), event()
+        self.methods: list[str] = []
+        self.responses: list[Any] = []
+        self.kind = _AsyncCompletionResponse if asynchronous else _CompletionResponse
+        self.server = _Server()
+
+    def _sent(self, request: Any, context: Any) -> None:
+        self.methods.append(f"{request.method} {request.url.split('example.com')[-1]}")
+        context.trace.request_headers_started()
+        context.trace.wire_send()
+        self.started.set()
+
+    def _reply(self, request: Any, context: Any) -> Any:
+        if self.token:
+            content = b'{"access_token":"upload-control","token_type":"Bearer","expires_in":3600}'
+            status = 200
+        else:
+            wire = self.server(httpx2.Request(request.method, request.url, content=b""))
+            status, content = wire.status_code, wire.read()
+        reply = self.kind(self.headers, status, content)
+        self.responses.append(reply)
+        context.trace.response_headers_received(http_version="HTTP/1.1", status_code=status, headers=reply.headers)
+        return reply
+
+    def send(self, request: Any, context: Any) -> Any:
+        self._sent(request, context)
+        if self.token and not self.release.wait(30):
+            msg = "token watchdog"
+            raise RuntimeError(msg)
+        return self._reply(request, context)
+
+    def close(self) -> None:
+        """Leave this borrowed adapter with its caller."""
+
+
+class _AsyncCompletionTransport(_CompletionTransport):
+    async def send(self, request: Any, context: Any) -> Any:
+        self._sent(request, context)
+        if self.token:
+            await self.release.wait()
+        return self._reply(request, context)
+
+    async def aclose(self) -> None:
+        """Leave this borrowed adapter with its caller."""
+
+
+def _completion_provider(harness: _Uploads, token: Any, *, asynchronous: bool = False) -> Any:
+    import importlib
+
+    auth = importlib.import_module(f"{harness.package.__name__}.auth")
+    kind = auth.AsyncClientCredentialsProvider if asynchronous else auth.ClientCredentialsProvider
+    secret = auth.AsyncStaticCredentialProvider if asynchronous else auth.StaticCredentialProvider
+    provider = kind(
+        "https://auth.example.com/token",
+        client_id="upload-control",
+        client_secret=secret(auth.ApiKeyCredential("control")),
+        token_transport=token,
+    )
+    return provider, harness.options.ClientOptions(auth=auth.AuthConfig({"oauth": provider}), cleanup_timeout=0.05)
+
+
+def uploads_oauth(package: ModuleType, lines: list[str]) -> None:
+    """Close during completion OAuth, then explicitly resume the proven-unsent resource on a fresh client."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    harness = _Uploads(package)
+    token, resource = _CompletionTransport(harness, token=True), _CompletionTransport(harness)
+    provider, settings = _completion_provider(harness, token)
+    api = package.Client(transport_adapter=resource, options=settings)
+    source = harness.protocols.BytesUploadSource.from_bytes(b"")
+    handle = api.protocols.files.finish.start(source, tus_resumable=harness.tus)
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        work = executor.submit(handle.run)
+        if not token.started.wait(30):
+            msg = "token admission watchdog"
+            raise RuntimeError(msg)
+        with suppress(harness.errors.CleanupError):
+            api.close()
+        token.release.set()
+        try:
+            work.result(timeout=30)
+        except harness.errors.ClientClosedError as error:
+            lines.append(f"sync original failure: {type(error).__name__} cause={error.cause}")
+    state = handle.checkpoint()
+    lines.append(f"  handle {handle!r} token={len(token.methods)} resource={resource.methods}")
+    with package.Client(transport_adapter=resource, options=settings) as fresh:
+        resumed = fresh.protocols.files.finish.resume(source, state)
+        result = resumed.run()
+        resumed.run()
+        lines.append(f"  resumed size={result.size} token={len(token.methods)} resource={resource.methods}")
+        _completion_end_control(harness, fresh, resource, lines)
+    lines.append(f"  responses closed={all(reply.closed for reply in token.responses + resource.responses)}")
+    handle.close()
+    api.close()
+    provider.close()
+    run(lambda: _async_completion_oauth(harness, lines))
+
+
+async def _async_completion_oauth(harness: _Uploads, lines: list[str]) -> None:
+    token = _AsyncCompletionTransport(harness, token=True, asynchronous=True)
+    resource = _AsyncCompletionTransport(harness, asynchronous=True)
+    provider, settings = _completion_provider(harness, token, asynchronous=True)
+    api = harness.package.AsyncClient(transport_adapter=resource, options=settings)
+    source = harness.protocols.AsyncBytesUploadSource.from_bytes(b"")
+    handle = await api.protocols.files.finish.start(source, tus_resumable=harness.tus)
+    work = asyncio.create_task(handle.run())
+    await asyncio.wait_for(token.started.wait(), timeout=30)
+    with suppress(harness.errors.CleanupError):
+        await api.aclose()
+    token.release.set()
+    try:
+        await asyncio.wait_for(work, timeout=30)
+    except harness.errors.ClientClosedError as error:
+        lines.append(f"async original failure: {type(error).__name__} cause={error.cause}")
+    state = handle.checkpoint()
+    lines.append(f"  handle {handle!r} token={len(token.methods)} resource={resource.methods}")
+    async with harness.package.AsyncClient(transport_adapter=resource, options=settings) as fresh:
+        resumed = await fresh.protocols.files.finish.resume(source, state)
+        result = await resumed.run()
+        await resumed.run()
+        lines.append(f"  resumed size={result.size} token={len(token.methods)} resource={resource.methods}")
+        await _async_completion_end_control(harness, fresh, resource, lines)
+    lines.append(f"  responses closed={all(reply.closed for reply in token.responses + resource.responses)}")
+    await handle.aclose()
+    await api.aclose()
+    await provider.aclose()
+
+
+class _CancelCompletionEnd:
+    """Cancel after the completion response has been decoded, retaining its already acquired result."""
+
+    def __init__(self, token: Any) -> None:
+        self.token = token
+
+    def on_event(self, event: Any) -> None:
+        if event.name == "call_end" and event.operation_id == "completeFile":
+            self.token.cancel()
+
+
+def _completion_end_control(harness: _Uploads, api: Any, resource: Any, lines: list[str]) -> None:
+    token = harness.options.CancelToken()
+    source = harness.protocols.BytesUploadSource.from_bytes(b"")
+    handle = api.protocols.files.finish.start(
+        source,
+        tus_resumable=harness.tus,
+        options=harness.options.RequestOptions(cancel_token=token, hooks=(_CancelCompletionEnd(token),)),
+    )
+    try:
+        handle.run()
+    except harness.errors.RequestCancelledError:
+        lines.append(f"  cancelled after decoded completion: retained={handle.run().size} resource={resource.methods}")
+    handle.close()
+
+
+async def _async_completion_end_control(harness: _Uploads, api: Any, resource: Any, lines: list[str]) -> None:
+    token = harness.options.CancelToken()
+    source = harness.protocols.AsyncBytesUploadSource.from_bytes(b"")
+    handle = await api.protocols.files.finish.start(
+        source,
+        tus_resumable=harness.tus,
+        options=harness.options.RequestOptions(cancel_token=token, hooks=(_CancelCompletionEnd(token),)),
+    )
+    try:
+        await handle.run()
+    except harness.errors.RequestCancelledError:
+        result = await handle.run()
+        lines.append(f"  cancelled after decoded completion: retained={result.size} resource={resource.methods}")
+    await handle.aclose()
