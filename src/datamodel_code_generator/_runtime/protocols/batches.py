@@ -713,7 +713,7 @@ class BatchIterator(_Batches[R]):
     client. Iterating from two threads at once raises ProtocolStateError.
     """
 
-    __slots__ = ("_core", "_executor", "_source")
+    __slots__ = ("_core", "_executor", "_source", "_submissions")
 
     def __init__(  # noqa: PLR0913, PLR0917
         self,
@@ -730,6 +730,12 @@ class BatchIterator(_Batches[R]):
         self._core = core
         self._source = source
         self._executor: ThreadPoolExecutor | None = None
+        self._submissions = threading.Lock()
+
+    def _delivery(self, batch: _Batch[R], error: BaseException, state: DeliveryState) -> None:
+        """Publish a worker's delivery evidence and native stop atomically with the next request submission."""
+        with self._submissions:
+            super()._delivery(batch, error, state)
 
     def _take(self) -> _Item | None:
         """Read the next item, or return None once reading stopped."""
@@ -775,16 +781,17 @@ class BatchIterator(_Batches[R]):
     def _head(self) -> _Batch[R] | None:
         """Submit requests while a slot is free and items are ready, then return the oldest one once it completed."""
         while not self._halted and len(self._slots) < self._limits.parallelism and (batch := self._group()) is not None:
-            if self._halted:
-                break
-            if (executor := self._executor) is None:
-                from concurrent.futures import ThreadPoolExecutor  # noqa: PLC0415 - Only a sent batch needs threads.
+            with self._submissions:
+                if self._halted:
+                    break
+                if (executor := self._executor) is None:
+                    from concurrent.futures import ThreadPoolExecutor  # noqa: PLC0415 - Only a sent batch needs threads.
 
-                executor = self._executor = ThreadPoolExecutor(
-                    max_workers=self._limits.parallelism, thread_name_prefix="batch"
-                )
-            batch.work = executor.submit(self._send, batch)
-            self._slots.append(batch)
+                    executor = self._executor = ThreadPoolExecutor(
+                        max_workers=self._limits.parallelism, thread_name_prefix="batch"
+                    )
+                batch.work = executor.submit(self._send, batch)
+                self._slots.append(batch)
         if not self._slots:
             return None
         work: Future[_Done[R]] = self._slots[0].work
