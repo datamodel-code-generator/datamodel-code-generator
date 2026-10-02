@@ -1689,7 +1689,14 @@ def queue_compression(package: ModuleType, lines: list[str]) -> None:
         outbox.cancel(receipt.entry_id)
         outbox.operations.create_order.enqueue(body=queue.order)
         waiting = outbox.operations.create_order.enqueue(body=queue.order)
-        queue.server.during = lambda: queue.time.advance(400)
+
+        def expire_after_outcome(entry: Any) -> None:
+            if entry.state == "succeeded":
+                queue.time.advance(400)
+            else:
+                store.before["compare_exchange"] = expire_after_outcome
+
+        store.before["compare_exchange"] = expire_after_outcome
         queue.step(
             "claim expiry between waves",
             lambda: outbox.drain(
