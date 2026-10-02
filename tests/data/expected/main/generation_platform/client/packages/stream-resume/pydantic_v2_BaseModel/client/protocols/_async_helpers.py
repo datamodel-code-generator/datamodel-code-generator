@@ -8,15 +8,23 @@ from typing import Literal
 
 from models import Created as _dcg_type_4
 from models import FeedQuery as _dcg_type_10
+from models import FieldDeepMarksGetHeaderLastEventIDParameter as _dcg_type_20
+from models import FieldDeepMarksGetQueryScopeParameter as _dcg_type_21
+from models import FieldDeepMarksGetQueryTagParameter as _dcg_type_19
 from models import FieldEventsGetCookieSessionParameter as _dcg_type_2
 from models import FieldEventsGetHeaderLastEventIDParameter as _dcg_type_1
 from models import FieldEventsGetQueryTopicParameter as _dcg_type_0
-from models import FieldMarksGetQueryScopeParameter as _dcg_type_12
+from models import FieldMarksGetHeaderLastEventIDParameter as _dcg_type_13
+from models import FieldMarksGetQueryScopeParameter as _dcg_type_14
+from models import FieldMarksGetQueryTagParameter as _dcg_type_12
+from models import FieldNamedMarksGetHeaderLastEventIDParameter as _dcg_type_17
+from models import FieldNamedMarksGetQueryScopeParameter as _dcg_type_18
+from models import FieldNamedMarksGetQueryTagParameter as _dcg_type_16
 from models import FieldRecordsGetQueryAfterParameter as _dcg_type_8
 from models import FieldRoomsRoomShardGetHeaderLastEventIDParameter as _dcg_type_7
 from models import FieldRoomsRoomShardGetPathRoomParameter as _dcg_type_5
 from models import FieldRoomsRoomShardGetPathShardParameter as _dcg_type_6
-from models import Mark as _dcg_type_13
+from models import Mark as _dcg_type_15
 from models import Message as _dcg_type_3
 from models import Record as _dcg_type_9
 from models import Tick as _dcg_type_11
@@ -158,6 +166,26 @@ class AsyncMarksProtocols:
     def scoped(self) -> AsyncMarksScopedSse:
         """The marks.scoped SSE helper."""
         return AsyncMarksScopedSse(self._core)
+
+    @cached_property
+    def named(self) -> AsyncMarksNamedSse:
+        """The marks.named SSE helper."""
+        return AsyncMarksNamedSse(self._core)
+
+    @cached_property
+    def deep(self) -> AsyncMarksDeepSse:
+        """The marks.deep SSE helper."""
+        return AsyncMarksDeepSse(self._core)
+
+    @cached_property
+    def bound(self) -> AsyncMarksBoundSse:
+        """The marks.bound SSE helper."""
+        return AsyncMarksBoundSse(self._core)
+
+    @cached_property
+    def deepbound(self) -> AsyncMarksDeepboundSse:
+        """The marks.deepbound SSE helper."""
+        return AsyncMarksDeepboundSse(self._core)
 
 
 class AsyncEventsLiveSse:
@@ -473,16 +501,18 @@ class AsyncMarksScopedSse:
     async def open(
         self,
         *,
-        scope: _dcg_type_12 | ModelValue[_dcg_type_12] | Unset = UNSET,
+        tag: _dcg_type_12 | ModelValue[_dcg_type_12] | Unset = UNSET,
+        last_event_id: _dcg_type_13 | ModelValue[_dcg_type_13] | Unset = UNSET,
+        scope: _dcg_type_14 | ModelValue[_dcg_type_14] | Unset = UNSET,
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_13]:
+    ) -> AsyncEventStream[_dcg_type_15]:
         """Open the event stream of GET /marks, returning once its response is a declared success."""
         return await aopen_events(
             self._core,
             _plans.STREAM_7,
-            (scope,),
+            (tag, last_event_id, scope),
             stream_options=stream_options,
             options=options,
             session_options=session_options,
@@ -495,11 +525,195 @@ class AsyncMarksScopedSse:
         stream_options: StreamOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> AsyncEventStream[_dcg_type_13]:
+    ) -> AsyncEventStream[_dcg_type_15]:
         """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
         return await aresume_events(
             self._core,
             _plans.STREAM_7,
+            state,
+            stream_options=stream_options,
+            options=options,
+            session_options=session_options,
+        )
+
+
+class AsyncMarksNamedSse:
+    """The marks.named SSE helper of GET /named-marks."""
+
+    def __init__(self, core: AsyncClientCore) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+    async def open(
+        self,
+        *,
+        tag: _dcg_type_16 | ModelValue[_dcg_type_16] | Unset = UNSET,
+        last_event_id: _dcg_type_17 | ModelValue[_dcg_type_17] | Unset = UNSET,
+        scope: _dcg_type_18 | ModelValue[_dcg_type_18] | Unset = UNSET,
+        stream_options: StreamOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> AsyncEventStream[_dcg_type_15]:
+        """Open the event stream of GET /named-marks, returning once its response is a declared success."""
+        return await aopen_events(
+            self._core,
+            _plans.STREAM_8,
+            (tag, last_event_id, scope),
+            stream_options=stream_options,
+            options=options,
+            session_options=session_options,
+        )
+
+    async def resume(
+        self,
+        state: ResumeState,
+        *,
+        stream_options: StreamOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> AsyncEventStream[_dcg_type_15]:
+        """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
+        return await aresume_events(
+            self._core,
+            _plans.STREAM_8,
+            state,
+            stream_options=stream_options,
+            options=options,
+            session_options=session_options,
+        )
+
+
+class AsyncMarksDeepSse:
+    """The marks.deep SSE helper of GET /deep-marks."""
+
+    def __init__(self, core: AsyncClientCore) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+    async def open(
+        self,
+        *,
+        tag: _dcg_type_19 | ModelValue[_dcg_type_19] | Unset = UNSET,
+        last_event_id: _dcg_type_20 | ModelValue[_dcg_type_20] | Unset = UNSET,
+        scope: _dcg_type_21 | ModelValue[_dcg_type_21] | Unset = UNSET,
+        stream_options: StreamOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> AsyncEventStream[_dcg_type_15]:
+        """Open the event stream of GET /deep-marks, returning once its response is a declared success."""
+        return await aopen_events(
+            self._core,
+            _plans.STREAM_9,
+            (tag, last_event_id, scope),
+            stream_options=stream_options,
+            options=options,
+            session_options=session_options,
+        )
+
+    async def resume(
+        self,
+        state: ResumeState,
+        *,
+        stream_options: StreamOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> AsyncEventStream[_dcg_type_15]:
+        """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
+        return await aresume_events(
+            self._core,
+            _plans.STREAM_9,
+            state,
+            stream_options=stream_options,
+            options=options,
+            session_options=session_options,
+        )
+
+
+class AsyncMarksBoundSse:
+    """The marks.bound SSE helper of GET /marks."""
+
+    def __init__(self, core: AsyncClientCore) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+    async def open(
+        self,
+        *,
+        tag: _dcg_type_12 | ModelValue[_dcg_type_12] | Unset = UNSET,
+        last_event_id: _dcg_type_13 | ModelValue[_dcg_type_13] | Unset = UNSET,
+        scope: _dcg_type_14 | ModelValue[_dcg_type_14] | Unset = UNSET,
+        stream_options: StreamOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> AsyncEventStream[_dcg_type_15]:
+        """Open the event stream of GET /marks, returning once its response is a declared success."""
+        return await aopen_events(
+            self._core,
+            _plans.STREAM_10,
+            (tag, last_event_id, scope),
+            stream_options=stream_options,
+            options=options,
+            session_options=session_options,
+        )
+
+    async def resume(
+        self,
+        state: ResumeState,
+        *,
+        stream_options: StreamOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> AsyncEventStream[_dcg_type_15]:
+        """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
+        return await aresume_events(
+            self._core,
+            _plans.STREAM_10,
+            state,
+            stream_options=stream_options,
+            options=options,
+            session_options=session_options,
+        )
+
+
+class AsyncMarksDeepboundSse:
+    """The marks.deepbound SSE helper of GET /deep-marks."""
+
+    def __init__(self, core: AsyncClientCore) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+    async def open(
+        self,
+        *,
+        tag: _dcg_type_19 | ModelValue[_dcg_type_19] | Unset = UNSET,
+        last_event_id: _dcg_type_20 | ModelValue[_dcg_type_20] | Unset = UNSET,
+        scope: _dcg_type_21 | ModelValue[_dcg_type_21] | Unset = UNSET,
+        stream_options: StreamOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> AsyncEventStream[_dcg_type_15]:
+        """Open the event stream of GET /deep-marks, returning once its response is a declared success."""
+        return await aopen_events(
+            self._core,
+            _plans.STREAM_11,
+            (tag, last_event_id, scope),
+            stream_options=stream_options,
+            options=options,
+            session_options=session_options,
+        )
+
+    async def resume(
+        self,
+        state: ResumeState,
+        *,
+        stream_options: StreamOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> AsyncEventStream[_dcg_type_15]:
+        """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
+        return await aresume_events(
+            self._core,
+            _plans.STREAM_11,
             state,
             stream_options=stream_options,
             options=options,

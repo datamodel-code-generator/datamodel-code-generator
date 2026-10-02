@@ -155,7 +155,7 @@
   options of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
   session options of another type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('session_options',), condition='invalid_value'] protocol_configuration_error
   reconnecting ! ProtocolConfigurationError: ProtocolConfigurationError(condition='missing_metadata') [field_path=('stream_options', 'reconnect'), condition='missing_metadata'] protocol_configuration_error
-  no send slot ! SessionLimitError: SessionLimitError(kind='network_sends', limit=0) [kind='network_sends', limit=0] session_limit_error
+  no send slot ! SessionLimitError: SessionLimitError(operation_id='streamEvents', kind='network_sends', limit=0) [operation_id='streamEvents', kind='network_sends', limit=0] session_limit_error
   call without a send slot ! BudgetExceededError: BudgetExceededError(operation_id='streamEvents', call_id='<call>', budget_kind='network', limit=0, used=0) [operation_id='streamEvents', limit=0] budget_exceeded_error
   > GET https://api.example.com/events accept=text/event-stream
   < closed

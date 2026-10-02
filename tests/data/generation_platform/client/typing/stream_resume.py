@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
-from pets import AsyncClient, Client
+from typing import TYPE_CHECKING
+
 from pets.errors import StreamInterruptedError, StreamResumeExhaustedError
 from pets.options import RequestOptions, SessionOptions
 from pets.protocols import AsyncEventStream, EventStream, ResumeState, StreamOptions, UnknownEvent, import_state
-from pets_models import Created, Message, Record
+from pets_models import Created, Mark, Message, Record
 from typing_extensions import assert_type
+
+if TYPE_CHECKING:
+    from pets import AsyncClient, Client
 
 
 def resumed(client: Client) -> None:
@@ -24,6 +28,10 @@ def resumed(client: Client) -> None:
     assert_type(again, EventStream[Message])
     assert_type(client.protocols.events.tracked.resume(state), EventStream[Created | UnknownEvent])
     assert_type(client.protocols.records.all.resume(state), EventStream[Record])
+    assert_type(client.protocols.marks.scoped.resume(state), EventStream[Mark])
+    assert_type(client.protocols.marks.named.resume(state), EventStream[Mark])
+    assert_type(client.protocols.marks.deep.resume(state), EventStream[Mark])
+    assert_type(client.protocols.marks.bound.resume(state), EventStream[Mark])
     try:
         next(again)
     except StreamResumeExhaustedError as error:
@@ -41,4 +49,8 @@ async def async_resumed(client: AsyncClient) -> None:
     assert_type(state, ResumeState)
     again = await client.protocols.events.live.resume(state)
     assert_type(again, AsyncEventStream[Message])
+    assert_type(await client.protocols.marks.scoped.resume(state), AsyncEventStream[Mark])
+    assert_type(await client.protocols.marks.named.resume(state), AsyncEventStream[Mark])
+    assert_type(await client.protocols.marks.deep.resume(state), AsyncEventStream[Mark])
+    assert_type(await client.protocols.marks.bound.resume(state), AsyncEventStream[Mark])
     await again.aclose()

@@ -1770,7 +1770,7 @@ own, the wire values of the caller's first request, never events, responses, the
 its auth adds; the caller's value of an optional parameter the reopen writes, such as its own `Last-Event-ID`, is left
 out. A call that gives a cookie, a credential header, or a security scheme's query parameter cannot be checkpointed and
 raises `ProtocolConfigurationError` with the condition `wrong_capability`, and so does a stream whose cursor or binding
-value the reopen sends as such a query field, a property of an exploded form object query parameter included. A cursor
+value the reopen sends as such a query field, including a property of an exploded form or deepObject query parameter. A cursor
 the reopen request cannot encode, such as an event ID ending in a space or an object written to a query parameter,
 raises `ProtocolDataError` with the condition `value` and the cursor's selector, or for an event ID the target it is
 written to, as `location`, from `checkpoint()` and from a reconnection, which keeps no `resume_state` and has the
