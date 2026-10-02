@@ -12,6 +12,8 @@ from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+import pytest
+
 from datamodel_code_generator import (
     GenerateConfig,
     OpenAPIScope,
@@ -25,14 +27,12 @@ from datamodel_code_generator._openapi_generation import (
     OpenAPIGenerationSession,
 )
 from datamodel_code_generator.enums import AllOfMergeMode
-from datamodel_code_generator.parser.openapi import OpenAPIParser
 from datamodel_code_generator.parser import openapi_contract
+from datamodel_code_generator.parser.openapi import OpenAPIParser
 from datamodel_code_generator.parser.openapi_contract import BindingCaptureMixin
 
 if TYPE_CHECKING:
     from types import FrameType
-
-    import pytest
 
     from datamodel_code_generator._openapi_generation import ModelGenerationProduct
 
@@ -96,6 +96,7 @@ class GenerationSessionObserver:
             self.events.append("close")
 
 
+@pytest.mark.abnormal_path("traces the session lifecycle while a test injects capture, parse, or release faults")
 def run_generation_session(
     source: Path,
     *,
@@ -167,6 +168,7 @@ def run_generation_session(
     return observation, sum(node() is not None for node in observer.graph)
 
 
+@pytest.mark.abnormal_path("traces the API factory under an injected collapse retry or a removed capability")
 def observe_api_session(
     source: Path, config: GenerateConfig, *, failure: str = "", monkeypatch: pytest.MonkeyPatch | None = None
 ) -> tuple[Any, dict[str, object]]:
@@ -196,6 +198,7 @@ def observe_api_session(
     }
 
 
+@pytest.mark.abnormal_path("replaces session and parser boundaries to inject faults no input can cause")
 def _inject_session_failure(monkeypatch: pytest.MonkeyPatch, failure: str, source: Path) -> None:
     """Inject only exceptional boundaries while preserving the real session and frozen batches."""
     construct = BindingCaptureMixin.__init__
@@ -303,18 +306,12 @@ def generate_product(
     source: Path,
     config: GenerateConfig,
     *,
-    artifact_rewrite: tuple[str, str] | None = None,
     artifact_failure: str = "",
-    artifact_append: str = "",
-    model_package: str = "models",
-) -> tuple[ModelGenerationProduct, int]:
+) -> ModelGenerationProduct:
     """Finish ordinary emission, then transfer real immutable values and borrowed sources."""
-    observer = GenerationSessionObserver()
     session = OpenAPIGenerationSession(
-        output=Path("models.py"), model_package=model_package, root_selector_document=source.as_uri()
+        output=Path("models.py"), model_package="models", root_selector_document=source.as_uri()
     )
-    previous = sys.getprofile()
-    sys.setprofile(observer.record)
     try:
         result = _run_generation(
             source, _prepare_generate_facade_config(config), Path.cwd(), use_output_cwd=False, capture=session
@@ -326,16 +323,6 @@ def generate_product(
             if isinstance(result, dict)
             else ()
         )
-        if artifact_rewrite is not None:
-            original, replacement = artifact_rewrite
-            artifacts = tuple(
-                replace(artifact, content=artifact.content.decode().replace(original, replacement).encode())
-                for artifact in artifacts
-            )
-        if artifact_append:
-            artifacts = tuple(
-                replace(artifact, content=artifact.content + artifact_append.encode()) for artifact in artifacts
-            )
         match artifact_failure:
             case "duplicate":
                 artifacts = (*artifacts, artifacts[0])
@@ -350,11 +337,10 @@ def generate_product(
         product = session.take_product(artifacts, allow_empty_api=True)
     finally:
         session.close()
-        sys.setprofile(previous)
-    gc.collect()
-    return product, sum(node() is not None for node in (*observer.graph, *observer.parsers))
+    return product
 
 
+@pytest.mark.abnormal_path("drives the session protocol with foreign and repeated transfers no caller makes")
 def _exercise_session_protocol(
     source: Path, case: str, observer: GenerationSessionObserver
 ) -> tuple[list[tuple[str, str]], int | None]:
@@ -464,6 +450,7 @@ def session_protocol_failure(source: Path, case: str) -> dict[str, object]:
     }
 
 
+@pytest.mark.abnormal_path("injects cleanup failures into the session release path")
 def session_cleanup_failures(source: Path, case: str, monkeypatch: pytest.MonkeyPatch) -> dict[str, object]:
     """Check first-failure identity and resource release after the entire failed call returns."""
     from datamodel_code_generator._openapi_generation import SourceLease

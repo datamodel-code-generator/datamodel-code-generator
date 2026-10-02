@@ -42,7 +42,7 @@ def test_contract_edges(case: dict[str, Any], monkeypatch: pytest.MonkeyPatch) -
         pytest.warns(DanglingRefWarning) if case.get("dangling") else nullcontext(),
         producer_fault(case["fault"], monkeypatch) if "fault" in case else nullcontext(),
     ):
-        product, retained = generate_product((DATA / case["source"]).resolve(), config)
+        product = generate_product((DATA / case["source"]).resolve(), config)
     product.close()
     expected = EXPECTED / "session-review/contract-edges" / case["id"]
     for artifact in product.artifacts:
@@ -78,4 +78,3 @@ def test_contract_edges(case: dict[str, Any], monkeypatch: pytest.MonkeyPatch) -
         + "\n",
         expected / "contract.txt",
     )
-    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")

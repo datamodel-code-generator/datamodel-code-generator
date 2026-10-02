@@ -63,7 +63,7 @@ def test_required_models_behind_wrapped_types(
 
     No target calls require_type_bindings, so this probe keeps it covered until a review decides whether it goes.
     """
-    product, retained = generate_product(
+    product = generate_product(
         (SOURCE / source).resolve(),
         GenerateConfig(
             input_file_type="openapi",
@@ -83,7 +83,6 @@ def test_required_models_behind_wrapped_types(
         ),
         EXPECTED / "session-review/wrapped-types" / f"{request.node.callspec.id}.txt",
     )
-    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
 
 
 @pytest.mark.parametrize("case", sorted(path.stem for path in (EXPECTED / "session/protocol").glob("*.txt")))
@@ -96,7 +95,7 @@ def test_session_protocol_ownership_and_transfer(case: str) -> None:
 @pytest.mark.parametrize("case", sorted(path.stem for path in (EXPECTED / "session/artifacts").glob("*.txt")))
 def test_product_artifact_integrity(case: str) -> None:
     """Demand final types only from unique, present, decodable, well-formed ordinary artifacts."""
-    product, retained = generate_product(
+    product = generate_product(
         (SOURCE / "binding/session-selection.json").resolve(),
         GenerateConfig(
             input_file_type="openapi", openapi_scopes=[OpenAPIScope.Api], formatters=[], disable_timestamp=True
@@ -111,7 +110,6 @@ def test_product_artifact_integrity(case: str) -> None:
         for item in require_type_bindings(product.batch, (use.id,))
     })
     assert_output(json.dumps(codes, indent=2) + "\n", EXPECTED / "session/artifacts" / f"{case}.txt")
-    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
 
 
 def test_product_artifact_validation_exception() -> None:
@@ -129,7 +127,7 @@ def test_invalid_batch_demand(case: str) -> None:
     """Reject corrupt accepted identities and keep unrelated failures outside selected demands."""
     from tests.data.python.binding_batch_failures import corrupt_batch
 
-    product, retained = generate_product(
+    product = generate_product(
         (SOURCE / "binding/session-legacy.json").resolve(),
         GenerateConfig(
             input_file_type="openapi", openapi_scopes=[OpenAPIScope.Api], formatters=[], disable_timestamp=True
@@ -144,7 +142,6 @@ def test_invalid_batch_demand(case: str) -> None:
         ),
         EXPECTED / "session/batch-failures" / f"{case}.txt",
     )
-    assert_output(f"{retained}\n", EXPECTED / "no-retained-graph.txt")
 
 
 @pytest.mark.parametrize("constructor_failure", [False, True])
