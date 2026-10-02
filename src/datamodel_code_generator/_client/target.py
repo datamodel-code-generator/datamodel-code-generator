@@ -75,7 +75,12 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.streams import StreamSpec
     from datamodel_code_generator._client.uploads import UploadSpec
     from datamodel_code_generator._client.webhooks import WebhookSpec
-    from datamodel_code_generator._generation_contract import GeneratedTypeContractBatch, TypeUseBinding, TypeUseId
+    from datamodel_code_generator._generation_contract import (
+        GeneratedTypeContractBatch,
+        OperationId,
+        TypeUseBinding,
+        TypeUseId,
+    )
     from datamodel_code_generator._openapi_codec_plan import CodecBackend, CodecPlan
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterPlan
@@ -147,8 +152,7 @@ class ClientTarget:
             selection=selection,
         )
         selected = {spec.contract.id for spec in plan.operations}
-        if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
-            raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
+        _require_codecs(codecs, selected, request)
         plan, named = plan_fields(plan, codecs, batch, wire)
         pages, checked = plan_pagination(protocols, plan, codecs, wire, request)
         polls, polled = plan_polling(protocols, plan, codecs, wire, request)
@@ -185,8 +189,7 @@ class ClientTarget:
                 sources=_sources(request),
                 selection=replace(selection, chosen=chosen),
             )
-            if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
-                raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
+            _require_codecs(codecs, selected, request)
         queues, queued = plan_queues(protocols, plan)
         order = {} if protocols is None else {helper.name: index for index, helper in enumerate(protocols.helpers)}
         helpers = tuple(
@@ -316,6 +319,12 @@ def _diagnostic(item: CodecDiagnostic, request: TargetRequest) -> Diagnostic:
         source_pointer=item.source.pointer,
         target_id=request.target_id,
     )
+
+
+def _require_codecs(codecs: CodecPlan, selected: set[OperationId], request: TargetRequest) -> None:
+    """Reject selected operation and shared binding diagnostics at each codec planning stage."""
+    if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
+        raise APIGenerationError(tuple(_diagnostic(item, request) for item in problems))
 
 
 def _bindings(codecs: CodecPlan, backend: str) -> tuple[TargetBinding, ...]:
