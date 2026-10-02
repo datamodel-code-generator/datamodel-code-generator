@@ -44,8 +44,8 @@ deliveries
   retry settled ! ProtocolStateError: ProtocolStateError(state='succeeded', action='retry_unknown') [] protocol_state_error action='retry_unknown'
   retry missing = None
   unsent = receipt e10 pending ttl=1:00:00
-  drain unsent = unknown=['e10']
-  inspect unsent = e10 create_order delivery_unknown deliveries=1 intent=False cancel=False leased=False outcome=unknown/phase_timeout_error/None
+  drain unproven timeout = unknown=['e10']
+  inspect unproven timeout = e10 create_order delivery_unknown deliveries=1 intent=False cancel=False leased=False outcome=unknown/phase_timeout_error/None
   purge = [e5 create_order succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/201, e6 refresh succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/200, e7 create_order succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/201, e8 create_order dead deliveries=1 intent=False cancel=False leased=False outcome=permanent/create_order_http_error/422, e9 create_order succeeded deliveries=2 intent=False cancel=False leased=False outcome=success/None/201, e10 create_order delivery_unknown deliveries=1 intent=False cancel=False leased=False outcome=unknown/phase_timeout_error/None]
   purge naive ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('before',), condition='invalid_value'] protocol_configuration_error
   left []
@@ -54,198 +54,218 @@ outcomes
   drain garbled = succeeded=['e11']
   inspect garbled = e11 create_order succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/201
   undeclared status = receipt e12 pending ttl=1:00:00
-  drain undeclared = dead=['e12']
-  inspect undeclared = e12 create_order dead deliveries=1 intent=False cancel=False leased=False outcome=permanent/unexpected_status_error/304
+  drain undeclared = unknown=['e12']
+  inspect undeclared = e12 create_order delivery_unknown deliveries=1 intent=False cancel=False leased=False outcome=unknown/unexpected_status_error/304
   dot segment = receipt e13 pending ttl=1 day, 0:00:00
   drain dot segment = dead=['e13']
   managed key header = receipt e14 pending ttl=1:00:00
   drain patching the key ! ConfigurationError: ConfigurationError(operation_id='createOrder', call_id='<call>', field_path='headers.Idempotency-Key', condition='managed') [operation_id='createOrder', field_path=('headers', 'Idempotency-Key'), condition='managed'] configuration_error
   inspect managed = e14 create_order pending deliveries=0 intent=False cancel=False leased=False outcome=-
   drain without a session deadline = succeeded=['e14']
-  cancelled after a send = receipt e15 pending ttl=1:00:00
-  drain cancelled after a send = dead=['e15']
-  inspect cancelled = e15 create_order dead deliveries=1 intent=False cancel=False leased=False outcome=permanent/request_cancelled_error/503
-  cancelled and taken = receipt e16 pending ttl=1:00:00
+  failed body = receipt e15 pending ttl=1:00:00
+  drain failed body = rescheduled=['e15']
+  inspect failed body = e15 create_order pending deliveries=1 intent=False cancel=False leased=False outcome=retryable/transport_error/503
+  cancelled in a body = receipt e16 pending ttl=1:00:00
+  drain cancelled in a body ! RequestCancelledError
+  inspect cancelled = e16 create_order pending deliveries=1 intent=False cancel=False leased=False outcome=retryable/request_cancelled_error/503
+  interrupted = receipt e17 pending ttl=1:00:00
+  interrupted while sending
+  inspect interrupted = e17 create_order delivery_unknown deliveries=1 intent=False cancel=False leased=False outcome=cancelled/None/None
+  retry interrupted = e17 create_order pending deliveries=1 intent=False cancel=False leased=False outcome=cancelled/None/None
+  drain interrupted again = succeeded=['e17']
+  cancelled and taken = receipt e18 pending ttl=1:00:00
   drain cancelled and taken ! RequestCancelledError
   server POST /orders key=k5 body={"item":"tea","quantity":2} duplicate=False
-  server POST /orders key=k6 -> 503
+  server POST /orders key=k6 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders key=k6 body={"item":"tea","quantity":2} duplicate=True
   server POST /orders key=k7 body={"item":"tea","quantity":2} duplicate=False
-  proven unsent = receipt e17 pending ttl=1 day, 0:00:00
-  drain unsent = rescheduled=['e17']
-  inspect unsent = e17 refresh pending deliveries=1 intent=False cancel=False leased=False outcome=retryable/transport_error/None
+  proven unsent = receipt e19 pending ttl=1 day, 0:00:00
+  drain unsent = rescheduled=['e19']
+  inspect unsent = e19 refresh pending deliveries=1 intent=False cancel=False leased=False outcome=retryable/transport_error/None
 holding
-  ready again = receipt e18 pending ttl=1:00:00
-  drain once = rescheduled=['e18']
-  inspect released = e18 create_order pending deliveries=1 intent=False cancel=False leased=False outcome=retryable/create_order_http_error/503
-  broken = receipt e19 pending ttl=1 day, 0:00:00
-  release fails ! QueueBindingError: QueueBindingError(condition='binding_mismatch') [field_path=('entry_id',), condition='binding_mismatch'] queue_binding_error entry_id='e19' secondary=['QueueStoreError']
+  ready again = receipt e20 pending ttl=1:00:00
+  drain once = rescheduled=['e20']
+  inspect released = e20 create_order pending deliveries=1 intent=False cancel=False leased=False outcome=retryable/create_order_http_error/503
+  broken = receipt e21 pending ttl=1 day, 0:00:00
+  release fails ! QueueBindingError: QueueBindingError(condition='binding_mismatch') [field_path=('entry_id',), condition='binding_mismatch'] queue_binding_error entry_id='e21' secondary=['QueueStoreError']
   server POST /orders key=k8 -> 503
   server POST /orders key=k8 -> 503
 waits
-  waited = receipt e20 pending ttl=1:00:00
-  drain past the child cap = rescheduled=['e20']
+  waited = receipt e22 pending ttl=1:00:00
+  drain past the child cap = rescheduled=['e22']
   server POST /orders key=k9 -> 503
   waits True saved True retry_at True
   not ready yet = empty
-  wait past the key = dead=['e20']
+  wait past the key = dead=['e22']
   server POST /orders key=k9 -> 503
-  inspect = e20 create_order dead deliveries=2 intent=False cancel=False leased=False outcome=permanent/expired/503
-  twice = receipt e21 pending ttl=1:00:00
-  first delivery = rescheduled=['e21']
-  second delivery = dead=['e21']
+  inspect = e22 create_order dead deliveries=2 intent=False cancel=False leased=False outcome=permanent/expired/503
+  twice = receipt e23 pending ttl=1:00:00
+  first delivery = rescheduled=['e23']
+  jitter wait 0.5
+  second delivery = dead=['e23']
   server POST /orders key=k10 -> 503
   server POST /orders key=k10 -> 503
-  inspect twice = e21 create_order dead deliveries=2 intent=False cancel=False leased=False outcome=permanent/max_deliveries/503
-  past the drain = receipt e22 pending ttl=1:00:00
-  next = receipt e23 pending ttl=1 day, 0:00:00
-  drain shorter than the wait = succeeded=['e23'] rescheduled=['e22']
+  inspect twice = e23 create_order dead deliveries=2 intent=False cancel=False leased=False outcome=permanent/max_deliveries/503
+  past the drain = receipt e24 pending ttl=1:00:00
+  next = receipt e25 pending ttl=1 day, 0:00:00
+  drain shorter than the wait = succeeded=['e25'] rescheduled=['e24']
   server POST /orders key=k11 -> 503
   server GET /orders/o2
   waits True
-  expired = receipt e24 pending ttl=1 day, 0:00:00
-  drain expired = dead=['e22', 'e24']
-  inspect expired = e24 refresh dead deliveries=0 intent=False cancel=False leased=False outcome=permanent/expired/None
-  exhausted = receipt e25 pending ttl=1 day, 0:00:00
-  drain exhausted = dead=['e25']
-  inspect exhausted = e25 refresh dead deliveries=5 intent=False cancel=False leased=False outcome=permanent/max_deliveries/None
+  expired = receipt e26 pending ttl=1 day, 0:00:00
+  drain expired = dead=['e24', 'e26']
+  inspect expired = e26 refresh dead deliveries=0 intent=False cancel=False leased=False outcome=permanent/expired/None
+  exhausted = receipt e27 pending ttl=1 day, 0:00:00
+  drain exhausted = dead=['e27']
+  inspect exhausted = e27 refresh dead deliveries=5 intent=False cancel=False leased=False outcome=permanent/max_deliveries/None
+  dated wait = receipt e28 pending ttl=1:00:00
+  drain dated = rescheduled=['e28']
+  dated wait 119<wait<=120 True
+  slow intent = receipt e29 pending ttl=1:00:00
+  drain past the key during the intent = dead=['e29']
+  inspect slow = e29 create_order dead deliveries=0 intent=False cancel=False leased=False outcome=permanent/expired/None
+  server POST /orders key=k12 -> 503
 recovery
-  crash after intent = receipt e26 pending ttl=1:00:00
+  crash after intent = receipt e30 pending ttl=1:00:00
   crashed before sending
-  inspect = e26 create_order leased deliveries=1 intent=True cancel=False leased=True outcome=-
+  inspect = e30 create_order leased deliveries=1 intent=True cancel=False leased=True outcome=-
   lease held = empty
-  after the lease = succeeded=['e26']
-  server POST /orders key=k12 body={"item":"tea","quantity":2} duplicate=False
-  inspect recovered = e26 create_order succeeded deliveries=2 intent=False cancel=False leased=False outcome=success/None/201
-  crash after response = receipt e27 pending ttl=1:00:00
-  crashed before saving the response
+  after the lease = succeeded=['e30']
   server POST /orders key=k13 body={"item":"tea","quantity":2} duplicate=False
-  redelivered = succeeded=['e27']
-  server POST /orders key=k13 body={"item":"tea","quantity":2} duplicate=True
-  inspect redelivered = e27 create_order succeeded deliveries=2 intent=False cancel=False leased=False outcome=success/None/201
-  held by another worker = receipt e28 pending ttl=1 day, 0:00:00
+  inspect recovered = e30 create_order succeeded deliveries=2 intent=False cancel=False leased=False outcome=success/None/201
+  crash after response = receipt e31 pending ttl=1:00:00
+  crashed before saving the response
+  server POST /orders key=k14 body={"item":"tea","quantity":2} duplicate=False
+  redelivered = succeeded=['e31']
+  server POST /orders key=k14 body={"item":"tea","quantity":2} duplicate=True
+  inspect redelivered = e31 create_order succeeded deliveries=2 intent=False cancel=False leased=False outcome=success/None/201
+  held by another worker = receipt e32 pending ttl=1 day, 0:00:00
   leased elsewhere = empty
-  after its lease = succeeded=['e28']
+  after its lease = succeeded=['e32']
   server GET /orders/o5
-  inspect other = e28 refresh succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/200
+  inspect other = e32 refresh succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/200
 cancelling
-  pending = receipt e29 pending ttl=1:00:00
-  cancel pending = e29 create_order cancelled deliveries=0 intent=False cancel=False leased=False outcome=cancelled/None/None
-  cancel again = e29 create_order cancelled deliveries=0 intent=False cancel=False leased=False outcome=cancelled/None/None
+  pending = receipt e33 pending ttl=1:00:00
+  cancel pending = e33 create_order cancelled deliveries=0 intent=False cancel=False leased=False outcome=cancelled/None/None
+  cancel again = e33 create_order cancelled deliveries=0 intent=False cancel=False leased=False outcome=cancelled/None/None
   retry cancelled ! ProtocolStateError: ProtocolStateError(state='cancelled', action='retry_unknown') [] protocol_state_error action='retry_unknown'
   cancel missing = None
-  maybe sent = receipt e30 pending ttl=1:00:00
-  cancel maybe sent = e30 create_order delivery_unknown deliveries=0 intent=False cancel=False leased=False outcome=cancelled/None/None
-  leased = receipt e31 pending ttl=1:00:00
-  cancel leased = e31 create_order leased deliveries=0 intent=False cancel=True leased=True outcome=-
-  cancel requested = e31 create_order leased deliveries=0 intent=False cancel=True leased=True outcome=-
-  drain cancelled = cancelled=['e31']
-  inspect = e31 create_order cancelled deliveries=0 intent=False cancel=True leased=False outcome=cancelled/None/None
-  done = receipt e32 pending ttl=1 day, 0:00:00
-  drain done = succeeded=['e32']
+  maybe sent = receipt e34 pending ttl=1:00:00
+  cancel maybe sent = e34 create_order delivery_unknown deliveries=0 intent=False cancel=False leased=False outcome=cancelled/None/None
+  leased = receipt e35 pending ttl=1:00:00
+  cancel leased = e35 create_order leased deliveries=0 intent=False cancel=True leased=True outcome=-
+  cancel requested = e35 create_order leased deliveries=0 intent=False cancel=True leased=True outcome=-
+  drain cancelled = cancelled=['e35']
+  inspect = e35 create_order cancelled deliveries=0 intent=False cancel=True leased=False outcome=cancelled/None/None
+  done = receipt e36 pending ttl=1 day, 0:00:00
+  drain done = succeeded=['e36']
   server GET /orders/o6
   cancel done ! ProtocolStateError: ProtocolStateError(state='succeeded', action='cancel') [] protocol_state_error action='cancel'
-  during a send = receipt e33 pending ttl=1:00:00
-  drain while cancelled = succeeded=['e33']
-  server POST /orders key=k14 body={"item":"tea","quantity":2} duplicate=False
-  inspect sent = e33 create_order succeeded deliveries=1 intent=False cancel=True leased=False outcome=success/None/201
-  during a failure = receipt e34 pending ttl=1:00:00
-  drain refused while cancelled = unknown=['e34']
-  server POST /orders key=k15 -> 503
-  inspect refused = e34 create_order delivery_unknown deliveries=1 intent=False cancel=True leased=False outcome=cancelled/None/503
-  before the send = receipt e35 pending ttl=1:00:00
-  drain cancelled before the send = cancelled=['e35']
-  inspect before the send = e35 create_order cancelled deliveries=0 intent=False cancel=True leased=False outcome=cancelled/None/None
-  cancelled during the intent = receipt e36 pending ttl=1:00:00
-  drain cancelled during the intent = cancelled=['e36']
-  inspect during the intent = e36 create_order cancelled deliveries=0 intent=False cancel=True leased=False outcome=cancelled/None/None
-  token = receipt e37 pending ttl=1:00:00
+  during a send = receipt e37 pending ttl=1:00:00
+  drain while cancelled = succeeded=['e37']
+  server POST /orders key=k15 body={"item":"tea","quantity":2} duplicate=False
+  inspect sent = e37 create_order succeeded deliveries=1 intent=False cancel=True leased=False outcome=success/None/201
+  during a failure = receipt e38 pending ttl=1:00:00
+  drain refused while cancelled = unknown=['e38']
+  server POST /orders key=k16 -> 503
+  inspect refused = e38 create_order delivery_unknown deliveries=1 intent=False cancel=True leased=False outcome=cancelled/None/503
+  before the send = receipt e39 pending ttl=1:00:00
+  drain cancelled before the send = cancelled=['e39']
+  inspect before the send = e39 create_order cancelled deliveries=0 intent=False cancel=True leased=False outcome=cancelled/None/None
+  cancelled during the intent = receipt e40 pending ttl=1:00:00
+  drain cancelled during the intent = cancelled=['e40']
+  inspect during the intent = e40 create_order cancelled deliveries=0 intent=False cancel=True leased=False outcome=cancelled/None/None
+  token = receipt e41 pending ttl=1:00:00
   drain cancelled token ! RequestCancelledError: RequestCancelledError(operation_id='createOrder', call_id='<call>', source='cancel_token', delivery_state='NOT_SENT') [operation_id='createOrder', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] request_cancelled_error
-  inspect token = e37 create_order pending deliveries=0 intent=False cancel=False leased=False outcome=-
+  inspect token = e41 create_order pending deliveries=0 intent=False cancel=False leased=False outcome=-
 bindings
-  fetch = receipt e38 pending ttl=1 day, 0:00:00
-  rename = receipt e39 pending ttl=0:10:00
+  fetch = receipt e42 pending ttl=1 day, 0:00:00
+  rename = receipt e43 pending ttl=0:10:00
   token saved False
   receipt ttl 0:10:00
-  drain with a new token = succeeded=['e38', 'e39']
+  drain with a new token = succeeded=['e42', 'e43']
   server GET /account auth=Bearer secret-two
-  server PATCH /account key=k16 auth=Bearer secret-two body={"name":"grace"}
-  retry = receipt e40 pending ttl=1 day, 0:00:00
-  provider not ready = deferred=['e40']
-  inspect deferred = e40 fetch pending deliveries=0 intent=False cancel=False leased=False outcome=-
-  provider ready = succeeded=['e40']
+  server PATCH /account key=k17 auth=Bearer secret-two body={"name":"grace"}
+  retry = receipt e44 pending ttl=1 day, 0:00:00
+  provider not ready = deferred=['e44']
+  inspect deferred = e44 fetch pending deliveries=0 intent=False cancel=False leased=False outcome=-
+  provider ready = succeeded=['e44']
   server GET /account auth=Bearer secret-two
-  partition = receipt e41 pending ttl=1 day, 0:00:00
-  drain in another partition ! QueueBindingError: QueueBindingError(condition='binding_mismatch') [field_path=('entry_id',), condition='binding_mismatch'] queue_binding_error entry_id='e41'
-  inspect = e41 fetch pending deliveries=0 intent=False cancel=False leased=False outcome=-
-  changed contract ! QueueBindingError: QueueBindingError(condition='binding_mismatch') [field_path=('entry_id',), condition='binding_mismatch'] queue_binding_error entry_id='e41'
-  unknown alias ! QueueBindingError: QueueBindingError(condition='binding_mismatch') [field_path=('entry_id',), condition='binding_mismatch'] queue_binding_error entry_id='e41'
-  restored = succeeded=['e41']
+  partition = receipt e45 pending ttl=1 day, 0:00:00
+  drain in another partition ! QueueBindingError: QueueBindingError(condition='binding_mismatch') [field_path=('entry_id',), condition='binding_mismatch'] queue_binding_error entry_id='e45'
+  inspect = e45 fetch pending deliveries=0 intent=False cancel=False leased=False outcome=-
+  changed contract ! QueueBindingError: QueueBindingError(condition='binding_mismatch') [field_path=('entry_id',), condition='binding_mismatch'] queue_binding_error entry_id='e45'
+  unknown alias ! QueueBindingError: QueueBindingError(condition='binding_mismatch') [field_path=('entry_id',), condition='binding_mismatch'] queue_binding_error entry_id='e45'
+  restored = succeeded=['e45']
   server GET /account auth=Bearer secret-two
 malformed
-  drain not json = dead=['e42']
-  drain version = dead=['e43']
-  drain arguments = dead=['e44']
-  drain media = dead=['e45']
-  drain value = dead=['e46']
-  drain secret = dead=['e47']
-  drain bad key = dead=['e48']
-  inspect bad key = e48 create_order dead deliveries=0 intent=False cancel=False leased=False outcome=permanent/malformed_entry/None
+  drain not json = dead=['e46']
+  drain version = dead=['e47']
+  drain arguments = dead=['e48']
+  drain media = dead=['e49']
+  drain value = dead=['e50']
+  drain secret = dead=['e51']
+  drain bad key = dead=['e52']
+  inspect bad key = e52 create_order dead deliveries=0 intent=False cancel=False leased=False outcome=permanent/malformed_entry/None
 store failures
   put fails ! QueueStoreError: QueueStoreError(action='put') [cause=OSError('disk full')] queue_store_error action='put' entry_id='<call>'
   put full ! QueueFullError: QueueFullError(action='put', kind='entries', limit=1, observed=2) [kind='entries', limit=1] queue_full_error action='put' observed=2
-  entry = receipt e49 pending ttl=1:00:00
-  get wrong ! QueueStoreError: QueueStoreError(action='get') [] queue_store_error action='get' entry_id='e49'
-  get fails ! QueueStoreError: QueueStoreError(action='get') [cause=OSError('read')] queue_store_error action='get' entry_id='e49'
+  entry = receipt e53 pending ttl=1:00:00
+  get wrong ! QueueStoreError: QueueStoreError(action='get') [] queue_store_error action='get' entry_id='e53'
+  get fails ! QueueStoreError: QueueStoreError(action='get') [cause=OSError('read')] queue_store_error action='get' entry_id='e53'
   claim wrong ! QueueStoreError: QueueStoreError(action='claim') [] queue_store_error action='claim'
   claim fails ! QueueStoreError: QueueStoreError(action='claim') [cause=OSError('lock')] queue_store_error action='claim'
-  intent fails ! QueueStoreError: QueueStoreError(action='compare_exchange') [cause=OSError('write')] queue_store_error action='compare_exchange' entry_id='e49'
-  inspect = e49 create_order leased deliveries=0 intent=False cancel=False leased=True outcome=-
-  exchange wrong ! QueueStoreError: QueueStoreError(action='compare_exchange') [] queue_store_error action='compare_exchange' entry_id='e49'
+  intent fails ! QueueStoreError: QueueStoreError(action='compare_exchange') [cause=OSError('write')] queue_store_error action='compare_exchange' entry_id='e53'
+  inspect = e53 create_order leased deliveries=0 intent=False cancel=False leased=True outcome=-
+  exchange wrong ! QueueStoreError: QueueStoreError(action='compare_exchange') [] queue_store_error action='compare_exchange' entry_id='e53'
   purge wrong ! QueueStoreError: QueueStoreError(action='purge_terminal') [] queue_store_error action='purge_terminal'
-  ignored leases = receipt e50 pending ttl=1 day, 0:00:00
-  drain bounded = succeeded=['e50']
+  ignored leases = receipt e54 pending ttl=1 day, 0:00:00
+  drain bounded = succeeded=['e54']
   claims bounded 5
   server GET /orders/s1
 conflicts
-  entry = receipt e51 pending ttl=1:00:00
-  one conflict = succeeded=['e51']
-  server POST /orders key=k17 body={"item":"tea","quantity":2} duplicate=False
-  stuck = receipt e52 pending ttl=1:00:00
-  endless conflicts ! QueueStoreError: QueueStoreError(action='compare_exchange') [] queue_store_error action='compare_exchange' entry_id='e52'
-  drain stuck = succeeded=['e52']
+  entry = receipt e55 pending ttl=1:00:00
+  one conflict = succeeded=['e55']
   server POST /orders key=k18 body={"item":"tea","quantity":2} duplicate=False
-  settled = receipt e53 pending ttl=1:00:00
-  conflicts after the send ! QueueStoreError: QueueStoreError(action='compare_exchange') [] queue_store_error action='compare_exchange' entry_id='e53'
+  stuck = receipt e56 pending ttl=1:00:00
+  endless conflicts ! QueueStoreError: QueueStoreError(action='compare_exchange') [] queue_store_error action='compare_exchange' entry_id='e56'
+  drain stuck = succeeded=['e56']
   server POST /orders key=k19 body={"item":"tea","quantity":2} duplicate=False
-  inspect settled = e53 create_order leased deliveries=1 intent=True cancel=False leased=True outcome=-
-  pending = receipt e54 pending ttl=1:00:00
-  cancel conflicts ! QueueStoreError: QueueStoreError(action='compare_exchange') [] queue_store_error action='compare_exchange' entry_id='e54'
-  retry conflicts ! QueueStoreError: QueueStoreError(action='compare_exchange') [] queue_store_error action='compare_exchange' entry_id='e53'
-  retry expired = e53 create_order dead deliveries=1 intent=False cancel=False leased=False outcome=permanent/expired/None
-  exhausted = receipt e55 pending ttl=1:00:00
-  retry exhausted = e55 create_order dead deliveries=5 intent=False cancel=False leased=False outcome=permanent/max_deliveries/None
-  taken after the intent = receipt e56 pending ttl=1:00:00
+  settled = receipt e57 pending ttl=1:00:00
+  conflicts after the send ! QueueStoreError: QueueStoreError(action='compare_exchange') [] queue_store_error action='compare_exchange' entry_id='e57'
+  server POST /orders key=k20 body={"item":"tea","quantity":2} duplicate=False
+  inspect settled = e57 create_order leased deliveries=1 intent=True cancel=False leased=True outcome=-
+  pending = receipt e58 pending ttl=1:00:00
+  cancel conflicts ! QueueStoreError: QueueStoreError(action='compare_exchange') [] queue_store_error action='compare_exchange' entry_id='e58'
+  retry conflicts ! QueueStoreError: QueueStoreError(action='compare_exchange') [] queue_store_error action='compare_exchange' entry_id='e57'
+  retry expired = e57 create_order dead deliveries=1 intent=False cancel=False leased=False outcome=permanent/expired/None
+  exhausted = receipt e59 pending ttl=1:00:00
+  retry exhausted = e59 create_order dead deliveries=5 intent=False cancel=False leased=False outcome=permanent/max_deliveries/None
+  taken after the intent = receipt e60 pending ttl=1:00:00
   drain taken after the intent = empty
-  stolen = receipt e57 pending ttl=1:00:00
+  stolen = receipt e61 pending ttl=1:00:00
   lease taken before the send = empty
   lease taken during the send = empty
-  server POST /orders key=k20 body={"item":"tea","quantity":2} duplicate=False
-  inspect stolen = e57 create_order leased deliveries=1 intent=True cancel=False leased=True outcome=-
+  server POST /orders key=k21 body={"item":"tea","quantity":2} duplicate=False
+  inspect stolen = e61 create_order leased deliveries=1 intent=True cancel=False leased=True outcome=-
 limits
-  one entry = succeeded=['e58', 'e59']
-  one send = succeeded=['e60']
+  one entry = succeeded=['e62']
+  one send = succeeded=['e63']
   no time = empty
   policy field ! QueuePolicyConflictError: QueuePolicyConflictError(condition='invalid_value', fields=('max_deliveries',)) [field_path=('queue_options',), condition='invalid_value'] queue_policy_conflict_error fields=('max_deliveries',)
   fixed key ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options', 'idempotency_key'), condition='invalid_value'] protocol_configuration_error
   options type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
   session type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('session_options',), condition='invalid_value'] protocol_configuration_error
   entry type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('entry_id',), condition='invalid_value'] protocol_configuration_error
-  rest = empty
+  rest = succeeded=['e64']
   server GET /orders/l0
   server GET /orders/l1
   server GET /orders/l2
+  session deadline passes = succeeded=['e65']
+  inspect after the session = e66 refresh pending deliveries=0 intent=False cancel=False leased=False outcome=-
+  server GET /orders/t0
 parallel
-  waves = succeeded=['e61', 'e62', 'e63']
+  waves = succeeded=['e67', 'e68', 'e69']
   server GET /orders/p0
   server GET /orders/p1
   server GET /orders/p2
@@ -298,7 +318,7 @@ memory stores
   blob ! ValueError: sha256 must be 32 bytes []
   blob key ! ValueError: key must not be empty []
   blob digest ! TypeError: sha256 must be bytes []
-  with blob = e64 refresh pending deliveries=0 intent=False cancel=False leased=False outcome=-
+  with blob = e70 refresh pending deliveries=0 intent=False cancel=False leased=False outcome=-
   wrong blob ! TypeError: blob must be a BlobRef []
   wrong policy ! TypeError: policy must be a ResolvedQueueOptions []
   wrong result ! TypeError: result must be a QueueOutcome []
@@ -307,40 +327,41 @@ memory stores
   receipt ! TypeError: expires_at must be a datetime []
   report counts {'succeeded': 1, 'rescheduled': 0, 'dead': 2, 'unknown': 0, 'deferred': 0, 'cancelled': 0}
 asyncio
-  enqueue = receipt e65 pending ttl=1:00:00
-  drain = succeeded=['e65', 'e66', 'e67']
+  enqueue = receipt e71 pending ttl=1:00:00
+  drain = succeeded=['e71', 'e72', 'e73']
   server GET /orders/a0
   server GET /orders/a1
-  server POST /orders key=k21 body={"item":"tea","quantity":2} duplicate=False
-  inspect = e65 create_order succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/201
-  purge = [e65 create_order succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/201, e66 refresh succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/200, e67 refresh succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/200]
-  lost = receipt e68 pending ttl=1:00:00
-  drain lost = unknown=['e68']
   server POST /orders key=k22 body={"item":"tea","quantity":2} duplicate=False
-  retry unknown = e68 create_order pending deliveries=1 intent=False cancel=False leased=False outcome=unknown/transport_error/None
-  cancel = e68 create_order cancelled deliveries=1 intent=False cancel=False leased=False outcome=cancelled/None/None
+  inspect = e71 create_order succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/201
+  purge = [e71 create_order succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/201, e72 refresh succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/200, e73 refresh succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/200]
+  lost = receipt e74 pending ttl=1:00:00
+  drain lost = unknown=['e74']
+  server POST /orders key=k23 body={"item":"tea","quantity":2} duplicate=False
+  retry unknown = e74 create_order pending deliveries=1 intent=False cancel=False leased=False outcome=unknown/transport_error/None
+  cancel = e74 create_order cancelled deliveries=1 intent=False cancel=False leased=False outcome=cancelled/None/None
   broken wave ! QueueBindingError: QueueBindingError(condition='binding_mismatch') [field_path=('entry_id',), condition='binding_mismatch'] queue_binding_error entry_id='<call>' secondary=['QueueBindingError']
   put fails ! QueueStoreError: QueueStoreError(action='put') [cause=OSError('disk full')] queue_store_error action='put' entry_id='<call>'
-  held = receipt e69 pending ttl=1:00:00
+  held = receipt e75 pending ttl=1:00:00
   drain cancelled while sending
-  inspect held = e69 create_order leased deliveries=1 intent=True cancel=False leased=True outcome=-
-  redelivered = succeeded=['e69']
-  server POST /orders key=k23 body={"item":"tea","quantity":2} duplicate=False
-  server POST /orders key=k23 body={"item":"tea","quantity":2} duplicate=True
-  intent entry = receipt e70 pending ttl=1:00:00
-  intent fails ! QueueStoreError: QueueStoreError(action='compare_exchange') [cause=OSError('write')] queue_store_error action='compare_exchange' entry_id='e70'
+  inspect held = e75 create_order delivery_unknown deliveries=1 intent=False cancel=False leased=False outcome=cancelled/None/None
+  retry held = e75 create_order pending deliveries=1 intent=False cancel=False leased=False outcome=cancelled/None/None
+  redelivered = succeeded=['e75']
+  server POST /orders key=k24 body={"item":"tea","quantity":2} duplicate=False
+  server POST /orders key=k24 body={"item":"tea","quantity":2} duplicate=True
+  intent entry = receipt e76 pending ttl=1:00:00
+  intent fails ! QueueStoreError: QueueStoreError(action='compare_exchange') [cause=OSError('write')] queue_store_error action='compare_exchange' entry_id='e76'
   entry type ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('entry_id',), condition='invalid_value'] protocol_configuration_error
   put full ! QueueFullError: QueueFullError(action='put', kind='bytes', limit=1, observed=2) [kind='bytes', limit=1] queue_full_error action='put' observed=2
   claim wrong ! QueueStoreError: QueueStoreError(action='claim') [] queue_store_error action='claim'
-  ready again = receipt e71 pending ttl=1:00:00
-  broken = receipt e72 pending ttl=1 day, 0:00:00
-  release fails ! QueueBindingError: QueueBindingError(condition='binding_mismatch') [field_path=('entry_id',), condition='binding_mismatch'] queue_binding_error entry_id='e72' secondary=['QueueStoreError']
-  server POST /orders key=k24 -> 503
-  ignored leases = receipt e73 pending ttl=1 day, 0:00:00
-  drain bounded = succeeded=['e73']
+  ready again = receipt e77 pending ttl=1:00:00
+  broken = receipt e78 pending ttl=1 day, 0:00:00
+  release fails ! QueueBindingError: QueueBindingError(condition='binding_mismatch') [field_path=('entry_id',), condition='binding_mismatch'] queue_binding_error entry_id='e78' secondary=['QueueStoreError']
+  server POST /orders key=k25 -> 503
+  ignored leases = receipt e79 pending ttl=1 day, 0:00:00
+  drain bounded = succeeded=['e79']
   server GET /orders/s2
-  memory enqueue = receipt e74 pending ttl=1 day, 0:00:00
-  memory drain = succeeded=['e74']
+  memory enqueue = receipt e80 pending ttl=1 day, 0:00:00
+  memory drain = succeeded=['e80']
   server GET /orders/m1
-  memory inspect = e74 refresh succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/200
-  memory purge = [e74 refresh succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/200]
+  memory inspect = e80 refresh succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/200
+  memory purge = [e80 refresh succeeded deliveries=1 intent=False cancel=False leased=False outcome=success/None/200]

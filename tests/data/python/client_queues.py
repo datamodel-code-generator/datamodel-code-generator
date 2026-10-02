@@ -11,7 +11,9 @@ import importlib
 import re
 import threading
 from dataclasses import replace
+from functools import partial
 from datetime import datetime, timedelta, timezone
+from email.utils import format_datetime
 from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
@@ -19,7 +21,7 @@ import httpx2
 from tests.data.python.client_runtime import Exchange, describe, failing, injected, json_response, raw_response, run
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterator
     from types import ModuleType
 
 _PARTITION: Final = "tenant-a"
@@ -120,10 +122,78 @@ class _Exchange(Exchange):
         return (self.responders.pop(0) if self.responders else self.orders)(request)
 
 
+class _Time:
+    """A stepped clock: time moves only a microsecond a read until the scenario moves it, and jitter draws its middle."""
+
+    def __init__(self) -> None:
+        """Start at a fixed instant."""
+        self.offset = 0.0
+        self.reads = 0
+        self.lock = threading.Lock()
+
+    def monotonic(self) -> float:
+        """Return seconds on the clock's monotonic scale."""
+        return 1000.0 + self.offset
+
+    def time(self) -> float:
+        """Return POSIX seconds, a microsecond later on every read so instants keep their order."""
+        with self.lock:
+            self.reads += 1
+            return 1_800_000_000.0 + self.offset + self.reads / 1_000_000
+
+    @staticmethod
+    def random() -> float:
+        """Return the middle of the jitter range."""
+        return 0.5
+
+    def advance(self, seconds: float) -> None:
+        """Let time pass."""
+        with self.lock:
+            self.offset += seconds
+
+    def now(self) -> datetime:
+        """Return the clock's instant in UTC."""
+        return datetime.fromtimestamp(self.time(), timezone.utc)
+
+    def http_date(self, seconds: float) -> str:
+        """Return the HTTP date seconds after the clock's instant."""
+        return format_datetime(datetime.fromtimestamp(self.time() + seconds, timezone.utc), usegmt=True)
+
+
+class _Broken(httpx2.SyncByteStream):
+    """A response body that breaks after its first bytes."""
+
+    def __iter__(self) -> Iterator[bytes]:
+        """Yield the start of a body, then lose the connection."""
+        yield b'{"code":'
+        msg = "connection reset"
+        raise httpx2.ReadError(msg)
+
+
+class _Cancelling(httpx2.SyncByteStream):
+    """A response body whose reading cancels a call's token."""
+
+    def __init__(self, token: Any) -> None:
+        """Keep the token to cancel."""
+        self.token = token
+
+    def __iter__(self) -> Iterator[bytes]:
+        """Yield the start of a body, cancel the token, then the rest."""
+        yield b'{"code":'
+        self.token.cancel()
+        yield b'"x"}'
+
+
+def _streamed(body: httpx2.SyncByteStream, request: httpx2.Request) -> httpx2.Response:
+    """Answer 503 with a streamed JSON body."""
+    request.read()
+    return httpx2.Response(503, headers={"content-type": "application/json"}, stream=body)
+
+
 class _Store:
     """A queue store written against the public queue types alone: entries in a dict, versions as counters.
 
-    It moves every entry's instants back to let time pass, and fails, conflicts, or answers wrongly on request.
+    It fails, conflicts, or answers wrongly on request; time passes on the client's stepped clock.
     """
 
     def __init__(self, protocols: ModuleType) -> None:
@@ -218,19 +288,6 @@ class _Store:
                 del self.entries[entry.entry_id]
             return purged
 
-    def travel(self, seconds: float) -> None:
-        """Let time pass: move every entry's instants back."""
-        delta = timedelta(seconds=seconds)
-        with self.lock:
-            for key, entry in self.entries.items():
-                self.entries[key] = replace(
-                    entry,
-                    created_at=entry.created_at - delta,
-                    expires_at=entry.expires_at - delta,
-                    not_before=entry.not_before - delta,
-                    lease_until=None if entry.lease_until is None else entry.lease_until - delta,
-                )
-
     def tamper(self, entry_id: str, **fields: object) -> None:
         """Change an entry's fields as another writer would."""
         with self.lock:
@@ -318,6 +375,18 @@ class _Queues:
         self.entries = _Labels("e")
         self.server = _Orders()
         self.exchange = _Exchange(self.server)
+        self.time = _Time()
+        self.clock = self.options.Clock(monotonic=self.time.monotonic, time=self.time.time, random=self.time.random)
+
+    def stepping(self, code: int) -> Callable[[httpx2.Request], httpx2.Response]:
+        """Return a responder that answers with a status after a second has passed."""
+        refuse = self.server.status(code)
+
+        def respond(request: httpx2.Request) -> httpx2.Response:
+            self.time.advance(1)
+            return refuse(request)
+
+        return respond
 
     def argument(self, operation: str, location: str, name: str, wire: object) -> object:
         """Return an argument built from its wire value."""
@@ -333,7 +402,9 @@ class _Queues:
             **settings,
         )
         extra = {} if auth is None else {"auth": self.auth.AuthConfig({"bearer": auth})}
-        return options.ClientOptions(retry=options.RetryOptions(max_retries=0), protocols=protocols, **extra)
+        return options.ClientOptions(
+            retry=options.RetryOptions(max_retries=0), protocols=protocols, clock=self.clock, **extra
+        )
 
     def label(self, text: str) -> str:
         """Replace every entry identifier in a text with its label."""
@@ -517,9 +588,9 @@ def _deliveries(queue: _Queues, native: httpx2.Client) -> None:
         step("retry missing", lambda: outbox.retry_unknown("missing"))
         unsent = step("unsent", lambda: outbox.operations.create_order.enqueue(body=queue.order))
         queue.exchange.respond(failing(httpx2.ConnectTimeout))
-        step("drain unsent", outbox.drain)
-        step("inspect unsent", lambda: outbox.inspect(unsent.entry_id))
-        later = datetime.now(timezone.utc) + timedelta(days=2)
+        step("drain unproven timeout", outbox.drain)
+        step("inspect unproven timeout", lambda: outbox.inspect(unsent.entry_id))
+        later = queue.time.now() + timedelta(days=2)
         step("purge", lambda: outbox.purge_terminal(later))
         step("purge naive", lambda: outbox.purge_terminal(datetime(2030, 1, 1)))  # noqa: DTZ001
         lines.append(f"  left {sorted(queue.entries(key) for key in store.entries)}")
@@ -567,20 +638,29 @@ def _outcomes(queue: _Queues, native: httpx2.Client) -> None:
         step("drain patching the key", lambda: outbox.drain(options=patched))
         step("inspect managed", lambda: outbox.inspect(managed.entry_id))
         step("drain without a session deadline", lambda: outbox.drain(session_options=options.SessionOptions(total_timeout=None)))
+        failed = step("failed body", lambda: outbox.operations.create_order.enqueue(body=queue.order))
+        queue.exchange.respond(injected(partial(_streamed, _Broken())))
+        step("drain failed body", outbox.drain)
+        step("inspect failed body", lambda: outbox.inspect(failed.entry_id))
         token = options.CancelToken()
-        sent = step("cancelled after a send", lambda: outbox.operations.create_order.enqueue(body=queue.order))
-
-        def cancelled(request: httpx2.Request) -> httpx2.Response:
-            token.cancel()
-            return server.status(503)(request)
-
-        queue.exchange.respond(cancelled)
-        retry = options.RetryOptions(max_retries=1, initial_delay=0, jitter="none")
-        queue.raised(
-            "drain cancelled after a send",
-            lambda: outbox.drain(options=options.RequestOptions(retry=retry, cancel_token=token)),
-        )
+        sent = step("cancelled in a body", lambda: outbox.operations.create_order.enqueue(body=queue.order))
+        queue.exchange.respond(injected(partial(_streamed, _Cancelling(token))))
+        queue.raised("drain cancelled in a body", lambda: outbox.drain(options=options.RequestOptions(cancel_token=token)))
         step("inspect cancelled", lambda: outbox.inspect(sent.entry_id))
+        interrupted = step("interrupted", lambda: outbox.operations.create_order.enqueue(body=queue.order))
+
+        def interrupt(request: httpx2.Request) -> httpx2.Response:
+            server(request)
+            raise _Crash
+
+        queue.exchange.respond(injected(interrupt))
+        try:
+            outbox.drain()
+        except _Crash:
+            lines.append("  interrupted while sending")
+        step("inspect interrupted", lambda: outbox.inspect(interrupted.entry_id))
+        step("retry interrupted", lambda: outbox.retry_unknown(interrupted.entry_id))
+        step("drain interrupted again", outbox.drain)
         lost = step("cancelled and taken", lambda: outbox.operations.create_order.enqueue(body=queue.order))
         stop = options.CancelToken()
 
@@ -611,12 +691,12 @@ def _holding(queue: _Queues, native: httpx2.Client) -> None:
     with _client(queue, native, store) as api:
         outbox = _helpers(api)[0]
         again = step("ready again", lambda: outbox.operations.create_order.enqueue(body=queue.order, queue_options=soon))
-        queue.exchange.respond(server.status(503))
+        queue.exchange.respond(queue.stepping(503))
         step("drain once", outbox.drain)
         step("inspect released", lambda: outbox.inspect(again.entry_id))
         broken = step("broken", lambda: outbox.operations.refresh.enqueue(order_id=queue.argument("GetOrder", "path", "orderId", "h1")))
         store.tamper(broken.entry_id, helper_fingerprint="0" * 64)
-        queue.exchange.respond(server.status(503))
+        queue.exchange.respond(queue.stepping(503))
         store.later["compare_exchange"] = (3, OSError("release"))
         step("release fails", outbox.drain)
         server.flush(lines)
@@ -632,7 +712,7 @@ def _waits(queue: _Queues, native: httpx2.Client) -> None:
         waited = step("waited", lambda: outbox.operations.create_order.enqueue(body=queue.order))
         queue.exchange.respond(server.status(503, **{"Retry-After": "120"}))
         retry = queue.options.RetryOptions(max_retries=2, max_retry_after=60, initial_delay=0, jitter="none")
-        before = datetime.now(timezone.utc)
+        before = queue.time.now()
         step("drain past the child cap", lambda: outbox.drain(options=queue.options.RequestOptions(retry=retry)))
         server.flush(lines)
         entry = store.entries[waited.entry_id]
@@ -641,7 +721,7 @@ def _waits(queue: _Queues, native: httpx2.Client) -> None:
             f"retry_at {entry.result.retry_at == entry.not_before}"
         )
         step("not ready yet", outbox.drain)
-        store.travel(121)
+        queue.time.advance(121)
         queue.exchange.respond(server.status(503, **{"Retry-After": "7200"}))
         step("wait past the key", outbox.drain)
         server.flush(lines)
@@ -650,7 +730,8 @@ def _waits(queue: _Queues, native: httpx2.Client) -> None:
         twice = step("twice", lambda: outbox.operations.create_order.enqueue(body=queue.order, queue_options=limited))
         queue.exchange.respond(server.status(503), server.status(503))
         step("first delivery", outbox.drain)
-        store.travel(2)
+        lines.append(f"  jitter wait {store.entries[twice.entry_id].saved_wait_seconds}")
+        queue.time.advance(2)
         step("second delivery", outbox.drain)
         server.flush(lines)
         step("inspect twice", lambda: outbox.inspect(twice.entry_id))
@@ -666,13 +747,27 @@ def _waits(queue: _Queues, native: httpx2.Client) -> None:
         server.flush(lines)
         lines.append(f"  waits {store.entries[later.entry_id].saved_wait_seconds >= 40}")
         expired = step("expired", lambda: outbox.operations.refresh.enqueue(order_id=queue.argument("GetOrder", "path", "orderId", "o3")))
-        store.travel(86401)
+        queue.time.advance(86401)
         step("drain expired", outbox.drain)
         step("inspect expired", lambda: outbox.inspect(expired.entry_id))
         exhausted = step("exhausted", lambda: outbox.operations.refresh.enqueue(order_id=queue.argument("GetOrder", "path", "orderId", "o4")))
         store.tamper(exhausted.entry_id, delivery_count=5)
         step("drain exhausted", outbox.drain)
         step("inspect exhausted", lambda: outbox.inspect(exhausted.entry_id))
+        dated = step("dated wait", lambda: outbox.operations.create_order.enqueue(body=queue.order))
+        queue.exchange.respond(server.status(503, **{"Retry-After": queue.time.http_date(120)}))
+        step("drain dated", outbox.drain)
+        wait = store.entries[dated.entry_id].saved_wait_seconds
+        lines.append(f"  dated wait 119<wait<=120 {119 < wait <= 120}")
+        slow = step("slow intent", lambda: outbox.operations.create_order.enqueue(body=queue.order))
+
+        def stall(entry: Any) -> None:
+            if entry.send_intent:
+                queue.time.advance(3601)
+
+        store.before["compare_exchange"] = stall
+        step("drain past the key during the intent", outbox.drain)
+        step("inspect slow", lambda: outbox.inspect(slow.entry_id))
         server.flush(lines)
 
 
@@ -697,7 +792,7 @@ def _recovery(queue: _Queues, native: httpx2.Client) -> None:
         server.flush(lines)
         step("inspect", lambda: outbox.inspect(crashed.entry_id))
         step("lease held", outbox.drain)
-        store.travel(400)
+        queue.time.advance(400)
         step("after the lease", outbox.drain)
         server.flush(lines)
         step("inspect recovered", lambda: outbox.inspect(crashed.entry_id))
@@ -708,15 +803,15 @@ def _recovery(queue: _Queues, native: httpx2.Client) -> None:
         except _Crash:
             lines.append("  crashed before saving the response")
         server.flush(lines)
-        store.travel(400)
+        queue.time.advance(400)
         step("redelivered", outbox.drain)
         server.flush(lines)
         step("inspect redelivered", lambda: outbox.inspect(answered.entry_id))
         other = step("held by another worker", lambda: outbox.operations.refresh.enqueue(order_id=queue.argument("GetOrder", "path", "orderId", "o5")))
-        now = datetime.now(timezone.utc)
+        now = queue.time.now()
         store.claim(now=now, lease_until=now + timedelta(seconds=60), limit=1)
         step("leased elsewhere", outbox.drain)
-        store.travel(61)
+        queue.time.advance(61)
         step("after its lease", outbox.drain)
         server.flush(lines)
         step("inspect other", lambda: outbox.inspect(other.entry_id))
@@ -738,11 +833,11 @@ def _cancelling(queue: _Queues, native: httpx2.Client) -> None:
         store.tamper(maybe.entry_id, send_intent=True)
         step("cancel maybe sent", lambda: outbox.cancel(maybe.entry_id))
         leased = step("leased", lambda: outbox.operations.create_order.enqueue(body=queue.order))
-        now = datetime.now(timezone.utc)
+        now = queue.time.now()
         store.claim(now=now, lease_until=now + timedelta(seconds=60), limit=1)
         step("cancel leased", lambda: outbox.cancel(leased.entry_id))
         step("cancel requested", lambda: outbox.cancel(leased.entry_id))
-        store.travel(61)
+        queue.time.advance(61)
         step("drain cancelled", outbox.drain)
         step("inspect", lambda: outbox.inspect(leased.entry_id))
         done = step("done", lambda: outbox.operations.refresh.enqueue(order_id=queue.argument("GetOrder", "path", "orderId", "o6")))
@@ -820,6 +915,7 @@ def _bindings(queue: _Queues, native: httpx2.Client) -> None:
         http_client=native,
         options=queue.options.ClientOptions(
             retry=queue.options.RetryOptions(max_retries=0),
+            clock=queue.clock,
             auth=queue.auth.AuthConfig({"bearer": provider}),
             protocols=queue.options.ProtocolClientOptions(
                 queue_stores={"account.offline": store},
@@ -894,12 +990,12 @@ def _store_failures(queue: _Queues, native: httpx2.Client) -> None:
         step("intent fails", outbox.drain)
         server.flush(lines)
         step("inspect", lambda: outbox.inspect(entry.entry_id))
-        store.travel(400)
+        queue.time.advance(400)
         store.wrong["compare_exchange"] = "yes"
         step("exchange wrong", outbox.drain)
-        store.travel(400)
+        queue.time.advance(400)
         store.wrong["purge_terminal"] = ["entry"]
-        step("purge wrong", lambda: outbox.purge_terminal(datetime.now(timezone.utc)))
+        step("purge wrong", lambda: outbox.purge_terminal(queue.time.now()))
     stubborn = _Stubborn(queue.protocols)
     with _client(queue, native, stubborn) as api:
         outbox = _helpers(api)[0]
@@ -924,7 +1020,7 @@ def _conflicts(queue: _Queues, native: httpx2.Client) -> None:
         store.conflicts = 100
         step("endless conflicts", outbox.drain)
         store.conflicts = 0
-        store.travel(400)
+        queue.time.advance(400)
         step("drain stuck", outbox.drain)
         server.flush(lines)
         settled = step("settled", lambda: outbox.operations.create_order.enqueue(body=queue.order))
@@ -939,7 +1035,7 @@ def _conflicts(queue: _Queues, native: httpx2.Client) -> None:
         step("cancel conflicts", lambda: outbox.cancel(pending.entry_id))
         step("retry conflicts", lambda: outbox.retry_unknown(settled.entry_id))
         store.conflicts = 0
-        store.travel(3601)
+        queue.time.advance(3601)
         step("retry expired", lambda: outbox.retry_unknown(settled.entry_id))
         exhausted = step("exhausted", lambda: outbox.operations.create_order.enqueue(body=queue.order))
         store.tamper(exhausted.entry_id, state="delivery_unknown", delivery_count=5)
@@ -979,7 +1075,7 @@ def _limits(queue: _Queues, native: httpx2.Client) -> None:
         outbox = _helpers(api)[0]
         for index in range(3):
             outbox.operations.refresh.enqueue(order_id=queue.argument("GetOrder", "path", "orderId", f"l{index}"))
-        step("one entry", lambda: outbox.drain(queue_options=queue.protocols.QueueOptions(max_entries=2)))
+        step("one entry", lambda: outbox.drain(queue_options=queue.protocols.QueueOptions(max_entries=1)))
         step("one send", lambda: outbox.drain(session_options=queue.options.SessionOptions(max_network_sends=1)))
         step("no time", lambda: outbox.drain(session_options=queue.options.SessionOptions(total_timeout=0)))
         step("policy field", lambda: outbox.drain(queue_options=queue.protocols.QueueOptions(max_deliveries=1)))
@@ -988,6 +1084,11 @@ def _limits(queue: _Queues, native: httpx2.Client) -> None:
         step("session type", lambda: outbox.drain(session_options="fast"))
         step("entry type", lambda: outbox.inspect(5))
         step("rest", outbox.drain)
+        server.flush(lines)
+        late = [outbox.operations.refresh.enqueue(order_id=queue.argument("GetOrder", "path", "orderId", f"t{index}")) for index in range(2)]
+        server.during = lambda: queue.time.advance(400)
+        step("session deadline passes", outbox.drain)
+        step("inspect after the session", lambda: outbox.inspect(late[1].entry_id))
         server.flush(lines)
 
 
@@ -1193,7 +1294,7 @@ async def _async_queues(queue: _Queues) -> None:
         await astep("drain", outbox.drain)
         server.flush(lines, ordered=False)
         await astep("inspect", lambda: outbox.inspect(first.entry_id))
-        await astep("purge", lambda: outbox.purge_terminal(datetime.now(timezone.utc) + timedelta(seconds=1)))
+        await astep("purge", lambda: outbox.purge_terminal(queue.time.now() + timedelta(seconds=1)))
         lost = await astep("lost", lambda: outbox.operations.create_order.enqueue(body=queue.order))
         queue.exchange.respond(injected(server.lost))
         await astep("drain lost", outbox.drain)
@@ -1227,7 +1328,8 @@ async def _async_queues(queue: _Queues) -> None:
             lines.append("  drain cancelled while sending")
         released.set()
         await astep("inspect held", lambda: outbox.inspect(held.entry_id))
-        store.travel(400)
+        await astep("retry held", lambda: outbox.retry_unknown(held.entry_id))
+        queue.time.advance(400)
         await astep("redelivered", outbox.drain)
         server.flush(lines, ordered=False)
         failing_entry = await astep("intent entry", lambda: outbox.operations.create_order.enqueue(body=queue.order))
@@ -1243,7 +1345,7 @@ async def _async_queues(queue: _Queues) -> None:
         await astep("ready again", lambda: outbox.operations.create_order.enqueue(body=queue.order, queue_options=soon))
         broken = await astep("broken", lambda: outbox.operations.refresh.enqueue(order_id=queue.argument("GetOrder", "path", "orderId", "h2")))
         store.tamper(broken.entry_id, helper_fingerprint="0" * 64)
-        queue.exchange.respond(server.status(503))
+        queue.exchange.respond(queue.stepping(503))
         store.later["compare_exchange"] = (3, OSError("release"))
         single = queue.protocols.QueueOptions(parallelism=1)
         await astep("release fails", lambda: outbox.drain(queue_options=single))
@@ -1267,4 +1369,4 @@ async def _async_queues(queue: _Queues) -> None:
         await astep("memory drain", outbox.drain)
         server.flush(lines)
         await astep("memory inspect", lambda: outbox.inspect(entry.entry_id))
-        await astep("memory purge", lambda: outbox.purge_terminal(datetime.now(timezone.utc) + timedelta(seconds=1)))
+        await astep("memory purge", lambda: outbox.purge_terminal(queue.time.now() + timedelta(seconds=1)))

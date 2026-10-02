@@ -2035,6 +2035,11 @@ condition `missing_adapter` before anything else. A store failure raises `QueueS
 its cause, or passes a `QueueStoreError` such as `QueueFullError` unchanged; a result of the wrong type raises
 `QueueStoreError` without a cause. No request is sent again because of a store failure.
 
+The store is the trust boundary of a queue: the client takes the entries it returns as its own writes, so a store holds
+them as safely as the requests they replay need. Even so, a keyed entry is never sent after the `dedupe_ttl` its
+operation declares from its `created_at`, whatever `expires_at` the store returns, and a payload that does not restore
+the declared request, a required argument or body missing included, ends the entry `dead` without a send.
+
 `MemoryQueueStore(*, max_entries=10000, max_bytes=268435456)` and `AsyncMemoryQueueStore` keep entries of one process
 under one lock, count payload bytes toward `max_bytes`, and refuse a new entry over either limit with `QueueFullError`.
 A store that outlives the process, such as one backed by a database, is the caller's own implementation of the same
@@ -2053,19 +2058,23 @@ entry to pending, and a crash after the intent consumes a delivery even when not
 | Delivery ends | Entry becomes | Report |
 |---|---|---|
 | A response with a success status, even if decoding or a hook fails after it | `succeeded` | `succeeded` |
-| A status the shared retry policy retries, or a request proven unsent | `pending` after a full-jitter backoff from `retry_initial_delay` doubling up to `retry_max_delay`, never before the server's `Retry-After` | `rescheduled` |
-| Another status, an entry past its lifetime or `max_deliveries`, or a saved request that no longer encodes | `dead` | `dead` |
-| A request that may have arrived without a response | `delivery_unknown`, never sent again unless `retry_unknown` returns it to pending with its key | `unknown` |
+| A status the shared retry policy retries, or an authentication status (401, 403, 407), even when its body failed; or a request proven unsent | `pending` after a full-jitter backoff from `retry_initial_delay` doubling up to `retry_max_delay`, never before the server's `Retry-After` | `rescheduled` |
+| An HTTP error the shared retry policy does not retry, an entry past its lifetime or `max_deliveries`, or a saved request that is malformed or no longer encodes | `dead` | `dead` |
+| A response whose body failed, or that is no declared error, with a status the policy does not retry | `delivery_unknown` | `unknown` |
+| A request that may have arrived without a response, or a send stopped by a native cancellation or interrupt | `delivery_unknown`, never sent again unless `retry_unknown` returns it to pending with its key | `unknown` |
 | A failure before anything was sent, such as a token that cannot be acquired | `pending`, with its delivery count and intent as before | `deferred` |
 
 A wait past the entry's lifetime ends it `dead` instead of rescheduling it; a wait longer than the drain's session, or
 than a call's `max_retry_after`, still reschedules it. A keyed entry's lifetime is at most its `dedupe_ttl`, and a
-delivery's time ends before it, so a key is never sent after the server forgets it. A cancellation of the options'
+delivery's time ends before it, so a key is never sent after the server forgets it; an entry whose lifetime ends while
+its intent is saved ends `dead` without a send, its delivery count unchanged. A cancellation of the options'
 `CancelToken`, and a closed client, end the drain after the delivery is saved, and are raised. An entry whose
 operation contract, partition, origins, required security, or auth identity changed since it was enqueued raises
 `QueueBindingError`, with its `entry_id`, and is returned to pending: entries are never migrated. Another failure, a
-store's included, is raised; a failure that is no SDK error, and a cancellation of the drain's task, leave the lease
-to expire.
+store's included, is raised. A native cancellation of the drain's task or an interrupt during a send ends the entry
+`delivery_unknown` before it propagates, so it is never sent again automatically; at any other point it, and a failure
+that is no SDK error, leave the lease to expire. Times are read from the client's `Clock`: wall-clock instants, leases,
+and Retry-After dates from its `time`, deadlines from its `monotonic`, and the backoff's jitter from its `random`.
 
 `cancel(entry_id)` ends a pending entry `cancelled`, or `delivery_unknown` when a crash after its intent may have sent
 it, and asks the drain that holds a leased entry to end it at its next boundary: before the send it is cancelled, and

@@ -3899,9 +3899,10 @@ cause, and no request is sent again because of it.
 the drain's session with the shared retries inside it. Before the first send it saves the entry's send intent and
 delivery count, and sends nothing if that save fails; a keyed entry sends the same idempotency key on every attempt and
 every delivery. A response with a success status succeeds the entry. A status the shared retry policy retries, or a
-request proven unsent, reschedules it after a full-jitter backoff, never before the server's `Retry-After`; another
-status ends it dead, and so does running out of deliveries or lifetime. A request that may have arrived ends it of
-unknown delivery: it is never sent again unless `retry_unknown` returns it to pending with the same key. A failure
+request proven unsent, reschedules it after a full-jitter backoff, never before the server's `Retry-After`; an HTTP
+error the policy does not retry ends it dead, and so does running out of deliveries or lifetime. Any other failed
+response, a request that may have arrived, and a send a native cancellation or interrupt stops end it of unknown
+delivery: it is never sent again unless `retry_unknown` returns it to pending with the same key. A failure
 before anything was sent, such as a token that cannot be acquired, defers the entry with its delivery count unchanged;
 a cancellation or a closed client is saved, then raised. An entry saved for another operation contract, partition,
 or auth raises `QueueBindingError` and is never migrated. A drain ends when nothing is ready, at `max_entries`, or when

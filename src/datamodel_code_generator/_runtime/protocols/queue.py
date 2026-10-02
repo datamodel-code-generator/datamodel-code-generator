@@ -12,7 +12,6 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
-from time import time
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, Literal, cast, final
 from uuid import uuid4
@@ -32,8 +31,8 @@ from ..client.errors import (
     add_secondary,
 )
 from ..client.options import IdempotencyKey, RequestOptions
-from ..client.retry import retry_after
-from ..client.timing import Deadline, SessionOptions
+from ..client.retry import retry_after, status_retry_reason
+from ..client.timing import Deadline, SessionOptions, absolute_deadline
 from ..model_codecs.errors import CodecError
 from ..model_codecs.media import decode_json
 from ..model_codecs.unset import UNSET, Unset
@@ -48,7 +47,9 @@ if TYPE_CHECKING:
     from ..client.client import AsyncClientCore, ClientCore
     from ..client.logical import OperationSession
     from ..client.operations import OperationPlan
+    from ..client.options import ResolvedRetryOptions
     from ..client.responses import ResponseInfo
+    from ..client.timing import Clock
     from ..model_codecs.selectors import MediaSelector
     from ..model_codecs.wire import WireValue
     from .queues import AsyncQueueStore, QueueState, QueueStore, ResolvedQueueOptions
@@ -91,6 +92,7 @@ _POLICY_FIELDS: Final = (
     "max_delivery_timeout",
 )
 _PERMANENT_STOPS: Final = frozenset({"status_not_retryable", "server_forbids_retry"})
+_AUTH_STATUSES: Final = frozenset({401, 403, 407})
 _UNSENT: Final = frozenset({DeliveryState.NOT_SENT})
 _STOPS: Final = (RequestCancelledError, ClientClosedError)
 _TOTAL_TIMEOUT: Final = 300.0
@@ -162,15 +164,20 @@ class _Send:
 _Step = _Store | _Send
 
 
-def _now() -> datetime:
-    return datetime.now(timezone.utc)
+def _now(clock: Clock) -> datetime:
+    """Return the client clock's wall-clock instant in UTC."""
+    return datetime.fromtimestamp(clock.time(), timezone.utc)
 
 
-def _draw() -> float:
-    """Load the random generator only for a backoff that is actually drawn."""
-    from secrets import randbits  # noqa: PLC0415
+def _expiry(entry: QueueEntry, queued: QueuedPlan | None) -> datetime:
+    """Return when an entry expires: its saved expiry, never later than its key's deduplication period allows.
 
-    return randbits(53) / (1 << 53)
+    The store is trusted with entries, but a keyed entry's key is never sent past what the plan declares the server
+    retains.
+    """
+    if queued is None or queued.dedupe_ttl is None:
+        return entry.expires_at
+    return min(entry.expires_at, entry.created_at + timedelta(seconds=queued.dedupe_ttl))
 
 
 def _entry_or_none(entry_id: str) -> Callable[[object], bool]:
@@ -316,7 +323,7 @@ def _new_entry(  # noqa: PLR0913, PLR0917
         raise ProtocolSizeError(
             kind="body", limit=limit, observed=size, unit="bytes", helper_id=plan.helper_id, operation=queued.operation
         )
-    now = _now()
+    now = _now(core.clock)
     ttl = policy.entry_ttl if queued.dedupe_ttl is None else min(policy.entry_ttl, queued.dedupe_ttl)
     return QueueEntry(
         entry_id=str(uuid4()),
@@ -353,6 +360,10 @@ class _MalformedError(Exception):
     """A payload that does not restore the request of the operation it names."""
 
 
+class _InterruptedError(Exception):
+    """Raised into a plan whose delivery a native cancellation or interrupt stopped, after its intent was saved."""
+
+
 def _require(condition: bool) -> None:  # noqa: FBT001
     if not condition:
         raise _MalformedError
@@ -363,8 +374,8 @@ def _restored(
 ) -> tuple[tuple[object, ...], object, str | MediaSelector | None]:
     """Return the arguments, body, and media type a payload saved, built and checked as a caller's are.
 
-    A payload of another shape or version, an argument a payload never saves, and a value its codec refuses are
-    malformed.
+    A payload of another shape or version, an argument a payload never saves, a missing required argument or body, and
+    a value its codec refuses are malformed.
     """
     try:
         saved = decode_json(payload)
@@ -385,6 +396,12 @@ def _restored(
         _require(isinstance(declared, str) and (concrete is None or isinstance(concrete, str)))
         given = sent[0], cast("str", declared), cast("str | None", concrete)
     _require(core.unsaved_argument(call, wire) is None)
+    _require(
+        not any(
+            spec.plan.required and isinstance(value, Unset) for spec, value in zip(call.parameters, wire, strict=True)
+        )
+        and (given is not None or (request := call.body) is None or not request.required)
+    )
     try:
         return core.restored_request(call, wire, given)
     except (SDKError, CodecError):
@@ -405,7 +422,7 @@ class _Ended:
     reverted: bool = False
     not_before: datetime | None = None
     wait: float = 0.0
-    failure: SDKError | None = None
+    failure: BaseException | None = None
 
 
 def _dead(code: str, response: ResponseInfo | None = None) -> _Ended:
@@ -462,7 +479,15 @@ def _write(
     return bool(written), current  # noqa: B901 - Its runner receives the outcome.
 
 
-def _retried(entry: QueueEntry, queued: QueuedPlan, info: ResponseInfo | None, code: str, now: datetime) -> _Ended:
+def _retried(  # noqa: PLR0913
+    entry: QueueEntry,
+    queued: QueuedPlan,
+    info: ResponseInfo | None,
+    code: str,
+    *,
+    now: datetime,
+    clock: Clock,
+) -> _Ended:
     """End a delivery that may be sent again: after a full-jitter backoff, never before the server's Retry-After.
 
     One past its delivery limit, or one whose next attempt would come at or after its expiry, is dead instead.
@@ -471,7 +496,7 @@ def _retried(entry: QueueEntry, queued: QueuedPlan, info: ResponseInfo | None, c
     if entry.delivery_count >= policy.max_deliveries:
         return _dead("max_deliveries", info)
     cap = min(policy.retry_max_delay, policy.retry_initial_delay * 2.0 ** min(entry.delivery_count - 1, _MAX_DOUBLINGS))
-    wait = cap * _draw()
+    wait = cap * clock.random()
     if (
         info is not None
         and (
@@ -479,25 +504,40 @@ def _retried(entry: QueueEntry, queued: QueuedPlan, info: ResponseInfo | None, c
                 info.headers,
                 milliseconds_header=queued.call.retry_after_ms_header,
                 received_at=0.0,
-                received_wall_time=time(),
+                received_wall_time=clock.time(),
             )
         )
         is not None
     ):
         wait = max(wait, server.seconds)
-    if wait >= (entry.expires_at - now).total_seconds():
+    if wait >= (_expiry(entry, queued) - now).total_seconds():
         return _dead("expired", info)
     at = now + timedelta(seconds=wait)
     outcome = QueueOutcome(category="retryable", response=info, retry_at=at, error_code=code)
     return _Ended("pending", "rescheduled", outcome, not_before=at, wait=wait)
 
 
-def _ended(error: SDKError, entry: QueueEntry, queued: QueuedPlan, now: datetime) -> _Ended:  # noqa: PLR0911
+def _retryable(error: SDKError, status: int, retry: ResolvedRetryOptions) -> bool:
+    """Return whether a response status would be sent again, as the shared retry policy decides for an HTTP error.
+
+    An HTTP error the policy stopped for its status, or that the server forbids retrying, is not; an authentication
+    status is, since current credentials may be accepted later. Any other response is judged by its status alone.
+    """
+    if isinstance(error, HTTPStatusError):
+        return error.retry_stop_reason not in _PERMANENT_STOPS
+    return status in _AUTH_STATUSES or status_retry_reason(status, retry, hint=None) is not None
+
+
+def _ended(  # noqa: PLR0913, PLR0917
+    error: SDKError, entry: QueueEntry, queued: QueuedPlan, now: datetime, retry: ResolvedRetryOptions, clock: Clock
+) -> _Ended:
     """Classify a failed delivery by whether any request was sent and how it ended.
 
     A response with a success status succeeded, whatever failed after it. Nothing sent defers the entry, except a
-    configuration or encoding error; a status the shared retry policy may retry, or a request proven unsent, waits for
-    another delivery; another status is dead; and a request that may have arrived is of unknown delivery.
+    configuration or encoding error. A status the shared retry policy retries, or a request proven unsent, waits for
+    another delivery; an HTTP error the policy does not retry is dead; any other failed response, such as one whose
+    body failed, and a request that may have arrived are of unknown delivery. A cancellation or a closed client is
+    raised once the entry is saved.
     """
     info, code = error.info, error.reason_code
     stop = error if isinstance(error, _STOPS) else None
@@ -509,15 +549,14 @@ def _ended(error: SDKError, entry: QueueEntry, queued: QueuedPlan, now: datetime
         return _Ended(
             "pending", "deferred", reverted=True, failure=error if isinstance(error, ConfigurationError) else stop
         )
+    if (info is not None and _retryable(error, info.status_code, retry)) or (
+        info is None and getattr(error, "delivery_state", None) in _UNSENT
+    ):
+        return replace(_retried(entry, queued, info, code, now=now, clock=clock), failure=stop)
     if isinstance(error, HTTPStatusError):
-        if error.retry_stop_reason in _PERMANENT_STOPS:
-            return _dead(code, info)
-        return replace(_retried(entry, queued, info, code, now), failure=stop)
-    if info is not None:
-        return _dead(code, info)
-    if getattr(error, "delivery_state", None) in _UNSENT:
-        return replace(_retried(entry, queued, None, code, now), failure=stop)
-    return _Ended("delivery_unknown", "unknown", QueueOutcome(category="unknown", error_code=code), failure=stop)
+        return replace(_dead(code, info), failure=stop)
+    outcome = QueueOutcome(category="unknown", response=info, error_code=code)
+    return _Ended("delivery_unknown", "unknown", outcome, failure=stop)
 
 
 @dataclass(frozen=True, slots=True)
@@ -555,13 +594,25 @@ def _limits(
 class _Drain:
     """One drain: its session, the entries it claimed and holds, and what became of each."""
 
-    __slots__ = ("claimed", "core", "held", "limits", "plan", "reported", "security", "seen", "session")
+    __slots__ = (
+        "claimed",
+        "clock",
+        "core",
+        "held",
+        "limits",
+        "plan",
+        "reported",
+        "retry",
+        "security",
+        "seen",
+        "session",
+    )
 
     def __init__(self, core: ClientCore | AsyncClientCore, plan: QueuePlan, limits: _Limits) -> None:
         """Start the drain's session and bind each operation to the security the drain sends under."""
         from ..client.logical import OperationSession  # noqa: PLC0415 - Only a drain loads the call runtime.
 
-        self.core, self.plan, self.limits = core, plan, limits
+        self.core, self.plan, self.limits, self.clock = core, plan, limits, core.clock
         self.session: OperationSession = OperationSession(
             total_timeout=limits.total_timeout,
             deadline=limits.deadline,
@@ -572,6 +623,7 @@ class _Drain:
             queued.alias: _fingerprint(core.checkpoint_security(queued.call, limits.options)[0])
             for queued in plan.operations
         }
+        self.retry = {queued.alias: core.call_settings(limits.options, queued.call).retry for queued in plan.operations}
         self.seen: set[str] = set()
         self.held: list[QueueLease] = []
         self.claimed = 0
@@ -595,7 +647,7 @@ class _Drain:
         """Return the claim of the next wave, leased for a whole delivery and its grace."""
         policy = self.limits.policy
         limit = min(policy.parallelism, left)
-        now = _now()
+        now = _now(self.clock)
         until = now + timedelta(seconds=max(policy.lease_min, self.window(policy) + policy.lease_grace))
 
         def valid(value: object) -> bool:
@@ -622,9 +674,22 @@ class _Drain:
             self.reported[report].append(lease.entry.entry_id)
 
     def release(self) -> Generator[_Step, object, None]:
-        """Return every held entry to pending, leaving any another write changed."""
+        """Return every held entry to pending, or end it cancelled when a cancel was requested meanwhile.
+
+        A write another one beat is evaluated again against the entry it left, as long as the lease is this drain's.
+        """
         for lease in self.held:
-            yield _exchange(lease.entry, _released(lease.entry))
+            current: QueueEntry | None = lease.entry
+            for _ in range(_ROUNDS):
+                if current is None or not _ours(current, lease):
+                    break
+                if current.cancel_requested:
+                    entry = _applied(current, _cancelled(current.send_intent), prior=False)[0]
+                else:
+                    entry = _released(current)
+                written, current = yield from _write(current, entry)
+                if written:
+                    break
 
     def report(self) -> DrainReport:
         """Return the drain's report."""
@@ -690,10 +755,11 @@ class _Drain:
                 helper_id=plan.helper_id,
                 operation=None if queued is None else queued.operation,
             )
-        prior, now = entry.send_intent, _now()
+        prior, now, clock = entry.send_intent, _now(self.clock), self.clock
+        expires = _expiry(entry, queued)
         if entry.cancel_requested:
             return (yield from self.settle(lease, entry, _cancelled(prior), prior=prior))
-        if now >= entry.expires_at:
+        if now >= expires:
             return (yield from self.settle(lease, entry, _dead("expired"), prior=prior))
         if entry.delivery_count >= entry.policy.max_deliveries:
             return (yield from self.settle(lease, entry, _dead("max_deliveries"), prior=prior))
@@ -704,8 +770,11 @@ class _Drain:
             return (yield from self.settle(lease, entry, _dead("malformed_entry"), prior=prior))
         policy = entry.policy
         window = self.window(policy)
+        expiry = None
         if queued.dedupe_ttl is not None:
-            window = min(window, (entry.expires_at - now).total_seconds())
+            left = (expires - now).total_seconds()
+            window, expiry = min(window, left), clock.monotonic() + left
+        deadline = absolute_deadline(clock.monotonic() + window, clock=clock)
         until = now + timedelta(seconds=max(policy.lease_min, window + policy.lease_grace))
         current: QueueEntry | None = entry
         for _ in range(_ROUNDS):
@@ -723,12 +792,14 @@ class _Drain:
             return None
         if current.cancel_requested:
             return (yield from self.settle(lease, current, replace(_cancelled(prior), reverted=True), prior=prior))
+        if expiry is not None and expiry <= clock.monotonic():
+            return (yield from self.settle(lease, current, replace(_dead("expired"), reverted=True), prior=prior))
         try:
-            info = cast(
-                "ResponseInfo", (yield _Send(queued.call, arguments, body, media_type, options, Deadline.after(window)))
-            )
+            info = cast("ResponseInfo", (yield _Send(queued.call, arguments, body, media_type, options, deadline)))
         except SDKError as error:
-            ended = _ended(error, current, queued, _now())
+            ended = _ended(error, current, queued, _now(clock), self.retry[queued.alias], clock)
+        except _InterruptedError:
+            ended = _cancelled(intent=True)
         else:
             ended = _Ended("succeeded", "succeeded", QueueOutcome(category="success", response=info))
         return (yield from self.settle(lease, current, ended, prior=prior))  # noqa: B901 - Its runner receives the outcome.
@@ -771,7 +842,7 @@ def _cancel(plan: QueuePlan, entry_id: str) -> Generator[_Step, object, QueueEnt
     raise QueueStoreError(action="compare_exchange", entry_id=entry_id, helper_id=plan.helper_id)
 
 
-def _retry(plan: QueuePlan, entry_id: str) -> Generator[_Step, object, QueueEntry | None]:
+def _retry(plan: QueuePlan, entry_id: str, clock: Clock) -> Generator[_Step, object, QueueEntry | None]:
     """Return an entry of unknown delivery to pending with its key, or end it dead when expired or out of deliveries."""
     current = cast("QueueEntry | None", (yield _get(entry_id)))
     for _ in range(_ROUNDS):
@@ -779,8 +850,8 @@ def _retry(plan: QueuePlan, entry_id: str) -> Generator[_Step, object, QueueEntr
             return None
         if current.state != "delivery_unknown":
             raise ProtocolStateError(state=current.state, action="retry_unknown", helper_id=plan.helper_id)
-        now = _now()
-        if now >= current.expires_at:
+        now = _now(clock)
+        if now >= _expiry(current, plan.aliases.get(current.operation_alias)):
             entry = _applied(current, _dead("expired"), prior=False)[0]
         elif current.delivery_count >= current.policy.max_deliveries:
             entry = _applied(current, _dead("max_deliveries"), prior=False)[0]
@@ -802,6 +873,34 @@ async def _acall(plan: QueuePlan, store: AsyncQueueStore, step: _Store) -> objec
     return await _aran(plan, step, lambda: method(*step.arguments, **step.keywords))
 
 
+def _interrupted(
+    plan: QueuePlan, store: QueueStore, steps: Generator[_Step, object, object], error: BaseException
+) -> None:
+    """Let a plan whose delivery was interrupted save it as of unknown delivery, keeping failures beside the error."""
+    try:
+        step = steps.throw(_InterruptedError())
+        while isinstance(step, _Store):
+            step = steps.send(_call(plan, store, step))
+    except StopIteration:
+        return
+    except Exception as failure:  # noqa: BLE001
+        add_secondary(error, failure)
+
+
+async def _ainterrupted(
+    plan: QueuePlan, store: AsyncQueueStore, steps: Generator[_Step, object, object], error: BaseException
+) -> None:
+    """Let a plan whose delivery was interrupted save it, as `_interrupted` does, awaiting the asynchronous store."""
+    try:
+        step = steps.throw(_InterruptedError())
+        while isinstance(step, _Store):
+            step = steps.send(await _acall(plan, store, step))
+    except StopIteration:
+        return
+    except Exception as failure:  # noqa: BLE001
+        add_secondary(error, failure)
+
+
 def _driven(
     plan: QueuePlan,
     core: ClientCore,
@@ -811,7 +910,8 @@ def _driven(
 ) -> R:
     """Run a plan's steps: each store call through the store, each delivery as a child call of the session.
 
-    A step's SDK failure is raised into the plan, which handles a delivery's and lets every other one propagate.
+    A step's SDK failure is raised into the plan, which handles a delivery's and lets every other one propagate. A
+    native cancellation or interrupt of a delivery lets the plan save it as of unknown delivery, then propagates.
     """
     reply: object = None
     failure: SDKError | None = None
@@ -836,6 +936,10 @@ def _driven(
                 reply = _call(plan, store, step)
         except SDKError as error:
             failure = error
+        except BaseException as error:
+            if isinstance(step, _Send):
+                _interrupted(plan, store, steps, error)
+            raise
 
 
 async def _adriven(
@@ -871,6 +975,10 @@ async def _adriven(
                 reply = await _acall(plan, store, step)
         except SDKError as error:
             failure = error
+        except BaseException as error:
+            if isinstance(step, _Send):
+                await _ainterrupted(plan, store, steps, error)
+            raise
 
 
 def _failed(drain: _Drain, leases: list[QueueLease], results: list[object]) -> None:
@@ -966,7 +1074,7 @@ def drain_queue(
                 break
             if fresh := drain.accept(leases):
                 _wave(drain, store, fresh)
-    except Exception as error:
+    except BaseException as error:
         try:
             _driven(plan, core, store, drain.release())
         except Exception as failure:  # noqa: BLE001
@@ -995,7 +1103,7 @@ async def adrain_queue(
                 break
             if fresh := drain.accept(leases):
                 await _awave(drain, store, fresh)
-    except Exception as error:
+    except BaseException as error:
         try:
             await _adriven(plan, core, store, drain.release())
         except Exception as failure:  # noqa: BLE001
@@ -1032,13 +1140,13 @@ async def acancel_entry(core: AsyncClientCore, plan: QueuePlan, entry_id: object
 def retry_entry(core: ClientCore, plan: QueuePlan, entry_id: object) -> QueueEntry | None:
     """Return an entry of unknown delivery to pending, or end it dead, and return it as saved; None when unknown."""
     store: QueueStore = _store(core, plan)
-    return _driven(plan, core, store, _retry(plan, _entry_id(plan, entry_id)))
+    return _driven(plan, core, store, _retry(plan, _entry_id(plan, entry_id), core.clock))
 
 
 async def aretry_entry(core: AsyncClientCore, plan: QueuePlan, entry_id: object) -> QueueEntry | None:
     """Retry an entry of unknown delivery as `retry_entry` does, awaiting the asynchronous store."""
     store: AsyncQueueStore = _store(core, plan)
-    return await _adriven(plan, core, store, _retry(plan, _entry_id(plan, entry_id)))
+    return await _adriven(plan, core, store, _retry(plan, _entry_id(plan, entry_id), core.clock))
 
 
 def purge_entries(core: ClientCore, plan: QueuePlan, before: object) -> tuple[QueueEntry, ...]:
