@@ -239,7 +239,7 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
             exchange.respond(raw_response(302, b"", Location="https://elsewhere.example.com"))
             try:
                 api.pets.list_pets(x_trace=trace)
-            except Exception as failure:  # noqa: BLE001
+            except Exception as failure:  # ruff: ignore[blind-except]
                 lines.append(f"  redirect info {failure.status_code} {failure.headers!r}")
         if error is None and label == "error":
             exchange.respond(*((json_response(500, {"code": 7}),) * 3))
@@ -453,7 +453,7 @@ async def _async_pets(package: ModuleType, exchange: Exchange, lines: list[str])
 
 
 def _async_invalid(package: ModuleType) -> Callable[[], Any]:
-    async def build() -> object:  # ruff: ignore[unused-async]
+    async def build() -> object:  # ruff: ignore[unused-async] - The scenario calls this factory through the async entry point.
         return package.AsyncClient(http_client=httpx2.Client())
 
     return build
@@ -659,7 +659,7 @@ def _limit(call: Callable[[], object]) -> Callable[[], str]:
     def limited() -> str:
         try:
             call()
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:  # ruff: ignore[blind-except]
             over = error.observed > error.limit >= 1024 * 1024
             return f"{type(error).__name__} layer={error.layer} ratio={error.max_ratio} over={over}"
         return "decoded"

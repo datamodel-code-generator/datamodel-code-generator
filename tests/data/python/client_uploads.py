@@ -47,7 +47,7 @@ _EXPIRED: Final = datetime(2015, 10, 21, 7, 28, tzinfo=timezone.utc)
 
 
 class _Server:
-    """Store each upload's bytes and answer its create, probe, append, and complete calls."""
+    """Keep each upload's bytes and answer creates, probes, appends, and completions independently."""
 
     def __init__(self) -> None:
         """Start without uploads."""
@@ -291,7 +291,7 @@ def step(lines: list[str], label: str, call: Callable[[], object], *, uncertain_
     """Report a step's result or failure."""
     try:
         result = call()
-    except Exception as error:  # noqa: BLE001
+    except Exception as error:  # ruff: ignore[blind-except]
         lines.append(f"  {label} ! {_progress(error, uncertain_delivery=uncertain_delivery)}")
         return None
     lines.append(f"  {label} = {_progress(result)}")
@@ -302,7 +302,7 @@ async def astep(lines: list[str], label: str, call: Callable[[], Any], *, uncert
     """Report an asyncio step's result or failure."""
     try:
         result = await call()
-    except Exception as error:  # noqa: BLE001
+    except Exception as error:  # ruff: ignore[blind-except]
         lines.append(f"  {label} ! {_progress(error, uncertain_delivery=uncertain_delivery)}")
         return None
     lines.append(f"  {label} = {_progress(result)}")
@@ -611,15 +611,14 @@ def _sources(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
     """Refuse one-shot inputs and invalid sources before sending, and stop at content that changed."""
     helper, protocols = api.protocols.files.upload, harness.protocols
 
-    async def stream() -> AsyncIterator[bytes]:  # ruff: ignore[unused-async]
+    async def stream() -> AsyncIterator[bytes]:  # ruff: ignore[unused-async] - Exercise rejection of an async iterator.
         yield _CONTENT
 
     class Ranges:
         identity = harness.source().identity
         max_parallel_ranges = 0
 
-        def open_range(self, offset: int, length: int) -> object:
-            del offset, length
+        def open_range(self, _offset: int, _length: int) -> object:
             return self
 
     class Unidentified(Ranges):
@@ -641,8 +640,7 @@ def _sources(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
     class Texts(Ranges):
         max_parallel_ranges = 1
 
-        def open_range(self, offset: int, length: int) -> Any:
-            del offset, length
+        def open_range(self, _offset: int, _length: int) -> Any:
             from contextlib import nullcontext
 
             return nullcontext(io.StringIO(string.digits))
@@ -689,14 +687,16 @@ def _sources(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
 def _ranges(source: Any) -> str:
     """Describe what out-of-range and invalid reads of a builtin source raise."""
     found = []
-    for label, call in (
-        ("past the end", lambda: source.open_range(5, 10).__enter__()),  # ruff: ignore[unnecessary-dunder-call]
-        ("a negative offset", lambda: source.open_range(-1, 1).__enter__()),  # ruff: ignore[unnecessary-dunder-call]
-    ):
-        try:
-            call()
-        except ValueError:  # ruff: ignore[try-except-in-loop]
-            found.append(f"{label} refused")
+    try:
+        with source.open_range(5, 10):
+            pass
+    except ValueError:
+        found.append("past the end refused")
+    try:
+        with source.open_range(-1, 1):
+            pass
+    except ValueError:
+        found.append("a negative offset refused")
     return ", ".join(found)
 
 
@@ -783,8 +783,8 @@ def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
     dotted = protocols.ResumeState(**fingerprints, state=dots, payload=state_payload(exported))
     record(lines, "resume with a path value of dots and bytes for a source", lambda: helper.resume(_CONTENT, dotted))
     digests = state_payload(exported)
-    other = protocols.ResumeState(**fingerprints, state=saved, payload=digests[:32] + bytes(32) + digests[64:])
-    step(lines, "resume with digests of other content", lambda: helper.resume(harness.source(), other))
+    mismatched = protocols.ResumeState(**fingerprints, state=saved, payload=digests[:32] + bytes(32) + digests[64:])
+    step(lines, "resume with digests of other content", lambda: helper.resume(harness.source(), mismatched))
     lines.append("a checkpoint of another security partition")
     secured = harness.client_options(
         protocols=harness.options.ProtocolClientOptions(
@@ -1068,7 +1068,7 @@ async def _async_uploads(harness: _Uploads, server: _Server, lines: list[str]) -
         lines.append("async file source")
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory, "content.bin")
-            path.write_bytes(_CONTENT)  # ruff: ignore[blocking-path-method-in-async-function]
+            await asyncio.to_thread(path.write_bytes, _CONTENT)
             async with await protocols.AsyncFileUploadSource.from_path(path) as source:
                 lines.append(f"  source {source!r}")
                 exchange.respond(*[server] * 4)
@@ -1079,7 +1079,7 @@ async def _async_uploads(harness: _Uploads, server: _Server, lines: list[str]) -
                     first = await reader.read(3)
                     await reader.aclose()
                     lines.append(f"  file range {first!r}, after close {await reader.read(1)!r}")
-                path.write_bytes(b"0123456789abc")  # ruff: ignore[blocking-path-method-in-async-function]
+                await asyncio.to_thread(path.write_bytes, b"0123456789abc")
                 await arecord(
                     lines, "start after the file changed", lambda: helper.start(source, tus_resumable=harness.tus)
                 )
