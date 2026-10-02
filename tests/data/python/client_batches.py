@@ -416,7 +416,16 @@ def _siblings(harness: _Batches, api: Any, server: _Server, lines: list[str]) ->
     server.respond(answer, cancelling)
     single = harness.batch(batch_size=2, parallelism=1)
     options = harness.options.RequestOptions(cancel_token=token)
-    continued(lines, "cancelled while answered", users.iterate(harness.users(6), batch_options=single, options=options))
+    states = {harness.errors.DeliveryState.MAYBE_SENT, harness.errors.DeliveryState.RESPONSE_STARTED}
+    continued(
+        lines,
+        "cancelled while answered",
+        users.iterate(harness.users(6), batch_options=single, options=options),
+        failure_description=lambda error: (
+            f"{type(error).__name__} delivery_unknown={error.delivery_state in states} "
+            f"source={error.source} reason={error.reason_code}"
+        ),
+    )
     server.report("cancelled while answered")
     _deadline(harness, server, lines)
     server.report("deadline while answered")

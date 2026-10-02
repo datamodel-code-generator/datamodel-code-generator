@@ -251,7 +251,7 @@ requests in flight after a failure
     success #1 id='u0001' status=200 value=u0001
     delivery_unknown #2 id='u0002' status=None no payload
     delivery_unknown #3 id='u0003' status=None no payload
-    ! after 4: RequestCancelledError: RequestCancelledError(operation_id='createUsers', call_id='<call>', source='cancel_token', delivery_state='RESPONSE_STARTED') [operation_id='createUsers', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>] request_cancelled_error
+    ! after 4: RequestCancelledError delivery_unknown=True source=cancel_token reason=request_cancelled_error
   cancelled while answered: 2 requests
     > u0000 POST /users/batch items=2 last=u0001 bytes=73
     > u0002 POST /users/batch items=2 last=u0003 bytes=73
