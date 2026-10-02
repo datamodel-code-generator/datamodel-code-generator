@@ -11,15 +11,16 @@ from .._runtime.protocols.caches import (
     CacheResult,
     CacheStore,
 )
+from .._runtime.protocols.circuit_records import (
+    CircuitKey,
+    CircuitPermit,
+    CircuitSnapshot,
+)
 from .._runtime.protocols.options import (
     AsyncCircuitStore,
     CacheOptions,
     CircuitBreakerOptions,
-    CircuitKey,
-    CircuitPermit,
-    CircuitSnapshot,
     CircuitStore,
-    Origin,
     PaginationOptions,
     PollOptions,
     ProtocolDefaults,
@@ -29,6 +30,7 @@ from .._runtime.protocols.options import (
     WebSocketTransportOptions,
     WSOptions,
 )
+from .._runtime.protocols.origins import Origin
 from .._runtime.protocols.records import (
     BodySelector,
     BodyTarget,

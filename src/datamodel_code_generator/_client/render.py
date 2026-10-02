@@ -362,15 +362,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .._runtime.protocols.caches import AsyncCacheStore, CacheEntry, CacheResult, CacheStore
+from .._runtime.protocols.circuit_records import CircuitKey, CircuitPermit, CircuitSnapshot
 from .._runtime.protocols.options import (
     AsyncCircuitStore,
     CacheOptions,
     CircuitBreakerOptions,
-    CircuitKey,
-    CircuitPermit,
-    CircuitSnapshot,
     CircuitStore,
-    Origin,
     PaginationOptions,
     PollOptions,
     ProtocolDefaults,
@@ -380,6 +377,7 @@ from .._runtime.protocols.options import (
     WebSocketTransportOptions,
     WSOptions,
 )
+from .._runtime.protocols.origins import Origin
 from .._runtime.protocols.records import (
     BodySelector,
     BodyTarget,
@@ -3730,7 +3728,8 @@ final 500, 502, 503, or 504 response are failures; any other response is a succe
 timeouts, 429, cancellation, deadlines, auth and token failures, and configuration, encoding, decoding, and validation
 errors leave the circuit unchanged. A streaming call completes when its response is handed over. The threshold of
 consecutive failures opens the circuit for the cooldown; then one call probes it, closing it on success and reopening
-it on failure, while other calls raise `CircuitOpenError`; a cancelled or neutral probe frees the slot.
+it on failure, while other calls raise `CircuitOpenError`; a cancelled or neutral probe frees the slot, as does a
+probe that records no outcome within another cooldown.
 
 `circuit_store` borrows a `CircuitStore` (an `AsyncCircuitStore` for `AsyncClient`) and never closes it; clients
 sharing one store share circuits with the same key. Its methods receive `now` from the monotonic source of the
