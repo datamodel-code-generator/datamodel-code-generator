@@ -26,8 +26,7 @@
   open error fields backend 2.5 None
   store repeated probe half_open failures=1 retry_at=None generation=2
   store probe running ! CircuitOpenError: CircuitOpenError(group='backend') [] circuit_open_error
-  store probe replaced 3 half_open failures=1 retry_at=4.0 generation=3
-  store replaced probe closed closed failures=0 retry_at=None generation=4
+  store probe closed closed failures=0 retry_at=None generation=3
   store admit key ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('key',), condition='invalid_value'] protocol_configuration_error
   store record permit ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('permit',), condition='invalid_value'] protocol_configuration_error
   store reset key ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('key',), condition='invalid_value'] protocol_configuration_error
@@ -342,6 +341,10 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token-secret] b''
     record success generation=0 probe=False
   auth with partition = Status(state='up')
+  other auth in a view ! ProtocolConfigurationError: ProtocolConfigurationError(operation_id='getAccount', call_id='<call>', condition='security_partition') [operation_id='getAccount', field_path=('options', 'auth'), condition='security_partition'] protocol_configuration_error
+  > GET https://api.example.com/health
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  other auth ungrouped = Status(state='up')
 # store_failures
   admit raises ! CircuitStoreError: CircuitStoreError(operation_id='getStatus', call_id='<call>', action='admit') [operation_id='getStatus', cause=RuntimeError('store down')] circuit_store_error
   admit raises secondary []
@@ -361,6 +364,12 @@
   > GET https://api.example.com/status
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
   record after failure secondary ['CircuitStoreError']
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  record open ! CircuitStoreError: CircuitStoreError(operation_id='getStatus', call_id='<call>', action='record') [operation_id='getStatus', cause=CircuitOpenError()] circuit_store_error
+  > GET https://api.example.com/status
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
+  record open secondary []
   > GET https://api.example.com/status
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, text/plain] b''
   raw record failure ! CircuitStoreError: CircuitStoreError(operation_id='getStatus', call_id='<call>', action='record') [operation_id='getStatus', cause=RuntimeError('store down')] circuit_store_error
@@ -486,3 +495,7 @@
     record neutral generation=2 probe=True
   async cancelled probe ! RequestCancelledError: RequestCancelledError(operation_id='getStatus', call_id='<call>', source='cancel_token', delivery_state='NOT_SENT') [operation_id='getStatus', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] request_cancelled_error
   async after cancel half_open failures=5 retry_at=None generation=2
+  > POST https://api.example.com/uploads
+    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/octet-stream, content-length: 6] b'upload'
+  cancelled while recording, file closed True
+  recorded after the cancel closed failures=1 retry_at=None generation=0

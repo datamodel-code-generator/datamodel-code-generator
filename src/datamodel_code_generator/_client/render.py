@@ -3661,17 +3661,17 @@ enabled=True))` is passed in `ClientOptions(protocols=...)`; otherwise calls tak
 
 Each call of a grouped operation passes the circuit of its group, the origin of its URL, and the client's
 `ProtocolSecurityContext.credential_partition` (`anonymous` without a context) once its request is encoded and before
-any credential, limiter permit, or send. An authenticated call needs a security context, or it raises
-`ProtocolConfigurationError` before sending. An open circuit raises `CircuitOpenError` with its `key` and the monotonic
-`retry_at` of its next admission; the call consumes no send, attempt, or token exchange, and is never retried.
+any credential, limiter permit, or send. An authenticated call needs a security context, and a view or call with
+other auth than the client's is refused, each with `ProtocolConfigurationError` before sending. An open circuit
+raises `CircuitOpenError` with its `key` and the monotonic `retry_at` of its next admission; the call consumes no
+send, attempt, or token exchange, and is never retried.
 
 A call's outcome is recorded once, after its redirects and retries. Connect, read, and write transport failures and a
 final 500, 502, 503, or 504 response are failures; any other response is a success, which resets the count. Pool
 timeouts, 429, cancellation, deadlines, auth and token failures, and configuration, encoding, decoding, and validation
 errors leave the circuit unchanged. A streaming call completes when its response is handed over. The threshold of
 consecutive failures opens the circuit for the cooldown; then one call probes it, closing it on success and reopening
-it on failure, while other calls raise `CircuitOpenError`; a cancelled or neutral probe frees the slot, as does a
-probe that records no outcome within another cooldown.
+it on failure, while other calls raise `CircuitOpenError`; a cancelled or neutral probe frees the slot.
 
 `circuit_store` borrows a `CircuitStore` (an `AsyncCircuitStore` for `AsyncClient`) and never closes it; clients
 sharing one store share circuits with the same key. Its methods receive `now` from the monotonic source of the

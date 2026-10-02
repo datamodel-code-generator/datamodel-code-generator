@@ -102,14 +102,16 @@ class _Circuits:
             circuit = self._circuits.setdefault(key, _Circuit())
             circuit.options = options
             probe = circuit.state != "closed"
-            if circuit.state == "open" or circuit.probe is not None:
+            if circuit.state == "open":
                 assert circuit.retry_at is not None
                 if now < circuit.retry_at:
                     raise CircuitOpenError(key=key, retry_at=circuit.retry_at)
                 circuit.move("half_open")
+            elif circuit.probe is not None:
+                raise CircuitOpenError(key=key, retry_at=now)
             permit_id = str(next(self._ids))
             if probe:
-                circuit.probe, circuit.retry_at = permit_id, now + options.cooldown
+                circuit.probe = permit_id
             return CircuitPermit(key=key, generation=circuit.generation, probe=probe, permit_id=permit_id)
 
     def record(self, permit: CircuitPermit, result: CircuitOutcome, now: float) -> None:
@@ -121,7 +123,7 @@ class _Circuits:
             if permit.probe:
                 if circuit.probe != permit.permit_id:
                     return
-                circuit.probe = circuit.retry_at = None
+                circuit.probe = None
             if result == "success":
                 circuit.failures = 0
                 if permit.probe:
@@ -152,9 +154,9 @@ class MemoryCircuitStore:
     """Keep the circuits of one client in this process; a store passed to several clients shares their circuits.
 
     Each operation is atomic under one lock. A circuit opens after the threshold of consecutive failures, admits one
-    probe once its cooldown passed, and closes when that probe succeeds; a probe that records no outcome within another
-    cooldown is replaced by the next call. Every transition and reset advances its generation, so outcomes of calls
-    admitted before it are ignored.
+    probe once its cooldown passed, and closes when that probe succeeds; only one probe runs at a time, and the client
+    records every probe it admits. Every transition and reset advances its generation, so outcomes of calls admitted
+    before it are ignored.
     """
 
     __slots__ = ("_circuits",)
@@ -207,11 +209,10 @@ class AsyncMemoryCircuitStore:
 
 
 def _store_failure(action: _Action, error: Exception) -> Exception:
-    return (
-        error
-        if isinstance(error, (CircuitOpenError, CircuitStoreError))
-        else CircuitStoreError(action=action, cause=error)
-    )
+    """Pass a store's own failure and an admission's open circuit; wrap anything else, an open circuit elsewhere too."""
+    if isinstance(error, CircuitStoreError) or (action == "admit" and isinstance(error, CircuitOpenError)):
+        return error
+    return CircuitStoreError(action=action, cause=error)
 
 
 def _stored(action: _Action, call: Callable[[], R]) -> R:

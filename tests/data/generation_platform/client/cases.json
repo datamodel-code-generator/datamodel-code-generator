@@ -3853,6 +3853,12 @@
           "runtime": {
             "circuit_group": "search"
           }
+        },
+        {
+          "ref": "/paths/~1uploads/post",
+          "runtime": {
+            "circuit_group": "backend"
+          }
         }
       ]
     },

@@ -143,10 +143,9 @@ if TYPE_CHECKING:
 
     from ..model_codecs.parameters import ParameterFragment
     from ..model_codecs.wire import WireValue
+    from ..protocols.circuit_records import CircuitKey, CircuitPermit
     from ..protocols.circuits import Breaker
     from ..protocols.options import (
-        CircuitKey,
-        CircuitPermit,
         ProtocolClientOptions,
         ProtocolDefaults,
         ProtocolSecurityContext,
@@ -839,21 +838,64 @@ def _retry_error(error: BaseException) -> TypeIs[HTTPStatusError[object] | Trans
 _EMPTY_ORIGINS: Final[frozenset[Origin]] = frozenset()
 
 
-def _circuit(breaker: Breaker, call: _Call, url: str) -> CircuitKey | None:
-    """Return the key of a call's circuit, or None for a call of an operation outside every circuit group."""
+def _circuit(breaker: Breaker, call: _Call, url: str, root_auth: AuthConfig | None) -> CircuitKey | None:
+    """Return the key of a call's circuit, or None for a call of an operation outside every circuit group.
+
+    A call authenticating with other auth than the client's would share the client's partition, so it is refused.
+    """
     if (operation := call.operation) is None or (group := operation.circuit_group) is None:
         return None
+    if call.auth is not None and call.settings.auth is not root_auth:
+        raise ProtocolConfigurationError(field_path=("options", "auth"), condition="security_partition")
     return breaker.call_key(url, group, authenticated=call.auth is not None)
 
 
-def _admission(breaker: Breaker, call: _Call, url: str) -> tuple[Breaker, CircuitPermit] | None:
+def _admission(
+    shared: _Shared[TransportAdapter], breaker: Breaker, call: _Call, url: str
+) -> tuple[Breaker, CircuitPermit] | None:
     """Pass a call through its circuit, returning the breaker and permit to record its outcome with."""
-    return None if (key := _circuit(breaker, call, url)) is None else (breaker, breaker.admit(key))
+    key = _circuit(breaker, call, url, shared.root_auth)
+    return None if key is None else (breaker, breaker.admit(key))
 
 
-async def _aadmission(breaker: Breaker, call: _Call, url: str) -> tuple[Breaker, CircuitPermit] | None:
+async def _aadmission(
+    shared: _Shared[AsyncTransportAdapter], breaker: Breaker, call: _Call, url: str
+) -> tuple[Breaker, CircuitPermit] | None:
     """Pass an asyncio call through its circuit, returning the breaker and permit to record its outcome with."""
-    return None if (key := _circuit(breaker, call, url)) is None else (breaker, await breaker.aadmit(key))
+    key = _circuit(breaker, call, url, shared.root_auth)
+    return None if key is None else (breaker, await breaker.aadmit(key))
+
+
+def _abandoned(
+    call: _Call,
+    owned: tuple[BodySource | None, BodyBindings | None],
+    admission: tuple[Breaker, CircuitPermit] | None,
+    failure: BaseException,
+) -> None:
+    """Release a failed call's body source and captured input, then record its outcome if it passed a circuit."""
+    try:
+        for resource in owned:
+            if resource is not None:
+                call.retry_blocked |= not _discarded(resource.close, failure)
+    finally:
+        if admission is not None:
+            admission[0].record(admission[1], failure, None)
+
+
+async def _aabandoned(
+    call: _Call,
+    owned: tuple[AsyncBodySource | None, AsyncBodyBindings | None],
+    admission: tuple[Breaker, CircuitPermit] | None,
+    failure: BaseException,
+) -> None:
+    """Release a failed asyncio call's body, then record its outcome, finishing the record even if cancelled."""
+    try:
+        for resource in owned:
+            if resource is not None:
+                await call.cleanup(resource.aclose, error=failure)
+    finally:
+        if admission is not None:
+            await asyncio.shield(admission[0].arecord(admission[1], failure, None))
 
 
 def _circuit_recorded(admission: tuple[Breaker, CircuitPermit], result: object, call: _Call) -> None:
@@ -1579,7 +1621,7 @@ class _Shared(Generic[AdapterT]):
     def protect(self, protocols: ProtocolClientOptions | None, clock: Clock, *, asynchronous: bool) -> None:
         """Keep the client's protocol settings and create its breaker, on the client's clock, if they enable one."""
         self.protocols = protocols
-        if protocols is not None and not isinstance(protocols.circuit, Unset):
+        if protocols is not None and self.circuit_groups and not isinstance(protocols.circuit, Unset):
             from ..protocols.circuits import breaker  # noqa: PLC0415 - Only circuit settings load the breaker.
 
             self.breaker = breaker(protocols, clock, asynchronous=asynchronous)
@@ -1648,11 +1690,11 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
 
     def circuit_key(self, group: object, origin: object) -> CircuitKey | None:
         """Return the key of one of the package's circuit groups at an origin, or None when no breaker is enabled."""
-        from ..protocols import options  # noqa: PLC0415 - Only circuit resets load the protocol settings.
+        from ..protocols import origins  # noqa: PLC0415 - Only circuit resets load the protocol origins.
 
         if not isinstance(group, str) or group not in self._shared.circuit_groups:
             raise ProtocolConfigurationError(field_path=("group",), condition="unknown_field")
-        if not isinstance(origin, options.Origin):
+        if not isinstance(origin, origins.Origin):
             raise ProtocolConfigurationError(field_path=("origin",), condition="invalid_value")
         if (breaker := self._shared.breaker) is None:
             return None
@@ -3144,7 +3186,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             if not call.streaming:
                 call.finish()
 
-    def _run(  # noqa: PLR0912, PLR0913, PLR0917
+    def _run(  # noqa: PLR0913, PLR0917
         self,
         call: _Call,
         body: object,
@@ -3189,19 +3231,14 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                 _released(abandoned.close, call.operation_id, call.call_id)
             call.check("encode")
             if (breaker := self._shared.breaker) is not None:
-                admission = _admission(breaker, call, request.url)
+                admission = _admission(self._shared, breaker, call, request.url)
             result = self._exchange(request, source, call, receive, adapter)
             if admission is not None:
                 admitted, admission = admission, None
                 _circuit_recorded(admitted, result, call)
         except BaseException as error:  # noqa: BLE001
             failure = call.failure(error)
-            if admission is not None:
-                admission[0].record(admission[1], failure, None)
-            if source is not None:
-                call.retry_blocked |= not _discarded(source.close, failure)
-            if entry is not None:
-                call.retry_blocked |= not _discarded(entry.close, failure)
+            _abandoned(call, (source, entry), admission, failure)
             raise failure from None
         if source is not None:
             try:
@@ -4140,7 +4177,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             if not call.streaming:
                 call.finish()
 
-    async def _run(  # noqa: PLR0912, PLR0913, PLR0917
+    async def _run(  # noqa: PLR0913, PLR0917
         self,
         call: _Call,
         body: object,
@@ -4183,19 +4220,14 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 await call.cleanup(abandoned.aclose)
             call.check("encode")
             if (breaker := self._shared.breaker) is not None:
-                admission = await _aadmission(breaker, call, request.url)
+                admission = await _aadmission(self._shared, breaker, call, request.url)
             result = await self._exchange(request, source, call, receive, adapter)
             if admission is not None:
                 admitted, admission = admission, None
                 await _acircuit_recorded(admitted, result, call)
         except BaseException as error:  # noqa: BLE001
             failure = call.failure(error)
-            if admission is not None:
-                await admission[0].arecord(admission[1], failure, None)
-            if source is not None:
-                await call.cleanup(source.aclose, error=failure)
-            if entry is not None:
-                await call.cleanup(entry.aclose, error=failure)
+            await _aabandoned(call, (source, entry), admission, failure)
             raise failure from None
         if source is not None:
             try:
