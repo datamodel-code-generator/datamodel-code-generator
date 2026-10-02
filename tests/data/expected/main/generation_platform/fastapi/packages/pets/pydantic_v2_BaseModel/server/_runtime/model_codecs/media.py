@@ -151,6 +151,7 @@ def _json_error(error: ValueError | RecursionError) -> WireValidationError | Cod
 
 
 def _nesting_limit() -> CodecResourceLimitError:
+    """Return the resource limit shared by JSON parsing and wire freezing."""
     return CodecResourceLimitError("JSON text is nested beyond the interpreter recursion limit")
 
 

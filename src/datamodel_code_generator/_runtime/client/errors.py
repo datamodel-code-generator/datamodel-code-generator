@@ -2413,13 +2413,13 @@ class ResponseDecodeError(SDKError):
         auth_refresh_pending: int = 0,
         wire_send_count: int | None = None,
     ) -> None:
-        """Keep the response metadata, the bounded body, and why it did not decode."""
+        """Keep the response metadata, bounded body, and decode cause without its traceback."""
         super().__init__(
             operation_id=operation_id,
             call_id=call_id,
             parent_session_id=parent_session_id,
             info=info,
-            cause=cause,
+            cause=None if cause is None else cause.with_traceback(None),
             secondary_errors=secondary_errors,
             resource_attempt_count=resource_attempt_count,
             redirect_count=redirect_count,

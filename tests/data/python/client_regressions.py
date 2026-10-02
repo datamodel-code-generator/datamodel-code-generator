@@ -32,6 +32,7 @@ def no_success(package: ModuleType, lines: list[str]) -> None:
 
 
 def _responses() -> Iterator[tuple[str, str, Any]]:
+    """Yield declared errors and undeclared successes for the error-only operations."""
     yield "bodyless error", "create_archive", raw_response(409)
     yield "JSON error", "read_archive", json_response(404, {"detail": "missing"})
     yield "range error", "check_archive", raw_response(403)
@@ -40,6 +41,7 @@ def _responses() -> Iterator[tuple[str, str, Any]]:
 
 
 async def _async_no_success(package: ModuleType, exchange: Exchange, lines: list[str]) -> None:
+    """Exercise the asynchronous error-only operations and their metadata view."""
     async with package.AsyncClient(http_client=exchange.async_client(), http_client_ownership="owned") as api:
         for label, name, response in _responses():
             exchange.respond(response)
@@ -49,6 +51,7 @@ async def _async_no_success(package: ModuleType, exchange: Exchange, lines: list
 
 
 def _bodies() -> Iterator[tuple[str, bytes]]:
+    """Build malformed JSON bodies from the external regression cases."""
     for case in json.loads((SOURCE / "json-decode-errors.json").read_text(encoding="utf-8")):
         if "hex" in case:
             yield case["name"], bytes.fromhex(case["hex"])
@@ -62,17 +65,19 @@ def _bodies() -> Iterator[tuple[str, bytes]]:
 
 
 def _failure(error: Any) -> str:
+    """Report the decode cause's classification, retained exception links, and body prefix."""
     cause = error.cause
     codes = ",".join(issue.code for issue in getattr(cause, "issues", ()))
     prefix = error.raw_prefix if hasattr(error, "raw_prefix") else error.body_bytes
     return (
         f"{type(error).__name__} {type(cause).__name__} {codes} "
-        f"context={cause.__context__!r} cause={cause.__cause__!r} "
+        f"context={cause.__context__!r} cause={cause.__cause__!r} traceback={cause.__traceback__ is not None} "
         f"prefix={len(prefix)} truncated={error.truncated}"
     )
 
 
 def _stream(api: Any, body: bytes) -> tuple[Any, bytes, str]:
+    """Frame a malformed JSON record for the generated SSE or NDJSON helper."""
     if hasattr(api.protocols, "events"):
         return api.protocols.events.messages, b"data: " + body + b"\n\n", "text/event-stream"
     return api.protocols.records.all, body + b"\n", "application/x-ndjson"
@@ -102,6 +107,7 @@ def json_decode_errors(package: ModuleType, lines: list[str]) -> None:
 
 
 async def _async_json_decode_errors(package: ModuleType, exchange: Exchange, lines: list[str]) -> None:
+    """Inspect asynchronous JSON response and stream failures through real HTTP exchanges."""
     errors = importlib.import_module(f"{package.__name__}.errors")
     async with package.AsyncClient(http_client=exchange.async_client(), http_client_ownership="owned") as api:
         for label, body in _bodies():
