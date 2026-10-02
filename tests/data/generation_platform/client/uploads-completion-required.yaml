@@ -430,7 +430,6 @@ components:
       required:
       - index
       - receipt
-      - size
       properties:
         index:
           type: integer
@@ -438,6 +437,9 @@ components:
           type: string
         size:
           type: integer
+      allOf:
+      - $ref: '#/components/schemas/RequiredPartSize'
+      - $ref: '#/components/schemas/RequiredPartSize'
     CompletionParts:
       type: object
       required:
@@ -465,3 +467,10 @@ components:
       properties:
         aborted:
           type: boolean
+    RequiredPartSize:
+      type: object
+      required:
+      - size
+      properties:
+        size:
+          type: integer
