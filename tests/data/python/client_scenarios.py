@@ -897,7 +897,13 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     ),
     "upload-probe-compression": (
         "uploads-probe-compression",
-        ("pydantic_v2.BaseModel", "pydantic_v2.dataclass", "dataclasses.dataclass", "typing.TypedDict", "msgspec.Struct"),
+        (
+            "pydantic_v2.BaseModel",
+            "pydantic_v2.dataclass",
+            "dataclasses.dataclass",
+            "typing.TypedDict",
+            "msgspec.Struct",
+        ),
         parts_probe_compression,
     ),
     "uploads-oauth": ("uploads-oauth", ("pydantic_v2.BaseModel",), uploads_oauth),
