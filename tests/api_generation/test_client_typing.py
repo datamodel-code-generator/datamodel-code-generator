@@ -170,6 +170,26 @@ def test_client_typing_uploads(backend: DataModelType, tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
+    "backend",
+    [
+        DataModelType.PydanticV2BaseModel,
+        DataModelType.PydanticV2Dataclass,
+        DataModelType.DataclassesDataclass,
+        DataModelType.TypingTypedDict,
+        DataModelType.MsgspecStruct,
+    ],
+)
+def test_client_typing_batches(backend: DataModelType, tmp_path: Path) -> None:
+    """Check batch helpers: typed items and records, sync and asyncio iterators, and misuses of each."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(
+        client_typing_report(tmp_path, backend, "batches", ("batches",)),
+        EXPECTED / f"{backend.value.replace('.', '-')}-batches.txt",
+    )
+
+
+@pytest.mark.parametrize(
     "case", ["pagination-targets", "pagination-querystring", "pagination-counts", "pagination-links", "streams-mixed"]
 )
 def test_client_typing_package(case: str, tmp_path: Path) -> None:
@@ -334,4 +354,24 @@ def test_client_typing_unions(backend: DataModelType, tmp_path: Path) -> None:
     assert_output(
         client_typing_report(tmp_path, backend, "unions-schema", ("unions",)),
         EXPECTED / f"{backend.value.replace('.', '-')}-unions.txt",
+    )
+
+
+def test_client_typing_circuits(tmp_path: Path) -> None:
+    """Check circuit breaker settings, records, stores, and the declared groups of a package's resets."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(
+        client_typing_report(tmp_path, DataModelType.PydanticV2BaseModel, "circuits", ("circuits",)),
+        EXPECTED / "pydantic_v2-BaseModel-circuits.txt",
+    )
+
+
+def test_client_typing_compression(tmp_path: Path) -> None:
+    """Check request coding settings on client, view, call, and helper options."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(
+        client_typing_report(tmp_path, DataModelType.PydanticV2BaseModel, "compression", ("compression",)),
+        EXPECTED / "pydantic_v2-BaseModel-compression.txt",
     )

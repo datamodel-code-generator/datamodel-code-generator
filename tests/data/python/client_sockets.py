@@ -353,6 +353,7 @@ def _refusals(harness: _Harness, api: Any) -> None:
         ("managed header", lambda: chat.connect(room=harness.room(), options=options.RequestOptions(headers=(("Upgrade", "h2c"),)))),
         ("no send slot", lambda: chat.connect(room=harness.room(), session_options=options.SessionOptions(max_network_sends=0))),
         ("reconnecting", lambda: chat.connect(room=harness.room(), ws_options=harness.ws(reconnect=True))),
+        ("compression", lambda: chat.connect(room=harness.room(), options=options.RequestOptions(compression="gzip"))),
         ("options of another type", lambda: chat.connect(room=harness.room(), ws_options=options.RequestOptions())),
         ("request options of another type", lambda: chat.connect(room=harness.room(), options=harness.ws())),
         ("session options of another type", lambda: chat.connect(room=harness.room(), session_options=harness.ws())),

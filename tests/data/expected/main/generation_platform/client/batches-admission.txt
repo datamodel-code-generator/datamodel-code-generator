@@ -1,0 +1,181 @@
+# batches-admission
+render pydantic_v2.BaseModel
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/users/__init__.py
+  write client/resources/users/_sync.py
+  write client/resources/users/_async.py
+  write client/resources/tags/__init__.py
+  write client/resources/tags/_sync.py
+  write client/resources/tags/_async.py
+  write client/types/__init__.py
+  write client/types/users/__init__.py
+  write client/types/users/_operations.py
+  write client/types/tags/__init__.py
+  write client/types/tags/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_generated/client_checks.py
+  write client/_generated/security.py
+  write client/_operations.py
+  write client/protocols/_plans.py
+  write client/protocols/batches.py
+  write client/protocols/_helpers.py
+  write client/protocols/_async_helpers.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['users.create', 'tags.put', 'tags.colors'] bindings 5
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper users.create batch enabled True /inputs/target_config/protocol_metadata/helpers/users.create 7517d4b0805c342154f296f1f6b8e86afdcf10c3ff4ca1e2303fca8586e31fd4
+  helper tags.put batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.put 0cf87757d778a7e442bdb26f3b5624af154a2d65ae42ee6c6412de873ce42ede
+  helper tags.colors batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.colors db6acf7343ec57ec3c415f96f00271384182018415ea04ef2dba9e3196d91865
+  {
+    "helpers": {
+      "tags.colors": {
+        "correlation": {
+          "input": "/color",
+          "kind": "id",
+          "result": "/color"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Tag"
+        },
+        "kind": "batch",
+        "max_items": 100,
+        "max_request_bytes": 1048576,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1tags~1batch/put"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/items"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/tag",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Tag"
+          }
+        }
+      },
+      "tags.put": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Tag"
+        },
+        "kind": "batch",
+        "max_items": 3,
+        "max_request_bytes": 1048576,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1tags~1batch/put"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/items"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/tag",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Tag"
+          }
+        }
+      },
+      "users.create": {
+        "correlation": {
+          "input": "/id",
+          "kind": "id",
+          "result": "/id"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/NewUser"
+        },
+        "kind": "batch",
+        "max_items": 37,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1users~1batch/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": "/users"
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/user",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/User"
+          }
+        }
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 users.create_users(query:dryRun=dry_run)
+    exports client.types.users.CreateUsersResponse client.types.users.CreateUsersErrorData client.types.users.CreateUsersHTTPError
+    exports client.types.users.CreateUsersRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 tags.put_tags()
+    exports client.types.tags.PutTagsResponse client.types.tags.PutTagsErrorData client.types.tags.PutTagsHTTPError
+    exports client.types.tags.PutTagsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

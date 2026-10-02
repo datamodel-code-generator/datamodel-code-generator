@@ -32,6 +32,10 @@
   PollSnapshot keyword-only=True hints=('state', 'terminal', 'data', 'response')
   PaginationOptions fields=('max_pages', 'max_items', 'max_page_bytes', 'max_cursor_bytes')
   PaginationOptions keyword-only=True hints=('max_pages', 'max_items', 'max_page_bytes', 'max_cursor_bytes')
+  BatchOptions fields=('batch_size', 'parallelism', 'max_items', 'max_item_bytes', 'max_buffer_bytes', 'raise_on_error')
+  BatchOptions keyword-only=True hints=('batch_size', 'parallelism', 'max_items', 'max_item_bytes', 'max_buffer_bytes', 'raise_on_error')
+  UploadOptions fields=('chunk_bytes', 'max_parts', 'parallelism', 'max_uncertain_probes')
+  UploadOptions keyword-only=True hints=('chunk_bytes', 'max_parts', 'parallelism', 'max_uncertain_probes')
   PollOptions fields=('max_polls', 'interval', 'max_wait')
   PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait')
   StreamOptions fields=('idle_timeout', 'max_line_bytes', 'max_event_bytes', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
@@ -40,8 +44,8 @@
   ProtocolSecurityContext keyword-only=True hints=('credential_partition', 'allowed_origins')
   ProtocolDefaults fields=('session', 'options')
   ProtocolDefaults keyword-only=True hints=('session', 'options')
-  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'queue_stores')
-  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'queue_stores')
+  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store', 'queue_stores')
+  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store', 'queue_stores')
   Continuation parameters=('kind', 'value') keyword-only=True hints=('kind', 'value', 'return') final=True
   ResumeState parameters=('helper_fingerprint', 'security_fingerprint', 'state', 'payload', 'expires_at') keyword-only=True hints=('helper_fingerprint', 'security_fingerprint', 'state', 'payload', 'expires_at', 'return') final=True
   HeaderSelector.occurrence values=('single', 'all')
@@ -329,6 +333,83 @@
   PaginationOptions.max_cursor_bytes True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_cursor_bytes',), condition='invalid_value'] protocol_configuration_error
   PaginationOptions.max_cursor_bytes 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_cursor_bytes',), condition='invalid_value'] protocol_configuration_error
   PaginationOptions.max_cursor_bytes '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_cursor_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size 1 = 1
+  BatchOptions.batch_size 2**63 = 9223372036854775808
+  BatchOptions.batch_size -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism 1 = 1
+  BatchOptions.parallelism 2**63 = 9223372036854775808
+  BatchOptions.parallelism -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_items None = None
+  BatchOptions.max_items 0 = 0
+  BatchOptions.max_items 1 = 1
+  BatchOptions.max_items 2**63 = 9223372036854775808
+  BatchOptions.max_items -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_items',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_items True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_items',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_items 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_items',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_items '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_items',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes 1 = 1
+  BatchOptions.max_item_bytes 2**63 = 9223372036854775808
+  BatchOptions.max_item_bytes -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes 1 = 1
+  BatchOptions.max_buffer_bytes 2**63 = 9223372036854775808
+  BatchOptions.max_buffer_bytes -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.raise_on_error True = True
+  BatchOptions.raise_on_error False = False
+  BatchOptions.raise_on_error None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('raise_on_error',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.raise_on_error 1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('raise_on_error',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.raise_on_error 'yes' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('raise_on_error',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes 1 = 1
+  UploadOptions.chunk_bytes 2**63 = 9223372036854775808
+  UploadOptions.chunk_bytes -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_parts None = None
+  UploadOptions.max_parts 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_parts',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_parts 1 = 1
+  UploadOptions.max_parts 2**63 = 9223372036854775808
+  UploadOptions.max_parts -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_parts',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_parts True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_parts',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_parts 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_parts',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_parts '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_parts',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism 1 = 1
+  UploadOptions.parallelism 2**63 = 9223372036854775808
+  UploadOptions.parallelism -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_uncertain_probes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_uncertain_probes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_uncertain_probes 0 = 0
+  UploadOptions.max_uncertain_probes 1 = 1
+  UploadOptions.max_uncertain_probes 2**63 = 9223372036854775808
+  UploadOptions.max_uncertain_probes -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_uncertain_probes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_uncertain_probes True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_uncertain_probes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_uncertain_probes 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_uncertain_probes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_uncertain_probes '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_uncertain_probes',), condition='invalid_value'] protocol_configuration_error
   PollOptions.max_polls None = None
   PollOptions.max_polls 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_polls',), condition='invalid_value'] protocol_configuration_error
   PollOptions.max_polls 1 = 1
@@ -413,6 +494,8 @@
   PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET, max_page_bytes=UNSET, max_cursor_bytes=UNSET) UNSET=True
   PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET) UNSET=True
   StreamOptions omitted=StreamOptions(idle_timeout=UNSET, max_line_bytes=UNSET, max_event_bytes=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET) UNSET=True
+  BatchOptions omitted=BatchOptions(batch_size=UNSET, parallelism=UNSET, max_items=UNSET, max_item_bytes=UNSET, max_buffer_bytes=UNSET, raise_on_error=UNSET) UNSET=True
+  UploadOptions omitted=UploadOptions(chunk_bytes=UNSET, max_parts=UNSET, parallelism=UNSET, max_uncertain_probes=UNSET) UNSET=True
   pagination unknown ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'interval' []
   poll unknown ! TypeError: PollOptions.__init__() got an unexpected keyword argument 'idle_timeout' []
   stream total timeout ! TypeError: StreamOptions.__init__() got an unexpected keyword argument 'total_timeout' []
@@ -444,11 +527,11 @@
   defaults webhook options ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
   defaults options None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
   defaults options mapping ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
-  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=UNSET, deadline=UNSET, max_network_sends=3), options=PaginationOptions(max_pages=UNSET, max_items=0, max_page_bytes=UNSET, max_cursor_bytes=UNSET)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, queue_stores=UNSET)
+  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=UNSET, deadline=UNSET, max_network_sends=3), options=PaginationOptions(max_pages=UNSET, max_items=0, max_page_bytes=UNSET, max_cursor_bytes=UNSET)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
   protocol options copy=mappingproxy keys=('users.all', 'jobs') identity=True/True
   protocol options frozen defaults ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
-  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, queue_stores=UNSET)
-  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, queue_stores=UNSET)
+  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
+  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
   helper name 'users' = ('users',)
   helper name 'users.all' = ('users.all',)
   helper name '_private.x1' = ('_private.x1',)
@@ -532,6 +615,10 @@
   PollSnapshot keyword-only=True hints=('state', 'terminal', 'data', 'response')
   PaginationOptions fields=('max_pages', 'max_items', 'max_page_bytes', 'max_cursor_bytes')
   PaginationOptions keyword-only=True hints=('max_pages', 'max_items', 'max_page_bytes', 'max_cursor_bytes')
+  BatchOptions fields=('batch_size', 'parallelism', 'max_items', 'max_item_bytes', 'max_buffer_bytes', 'raise_on_error')
+  BatchOptions keyword-only=True hints=('batch_size', 'parallelism', 'max_items', 'max_item_bytes', 'max_buffer_bytes', 'raise_on_error')
+  UploadOptions fields=('chunk_bytes', 'max_parts', 'parallelism', 'max_uncertain_probes')
+  UploadOptions keyword-only=True hints=('chunk_bytes', 'max_parts', 'parallelism', 'max_uncertain_probes')
   PollOptions fields=('max_polls', 'interval', 'max_wait')
   PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait')
   StreamOptions fields=('idle_timeout', 'max_line_bytes', 'max_event_bytes', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
@@ -540,8 +627,8 @@
   ProtocolSecurityContext keyword-only=True hints=('credential_partition', 'allowed_origins')
   ProtocolDefaults fields=('session', 'options')
   ProtocolDefaults keyword-only=True hints=('session', 'options')
-  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'queue_stores')
-  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'queue_stores')
+  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store', 'queue_stores')
+  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store', 'queue_stores')
   Continuation parameters=('kind', 'value') keyword-only=True hints=('kind', 'value', 'return') final=True
   ResumeState parameters=('helper_fingerprint', 'security_fingerprint', 'state', 'payload', 'expires_at') keyword-only=True hints=('helper_fingerprint', 'security_fingerprint', 'state', 'payload', 'expires_at', 'return') final=True
   HeaderSelector.occurrence values=('single', 'all')
@@ -829,6 +916,83 @@
   PaginationOptions.max_cursor_bytes True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_cursor_bytes',), condition='invalid_value'] protocol_configuration_error
   PaginationOptions.max_cursor_bytes 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_cursor_bytes',), condition='invalid_value'] protocol_configuration_error
   PaginationOptions.max_cursor_bytes '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_cursor_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size 1 = 1
+  BatchOptions.batch_size 2**63 = 9223372036854775808
+  BatchOptions.batch_size -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism 1 = 1
+  BatchOptions.parallelism 2**63 = 9223372036854775808
+  BatchOptions.parallelism -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_items None = None
+  BatchOptions.max_items 0 = 0
+  BatchOptions.max_items 1 = 1
+  BatchOptions.max_items 2**63 = 9223372036854775808
+  BatchOptions.max_items -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_items',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_items True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_items',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_items 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_items',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_items '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_items',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes 1 = 1
+  BatchOptions.max_item_bytes 2**63 = 9223372036854775808
+  BatchOptions.max_item_bytes -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes 1 = 1
+  BatchOptions.max_buffer_bytes 2**63 = 9223372036854775808
+  BatchOptions.max_buffer_bytes -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.raise_on_error True = True
+  BatchOptions.raise_on_error False = False
+  BatchOptions.raise_on_error None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('raise_on_error',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.raise_on_error 1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('raise_on_error',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.raise_on_error 'yes' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('raise_on_error',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes 1 = 1
+  UploadOptions.chunk_bytes 2**63 = 9223372036854775808
+  UploadOptions.chunk_bytes -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_parts None = None
+  UploadOptions.max_parts 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_parts',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_parts 1 = 1
+  UploadOptions.max_parts 2**63 = 9223372036854775808
+  UploadOptions.max_parts -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_parts',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_parts True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_parts',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_parts 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_parts',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_parts '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_parts',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism 1 = 1
+  UploadOptions.parallelism 2**63 = 9223372036854775808
+  UploadOptions.parallelism -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_uncertain_probes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_uncertain_probes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_uncertain_probes 0 = 0
+  UploadOptions.max_uncertain_probes 1 = 1
+  UploadOptions.max_uncertain_probes 2**63 = 9223372036854775808
+  UploadOptions.max_uncertain_probes -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_uncertain_probes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_uncertain_probes True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_uncertain_probes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_uncertain_probes 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_uncertain_probes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_uncertain_probes '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_uncertain_probes',), condition='invalid_value'] protocol_configuration_error
   PollOptions.max_polls None = None
   PollOptions.max_polls 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_polls',), condition='invalid_value'] protocol_configuration_error
   PollOptions.max_polls 1 = 1
@@ -913,6 +1077,8 @@
   PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET, max_page_bytes=UNSET, max_cursor_bytes=UNSET) UNSET=True
   PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET) UNSET=True
   StreamOptions omitted=StreamOptions(idle_timeout=UNSET, max_line_bytes=UNSET, max_event_bytes=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET) UNSET=True
+  BatchOptions omitted=BatchOptions(batch_size=UNSET, parallelism=UNSET, max_items=UNSET, max_item_bytes=UNSET, max_buffer_bytes=UNSET, raise_on_error=UNSET) UNSET=True
+  UploadOptions omitted=UploadOptions(chunk_bytes=UNSET, max_parts=UNSET, parallelism=UNSET, max_uncertain_probes=UNSET) UNSET=True
   pagination unknown ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'interval' []
   poll unknown ! TypeError: PollOptions.__init__() got an unexpected keyword argument 'idle_timeout' []
   stream total timeout ! TypeError: StreamOptions.__init__() got an unexpected keyword argument 'total_timeout' []
@@ -944,11 +1110,11 @@
   defaults webhook options ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
   defaults options None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
   defaults options mapping ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
-  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=UNSET, deadline=UNSET, max_network_sends=3), options=PaginationOptions(max_pages=UNSET, max_items=0, max_page_bytes=UNSET, max_cursor_bytes=UNSET)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, queue_stores=UNSET)
+  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=UNSET, deadline=UNSET, max_network_sends=3), options=PaginationOptions(max_pages=UNSET, max_items=0, max_page_bytes=UNSET, max_cursor_bytes=UNSET)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
   protocol options copy=mappingproxy keys=('users.all', 'jobs') identity=True/True
   protocol options frozen defaults ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
-  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, queue_stores=UNSET)
-  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, queue_stores=UNSET)
+  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
+  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
   helper name 'users' = ('users',)
   helper name 'users.all' = ('users.all',)
   helper name '_private.x1' = ('_private.x1',)
@@ -1032,6 +1198,10 @@
   PollSnapshot keyword-only=True hints=('state', 'terminal', 'data', 'response')
   PaginationOptions fields=('max_pages', 'max_items', 'max_page_bytes', 'max_cursor_bytes')
   PaginationOptions keyword-only=True hints=('max_pages', 'max_items', 'max_page_bytes', 'max_cursor_bytes')
+  BatchOptions fields=('batch_size', 'parallelism', 'max_items', 'max_item_bytes', 'max_buffer_bytes', 'raise_on_error')
+  BatchOptions keyword-only=True hints=('batch_size', 'parallelism', 'max_items', 'max_item_bytes', 'max_buffer_bytes', 'raise_on_error')
+  UploadOptions fields=('chunk_bytes', 'max_parts', 'parallelism', 'max_uncertain_probes')
+  UploadOptions keyword-only=True hints=('chunk_bytes', 'max_parts', 'parallelism', 'max_uncertain_probes')
   PollOptions fields=('max_polls', 'interval', 'max_wait')
   PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait')
   StreamOptions fields=('idle_timeout', 'max_line_bytes', 'max_event_bytes', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
@@ -1040,8 +1210,8 @@
   ProtocolSecurityContext keyword-only=True hints=('credential_partition', 'allowed_origins')
   ProtocolDefaults fields=('session', 'options')
   ProtocolDefaults keyword-only=True hints=('session', 'options')
-  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'queue_stores')
-  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'queue_stores')
+  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store', 'queue_stores')
+  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store', 'queue_stores')
   Continuation parameters=('kind', 'value') keyword-only=True hints=('kind', 'value', 'return') final=True
   ResumeState parameters=('helper_fingerprint', 'security_fingerprint', 'state', 'payload', 'expires_at') keyword-only=True hints=('helper_fingerprint', 'security_fingerprint', 'state', 'payload', 'expires_at', 'return') final=True
   HeaderSelector.occurrence values=('single', 'all')
@@ -1329,6 +1499,83 @@
   PaginationOptions.max_cursor_bytes True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_cursor_bytes',), condition='invalid_value'] protocol_configuration_error
   PaginationOptions.max_cursor_bytes 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_cursor_bytes',), condition='invalid_value'] protocol_configuration_error
   PaginationOptions.max_cursor_bytes '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_cursor_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size 1 = 1
+  BatchOptions.batch_size 2**63 = 9223372036854775808
+  BatchOptions.batch_size -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism 1 = 1
+  BatchOptions.parallelism 2**63 = 9223372036854775808
+  BatchOptions.parallelism -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_items None = None
+  BatchOptions.max_items 0 = 0
+  BatchOptions.max_items 1 = 1
+  BatchOptions.max_items 2**63 = 9223372036854775808
+  BatchOptions.max_items -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_items',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_items True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_items',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_items 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_items',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_items '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_items',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes 1 = 1
+  BatchOptions.max_item_bytes 2**63 = 9223372036854775808
+  BatchOptions.max_item_bytes -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes 1 = 1
+  BatchOptions.max_buffer_bytes 2**63 = 9223372036854775808
+  BatchOptions.max_buffer_bytes -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.raise_on_error True = True
+  BatchOptions.raise_on_error False = False
+  BatchOptions.raise_on_error None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('raise_on_error',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.raise_on_error 1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('raise_on_error',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.raise_on_error 'yes' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('raise_on_error',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes 1 = 1
+  UploadOptions.chunk_bytes 2**63 = 9223372036854775808
+  UploadOptions.chunk_bytes -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_parts None = None
+  UploadOptions.max_parts 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_parts',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_parts 1 = 1
+  UploadOptions.max_parts 2**63 = 9223372036854775808
+  UploadOptions.max_parts -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_parts',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_parts True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_parts',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_parts 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_parts',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_parts '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_parts',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism 1 = 1
+  UploadOptions.parallelism 2**63 = 9223372036854775808
+  UploadOptions.parallelism -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_uncertain_probes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_uncertain_probes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_uncertain_probes 0 = 0
+  UploadOptions.max_uncertain_probes 1 = 1
+  UploadOptions.max_uncertain_probes 2**63 = 9223372036854775808
+  UploadOptions.max_uncertain_probes -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_uncertain_probes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_uncertain_probes True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_uncertain_probes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_uncertain_probes 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_uncertain_probes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_uncertain_probes '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_uncertain_probes',), condition='invalid_value'] protocol_configuration_error
   PollOptions.max_polls None = None
   PollOptions.max_polls 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_polls',), condition='invalid_value'] protocol_configuration_error
   PollOptions.max_polls 1 = 1
@@ -1413,6 +1660,8 @@
   PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET, max_page_bytes=UNSET, max_cursor_bytes=UNSET) UNSET=True
   PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET) UNSET=True
   StreamOptions omitted=StreamOptions(idle_timeout=UNSET, max_line_bytes=UNSET, max_event_bytes=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET) UNSET=True
+  BatchOptions omitted=BatchOptions(batch_size=UNSET, parallelism=UNSET, max_items=UNSET, max_item_bytes=UNSET, max_buffer_bytes=UNSET, raise_on_error=UNSET) UNSET=True
+  UploadOptions omitted=UploadOptions(chunk_bytes=UNSET, max_parts=UNSET, parallelism=UNSET, max_uncertain_probes=UNSET) UNSET=True
   pagination unknown ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'interval' []
   poll unknown ! TypeError: PollOptions.__init__() got an unexpected keyword argument 'idle_timeout' []
   stream total timeout ! TypeError: StreamOptions.__init__() got an unexpected keyword argument 'total_timeout' []
@@ -1444,11 +1693,11 @@
   defaults webhook options ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
   defaults options None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
   defaults options mapping ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
-  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=UNSET, deadline=UNSET, max_network_sends=3), options=PaginationOptions(max_pages=UNSET, max_items=0, max_page_bytes=UNSET, max_cursor_bytes=UNSET)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, queue_stores=UNSET)
+  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=UNSET, deadline=UNSET, max_network_sends=3), options=PaginationOptions(max_pages=UNSET, max_items=0, max_page_bytes=UNSET, max_cursor_bytes=UNSET)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
   protocol options copy=mappingproxy keys=('users.all', 'jobs') identity=True/True
   protocol options frozen defaults ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
-  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, queue_stores=UNSET)
-  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, queue_stores=UNSET)
+  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
+  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
   helper name 'users' = ('users',)
   helper name 'users.all' = ('users.all',)
   helper name '_private.x1' = ('_private.x1',)
@@ -1532,6 +1781,10 @@
   PollSnapshot keyword-only=True hints=('state', 'terminal', 'data', 'response')
   PaginationOptions fields=('max_pages', 'max_items', 'max_page_bytes', 'max_cursor_bytes')
   PaginationOptions keyword-only=True hints=('max_pages', 'max_items', 'max_page_bytes', 'max_cursor_bytes')
+  BatchOptions fields=('batch_size', 'parallelism', 'max_items', 'max_item_bytes', 'max_buffer_bytes', 'raise_on_error')
+  BatchOptions keyword-only=True hints=('batch_size', 'parallelism', 'max_items', 'max_item_bytes', 'max_buffer_bytes', 'raise_on_error')
+  UploadOptions fields=('chunk_bytes', 'max_parts', 'parallelism', 'max_uncertain_probes')
+  UploadOptions keyword-only=True hints=('chunk_bytes', 'max_parts', 'parallelism', 'max_uncertain_probes')
   PollOptions fields=('max_polls', 'interval', 'max_wait')
   PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait')
   StreamOptions fields=('idle_timeout', 'max_line_bytes', 'max_event_bytes', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
@@ -1540,8 +1793,8 @@
   ProtocolSecurityContext keyword-only=True hints=('credential_partition', 'allowed_origins')
   ProtocolDefaults fields=('session', 'options')
   ProtocolDefaults keyword-only=True hints=('session', 'options')
-  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'queue_stores')
-  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'queue_stores')
+  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store', 'queue_stores')
+  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store', 'queue_stores')
   Continuation parameters=('kind', 'value') keyword-only=True hints=('kind', 'value', 'return') final=True
   ResumeState parameters=('helper_fingerprint', 'security_fingerprint', 'state', 'payload', 'expires_at') keyword-only=True hints=('helper_fingerprint', 'security_fingerprint', 'state', 'payload', 'expires_at', 'return') final=True
   HeaderSelector.occurrence values=('single', 'all')
@@ -1829,6 +2082,83 @@
   PaginationOptions.max_cursor_bytes True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_cursor_bytes',), condition='invalid_value'] protocol_configuration_error
   PaginationOptions.max_cursor_bytes 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_cursor_bytes',), condition='invalid_value'] protocol_configuration_error
   PaginationOptions.max_cursor_bytes '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_cursor_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size 1 = 1
+  BatchOptions.batch_size 2**63 = 9223372036854775808
+  BatchOptions.batch_size -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism 1 = 1
+  BatchOptions.parallelism 2**63 = 9223372036854775808
+  BatchOptions.parallelism -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_items None = None
+  BatchOptions.max_items 0 = 0
+  BatchOptions.max_items 1 = 1
+  BatchOptions.max_items 2**63 = 9223372036854775808
+  BatchOptions.max_items -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_items',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_items True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_items',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_items 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_items',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_items '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_items',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes 1 = 1
+  BatchOptions.max_item_bytes 2**63 = 9223372036854775808
+  BatchOptions.max_item_bytes -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes 1 = 1
+  BatchOptions.max_buffer_bytes 2**63 = 9223372036854775808
+  BatchOptions.max_buffer_bytes -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.raise_on_error True = True
+  BatchOptions.raise_on_error False = False
+  BatchOptions.raise_on_error None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('raise_on_error',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.raise_on_error 1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('raise_on_error',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.raise_on_error 'yes' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('raise_on_error',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes 1 = 1
+  UploadOptions.chunk_bytes 2**63 = 9223372036854775808
+  UploadOptions.chunk_bytes -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_parts None = None
+  UploadOptions.max_parts 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_parts',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_parts 1 = 1
+  UploadOptions.max_parts 2**63 = 9223372036854775808
+  UploadOptions.max_parts -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_parts',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_parts True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_parts',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_parts 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_parts',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_parts '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_parts',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism 1 = 1
+  UploadOptions.parallelism 2**63 = 9223372036854775808
+  UploadOptions.parallelism -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_uncertain_probes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_uncertain_probes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_uncertain_probes 0 = 0
+  UploadOptions.max_uncertain_probes 1 = 1
+  UploadOptions.max_uncertain_probes 2**63 = 9223372036854775808
+  UploadOptions.max_uncertain_probes -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_uncertain_probes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_uncertain_probes True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_uncertain_probes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_uncertain_probes 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_uncertain_probes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_uncertain_probes '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_uncertain_probes',), condition='invalid_value'] protocol_configuration_error
   PollOptions.max_polls None = None
   PollOptions.max_polls 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_polls',), condition='invalid_value'] protocol_configuration_error
   PollOptions.max_polls 1 = 1
@@ -1913,6 +2243,8 @@
   PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET, max_page_bytes=UNSET, max_cursor_bytes=UNSET) UNSET=True
   PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET) UNSET=True
   StreamOptions omitted=StreamOptions(idle_timeout=UNSET, max_line_bytes=UNSET, max_event_bytes=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET) UNSET=True
+  BatchOptions omitted=BatchOptions(batch_size=UNSET, parallelism=UNSET, max_items=UNSET, max_item_bytes=UNSET, max_buffer_bytes=UNSET, raise_on_error=UNSET) UNSET=True
+  UploadOptions omitted=UploadOptions(chunk_bytes=UNSET, max_parts=UNSET, parallelism=UNSET, max_uncertain_probes=UNSET) UNSET=True
   pagination unknown ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'interval' []
   poll unknown ! TypeError: PollOptions.__init__() got an unexpected keyword argument 'idle_timeout' []
   stream total timeout ! TypeError: StreamOptions.__init__() got an unexpected keyword argument 'total_timeout' []
@@ -1944,11 +2276,11 @@
   defaults webhook options ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
   defaults options None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
   defaults options mapping ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
-  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=UNSET, deadline=UNSET, max_network_sends=3), options=PaginationOptions(max_pages=UNSET, max_items=0, max_page_bytes=UNSET, max_cursor_bytes=UNSET)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, queue_stores=UNSET)
+  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=UNSET, deadline=UNSET, max_network_sends=3), options=PaginationOptions(max_pages=UNSET, max_items=0, max_page_bytes=UNSET, max_cursor_bytes=UNSET)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
   protocol options copy=mappingproxy keys=('users.all', 'jobs') identity=True/True
   protocol options frozen defaults ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
-  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, queue_stores=UNSET)
-  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, queue_stores=UNSET)
+  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
+  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
   helper name 'users' = ('users',)
   helper name 'users.all' = ('users.all',)
   helper name '_private.x1' = ('_private.x1',)
@@ -2032,6 +2364,10 @@
   PollSnapshot keyword-only=True hints=('state', 'terminal', 'data', 'response')
   PaginationOptions fields=('max_pages', 'max_items', 'max_page_bytes', 'max_cursor_bytes')
   PaginationOptions keyword-only=True hints=('max_pages', 'max_items', 'max_page_bytes', 'max_cursor_bytes')
+  BatchOptions fields=('batch_size', 'parallelism', 'max_items', 'max_item_bytes', 'max_buffer_bytes', 'raise_on_error')
+  BatchOptions keyword-only=True hints=('batch_size', 'parallelism', 'max_items', 'max_item_bytes', 'max_buffer_bytes', 'raise_on_error')
+  UploadOptions fields=('chunk_bytes', 'max_parts', 'parallelism', 'max_uncertain_probes')
+  UploadOptions keyword-only=True hints=('chunk_bytes', 'max_parts', 'parallelism', 'max_uncertain_probes')
   PollOptions fields=('max_polls', 'interval', 'max_wait')
   PollOptions keyword-only=True hints=('max_polls', 'interval', 'max_wait')
   StreamOptions fields=('idle_timeout', 'max_line_bytes', 'max_event_bytes', 'reconnect', 'max_reconnects', 'max_reconnect_wait')
@@ -2040,8 +2376,8 @@
   ProtocolSecurityContext keyword-only=True hints=('credential_partition', 'allowed_origins')
   ProtocolDefaults fields=('session', 'options')
   ProtocolDefaults keyword-only=True hints=('session', 'options')
-  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'queue_stores')
-  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'queue_stores')
+  ProtocolClientOptions fields=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store', 'queue_stores')
+  ProtocolClientOptions keyword-only=True hints=('security', 'defaults', 'cache_stores', 'websocket_connector', 'websocket_transport', 'circuit', 'circuit_store', 'queue_stores')
   Continuation parameters=('kind', 'value') keyword-only=True hints=('kind', 'value', 'return') final=True
   ResumeState parameters=('helper_fingerprint', 'security_fingerprint', 'state', 'payload', 'expires_at') keyword-only=True hints=('helper_fingerprint', 'security_fingerprint', 'state', 'payload', 'expires_at', 'return') final=True
   HeaderSelector.occurrence values=('single', 'all')
@@ -2329,6 +2665,83 @@
   PaginationOptions.max_cursor_bytes True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_cursor_bytes',), condition='invalid_value'] protocol_configuration_error
   PaginationOptions.max_cursor_bytes 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_cursor_bytes',), condition='invalid_value'] protocol_configuration_error
   PaginationOptions.max_cursor_bytes '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_cursor_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size 1 = 1
+  BatchOptions.batch_size 2**63 = 9223372036854775808
+  BatchOptions.batch_size -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.batch_size '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('batch_size',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism 1 = 1
+  BatchOptions.parallelism 2**63 = 9223372036854775808
+  BatchOptions.parallelism -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.parallelism '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_items None = None
+  BatchOptions.max_items 0 = 0
+  BatchOptions.max_items 1 = 1
+  BatchOptions.max_items 2**63 = 9223372036854775808
+  BatchOptions.max_items -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_items',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_items True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_items',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_items 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_items',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_items '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_items',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes 1 = 1
+  BatchOptions.max_item_bytes 2**63 = 9223372036854775808
+  BatchOptions.max_item_bytes -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_item_bytes '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_item_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes 1 = 1
+  BatchOptions.max_buffer_bytes 2**63 = 9223372036854775808
+  BatchOptions.max_buffer_bytes -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.max_buffer_bytes '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_buffer_bytes',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.raise_on_error True = True
+  BatchOptions.raise_on_error False = False
+  BatchOptions.raise_on_error None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('raise_on_error',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.raise_on_error 1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('raise_on_error',), condition='invalid_value'] protocol_configuration_error
+  BatchOptions.raise_on_error 'yes' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('raise_on_error',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes 1 = 1
+  UploadOptions.chunk_bytes 2**63 = 9223372036854775808
+  UploadOptions.chunk_bytes -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.chunk_bytes '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('chunk_bytes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_parts None = None
+  UploadOptions.max_parts 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_parts',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_parts 1 = 1
+  UploadOptions.max_parts 2**63 = 9223372036854775808
+  UploadOptions.max_parts -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_parts',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_parts True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_parts',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_parts 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_parts',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_parts '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_parts',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism 1 = 1
+  UploadOptions.parallelism 2**63 = 9223372036854775808
+  UploadOptions.parallelism -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.parallelism '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('parallelism',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_uncertain_probes None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_uncertain_probes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_uncertain_probes 0 = 0
+  UploadOptions.max_uncertain_probes 1 = 1
+  UploadOptions.max_uncertain_probes 2**63 = 9223372036854775808
+  UploadOptions.max_uncertain_probes -1 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_uncertain_probes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_uncertain_probes True ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_uncertain_probes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_uncertain_probes 1.0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_uncertain_probes',), condition='invalid_value'] protocol_configuration_error
+  UploadOptions.max_uncertain_probes '1' ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_uncertain_probes',), condition='invalid_value'] protocol_configuration_error
   PollOptions.max_polls None = None
   PollOptions.max_polls 0 ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_polls',), condition='invalid_value'] protocol_configuration_error
   PollOptions.max_polls 1 = 1
@@ -2413,6 +2826,8 @@
   PaginationOptions omitted=PaginationOptions(max_pages=UNSET, max_items=UNSET, max_page_bytes=UNSET, max_cursor_bytes=UNSET) UNSET=True
   PollOptions omitted=PollOptions(max_polls=UNSET, interval=UNSET, max_wait=UNSET) UNSET=True
   StreamOptions omitted=StreamOptions(idle_timeout=UNSET, max_line_bytes=UNSET, max_event_bytes=UNSET, reconnect=UNSET, max_reconnects=UNSET, max_reconnect_wait=UNSET) UNSET=True
+  BatchOptions omitted=BatchOptions(batch_size=UNSET, parallelism=UNSET, max_items=UNSET, max_item_bytes=UNSET, max_buffer_bytes=UNSET, raise_on_error=UNSET) UNSET=True
+  UploadOptions omitted=UploadOptions(chunk_bytes=UNSET, max_parts=UNSET, parallelism=UNSET, max_uncertain_probes=UNSET) UNSET=True
   pagination unknown ! TypeError: PaginationOptions.__init__() got an unexpected keyword argument 'interval' []
   poll unknown ! TypeError: PollOptions.__init__() got an unexpected keyword argument 'idle_timeout' []
   stream total timeout ! TypeError: StreamOptions.__init__() got an unexpected keyword argument 'total_timeout' []
@@ -2444,11 +2859,11 @@
   defaults webhook options ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
   defaults options None ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
   defaults options mapping ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
-  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=UNSET, deadline=UNSET, max_network_sends=3), options=PaginationOptions(max_pages=UNSET, max_items=0, max_page_bytes=UNSET, max_cursor_bytes=UNSET)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, queue_stores=UNSET)
+  protocol options repr=ProtocolClientOptions(security=ProtocolSecurityContext(allowed_origins=()), defaults=mappingproxy({'users.all': ProtocolDefaults(session=SessionOptions(total_timeout=UNSET, deadline=UNSET, max_network_sends=3), options=PaginationOptions(max_pages=UNSET, max_items=0, max_page_bytes=UNSET, max_cursor_bytes=UNSET)), 'jobs': ProtocolDefaults(session=UNSET, options=UNSET)}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
   protocol options copy=mappingproxy keys=('users.all', 'jobs') identity=True/True
   protocol options frozen defaults ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
-  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, queue_stores=UNSET)
-  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, queue_stores=UNSET)
+  protocol options omitted = ProtocolClientOptions(security=UNSET, defaults=UNSET, cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
+  protocol options anonymous = ProtocolClientOptions(security=None, defaults=mappingproxy({}), cache_stores=UNSET, websocket_connector=UNSET, websocket_transport=UNSET, circuit=UNSET, queue_stores=UNSET)
   helper name 'users' = ('users',)
   helper name 'users.all' = ('users.all',)
   helper name '_private.x1' = ('_private.x1',)

@@ -12,6 +12,7 @@ from datamodel_code_generator._api_generation import RenderedFile
 from datamodel_code_generator._client._compiled_templates import client as client_template
 from datamodel_code_generator._client._compiled_templates import resource as resource_template
 from datamodel_code_generator._client._compiled_templates import types as types_template
+from datamodel_code_generator._client.batches import BatchSpec
 from datamodel_code_generator._client.caching import CacheSpec
 from datamodel_code_generator._client.naming import helper_classes, pascal
 from datamodel_code_generator._client.plan import media_range, member_parts, reachable, success_media
@@ -254,6 +255,7 @@ _ERROR_NAMES: Final = (
     "BodyNotReplayableError",
     "BodyProtocolError",
     "BudgetExceededError",
+    "CircuitStoreError",
     "CleanupError",
     "ClientClosedError",
     "ConfigurationError",
@@ -297,10 +299,14 @@ _ERROR_NAMES: Final = (
     "WebhookVerificationError",
 )
 _PROTOCOL_ERROR_NAMES: Final = (
+    "BatchDeliveryUnknownError",
+    "BatchItemTooLargeError",
+    "BatchProtocolError",
     "CacheInvalidationError",
     "CacheProtocolError",
     "CacheStoreError",
     "CacheValidatorConflictError",
+    "CircuitOpenError",
     "ConcurrentReceiveError",
     "DeliveryUnknownError",
     "HandshakeResponse",
@@ -371,19 +377,25 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .._runtime.protocols.caches import AsyncCacheStore, CacheEntry, CacheResult, CacheStore
+from .._runtime.protocols.circuit_records import CircuitKey, CircuitPermit, CircuitSnapshot
 from .._runtime.protocols.options import (
+    BatchOptions,
+    AsyncCircuitStore,
     CacheOptions,
-    Origin,
+    CircuitBreakerOptions,
+    CircuitStore,
     PaginationOptions,
     PollOptions,
     ProtocolDefaults,
     ProtocolSecurityContext,
     QueueOptions,
+    ResolvedCircuitBreakerOptions,
     StreamOptions,
     UploadOptions,
     WebSocketTransportOptions,
     WSOptions,
 )
+from .._runtime.protocols.origins import Origin
 from .._runtime.protocols.queues import (
     AsyncQueueStore,
     BlobRef,
@@ -445,7 +457,9 @@ from .._runtime.protocols.websocket_types import (
 )
 
 if TYPE_CHECKING:
+    from .._runtime.protocols.batches import AsyncBatchIterator, BatchIterator
     from .._runtime.protocols.cache_stores import AsyncMemoryCacheStore, MemoryCacheStore
+    from .._runtime.protocols.circuits import AsyncMemoryCircuitStore, MemoryCircuitStore
     from .._runtime.protocols.pagination import AsyncPager, Page, Pager
     from .._runtime.protocols.polling import AsyncLroHandle, LroHandle
     from .._runtime.protocols.queue_stores import AsyncMemoryQueueStore, MemoryQueueStore
@@ -461,12 +475,15 @@ if TYPE_CHECKING:
     from .._runtime.protocols.websocket import AsyncWebSocketSession, WebSocketSession
 
 __all__ = [
+    "AsyncBatchIterator",
     "AsyncBytesUploadSource",
     "AsyncCacheStore",
+    "AsyncCircuitStore",
     "AsyncEventStream",
     "AsyncFileUploadSource",
     "AsyncLroHandle",
     "AsyncMemoryCacheStore",
+    "AsyncMemoryCircuitStore",
     "AsyncMemoryQueueStore",
     "AsyncMemoryReplayStore",
     "AsyncPager",
@@ -478,6 +495,8 @@ __all__ = [
     "AsyncWebSocketConnection",
     "AsyncWebSocketConnector",
     "AsyncWebSocketSession",
+    "BatchIterator",
+    "BatchOptions",
     "BlobRef",
     "BodySelector",
     "BodyTarget",
@@ -487,6 +506,11 @@ __all__ = [
     "CacheResult",
     "CacheStore",
     "CancelReceipt",
+    "CircuitBreakerOptions",
+    "CircuitKey",
+    "CircuitPermit",
+    "CircuitSnapshot",
+    "CircuitStore",
     "Continuation",
     "DrainReport",
     "EventStream",
@@ -495,6 +519,7 @@ __all__ = [
     "KeySet",
     "LroHandle",
     "MemoryCacheStore",
+    "MemoryCircuitStore",
     "MemoryQueueStore",
     "MemoryReplayStore",
     "Message",
@@ -522,6 +547,7 @@ __all__ = [
     "RangeReader",
     "ReplayStore",
     "RequestTarget",
+    "ResolvedCircuitBreakerOptions",
     "ResolvedQueueOptions",
     "ResolvedWSOptions",
     "ResolvedWebSocketTransportOptions",
@@ -570,6 +596,14 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import streams
 
         return getattr(streams, name)
+    if name in {"AsyncBatchIterator", "BatchIterator"}:
+        from .._runtime.protocols import batches
+
+        return getattr(batches, name)
+    if name in {"AsyncMemoryCircuitStore", "MemoryCircuitStore"}:
+        from .._runtime.protocols import circuits
+
+        return getattr(circuits, name)
     if name in {"AsyncUploadHandle", "UploadHandle"}:
         from .._runtime.protocols import uploads
 
@@ -1022,6 +1056,11 @@ class Module:
         ))
 
 
+def circuit_groups(plan: ClientPlan) -> tuple[str, ...]:
+    """Return the circuit groups a client's operations declare, sorted."""
+    return tuple(sorted({group for spec in plan.operations if (group := spec.circuit_group) is not None}))
+
+
 class _Typing:
     """Spell the payload types of a planned client: model types with their projection, or schema-less surfaces."""
 
@@ -1158,7 +1197,7 @@ class _Resources(_Typing):
         validation: ClientValidationConfig,
         *,
         unpacked: bool = False,
-        helpers: tuple[PaginationSpec | PollingSpec | CacheSpec | UploadSpec | QueueSpec, ...] = (),
+        helpers: tuple[PaginationSpec | PollingSpec | CacheSpec | UploadSpec | BatchSpec | QueueSpec, ...] = (),
         streams: tuple[StreamSpec, ...] = (),
         sockets: tuple[SocketSpec, ...] = (),
     ) -> None:
@@ -1189,10 +1228,19 @@ class _Resources(_Typing):
                 f"{module.local('_runtime.client.options', 'ValidationModes')}({arguments})",
             ))
         name = module.local("_runtime.client.client", "ClientDefaults")
-        if not (helpers := (*self.helpers, *self.streams, *self.sockets)):
+        helpers = (*self.helpers, *self.streams, *self.sockets)
+        if not helpers and not self.circuit_groups:
             return f"{name}({', '.join(f'{prefix}{value}' for prefix, value in entries)})"
-        entries.append(("helpers=", _tuple(repr((spec.helper.name, spec.helper.kind)) for spec in helpers)))
+        if helpers:
+            entries.append(("helpers=", _tuple(repr((spec.helper.name, spec.helper.kind)) for spec in helpers)))
+        if groups := self.circuit_groups:
+            entries.append(("circuit_groups=", f"frozenset({{{', '.join(map(repr, groups))}}})"))
         return layout(_call(name, entries), 0, len("_DEFAULTS = "), WIDTH)
+
+    @cached_property
+    def circuit_groups(self) -> tuple[str, ...]:
+        """Return the circuit groups the package's operations declare, sorted."""
+        return circuit_groups(self.plan)
 
     def client(self, *, asynchronous: bool) -> str:
         """Return a root client module: its constructor, lazy resource attributes, and close methods."""
@@ -1209,6 +1257,10 @@ class _Resources(_Typing):
         helpers_module = f".protocols.{_helpers_module(asynchronous=asynchronous)}"
         if protocols is not None:
             lazy.append((protocols, helpers_module))
+        circuit_groups = None
+        if groups := self.circuit_groups:
+            lazy.append(("Origin", ".protocols"))
+            circuit_groups = f"{module.name('typing', 'Literal')}[{', '.join(map(repr, groups))}]"
         values = {
             "defaults": self.defaults(module),
             "options": module.local("options", "ClientOptions"),
@@ -1246,6 +1298,7 @@ class _Resources(_Typing):
             ],
             protocols=protocols,
             protocols_module=helpers_module,
+            circuit_groups=circuit_groups,
             **values,
         )
 
@@ -2152,6 +2205,7 @@ class _Registry(_Typing):
             entries.append(("security=", f"{module.local('_generated', 'security')}.OPERATION_{spec.index}"))
         if spec.auth_challenge_less_401:
             entries.append(("auth_challenge_less_401=", "True"))
+        entries.extend(self.protection_metadata(spec))
         if (spec.body is not None and spec.body.media) or success_media(spec.responses, ranges=True):
             entries.append(("codecs=", module.local(f"types.{spec.resource}", f"{spec.pascal}RequestCodecs")))
         if self.checks is not None and (branches := self.checks.branches.get(spec.index)):
@@ -2160,6 +2214,16 @@ class _Registry(_Typing):
         if spec.fields:
             entries.append(("fields=", self.field_arguments(module, spec)))
         return _call(module.local(_RUNTIME, "OperationPlan"), entries)
+
+    @staticmethod
+    def protection_metadata(spec: OperationSpec) -> list[tuple[str, Doc]]:
+        """Return an operation's circuit group and accepted request codings, when it declares them."""
+        entries: list[tuple[str, Doc]] = []
+        if spec.circuit_group is not None:
+            entries.append(("circuit_group=", repr(spec.circuit_group)))
+        if spec.accepted_content_encodings:
+            entries.append(("accepted_content_encodings=", _tuple(map(repr, spec.accepted_content_encodings))))
+        return entries
 
     @staticmethod
     def retry_metadata(module: Module, spec: OperationSpec) -> list[tuple[str, Doc]]:
@@ -2408,6 +2472,7 @@ _HELPER_KINDS: Final = {
     "pagination": "pagination helper",
     "polling": "polling helper",
     "resumable_upload": "upload helper",
+    "batch": "batch helper",
     "queue": "queue helper",
     "sse": "SSE helper",
     "ndjson": "NDJSON helper",
@@ -2455,6 +2520,20 @@ reopen are delivered again.
 _CACHE: Final = "_runtime.protocols.cache"
 _CACHE_OPTIONS: Final = (("cache_options", ".", "CacheOptions"), _HELPER_OPTIONS[1])
 _DEFAULT_STATUSES: Final = [200]
+_BATCHES: Final = "_runtime.protocols.batches"
+_BATCH_OPTIONS: Final = (("batch_options", ".", "BatchOptions"), *_HELPER_OPTIONS[1:])
+_RECORDS: Final = (
+    ("Success", "value", "success", "the server applied, with its success value"),
+    ("Error", "error", "error", "the server refused, with its error"),
+)
+_SUFFIXES: Final = ("Success", "Error", "DeliveryUnknown", "Result")
+
+
+def _prefix(spec: BatchSpec) -> str:
+    """Return the prefix of a batch helper's record names: its dotted name's parts in PascalCase."""
+    return "".join(map(pascal, spec.helper.name.split(".")))
+
+
 _QUEUE: Final = "_runtime.protocols.queue"
 _QUEUE_OPTIONS: Final = (("queue_options", ".", "QueueOptions"), *_HELPER_OPTIONS[1:])
 _QUEUE_CALLS: Final = {
@@ -2475,7 +2554,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         self.fingerprints = fingerprints
 
     @staticmethod
-    def page(module: Module, spec: PaginationSpec | PollingSpec | UploadSpec) -> str:
+    def page(module: Module, spec: PaginationSpec | PollingSpec | UploadSpec | BatchSpec) -> str:
         """Return the type of a helper's page or create response: its operation's response alias."""
         return _Helpers.response(module, spec.operation)
 
@@ -2493,7 +2572,16 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
 
     def plans(self) -> str:
         """Return the module of every helper's accessors and plan, then each stream and WebSocket helper's plan."""
-        names = ("PLAN_{}", "CANCEL_{}", "_items_{}", "_result_{}", "_immediate_{}")
+        names = (
+            "PLAN_{}",
+            "CANCEL_{}",
+            "_items_{}",
+            "_result_{}",
+            "_immediate_{}",
+            "_results_{}",
+            "_success_{}",
+            "_error_{}",
+        )
         streams, sockets = self.streams, self.sockets
         module = Module(
             {
@@ -2518,6 +2606,8 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                 sections.append(self.upload(module, index, spec))
             elif isinstance(spec, CacheSpec):
                 sections.extend(self.cache(module, index, spec))
+            elif isinstance(spec, BatchSpec):
+                sections.extend(self.batch(module, index, spec))
             elif isinstance(spec, QueueSpec):
                 sections.append(self.queue(module, index, spec))
             else:
@@ -2899,12 +2989,12 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             sections=sections,
         )
 
-    def leaf(  # noqa: PLR0913
+    def leaf(  # noqa: PLR0911, PLR0913
         self,
         module: Module,
         index: int,
         name: str,
-        spec: PaginationSpec | PollingSpec | CacheSpec | UploadSpec,
+        spec: PaginationSpec | PollingSpec | CacheSpec | UploadSpec | BatchSpec,
         core: str,
         *,
         handle: str | None,
@@ -2933,6 +3023,10 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                 if handle is None
                 else [node, self.upload_handle(module, index, spec, handle, asynchronous=asynchronous)]
             )
+        if isinstance(spec, BatchSpec):
+            return [
+                self.node(name, what, core, [self.iterate(module, index, spec, asynchronous=asynchronous)], leaf=True)
+            ]
         if not isinstance(spec, CacheSpec):
             return [
                 self.node(name, what, core, self.methods(module, index, spec, asynchronous=asynchronous), leaf=True)
@@ -3495,6 +3589,147 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         )
 
     @staticmethod
+    def records(module: Module, spec: BatchSpec, suffixes: tuple[str, ...] = _SUFFIXES) -> list[str]:
+        """Return the record classes and result alias of a batch helper with the suffixes given."""
+        prefix = _prefix(spec)
+        return [module.local("protocols.batches", f"{prefix}{suffix}") for suffix in suffixes]
+
+    def batch(self, module: Module, index: int, spec: BatchSpec) -> list[str]:
+        """Return a batch helper's result accessors and its plan: its operation, result members, and limits."""
+        helper = spec.helper
+        tree, name = helper.tree, helper.name
+        result = module.types.static(spec.result)
+        sequence = module.name("collections.abc", "Sequence")
+        sections = [
+            self.accessor(
+                module,
+                f"_results_{index}",
+                self.page(module, spec),
+                f"{sequence}[{result}] | None",
+                f"the results of one request of {name}",
+                spec.results,
+            ),
+            *(
+                self.accessor(
+                    module,
+                    f"_{key}_{index}",
+                    result,
+                    f"{module.types.static(member.value)} | None",
+                    f"the {key} member of one result of {name}",
+                    member.steps,
+                )
+                for key, member in (("success", spec.success), ("error", spec.error))
+            ),
+        ]
+        succeeded, failed, unknown, alias = self.records(module, spec)
+        records = "_runtime.protocols.records"
+        entries: list[tuple[str, Doc]] = [
+            ("helper_id=", repr(name)),
+            ("operation=", self.reference(module, spec.operation)),
+            ("call=", f"{module.root('_operations')}.OPERATION_{spec.operation.index}"),
+            ("results=", f"_results_{index}"),
+            ("results_selector=", f"{module.local(records, 'BodySelector')}(pointer={tree['results']['pointer']!r})"),
+            ("success=", f"_success_{index}"),
+            ("success_pointer=", repr(tree["success"]["pointer"])),
+            ("error=", f"_error_{index}"),
+            ("error_pointer=", repr(tree["error"]["pointer"])),
+            ("succeeded=", succeeded),
+            ("failed=", failed),
+            ("unknown=", unknown),
+            ("max_items=", repr(tree["max_items"])),
+            ("max_request_bytes=", repr(tree["max_request_bytes"])),
+            ("fingerprint=", repr(self.fingerprints[name])),
+        ]
+        if spec.items_member is not None:
+            entries.append(("items_member=", repr(spec.items_member)))
+        if spec.items_root is not None:
+            entries.append(("items_root=", module.types.static(spec.items_root)))
+        if (correlation := tree["correlation"])["kind"] == "id":
+            entries.extend((("input_id=", repr(correlation["input"])), ("result_id=", repr(correlation["result"]))))
+        plan = module.local(_BATCHES, "BatchPlan")
+        head = f"PLAN_{index}: {module.name('typing', 'Final')}[{plan}[{module.types.static(spec.item)}, {alias}]] = "
+        sections.append(head + layout(_call(plan, entries), 0, len(head), WIDTH))
+        return sections
+
+    def iterate(self, module: Module, index: int, spec: BatchSpec, *, asynchronous: bool) -> str:
+        """Return a batch helper's iterate method, which takes the items and its operation's parameters."""
+        operation = spec.operation
+        resources = self.resources
+        arguments = [resources.parameter(module, parameter) for parameter in operation.parameters]
+        options = [
+            _Argument(name, f"{module.namespace.name(source, kind)} | None", "none")
+            for name, source, kind in _BATCH_OPTIONS
+        ]
+        item = module.types.static(spec.item)
+        iterable = f"{module.name('collections.abc', 'Iterable')}[{item}]"
+        if asynchronous:
+            iterable = f"{iterable} | {module.name('collections.abc', 'AsyncIterable')}[{item}]"
+        alias = self.records(module, spec, ("Result",))[0]
+        iterator = f"{module.local(_BATCHES, 'AsyncBatchIterator' if asynchronous else 'BatchIterator')}[{alias}]"
+        passed = [
+            ("", "self._core"),
+            ("", f"{module.namespace.name('.', '_plans')}.PLAN_{index}"),
+            ("", _tuple(parameter.python_name for parameter in operation.parameters)),
+            ("", "items"),
+            *((f"{name}=", name) for name, _, _ in _BATCH_OPTIONS),
+        ]
+        factory = module.local(_BATCHES, "aiterate_batches" if asynchronous else "iterate_batches")
+        route = f"{operation.contract.method.upper()} {operation.contract.path}"
+        signature = (f"items: {iterable}", "*", *(argument.parameter(module) for argument in (*arguments, *options)))
+        return "\n".join((
+            layout(Group("    def iterate(", items(("self", *signature)), f") -> {iterator}:"), 4, 0, WIDTH),
+            f'        """Return the results of {route} for the items in order; nothing is sent until iterated."""',
+            f"        return {layout(_call(factory, passed), 8, 7, WIDTH)}",
+        ))
+
+    def results_module(self) -> str:
+        """Return the module of every batch helper's result records and result alias.
+
+        Each record is frozen and keyword-only, and its outcome is a literal that narrows the result alias; a record's
+        value, error, and retry token stay out of its repr.
+        """
+        batches = [(spec, _prefix(spec)) for spec in self.helpers if isinstance(spec, BatchSpec)]
+        names = sorted(f"{prefix}{suffix}" for _, prefix in batches for suffix in _SUFFIXES)
+        module = Module(names, self.resources.symbols, level=2)
+        field = module.name("dataclasses", "field")
+        literal = module.name("typing", "Literal")
+        decorators = (
+            f"@{module.name('typing', 'final')}\n@{module.name('dataclasses', 'dataclass')}"
+            "(frozen=True, slots=True, kw_only=True)\n"
+        )
+        response = f"{module.local('responses', 'ResponseInfo')} | None"
+        token = f"    retry_token: bytes | None = {field}(default=None, repr=False)\n"
+        sections = ["__all__ = [\n" + "".join(f"    {name!r},\n" for name in names) + "]"]
+        for spec, prefix in batches:
+            shared = f"    index: int\n    item_id: {spec.item_id or 'None'}\n    response: {response}\n"
+            for suffix, member, outcome, what in _RECORDS:
+                value = (spec.success if outcome == "success" else spec.error).value
+                sections.append(
+                    f"{decorators}class {prefix}{suffix}:\n"
+                    f'    """One item of {spec.helper.name} {what}."""\n\n{shared}'
+                    f"    {member}: {module.types.static(value)} = {field}(repr=False)\n{token}"
+                    f"    outcome: {literal}[{outcome!r}] = {field}(default={outcome!r}, init=False)"
+                )
+            sections.extend((
+                (
+                    f"{decorators}class {prefix}DeliveryUnknown:\n"
+                    f'    """One item of {spec.helper.name} whose request may have reached the server unanswered."""'
+                    "\n\n"
+                    f"{shared}{token}"
+                    f"    outcome: {literal}['delivery_unknown'] = {field}(default='delivery_unknown', init=False)"
+                ),
+                (
+                    f"{prefix}Result: {module.name('typing', 'TypeAlias')} = "
+                    f"{prefix}Success | {prefix}Error | {prefix}DeliveryUnknown"
+                ),
+            ))
+        return types_template.render(
+            docstring="The result records of this package's batch helpers; regenerate them instead of editing.",
+            imports=module.imports(),
+            sections=sections,
+        )
+
+    @staticmethod
     def event_type(module: Module, spec: StreamSpec) -> str:
         """Return the type of a stream's event data: its event types, with UnknownEvent when it keeps unknown events."""
         types = [use.type for _, use in spec.events if use.type is not None]
@@ -3750,7 +3985,7 @@ class ClientRenderer:
         batch: GeneratedTypeContractBatch,
         wire: WirePlan,
         codecs: CodecPlan,
-        helpers: tuple[PaginationSpec | PollingSpec | CacheSpec | UploadSpec | QueueSpec, ...] = (),
+        helpers: tuple[PaginationSpec | PollingSpec | CacheSpec | UploadSpec | BatchSpec | QueueSpec, ...] = (),
         streams: tuple[StreamSpec, ...] = (),
         sockets: tuple[SocketSpec, ...] = (),
         fingerprints: Mapping[str, str] | None = None,
@@ -3851,7 +4086,49 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
 ```json
 {json.dumps(metadata, indent=2, ensure_ascii=True)}
 ```
-{self.helper_readme()}"""
+{self.helper_readme()}{self._circuit_readme()}{self._compression_readme()}"""
+
+    def _compression_readme(self) -> str:
+        """List the operations that accept compressed request bodies, or nothing when none declares a coding."""
+        if not (accepted := self._accepted_encodings()):
+            return ""
+        return f"""
+## Request compression
+
+These operations accept the request content codings listed; `compression="gzip"` in `ClientOptions`, a view, or a
+call's `RequestOptions` compresses their bodies. See the runtime reference.
+
+```json
+{json.dumps(accepted, indent=2, ensure_ascii=True)}
+```
+"""
+
+    def _accepted_encodings(self) -> dict[str, list[str]]:
+        """Return the request codings each operation accepts, by its resource and method name."""
+        return {
+            f"{spec.resource}.{spec.name}": list(spec.accepted_content_encodings)
+            for spec in self.plan.operations
+            if spec.accepted_content_encodings
+        }
+
+    def _circuit_readme(self) -> str:
+        """Describe the package's circuit groups, or nothing when no operation declares one."""
+        if not (groups := circuit_groups(self.plan)):
+            return ""
+        members = {
+            group: [f"{spec.resource}.{spec.name}" for spec in self.plan.operations if spec.circuit_group == group]
+            for group in groups
+        }
+        return f"""
+## Circuit groups
+
+Calls of these operations pass a circuit of their group when `ProtocolClientOptions(circuit=CircuitBreakerOptions(
+enabled=True))` enables the breaker; `Client.reset_circuit(group, origin=...)` closes one. See the runtime reference.
+
+```json
+{json.dumps(members, indent=2, ensure_ascii=True)}
+```
+"""
 
     def helper_readme(self) -> str:
         """Describe the package's protocol helpers, or nothing when it has none."""
@@ -3932,6 +4209,14 @@ reference for their limits."""
             if "cache" in kinds
             else ""
         )
+        batch = (
+            """
+A batch helper's `iterate` returns an iterator that sends nothing until it is consumed, then sends the items in
+requests within the server's and the caller's limits, a few at once, and returns one record per item in input order:
+its success value, its error, or an unknown delivery. See the runtime reference for its limits."""
+            if "batch" in kinds
+            else ""
+        )
         queues = (
             """
 A queue helper's `operations.<alias>.enqueue` saves a call in the queue's store and sends nothing; only `drain` sends,
@@ -3947,7 +4232,7 @@ their limits."""
 
 `client.protocols` holds the protocol helpers below by their dotted names, on `Client` and `AsyncClient` alike.{
             streams
-        }{sockets}{pagination}{polling}{caching}{uploads}{queues}{closing}
+        }{sockets}{pagination}{polling}{caching}{uploads}{batch}{queues}{closing}
 
 ```json
 {json.dumps(helpers, indent=2, ensure_ascii=True)}
@@ -4131,17 +4416,136 @@ A limiter permit is acquired before opening a body and released when its respons
 bounded wait, retains unfinished owned work, and preserves the primary error, attaching secondary failures where
 possible. Client/view closure refuses new work and interrupts active calls at observation points. Retrying close can
 wait for retained cleanup; it does not authorize another send or restore an expired logical deadline.
-{self.helper_runtime()}{self.stream_runtime()}{self.socket_runtime()}"""  # noqa: S608
+{self.helper_runtime()}{self.stream_runtime()}{self.socket_runtime()}{self._circuit_runtime()}{self._compression_runtime()}"""  # noqa: S608
+
+    def _compression_runtime(self) -> str:
+        """Describe request compression, or that no operation of the package accepts a request coding."""
+        if not self._accepted_encodings():
+            return """
+## Request compression
+
+No operation of this package declares a request content coding, so `compression` in `ClientOptions` and views turns
+off for every call, and a call's own `RequestOptions(compression="gzip")` raises `ConfigurationError` before sending.
+"""
+        return """
+## Request compression
+
+`compression: str | None` in `ClientOptions`, `RequestOptions` views, and calls selects a request content coding;
+`gzip` is the only coding with an encoder, `UNSET` inherits, and `None` turns compression off. Another value raises
+`ConfigurationError` when the options are made. A selected coding applies to a call only when it sends a body,
+including empty bytes and JSON null, and its operation accepts the coding; then the body is sent gzip-compressed
+(level 6, no file name, zero modification time) with `Content-Encoding: gzip`, and a Content-Encoding header the call
+already sends raises `ConfigurationError`. A coding the client or a view selects turns off for other calls, including
+`request_raw`; one a call selects raises `ConfigurationError` before sending for a call it cannot apply to.
+
+Bytes and encoded bodies are compressed once and every retry resends the same bytes. File, stream, factory, and
+multipart bodies are compressed as each attempt streams, without a Content-Length, and replay exactly as they would
+uncompressed; a one-shot body stays one-shot. A signer that needs a body digest digests the compressed bytes, so it
+accepts only bodies encoded once. A redirect that drops the body also drops Content-Encoding.
+
+A protocol helper given a coding in its `options` checks once, before sending anything, that one of its requests can
+apply it, or raises `ConfigurationError(field_path=('options', 'compression'),
+condition='no_applicable_helper_child')`; then only its requests with a body whose operation accepts the coding are
+compressed, and its bodyless polls and followed URLs are not. Token requests are never compressed.
+
+Queue `enqueue` accepts no request `options`; passing them raises `TypeError` without storing or sending. Queue
+`drain` refuses an explicit coding with `no_applicable_helper_child` before claiming entries or sending. Entries
+save no coding; inherited client or view codings apply only to declared queued operations with bodies.
+"""
+
+    def _circuit_runtime(self) -> str:
+        """Describe circuit breaking, or nothing for a package whose operations declare no circuit group."""
+        if not circuit_groups(self.plan):
+            return ""
+        return f"""
+## Circuit breakers
+
+Import `CircuitBreakerOptions` and the circuit store types from `{self.config.package}.protocols`. A circuit breaker
+runs only for operations with a circuit group and only when `ProtocolClientOptions(circuit=CircuitBreakerOptions(
+enabled=True))` is passed in `ClientOptions(protocols=...)`; otherwise calls take no circuit step.
+
+| Setting | Default |
+|---|---|
+| `enabled` | False |
+| `failure_threshold` | 5 consecutive failed calls |
+| `cooldown` | 30 seconds |
+| half-open probes | 1 at a time, fixed |
+| `circuit_store` | None: a memory store of this client, shared with its views |
+
+Each call of a grouped operation passes the circuit of its group, the origin of its URL, and the client's
+`ProtocolSecurityContext.credential_partition` (`anonymous` without a context) once its request is encoded and before
+any credential, limiter permit, or send. An authenticated call needs a security context, and a view or call with
+other auth than the client's is refused, each with `ProtocolConfigurationError` before sending. An open circuit
+raises `CircuitOpenError` with its `key` and the monotonic `retry_at` of its next admission; the call consumes no
+send, attempt, or token exchange, and is never retried.
+
+A call's outcome is recorded once, after its redirects and retries. Connect, read, and write transport failures and a
+final 500, 502, 503, or 504 response are failures; any other response is a success, which resets the count. Pool
+timeouts, 429, cancellation, deadlines, auth and token failures, and configuration, encoding, decoding, and validation
+errors leave the circuit unchanged. A streaming call completes when its response is handed over. The threshold of
+consecutive failures opens the circuit for the cooldown; then one call probes it, closing it on success and reopening
+it on failure, while other calls raise `CircuitOpenError`; a cancelled or neutral probe frees the slot.
+
+`circuit_store` borrows a `CircuitStore` (an `AsyncCircuitStore` for `AsyncClient`) and never closes it; clients
+sharing one store share circuits with the same key. Its methods receive `now` from the monotonic source of the
+client's clock, `ClientOptions(clock=...)`, which is process local. A store failure raises `CircuitStoreError`, or
+becomes a secondary error of a call that already failed; no request is resent because of it.
+`reset_circuit(group, origin=Origin(...))` closes one circuit of this client's partition without sending anything,
+and permits admitted before it cannot change the state after it.
+"""
 
     def helper_runtime(self) -> str:
-        """Describe the package's pagination, polling, and upload sessions and cache and queue helpers, if any."""
+        """Describe the package's protocol helpers and their runtime limits."""
         return (
             self.pagination_runtime()
             + self.polling_runtime()
             + self.cache_runtime()
             + self.upload_runtime()
+            + self._batch_runtime()
             + self.queue_runtime()
         )
+
+    def _batch_runtime(self) -> str:
+        """Describe batch sessions and their limits, or nothing for a package without batch helpers."""
+        if not any(isinstance(spec, BatchSpec) for spec in self.helpers):
+            return ""
+        return f"""
+## Batch sessions
+
+A batch helper's `iterate` returns an iterator that is one session; it reads, encodes, and sends nothing until it is
+consumed. Every request is a logical call of its own, with its own retries, total timeout, and idempotency key; the
+session bounds all of them. Each limit comes from the call's options, then `ProtocolClientOptions.defaults` for the
+helper, then the default below. The session types are imported from:
+
+- `{self.config.package}.protocols`: `BatchOptions`, `BatchIterator`, and `AsyncBatchIterator`
+- `{self.config.package}.protocols.batches`: each helper's records and result alias
+- `{self.config.package}.options`: `SessionOptions`
+
+| Limit | Effective default |
+|---|---|
+| items per request | 100, fewer when the server allows fewer |
+| requests in flight | 4 |
+| items per session | 100000; None removes it |
+| encoded bytes per item | 8 MiB, less when one request carries less |
+| prepared request bytes | 32 MiB, also the most one request carries |
+| session total timeout | 600 seconds; None removes it |
+| network sends per session | 10000; None removes it |
+
+Items are grouped in input order into requests within the count and byte limits, and an item whose declared ID is
+already in a request starts the next one. Results come back in input order, whatever order requests complete in. A
+result item must carry exactly one of its success and error members, and results that do not match the request's
+items by position or declared ID raise `BatchProtocolError`. An item too large for any request raises
+`BatchItemTooLargeError` before it is sent. Item errors are records, never retried; a request is resent only as the
+shared retry policy allows its operation. A request that may have reached the server without a readable answer, such
+as after a transport failure, a deadline, a cancellation, or a success response whose body fails to decode, gives one
+unknown delivery record per item, never resent, or raises `BatchDeliveryUnknownError` with
+`BatchOptions(raise_on_error=True)`; a deadline, a cancellation, or a closed client is raised after those records.
+Any other failure, and a failure of the caller's items, is raised after the results before it; nothing is read or
+sent after it, and the requests in flight still return their records in order. A cancelled asyncio step cancels the
+requests in flight, whose items become unknown deliveries, and the iteration then ends with `ProtocolStateError`.
+Iterate in a `with` or `async with` block: `close()` or `aclose()` stops sending and drops the results not yet
+returned; it never closes the client. A call's options must not fix an idempotency key.
+"""
 
     def polling_runtime(self) -> str:
         """Describe polling sessions and their limits, or nothing for a package without polling helpers."""
@@ -4341,7 +4745,9 @@ removes the ended entries created before an instant and returns them.
         """
         if not (
             pages := [
-                spec for spec in self.helpers if not isinstance(spec, PollingSpec | CacheSpec | UploadSpec | QueueSpec)
+                spec
+                for spec in self.helpers
+                if not isinstance(spec, PollingSpec | CacheSpec | UploadSpec | BatchSpec | QueueSpec)
             ]
         ):
             return ""
@@ -4564,8 +4970,14 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
         if not (self.helpers or self.streams or self.sockets):
             return ()
         helpers = _Helpers(resources, self.fingerprints)
+        batches = (
+            (self.file(PurePosixPath("protocols", "batches.py"), "protocols", helpers.results_module()),)
+            if any(isinstance(spec, BatchSpec) for spec in self.helpers)
+            else ()
+        )
         return (
             self.file(PurePosixPath("protocols", "_plans.py"), "protocols", helpers.plans()),
+            *batches,
             self.file(PurePosixPath("protocols", "_helpers.py"), "protocols", helpers.module(asynchronous=False)),
             self.file(PurePosixPath("protocols", "_async_helpers.py"), "protocols", helpers.module(asynchronous=True)),
         )

@@ -67,12 +67,18 @@ class _Orders:
             path = request.url.path
             key = request.headers.get("Idempotency-Key")
             auth = request.headers.get("Authorization")
+            content = request.content
+            if request.headers.get("Content-Encoding") == "gzip":
+                from gzip import decompress
+
+                content = decompress(content)
             facts = [
+                *(["coding=gzip"] if request.headers.get("Content-Encoding") == "gzip" else []),
                 *([f"key={self.keys(key)}"] if key else []),
                 *([f"auth={auth}"] if auth else []),
                 *([f"trace={trace}"] if (trace := request.headers.get("X-Trace")) else []),
                 *([f"query={request.url.query.decode()}"] if request.url.query else []),
-                *([f"body={request.content.decode()}"] if request.content else []),
+                *([f"body={content.decode()}"] if request.content else []),
             ]
             if request.method == "POST" and path == "/orders":
                 duplicate = key in self.orders
@@ -1592,3 +1598,167 @@ async def _async_queues(queue: _Queues) -> None:  # ruff: ignore[too-many-locals
         await astep("async expired intent drain", outbox.drain)
         await astep("async recovered intent", lambda: outbox.inspect(intended.entry_id))
         server.flush(lines)
+
+
+def queue_compression(package: ModuleType, lines: list[str]) -> None:
+    """Admit one finite saved claim, compress matching aliases, and return every unsent lease on refusal."""
+    queue = _Queues(package, lines)
+    store = _Store(queue.protocols)
+    coding = queue.options.RequestOptions(compression="gzip")
+    limits = queue.protocols.QueueOptions(max_entries=2, parallelism=1)
+    with queue.exchange.client() as native, _client(queue, native, store) as api:
+        outbox = _helpers(api)[0]
+        queue.step("enqueue coding", lambda: outbox.operations.create_order.enqueue(body=queue.order, options=coding))
+        queue.step("empty coding", lambda: outbox.drain(options=coding))
+        refresh = outbox.operations.refresh
+        order_id = queue.argument("GetOrder", "path", "orderId", "o1")
+        plain = refresh.enqueue(order_id=order_id)
+        store.conflicts = 1
+        queue.step("bodyless coding", lambda: outbox.drain(options=coding))
+        queue.step("returned after conflict", lambda: outbox.inspect(plain.entry_id))
+        outbox.operations.create_order.enqueue(body=queue.order)
+        queue.server.during = lambda: outbox.operations.create_order.enqueue(body=queue.order)
+        queue.step("mixed finite coding", lambda: outbox.drain(options=coding, queue_options=limits))
+        queue.server.flush(lines)
+        pending = [entry for entry in store.entries.values() if entry.state == "pending"]
+        lines.append(f"  new arrivals pending={len(pending)} deliveries={[entry.delivery_count for entry in pending]}")
+        queue.step("drain off", lambda: outbox.drain(options=queue.options.RequestOptions(compression=None)))
+        queue.server.flush(lines)
+        with api.with_options(coding) as compressed:
+            inherited = _helpers(compressed)[0]
+            inherited.operations.create_order.enqueue(body=queue.order)
+            queue.step("drain inherited coding", inherited.drain)
+            queue.step("empty inherited coding", inherited.drain)
+            queue.server.flush(lines)
+        for label, change in (
+            ("malformed", {"payload": b"{}"}),
+            ("invalid JSON", {"payload": b"["}),
+            ("invalid body metadata", {"payload": b'{"version":1,"arguments":[[]],"body":0}'}),
+            ("missing alias", {"operation_alias": "absent"}),
+            ("wrong fingerprint", {"helper_fingerprint": "absent"}),
+            ("wrong security", {"security_fingerprint": "absent"}),
+        ):
+            receipt = refresh.enqueue(order_id=order_id)
+            store.tamper(receipt.entry_id, **change)
+            queue.step(label, lambda: outbox.drain(options=coding))
+            queue.step("returned", lambda receipt=receipt: outbox.inspect(receipt.entry_id))
+            outbox.cancel(receipt.entry_id)
+        for label, change in (
+            ("cancelled claim", {"cancel_requested": True}),
+            ("expired claim", {"expires_at": queue.time.now()}),
+        ):
+            receipt = outbox.operations.create_order.enqueue(body=queue.order)
+            store.at_claim[store.claims + 1] = lambda receipt=receipt, change=change: store.tamper(
+                receipt.entry_id, **change
+            )
+            queue.step(label, lambda: outbox.drain(options=coding))
+            queue.step("ineligible claim returned", lambda receipt=receipt: outbox.inspect(receipt.entry_id))
+            outbox.cancel(receipt.entry_id)
+        receipt = refresh.enqueue(order_id=order_id)
+        store.conflicts = 2
+        queue.step("failed return", lambda: outbox.drain(options=coding))
+        queue.step("still leased", lambda: outbox.inspect(receipt.entry_id))
+        store.tamper(receipt.entry_id, lease_until=queue.time.now())
+        queue.step("recover refused lease", outbox.drain)
+        queue.server.flush(lines)
+        receipt = refresh.enqueue(order_id=order_id)
+        store.before["compare_exchange"] = lambda _: store.tamper(receipt.entry_id, cancel_requested=True)
+        queue.step("cancel during return", lambda: outbox.drain(options=coding))
+        queue.step("cancelled unsent", lambda: outbox.inspect(receipt.entry_id))
+        receipt = refresh.enqueue(order_id=order_id)
+        store.before["compare_exchange"] = lambda _: store.tamper(receipt.entry_id, lease_id="another-worker")
+        queue.step("transferred lease", lambda: outbox.drain(options=coding))
+        queue.step("other lease retained", lambda: outbox.inspect(receipt.entry_id))
+        store.entries.clear()
+        receipt = refresh.enqueue(order_id=order_id)
+        store.conflicts = 1
+        store.before["compare_exchange"] = lambda _: store.before.update(
+            compare_exchange=lambda _: store.tamper(receipt.entry_id, lease_id="second-worker")
+        )
+        queue.step("transferred on final return", lambda: outbox.drain(options=coding))
+        queue.step("final other lease retained", lambda: outbox.inspect(receipt.entry_id))
+        store.entries.clear()
+        receipt = outbox.operations.create_order.enqueue(body=queue.order)
+        token = queue.options.CancelToken()
+        store.at_claim[store.claims + 1] = token.cancel
+        queue.step(
+            "cancel compression admission",
+            lambda: outbox.drain(options=queue.options.RequestOptions(compression="gzip", cancel_token=token)),
+        )
+        queue.step("cancelled admission returned", lambda: outbox.inspect(receipt.entry_id))
+        outbox.cancel(receipt.entry_id)
+        outbox.operations.create_order.enqueue(body=queue.order)
+        waiting = outbox.operations.create_order.enqueue(body=queue.order)
+
+        def expire_after_outcome(entry: Any) -> None:
+            if entry.state == "succeeded":
+                queue.time.advance(400)
+            else:
+                store.before["compare_exchange"] = expire_after_outcome
+
+        store.before["compare_exchange"] = expire_after_outcome
+        queue.step(
+            "claim expiry between waves",
+            lambda: outbox.drain(
+                options=coding, queue_options=limits, session_options=queue.options.SessionOptions(total_timeout=1000)
+            ),
+        )
+        queue.step("unsent expired lease returned", lambda: outbox.inspect(waiting.entry_id))
+        queue.server.flush(lines)
+        waiting = outbox.operations.create_order.enqueue(body=queue.order)
+        queue.step(
+            "finite send limit",
+            lambda: outbox.drain(
+                options=coding, queue_options=limits, session_options=queue.options.SessionOptions(max_network_sends=1)
+            ),
+        )
+        queue.step("unsent limited lease returned", lambda: outbox.inspect(waiting.entry_id))
+        queue.step(
+            "zero time coding",
+            lambda: outbox.drain(options=coding, session_options=queue.options.SessionOptions(total_timeout=0)),
+        )
+        queue.server.flush(lines)
+
+    run(lambda: _async_queue_compression(queue))
+
+
+async def _async_queue_compression(queue: _Queues) -> None:
+    """Use the same bounded claim and rollback before asyncio sends."""
+    store = _Store(queue.protocols)
+    coding = queue.options.RequestOptions(compression="gzip")
+    limits = queue.protocols.QueueOptions(max_entries=2, parallelism=1)
+    async with (
+        queue.exchange.async_client() as native,
+        queue.package.AsyncClient(http_client=native, options=queue.settings(_AsyncStore(store))) as api,
+    ):
+        outbox = _helpers(api)[0]
+        await queue.astep("async empty coding", lambda: outbox.drain(options=coding))
+        order_id = queue.argument("GetOrder", "path", "orderId", "o1")
+        plain = await outbox.operations.refresh.enqueue(order_id=order_id)
+        store.conflicts = 1
+        await queue.astep("async bodyless coding", lambda: outbox.drain(options=coding))
+        await queue.astep("async returned", lambda: outbox.inspect(plain.entry_id))
+        await outbox.operations.create_order.enqueue(body=queue.order)
+        await queue.astep("async mixed coding", lambda: outbox.drain(options=coding, queue_options=limits))
+        queue.server.flush(queue.lines)
+        await queue.astep("async empty unset", outbox.drain)
+        receipt = await outbox.operations.create_order.enqueue(body=queue.order)
+        token = queue.options.CancelToken()
+        store.at_claim[store.claims + 1] = token.cancel
+        await queue.astep(
+            "async cancelled admission",
+            lambda: outbox.drain(options=queue.options.RequestOptions(compression="gzip", cancel_token=token)),
+        )
+        await queue.astep("async cancelled admission returned", lambda: outbox.inspect(receipt.entry_id))
+        await outbox.operations.create_order.enqueue(body=queue.order)
+        await queue.astep(
+            "async finite limit",
+            lambda: outbox.drain(
+                options=coding, queue_options=limits, session_options=queue.options.SessionOptions(max_network_sends=1)
+            ),
+        )
+        await queue.astep(
+            "async zero time coding",
+            lambda: outbox.drain(options=coding, session_options=queue.options.SessionOptions(total_timeout=0)),
+        )
+        queue.server.flush(queue.lines)

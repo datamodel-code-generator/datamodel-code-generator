@@ -37,6 +37,7 @@ __all__ = (
     "dotted_read",
     "dotted_write",
     "position",
+    "query_written",
     "read_paths",
     "targeted",
     "targeted_writes",
@@ -155,6 +156,30 @@ def targeted(
         )
     called = replace(call, parameters=tuple(parameters), body=body, checks=())
     return called, tuple(writes), frozenset(headers), frozenset(queries)
+
+
+def query_written(call: OperationPlan[T, object], writes: Writes, name: str) -> bool:
+    """Return whether a query patch can replace a field written by a helper, including object properties.
+
+    Exploded form objects own their declared properties and any additional name their parameter accepts. Deep
+    objects own those properties within the parameter's brackets. Decoder reservations do not limit wire writes.
+    """
+    for position, _ in writes:
+        if position is None or (plan := call.parameters[position].plan).location != "query":
+            continue
+        if plan.shape != "object" or not plan.explode or plan.style not in {"form", "deepObject"}:
+            if name == plan.name:
+                return True
+            continue
+        member = name
+        if plan.style == "deepObject":
+            prefix = f"{plan.name}["
+            if not name.startswith(prefix) or not name.endswith("]"):
+                continue
+            member = name[len(prefix) : -1]
+        if any(item.name == member for item in plan.fields) or plan.additional is not None:
+            return True
+    return False
 
 
 def read_paths(call: OperationPlan[T, object], sources: Sequence[tuple[RequestTarget, Selector | None]]) -> ReadPaths:

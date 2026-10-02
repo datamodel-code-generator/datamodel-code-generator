@@ -41,7 +41,7 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 ErrorT = TypeVar("ErrorT", bound=SDKError)
-StopReason: TypeAlias = Literal["token", "closing", "deadline", "idle"]
+StopReason: TypeAlias = Literal["token", "closing", "deadline", "idle", "interruption"]
 
 
 class _Scope(Protocol):
@@ -129,6 +129,7 @@ class _Guard:
     __slots__ = (
         "_armed",
         "_handles",
+        "_interruption",
         "_loop",
         "_poller",
         "_signals",
@@ -140,7 +141,12 @@ class _Guard:
         "task",
     )
 
-    def __init__(self, call: LogicalCallContext, idle_timeout: float | None) -> None:
+    def __init__(
+        self,
+        call: LogicalCallContext,
+        idle_timeout: float | None,
+        interruption: asyncio.Future[BaseException] | None = None,
+    ) -> None:
         """Arm the call's deadline, stream idle limit, client closing signals, and token polling."""
         import asyncio  # noqa: PLC0415
 
@@ -158,15 +164,23 @@ class _Guard:
         if idle_timeout is not None:
             self._handles.append(loop.call_at(loop.time() + idle_timeout, self.stop, "idle"))
         self._poller = None if self._token is None else loop.call_later(TOKEN_INTERVAL, self._poll)
+        self._interruption = interruption
+        if interruption is not None:
+            interruption.add_done_callback(self._interrupt)
         self._signals = call.closing_signals()
         for signal in self._signals:
             signal.add_done_callback(self._closing)
 
-    def stop(self, reason: StopReason) -> None:
+    def stop(self, reason: StopReason, error: BaseException | None = None) -> None:
         """Cancel the awaiting task once, for the first reason that stops the call."""
         if self._armed and self.reason is None and self.task is not None:
             self.reason = reason
+            self.error = error
             self.task.cancel()
+
+    def _interrupt(self, signal: asyncio.Future[BaseException]) -> None:
+        """Wake owned work for a published native interruption, retaining the original exception."""
+        self.stop("interruption", signal.result())
 
     def _closing(self, _signal: asyncio.Future[None]) -> None:
         self.stop("closing")
@@ -190,6 +204,8 @@ class _Guard:
             self._poller.cancel()
         for signal in self._signals:
             signal.remove_done_callback(self._closing)
+        if self._interruption is not None:
+            self._interruption.remove_done_callback(self._interrupt)
         return self.reason is not None and _uncancel(self.task) <= self.level
 
 
@@ -757,6 +773,7 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
         cleanup: Callable[[T], Awaitable[None]] | None = None,
         idle_timeout: float | None = None,
         idle: bool = True,
+        interruption: asyncio.Future[BaseException] | None = None,
     ) -> T:
         """Await SDK work in the caller's task, cancelling it only when the call's token, closing, or limits stop it.
 
@@ -770,7 +787,7 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
         if self.streaming and phase == "stream" and idle_timeout is None and idle:
             read, limit = self.settings.stream_read_timeout, self.settings.stream_idle_timeout
             idle_timeout = limit if read is None else read if limit is None else min(read, limit)
-        guard = self._guard = _Guard(self, idle_timeout)
+        guard = self._guard = _Guard(self, idle_timeout, interruption)
         if self._task is None:
             self._task = guard.task
         left = LEFT_WORK.set(self._left)

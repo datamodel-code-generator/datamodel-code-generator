@@ -243,6 +243,12 @@ booleans. Durations are finite numbers of seconds, excluding booleans; integers 
 | | `reconnect` | `False` | `bool` |
 | | `max_reconnects` | `5` | Nonnegative integer or `None` |
 | | `max_reconnect_wait` | `60` seconds | Positive duration or `None` |
+| `BatchOptions` | `batch_size` | `100`, fewer when the server allows fewer | Positive integer |
+| | `parallelism` | `4` | Positive integer |
+| | `max_items` | `100000` | Nonnegative integer or `None` |
+| | `max_item_bytes` | `8388608` | Positive integer |
+| | `max_buffer_bytes` | `33554432` | Positive integer |
+| | `raise_on_error` | `False` | `bool` |
 | `UploadOptions` | `chunk_bytes` | `8388608`, at most the helper's `max_chunk_bytes` | Positive integer |
 | | `max_parts` | `10000` | Positive integer or `None` |
 | | `parallelism` | `4` | Positive integer |
@@ -293,10 +299,12 @@ client = Client(options=options)
 | `ProtocolClientOptions.security` | `ProtocolSecurityContext \| None`, default `UNSET` | `None` means anonymous use. Its `allowed_origins` are the origins beyond the server's that a next-URL or Link pagination helper may follow a URL to |
 | `ProtocolClientOptions.defaults` | `Mapping[str, ProtocolDefaults]`, default `UNSET` | Keys are helper names: Python identifiers separated by dots, without keywords or empty parts. The mapping is copied into a read-only mapping, and its values keep their identity |
 | `ProtocolDefaults.session` | `SessionOptions`, default `UNSET` | Session limits of that helper |
-| `ProtocolDefaults.options` | `PaginationOptions \| PollOptions \| StreamOptions \| CacheOptions \| WSOptions \| UploadOptions \| QueueOptions`, default `UNSET` | Kind-specific options of that helper |
+| `ProtocolDefaults.options` | `PaginationOptions \| PollOptions \| StreamOptions \| CacheOptions \| WSOptions \| UploadOptions \| BatchOptions \| QueueOptions`, default `UNSET` | Kind-specific options of that helper |
 | `ProtocolClientOptions.cache_stores` | `Mapping[str, CacheStore \| AsyncCacheStore]`, default `UNSET` | The store each [cache helper](#cache-helpers) keeps its entries in, by helper name. The mapping is copied into a read-only mapping that keeps each store's identity; the client borrows the stores and never closes them |
 | `ProtocolClientOptions.websocket_connector` | `WebSocketConnector \| AsyncWebSocketConnector \| None`, default `UNSET` | A borrowed connector that opens WebSocket connections; see [connectors and transports](#connectors-and-transports) |
 | `ProtocolClientOptions.websocket_transport` | `WebSocketTransportOptions`, default `UNSET` | TLS contexts, proxy, and `trust_env` of WebSocket connections |
+| `ProtocolClientOptions.circuit` | `CircuitBreakerOptions`, default `UNSET` | `UNSET` leaves circuit breaking off; see [Circuit breakers](#circuit-breakers) |
+| `ProtocolClientOptions.circuit_store` | `CircuitStore \| AsyncCircuitStore \| None`, default `UNSET` | A borrowed store of circuit states; `None` or `UNSET` gives the client a memory store of its own when the breaker is enabled |
 | `ProtocolClientOptions.queue_stores` | `Mapping[str, QueueStore \| AsyncQueueStore]`, default `UNSET` | The borrowed store of each [queue helper](#queue-helpers), by its name. The mapping is copied into a read-only mapping, and its values keep their identity |
 
 Invalid values inside `ProtocolClientOptions` and `ProtocolDefaults` raise `ProtocolConfigurationError`. Explicit
@@ -326,6 +334,7 @@ Invalid field values raise `ValueError`.
 | `IncompleteFrameError` | `StreamInterruptedError` | `buffered_bytes: int`; `condition` is always `eof` |
 | `StreamRemoteError[E]` | `ProtocolError` | `event_type: str \| None`, `data: E`, a read-only property, `sequence: int` |
 | `CacheStoreError` | `ProtocolStoreError` | `action`, the store method that failed, and `entry_id: str \| None = None` |
+| `CircuitStoreError` | `ProtocolStoreError` | `action`, the store method that failed; see [Circuit breakers](#circuit-breakers) |
 | `CacheProtocolError` | `ProtocolDataError` | No other fields; `condition` is always `inconsistent` |
 | `CacheValidatorConflictError` | `ProtocolConfigurationError` | `header_name: Literal['If-None-Match', 'If-Modified-Since']`; `field_path` is the header's name and `condition` is always `binding_mismatch` |
 | `CacheInvalidationError[T]` | `CacheStoreError` | `tags: tuple[str, ...]`, `completed_result: T \| Unset = UNSET`, a read-only property; `has_completed_result` and `require_result()`, which raises `ResultUnavailableError` without a result; `action` is always `invalidate` |
@@ -335,7 +344,11 @@ Invalid field values raise `ValueError`.
 | `WebSocketProxyError` | `TransportError` | `proxy_status_code: int \| None = None`, `retry_stop_reason = None`; `phase` is always `connect` and `delivery_state` `NOT_SENT` |
 | `HandshakeResponse` | `ProtocolError` | `status_code: int`, `headers: HeadersView`, `body_prefix: bytes` of at most 65536 bytes, `truncated: bool`; raised only by connectors |
 | `DeliveryUnknownError` | `ProtocolError` | `delivery_state`, `MAYBE_SENT` or `RESPONSE_STARTED`, `resume_state: ResumeState \| None = None`, `message_id: str \| None = None` |
+| `CircuitOpenError` | `ProtocolError` | `key: CircuitKey`, `retry_at: float`, the nonnegative monotonic time of the circuit's next admission |
 | `NonResumableSourceError` | `ProtocolConfigurationError` | `source_kind: Literal['iterable', 'iterator', 'stream', 'reader']`; `field_path` is always `('source',)` and `condition` `wrong_capability` |
+| `BatchProtocolError` | `ProtocolDataError` | `indices: tuple[int, ...]`; `condition` is always `inconsistent` |
+| `BatchItemTooLargeError` | `ProtocolSizeError` | `index: int`, `limit: int`, `observed: int`; `kind` is always `body` and `unit` `bytes` |
+| `BatchDeliveryUnknownError[R]` | `DeliveryUnknownError` | `partial_results: tuple[R, ...]`, a read-only property, `batch_indices: tuple[int, ...]`; `message_id` is None |
 | `UploadDeliveryUnknownError` | `DeliveryUnknownError` | `phase: Literal['append', 'part', 'complete']`, `part` being reserved for the parts profile, `progress: UploadProgress`; no `message_id` |
 | `UploadSourceChangedError` | `ProtocolDataError` | `expected: UploadIdentity`, `actual: UploadIdentity \| None`, `offset: int \| None = None`; `condition` is always `inconsistent` |
 | `UploadOffsetError` | `ProtocolDataError` | `confirmed_offset: int`, `expected_offset: int`, `remote_offset: int`, `size: int`, `resume_state: ResumeState \| None = None`; `condition` is always `inconsistent` |
@@ -353,7 +366,7 @@ using it as a model.
 
 ## Protocol helper configuration
 
-Pagination, polling, SSE or NDJSON stream, WebSocket, webhook, cache, resumable upload, and queue helpers of an API are declared
+Pagination, polling, SSE or NDJSON stream, WebSocket, webhook, cache, resumable upload, batch, and queue helpers of an API are declared
 in a helper configuration, which the client target reads through its `protocols` setting. The helpers are still being
 implemented: generation validates every helper, resolves its references against the selected API, and records it in the
 target manifest. An enabled pagination helper generates the [pagination helper](#pagination-helpers) below, an enabled
@@ -361,10 +374,10 @@ polling helper the [polling helper](#polling-helpers), an enabled `offset` or `p
 [upload helper](#upload-helpers), an enabled SSE helper the [SSE stream helper](#sse-stream-helpers), an enabled NDJSON
 helper the [NDJSON stream helper](#ndjson-stream-helpers), an enabled WebSocket helper the
 [WebSocket helper](#websocket-helpers), an enabled cache helper the [cache helper](#cache-helpers), an enabled queue
-helper the [queue helper](#queue-helpers), and an enabled webhook helper the
-[webhook verification helper](#webhook-verification-helpers). A disabled helper generates nothing, so the package is the
-same as without it. The `batch` kind fails with `E_CLIENT_UNSUPPORTED` whether enabled or not, and its settings are not
-read yet. Upload helpers support the `offset` and `parts` profiles, remote abort and session URLs when declared.
+helper the [queue helper](#queue-helpers), an enabled webhook helper the
+[webhook verification helper](#webhook-verification-helpers), and an enabled batch helper the
+[batch helper](#batch-helpers). A disabled helper generates nothing, so the package is the same as without it.
+Upload helpers support the `offset` and `parts` profiles, remote abort and session URLs when declared.
 
 | Setting | Values | Default | Where |
 |---|---|---|---|
@@ -514,6 +527,7 @@ querystring, or its request body. An operation that owns a querystring takes no 
 | `webhook` | `event_schema`, `signature` (see [webhook verification helpers](#webhook-verification-helpers)) | `duplicates` (`report`, the default, or `reject`, which needs a signature) |
 | `cache` | `operation`, `validator` (`etag`, `last_modified`, or `both`), `authenticated` (a boolean) | `statuses` (`[200]`), `vary_allowlist` (`[]`), `tags` (`[]`), `mutations` (`{}`); see [cache helpers](#cache-helpers) |
 | `resumable_upload` | `profile` (`offset` or `parts`), `create` (`{operation, size?, expires_at?, session_url?}`), `probe` (`{operation, remote_offset, bindings?}`), `append` (`{operation, offset, length?, bindings?}`), `max_chunk_bytes` (a positive integer), `partial_commit` (`allowed` or `forbidden`), `completion` | `abort` (`{operation, bindings?}`); the parts profile uses `list_parts`, `upload_part`, `complete`, and `limits` |
+| `batch` | `operation`, `request_items` (a body target), `item_schema`, `max_items`, `max_request_bytes` (positive integers), `results` (a body selector), `success` and `error` (`{pointer, schema}`), `correlation` (`{kind: position}` or `{kind: id, input, result}`) | `retry_failed_subset` (`false`; see [batch helpers](#batch-helpers)) |
 | `queue` | `operations`, a nonempty mapping of aliases to `{operation, side_effects}` (see [queue helpers](#queue-helpers)) | Per operation, `key_binding` and `dedupe_ttl`, given together and required with side effects |
 
 A pagination `continuation` is one of these:
@@ -564,7 +578,7 @@ E_SELECTOR_DEPENDENCY selection protocols.helpers['audit.all'].operation /paths/
 
 `ProtocolConfiguration(schema_version=1, helpers={...})` takes `PaginationHelper`, `PollingHelper`, `StreamHelper`,
 `WebSocketHelper`, whose `send` and `receive` are `WebSocketMessage` records, `WebhookHelper`, `CacheHelper`, and
-`ResumableUploadHelper` records, which mirror the file: their fields have the file's names, with `from_` for `from`,
+`ResumableUploadHelper` and `BatchHelper` records, which mirror the file: their fields have the file's names, with `from_` for `from`,
 and they take the client's `Selector` and `RequestTarget` records, `OperationRef` or a pointer string, and `SchemaRef`.
 A webhook's `HmacSignature` (`hmac-sha256` or `hmac-sha512`) or `PublicKeySignature` (`ed25519` or `rsa-pss-sha256`)
 has the same fields and takes `HeaderName`, `TimestampHeader`, `SignedLiteral`, `FixedBytes`, and `AsciiBytes` records,
@@ -573,9 +587,10 @@ or `"none"`, and `signed_parts` entries `"raw-body"`, `"timestamp"`, and `"deliv
 declares an unsigned webhook. An event mapping is an `EventMapping` with an `EventDiscriminator(from_="body",
 pointer=...)`, a cache mutation a `CacheMutation(operation=..., invalidate_tags=(...))`, and an upload takes
 `UploadCreate`, `UploadProbe`, `UploadAppend`, `LengthCompletion()` or `OperationCompletion`, and `UploadAbort`
-records. A queue is a `QueueHelper` whose `operations` map aliases to `QueuedOperation(operation=..., side_effects=...,
-key_binding=..., dedupe_ttl=...)`. They are validated as the file is, with the same diagnostics, when the client configuration is constructed.
-The later kinds have no records yet.
+records. A batch takes `BatchMember` records for success and error and either `PositionCorrelation()` or
+`IdCorrelation(input=..., result=...)`. A queue is a `QueueHelper` whose `operations` map aliases to
+`QueuedOperation(operation=..., side_effects=..., key_binding=..., dedupe_ttl=...)`. They are validated as the file is,
+with the same diagnostics, when the client configuration is constructed.
 
 ```python
 ClientGenerationConfig(
@@ -1589,6 +1604,240 @@ E_CONFIG_VALUE config protocols.helpers['checks.completion_body'].completion.bin
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.uploads.diagnostics -->
 
+## Batch helpers
+
+A batch helper sends a list of items through one API operation that takes many items in its request body and answers
+with one result per item. Declare it with `kind: batch`:
+
+```yaml
+schema_version: 1
+helpers:
+  users.create:
+    kind: batch
+    operation: /paths/~1users~1batch/post
+    request_items: {in: body, pointer: /users}
+    item_schema: {pointer: /components/schemas/NewUser}
+    max_items: 37
+    max_request_bytes: 4096
+    results: {from: body, pointer: /results}
+    success: {pointer: /user, schema: {pointer: /components/schemas/User}}
+    error: {pointer: /error, schema: {pointer: /components/schemas/ItemError}}
+    correlation: {kind: id, input: /id, result: /id}
+```
+
+`request_items` is the JSON request body itself (`pointer: ''`) or one of its top-level properties, an array of
+`item_schema`; the helper builds the body from the items alone, so the body's other properties must be optional and
+are never sent. `max_items` and `max_request_bytes` are the server's limits per request. `results` selects the array
+of result items in the success response, and `success` and `error` name the member of a result item that carries its
+success value or its error, with the schema each member has. `correlation` matches results with items:
+`{kind: position}` declares that the API answers every item in order, and `{kind: id, input, result}` names the ID
+property of an input item and of a result item, both strings or both integers. `retry_failed_subset` defaults to
+`false`; `true` is not supported yet.
+
+An enabled batch helper is generated at `client.protocols.<name>` on `Client` and `AsyncClient` alike. Its `iterate`
+takes the items, positionally, then the operation's parameters as keywords, never a body or field arguments, then
+`batch_options`, `options`, and `session_options`:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.batches.helper -->
+<!-- fmt: off -->
+
+```python
+    def iterate(
+        self,
+        items: Iterable[_dcg_type_1],
+        *,
+        dry_run: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        batch_options: BatchOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> BatchIterator[UsersCreateResult]:
+        """Return the results of POST /users/batch for the items in order; nothing is sent until iterated."""
+        return iterate_batches(
+            self._core,
+            _plans.PLAN_0,
+            (dry_run,),
+            items,
+            batch_options=batch_options,
+            options=options,
+            session_options=session_options,
+        )
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.batches.helper -->
+
+```python
+with Client() as client:
+    for result in client.protocols.users.create.iterate(new_users):
+        if result.outcome == "success":
+            created = result.value
+        elif result.outcome == "error":
+            refused = result.error
+```
+
+`iterate` is an ordinary method on both clients and sends nothing: the returned `BatchIterator[R]`, or
+`AsyncBatchIterator[R]` with `async for`, reads, encodes, and sends items only as it is consumed. The asyncio `iterate`
+also takes an `AsyncIterable`. Each result is one of the helper's records from `pkg.protocols.batches`, frozen and
+keyword-only, whose `outcome` literal narrows the `<Helper>Result` alias:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.batches.records -->
+<!-- fmt: off -->
+
+```python
+@final
+@dataclass(frozen=True, slots=True, kw_only=True)
+class UsersCreateSuccess:
+    """One item of users.create the server applied, with its success value."""
+
+    index: int
+    item_id: str
+    response: ResponseInfo | None
+    value: _dcg_type_0 = field(repr=False)
+    retry_token: bytes | None = field(default=None, repr=False)
+    outcome: Literal['success'] = field(default='success', init=False)
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.batches.records -->
+
+`<Helper>Error` carries `error`, typed as the declared error schema, and `<Helper>DeliveryUnknown` carries no payload.
+Every record has the item's input `index`, its `item_id` (the input item's ID as sent, or None for positions), and the
+`response` metadata of its request, None for an unknown delivery. `retry_token` is always None until retries of failed
+items are supported. Values, errors, and tokens stay out of a record's representation.
+
+### Requests and order
+
+Each item is encoded once, as the request body's codec encodes it under the call's request validation mode, and its
+compact JSON bytes are measured. Items are grouped in input order into requests of at most
+`min(BatchOptions.batch_size, max_items)` items, the server's `max_items` from the helper, whose bodies stay within
+`min(max_request_bytes, 32 MiB, BatchOptions.max_buffer_bytes)` bytes; an item whose ID is already in a request starts the next one. An item larger
+than one request can carry, or than `BatchOptions.max_item_bytes`, is never sent: once every earlier item's result has
+been returned, the iterator raises `BatchItemTooLargeError` with its `index`.
+
+At most `BatchOptions.parallelism` requests are in flight, on a private thread pool for `Client` and as tasks for
+`AsyncClient`. Results always come back in input order: a request's slot is held until every one of its results has
+been returned. Items are read only into a free slot and while the bytes of the items read and not yet answered, those
+in flight and those held for the next request, stay below `max_buffer_bytes`; a request the full buffer would cut
+short waits for the oldest request instead, so at most `parallelism × batch_size` items and one more are read ahead
+of the results. With `id`
+correlation, results may come in any order; with `position`, they must come in item order.
+
+Before reading another item, the iterator reserves room for its maximum allowed encoded size. A small
+`max_buffer_bytes` can therefore reduce chunk sizes and concurrency; a smaller `max_item_bytes` lets small items
+share the buffer more efficiently. Asynchronous source waits use the session deadline, cancellation token, and
+client close guards, including a check before entering the source.
+
+### Results and failures
+
+A result item must carry exactly one of the success and error members, neither missing nor null. A response whose
+results cannot be matched with the request's items, by count for `position`, or by a missing, unknown, or repeated
+result ID or an item without a result for `id`, raises `BatchProtocolError` with the input `indices` of the items
+concerned; so do a result with both members or neither, and an input item without its declared ID. A missing result
+array raises `ProtocolDataError`. Item errors are results, never retried.
+
+Each request is a child call with the shared retry policy, so a whole request is resent only when the operation's
+retry safety allows it: a `PUT` is retried after a `503` by default, while a `POST` needs an idempotent declaration or
+a key contract, and each request has its own idempotency key. A request that may have reached the server without an
+answer the helper can read becomes one `<Helper>DeliveryUnknown` record per item, never resent: a failure whose
+`delivery_state` is `MAYBE_SENT` or `RESPONSE_STARTED`, such as a transport failure, a deadline, or a cancellation
+during the call, and a success response whose body fails to decode or validate, since the server applied the request.
+A failure before resource admission creates no unknown records, even when it carries delivery metadata from
+earlier work.
+With `BatchOptions(raise_on_error=True)` the iterator raises `BatchDeliveryUnknownError` instead, whose `cause` is
+that failure, `partial_results` that request's records, and `batch_indices` its items' indices. A deadline, a
+cancellation, or a closed client also ends the iteration: it is raised after those records.
+
+Any other failure of a request, such as an HTTP error or a mismatch, is raised once the results before it have been
+returned. Nothing is read or sent after it, but the requests already in flight are not abandoned: the following steps
+return their records, or raise their own failures, in input order, and then the iteration ends, so
+every request sent either returns its records or raises.
+
+A failure of the caller's items, such as an exception from its iterator or an item its codec refuses, stops reading:
+the items read before it are still sent and their results returned, then the original exception, or the
+`RequestEncodingError` with the location `("items", index)`, is raised.
+
+Iterate inside a `with` or `async with` block, so that the requests in flight are waited for or cancelled when the
+loop ends early. `close()` or `aclose()`, or leaving the block, stops sending: requests not started are cancelled,
+`close` waits for the requests in flight and `aclose` cancels them, and their results are dropped; later steps end the
+iteration. Neither closes the client. A step of an `AsyncBatchIterator` that is cancelled, such as by a timeout around
+`anext`, cancels the requests in flight and reads and sends nothing more; the following steps return a
+`<Helper>DeliveryUnknown` record per item of the cancelled requests, or raise `BatchDeliveryUnknownError` with
+`raise_on_error`, then raise `ProtocolStateError` with `state='cancelled'`, so the items read but never sent are not
+dropped silently. A `BatchIterator` interrupted while it reads the items, such as by `KeyboardInterrupt` from the
+caller's iterator, cancels the requests not started and ends the same way after the records of those in flight.
+Native interruptions raised inside a worker also propagate unchanged and stop new submissions. Following steps
+retain unknown records for requests admitted before interruption and completed sibling results; requests never
+admitted produce no unknown records. Calling a step while another one runs raises `ProtocolStateError` with
+`state='iterating'`.
+
+### Limits and sessions
+
+An iterator is one session. Every request is a call of its own, with its own retries, total timeout, and idempotency
+key, and the session bounds all of them. Each limit comes from the call's options, then the helper's
+`ProtocolDefaults` in `ProtocolClientOptions.defaults`, then the default below:
+
+| Limit | Default | None |
+|---|---|---|
+| `BatchOptions.batch_size` | 100 items, fewer when `max_items` is smaller | Not allowed |
+| `BatchOptions.parallelism` | 4 requests | Not allowed |
+| `BatchOptions.max_items` | 100000 items read | Removes the limit |
+| `BatchOptions.max_item_bytes` | 8 MiB | Not allowed |
+| `BatchOptions.max_buffer_bytes` | 32 MiB | Not allowed |
+| `BatchOptions.raise_on_error` | `False` | Not allowed |
+| `SessionOptions.total_timeout` | 600 seconds from `iterate` | Removes the limit |
+| `SessionOptions.deadline` | None | No deadline |
+| `SessionOptions.max_network_sends` | 10000 sends | Removes the limit |
+
+An item past `max_items` raises `SessionLimitError` with the kind `items`, and a request the session has no send slot
+for raises it with the kind `network_sends`, each after the results before it. The options of `iterate` apply to
+every request; they must not fix an idempotency key, and options of another type raise `ProtocolConfigurationError`
+before anything is read. In a package that validates arguments with Pydantic, the shared parameter arguments are
+checked once at the first step, before anything is sent, and an invalid one raises `RequestEncodingError` at every
+step; each item is validated by the request body's codec. Checkpoints, resumable item sources, and retries of failed items are not supported yet.
+
+### Generation checks
+
+The operation must take one JSON request media type, sent by default, whose model is read natively, and declare
+exactly one success response with one JSON media type, read natively. The items pointer must name an array of
+`item_schema` in the body, or be the body; a nested member, a union, a map, and a root model property are not
+supported yet. The results pointer must name an array of objects, and the success and error pointers properties of a
+result item whose schemas are the declared ones. Declared IDs must be string or integer properties of the item schema
+and of a result item of the same type, outside the success and error members, which a result of the other outcome
+does not carry:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.batches.diagnostics -->
+<!-- fmt: off -->
+
+```text
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.retried'].retry_failed_subset /paths/~1checks~1plain/post: The batch helper 'checks.retried' retries failed subsets, which is not supported yet
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.media'].request_items /paths/~1checks~1media/post: The batch helper 'checks.media' needs one JSON request media of POST /checks/media, which is not supported yet
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.envelope'].request_items /paths/~1checks~1envelope/post: The batch helper 'checks.envelope' sends an envelope-projected request body, which is not supported yet
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.nested'].request_items /paths/~1checks~1plain/post: The items pointer '/nested/items' of 'checks.nested' names a nested member, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['checks.absent'].request_items /paths/~1checks~1plain/post: The items pointer '/missing' of 'checks.absent' names no property of the POST /checks/plain request body
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.union'].request_items /paths/~1checks~1union/post: The items pointer '/items' of 'checks.union' reads through a union, a map, or a root model property, which is not supported yet
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.listed'].request_items /paths/~1checks~1plain/post: The items pointer '/listed' of 'checks.listed' reads through a union, a map, or a root model property, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['checks.scalar'].request_items /paths/~1checks~1plain/post: The items pointer '/label' of 'checks.scalar' selects no JSON array of the POST /checks/plain request body
+E_CONFIG_VALUE config protocols.helpers['checks.unknown_schema'].item_schema /paths/~1checks~1plain/post: The item_schema '/components/schemas/Missing' of 'checks.unknown_schema' does not exist in its document
+E_CONFIG_VALUE config protocols.helpers['checks.other_schema'].item_schema /paths/~1checks~1plain/post: The item_schema '/components/schemas/Item' of 'checks.other_schema' is not the item schema of the array its items pointer selects
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.required'].request_items /paths/~1checks~1required/post: The batch helper 'checks.required' sends only the items of the POST /checks/required request body, which also requires 'mode'
+E_CONFIG_VALUE config protocols.helpers['checks.empty'].operation /paths/~1checks~1empty/post: POST /checks/empty must declare exactly one JSON success response for the batch helper 'checks.empty'
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.mapped_results'].results /paths/~1checks~1plain/post: The results pointer '/data/first' of 'checks.mapped_results' reads through a union or map, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['checks.absent_results'].results /paths/~1checks~1plain/post: The results pointer '/outcomes' of 'checks.absent_results' names no property of the POST /checks/plain response
+E_CONFIG_VALUE config protocols.helpers['checks.string_results'].results /paths/~1checks~1strings/post: The results pointer '/results' of 'checks.string_results' selects no JSON array of objects of POST /checks/strings
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.mapped_member'].success.pointer /paths/~1checks~1plain/post: The success pointer '/meta/x' of 'checks.mapped_member' reads through a union or map, which is not supported yet
+E_CONFIG_VALUE config protocols.helpers['checks.mapped_member'].error.pointer /paths/~1checks~1plain/post: The error pointer '/missing' of 'checks.mapped_member' names no property of a result item
+E_CONFIG_VALUE config protocols.helpers['checks.member_schemas'].success.schema /paths/~1checks~1plain/post: The success schema '/components/schemas/Missing' of 'checks.member_schemas' does not exist in its document
+E_CONFIG_VALUE config protocols.helpers['checks.member_schemas'].error.schema /paths/~1checks~1plain/post: The error schema '/components/schemas/Item' of 'checks.member_schemas' is not the schema its pointer reads
+E_CONFIG_VALUE config protocols.helpers['checks.input_id'].correlation.input /paths/~1checks~1plain/post: The input ID pointer '/flag' of 'checks.input_id' names no string or integer property of the item schema
+E_CONFIG_VALUE config protocols.helpers['checks.result_id'].correlation.result /paths/~1checks~1plain/post: The result ID pointer '/id' of 'checks.result_id' names no property of a result item of the input ID's type, integer
+E_CONFIG_VALUE config protocols.helpers['checks.absent_ids'].correlation.input /paths/~1checks~1plain/post: The input ID pointer '/missing' of 'checks.absent_ids' names no string or integer property of the item schema
+E_CONFIG_VALUE config protocols.helpers['checks.integer_ids'].correlation.result /paths/~1checks~1plain/post: The result ID pointer '/missing' of 'checks.integer_ids' names no property of a result item of the input ID's type, integer
+E_CONFIG_VALUE config protocols.helpers['checks.member_id'].correlation.result /paths/~1checks~1plain/post: The result ID pointer '/ok/id' of 'checks.member_id' reads the success member, which a result of the other outcome does not carry
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.batches.diagnostics -->
+
 ## SSE stream helpers
 
 An enabled `sse` helper is generated at `client.protocols.<name>` on `Client` and `AsyncClient` alike, with one method,
@@ -1803,7 +2052,7 @@ own, the wire values of the caller's first request, never events, responses, the
 its auth adds; the caller's value of an optional parameter the reopen writes, such as its own `Last-Event-ID`, is left
 out. A call that gives a cookie, a credential header, or a security scheme's query parameter cannot be checkpointed and
 raises `ProtocolConfigurationError` with the condition `wrong_capability`, and so does a stream whose cursor or binding
-value the reopen sends as such a query field, a property of an exploded form object query parameter included. A cursor
+value the reopen sends as such a query field, including a property of an exploded form or deepObject query parameter. A cursor
 the reopen request cannot encode, such as an event ID ending in a space or an object written to a query parameter,
 raises `ProtocolDataError` with the condition `value` and the cursor's selector, or for an event ID the target it is
 written to, as `location`, from `checkpoint()` and from a reconnection, which keeps no `resume_state` and has the
@@ -3766,6 +4015,224 @@ def keyed_view(client: Client, value: str, first_used_at: datetime) -> Client:
 Use the returned view in a `with` block and call an operation with the matching declaration. Supply the persisted
 first-use time, not the time of the newest retry. An attached key whose retention has expired stops replay even for
 a normally safe method.
+
+## Circuit breakers
+
+A circuit breaker stops calls to a failing backend before they send anything. It applies only to operations whose
+generation settings name a circuit group, and only when the client enables it; ordinary calls of other operations and
+packages without groups take no circuit step, load no circuit code, and read no clock.
+
+### Declare circuit groups
+
+`RuntimeOperationMetadata.circuit_group: str | None = None` puts an operation into a group. A group is a nonsecret
+name with non-whitespace text and no control characters; several operations may share one. With the internal
+generator entry point shown in [Declare API guarantees during generation](#declare-api-guarantees-during-generation):
+
+```python
+ClientOperationConfig(ref="/paths/~1status/get", runtime=RuntimeOperationMetadata(circuit_group="backend"))
+```
+
+The flat target-file entry is:
+
+```toml
+[[operations]]
+ref = "/paths/~1status/get"
+
+[operations.runtime]
+circuit_group = "backend"
+```
+
+An invalid group receives `E_CONFIG_VALUE`. The group is part of the operation's request digest, and the generated
+README lists each group's operations. Only a package that declares a group gets `Client.reset_circuit` and
+`AsyncClient.reset_circuit`, whose `group` parameter is a `Literal` of its groups.
+
+### Enable the breaker
+
+```python
+from pkg import Client
+from pkg.options import ClientOptions, ProtocolClientOptions
+from pkg.protocols import CircuitBreakerOptions, ProtocolSecurityContext
+
+options = ClientOptions(
+    protocols=ProtocolClientOptions(
+        circuit=CircuitBreakerOptions(enabled=True),
+        security=ProtocolSecurityContext(credential_partition="tenant-a"),
+    ),
+)
+client = Client(options=options)
+```
+
+`CircuitBreakerOptions(*, enabled: bool = False, failure_threshold: int = 5, cooldown: float = 30)` is immutable.
+`failure_threshold` is a positive integer and `cooldown` positive finite seconds; booleans are refused, and an invalid
+value raises `ProtocolConfigurationError(condition='invalid_value')`. Only one half-open probe runs at a time, and no
+field changes that. `resolved()` returns the `ResolvedCircuitBreakerOptions(failure_threshold, cooldown)` a store
+receives. These types come from `pkg.protocols`; importing and constructing them sends nothing and creates no store.
+
+### Circuits, outcomes, and states
+
+Each circuit is keyed by `CircuitKey(origin, credential_partition, group)`: the `Origin` of the call's URL before any
+redirect, the client's `ProtocolSecurityContext.credential_partition` (`"anonymous"` without a context), and the
+operation's group. A call that authenticates needs a security context, or it raises
+`ProtocolConfigurationError(field_path=('protocols', 'security'), condition='security_partition')` before any
+credential or send. A view or call that authenticates with other auth than the client's would share the client's
+partition, so it raises `ProtocolConfigurationError(field_path=('options', 'auth'), condition='security_partition')`
+before admission; use a client of its own, with its own partition, for other credentials. `request_raw` has no
+operation, so it never passes a circuit.
+
+A call passes its circuit once its request is encoded, before credentials, limiter permits, and sends. Its outcome is
+recorded once, after its redirects and retries, so a call that retried three times counts once:
+
+| Outcome | Calls |
+|---|---|
+| Failure | Connect, read, and write transport failures, including their phase timeouts and broken connections, and a final 500, 502, 503, or 504 response, typed or raw |
+| Success | Any other final response, such as 2xx, 3xx, 404, or 501 |
+| Neutral | Pool timeouts and other transport failures, 429, cancellation, deadlines, client closing, authentication and token failures, configuration, encoding, decoding, and validation errors |
+
+A streaming call completes when its response is handed over; a later read failure is not recorded.
+
+| State | Admission | Transitions |
+|---|---|---|
+| Closed | Every call | A success resets the consecutive failures to 0; reaching `failure_threshold` opens the circuit for `cooldown` seconds |
+| Open | `CircuitOpenError` until the cooldown ends, then one probe | The first call after the cooldown becomes the probe and the circuit half-open |
+| Half-open | `CircuitOpenError` while the probe runs | A successful probe closes the circuit; a failed probe reopens it for another cooldown; a neutral or cancelled probe frees the slot for the next call |
+
+`CircuitOpenError` keeps the circuit's `key` and `retry_at`, the monotonic time of its next admission; while a probe
+runs, `retry_at` is the time of the refusal. The refused call consumes no send, attempt, token exchange, or limiter
+permit, and is never retried. Every transition and reset advances the circuit's generation, and an outcome of a call
+admitted in an earlier generation is ignored, so a call admitted before the circuit opened cannot close it.
+
+### Stores and resets
+
+Without `circuit_store`, each client creates one memory store when it is constructed with the breaker enabled; its
+views share it, and other clients do not. `MemoryCircuitStore()` and `AsyncMemoryCircuitStore()` from
+`pkg.protocols` can be passed to several clients to share their circuits. A custom store implements `CircuitStore`
+with synchronous methods for `Client`, or `AsyncCircuitStore` with coroutine methods for `AsyncClient`:
+
+| Method | Contract |
+|---|---|
+| `admit(key, *, now, options) -> CircuitPermit` | Atomically admit a call, or raise `CircuitOpenError`; take the single half-open slot when due |
+| `record(permit, outcome, *, now) -> None` | Apply `'success'`, `'failure'`, or `'neutral'` once; ignore a permit of another generation |
+| `reset(key) -> None` | Close the circuit and advance its generation |
+| `snapshot(key) -> CircuitSnapshot` | Return `state`, `consecutive_failures`, `retry_at`, and `generation` |
+
+`CircuitPermit(key, generation, probe, permit_id)` and `CircuitSnapshot(state, consecutive_failures, retry_at,
+generation)` are immutable records; a wrong field type raises `TypeError` and an invalid value `ValueError`. `now` is
+read from the monotonic source of the client's clock, `ClientOptions(clock=Clock(...))`, so the cooldown and the
+half-open admission follow an injected clock; that time is local to the process, and a store shared across processes
+must map its callers into one clock domain. A store is borrowed and never closed. A store missing a method, or whose
+methods do not match the client's mode, raises `ProtocolConfigurationError(field_path=('protocols', 'circuit_store'),
+condition='wrong_capability')` when the client is constructed. A store failure raises `CircuitStoreError` with the
+failure as its cause, or becomes a secondary error of a call that already failed; an admission that is not a permit
+for the key, and a `CircuitOpenError` from any method but `admit`, are also a `CircuitStoreError`. No request is resent
+because of a store failure. The client records the outcome of every call it admits, even when the call is cancelled,
+after releasing its body; the builtin stores keep one probe until it is recorded. A custom store shared beyond one
+process must itself recover a probe whose outcome never arrives, such as after that process stops.
+
+`client.reset_circuit(group, origin=Origin(...))`, awaited on `AsyncClient`, closes one circuit of this client's
+partition without sending anything. A group the package does not declare raises
+`ProtocolConfigurationError(field_path=('group',), condition='unknown_field')`, and an origin that is not an `Origin`
+raises one with `condition='invalid_value'`. Without an enabled breaker, a reset does nothing.
+
+## Request compression
+
+A client can send request bodies gzip-compressed to operations whose API accepts them. Compression needs two things:
+the generation settings declare that an operation accepts the coding, and a client, view, or call selects it.
+
+### Declare accepted codings
+
+`RuntimeOperationMetadata.accepted_content_encodings: tuple[str, ...] = ()` lists the request content codings an
+operation accepts. Values are HTTP tokens compared in lowercase, without duplicates; `gzip` is the only coding with a
+builtin encoder, so another value, including `identity`, receives `E_CONFIG_VALUE`, and a repeated one
+`E_CONFIG_CONFLICT`. With the internal generator entry point shown in
+[Declare API guarantees during generation](#declare-api-guarantees-during-generation):
+
+```python
+ClientOperationConfig(
+    ref="/paths/~1items/post",
+    runtime=RuntimeOperationMetadata(accepted_content_encodings=("gzip",)),
+)
+```
+
+The flat target-file entry is:
+
+```toml
+[[operations]]
+ref = "/paths/~1items/post"
+
+[operations.runtime]
+accepted_content_encodings = ["gzip"]
+```
+
+The declaration is part of the operation's request digest, and the generated README lists the operations that accept
+a coding.
+
+### Select a coding
+
+`compression: str | None` exists on `ClientOptions` and `RequestOptions`, for views and calls alike. `UNSET` inherits,
+`None` turns compression off at that layer, and a string is lowercased; any value other than `gzip` raises
+`ConfigurationError(field_path=('compression',), condition='invalid_value')`, and a value of another type one with
+`condition='invalid_type'`, when the options are constructed.
+
+```python
+from pkg import Client
+from pkg.options import ClientOptions, RequestOptions
+
+client = Client(options=ClientOptions(compression="gzip"))
+plain = client.with_options(RequestOptions(compression=None))
+```
+
+A selected coding applies to a call only when the call sends a body and its operation accepts the coding. A body is
+present when the call gives one, including empty bytes and a JSON `null`; an omitted optional body is absent. Where
+both hold, the body is compressed and the request carries `Content-Encoding: gzip`. Elsewhere:
+
+| Selected by | Without a body, for an operation that does not accept it, or for `request_raw` |
+|---|---|
+| `ClientOptions` or a `with_options` view | Compression turns off and the call is sent uncompressed |
+| The call's own `RequestOptions` | `ConfigurationError(field_path=('compression',), condition='not_applicable')` before anything is sent |
+
+`with_raw_response` and `with_streaming_response` follow the rules of their operation. A `Content-Encoding` header
+the call already sends conflicts with a coding that applies and raises
+`ConfigurationError(field_path=('headers', 'Content-Encoding'), condition='managed')`. Token requests of OAuth providers
+are never compressed.
+
+### Bodies, retries, and redirects
+
+The encoder uses gzip level 6 with no file name and a zero modification time, and feeds at most 64 KiB at a time. A
+body encoded once, such as bytes or a JSON model, is compressed once, and every retry sends the same compressed bytes.
+File, stream, factory, and multipart bodies are compressed as each attempt streams, without a `Content-Length`; they
+replay exactly as they would uncompressed, so a one-shot stream is never resent. A signer that needs a body digest
+digests the bytes sent: a body encoded once works, while a compressed file, stream, or factory body raises
+`BodyNotReplayableError(condition='digest_unavailable')` before sending. A redirect that drops the body, such as an
+allowed 303, also drops `Content-Encoding`; a redirect that keeps the body keeps the coding.
+
+### Protocol helpers
+
+A coding passed in a helper call's `options` is checked once, when the helper call is made and before anything is
+sent: at least one request the helper may send for that call must have a body whose operation accepts the coding, or
+the call raises `ConfigurationError(field_path=('options', 'compression'), condition='no_applicable_helper_child')`.
+Then each request the helper sends is compressed only when it has such a body:
+
+| Helper | Requests that can be compressed |
+|---|---|
+| Pagination `page` and `iterate` | The first request, and later ones that send the body again, or a body their bindings or cursor write, with the same operation; Next-URL and Link requests are `GET`s without a body unless `repeat_request_body` is set |
+| Pagination `next_page` and `resume` | Only the next request; a call after the last page, or with `max_items=0`, has none |
+| Polling `start` | The create request, and a poll or the result fetch whose bindings write into its body |
+| Polling `resume` | Only a poll or result fetch whose bindings write into its body: a resumed handle never creates the operation again |
+| SSE and NDJSON `open` | The stream's request |
+| WebSocket `connect` | None: a handshake sends no body |
+| Queue `enqueue` and `drain` | `enqueue` accepts only `queue_options`, so request `options` raise `TypeError`; `drain` claims at most `max_entries` once and admits matching saved bodies; otherwise it returns its leases and raises `no_applicable_helper_child` |
+
+A cache helper's `fetch` sends a bodyless GET, so a coding its call selects raises
+`ConfigurationError(field_path=('options', 'compression'), condition='no_applicable_helper_child')` before the cache is
+looked up, whether the entry is stored or not; its mutations follow their operation.
+
+Queue entries keep their wire body and entry policy, without call options or a content coding. To change a pending
+entry's delivery settings, use client, view, or request options at drain. Inherited codings apply only to queued
+operations that declare them and have a body. Explicit drain codings inspect only their first finite claim, send
+matching entries compressed and other entries plain, and never replenish that invocation with newly arrived entries.
+Refused admission returns owned leases without changing delivery counts or send intent.
+
+A coding the helper inherits from the client or a view is not checked and turns off where it does not apply.
 
 ## Body replay and resource ownership
 

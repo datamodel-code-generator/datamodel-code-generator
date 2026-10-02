@@ -16,11 +16,15 @@ from tests.data.python.client_auth_errors import auth_errors
 from tests.data.python.client_auth_flows import auth_flows
 from tests.data.python.client_auth_options import auth_options
 from tests.data.python.client_auth_values import auth_values
+from tests.data.python.client_batch_admission import batch_admission
+from tests.data.python.client_batches import batch_arguments, batch_backends, batch_compression, batches
 from tests.data.python.client_bodies import bodies
 from tests.data.python.client_body_digest import body_digest
 from tests.data.python.client_body_replay import body_replay, multipart_replay
 from tests.data.python.client_body_replay_faults import body_replay_faults
 from tests.data.python.client_caching import cache_backends, cache_stores, caching
+from tests.data.python.client_circuits import circuits
+from tests.data.python.client_compression import compression
 from tests.data.python.client_deadline_cleanup import deadline_cleanup
 from tests.data.python.client_deadline_files import deadline_files
 from tests.data.python.client_deadline_options import deadline_options
@@ -64,7 +68,7 @@ from tests.data.python.client_query import query
 from tests.data.python.client_queue_credentials import queue_credentials
 from tests.data.python.client_queue_order import queue_order
 from tests.data.python.client_queue_recovery import queue_recovery, queue_restoration, queue_scope
-from tests.data.python.client_queues import queues
+from tests.data.python.client_queues import queue_compression, queues
 from tests.data.python.client_raw import raw
 from tests.data.python.client_redirects import head_redirects, redirects
 from tests.data.python.client_regressions import json_decode_errors, no_success
@@ -98,7 +102,13 @@ from tests.data.python.client_streams import ndjson, ndjson_backends, ndjson_spl
 from tests.data.python.client_streams import stream_lifetimes as event_stream_lifetimes
 from tests.data.python.client_transports import lifecycle, transports
 from tests.data.python.client_unions import schema_unions, split_unions, unions
-from tests.data.python.client_uploads import parts_source_recovery, parts_uploads, uploads, uploads_oauth
+from tests.data.python.client_uploads import (
+    parts_source_recovery,
+    parts_uploads,
+    upload_compression,
+    uploads,
+    uploads_oauth,
+)
 from tests.data.python.client_validation import arguments, validation
 from tests.data.python.client_webhook_adapters import (
     webhook_adapter_imports,
@@ -243,7 +253,7 @@ def _list_pets(package: ModuleType, api: Any, exchange: Exchange, lines: list[st
             exchange.respond(raw_response(302, b"", Location="https://elsewhere.example.com"))
             try:
                 api.pets.list_pets(x_trace=trace)
-            except Exception as failure:  # ruff: ignore[blind-except]
+            except Exception as failure:  # ruff: ignore[blind-except] - Report failures from public calls.
                 lines.append(f"  redirect info {failure.status_code} {failure.headers!r}")
         if error is None and label == "error":
             exchange.respond(*((json_response(500, {"code": 7}),) * 3))
@@ -457,7 +467,7 @@ async def _async_pets(package: ModuleType, exchange: Exchange, lines: list[str])
 
 
 def _async_invalid(package: ModuleType) -> Callable[[], Any]:
-    async def build() -> object:  # ruff: ignore[unused-async] - The scenario calls this factory through the async entry point.
+    async def build() -> object:  # ruff: ignore[unused-async] - The public adapter requires an async callback.
         return package.AsyncClient(http_client=httpx2.Client())
 
     return build
@@ -663,7 +673,7 @@ def _limit(call: Callable[[], object]) -> Callable[[], str]:
     def limited() -> str:
         try:
             call()
-        except Exception as error:  # ruff: ignore[blind-except]
+        except Exception as error:  # ruff: ignore[blind-except] - Report failures from public calls.
             over = error.observed > error.limit >= 1024 * 1024
             return f"{type(error).__name__} layer={error.layer} ratio={error.max_ratio} over={over}"
         return "decoded"
@@ -829,6 +839,11 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "pagination-links": ("pagination-links", ("pydantic_v2.BaseModel",), pagination_links),
     "pagination-resume": ("pagination-resume", ("pydantic_v2.BaseModel",), pagination_resume),
     "polling": ("polling", ("pydantic_v2.BaseModel",), polling),
+    "batches": ("batches", ("pydantic_v2.BaseModel",), batches),
+    "batch-backends": ("batches", BACKENDS, batch_backends),
+    "batch-arguments": ("batches-arguments", ("pydantic_v2.BaseModel",), batch_arguments),
+    "batch-compression": ("batches-compression", ("pydantic_v2.BaseModel",), batch_compression),
+    "batch-admission": ("batches-admission", ("pydantic_v2.BaseModel",), batch_admission),
     "uploads": ("uploads", ("pydantic_v2.BaseModel",), uploads),
     "upload-parts-composite": ("uploads-composite", ("pydantic_v2.BaseModel",), parts_source_recovery),
     "upload-parts-source-recovery": ("uploads", ("pydantic_v2.BaseModel",), parts_source_recovery),
@@ -837,11 +852,16 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
         ("typing.TypedDict", "dataclasses.dataclass", "msgspec.Struct", "pydantic_v2.dataclass"),
         parts_uploads,
     ),
+    "upload-compression-off": ("uploads", ("pydantic_v2.BaseModel",), upload_compression),
+    "upload-compression": ("uploads-compression", ("pydantic_v2.BaseModel",), upload_compression),
     "uploads-oauth": ("uploads-oauth", ("pydantic_v2.BaseModel",), uploads_oauth),
     "polling-resume": ("polling", ("pydantic_v2.BaseModel",), polling_resume),
+    "circuits": ("circuits", ("pydantic_v2.BaseModel",), circuits),
+    "compression": ("compression", ("pydantic_v2.BaseModel",), compression),
     "queue-credentials": ("queue-credentials", ("pydantic_v2.BaseModel",), queue_credentials),
     "queue-order": ("queue-order", ("pydantic_v2.BaseModel",), queue_order),
     "queues": ("queues", ("pydantic_v2.BaseModel",), queues),
+    "queue-compression": ("queues", ("pydantic_v2.BaseModel",), queue_compression),
     "queue-recovery": ("queues", ("pydantic_v2.BaseModel",), queue_recovery),
     "queue-restoration": ("queues-restoration", ("pydantic_v2.BaseModel",), queue_restoration),
     "queue-scope": ("queues", ("pydantic_v2.BaseModel",), queue_scope),

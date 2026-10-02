@@ -2187,3 +2187,8 @@ nothing. `resume` checks it, then the source, then probes the server's offset on
 A checkpoint past the server's declared expiry raises `UploadExpiredError`. `advance` and `run` at once raise
 `ProtocolStateError`, and so does every step after `close()` or `aclose()`, which stops only local uploading. A call's
 options must not fix an idempotency key or patch a header or query parameter the helper writes.
+
+## Request compression
+
+No operation of this package declares a request content coding, so `compression` in `ClientOptions` and views turns
+off for every call, and a call's own `RequestOptions(compression="gzip")` raises `ConfigurationError` before sending.

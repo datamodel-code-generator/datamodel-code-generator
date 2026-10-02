@@ -1,4 +1,0 @@
-# protocols-unsupported-kinds
-render pydantic_v2.BaseModel
-  APIGenerationError
-  E_CLIENT_UNSUPPORTED target protocols.helpers['users.bulk']: The batch helper 'users.bulk' is not supported yet

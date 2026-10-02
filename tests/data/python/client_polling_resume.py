@@ -70,7 +70,7 @@ def _replaced(state: Any, path: tuple[object, ...], value: object) -> dict[str, 
 def _failure(call: Callable[[], object]) -> Any:
     try:
         call()
-    except Exception as error:  # ruff: ignore[blind-except]
+    except Exception as error:  # noqa: BLE001 - Report failures from public calls.
         return error
     return None
 
@@ -186,6 +186,7 @@ def _pending(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -
     _saved(lines, "before any poll", fresh)
     exchange.respond(job("done"), report(4))
     step(lines, "resumed before any poll", helper.resume(fresh).wait)
+    step(lines, "resumed with a coding", lambda: helper.resume(fresh, options=harness.request(compression="gzip")))
     reports = api.protocols.jobs.report
     exchange.respond(job("queued", 202))
     posted = reports.start(body=body).checkpoint()
@@ -549,6 +550,11 @@ async def _async_resume(harness: Polling, lines: list[str]) -> None:
         state = handle.checkpoint()
         resumed = helper.resume(state)
         lines.append(f"  resumed {resumed!r}")
+        step(
+            lines,
+            "async resumed with a coding",
+            lambda: helper.resume(state, options=harness.request(compression="gzip")),
+        )
         exchange.respond(job("done"), report(3))
         await astep(lines, "resumed wait", resumed.wait)
         once = harness.request(retry=harness.options.RetryOptions(max_retries=0))
@@ -561,7 +567,7 @@ async def _async_resume(harness: Polling, lines: list[str]) -> None:
         handle = await helper.start(body=body)
         try:
             await handle.status()
-        except Exception as error:  # ruff: ignore[blind-except]
+        except Exception as error:  # noqa: BLE001 - Report failures from public calls.
             _kept(lines, "async long server delay", error)
         lines.append("async remote cancellation")
         tracked = api.protocols.jobs.tracked
@@ -591,5 +597,5 @@ async def _async_resume(harness: Polling, lines: list[str]) -> None:
         unbudgeted = await tracked.start(body=body, session_options=harness.session(max_network_sends=1))
         try:
             await unbudgeted.cancel_remote()
-        except Exception as error:  # ruff: ignore[blind-except]
+        except Exception as error:  # noqa: BLE001 - Report failures from public calls.
             _kept(lines, "async cancel without a send slot", error)

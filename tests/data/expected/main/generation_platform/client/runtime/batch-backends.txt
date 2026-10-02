@@ -1,0 +1,80 @@
+# batches pydantic_v2.BaseModel
+  users: 40 results in order True {'success': 32, 'error': 8, 'delivery_unknown': 0}
+    error #0 id='u0000' status=200 error=taken
+    success #1 id='u0001' status=200 value=u0001
+    success #38 id='u0038' status=200 value=u0038
+    success #39 id='u0039' status=200 value=u0039
+  tags: 4 results in order True {'success': 3, 'error': 1, 'delivery_unknown': 0}
+    success #0 id=None status=200 value=t000
+    error #1 id=None status=200 error=colorless
+    success #2 id=None status=200 value=t002
+    success #3 id=None status=200 value=t003
+  requests: 4 requests
+    > t000 PUT /tags/batch items=3 last=t002 bytes=81
+    > t003 PUT /tags/batch items=1 last=t003 bytes=34
+    > u0000 POST /users/batch items=37 last=u0036 bytes=1185
+    > u0037 POST /users/batch items=3 last=u0039 bytes=107
+# batches pydantic_v2.dataclass
+  users: 40 results in order True {'success': 32, 'error': 8, 'delivery_unknown': 0}
+    error #0 id='u0000' status=200 error=taken
+    success #1 id='u0001' status=200 value=u0001
+    success #38 id='u0038' status=200 value=u0038
+    success #39 id='u0039' status=200 value=u0039
+  tags: 4 results in order True {'success': 3, 'error': 1, 'delivery_unknown': 0}
+    success #0 id=None status=200 value=t000
+    error #1 id=None status=200 error=colorless
+    success #2 id=None status=200 value=t002
+    success #3 id=None status=200 value=t003
+  requests: 4 requests
+    > t000 PUT /tags/batch items=3 last=t002 bytes=81
+    > t003 PUT /tags/batch items=1 last=t003 bytes=34
+    > u0000 POST /users/batch items=37 last=u0036 bytes=1185
+    > u0037 POST /users/batch items=3 last=u0039 bytes=107
+# batches dataclasses.dataclass
+  users: 40 results in order True {'success': 32, 'error': 8, 'delivery_unknown': 0}
+    error #0 id='u0000' status=200 error=taken
+    success #1 id='u0001' status=200 value=u0001
+    success #38 id='u0038' status=200 value=u0038
+    success #39 id='u0039' status=200 value=u0039
+  tags: 4 results in order True {'success': 3, 'error': 1, 'delivery_unknown': 0}
+    success #0 id=None status=200 value=t000
+    error #1 id=None status=200 error=colorless
+    success #2 id=None status=200 value=t002
+    success #3 id=None status=200 value=t003
+  requests: 4 requests
+    > t000 PUT /tags/batch items=3 last=t002 bytes=81
+    > t003 PUT /tags/batch items=1 last=t003 bytes=34
+    > u0000 POST /users/batch items=37 last=u0036 bytes=1185
+    > u0037 POST /users/batch items=3 last=u0039 bytes=107
+# batches typing.TypedDict
+  users: 40 results in order True {'success': 32, 'error': 8, 'delivery_unknown': 0}
+    error #0 id='u0000' status=200 error=taken
+    success #1 id='u0001' status=200 value=u0001
+    success #38 id='u0038' status=200 value=u0038
+    success #39 id='u0039' status=200 value=u0039
+  tags: 4 results in order True {'success': 3, 'error': 1, 'delivery_unknown': 0}
+    success #0 id=None status=200 value=t000
+    error #1 id=None status=200 error=colorless
+    success #2 id=None status=200 value=t002
+    success #3 id=None status=200 value=t003
+  requests: 4 requests
+    > t000 PUT /tags/batch items=3 last=t002 bytes=81
+    > t003 PUT /tags/batch items=1 last=t003 bytes=34
+    > u0000 POST /users/batch items=37 last=u0036 bytes=1185
+    > u0037 POST /users/batch items=3 last=u0039 bytes=107
+# batches msgspec.Struct
+  users: 40 results in order True {'success': 32, 'error': 8, 'delivery_unknown': 0}
+    error #0 id='u0000' status=200 error=taken
+    success #1 id='u0001' status=200 value=u0001
+    success #38 id='u0038' status=200 value=u0038
+    success #39 id='u0039' status=200 value=u0039
+  tags: 4 results in order True {'success': 3, 'error': 1, 'delivery_unknown': 0}
+    success #0 id=None status=200 value=t000
+    error #1 id=None status=200 error=colorless
+    success #2 id=None status=200 value=t002
+    success #3 id=None status=200 value=t003
+  requests: 4 requests
+    > t000 PUT /tags/batch items=3 last=t002 bytes=81
+    > t003 PUT /tags/batch items=1 last=t003 bytes=34
+    > u0000 POST /users/batch items=37 last=u0036 bytes=1185
+    > u0037 POST /users/batch items=3 last=u0039 bytes=107

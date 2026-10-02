@@ -36,6 +36,8 @@ if TYPE_CHECKING:
 __all__ = (
     "AdapterSignature",
     "AsciiBytes",
+    "BatchHelper",
+    "BatchMember",
     "Binding",
     "CacheHelper",
     "CacheMutation",
@@ -52,6 +54,7 @@ __all__ = (
     "HelperDefinition",
     "HelperKind",
     "HmacSignature",
+    "IdCorrelation",
     "ImmediateResult",
     "InlineResult",
     "LengthCompletion",
@@ -67,6 +70,7 @@ __all__ = (
     "PartsUploadHelper",
     "PollInterval",
     "PollingHelper",
+    "PositionCorrelation",
     "ProtocolConfiguration",
     "PublicKeySignature",
     "QueueHelper",
@@ -121,7 +125,6 @@ KINDS: Final = (
     "batch",
     "queue",
 )
-_LATER: Final = frozenset({"batch"})
 _HMAC_SIGNATURES: Final = ("hmac-sha256", "hmac-sha512")
 _PUBLIC_KEY_SIGNATURES: Final = ("ed25519", "rsa-pss-sha256")
 _SIGNATURES: Final = (*_HMAC_SIGNATURES, *_PUBLIC_KEY_SIGNATURES)
@@ -712,6 +715,50 @@ class ResumableUploadHelper:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class BatchMember:
+    """The member of each batch result item that carries its success or error value, and that value's schema."""
+
+    pointer: str
+    schema: SchemaRef
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class PositionCorrelation:
+    """Results answer the items of a request in order, one result per item, by the API's contract."""
+
+    kind: ClassVar[Literal["position"]] = "position"
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class IdCorrelation:
+    """Results answer the items of a request by an ID each input item and each result item declare."""
+
+    kind: ClassVar[Literal["id"]] = "id"
+
+    input: str
+    result: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class BatchHelper:
+    """Send a list of items through one batch operation in bounded requests, returning one result per item."""
+
+    kind: ClassVar[Literal["batch"]] = "batch"
+
+    operation: OperationSelector
+    request_items: RequestTarget
+    item_schema: SchemaRef
+    max_items: int
+    max_request_bytes: int
+    results: Selector
+    success: BatchMember
+    error: BatchMember
+    correlation: PositionCorrelation | IdCorrelation
+    retry_failed_subset: bool = False
+    enabled: bool = True
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class QueuedOperation:
     """An operation a queue may save and send later: side-effect free, or keyed for the server's deduplication.
 
@@ -748,6 +795,7 @@ HelperDefinition: TypeAlias = (
     | CacheHelper
     | ResumableUploadHelper
     | PartsUploadHelper
+    | BatchHelper
     | QueueHelper
 )
 
@@ -812,6 +860,10 @@ _RECORDS: Final = frozenset({
     UploadCompletionProbe,
     PartsUploadHelper,
     ResumableUploadHelper,
+    BatchMember,
+    PositionCorrelation,
+    IdCorrelation,
+    BatchHelper,
     QueuedOperation,
     QueueHelper,
     ProtocolConfiguration,
@@ -1372,7 +1424,7 @@ class _Validator:  # noqa: PLR0904
         return tuple(helpers)
 
     def helper(self, name: str, value: object, at: str) -> Helper | None:  # noqa: PLR0912
-        """Validate one helper; kinds of later stages are refused without reading their settings."""
+        """Validate one helper's kind and settings."""
         if not isinstance(value, Mapping):
             self.value(at, f"{at} must be a helper definition")
             return None
@@ -1381,10 +1433,6 @@ class _Validator:  # noqa: PLR0904
             return None
         if not isinstance(kind := value["kind"], str) or kind not in KINDS:
             self.value(f"{at}.kind", f"{at}.kind must be {_choices(KINDS)}")
-            return None
-        if kind in _LATER:
-            message = f"The {kind} helper {name!r} is not supported yet"
-            self.problems.append(_unsupported(at, message))
             return None
         self.schemas = []
         match kind:
@@ -1400,6 +1448,8 @@ class _Validator:  # noqa: PLR0904
                 tree = self.cache(value, at)
             case "resumable_upload":
                 tree = self.upload(value, at, name)
+            case "batch":
+                tree = self.batch(value, at)
             case "queue":
                 tree = self.queue(value, at)
             case _:
@@ -1882,6 +1932,53 @@ class _Validator:  # noqa: PLR0904
                 mutations[""] = self.value(at, f"{at} has the key {name!r}, which is not a public method name")
         return INVALID if any(item is INVALID for item in mutations.values()) else mutations
 
+    def batch(self, value: object, at: str) -> Tree | _Invalid:
+        """Convert a batch helper, refusing one member read as both outcomes."""
+        batch = self.record(
+            value,
+            at,
+            {
+                "kind": (_keep, REQUIRED),
+                "enabled": (self.boolean, True),
+                "operation": (self.operation, REQUIRED),
+                "request_items": (self.body_target, REQUIRED),
+                "item_schema": (self.schema, REQUIRED),
+                "max_items": (self.positive, REQUIRED),
+                "max_request_bytes": (self.positive, REQUIRED),
+                "results": (partial(self.selector, body=True), REQUIRED),
+                "success": (self.member, REQUIRED),
+                "error": (self.member, REQUIRED),
+                "correlation": (self.correlation, REQUIRED),
+                "retry_failed_subset": (self.boolean, False),
+            },
+            "a helper definition",
+        )
+        if batch is not INVALID and _nested(success := batch["success"]["pointer"], error := batch["error"]["pointer"]):
+            self.conflict(
+                f"{at}.error.pointer",
+                f"{at}.error.pointer {error!r} and {at}.success.pointer {success!r} name the same member or one inside "
+                "the other",
+            )
+            return INVALID
+        return batch
+
+    def body_target(self, value: object, at: str) -> object:
+        """Convert a request target that must write the request body."""
+        if isinstance(target := self.target(value, at), Mapping) and target["in"] != "body":
+            return self.value(f"{at}.in", f"{at}.in must be 'body'")
+        return target
+
+    def member(self, value: object, at: str) -> object:
+        spec: Spec = {"pointer": (self.pointer, REQUIRED), "schema": (self.schema, REQUIRED)}
+        return self.record(value, at, spec, "a result member")
+
+    def correlation(self, value: object, at: str) -> object:
+        variants: dict[str, Spec] = {
+            "position": {},
+            "id": {"input": (self.pointer, REQUIRED), "result": (self.pointer, REQUIRED)},
+        }
+        return self.tagged(value, at, "kind", variants, "a correlation")
+
     def queue(self, value: object, at: str) -> Tree | _Invalid:
         spec: Spec = {
             "kind": (_keep, REQUIRED),
@@ -2021,6 +2118,11 @@ def _printable(text: str) -> bool:
     return bool(text) and text.isascii() and text.isprintable()
 
 
+def _nested(first: str, second: str) -> bool:
+    """Return whether two pointers name the same member, or one names a member inside the other's."""
+    return f"{first}/".startswith(f"{second}/") or f"{second}/".startswith(f"{first}/")
+
+
 def _keep(value: object, _: str) -> object:
     return value
 
@@ -2098,6 +2200,12 @@ def _links(kind: str, tree: Tree, at: str) -> Iterator[Link]:  # noqa: PLR0912
             )
         case "webhook":
             return
+        case "batch":
+            yield Link(
+                at=f"{at}.operation",
+                ref=tree["operation"],
+                targets=((f"{at}.request_items", tree["request_items"]),),
+            )
         case "websocket":
             yield Link(at=f"{at}.operation", ref=tree["operation"])
         case "cache":

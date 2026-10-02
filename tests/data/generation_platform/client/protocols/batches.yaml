@@ -1,0 +1,35 @@
+schema_version: 1
+helpers:
+  users.create:
+    kind: batch
+    operation: /paths/~1users~1batch/post
+    request_items: {in: body, pointer: /users}
+    item_schema: {pointer: /components/schemas/NewUser}
+    max_items: 37
+    max_request_bytes: 4096
+    results: {from: body, pointer: /results}
+    success: {pointer: /user, schema: {pointer: /components/schemas/User}}
+    error: {pointer: /error, schema: {pointer: /components/schemas/ItemError}}
+    correlation: {kind: id, input: /id, result: /id}
+  tags.put:
+    kind: batch
+    operation: /paths/~1tags~1batch/put
+    request_items: {in: body, pointer: ''}
+    item_schema: {pointer: /components/schemas/Tag}
+    max_items: 3
+    max_request_bytes: 1048576
+    results: {from: body, pointer: /items}
+    success: {pointer: /tag, schema: {pointer: /components/schemas/Tag}}
+    error: {pointer: /error, schema: {pointer: /components/schemas/ItemError}}
+    correlation: {kind: position}
+  tags.colors:
+    kind: batch
+    operation: /paths/~1tags~1batch/put
+    request_items: {in: body, pointer: ''}
+    item_schema: {pointer: /components/schemas/Tag}
+    max_items: 100
+    max_request_bytes: 1048576
+    results: {from: body, pointer: /items}
+    success: {pointer: /tag, schema: {pointer: /components/schemas/Tag}}
+    error: {pointer: /error, schema: {pointer: /components/schemas/ItemError}}
+    correlation: {kind: id, input: /color, result: /color}

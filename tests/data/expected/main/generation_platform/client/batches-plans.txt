@@ -1,0 +1,713 @@
+# batches-plans
+render pydantic_v2.dataclass
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/users/__init__.py
+  write client/resources/users/_sync.py
+  write client/resources/users/_async.py
+  write client/resources/tags/__init__.py
+  write client/resources/tags/_sync.py
+  write client/resources/tags/_async.py
+  write client/types/__init__.py
+  write client/types/users/__init__.py
+  write client/types/users/_operations.py
+  write client/types/tags/__init__.py
+  write client/types/tags/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/protocols/_plans.py
+  write client/protocols/batches.py
+  write client/protocols/_helpers.py
+  write client/protocols/_async_helpers.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['users.create', 'tags.put', 'tags.colors'] bindings 5
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper users.create batch enabled True /inputs/target_config/protocol_metadata/helpers/users.create 2e64b9fa0e5af2205e4b43f3e3945a23d76315d74780d555adaafa5a58bb33b9
+  helper tags.put batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.put a9cc74d31c30acc25537e4db0d65d9973c815a2045073972a355917575307f91
+  helper tags.colors batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.colors 6101608e8bb8ead1c1068524414866539c89b39fbea54a5ebe1988a0eab90b19
+  {
+    "helpers": {
+      "tags.colors": {
+        "correlation": {
+          "input": "/color",
+          "kind": "id",
+          "result": "/color"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Tag"
+        },
+        "kind": "batch",
+        "max_items": 100,
+        "max_request_bytes": 1048576,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1tags~1batch/put"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/items"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/tag",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Tag"
+          }
+        }
+      },
+      "tags.put": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Tag"
+        },
+        "kind": "batch",
+        "max_items": 3,
+        "max_request_bytes": 1048576,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1tags~1batch/put"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/items"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/tag",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Tag"
+          }
+        }
+      },
+      "users.create": {
+        "correlation": {
+          "input": "/id",
+          "kind": "id",
+          "result": "/id"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/NewUser"
+        },
+        "kind": "batch",
+        "max_items": 37,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1users~1batch/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": "/users"
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/user",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/User"
+          }
+        }
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 users.create_users(query:dryRun=dry_run)
+    exports client.types.users.CreateUsersResponse client.types.users.CreateUsersErrorData client.types.users.CreateUsersHTTPError
+    exports client.types.users.CreateUsersRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 tags.put_tags()
+    exports client.types.tags.PutTagsResponse client.types.tags.PutTagsErrorData client.types.tags.PutTagsHTTPError
+    exports client.types.tags.PutTagsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+render dataclasses.dataclass
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/users/__init__.py
+  write client/resources/users/_sync.py
+  write client/resources/users/_async.py
+  write client/resources/tags/__init__.py
+  write client/resources/tags/_sync.py
+  write client/resources/tags/_async.py
+  write client/types/__init__.py
+  write client/types/users/__init__.py
+  write client/types/users/_operations.py
+  write client/types/tags/__init__.py
+  write client/types/tags/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/protocols/_plans.py
+  write client/protocols/batches.py
+  write client/protocols/_helpers.py
+  write client/protocols/_async_helpers.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['users.create', 'tags.put', 'tags.colors'] bindings 5
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper users.create batch enabled True /inputs/target_config/protocol_metadata/helpers/users.create 859de176b7cad98dc13183ba44858353fb0e5a3d82eaef6218eb889bf26a8aaa
+  helper tags.put batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.put fb5e97871ee488757bc4125ed8edfd19f32030f5285962eb48311f585fbf5799
+  helper tags.colors batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.colors 01a72aeb17dcb1be8a1c3ef4aa5d2369652f9e8ce0f291e1131e11250a4d378a
+  {
+    "helpers": {
+      "tags.colors": {
+        "correlation": {
+          "input": "/color",
+          "kind": "id",
+          "result": "/color"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Tag"
+        },
+        "kind": "batch",
+        "max_items": 100,
+        "max_request_bytes": 1048576,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1tags~1batch/put"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/items"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/tag",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Tag"
+          }
+        }
+      },
+      "tags.put": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Tag"
+        },
+        "kind": "batch",
+        "max_items": 3,
+        "max_request_bytes": 1048576,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1tags~1batch/put"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/items"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/tag",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Tag"
+          }
+        }
+      },
+      "users.create": {
+        "correlation": {
+          "input": "/id",
+          "kind": "id",
+          "result": "/id"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/NewUser"
+        },
+        "kind": "batch",
+        "max_items": 37,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1users~1batch/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": "/users"
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/user",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/User"
+          }
+        }
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 users.create_users(query:dryRun=dry_run)
+    exports client.types.users.CreateUsersResponse client.types.users.CreateUsersErrorData client.types.users.CreateUsersHTTPError
+    exports client.types.users.CreateUsersRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 tags.put_tags()
+    exports client.types.tags.PutTagsResponse client.types.tags.PutTagsErrorData client.types.tags.PutTagsHTTPError
+    exports client.types.tags.PutTagsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
+render typing.TypedDict
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/users/__init__.py
+  write client/resources/users/_sync.py
+  write client/resources/users/_async.py
+  write client/resources/tags/__init__.py
+  write client/resources/tags/_sync.py
+  write client/resources/tags/_async.py
+  write client/types/__init__.py
+  write client/types/users/__init__.py
+  write client/types/users/_operations.py
+  write client/types/tags/__init__.py
+  write client/types/tags/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/protocols/_plans.py
+  write client/protocols/batches.py
+  write client/protocols/_helpers.py
+  write client/protocols/_async_helpers.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['users.create', 'tags.put', 'tags.colors'] bindings 5
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper users.create batch enabled True /inputs/target_config/protocol_metadata/helpers/users.create af1e5b5d14611370efa7707999b332371bbb013e9ae3cbc5e13585ff32daeadf
+  helper tags.put batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.put 77eeeb831bbca74dbdb6592dc0227fd33dd04170fc9f2bd0f9c1de91aa66f107
+  helper tags.colors batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.colors 551c2431ecc676b2ecb30cc37b35aef9708a2ca6698bcb854f580f40a746b71d
+  {
+    "helpers": {
+      "tags.colors": {
+        "correlation": {
+          "input": "/color",
+          "kind": "id",
+          "result": "/color"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Tag"
+        },
+        "kind": "batch",
+        "max_items": 100,
+        "max_request_bytes": 1048576,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1tags~1batch/put"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/items"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/tag",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Tag"
+          }
+        }
+      },
+      "tags.put": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Tag"
+        },
+        "kind": "batch",
+        "max_items": 3,
+        "max_request_bytes": 1048576,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1tags~1batch/put"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/items"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/tag",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Tag"
+          }
+        }
+      },
+      "users.create": {
+        "correlation": {
+          "input": "/id",
+          "kind": "id",
+          "result": "/id"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/NewUser"
+        },
+        "kind": "batch",
+        "max_items": 37,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1users~1batch/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": "/users"
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/user",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/User"
+          }
+        }
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 users.create_users(query:dryRun=dry_run)
+    exports client.types.users.CreateUsersResponse client.types.users.CreateUsersErrorData client.types.users.CreateUsersHTTPError
+    exports client.types.users.CreateUsersRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 tags.put_tags()
+    exports client.types.tags.PutTagsResponse client.types.tags.PutTagsErrorData client.types.tags.PutTagsHTTPError
+    exports client.types.tags.PutTagsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37']
+render msgspec.Struct
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/users/__init__.py
+  write client/resources/users/_sync.py
+  write client/resources/users/_async.py
+  write client/resources/tags/__init__.py
+  write client/resources/tags/_sync.py
+  write client/resources/tags/_async.py
+  write client/types/__init__.py
+  write client/types/users/__init__.py
+  write client/types/users/_operations.py
+  write client/types/tags/__init__.py
+  write client/types/tags/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/protocols/_plans.py
+  write client/protocols/batches.py
+  write client/protocols/_helpers.py
+  write client/protocols/_async_helpers.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['users.create', 'tags.put', 'tags.colors'] bindings 5
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper users.create batch enabled True /inputs/target_config/protocol_metadata/helpers/users.create 910dfb15aaec36667471e83acbf4bdac9a941190f7f09c8c0cf728be2fbb80e1
+  helper tags.put batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.put cfc2a75dcb6b3e31e994c747846c7b35bb9bff20e184fa5f1e5ed876f0bb345b
+  helper tags.colors batch enabled True /inputs/target_config/protocol_metadata/helpers/tags.colors 67e121c247713774c4105e739e975d27854c5696298916a706e467eeea82b7aa
+  {
+    "helpers": {
+      "tags.colors": {
+        "correlation": {
+          "input": "/color",
+          "kind": "id",
+          "result": "/color"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Tag"
+        },
+        "kind": "batch",
+        "max_items": 100,
+        "max_request_bytes": 1048576,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1tags~1batch/put"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/items"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/tag",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Tag"
+          }
+        }
+      },
+      "tags.put": {
+        "correlation": {
+          "kind": "position"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Tag"
+        },
+        "kind": "batch",
+        "max_items": 3,
+        "max_request_bytes": 1048576,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1tags~1batch/put"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": ""
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/items"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/tag",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/Tag"
+          }
+        }
+      },
+      "users.create": {
+        "correlation": {
+          "input": "/id",
+          "kind": "id",
+          "result": "/id"
+        },
+        "enabled": true,
+        "error": {
+          "pointer": "/error",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/ItemError"
+          }
+        },
+        "item_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/NewUser"
+        },
+        "kind": "batch",
+        "max_items": 37,
+        "max_request_bytes": 4096,
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1users~1batch/post"
+        },
+        "request_items": {
+          "in": "body",
+          "pointer": "/users"
+        },
+        "results": {
+          "from": "body",
+          "pointer": "/results"
+        },
+        "retry_failed_subset": false,
+        "success": {
+          "pointer": "/user",
+          "schema": {
+            "document": "/inputs/root",
+            "pointer": "/components/schemas/User"
+          }
+        }
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 users.create_users(query:dryRun=dry_run)
+    exports client.types.users.CreateUsersResponse client.types.users.CreateUsersErrorData client.types.users.CreateUsersHTTPError
+    exports client.types.users.CreateUsersRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  /selection/selected_operations/1 tags.put_tags()
+    exports client.types.tags.PutTagsResponse client.types.tags.PutTagsErrorData client.types.tags.PutTagsHTTPError
+    exports client.types.tags.PutTagsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'msgspec>=0.18']

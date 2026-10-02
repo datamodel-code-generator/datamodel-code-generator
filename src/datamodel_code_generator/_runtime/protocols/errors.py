@@ -18,6 +18,7 @@ from ..client.errors import (
     DeliveryState,
     ProtocolConfigurationError,
     ProtocolError,
+    ProtocolSizeError,
     ProtocolStoreError,
     ResultUnavailableError,
     RetryStopReason,
@@ -31,6 +32,7 @@ from ..client.errors import (
 from ..client.responses import HeadersView, ResponseInfo
 from ..model_codecs.unset import UNSET, Unset
 from .caches import string_tuple
+from .circuit_records import CircuitKey
 from .records import (
     PROGRESS_KEYS,
     PollSnapshot,
@@ -44,10 +46,14 @@ from .resume import ResumeState, ResumeStateError, ResumeStateTooLargeError
 from .sources import UploadIdentity, UploadProgress
 
 __all__ = (
+    "BatchDeliveryUnknownError",
+    "BatchItemTooLargeError",
+    "BatchProtocolError",
     "CacheInvalidationError",
     "CacheProtocolError",
     "CacheStoreError",
     "CacheValidatorConflictError",
+    "CircuitOpenError",
     "ConcurrentReceiveError",
     "DeliveryUnknownError",
     "HandshakeResponse",
@@ -82,6 +88,7 @@ __all__ = (
 
 E_co = TypeVar("E_co", covariant=True, default=object)
 P_co = TypeVar("P_co", covariant=True, default=object)
+R_co = TypeVar("R_co", covariant=True, default=object)
 T_co = TypeVar("T_co", covariant=True, default=object)
 
 _DataCondition: TypeAlias = Literal["missing", "null", "type", "value", "malformed", "inconsistent"]
@@ -163,6 +170,12 @@ def _context(helper_id: object, operation: object) -> None:
         raise ValueError(msg)
 
 
+def _circuit_key(value: object) -> None:
+    if not isinstance(value, CircuitKey):
+        msg = "key must be a CircuitKey"
+        raise ValueError(msg)  # noqa: TRY004 - Exception constructors reject invalid fields with ValueError.
+
+
 def _upload_progress(value: object) -> None:
     if not isinstance(value, UploadProgress):
         msg = "progress must be an UploadProgress"
@@ -179,6 +192,21 @@ def _identity(value: object, *, optional: bool) -> None:
     if not isinstance(value, UploadIdentity) and not (optional and value is None):
         msg = "an identity must be an UploadIdentity"
         raise ValueError(msg)
+
+
+def _is_tuple(value: object) -> TypeIs[tuple[object, ...]]:
+    return isinstance(value, tuple)
+
+
+def _tuple(value: object, field: str) -> tuple[object, ...]:
+    if not _is_tuple(value):
+        msg = f"{field} must be a tuple"
+        raise ValueError(msg)
+    return value
+
+
+def _indices(value: object, field: str) -> tuple[int, ...]:
+    return tuple(error_count(item, field) for item in _tuple(value, field))
 
 
 def _flag(value: object, field: str) -> None:
@@ -531,6 +559,61 @@ class PollingStateError(ProtocolDataError):
             auth_refresh_pending=auth_refresh_pending,
             wire_send_count=wire_send_count,
         )
+
+
+class CircuitOpenError(ProtocolError):
+    """An open circuit, or a half-open one already probing, refused the call before any credential or send."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        key: CircuitKey,
+        retry_at: float,
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep the circuit's key and the monotonic time at which it admits a call again."""
+        _circuit_key(key)
+        when = error_time(retry_at, "retry_at")
+        super().__init__(
+            helper_id=helper_id,
+            operation=operation,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self.key = key
+        self.retry_at = when
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("group", self.key.group))
 
 
 class PollWaitLimitError(ProtocolError):
@@ -1734,6 +1817,187 @@ class NonResumableSourceError(ProtocolConfigurationError):
 
     def _details(self) -> tuple[tuple[str, object], ...]:
         return (*super()._details(), ("source_kind", self.source_kind))
+
+
+class BatchProtocolError(ProtocolDataError):
+    """Batch results that cannot be matched with their items: missing, duplicate, or unknown IDs, or another count.
+
+    `indices` are the input indices of the items concerned; the condition is always inconsistent.
+    """
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        indices: tuple[int, ...],
+        location: Selector | RequestTarget | None = None,
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep the input indices of the items whose results do not match."""
+        super().__init__(
+            condition="inconsistent",
+            location=location,
+            helper_id=helper_id,
+            operation=operation,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self.indices = _indices(indices, "indices")
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("indices", self.indices))
+
+
+class BatchItemTooLargeError(ProtocolSizeError):
+    """An input item whose encoded bytes exceed what one request may carry; it is never sent."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        index: int,
+        limit: int,
+        observed: int,
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep the item's input index; the kind is always body and the unit bytes."""
+        error_count(index, "index")
+        super().__init__(
+            kind="body",
+            limit=error_count(limit, "limit"),
+            observed=error_count(observed, "observed"),
+            unit="bytes",
+            helper_id=helper_id,
+            operation=operation,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self.index = index
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("index", self.index))
+
+
+class BatchDeliveryUnknownError(DeliveryUnknownError, Generic[R_co]):
+    """A batch request that may have reached the server without a response; its items are never resent.
+
+    `partial_results` are that batch's records not yet returned, and `batch_indices` the input indices of its items.
+    """
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        partial_results: tuple[R_co, ...],
+        batch_indices: tuple[int, ...],
+        delivery_state: DeliveryState,
+        resume_state: ResumeState | None = None,
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep the batch's unreturned records and its items' input indices; there is no message ID."""
+        _tuple(partial_results, "partial_results")
+        super().__init__(
+            delivery_state=delivery_state,
+            resume_state=resume_state,
+            helper_id=helper_id,
+            operation=operation,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self._partial_results = partial_results
+        self.batch_indices = _indices(batch_indices, "batch_indices")
+
+    @property
+    def partial_results(self) -> tuple[R_co, ...]:
+        """Return the batch's records that were not returned before the error."""
+        return self._partial_results
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("batch_indices", self.batch_indices))
 
 
 class QueueStoreError(ProtocolStoreError):

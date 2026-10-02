@@ -1,0 +1,12 @@
+schema_version: 1
+helpers:
+  users.query:
+    {kind: batch, operation: /paths/~1users/get, request_items: {in: query, name: limit}, item_schema: {pointer: /components/schemas/User}, max_items: 1, max_request_bytes: 1, results: {from: body, pointer: /users}, success: {pointer: /a, schema: {pointer: /components/schemas/User}}, error: {pointer: /b, schema: {pointer: /components/schemas/User}}, correlation: {kind: position}}
+  users.same:
+    {kind: batch, operation: /paths/~1users/get, request_items: {in: body, pointer: /users}, item_schema: {pointer: /components/schemas/User}, max_items: 1, max_request_bytes: 1, results: {from: body, pointer: /users}, success: {pointer: /a, schema: {pointer: /components/schemas/User}}, error: {pointer: /a, schema: {pointer: /components/schemas/User}}, correlation: {kind: position}}
+  users.limits:
+    {kind: batch, operation: /paths/~1users/get, request_items: {in: body, pointer: /users}, item_schema: {pointer: /components/schemas/User}, max_items: 0, max_request_bytes: "1", results: {from: header, name: Link}, success: {pointer: a}, error: [], correlation: {kind: name}, retry_failed_subset: "no"}
+  users.ids:
+    {kind: batch, operation: /paths/~1users/get, request_items: {in: body, pointer: /users}, item_schema: {pointer: /components/schemas/User}, max_items: 1, max_request_bytes: 1, results: {from: body, pointer: /users}, success: {pointer: /a, schema: {pointer: /components/schemas/User}}, error: {pointer: /b, schema: {pointer: /components/schemas/User}}, correlation: {kind: id, input: id}}
+  users.nested:
+    {kind: batch, operation: /paths/~1users/get, request_items: {in: body, pointer: /users}, item_schema: {pointer: /components/schemas/User}, max_items: 1, max_request_bytes: 1, results: {from: body, pointer: /users}, success: {pointer: /a/b, schema: {pointer: /components/schemas/User}}, error: {pointer: /a, schema: {pointer: /components/schemas/User}}, correlation: {kind: position}}

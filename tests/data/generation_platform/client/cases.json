@@ -1532,23 +1532,6 @@
     },
     "modules": true
   },
-  "protocols-unsupported-kinds": {
-    "input": "helpers.yaml",
-    "references": [
-      "helpers-external.yaml",
-      "protocols/unsupported-kinds.yaml"
-    ],
-    "config": {
-      "selection": {
-        "exclude_tags": [
-          "admin"
-        ],
-        "reason": "Administration stays internal"
-      },
-      "protocols": "protocols/unsupported-kinds.yaml"
-    },
-    "modules": false
-  },
   "protocols-not-utf8": {
     "input": "helpers.yaml",
     "references": [
@@ -1852,6 +1835,23 @@
         "reason": "Administration stays internal"
       },
       "protocols": "protocols/polling-errors.yaml"
+    },
+    "modules": false
+  },
+  "protocols-batch-errors": {
+    "input": "helpers.yaml",
+    "references": [
+      "helpers-external.yaml",
+      "protocols/batch-errors.yaml"
+    ],
+    "config": {
+      "selection": {
+        "exclude_tags": [
+          "admin"
+        ],
+        "reason": "Administration stays internal"
+      },
+      "protocols": "protocols/batch-errors.yaml"
     },
     "modules": false
   },
@@ -2685,6 +2685,118 @@
     ],
     "config": {
       "protocols": "protocols/polling-checks.yaml"
+    },
+    "modules": false
+  },
+  "batches": {
+    "input": "batches.yaml",
+    "references": [
+      "protocols/batches.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/batches.yaml"
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "batches.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ]
+    ]
+  },
+  "batches-compression": {
+    "input": "batches.yaml",
+    "references": [
+      "protocols/batches.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/batches.yaml",
+      "operations": [
+        {
+          "ref": "/paths/~1users~1batch/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        }
+      ]
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "batches-plans": {
+    "input": "batches.yaml",
+    "references": [
+      "protocols/batches.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/batches.yaml"
+    },
+    "backends": [
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "batches.py"
+      ]
+    ]
+  },
+  "batches-arguments": {
+    "input": "batches.yaml",
+    "references": [
+      "protocols/batches.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/batches.yaml",
+      "validation": {
+        "arguments": "pydantic"
+      }
+    },
+    "modules": false
+  },
+  "protocols-batch-checks": {
+    "input": "batch-checks.yaml",
+    "references": [
+      "protocols/batch-checks.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/batch-checks.yaml"
     },
     "modules": false
   },
@@ -3939,76 +4051,17 @@
     },
     "modules": false
   },
-  "protocols-parts-checks": {
-    "input": "uploads.yaml",
+  "uploads-oauth": {
+    "input": "uploads-oauth.yaml",
     "references": [
-      "protocols/parts-checks.yaml"
+      "protocols/uploads-oauth.yaml"
     ],
     "config": {
-      "protocols": "protocols/parts-checks.yaml"
-    },
-    "modules": false
-  },
-  "uploads-default": {
-    "input": "uploads-default.yaml",
-    "references": [
-      "protocols/uploads-default.yaml"
-    ],
-    "config": {
-      "protocols": "protocols/uploads-default.yaml"
+      "protocols": "protocols/uploads-oauth.yaml"
     },
     "backends": [
       "pydantic_v2.BaseModel"
-    ],
-    "modules": [
-      [
-        "client",
-        "protocols",
-        "_plans.py"
-      ]
     ]
-  },
-  "uploads-composite": {
-    "input": "uploads-composite.yaml",
-    "references": [
-      "protocols/uploads-composite.yaml"
-    ],
-    "config": {
-      "protocols": "protocols/uploads-composite.yaml"
-    },
-    "backends": [
-      "pydantic_v2.BaseModel"
-    ],
-    "modules": [
-      [
-        "client",
-        "protocols",
-        "_plans.py"
-      ],
-      [
-        "client",
-        "protocols",
-        "_helpers.py"
-      ],
-      [
-        "client",
-        "protocols",
-        "_async_helpers.py"
-      ]
-    ]
-  },
-  "uploads-completion-required": {
-    "input": "uploads-completion-required.yaml",
-    "references": [
-      "protocols/uploads.yaml"
-    ],
-    "config": {
-      "protocols": "protocols/uploads.yaml"
-    },
-    "backends": [
-      "pydantic_v2.BaseModel"
-    ],
-    "modules": false
   },
   "queues": {
     "input": "queues.yaml",
@@ -4203,6 +4256,171 @@
     },
     "modules": false
   },
+  "circuits": {
+    "input": "circuits.yaml",
+    "config": {
+      "operations": [
+        {
+          "ref": "/paths/~1status/get",
+          "runtime": {
+            "circuit_group": "backend"
+          }
+        },
+        {
+          "ref": "/paths/~1account/get",
+          "runtime": {
+            "circuit_group": "backend"
+          }
+        },
+        {
+          "ref": "/paths/~1search/get",
+          "runtime": {
+            "circuit_group": "search"
+          }
+        },
+        {
+          "ref": "/paths/~1uploads/post",
+          "runtime": {
+            "circuit_group": "backend"
+          }
+        }
+      ]
+    },
+    "modules": [
+      [
+        "client",
+        "_client.py"
+      ],
+      [
+        "client",
+        "_async_client.py"
+      ],
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "compression": {
+    "input": "compression.yaml",
+    "references": [
+      "protocols/compression.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/compression.yaml",
+      "operations": [
+        {
+          "ref": "/paths/~1items/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1items/get",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1blobs/put",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1search/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1feed/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1jobs/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1events/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        },
+        {
+          "ref": "/paths/~1checks~1status/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        }
+      ]
+    },
+    "modules": [
+      [
+        "client",
+        "_operations.py"
+      ]
+    ]
+  },
+  "uploads-compression": {
+    "input": "uploads.yaml",
+    "references": [
+      "protocols/uploads.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/uploads.yaml",
+      "operations": [
+        {
+          "ref": "/paths/~1files~1{fileId}/patch",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        }
+      ]
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ]
+    ]
+  },
   "queues-restoration": {
     "input": "queues.yaml",
     "references": [
@@ -4341,18 +4559,6 @@
       "pydantic_v2.BaseModel"
     ]
   },
-  "uploads-oauth": {
-    "input": "uploads-oauth.yaml",
-    "references": [
-      "protocols/uploads-oauth.yaml"
-    ],
-    "config": {
-      "protocols": "protocols/uploads-oauth.yaml"
-    },
-    "backends": [
-      "pydantic_v2.BaseModel"
-    ]
-  },
   "queue-credentials": {
     "input": "queue-credentials.json",
     "references": [
@@ -4387,6 +4593,103 @@
     ],
     "config": {
       "protocols": "protocols/queue-order.json"
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": false
+  },
+  "batches-admission": {
+    "input": "batch-admission.yaml",
+    "references": [
+      "protocols/batches.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/batches.yaml",
+      "operations": [
+        {
+          "ref": "/paths/~1users~1batch/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        }
+      ],
+      "validation": {
+        "arguments": "pydantic"
+      }
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": false
+  },
+  "protocols-parts-checks": {
+    "input": "uploads.yaml",
+    "references": [
+      "protocols/parts-checks.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/parts-checks.yaml"
+    },
+    "modules": false
+  },
+  "uploads-default": {
+    "input": "uploads-default.yaml",
+    "references": [
+      "protocols/uploads-default.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/uploads-default.yaml"
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ]
+    ]
+  },
+  "uploads-composite": {
+    "input": "uploads-composite.yaml",
+    "references": [
+      "protocols/uploads-composite.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/uploads-composite.yaml"
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": [
+      [
+        "client",
+        "protocols",
+        "_plans.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_helpers.py"
+      ],
+      [
+        "client",
+        "protocols",
+        "_async_helpers.py"
+      ]
+    ]
+  },
+  "uploads-completion-required": {
+    "input": "uploads-completion-required.yaml",
+    "references": [
+      "protocols/uploads.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/uploads.yaml"
     },
     "backends": [
       "pydantic_v2.BaseModel"

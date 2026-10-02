@@ -1,0 +1,9 @@
+# batches-arguments pydantic_v2.BaseModel
+  invalid shared argument ! RequestEncodingError location=('query', 'dryRun') cause=ValidationError
+  again ! RequestEncodingError location=('query', 'dryRun') cause=ValidationError
+  valid shared argument: 3 results in order True {'success': 2, 'error': 1, 'delivery_unknown': 0}
+    error #0 id='u0000' status=200 error=taken
+    success #1 id='u0001' status=200 value=u0001
+    success #2 id='u0002' status=200 value=u0002
+  arguments: 1 requests
+    > u0000 POST /users/batch?dryRun=true items=3 last=u0002 bytes=104
