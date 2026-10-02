@@ -20,32 +20,32 @@
   sync tunnel-certificate = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
   arrivals=0 connects=1 alpn=[]
   sync environment forward-upper = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0
+  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
   sync environment forward-lower = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0
+  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
   sync environment tunnel-upper = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=1 proxy arrivals=0
+  origin arrivals=1 connects=1 proxy arrivals=0 connects=0
   sync environment tunnel-lower = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=1 proxy arrivals=0
+  origin arrivals=1 connects=1 proxy arrivals=0 connects=0
   sync environment all-upper = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0
+  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
   sync environment all-lower = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0
+  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
   sync environment no-proxy-upper = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0
+  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
   sync environment no-proxy-lower = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0
+  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
   sync environment opt-out = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0
+  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
   sync environment ca-default-upper = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0
-  sync environment ca-opt-out = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0
+  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
+  sync environment ca-opt-out = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
+  origin arrivals=0 connects=0 proxy arrivals=0 connects=0
   sync environment ca-context = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0
+  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
   sync environment injected = 'Response status=200 attempts=1 sends=1 wire=None'
   native closed=False
-  origin arrivals=1 connects=0 proxy arrivals=0
+  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
 sync size default/16777217 raw=False: status=200 bytes=16777217
   arrivals=1
 sync size default/16777217 raw=True: status=200 bytes=16777217
@@ -332,32 +332,32 @@ sync size error-explicit/65537 raw=True: ResponseTooLargeError limit=8 bytes=0 t
   async tunnel-certificate = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
   arrivals=0 connects=1 alpn=[]
   async environment forward-upper = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0
+  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
   async environment forward-lower = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0
+  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
   async environment tunnel-upper = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=1 proxy arrivals=0
+  origin arrivals=1 connects=1 proxy arrivals=0 connects=0
   async environment tunnel-lower = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=1 proxy arrivals=0
+  origin arrivals=1 connects=1 proxy arrivals=0 connects=0
   async environment all-upper = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0
+  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
   async environment all-lower = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0
+  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
   async environment no-proxy-upper = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0
+  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
   async environment no-proxy-lower = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0
+  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
   async environment opt-out = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0
+  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
   async environment ca-default-upper = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0
-  async environment ca-opt-out = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0
+  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
+  async environment ca-opt-out = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
+  origin arrivals=0 connects=0 proxy arrivals=0 connects=0
   async environment ca-context = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0
+  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
   async environment injected = 'Response status=200 attempts=1 sends=1 wire=None'
   native closed=False
-  origin arrivals=1 connects=0 proxy arrivals=0
+  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
 async size default/16777217 raw=False: status=200 bytes=16777217
   arrivals=1
 async size default/16777217 raw=True: status=200 bytes=16777217

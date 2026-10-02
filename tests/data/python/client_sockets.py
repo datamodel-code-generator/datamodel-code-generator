@@ -13,12 +13,12 @@ import subprocess
 import sys
 import threading
 from contextlib import contextmanager
-from pathlib import Path
 from dataclasses import asdict, is_dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
-from tests.data.python.client_runtime import describe, run
 from tests.data.python.client_regressions import json_error_body, retained_body
+from tests.data.python.client_runtime import describe, run
 from tests.data.python.fixture_websocket import Play, RawPeer, SocketServer, TunnelProxy, client_context
 
 if TYPE_CHECKING:

@@ -194,6 +194,8 @@ def _wire(package: ModuleType, options: ModuleType, lines: list[str], *, asynchr
                             async with package.AsyncClient(
                                 options=settings, **({"http_client": native} if name == "injected" else {})
                             ) as api:
+                                if name.startswith("ca-default") or name == "ca-opt-out":
+                                    environment.delenv("SSL_CERT_FILE")
                                 await arecord(
                                     lines,
                                     f"{mode} environment {name}",
@@ -208,13 +210,16 @@ def _wire(package: ModuleType, options: ModuleType, lines: list[str], *, asynchr
                         with package.Client(
                             options=settings, **({"http_client": native} if name == "injected" else {})
                         ) as api:
+                            if name.startswith("ca-default") or name == "ca-opt-out":
+                                environment.delenv("SSL_CERT_FILE")
                             record(
                                 lines, f"{mode} environment {name}", lambda: _called(api.retry.with_response.get_safe)
                             )
                         if name == "injected":
                             lines.append(f"  native closed={native.is_closed}")
                 lines.append(
-                    f"  origin arrivals={len(server.requests)} connects={server.connects} proxy arrivals={len(peer.requests)}"
+                    f"  origin arrivals={len(server.requests)} connects={server.connects} "
+                    f"proxy arrivals={len(peer.requests)} connects={peer.connects}"
                 )
         finally:
             server.stop()
