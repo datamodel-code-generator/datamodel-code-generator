@@ -1224,7 +1224,7 @@ def _completion_provider(harness: _Uploads, token: Any, *, asynchronous: bool = 
         client_secret=secret(auth.ApiKeyCredential("control")),
         token_transport=token,
     )
-    return provider, harness.options.ClientOptions(auth=auth.AuthConfig({"oauth": provider}), cleanup_timeout=0)
+    return provider, harness.options.ClientOptions(auth=auth.AuthConfig({"oauth": provider}), cleanup_timeout=0.05)
 
 
 def uploads_oauth(package: ModuleType, lines: list[str]) -> None:
