@@ -1930,7 +1930,10 @@
         "api"
       ]
     },
-    "verbatim": true
+    "verbatim": true,
+    "references": [
+      "session-metadata-library.json"
+    ]
   },
   "session-metadata-shadow": {
     "source": "generation_platform/binding/session-metadata-shadow.json",
@@ -1939,7 +1942,10 @@
         "api"
       ]
     },
-    "verbatim": true
+    "verbatim": true,
+    "references": [
+      "session-metadata-cycle.json"
+    ]
   },
   "session-metadata-unobserved": {
     "source": "generation_platform/binding/session-metadata-unobserved.json",
@@ -3081,7 +3087,11 @@
         "paths"
       ]
     },
-    "verbatim": true
+    "verbatim": true,
+    "references": [
+      "session-legacy-media.json",
+      "session-media-stream.json"
+    ]
   },
   "session-legacy-shared-stream": {
     "source": "generation_platform/binding/session-legacy-shared-stream.json",
