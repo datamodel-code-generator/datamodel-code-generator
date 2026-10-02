@@ -3923,15 +3923,17 @@ Then each request the helper sends is compressed only when it has such a body:
 | Polling `resume` | Only a poll or result fetch whose bindings write into its body: a resumed handle never creates the operation again |
 | SSE and NDJSON `open` | The stream's request |
 | WebSocket `connect` | None: a handshake sends no body |
-| Queue `enqueue` and `drain` | Explicit codings are refused with zero sends: `enqueue` accepts only `queue_options`, so request `options` raise `TypeError`; `drain` claims at most `max_entries` once and admits matching saved bodies; otherwise it returns its leases and raises `no_applicable_helper_child` |
+| Queue `enqueue` and `drain` | `enqueue` accepts only `queue_options`, so request `options` raise `TypeError`; `drain` claims at most `max_entries` once and admits matching saved bodies; otherwise it returns its leases and raises `no_applicable_helper_child` |
 
 A cache helper's `fetch` sends a bodyless GET, so a coding its call selects raises
 `ConfigurationError(field_path=('options', 'compression'), condition='no_applicable_helper_child')` before the cache is
 looked up, whether the entry is stored or not; its mutations follow their operation.
 
 Queue entries keep their wire body and entry policy, without call options or a content coding. To change a pending
-entry's delivery settings, use client or view options at drain: inherited codings apply only to queued operations that
-declare them and have a body. Explicit drain codings inspect only their first finite claim, send matching entries compressed and other entries plain, and never replenish that invocation with newly arrived entries. Refused admission returns owned leases without changing delivery counts or send intent.
+entry's delivery settings, use client, view, or request options at drain. Inherited codings apply only to queued
+operations that declare them and have a body. Explicit drain codings inspect only their first finite claim, send
+matching entries compressed and other entries plain, and never replenish that invocation with newly arrived entries.
+Refused admission returns owned leases without changing delivery counts or send intent.
 
 A coding the helper inherits from the client or a view is not checked and turns off where it does not apply.
 

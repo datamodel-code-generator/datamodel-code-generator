@@ -28,13 +28,17 @@
   cancelled unsent = e10 refresh cancelled deliveries=0 intent=False cancel=True leased=False outcome=cancelled/None/None
   transferred lease ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
   other lease retained = e11 refresh leased deliveries=0 intent=False cancel=False leased=True outcome=-
-  claim expiry between waves = succeeded=['e12'] deferred=['e13']
-  unsent expired lease returned = e13 create_order pending deliveries=0 intent=False cancel=False leased=False outcome=-
+  cancel compression admission ! RequestCancelledError: RequestCancelledError(source='cancel_token', delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] request_cancelled_error
+  cancelled admission returned = e12 create_order pending deliveries=0 intent=False cancel=False leased=False outcome=-
+  claim expiry between waves = succeeded=['e13'] deferred=['e14']
+  unsent expired lease returned = e14 create_order pending deliveries=0 intent=False cancel=False leased=False outcome=-
   server POST /orders coding=gzip key=k4 body={"item":"tea","quantity":2} duplicate=False
   async empty coding ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
   async bodyless coding ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
-  async returned = e14 refresh pending deliveries=0 intent=False cancel=False leased=False outcome=-
-  async mixed coding = succeeded=['e14', 'e15']
+  async returned = e15 refresh pending deliveries=0 intent=False cancel=False leased=False outcome=-
+  async mixed coding = succeeded=['e15', 'e16']
   server GET /orders/o1
   server POST /orders coding=gzip key=k5 body={"item":"tea","quantity":2} duplicate=False
   async empty unset = empty
+  async cancelled admission ! RequestCancelledError: RequestCancelledError(source='cancel_token', delivery_state='NOT_SENT') [delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] request_cancelled_error
+  async cancelled admission returned = e17 create_order pending deliveries=0 intent=False cancel=False leased=False outcome=-

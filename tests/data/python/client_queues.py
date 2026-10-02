@@ -1637,6 +1637,15 @@ def queue_compression(package: ModuleType, lines: list[str]) -> None:
         queue.step("transferred lease", lambda: outbox.drain(options=coding))
         queue.step("other lease retained", lambda: outbox.inspect(receipt.entry_id))
         store.entries.clear()
+        receipt = outbox.operations.create_order.enqueue(body=queue.order)
+        token = queue.options.CancelToken()
+        store.at_claim[store.claims + 1] = token.cancel
+        queue.step(
+            "cancel compression admission",
+            lambda: outbox.drain(options=queue.options.RequestOptions(compression="gzip", cancel_token=token)),
+        )
+        queue.step("cancelled admission returned", lambda: outbox.inspect(receipt.entry_id))
+        outbox.cancel(receipt.entry_id)
         outbox.operations.create_order.enqueue(body=queue.order)
         waiting = outbox.operations.create_order.enqueue(body=queue.order)
         queue.server.during = lambda: queue.time.advance(400)
@@ -1671,3 +1680,11 @@ async def _async_queue_compression(queue: _Queues) -> None:
         await queue.astep("async mixed coding", lambda: outbox.drain(options=coding, queue_options=limits))
         queue.server.flush(queue.lines)
         await queue.astep("async empty unset", outbox.drain)
+        receipt = await outbox.operations.create_order.enqueue(body=queue.order)
+        token = queue.options.CancelToken()
+        store.at_claim[store.claims + 1] = token.cancel
+        await queue.astep(
+            "async cancelled admission",
+            lambda: outbox.drain(options=queue.options.RequestOptions(compression="gzip", cancel_token=token)),
+        )
+        await queue.astep("async cancelled admission returned", lambda: outbox.inspect(receipt.entry_id))
