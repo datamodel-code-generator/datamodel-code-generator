@@ -1,0 +1,88 @@
+# batches-admission pydantic_v2.BaseModel
+  sync declared explicit nonempty factory: reads=0 pulls=0 provider=0 sends=0
+    > POST /users/batch coding=gzip body=b'{"users":[{"id":"u0001","name":"user 1"}]}'
+  sync declared explicit nonempty: outcomes=['success'] error=None reads=1 pulls=2 provider=1 sends=1 budget=1/1
+  sync undeclared explicit nonempty factory: reads=0 pulls=0 provider=0 sends=0
+  sync undeclared explicit nonempty: outcomes=[] error=ConfigurationError field=('options', 'compression') condition='no_applicable_helper_child' location=None cause=None identity=False reads=0 pulls=0 provider=0 sends=0 budget=0/0
+  sync declared explicit empty factory: reads=0 pulls=0 provider=0 sends=0
+  sync declared explicit empty: outcomes=[] error=ConfigurationError field=('options', 'compression') condition='no_applicable_helper_child' location=None cause=None identity=False reads=0 pulls=1 provider=0 sends=0 budget=0/0
+  sync declared explicit zero factory: reads=0 pulls=0 provider=0 sends=0
+  sync declared explicit zero: outcomes=[] error=ConfigurationError field=('options', 'compression') condition='no_applicable_helper_child' location=None cause=None identity=False reads=0 pulls=0 provider=0 sends=0 budget=0/0
+  sync declared inherited empty factory: reads=0 pulls=0 provider=0 sends=0
+  sync declared inherited empty: outcomes=[] error=None reads=0 pulls=1 provider=0 sends=0 budget=0/0
+  sync undeclared inherited empty factory: reads=0 pulls=0 provider=0 sends=0
+  sync undeclared inherited empty: outcomes=[] error=None reads=0 pulls=1 provider=0 sends=0 budget=0/0
+  sync declared unset empty factory: reads=0 pulls=0 provider=0 sends=0
+  sync declared unset empty: outcomes=[] error=None reads=0 pulls=1 provider=0 sends=0 budget=0/0
+  sync declared off empty factory: reads=0 pulls=0 provider=0 sends=0
+  sync declared off empty: outcomes=[] error=None reads=0 pulls=1 provider=0 sends=0 budget=0/0
+  sync declared inherited zero factory: reads=0 pulls=0 provider=0 sends=0
+  sync declared inherited zero: outcomes=[] error=None reads=0 pulls=0 provider=0 sends=0 budget=0/0
+  sync declared off zero factory: reads=0 pulls=0 provider=0 sends=0
+  sync declared off zero: outcomes=[] error=None reads=0 pulls=0 provider=0 sends=0 budget=0/0
+  sync invalid shared empty factory: reads=0 pulls=0 provider=0 sends=0
+  sync invalid shared empty: outcomes=[] error=RequestEncodingError field=None condition=None location=('query', 'dryRun') cause=ValidationError identity=False reads=0 pulls=0 provider=0 sends=0 budget=0/0
+  sync invalid shared zero factory: reads=0 pulls=0 provider=0 sends=0
+  sync invalid shared zero: outcomes=[] error=RequestEncodingError field=None condition=None location=('query', 'dryRun') cause=ValidationError identity=False reads=0 pulls=0 provider=0 sends=0 budget=0/0
+  sync source failure factory: reads=0 pulls=0 provider=0 sends=0
+  sync source failure: outcomes=[] error=ValueError field=None condition=None location=None cause=None identity=True reads=0 pulls=1 provider=0 sends=0 budget=0/0
+  sync native stop factory: reads=0 pulls=0 provider=0 sends=0
+  sync native stop: outcomes=[] error=_Interrupt field=None condition=None location=None cause=None identity=True reads=0 pulls=1 provider=0 sends=0 budget=0/0
+  async iterable declared explicit nonempty factory: reads=0 pulls=0 provider=0 sends=0
+    > POST /users/batch coding=gzip body=b'{"users":[{"id":"u0001","name":"user 1"}]}'
+  async iterable declared explicit nonempty: outcomes=['success'] error=None reads=1 pulls=2 provider=1 sends=1 budget=1/1
+  async iterable undeclared explicit nonempty factory: reads=0 pulls=0 provider=0 sends=0
+  async iterable undeclared explicit nonempty: outcomes=[] error=ConfigurationError field=('options', 'compression') condition='no_applicable_helper_child' location=None cause=None identity=False reads=0 pulls=0 provider=0 sends=0 budget=0/0
+  async iterable declared explicit empty factory: reads=0 pulls=0 provider=0 sends=0
+  async iterable declared explicit empty: outcomes=[] error=ConfigurationError field=('options', 'compression') condition='no_applicable_helper_child' location=None cause=None identity=False reads=0 pulls=1 provider=0 sends=0 budget=0/0
+  async iterable declared explicit zero factory: reads=0 pulls=0 provider=0 sends=0
+  async iterable declared explicit zero: outcomes=[] error=ConfigurationError field=('options', 'compression') condition='no_applicable_helper_child' location=None cause=None identity=False reads=0 pulls=0 provider=0 sends=0 budget=0/0
+  async iterable declared inherited empty factory: reads=0 pulls=0 provider=0 sends=0
+  async iterable declared inherited empty: outcomes=[] error=None reads=0 pulls=1 provider=0 sends=0 budget=0/0
+  async iterable undeclared inherited empty factory: reads=0 pulls=0 provider=0 sends=0
+  async iterable undeclared inherited empty: outcomes=[] error=None reads=0 pulls=1 provider=0 sends=0 budget=0/0
+  async iterable declared unset empty factory: reads=0 pulls=0 provider=0 sends=0
+  async iterable declared unset empty: outcomes=[] error=None reads=0 pulls=1 provider=0 sends=0 budget=0/0
+  async iterable declared off empty factory: reads=0 pulls=0 provider=0 sends=0
+  async iterable declared off empty: outcomes=[] error=None reads=0 pulls=1 provider=0 sends=0 budget=0/0
+  async iterable declared inherited zero factory: reads=0 pulls=0 provider=0 sends=0
+  async iterable declared inherited zero: outcomes=[] error=None reads=0 pulls=0 provider=0 sends=0 budget=0/0
+  async iterable declared off zero factory: reads=0 pulls=0 provider=0 sends=0
+  async iterable declared off zero: outcomes=[] error=None reads=0 pulls=0 provider=0 sends=0 budget=0/0
+  async iterable invalid shared empty factory: reads=0 pulls=0 provider=0 sends=0
+  async iterable invalid shared empty: outcomes=[] error=RequestEncodingError field=None condition=None location=('query', 'dryRun') cause=ValidationError identity=False reads=0 pulls=0 provider=0 sends=0 budget=0/0
+  async iterable invalid shared zero factory: reads=0 pulls=0 provider=0 sends=0
+  async iterable invalid shared zero: outcomes=[] error=RequestEncodingError field=None condition=None location=('query', 'dryRun') cause=ValidationError identity=False reads=0 pulls=0 provider=0 sends=0 budget=0/0
+  async iterable source failure factory: reads=0 pulls=0 provider=0 sends=0
+  async iterable source failure: outcomes=[] error=ValueError field=None condition=None location=None cause=None identity=True reads=0 pulls=1 provider=0 sends=0 budget=0/0
+  async iterable native stop factory: reads=0 pulls=0 provider=0 sends=0
+  async iterable native stop: outcomes=[] error=_Interrupt field=None condition=None location=None cause=None identity=True reads=0 pulls=1 provider=0 sends=0 budget=0/0
+  async source declared explicit nonempty factory: reads=0 pulls=0 provider=0 sends=0
+    > POST /users/batch coding=gzip body=b'{"users":[{"id":"u0001","name":"user 1"}]}'
+  async source declared explicit nonempty: outcomes=['success'] error=None reads=1 pulls=2 provider=1 sends=1 budget=1/1
+  async source undeclared explicit nonempty factory: reads=0 pulls=0 provider=0 sends=0
+  async source undeclared explicit nonempty: outcomes=[] error=ConfigurationError field=('options', 'compression') condition='no_applicable_helper_child' location=None cause=None identity=False reads=0 pulls=0 provider=0 sends=0 budget=0/0
+  async source declared explicit empty factory: reads=0 pulls=0 provider=0 sends=0
+  async source declared explicit empty: outcomes=[] error=ConfigurationError field=('options', 'compression') condition='no_applicable_helper_child' location=None cause=None identity=False reads=0 pulls=1 provider=0 sends=0 budget=0/0
+  async source declared explicit zero factory: reads=0 pulls=0 provider=0 sends=0
+  async source declared explicit zero: outcomes=[] error=ConfigurationError field=('options', 'compression') condition='no_applicable_helper_child' location=None cause=None identity=False reads=0 pulls=0 provider=0 sends=0 budget=0/0
+  async source declared inherited empty factory: reads=0 pulls=0 provider=0 sends=0
+  async source declared inherited empty: outcomes=[] error=None reads=0 pulls=1 provider=0 sends=0 budget=0/0
+  async source undeclared inherited empty factory: reads=0 pulls=0 provider=0 sends=0
+  async source undeclared inherited empty: outcomes=[] error=None reads=0 pulls=1 provider=0 sends=0 budget=0/0
+  async source declared unset empty factory: reads=0 pulls=0 provider=0 sends=0
+  async source declared unset empty: outcomes=[] error=None reads=0 pulls=1 provider=0 sends=0 budget=0/0
+  async source declared off empty factory: reads=0 pulls=0 provider=0 sends=0
+  async source declared off empty: outcomes=[] error=None reads=0 pulls=1 provider=0 sends=0 budget=0/0
+  async source declared inherited zero factory: reads=0 pulls=0 provider=0 sends=0
+  async source declared inherited zero: outcomes=[] error=None reads=0 pulls=0 provider=0 sends=0 budget=0/0
+  async source declared off zero factory: reads=0 pulls=0 provider=0 sends=0
+  async source declared off zero: outcomes=[] error=None reads=0 pulls=0 provider=0 sends=0 budget=0/0
+  async source invalid shared empty factory: reads=0 pulls=0 provider=0 sends=0
+  async source invalid shared empty: outcomes=[] error=RequestEncodingError field=None condition=None location=('query', 'dryRun') cause=ValidationError identity=False reads=0 pulls=0 provider=0 sends=0 budget=0/0
+  async source invalid shared zero factory: reads=0 pulls=0 provider=0 sends=0
+  async source invalid shared zero: outcomes=[] error=RequestEncodingError field=None condition=None location=('query', 'dryRun') cause=ValidationError identity=False reads=0 pulls=0 provider=0 sends=0 budget=0/0
+  async source source failure factory: reads=0 pulls=0 provider=0 sends=0
+  async source source failure: outcomes=[] error=ValueError field=None condition=None location=None cause=None identity=True reads=0 pulls=1 provider=0 sends=0 budget=0/0
+  async source native stop factory: reads=0 pulls=0 provider=0 sends=0
+  async source native stop: outcomes=[] error=_Interrupt field=None condition=None location=None cause=None identity=True reads=0 pulls=1 provider=0 sends=0 budget=0/0

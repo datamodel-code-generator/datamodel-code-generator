@@ -16,6 +16,7 @@ from tests.data.python.client_auth_errors import auth_errors
 from tests.data.python.client_auth_flows import auth_flows
 from tests.data.python.client_auth_options import auth_options
 from tests.data.python.client_auth_values import auth_values
+from tests.data.python.client_batch_admission import batch_admission
 from tests.data.python.client_batches import batch_arguments, batch_backends, batch_compression, batches
 from tests.data.python.client_bodies import bodies
 from tests.data.python.client_body_digest import body_digest
@@ -836,6 +837,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "batch-backends": ("batches", BACKENDS, batch_backends),
     "batch-arguments": ("batches-arguments", ("pydantic_v2.BaseModel",), batch_arguments),
     "batch-compression": ("batches-compression", ("pydantic_v2.BaseModel",), batch_compression),
+    "batch-admission": ("batches-admission", ("pydantic_v2.BaseModel",), batch_admission),
     "uploads": ("uploads", ("pydantic_v2.BaseModel",), uploads),
     "upload-compression-off": ("uploads", ("pydantic_v2.BaseModel",), upload_compression),
     "upload-compression": ("uploads-compression", ("pydantic_v2.BaseModel",), upload_compression),

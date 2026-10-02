@@ -4618,5 +4618,31 @@
       "pydantic_v2.BaseModel"
     ],
     "modules": false
+  },
+  "batches-admission": {
+    "input": "batch-admission.yaml",
+    "references": [
+      "protocols/batches.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/batches.yaml",
+      "operations": [
+        {
+          "ref": "/paths/~1users~1batch/post",
+          "runtime": {
+            "accepted_content_encodings": [
+              "gzip"
+            ]
+          }
+        }
+      ],
+      "validation": {
+        "arguments": "pydantic"
+      }
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": false
   }
 }
