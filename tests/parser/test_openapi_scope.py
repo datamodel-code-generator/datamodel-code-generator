@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from shutil import copyfile
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -351,24 +352,43 @@ def test_api_reference_leaf_extension() -> None:
         parser.dispose()
 
 
-def test_api_repeated_source_declarations() -> None:
-    """Generate each declaration once when the parser receives the same document twice.
-
-    Only a parser built directly can receive one document twice, so these guards are removal candidates pending
-    review.
-    """
-    source = SOURCE / "declarations.json"
-    parser = ApiOpenAPIParser(
+def test_api_repeated_source_declarations(tmp_path: Path) -> None:
+    """Generate each declaration once when the public facade receives the same document twice."""
+    source = tmp_path / "declarations.json"
+    copyfile(SOURCE / "declarations.json", source)
+    output = tmp_path / "models"
+    generate(
         [source, source],
+        input_file_type=InputFileType.OpenAPI,
         openapi_scopes=[OpenAPIScope.Api],
         use_operation_id_as_name=True,
+        use_union_operator=False,
+        use_standard_collections=False,
+        disable_timestamp=True,
         formatters=[],
-        base_path=SOURCE,
+        output=output,
     )
-    try:
-        assert_output(parser.parse()["declarations.py",].body, EXPECTED / "declarations.py")
-    finally:
-        parser.dispose()
+    assert_directory_content(output, EXPECTED / "repeated-source")
+
+
+def test_api_external_document_also_collected_as_root(tmp_path: Path) -> None:
+    """Collect a referenced library once when directory traversal later visits it as a root."""
+    source = tmp_path / "inputs"
+    source.mkdir()
+    for name in ("external.json", "library.json"):
+        copyfile(SOURCE / name, source / name)
+    output = tmp_path / "models"
+    generate(
+        source,
+        input_file_type=InputFileType.OpenAPI,
+        openapi_scopes=[OpenAPIScope.Api],
+        use_union_operator=False,
+        use_standard_collections=False,
+        disable_timestamp=True,
+        formatters=[],
+        output=output,
+    )
+    assert_directory_content(output, EXPECTED / "external-directory")
 
 
 @pytest.mark.parametrize("case", ["local", "external", "relative", "url", "scoped", "bare", "empty", "many_ordinary"])
@@ -460,6 +480,30 @@ def test_api_root_feature_lifetime(version: str, tmp_path: Path) -> None:
         output=output,
     )
     assert_output(f"{output.exists()}\n", EXPECTED / "absent-output.txt")
+
+
+@pytest.mark.parametrize("mode", ["first", "reversed", "directory", "explicit"])
+def test_api_root_dialects_affect_generated_models(mode: str, tmp_path: Path) -> None:
+    """Keep the first root's dialect while allowing an explicit OpenAPI version override."""
+    directory = tmp_path / "inputs"
+    directory.mkdir()
+    for name in ("a.json", "b.json"):
+        copyfile(SOURCE / "version-behavior" / name, directory / name)
+    sources = sorted(directory.glob("*.json"), reverse=mode == "reversed")
+    output = tmp_path / "models"
+    generate(
+        directory if mode == "directory" else sources,
+        input_file_type=InputFileType.OpenAPI,
+        openapi_scopes=[OpenAPIScope.Api],
+        schema_version="3.2" if mode == "explicit" else "auto",
+        use_operation_id_as_name=True,
+        use_union_operator=False,
+        use_standard_collections=False,
+        disable_timestamp=True,
+        formatters=[Formatter.BLACK, Formatter.ISORT],
+        output=output,
+    )
+    assert_directory_content(output, EXPECTED / f"version-{mode}")
 
 
 @pytest.mark.parametrize("backend", list(DataModelType))

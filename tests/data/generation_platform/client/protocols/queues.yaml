@@ -1,0 +1,24 @@
+schema_version: 1
+helpers:
+  orders.outbox:
+    kind: queue
+    operations:
+      create_order:
+        operation: /paths/~1orders/post
+        side_effects: true
+        key_binding: {in: header, name: Idempotency-Key}
+        dedupe_ttl: 3600
+      refresh:
+        operation: "/paths/~1orders~1{orderId}/get"
+        side_effects: false
+  account.offline:
+    kind: queue
+    operations:
+      fetch:
+        operation: /paths/~1account/get
+        side_effects: false
+      rename:
+        operation: /paths/~1account/patch
+        side_effects: true
+        key_binding: {in: header, name: Idempotency-Key}
+        dedupe_ttl: 600

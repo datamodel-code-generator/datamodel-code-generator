@@ -1,0 +1,46 @@
+mypy pets and queues.py: clean
+pyright pets and queues.py: clean
+ty pets and queues.py: clean
+queues_negative.py 13 marked lines
+mypy queues_negative.py: 13/13 marked lines with one error, 0 elsewhere, 0 in other files
+  14 call-arg
+  15 call-arg
+  16 arg-type
+  17 arg-type
+  18 arg-type
+  19 assignment
+  20 misc
+  21 assignment
+  22 arg-type
+  23 assignment
+  24 misc
+  25 arg-type
+  26 dict-item
+pyright queues_negative.py: 13/13 marked lines with one error, 0 elsewhere, 0 in other files
+  14 reportCallIssue
+  15 reportCallIssue
+  16 reportArgumentType
+  17 reportArgumentType
+  18 reportArgumentType
+  19 reportAssignmentType
+  20 reportGeneralTypeIssues
+  21 reportAssignmentType
+  22 reportArgumentType
+  23 reportAssignmentType
+  24 reportAttributeAccessIssue
+  25 reportArgumentType
+  26 reportArgumentType
+ty queues_negative.py: 13/13 marked lines with one error, 0 elsewhere, 0 in other files
+  14 missing-argument
+  15 unknown-argument
+  16 invalid-argument-type
+  17 invalid-argument-type
+  18 invalid-argument-type
+  19 invalid-assignment
+  20 invalid-await
+  21 invalid-assignment
+  22 invalid-argument-type
+  23 invalid-assignment
+  24 invalid-assignment
+  25 invalid-argument-type
+  26 invalid-argument-type

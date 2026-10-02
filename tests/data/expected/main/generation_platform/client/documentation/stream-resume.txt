@@ -1162,3 +1162,8 @@ session's sends raises `StreamResumeExhaustedError` with a checkpoint; a wait wh
 longer than allowed, or a wait longer than the session has left, raises the interruption instead. Decode, size, remote,
 idle, and deadline failures, the declared end, and closing never reconnect, and events the server sends again after a
 reopen are delivered again.
+
+## Request compression
+
+No operation of this package declares a request content coding, so `compression` in `ClientOptions` and views turns
+off for every call, and a call's own `RequestOptions(compression="gzip")` raises `ConfigurationError` before sending.
