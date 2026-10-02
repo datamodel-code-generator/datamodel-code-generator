@@ -1,0 +1,29 @@
+{
+  "openapi": "3.0.3",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "info": {"title": "First root", "version": "1"},
+  "paths": {
+    "/old": {
+      "get": {
+        "operationId": "old",
+        "responses": {
+          "200": {
+            "description": "A referenced string with a sibling constraint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "value": {"$ref": "#/components/schemas/Value", "maxLength": 3}
+                  },
+                  "required": ["value"]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {"schemas": {"Value": {"type": "string"}}}
+}
