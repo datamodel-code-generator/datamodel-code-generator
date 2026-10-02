@@ -4347,7 +4347,7 @@
       "protocols/uploads.yaml"
     ],
     "config": {
-      "protocols": "protocols/uploads.yaml"
+      "protocols": "protocols/uploads-oauth.yaml"
     },
     "backends": [
       "pydantic_v2.BaseModel"
