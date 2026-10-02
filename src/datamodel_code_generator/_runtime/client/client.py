@@ -515,10 +515,15 @@ def _secret(spec: ParameterSpec, value: WireValue, headers: frozenset[str], quer
             secret = name.lower() in headers
         case "query":
             secret = name in queries
-            if plan.shape == "object" and plan.explode and isinstance(value, Mapping):
+            if (
+                plan.shape == "object"
+                and plan.explode
+                and plan.style in {"form", "deepObject"}
+                and isinstance(value, Mapping)
+            ):
                 if plan.style == "form":
                     secret = secret or not queries.isdisjoint(value)
-                elif plan.style == "deepObject":
+                else:
                     secret = secret or any(f"{name}[{member}]" in queries for member in value)
         case "querystring":
             secret = isinstance(value, Mapping) and not queries.isdisjoint(value)
