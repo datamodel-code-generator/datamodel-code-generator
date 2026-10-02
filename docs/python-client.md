@@ -4011,10 +4011,12 @@ bodyless: ordinary and `with_response` calls return `None` data for an empty fin
 `with_streaming_response` to access that final GET body without typed decoding.
 
 `TransportOptions` belongs only to `ClientOptions`; it cannot be set on a view or request. Its effective defaults are
-`verify=True`, `ssl_context=None`, `proxy=None`, `trust_env=False`, `http2=False`, `max_connections=100`,
+`verify=True`, `ssl_context=None`, `proxy=None`, `trust_env=True`, `http2=False`, `max_connections=100`,
 `max_keepalive_connections=20`, `keepalive_expiry=5`, and `retry_owner="sdk"`. Supplying an SSLContext uses its CA,
 verification, and client certificate settings and rejects any explicit `verify` override. Proxy/environment/TLS
-choices are explicit. HTTP/2 is opt-in and requires its optional dependency.
+settings follow HTTPX2 environment handling by default; `trust_env=False` opts out.
+Buffered success responses have no default size cap. Set `max_response_bytes` on client, view, or request options
+to bound them; `None` removes an inherited cap. Error bodies retain their 64 KiB default cap. HTTP/2 is opt-in and requires its optional dependency.
 
 ```python
 from ssl import create_default_context
