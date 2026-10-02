@@ -1494,7 +1494,8 @@ bounds all of them. Each limit comes from the call's options, then the helper's 
 By default, an upload session has no total lifetime limit. If a finite `total_timeout` is configured, it runs from
 `start` or `resume` for the whole life of the handle, including reading the source. A long upload stepped slowly may
 then need a larger timeout, `SessionOptions(total_timeout=None)`, or a `resume` from a checkpoint, which starts a new
-session. The deadline also bounds reading the source. A call past a limit raises
+session. Both modes check a finite deadline before each source read. A synchronous `opened.read()` cannot be
+interrupted once it blocks; an asynchronous read is bounded by the remaining deadline. A call past a limit raises
 `SessionLimitError` with the kind `network_sends`, the progress so far, and `resume_state`, before sending; a create
 request the session has no slot for raises it without `resume_state`, since nothing was created. The options must not
 fix an idempotency key, from the client, a view, or the call, and must not patch a header or a query parameter the
