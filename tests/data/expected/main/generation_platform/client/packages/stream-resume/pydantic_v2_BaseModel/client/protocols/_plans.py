@@ -263,3 +263,26 @@ STREAM_10: Final[EventPlan[_dcg_type_4]] = EventPlan(
         ),
     ),
 )
+
+
+STREAM_11: Final[EventPlan[_dcg_type_4]] = EventPlan(
+    helper_id='marks.deepbound',
+    operation=OperationRef(pointer='/paths/~1deep-marks/get'),
+    call=_operations.OPERATION_8,
+    media='text/event-stream',
+    fingerprint='e673f50f4d4d8dcb9295e638acd483b3241775fd060a70e6461d0c1c3a9c8d71',
+    event=native_value(model_bindings.codec_47, model_bindings.CONTEXT_47),
+    resume=StreamResumePlan(
+        operation=OperationRef(pointer='/paths/~1deep-marks/get'),
+        call=_operations.OPERATION_8,
+        media='text/event-stream',
+        write=ParameterTarget(location='header', name='Last-Event-ID'),
+        own=True,
+        bindings=(
+            PageBinding(
+                target=ParameterTarget(location='query', name='scope'),
+                literal={'api_key': 'SERVER_KEY'},
+            ),
+        ),
+    ),
+)

@@ -250,6 +250,10 @@ components:
       type: apiKey
       in: query
       name: api_key
+    deep_query_key:
+      type: apiKey
+      in: query
+      name: scope[api_key]
   schemas:
     Mark:
       type: object

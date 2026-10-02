@@ -78,7 +78,7 @@ def _drained(lines: list[str], label: str, stream: Iterable[Any]) -> Any:
     lines.append(f"  {label}")
     try:
         lines.extend(f"    {_event(event)}" for event in stream)
-    except Exception as error:  # noqa: BLE001
+    except Exception as error:  # ruff: ignore[blind-except]
         return _kept(lines, error)
     lines.append("    end")
     return None
@@ -89,8 +89,8 @@ async def _adrained(lines: list[str], label: str, stream: AsyncIterator[Any]) ->
     lines.append(f"  {label}")
     try:
         async for event in stream:
-            lines.append(f"    {_event(event)}")  # noqa: PERF401 - Keep events delivered before an interruption.
-    except Exception as error:  # noqa: BLE001
+            lines.append(f"    {_event(event)}")  # ruff: ignore[manual-list-comprehension] - Keep events delivered before an interruption.
+    except Exception as error:  # ruff: ignore[blind-except]
         return _kept(lines, error)
     lines.append("    end")
     return None
@@ -280,7 +280,7 @@ def _checkpoints(resumes: _Resumes, api: Any) -> None:
     lines, harness, helper = resumes.lines, resumes.harness, api.protocols.events.live
     lines.append("checkpoints")
     held: list[Any] = []
-    probe = lambda: record(lines, "checkpoint while receiving", held[0].checkpoint)  # noqa: E731
+    probe = lambda: record(lines, "checkpoint while receiving", held[0].checkpoint)  # ruff: ignore[lambda-assignment]
     resumes.reply(b'id: 1\ndata: {"text": "a"}\n\n', probe, b'data: {"text": "b"}\n\n', response=_Probed)
     held.append(stream := helper.open())
     _drained(lines, "probed", stream)
@@ -405,7 +405,7 @@ def _ineligible(resumes: _Resumes, api: Any) -> None:
 def _failure(call: Callable[[], object]) -> BaseException | None:
     try:
         call()
-    except Exception as error:  # noqa: BLE001
+    except Exception as error:  # ruff: ignore[blind-except]
         return error
     return None
 
@@ -597,7 +597,7 @@ def _refused(lines: list[str], label: str, stream: Iterable[Any]) -> None:
     lines.append(f"  {label}")
     try:
         lines.extend(f"    {_event(event)}" for event in stream)
-    except Exception as error:  # noqa: BLE001
+    except Exception as error:  # ruff: ignore[blind-except]
         _origins(lines, error)
 
 
@@ -737,7 +737,7 @@ async def _async_resume(package: ModuleType, lines: list[str]) -> None:
         try:
             await anext(stream)
             await anext(stream)
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:  # ruff: ignore[blind-except]
             _origins(lines, error)
         resumes.reply(b'id: 1\ndata: {"text": "a"}\n\n', Stop())
         stream = await helper.open(stream_options=resumes.reconnect)
@@ -792,7 +792,7 @@ def _guarded(lines: list[str], label: str, action: Callable[[], Any]) -> None:
     lines.append(label)
     try:
         result = action()
-    except Exception as error:  # noqa: BLE001
+    except Exception as error:  # ruff: ignore[blind-except]
         _guard_failure(lines, error)
     else:
         lines.append(f"  returned {type(result).__name__}")
@@ -805,7 +805,7 @@ async def _aguarded(lines: list[str], label: str, action: Callable[[], Any]) -> 
     lines.append(label)
     try:
         result = await action()
-    except Exception as error:  # noqa: BLE001
+    except Exception as error:  # ruff: ignore[blind-except]
         _guard_failure(lines, error)
     else:
         lines.append(f"  returned {type(result).__name__}")
@@ -852,7 +852,7 @@ def _write_guards(package: ModuleType, lines: list[str]) -> None:
             transport_adapter=resumes.adapter,
             options=_guard_auth(resumes, asynchronous=False, authenticated=authenticated),
         ) as api:
-            for name in ("scoped", "bound"):
+            for name in ("scoped", "bound", "deep", "deepbound"):
                 resumes.reply(b'id: 1\ndata: {"scope": {"api_key": "SERVER_KEY"}}\n\n', resumes.harness.interrupted())
                 stream = getattr(api.protocols.marks, name).open(stream_options=resumes.reconnect)
                 next(stream)
@@ -973,7 +973,7 @@ async def _awrite_guards(package: ModuleType, lines: list[str]) -> None:
             transport_adapter=resumes.adapter,
             options=_guard_auth(resumes, asynchronous=True, authenticated=authenticated),
         ) as api:
-            for name in ("scoped", "bound"):
+            for name in ("scoped", "bound", "deep", "deepbound"):
                 resumes.reply(b'id: 1\ndata: {"scope": {"api_key": "SERVER_KEY"}}\n\n', resumes.harness.interrupted())
                 stream = await getattr(api.protocols.marks, name).open(stream_options=resumes.reconnect)
                 await anext(stream)

@@ -182,6 +182,11 @@ class MarksProtocols:
         """The marks.bound SSE helper."""
         return MarksBoundSse(self._core)
 
+    @cached_property
+    def deepbound(self) -> MarksDeepboundSse:
+        """The marks.deepbound SSE helper."""
+        return MarksDeepboundSse(self._core)
+
 
 class EventsLiveSse:
     """The events.live SSE helper of GET /events."""
@@ -663,6 +668,52 @@ class MarksBoundSse:
         return resume_events(
             self._core,
             _plans.STREAM_10,
+            state,
+            stream_options=stream_options,
+            options=options,
+            session_options=session_options,
+        )
+
+
+class MarksDeepboundSse:
+    """The marks.deepbound SSE helper of GET /deep-marks."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+    def open(
+        self,
+        *,
+        tag: _dcg_type_19 | ModelValue[_dcg_type_19] | Unset = UNSET,
+        last_event_id: _dcg_type_20 | ModelValue[_dcg_type_20] | Unset = UNSET,
+        scope: _dcg_type_21 | ModelValue[_dcg_type_21] | Unset = UNSET,
+        stream_options: StreamOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> EventStream[_dcg_type_15]:
+        """Open the event stream of GET /deep-marks, returning once its response is a declared success."""
+        return open_events(
+            self._core,
+            _plans.STREAM_11,
+            (tag, last_event_id, scope),
+            stream_options=stream_options,
+            options=options,
+            session_options=session_options,
+        )
+
+    def resume(
+        self,
+        state: ResumeState,
+        *,
+        stream_options: StreamOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> EventStream[_dcg_type_15]:
+        """Reopen the event stream after a checkpoint's cursor, returning once its response is a declared success."""
+        return resume_events(
+            self._core,
+            _plans.STREAM_11,
             state,
             stream_options=stream_options,
             options=options,

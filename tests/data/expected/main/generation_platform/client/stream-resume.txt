@@ -66,7 +66,7 @@ render pydantic_v2.BaseModel
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers ['events.live', 'events.plain', 'events.tracked', 'rooms.live', 'records.all', 'feed.ticks', 'topics.marks', 'marks.scoped', 'marks.named', 'marks.deep', 'marks.bound'] bindings 48
+  namespace client helpers ['events.live', 'events.plain', 'events.tracked', 'rooms.live', 'records.all', 'feed.ticks', 'topics.marks', 'marks.scoped', 'marks.named', 'marks.deep', 'marks.bound', 'marks.deepbound'] bindings 48
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   helper events.live sse enabled True /inputs/target_config/protocol_metadata/helpers/events.live fe9d46bf6146c8ad370b9e120eebaa7a97ce69791b82e42dc42fb36df7d8d89b
   helper events.plain sse enabled True /inputs/target_config/protocol_metadata/helpers/events.plain bb4bb5c8c5cbe3809e0cde61598b05446f9667463353a95c362eae717c7baaf9
@@ -79,6 +79,7 @@ render pydantic_v2.BaseModel
   helper marks.named sse enabled True /inputs/target_config/protocol_metadata/helpers/marks.named 17ebe9633ae00f38397b430af67dd1cd2cb5b78d7deae0c5292cfad0d38131a2
   helper marks.deep sse enabled True /inputs/target_config/protocol_metadata/helpers/marks.deep 8057681cc8f3e3c26dc367491ead6daa5b993c29143247624afb3c8e97fbbf43
   helper marks.bound sse enabled True /inputs/target_config/protocol_metadata/helpers/marks.bound 8db2caef70358490b9dc41878beef4e5ac47e2195d6b75a55061f02b13b0621e
+  helper marks.deepbound sse enabled True /inputs/target_config/protocol_metadata/helpers/marks.deepbound e673f50f4d4d8dcb9295e638acd483b3241775fd060a70e6461d0c1c3a9c8d71
   {
     "helpers": {
       "events.live": {
@@ -360,6 +361,53 @@ render pydantic_v2.BaseModel
           "write": {
             "in": "query",
             "name": "scope"
+          }
+        },
+        "unknown": "error"
+      },
+      "marks.deepbound": {
+        "completion": {
+          "kind": "eof"
+        },
+        "enabled": true,
+        "error_events": {},
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/components/schemas/Mark"
+        },
+        "kind": "sse",
+        "media": "text/event-stream",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1deep-marks/get"
+        },
+        "resume": {
+          "bindings": [
+            {
+              "target": {
+                "in": "query",
+                "name": "scope"
+              },
+              "value": {
+                "literal": {
+                  "api_key": "SERVER_KEY"
+                }
+              }
+            }
+          ],
+          "cursor": "event_id",
+          "delivery": "at_least_once",
+          "enabled": true,
+          "reconnect_on": [
+            "transport_interruption"
+          ],
+          "reopen_operation": {
+            "document": "/inputs/root",
+            "pointer": "/paths/~1deep-marks/get"
+          },
+          "write": {
+            "in": "header",
+            "name": "Last-Event-ID"
           }
         },
         "unknown": "error"

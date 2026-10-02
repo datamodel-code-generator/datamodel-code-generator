@@ -502,8 +502,8 @@ def _auth_identity(auth: AuthConfig) -> WireValue:
 def _secret(spec: ParameterSpec, value: WireValue, headers: frozenset[str], queries: frozenset[str]) -> bool:
     """Return whether an argument carries credentials: a cookie, a credential header, or a scheme's query field.
 
-    An exploded form object query parameter sends each of its properties as a query field of its own, as a querystring
-    does, an additional property included.
+    Exploded form and deepObject query parameters send their properties as fields of their own, with brackets around
+    deepObject properties, an additional property included.
     """
     plan = spec.plan
     name = plan.name
@@ -514,9 +514,13 @@ def _secret(spec: ParameterSpec, value: WireValue, headers: frozenset[str], quer
         case "header":
             secret = name.lower() in headers
         case "query":
-            secret = name in queries or (
-                _exploded(plan) and isinstance(value, Mapping) and not queries.isdisjoint(value)
-            )
+            secret = name in queries
+            if plan.shape == "object" and plan.explode and isinstance(value, Mapping):
+                match plan.style:
+                    case "form":
+                        secret = secret or not queries.isdisjoint(value)
+                    case "deepObject":
+                        secret = secret or any(f"{name}[{member}]" in queries for member in value)
         case "querystring":
             secret = isinstance(value, Mapping) and not queries.isdisjoint(value)
         case _:
