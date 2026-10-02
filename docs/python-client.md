@@ -2526,9 +2526,13 @@ shared retries inside it, and returns a `DrainReport`. An entry ready again duri
 the drain ends and then returned to pending, so a drain delivers each entry at most once. Before the first send of a
 delivery, the drain saves the entry's send intent and its delivery count plus one, and sends nothing unless that save
 succeeds; a keyed entry sends its stable key on every attempt and every delivery, so the server can deduplicate it.
-A claim's lease that expires, after a crash for example, returns an unsent entry to pending. An entry with saved send
-intent becomes `delivery_unknown` and is never redelivered automatically; a crash after the intent consumes a delivery
-even when nothing was sent. Only an explicit `retry_unknown` can redeliver it, with the same key within its expiry.
+An expired crash lease without a recorded outcome or cancellation returns to pending during the next explicit drain,
+keeping the request identity, key, first-use time, delivery count and send intent. The drain may redeliver within the
+binding, retention, lifetime and delivery limits, providing bounded at-least-once delivery; server deduplication can
+prevent duplicate effects, but the SDK does not guarantee exactly-once effects. A crash after the intent consumes a
+delivery even when nothing was sent. Recorded success and terminal unknown are not automatically redelivered;
+terminal unknown requires explicit `retry_unknown`. A cancellation remains cancelled when nothing may have been
+sent, or of unknown delivery when a request may have arrived, and is never recovered automatically.
 
 | Delivery ends | Entry becomes | Report |
 |---|---|---|
