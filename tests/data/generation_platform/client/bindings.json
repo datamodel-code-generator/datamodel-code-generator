@@ -1290,5 +1290,562 @@
         }
       }
     }
+  },
+  "contract-resolver": {
+    "source": "generation_platform/binding/resolver.json",
+    "variants": {
+      "api": {},
+      "schemas": {
+        "openapi_scopes": [
+          "schemas",
+          "paths"
+        ]
+      }
+    }
+  },
+  "api-external": {
+    "source": "generation_platform/api_scope/external.json",
+    "references": [
+      "library.json"
+    ]
+  },
+  "api-traversal": {
+    "source": "generation_platform/api_scope/traversal.json"
+  },
+  "api-media-32": {
+    "source": "generation_platform/api_scope/media-32.json"
+  },
+  "api-resources": {
+    "source": "generation_platform/api_scope/resources.json",
+    "references": [
+      "resources-library.json"
+    ]
+  },
+  "api-local-roots": {
+    "source": "generation_platform/api_scope/local-roots.json"
+  },
+  "api-anchors": {
+    "source": "generation_platform/api_scope/anchors.json",
+    "references": [
+      "anchors-library.json"
+    ]
+  },
+  "api-typed-reuse": {
+    "source": "generation_platform/api_scope/typed-reuse.json"
+  },
+  "api-method-case": {
+    "source": "generation_platform/api_scope/method-case.json"
+  },
+  "api-items-object": {
+    "source": "generation_platform/api_scope/items-object.json"
+  },
+  "api-items-primitive": {
+    "source": "generation_platform/api_scope/items-primitive.json"
+  },
+  "legacy-operations": {
+    "source": "generation_platform/binding/legacy-operations.json",
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ]
+    }
+  },
+  "legacy-candidates": {
+    "source": "generation_platform/binding/legacy-candidates.yaml",
+    "verbatim": true,
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ],
+      "openapi_include_paths": [
+        "/chosen"
+      ]
+    }
+  },
+  "legacy-ambiguous": {
+    "pins": "#4299: the two operations that share one YAML operation object ship without model codecs, and their BND_OPERATION_ORIGIN_UNRESOLVED diagnostics are dropped",
+    "source": "generation_platform/binding/legacy-ambiguous.yaml",
+    "verbatim": true,
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ]
+    }
+  },
+  "capture-observation": {
+    "source": "generation_platform/observation.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "collapse_root_models": true,
+      "collapse_root_models_name_strategy": "child",
+      "reuse_model": true,
+      "collapse_reuse_models": true,
+      "read_only_write_only_model_type": "all"
+    }
+  },
+  "capture-replacements": {
+    "source": "generation_platform/binding/replacements.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "collapse_root_models": true,
+      "collapse_root_models_name_strategy": "child",
+      "reuse_model": true,
+      "collapse_reuse_models": true,
+      "read_only_write_only_model_type": "all"
+    }
+  },
+  "capture-inherited-overrides": {
+    "source": "generation_platform/binding/inherited-overrides.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "collapse_root_models": true,
+      "collapse_root_models_name_strategy": "child",
+      "reuse_model": true,
+      "collapse_reuse_models": true,
+      "read_only_write_only_model_type": "all"
+    }
+  },
+  "capture-split": {
+    "source": "generation_platform/observation.json",
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ],
+      "read_only_write_only_model_type": "all",
+      "collapse_root_models": true,
+      "reuse_model": true,
+      "module_split_mode": "single"
+    },
+    "models": "models"
+  },
+  "capture-deduplication": {
+    "source": "openapi/duplicate_model_simplify.yaml",
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ]
+    }
+  },
+  "inherited-merge": {
+    "source": "openapi/allof_partial_override_inherited_types.yaml",
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ],
+      "read_only_write_only_model_type": "all"
+    },
+    "variants": {
+      "all": {
+        "allof_merge_mode": "all"
+      },
+      "constraints": {
+        "allof_merge_mode": "constraints"
+      },
+      "none": {
+        "allof_merge_mode": "none"
+      }
+    }
+  },
+  "copied-field-origins": {
+    "source": "generation_platform/binding/copied-field-origins.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "read_only_write_only_model_type": "all"
+    },
+    "variants": {
+      "all": {
+        "allof_merge_mode": "all"
+      },
+      "constraints": {
+        "allof_merge_mode": "constraints"
+      },
+      "none": {
+        "allof_merge_mode": "none"
+      }
+    }
+  },
+  "copied-default-overrides": {
+    "source": "generation_platform/binding/copied-field-origins.json",
+    "model": {
+      "read_only_write_only_model_type": "all",
+      "default_value_overrides": {
+        "Child.raw-note": null,
+        "GrandChild.raw-note": "grand",
+        "GrandChild.secret": null
+      }
+    }
+  },
+  "field-origins": {
+    "source": "generation_platform/binding/field-origins.json",
+    "variants": {
+      "api": {},
+      "schemas": {
+        "openapi_scopes": [
+          "schemas",
+          "paths"
+        ]
+      }
+    }
+  },
+  "aliased-origins": {
+    "source": "generation_platform/binding/aliased-origins.yaml",
+    "verbatim": true
+  },
+  "default-origins": {
+    "source": "generation_platform/binding/default-origins.json",
+    "model": {
+      "default_value_overrides": {
+        "equalOverride": null,
+        "Defaults.scopedOverride": 7
+      }
+    }
+  },
+  "default-inputs": {
+    "source": "generation_platform/binding/default-inputs.json",
+    "model": {
+      "default_value_overrides": {
+        "equalOverride": null,
+        "Defaults.scopedOverride": 7
+      }
+    }
+  },
+  "conditional-origins": {
+    "source": "generation_platform/binding/conditional-origins.json",
+    "model": {
+      "generate_schema_validators": true
+    }
+  },
+  "materialized-inherited-origins": {
+    "source": "generation_platform/binding/inherited-origins.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_title_as_name": true,
+      "read_only_write_only_model_type": "request-response"
+    }
+  },
+  "materialized-combined-origins": {
+    "source": "generation_platform/binding/combined-origins.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_title_as_name": true,
+      "read_only_write_only_model_type": "request-response"
+    }
+  },
+  "materialized-allof-union-origins": {
+    "source": "generation_platform/binding/allof-union-origins.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_title_as_name": true,
+      "read_only_write_only_model_type": "request-response"
+    }
+  },
+  "materialized-merged-origins": {
+    "source": "generation_platform/binding/merged-origins.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_title_as_name": true,
+      "read_only_write_only_model_type": "request-response"
+    }
+  },
+  "materialized-root-origins": {
+    "source": "generation_platform/binding/root-origins.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_title_as_name": true,
+      "read_only_write_only_model_type": "request-response"
+    }
+  },
+  "materialized-root-merged-values": {
+    "source": "generation_platform/binding/root-merged-values.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_title_as_name": true,
+      "read_only_write_only_model_type": "request-response"
+    },
+    "document": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema"
+    }
+  },
+  "materialized-synthetic-origins": {
+    "source": "generation_platform/binding/synthetic-origins.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_title_as_name": true,
+      "read_only_write_only_model_type": "request-response"
+    }
+  },
+  "materialized-merge-edges": {
+    "source": "generation_platform/binding/merge-edges.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_title_as_name": true,
+      "read_only_write_only_model_type": "request-response"
+    }
+  },
+  "materialized-root-edges": {
+    "source": "generation_platform/binding/root-edges.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_title_as_name": true,
+      "read_only_write_only_model_type": "request-response"
+    },
+    "document": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema"
+    }
+  },
+  "materialized-null-property-names": {
+    "source": "generation_platform/binding/null-property-names.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_title_as_name": true,
+      "read_only_write_only_model_type": "request-response"
+    },
+    "document": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema"
+    }
+  },
+  "materialized-session-helper-producers": {
+    "source": "generation_platform/binding/session-helper-producers.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_title_as_name": true,
+      "read_only_write_only_model_type": "request-response"
+    }
+  },
+  "materialized-inline-allof-union": {
+    "source": "generation_platform/binding/inline-allof-union.json",
+    "backends": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass",
+      "dataclasses.dataclass",
+      "typing.TypedDict",
+      "msgspec.Struct"
+    ],
+    "model": {
+      "use_title_as_name": true,
+      "read_only_write_only_model_type": "request-response"
+    }
+  },
+  "capture-branches": {
+    "source": "generation_platform/binding/capture-branches.json",
+    "variants": {
+      "default": {},
+      "no-merge": {
+        "allof_merge_mode": "none"
+      },
+      "validators": {
+        "generate_schema_validators": true
+      }
+    }
+  },
+  "marker-references": {
+    "source": "generation_platform/binding/marker-references.json",
+    "model": {
+      "generate_schema_validators": true,
+      "openapi_scopes": [
+        "schemas",
+        "paths",
+        "parameters"
+      ]
+    },
+    "document": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema"
+    }
+  },
+  "dangling-sibling": {
+    "source": "generation_platform/binding/dangling-sibling.yaml",
+    "verbatim": true,
+    "model": {
+      "use_title_as_name": true,
+      "read_only_write_only_model_type": "request-response"
+    }
+  },
+  "final-imports": {
+    "source": "generation_platform/binding/final-imports.json",
+    "model": {
+      "strict_types": [
+        "str"
+      ],
+      "import_overrides": {
+        "StrictStr": "pydantic.types",
+        "Color": "palette"
+      }
+    }
+  },
+  "final-reused-inheritance": {
+    "source": "generation_platform/binding/final-reused-inheritance.json",
+    "model": {
+      "use_serialize_as_any": true,
+      "reuse_model": true
+    }
+  },
+  "inline-allof-anyOf": {
+    "source": "generation_platform/binding/inline-allof-anyOf.json"
+  },
+  "inline-allof-oneOf": {
+    "source": "generation_platform/binding/inline-allof-oneOf.json"
+  },
+  "quoted-constraints": {
+    "source": "generation_platform/binding/quoted-constraints.json",
+    "model": {
+      "use_double_quotes": true,
+      "wrap_string_literal": true,
+      "use_decimal_for_multiple_of": true,
+      "deserialize_default_values": [
+        "decimal"
+      ]
+    },
+    "variants": {
+      "builtin": {},
+      "black": {
+        "formatters": [
+          "black"
+        ]
+      }
+    }
+  },
+  "api-reference-declarations": {
+    "source": "generation_platform/api_scope/reference-declarations.json"
+  },
+  "api-pointer-percent": {
+    "source": "generation_platform/api_scope/pointer-percent.json"
+  },
+  "api-pointer-utf8": {
+    "source": "generation_platform/api_scope/pointer-utf8.json"
+  },
+  "api-pointer-escape": {
+    "source": "generation_platform/api_scope/pointer-escape.json"
+  },
+  "api-pointer-tilde": {
+    "source": "generation_platform/api_scope/pointer-tilde.json"
+  },
+  "api-pointer-ambiguous": {
+    "source": "generation_platform/api_scope/pointer-ambiguous.json"
+  },
+  "api-pointer-external-ambiguous": {
+    "source": "generation_platform/api_scope/pointer-external-ambiguous.json",
+    "references": [
+      "pointer-external-library.json"
+    ]
+  },
+  "api-reference-anchors": {
+    "source": "generation_platform/api_scope/anchors.json",
+    "references": [
+      "anchors-library.json"
+    ],
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ]
+    }
+  },
+  "capture-module-outputs": {
+    "source": "generation_platform/observation.json",
+    "model": {
+      "openapi_scopes": [
+        "schemas",
+        "paths"
+      ],
+      "read_only_write_only_model_type": "all",
+      "collapse_root_models": true,
+      "reuse_model": true
+    }
   }
 }

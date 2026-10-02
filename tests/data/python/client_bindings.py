@@ -4,6 +4,9 @@ Every component schema becomes the body and response of one operation, so the cl
 edits the generated models through a custom formatter, as a user formatter may, and the report shows what the
 edit changes in the shipped models and bindings. A rewrite instead changes the staged models after generation,
 as another process writing to the staging directory would.
+
+A render the generator refuses reports the error instead of a package, and the generator's own warnings are reported
+before what the render ships.
 """
 
 from __future__ import annotations
@@ -58,7 +61,7 @@ def _document(source: Path, root: Path, case: dict[str, Any]) -> Path:
     if case.get("verbatim"):
         return Path(shutil.copy2(source, inputs / source.name))
     text = source.read_text(encoding="utf-8")
-    document = json.loads(text) if source.suffix == ".json" else yaml.safe_load(text)
+    document = {**(json.loads(text) if source.suffix == ".json" else yaml.safe_load(text)), **case.get("document", {})}
     skipped = case.get("skip", ())
     schemas = [name for name in document.get("components", {}).get("schemas", {}) if name not in skipped]
     document["paths"] = {

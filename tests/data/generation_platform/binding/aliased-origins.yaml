@@ -2,7 +2,21 @@ openapi: 3.1.0
 info:
   title: Aliased source occurrences
   version: '1'
-paths: {}
+paths:
+  /first:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/First'
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Second'
 components:
   schemas:
     First: &schema

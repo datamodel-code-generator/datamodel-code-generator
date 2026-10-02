@@ -1,0 +1,8 @@
+# api-traversal
+render pydantic_v2.BaseModel default
+  diagnostic APIGenerationError
+  diagnostic E_METADATA_REQUIRED target /paths/~1root/post: The security of POST /root requires the unavailable scheme 'bearer'
+  diagnostic E_METADATA_REQUIRED target /paths/~1/get: The security of GET / requires the unavailable scheme 'bearer'
+  diagnostic E_METADATA_REQUIRED target /components/pathItems/Unused/put: The security of PUT Unused requires the unavailable scheme 'bearer'
+  diagnostic E_METADATA_REQUIRED target /components/callbacks/Unused/callbacks/Unused/{$request.query.url}/post: The path placeholder '$request.query.url' of POST {$request.query.url} has no path parameter
+  diagnostic E_METADATA_REQUIRED target /components/callbacks/Unused/callbacks/Unused/{$request.query.url}/post: The security of POST {$request.query.url} requires the unavailable scheme 'bearer'

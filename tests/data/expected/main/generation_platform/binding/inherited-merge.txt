@@ -1,6 +1,0 @@
-{
-  "identical_output": true,
-  "actual_merges": true,
-  "preserved_pairs": true,
-  "preserved_mode": true
-}
