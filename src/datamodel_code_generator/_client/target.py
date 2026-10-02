@@ -79,7 +79,7 @@ if TYPE_CHECKING:
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterPlan
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
 
-DEPENDENCIES: Final = ("httpx2>=2.13.0", "typing-extensions>=4.16")
+DEPENDENCIES: Final = ("httpx2>=2.13.0", "typing-extensions>=4.16", "certifi>=2026.1.4")
 VALIDATION: Final = ("jsonschema[format-nongpl]>=4.26", "referencing>=0.37")
 PYDANTIC: Final = "pydantic>=2.13.5"
 BACKEND_DEPENDENCIES: Final[dict[str, tuple[str, ...]]] = {

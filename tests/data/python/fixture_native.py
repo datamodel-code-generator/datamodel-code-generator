@@ -141,7 +141,7 @@ class NativeFixture(ThreadingTCPServer):
     def __init__(
         self, *, http2: bool = False, proxy: str | None = None, malformed: bool = False, ipv6: bool = False
     ) -> None:
-        authority = trustme.CA()
+        authority = trustme.CA(organization_name="dcg native test", organization_unit_name="TLS CA environment")
         self.ca_pem = authority.cert_pem.bytes()
         self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         self.context.minimum_version = ssl.TLSVersion.TLSv1_2

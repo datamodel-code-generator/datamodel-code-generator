@@ -4051,7 +4051,11 @@ original request are stripped on an origin change. Invalid/multiple Location, lo
 
 `TransportOptions` belongs only to `ClientOptions`: verify=True, ssl_context=None, proxy=None, trust_env=True,
 http2=False, max_connections=100, max_keepalive_connections=20, keepalive_expiry=5, retry_owner="sdk".
-SDK-created clients honor HTTPX2 proxy and CA environment settings; trust_env=False opts out.
+SDK-created HTTP clients honor proxy and CA environment settings with trust_env=True, preserving native system
+trust. With trust_env=False, default origin TLS and an explicit HTTPS proxy's independent default TLS use certifi's
+Mozilla public-root bundle without CA environment overrides. Plain HTTP proxies retain native behavior. Caller
+ssl_context or verify=False controls origin TLS; injected native clients retain their settings and ownership.
+For enterprise roots with trust_env=False, supply an SSLContext.
 Buffered success responses have no default size cap; explicit max_response_bytes still applies, and error bodies
 retain their 64 KiB default cap. An SSLContext supplies TLS settings and conflicts with any explicit verify override.
 HTTP/2 is explicit and requires
