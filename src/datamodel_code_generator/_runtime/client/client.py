@@ -92,11 +92,13 @@ from .options import (
     Settings,
     TimeoutOptions,
     ValidationModes,
+    _GenerationDefaults,
     awaited,
     checked_base_url,
     context,
     layered_redirects,
     layered_retry,
+    layered_timeout,
     network_send_limit,
     new_key,
     resolve_transport_options,
@@ -232,6 +234,7 @@ class ClientDefaults:
     security_schemes: tuple[SecuritySchemeEntry, ...] = ()
     helpers: tuple[tuple[str, str], ...] = ()
     circuit_groups: frozenset[str] = frozenset()
+    runtime: _GenerationDefaults | None = None
 
 
 _DEFAULT_SERVER: Final = ServerSelection()
@@ -273,7 +276,7 @@ def _layered(
         redirects=layered_redirects(settings.redirects, layer.redirects),
         idempotency_key=settings.idempotency_key if isinstance(layer.idempotency_key, Unset) else layer.idempotency_key,
         auth=settings.auth if isinstance(layer.auth, Unset) else layer.auth,
-        timeout=_timeouts(settings.timeout, layer.timeout),
+        timeout=layered_timeout(settings.timeout, layer.timeout),
         stream_read_timeout=(
             None
             if layer.timeout is None
@@ -304,20 +307,6 @@ def _layered(
             else ResolvedCompression(coding, origin)
         ),
         clock=settings.clock,
-    )
-
-
-def _timeouts(current: ResolvedTimeoutOptions, layer: TimeoutOptions | Unset | None) -> ResolvedTimeoutOptions:
-    """Resolve nested phase fields while preserving the difference between omission and an explicit None."""
-    if isinstance(layer, Unset):
-        return current
-    if layer is None:
-        return ResolvedTimeoutOptions(connect=None, read=None, write=None, pool=None)
-    return ResolvedTimeoutOptions(
-        connect=current.connect if isinstance(layer.connect, Unset) else layer.connect,
-        read=current.read if isinstance(layer.read, Unset) else layer.read,
-        write=current.write if isinstance(layer.write, Unset) else layer.write,
-        pool=current.pool if isinstance(layer.pool, Unset) else layer.pool,
     )
 
 
@@ -361,6 +350,8 @@ def _client_settings(options: object, defaults: ClientDefaults) -> Settings:
         None,
         validation=modes.default(),
     )
+    if defaults.runtime is not None:
+        settings = defaults.runtime.applied(settings)
     match options:
         case None:
             return settings

@@ -400,6 +400,28 @@ def _recorded(entry: JSONValue, target_id: str) -> RecordedFile:
     )
 
 
+def _client_defaults_valid(inputs: JSONObject, data: JSONObject) -> bool:
+    """Check the existing client's closed defaults and its one authoritative reference."""
+    from datamodel_code_generator._client.runtime_defaults import checked_projection  # noqa: PLC0415
+
+    target, config = data.get("client"), inputs.get("target_config")
+    if not (
+        _is_object(target)
+        and target.get("runtime_defaults_ref") == "/inputs/target_config/runtime_defaults"
+        and _is_object(config)
+        and "runtime_defaults" in config
+        and _is_object(public := config.get("public_options"))
+        and "runtime_defaults" not in public
+    ):
+        return False
+    try:
+        return canonical_bytes(config["runtime_defaults"]) == canonical_bytes(
+            checked_projection(config["runtime_defaults"])
+        )
+    except (ValueError, TypeError):
+        return False
+
+
 def _check_manifest(manifest: JSONObject, kind: TargetKind, package: str, target_id: str) -> list[JSONValue]:
     name = PurePosixPath(MANIFEST_NAME)
     if frozenset(manifest) != _MANIFEST_KEYS:
@@ -419,6 +441,17 @@ def _check_manifest(manifest: JSONObject, kind: TargetKind, package: str, target
                 code="E_STATE_CORRUPT",
                 path=name,
                 message="The manifest has an invalid list or target data",
+                target_id=target_id,
+            )
+    if kind == "client":
+        inputs, data = manifest["inputs"], manifest["target_data"]
+        assert _is_object(inputs)
+        assert _is_object(data)
+        if not _client_defaults_valid(inputs, data):
+            raise _state_error(
+                code="E_STATE_CORRUPT",
+                path=name,
+                message="The manifest runtime defaults are invalid",
                 target_id=target_id,
             )
     match manifest["target"]:

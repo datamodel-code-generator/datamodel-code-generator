@@ -35,6 +35,7 @@ from datamodel_code_generator._client.protocol_plan import (
 )
 from datamodel_code_generator._client.queues import plan_queues
 from datamodel_code_generator._client.render import ClientRenderer
+from datamodel_code_generator._client.runtime_defaults import checked_defaults
 from datamodel_code_generator._client.security import security_contract
 from datamodel_code_generator._client.sockets import DEPENDENCY as WEBSOCKETS
 from datamodel_code_generator._client.sockets import plan_sockets, socket_uses
@@ -194,8 +195,10 @@ class ClientTarget:
         fingerprints.update((spec.helper.name, data.webhook(spec, metadata[spec.helper.name])) for spec in webhooks)
         fingerprints.update((spec.helper.name, data.stream(spec, metadata[spec.helper.name])) for spec in streams)
         fingerprints.update((spec.helper.name, data.socket(spec, metadata[spec.helper.name])) for spec in sockets)
+        runtime_defaults = checked_defaults(config.runtime_defaults)[1]
         renderer = ClientRenderer(
             config=config,
+            runtime_defaults=runtime_defaults,
             package=request.layout.package,
             plan=plan,
             batch=batch,
@@ -229,6 +232,7 @@ class ClientTarget:
             ),
             bindings=_bindings(codecs, backend),
             protocol_metadata=protocol_metadata(metadata, protocols),
+            runtime_defaults=runtime_defaults,
         )
 
 

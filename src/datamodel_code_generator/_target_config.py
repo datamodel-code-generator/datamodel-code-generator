@@ -44,7 +44,7 @@ class _ConfigValueError(Exception):
         option_path: str,
         message: str,
         *,
-        code: Literal["E_CONFIG_VALUE", "E_CONFIG_UNKNOWN"] = "E_CONFIG_VALUE",
+        code: Literal["E_CONFIG_VALUE", "E_CONFIG_UNKNOWN", "E_CONFIG_CONFLICT"] = "E_CONFIG_VALUE",
     ) -> None:
         self.option_path = option_path
         self.message = message

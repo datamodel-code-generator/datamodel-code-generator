@@ -27,3 +27,4 @@ default_base_url=None
 server_base_url=None
 codec_adapters=()
 protocols=PurePosixPath('config/client-protocols.yaml')
+runtime_defaults=RuntimeDefaultsConfig(timeout=UNSET, total_timeout=UNSET, retry=UNSET, redirects=UNSET, max_network_sends=UNSET, max_response_bytes=UNSET, max_error_body_bytes=UNSET, max_stream_bytes=UNSET, stream_idle_timeout=UNSET, stream_total_timeout=UNSET, cleanup_timeout=UNSET, compression=UNSET)

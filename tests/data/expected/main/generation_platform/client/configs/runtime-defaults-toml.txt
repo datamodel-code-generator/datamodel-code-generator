@@ -1,0 +1,47 @@
+# runtime defaults TOML
+valid timeout {"timeout": null}
+valid timeout.connect {"timeout": {"connect": null}}
+valid timeout.read {"timeout": {"read": null}}
+valid timeout.write {"timeout": {"write": null}}
+valid timeout.pool {"timeout": {"pool": null}}
+valid compression {"compression": null}
+valid total_timeout {"total_timeout": null}
+valid max_network_sends {"max_network_sends": null}
+valid max_response_bytes {"max_response_bytes": null}
+valid max_stream_bytes {"max_stream_bytes": null}
+valid stream_idle_timeout {"stream_idle_timeout": null}
+valid stream_total_timeout {"stream_total_timeout": null}
+valid retry.max_retry_after {"retry": {"max_retry_after": null}}
+invalid unknown E_CONFIG_UNKNOWN runtime_defaults.unknown
+invalid unknown nested E_CONFIG_UNKNOWN runtime_defaults.retry.secret
+invalid vendor E_CONFIG_UNKNOWN runtime_defaults.retry.retry_after_ms_header
+invalid auth E_CONFIG_UNKNOWN runtime_defaults.auth
+invalid protocol E_CONFIG_UNKNOWN runtime_defaults.max_items
+invalid deadline E_CONFIG_UNKNOWN runtime_defaults.deadline
+invalid provider E_CONFIG_UNKNOWN runtime_defaults.content_coding_factories
+invalid wrong disabled E_CONFIG_VALUE runtime_defaults.total_timeout
+invalid wrong unlimited E_CONFIG_VALUE runtime_defaults.timeout
+invalid retry tag E_CONFIG_VALUE runtime_defaults.retry
+invalid redirect tag E_CONFIG_VALUE runtime_defaults.redirects
+invalid error tag E_CONFIG_VALUE runtime_defaults.max_error_body_bytes
+invalid cleanup tag E_CONFIG_VALUE runtime_defaults.cleanup_timeout
+invalid unknown mode E_CONFIG_VALUE runtime_defaults.compression
+invalid mode value E_CONFIG_CONFLICT runtime_defaults.compression
+invalid mode fields E_CONFIG_CONFLICT runtime_defaults.timeout
+invalid mode extra E_CONFIG_UNKNOWN runtime_defaults.timeout
+invalid string null E_CONFIG_VALUE runtime_defaults.timeout
+invalid string None E_CONFIG_VALUE runtime_defaults.compression
+invalid count bool E_CONFIG_VALUE runtime_defaults.max_network_sends
+invalid count fractional E_CONFIG_VALUE runtime_defaults.max_stream_bytes
+invalid infinite E_CONFIG_VALUE runtime_defaults.total_timeout
+invalid nan E_CONFIG_VALUE runtime_defaults.stream_total_timeout
+invalid phase bool E_CONFIG_VALUE runtime_defaults.timeout.read
+invalid error none E_CONFIG_VALUE runtime_defaults.max_error_body_bytes
+invalid cleanup zero E_CONFIG_VALUE runtime_defaults.cleanup_timeout
+invalid duplicate statuses E_CONFIG_VALUE runtime_defaults.retry.statuses
+invalid bool statuses E_CONFIG_VALUE runtime_defaults.retry.statuses
+invalid statuses type E_CONFIG_VALUE runtime_defaults.retry.statuses
+invalid origins type E_CONFIG_VALUE runtime_defaults.redirects.allowed_origins
+invalid origins bad E_CONFIG_VALUE runtime_defaults.redirects.allowed_origins
+invalid delay ordering E_CONFIG_VALUE runtime_defaults.retry.max_delay
+invalid effective ordering E_CONFIG_VALUE runtime_defaults.retry.max_delay

@@ -90,6 +90,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
         "compatibility",
         "circuits",
         "compression",
+        "runtime-defaults",
     ],
 )
 def test_client_render(case: str, tmp_path: Path) -> None:
@@ -314,6 +315,8 @@ def test_client_body_arguments_digests(tmp_path: Path) -> None:
         "protocols-records-shape",
         "toml-protocols",
         "toml-protocols-type",
+        "runtime-defaults",
+        "runtime-defaults-toml",
     ],
 )
 def test_client_config(case: str, tmp_path: Path) -> None:

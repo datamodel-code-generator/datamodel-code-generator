@@ -30,6 +30,7 @@ from datamodel_code_generator._target_render import field_plan, items, parameter
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping, Sequence
 
+    from datamodel_code_generator._api_manifest import JSONObject
     from datamodel_code_generator._client.config import ClientGenerationConfig, ClientValidationConfig
     from datamodel_code_generator._client.pagination import ItemStep, PaginationSpec
     from datamodel_code_generator._client.plan import (
@@ -1184,12 +1185,14 @@ class _Resources(_Typing):
         validation: ClientValidationConfig,
         *,
         unpacked: bool = False,
+        runtime_defaults: bool = False,
         helpers: tuple[PaginationSpec | PollingSpec | CacheSpec | UploadSpec | QueueSpec, ...] = (),
         streams: tuple[StreamSpec, ...] = (),
         sockets: tuple[SocketSpec, ...] = (),
     ) -> None:
         """Keep the typing context, User-Agent, validation, unpacked methods' TypedDicts, and protocol helpers."""
         super().__init__(plan, codecs, accessors)
+        self.runtime_defaults = runtime_defaults
         self.user_agent = user_agent
         self.validation = validation
         self.records = _Records(self) if unpacked else None
@@ -1214,6 +1217,8 @@ class _Resources(_Typing):
                 "validation=",
                 f"{module.local('_runtime.client.options', 'ValidationModes')}({arguments})",
             ))
+        if self.runtime_defaults:
+            entries.append(("runtime=", module.local("_generated.runtime_defaults", "RUNTIME_DEFAULTS")))
         name = module.local("_runtime.client.client", "ClientDefaults")
         helpers = (*self.helpers, *self.streams, *self.sockets)
         if not helpers and not self.circuit_groups:
@@ -3712,6 +3717,7 @@ class ClientRenderer:
         self,
         *,
         config: ClientGenerationConfig,
+        runtime_defaults: JSONObject,
         package: PurePosixPath,
         plan: ClientPlan,
         batch: GeneratedTypeContractBatch,
@@ -3728,6 +3734,7 @@ class ClientRenderer:
         The webhook modules are rendered from the use accessors.
         """
         self.config = config
+        self.runtime_defaults = runtime_defaults
         self.package = package
         self.plan = plan
         self.batch = batch
@@ -3818,7 +3825,26 @@ credentials fail before sending. `auth_challenge_less_401` is the explicit gener
 ```json
 {json.dumps(metadata, indent=2, ensure_ascii=True)}
 ```
-{self.helper_readme()}{self._circuit_readme()}{self._compression_readme()}"""
+{self.helper_readme()}{self._circuit_readme()}{self._compression_readme()}{self._defaults_readme()}"""
+
+    def _defaults_readme(self) -> str:
+        """Describe the saved generation layer, preserving empty-default output bytes."""
+        if not self.runtime_defaults:
+            return ""
+        return f"""
+## Generated runtime defaults
+
+This sparse layer applies before `ClientOptions`, a view's options, and the call's `RequestOptions`. Omitted fields
+inherit; explicit `null` and zero keep their field-specific meanings. Nested timeout, retry, and redirect fields
+inherit independently. Session deadlines and budgets remain separate. Inherited compression applies only to actual
+bodies of operations declaring the selected coding; other children remain uncompressed. The saved values are:
+
+```json
+{json.dumps(self.runtime_defaults, indent=2, ensure_ascii=True, sort_keys=True)}
+```
+
+A saved `retry.respect_retry_after=false` disables Retry-After handling; that opt-out applies to this generated layer.
+"""
 
     def _compression_readme(self) -> str:
         """List the operations that accept compressed request bodies, or nothing when none declares a coding."""
@@ -4639,6 +4665,34 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
             self.file(PurePosixPath("protocols", "_async_helpers.py"), "protocols", helpers.module(asynchronous=True)),
         )
 
+    def _settings(self) -> str:
+        """Render the canonical sparse projection as one shared internal runtime layer."""
+        module = Module({"RUNTIME_DEFAULTS"}, {}, level=2)
+        names = {"timeout": "TimeoutOptions", "retry": "RetryOptions", "redirects": "RedirectOptions"}
+        entries: list[str] = []
+        for name, value in self.runtime_defaults.items():
+            if name in names and isinstance(value, dict):
+                nested = []
+                for field, scalar in value.items():
+                    literal = (
+                        f"frozenset({scalar!r})"
+                        if field == "statuses"
+                        else repr(tuple(scalar))
+                        if field == "allowed_origins" and isinstance(scalar, list)
+                        else repr(scalar)
+                    )
+                    nested.append(f"{field}={literal}")
+                constructor = module.local("_runtime.client.options", names[name])
+                literal = f"{constructor}({', '.join(nested)})"
+            else:
+                literal = repr(value)
+            entries.append(f"{name}={literal}")
+        constant = (
+            f"RUNTIME_DEFAULTS = {module.local('_runtime.client.options', '_GenerationDefaults')}({', '.join(entries)})"
+        )
+        docstring = '"""Sparse generated runtime settings shared by sync and async clients."""'
+        return f"{docstring}\n\n{module.imports()}\n\n{constant}\n"
+
     def files(self) -> tuple[RenderedFile, ...]:
         """Return every rendered client file in the fixed artifact order."""
         config = self.config
@@ -4655,6 +4709,7 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
             helpers=self.helpers,
             streams=self.streams,
             sockets=self.sockets,
+            runtime_defaults=bool(self.runtime_defaults),
         )
         types = _Types(self.plan, self.codecs, self.accessors)
         registry = _Registry(self.plan, self.codecs, self.accessors)
@@ -4696,6 +4751,10 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
             ),
             self.file(PurePosixPath("_generated", "model_bindings.py"), "model_bindings", self.bindings.source),
         ))
+        if self.runtime_defaults:
+            files.append(
+                self.file(PurePosixPath("_generated", "runtime_defaults.py"), "runtime_defaults", self._settings())
+            )
         if (records := resources.records) is not None:
             files.append(self.file(PurePosixPath("_generated", "client_arguments.py"), "arguments", records.source()))
         if (checks := registry.checks) is not None:

@@ -27,3 +27,4 @@ default_base_url='https://api.example.com/v1'
 server_base_url='http://localhost:8080'
 codec_adapters=()
 protocols=None
+runtime_defaults=RuntimeDefaultsConfig(timeout=UNSET, total_timeout=UNSET, retry=UNSET, redirects=UNSET, max_network_sends=UNSET, max_response_bytes=UNSET, max_error_body_bytes=UNSET, max_stream_bytes=UNSET, stream_idle_timeout=UNSET, stream_total_timeout=UNSET, cleanup_timeout=UNSET, compression=UNSET)

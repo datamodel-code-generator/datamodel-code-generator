@@ -1,0 +1,58 @@
+# runtime defaults
+RuntimeDefaultsConfig fields ['timeout', 'total_timeout', 'retry', 'redirects', 'max_network_sends', 'max_response_bytes', 'max_error_body_bytes', 'max_stream_bytes', 'stream_idle_timeout', 'stream_total_timeout', 'cleanup_timeout', 'compression'] UNSET True slots True frozen True
+RuntimeDefaultsConfig positional TypeError
+RuntimeTimeoutDefaults fields ['connect', 'read', 'write', 'pool'] UNSET True slots True frozen True
+RuntimeTimeoutDefaults positional TypeError
+RuntimeRetryDefaults fields ['max_retries', 'initial_delay', 'max_delay', 'jitter', 'statuses', 'max_retry_after', 'respect_retry_after', 'retry_on_pool_timeout'] UNSET True slots True frozen True
+RuntimeRetryDefaults positional TypeError
+RuntimeRedirectDefaults fields ['enabled', 'max_redirects', 'allow_303_to_get', 'allowed_origins', 'allow_https_downgrade'] UNSET True slots True frozen True
+RuntimeRedirectDefaults positional TypeError
+projection {"cleanup_timeout": 1.0, "compression": "gzip", "max_error_body_bytes": 1, "max_network_sends": 0, "max_response_bytes": 0, "max_stream_bytes": 0, "redirects": {"allow_303_to_get": true, "allow_https_downgrade": false, "allowed_origins": ["https://example.com", "http://[::1]"], "enabled": true, "max_redirects": 0}, "retry": {"initial_delay": 0.0, "jitter": "none", "max_delay": 0.0, "max_retries": 0, "max_retry_after": null, "respect_retry_after": false, "retry_on_pool_timeout": true, "statuses": [429, 503]}, "stream_idle_timeout": null, "stream_total_timeout": 0.0, "timeout": {"connect": 1.0, "pool": null, "read": 2.0, "write": 3.0}, "total_timeout": null}
+reference /inputs/target_config/runtime_defaults
+public duplicate False
+shared module True
+omitted {} module False models same True
+empty nested {} module False models same True
+equal {"timeout": {"read": 30.0}} module True models same True
+disabled {"compression": null, "timeout": null} module True models same True
+Python TOML artifacts identical True
+invalid timeout E_CONFIG_VALUE runtime_defaults.timeout
+invalid total_timeout E_CONFIG_VALUE runtime_defaults.total_timeout
+invalid retry E_CONFIG_VALUE runtime_defaults.retry
+invalid redirects E_CONFIG_VALUE runtime_defaults.redirects
+invalid max_network_sends E_CONFIG_VALUE runtime_defaults.max_network_sends
+invalid max_response_bytes E_CONFIG_VALUE runtime_defaults.max_response_bytes
+invalid max_error_body_bytes E_CONFIG_VALUE runtime_defaults.max_error_body_bytes
+invalid max_stream_bytes E_CONFIG_VALUE runtime_defaults.max_stream_bytes
+invalid stream_idle_timeout E_CONFIG_VALUE runtime_defaults.stream_idle_timeout
+invalid stream_total_timeout E_CONFIG_VALUE runtime_defaults.stream_total_timeout
+invalid cleanup_timeout E_CONFIG_VALUE runtime_defaults.cleanup_timeout
+invalid compression E_CONFIG_VALUE runtime_defaults.compression
+invalid timeout.connect E_CONFIG_VALUE runtime_defaults.timeout.connect
+invalid timeout.read E_CONFIG_VALUE runtime_defaults.timeout.read
+invalid timeout.write E_CONFIG_VALUE runtime_defaults.timeout.write
+invalid timeout.pool E_CONFIG_VALUE runtime_defaults.timeout.pool
+invalid retry.max_retries E_CONFIG_VALUE runtime_defaults.retry.max_retries
+invalid retry.initial_delay E_CONFIG_VALUE runtime_defaults.retry.initial_delay
+invalid retry.max_delay E_CONFIG_VALUE runtime_defaults.retry.max_delay
+invalid retry.jitter E_CONFIG_VALUE runtime_defaults.retry.jitter
+invalid retry.statuses E_CONFIG_VALUE runtime_defaults.retry.statuses
+invalid retry.max_retry_after E_CONFIG_VALUE runtime_defaults.retry.max_retry_after
+invalid retry.respect_retry_after E_CONFIG_VALUE runtime_defaults.retry.respect_retry_after
+invalid retry.retry_on_pool_timeout E_CONFIG_VALUE runtime_defaults.retry.retry_on_pool_timeout
+invalid redirects.enabled E_CONFIG_VALUE runtime_defaults.redirects.enabled
+invalid redirects.max_redirects E_CONFIG_VALUE runtime_defaults.redirects.max_redirects
+invalid redirects.allow_303_to_get E_CONFIG_VALUE runtime_defaults.redirects.allow_303_to_get
+invalid redirects.allowed_origins E_CONFIG_VALUE runtime_defaults.redirects.allowed_origins
+invalid redirects.allow_https_downgrade E_CONFIG_VALUE runtime_defaults.redirects.allow_https_downgrade
+invalid retry.initial_delay effective E_CONFIG_VALUE runtime_defaults.retry.max_delay
+invalid retry.max_delay effective E_CONFIG_VALUE runtime_defaults.retry.max_delay
+manifest wrong reference E_STATE_CORRUPT
+manifest missing defaults E_STATE_CORRUPT
+manifest duplicate defaults E_STATE_CORRUPT
+manifest unknown defaults E_STATE_CORRUPT
+manifest boolean count E_STATE_CORRUPT
+manifest unsorted statuses E_STATE_CORRUPT
+manifest tag in manifest E_STATE_CORRUPT
+manifest missing client E_STATE_CORRUPT
+manifest missing config E_STATE_CORRUPT

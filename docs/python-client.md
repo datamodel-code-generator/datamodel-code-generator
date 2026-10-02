@@ -3923,7 +3923,49 @@ digests the bytes sent: a body encoded once works, while a compressed file, stre
 `BodyNotReplayableError(condition='digest_unavailable')` before sending. A redirect that drops the body, such as an
 allowed 303, also drops `Content-Encoding`; a redirect that keeps the body keeps the coding.
 
-### Protocol helpers
+### Generated runtime defaults
+
+The client target's `runtime_defaults` setting saves a sparse data layer applied in this order: builtin defaults,
+generation defaults, `ClientOptions`, view options, then the call's `RequestOptions`. Omission inherits; an explicit
+value equal to a builtin default remains explicit. Nested fields inherit independently. A saved phase read timeout
+also sets that explicit stream read cap. Session deadlines and budgets retain their own limits.
+
+| Record | Complete field inventory |
+|---|---|
+| `RuntimeDefaultsConfig` | `timeout`, `total_timeout`, `retry`, `redirects`, `max_network_sends`, `max_response_bytes`, `max_error_body_bytes`, `max_stream_bytes`, `stream_idle_timeout`, `stream_total_timeout`, `cleanup_timeout`, `compression` |
+| `RuntimeTimeoutDefaults` | `connect`, `read`, `write`, `pool` |
+| `RuntimeRetryDefaults` | `max_retries`, `initial_delay`, `max_delay`, `jitter`, `statuses`, `max_retry_after`, `respect_retry_after`, `retry_on_pool_timeout` |
+| `RuntimeRedirectDefaults` | `enabled`, `max_redirects`, `allow_303_to_get`, `allowed_origins`, `allow_https_downgrade` |
+
+All constructor fields are `UNSET`. The records are frozen, slotted, and keyword-only. Field types, ranges, and None
+meanings match the runtime options: retry and redirects cannot be None, cleanup timeout is positive, and error-body
+bytes are limited to 1 through 1 MiB. Effective retry delays must remain ordered after inheritance. Booleans are not
+counts or durations; fractional counts and nonfinite durations are refused. The setting accepts no credentials,
+headers, transport, providers, live deadlines, or helper/session defaults.
+
+In the flat target TOML file, the only None tags are `{mode="disabled"}` for `timeout`, its phases, or `compression`,
+and `{mode="unlimited"}` for `total_timeout`, `max_network_sends`, `max_response_bytes`, `max_stream_bytes`,
+`stream_idle_timeout`, `stream_total_timeout`, or `retry.max_retry_after`. A tag has only `mode`; extra keys,
+misplaced/unknown modes, or simultaneous mode and value are diagnosed. Strings `"None"`/`"null"` and zero are not None.
+For example, this fragment keeps zero retries and disables only the read phase:
+
+```toml
+[runtime_defaults.timeout]
+read = { mode = "disabled" }
+
+[runtime_defaults.retry]
+max_retries = 0
+max_retry_after = { mode = "unlimited" }
+```
+
+Generated settings and the manifest share one canonical sparse projection. UNSET and empty nested records are
+omitted; explicit None is null, durations are floats, retry statuses are sorted, and origins are normalized in
+order. Empty defaults add no settings module. Inherited gzip applies only to actual bodies whose operations declare
+it, with bodyless, undeclared, direct raw, WebSocket, and ineligible helper children uncompressed. Explicit call gzip
+retains the runtime's strict admission. Saving `respect_retry_after=False` disables Retry-After handling, which the
+generated reference records.
+
+## Protocol helpers
 
 A coding passed in a helper call's `options` is checked once, when the helper call is made and before anything is
 sent: at least one request the helper may send for that call must have a body whose operation accepts the coding, or

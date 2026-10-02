@@ -11,7 +11,16 @@ from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, Type
 from typing_extensions import TypeIs
 
 from datamodel_code_generator._client.naming import identifier, namespace_problem, token
+from datamodel_code_generator._client.runtime_defaults import (
+    RuntimeDefaultsConfig,
+    RuntimeRedirectDefaults,
+    RuntimeRetryDefaults,
+    RuntimeTimeoutDefaults,
+    checked_defaults,
+    toml_defaults,
+)
 from datamodel_code_generator._codec_declarations import CodecAdapterRegistration, OperationRef
+from datamodel_code_generator._runtime.client.errors import ConfigurationError
 from datamodel_code_generator._runtime.client.options import (
     ArgumentValidation,
     RequestValidation,
@@ -40,6 +49,21 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_types import Diagnostic, OperationSelector
     from datamodel_code_generator._client.protocols import ProtocolConfiguration
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation
+
+__all__ = (
+    "BodyFieldName",
+    "ClientGenerationConfig",
+    "ClientOperationConfig",
+    "ClientValidationConfig",
+    "IdempotencyMetadata",
+    "ParameterName",
+    "ResourceName",
+    "RuntimeDefaultsConfig",
+    "RuntimeOperationMetadata",
+    "RuntimeRedirectDefaults",
+    "RuntimeRetryDefaults",
+    "RuntimeTimeoutDefaults",
+)
 
 Transport: TypeAlias = Literal["httpx2"]
 SignatureStyle: TypeAlias = Literal["explicit", "unpack"]
@@ -167,9 +191,10 @@ class ClientGenerationConfig(TargetConfig):
     server_base_url: str | None = None
     codec_adapters: tuple[CodecAdapterRegistration, ...] = ()
     protocols: Path | ProtocolConfiguration | None = None
+    runtime_defaults: RuntimeDefaultsConfig = field(default_factory=RuntimeDefaultsConfig)
 
     toml_converters: ClassVar[Mapping[str, Converter]]
-    manifest_exclusions: ClassVar[frozenset[str]] = frozenset({"selection", "protocols"})
+    manifest_exclusions: ClassVar[frozenset[str]] = frozenset({"selection", "protocols", "runtime_defaults"})
 
     def _problems(self) -> Iterator[Diagnostic]:
         yield from TargetConfig._problems(self)  # noqa: SLF001
@@ -184,6 +209,10 @@ class ClientGenerationConfig(TargetConfig):
         if self.body_arguments not in _BODY_ARGUMENTS:
             yield _diagnostic("E_CONFIG_VALUE", "body_arguments", "body_arguments must be 'body' or 'both'")
         yield from _validation_problems(self.validation)
+        try:
+            checked_defaults(self.runtime_defaults)
+        except ConfigurationError as error:
+            yield _diagnostic("E_CONFIG_VALUE", ".".join(("runtime_defaults", *error.field_path)), error.condition)
         for name in ("default_base_url", "server_base_url"):
             if (value := getattr(self, name)) is not None and not absolute(value):
                 yield _diagnostic(
@@ -628,4 +657,5 @@ ClientGenerationConfig.toml_converters = MappingProxyType({
     "default_base_url": _string,
     "server_base_url": _string,
     "protocols": _path,
+    "runtime_defaults": toml_defaults,
 })

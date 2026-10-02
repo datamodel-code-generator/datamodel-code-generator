@@ -4489,5 +4489,89 @@
       "pydantic_v2.BaseModel"
     ],
     "modules": false
+  },
+  "runtime-defaults": {
+    "input": "pets.yaml",
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "config": {
+      "resource_names": [
+        {
+          "tag": "photos",
+          "namespace": "photos"
+        }
+      ],
+      "operations": [
+        {
+          "ref": "/paths/~1pets/get",
+          "parameter_names": [
+            {
+              "in_": "query",
+              "name": "tags",
+              "python_name": "labels"
+            }
+          ],
+          "runtime": {
+            "request_id_header": "X-Request-Id"
+          }
+        },
+        {
+          "ref": {
+            "pointer": "/paths/~1pets/post"
+          },
+          "description": "Create a pet \"quoted\" \\ escaped."
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}/get",
+          "response_media_type": "application/json"
+        },
+        {
+          "ref": "/paths/~1pets~1{petId}~1photo/put",
+          "resource": "pets.photos",
+          "name": "upload"
+        }
+      ],
+      "runtime_defaults": {
+        "timeout": {
+          "connect": 1,
+          "read": 2,
+          "write": 3,
+          "pool": null
+        },
+        "retry": {
+          "max_retries": 0,
+          "initial_delay": 0,
+          "max_delay": 0,
+          "jitter": "none",
+          "statuses": [
+            503,
+            429
+          ],
+          "max_retry_after": null,
+          "respect_retry_after": false,
+          "retry_on_pool_timeout": true
+        },
+        "redirects": {
+          "enabled": true,
+          "max_redirects": 0,
+          "allow_303_to_get": true,
+          "allowed_origins": [
+            "https://EXAMPLE.com:443",
+            "http://[::1]:80"
+          ],
+          "allow_https_downgrade": false
+        },
+        "total_timeout": null,
+        "max_network_sends": 0,
+        "max_response_bytes": 0,
+        "max_error_body_bytes": 1,
+        "max_stream_bytes": 0,
+        "stream_idle_timeout": null,
+        "stream_total_timeout": 0,
+        "cleanup_timeout": 1,
+        "compression": "gzip"
+      }
+    }
   }
 }

@@ -7,7 +7,7 @@ import math
 import re
 from collections.abc import Mapping
 from collections.abc import Set as AbstractSet
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from decimal import Decimal
 from ssl import SSLContext
@@ -643,7 +643,7 @@ def _is_limiter(value: object) -> TypeIs[Limiter | AsyncLimiter]:
     return callable(getattr(value, "acquire", None))
 
 
-CompressionOrigin: TypeAlias = Literal["client", "view", "call"]
+CompressionOrigin: TypeAlias = Literal["generation_default", "client", "view", "call"]
 _CODING: Final = re.compile(r"[!#$%&'*+.^_`|~0-9a-z-]+")
 _ENCODERS: Final = frozenset({"gzip"})
 
@@ -698,23 +698,16 @@ class _Options:
     compression: str | Unset | None = UNSET
 
     def _check_timing(self) -> None:
-        checked_instance(self.timeout, (TimeoutOptions, Unset, type(None)), ("timeout",))
         checked_instance(self.deadline, (Deadline, Unset, type(None)), ("deadline",))
         checked_instance(self.cancel_token, (CancelToken, Unset, type(None)), ("cancel_token",))
         if self.limiter is not None and not isinstance(self.limiter, Unset) and not _is_limiter(self.limiter):
             raise ConfigurationError(field_path=("limiter",), condition="invalid_type")
-        for name in ("total_timeout", "stream_idle_timeout", "stream_total_timeout"):
-            if (value := getattr(self, name)) is not None and not isinstance(value, Unset):
-                object.__setattr__(self, name, seconds(value, (name,)))  # noqa: PLC2801 - Normalize frozen options.
-        if self.max_network_sends is not None and not isinstance(self.max_network_sends, Unset):
-            checked_count(self.max_network_sends, ("max_network_sends",))
 
     def __post_init__(self) -> None:
         self._check_timing()
+        _check_runtime_defaults(self)
         _auth_type(self.auth)
         checked_instance(self.validation, (ValidationOptions, Unset), ("validation",))
-        checked_instance(self.retry, (RetryOptions, Unset), ("retry",))
-        checked_instance(self.redirects, (RedirectOptions, Unset), ("redirects",))
         checked_instance(self.idempotency_key, (IdempotencyKey, Unset, type(None)), ("idempotency_key",))
         if not isinstance(self.hooks, Unset):
             object.__setattr__(self, "hooks", _hooks(self.hooks))
@@ -731,16 +724,6 @@ class _Options:
             if type(self.base_url) is not str:
                 raise ConfigurationError(field_path=("base_url",), condition="invalid_type")
             checked_base_url(self.base_url, ("base_url",))
-        if self.max_response_bytes is not None and not isinstance(self.max_response_bytes, Unset):
-            checked_count(self.max_response_bytes, ("max_response_bytes",))
-        if not isinstance(self.max_error_body_bytes, Unset):
-            checked_count(self.max_error_body_bytes, ("max_error_body_bytes",), minimum=1, maximum=MAX_ERROR_BODY_LIMIT)
-        if not isinstance(self.cleanup_timeout, Unset):
-            _positive_seconds(self.cleanup_timeout, ("cleanup_timeout",))
-        if self.max_stream_bytes is not None and not isinstance(self.max_stream_bytes, Unset):
-            checked_count(self.max_stream_bytes, ("max_stream_bytes",))
-        if not isinstance(self.compression, Unset):
-            object.__setattr__(self, "compression", _compression(self.compression))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -806,6 +789,99 @@ class Settings:
     auth: AuthConfig | None = field(default=None, repr=False)
     clock: Clock = field(default=SYSTEM_CLOCK, repr=False)
     compression: ResolvedCompression | None = None
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class _GenerationDefaults:
+    """A closed data layer applied once at client construction, before runtime client options."""
+
+    timeout: TimeoutOptions | Unset | None = UNSET
+    total_timeout: float | Unset | None = UNSET
+    retry: RetryOptions | Unset = UNSET
+    redirects: RedirectOptions | Unset = UNSET
+    max_network_sends: int | Unset | None = UNSET
+    max_response_bytes: int | Unset | None = UNSET
+    max_error_body_bytes: int | Unset = UNSET
+    max_stream_bytes: int | Unset | None = UNSET
+    stream_idle_timeout: float | Unset | None = UNSET
+    stream_total_timeout: float | Unset | None = UNSET
+    cleanup_timeout: float | Unset = UNSET
+    compression: str | Unset | None = UNSET
+
+    def __post_init__(self) -> None:
+        """Share runtime field validation and reject vendor headers in this closed layer."""
+        _check_runtime_defaults(self)
+        if not isinstance(self.cleanup_timeout, Unset):
+            object.__setattr__(self, "cleanup_timeout", float(self.cleanup_timeout))
+        if not isinstance(self.retry, Unset):
+            for name in ("retry_after_ms_header", "should_retry_header"):
+                if not isinstance(getattr(self.retry, name), Unset):
+                    raise ConfigurationError(field_path=("retry", name), condition="invalid_value")
+            layered_retry(DEFAULT_RETRY, self.retry)
+
+    def applied(self, settings: Settings) -> Settings:
+        """Apply explicit generation values without changing session or helper ownership."""
+        return replace(
+            settings,
+            timeout=layered_timeout(settings.timeout, self.timeout),
+            stream_read_timeout=(
+                None
+                if self.timeout is None
+                else self.timeout.read
+                if isinstance(self.timeout, TimeoutOptions) and not isinstance(self.timeout.read, Unset)
+                else settings.stream_read_timeout
+            ),
+            retry=layered_retry(settings.retry, self.retry),
+            redirects=layered_redirects(settings.redirects, self.redirects),
+            total_timeout=_inherited(settings.total_timeout, self.total_timeout),
+            max_network_sends=_inherited(settings.max_network_sends, self.max_network_sends),
+            max_response_bytes=_inherited(settings.max_response_bytes, self.max_response_bytes),
+            max_error_body_bytes=_inherited(settings.max_error_body_bytes, self.max_error_body_bytes),
+            max_stream_bytes=_inherited(settings.max_stream_bytes, self.max_stream_bytes),
+            stream_idle_timeout=_inherited(settings.stream_idle_timeout, self.stream_idle_timeout),
+            stream_total_timeout=_inherited(settings.stream_total_timeout, self.stream_total_timeout),
+            cleanup_timeout=_inherited(settings.cleanup_timeout, self.cleanup_timeout),
+            compression=(
+                settings.compression
+                if isinstance(self.compression, Unset)
+                else None
+                if self.compression is None
+                else ResolvedCompression(self.compression, "generation_default")
+            ),
+        )
+
+
+def _check_runtime_defaults(layer: _Options | _GenerationDefaults) -> None:
+    """Validate the shared closed runtime fields without constructing synthetic request options."""
+    checked_instance(layer.timeout, (TimeoutOptions, Unset, type(None)), ("timeout",))
+    checked_instance(layer.retry, (RetryOptions, Unset), ("retry",))
+    checked_instance(layer.redirects, (RedirectOptions, Unset), ("redirects",))
+    for name in ("total_timeout", "stream_idle_timeout", "stream_total_timeout"):
+        if (value := getattr(layer, name)) is not None and not isinstance(value, Unset):
+            object.__setattr__(layer, name, seconds(value, (name,)))  # noqa: PLC2801 - Normalize a frozen data layer.
+    for name in ("max_network_sends", "max_response_bytes", "max_stream_bytes"):
+        if (value := getattr(layer, name)) is not None and not isinstance(value, Unset):
+            checked_count(value, (name,))
+    if not isinstance(layer.max_error_body_bytes, Unset):
+        checked_count(layer.max_error_body_bytes, ("max_error_body_bytes",), minimum=1, maximum=MAX_ERROR_BODY_LIMIT)
+    if not isinstance(layer.cleanup_timeout, Unset):
+        _positive_seconds(layer.cleanup_timeout, ("cleanup_timeout",))
+    if not isinstance(layer.compression, Unset):
+        object.__setattr__(layer, "compression", _compression(layer.compression))  # noqa: PLC2801 - Normalize frozen data.
+
+
+def layered_timeout(current: ResolvedTimeoutOptions, layer: TimeoutOptions | Unset | None) -> ResolvedTimeoutOptions:
+    """Resolve phase fields while preserving omission and explicit None."""
+    if isinstance(layer, Unset):
+        return current
+    if layer is None:
+        return ResolvedTimeoutOptions(connect=None, read=None, write=None, pool=None)
+    return ResolvedTimeoutOptions(
+        connect=current.connect if isinstance(layer.connect, Unset) else layer.connect,
+        read=current.read if isinstance(layer.read, Unset) else layer.read,
+        write=current.write if isinstance(layer.write, Unset) else layer.write,
+        pool=current.pool if isinstance(layer.pool, Unset) else layer.pool,
+    )
 
 
 def network_send_limit(settings: Settings, *, exchanges: int = 0) -> int | None:

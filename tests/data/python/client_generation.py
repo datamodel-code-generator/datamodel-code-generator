@@ -21,7 +21,11 @@ from datamodel_code_generator._client.config import (
     IdempotencyMetadata,
     ParameterName,
     ResourceName,
+    RuntimeDefaultsConfig,
     RuntimeOperationMetadata,
+    RuntimeRedirectDefaults,
+    RuntimeRetryDefaults,
+    RuntimeTimeoutDefaults,
 )
 from datamodel_code_generator._client.target import ClientTarget
 from datamodel_code_generator._codec_declarations import OperationRef
@@ -122,6 +126,8 @@ def client_config(values: dict[str, Any], root: Path) -> ClientGenerationConfig:
                 converted[key] = ClientValidationConfig(**{
                     name: tuple(item) if isinstance(item, list) else item for name, item in value.items()
                 })
+            case "runtime_defaults" if isinstance(value, dict):
+                converted[key] = runtime_defaults(value)
             case _:
                 converted[key] = value
     return ClientGenerationConfig(**converted)
@@ -385,6 +391,14 @@ def _setting(value: object, root: Path) -> str:
 
 def client_config_report(case_name: str, root: Path) -> str:
     """Construct one client configuration from Python values or a TOML file and report it or its diagnostics."""
+    if case_name == "runtime-defaults":
+        from tests.data.python.client_runtime_defaults_config import defaults_config_report
+
+        return defaults_config_report(root)
+    if case_name == "runtime-defaults-toml":
+        from tests.data.python.client_runtime_defaults_toml import defaults_toml_report
+
+        return defaults_toml_report(root)
     case = json.loads((SOURCE / "configs.json").read_text(encoding="utf-8"))[case_name]
     try:
         if (toml := case.get("toml")) is not None:
@@ -398,3 +412,52 @@ def client_config_report(case_name: str, root: Path) -> str:
     except TypeError as error:
         return f"TypeError: {error}\n"
     return "".join(f"{item.name}={_setting(getattr(config, item.name), root)}\n" for item in fields(config))
+
+
+def default_record_types() -> tuple[type[Any], ...]:
+    """Return the declared generator records for their public constructor inventory report."""
+    return RuntimeDefaultsConfig, RuntimeTimeoutDefaults, RuntimeRetryDefaults, RuntimeRedirectDefaults
+
+
+def runtime_defaults(value: dict[str, Any]) -> RuntimeDefaultsConfig:
+    """Build only declared generation records from JSON fixture values."""
+    converted = dict(value)
+    for name, record in zip(("timeout", "retry", "redirects"), default_record_types()[1:], strict=True):
+        if isinstance(nested := converted.get(name), dict):
+            nested = dict(nested)
+            if name == "retry" and isinstance(nested.get("statuses"), list):
+                nested["statuses"] = frozenset(nested["statuses"])
+            if name == "redirects" and isinstance(nested.get("allowed_origins"), list):
+                nested["allowed_origins"] = tuple(nested["allowed_origins"])
+            converted[name] = record(**nested)
+    return RuntimeDefaultsConfig(**converted)
+
+
+def runtime_defaults_config(root: Path, defaults: object) -> ClientGenerationConfig:
+    """Use the coordinator's generator-facing config seam, without publishing new private entry points."""
+    return ClientGenerationConfig(
+        output=root / "client",
+        package="client",
+        model_package="models",
+        formatter_settings=root,
+        runtime_defaults=defaults,
+    )
+
+
+def defaults_load(path: Path) -> ClientGenerationConfig:
+    """Load prototype generation records at the existing coordinator boundary."""
+    return load_target_config(path, ClientGenerationConfig)
+
+
+def defaults_project(root: Path, config: object, *, publish: bool = False) -> dict[str, bytes | None]:
+    """Render or publish a configured client through the existing generation entry point."""
+    options = {
+        "model_config": model_config(root / "models.py", "pydantic_v2.BaseModel", {}),
+        "config": config,
+        "generator": ClientTarget(),
+    }
+    if publish:
+        generate_target(SOURCE / "pets.yaml", **options)
+        return {}
+    project = render_target(SOURCE / "pets.yaml", **options)
+    return {item.path.relative_to(root).as_posix(): item.content for item in project.artifacts}
