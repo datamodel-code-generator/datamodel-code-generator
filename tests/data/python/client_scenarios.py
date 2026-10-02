@@ -94,7 +94,7 @@ from tests.data.python.client_selectors import selectors
 from tests.data.python.client_signatures import keywords, signatures
 from tests.data.python.client_socket_connectors import socket_connectors
 from tests.data.python.client_sockets import sockets
-from tests.data.python.client_sqlite_queues import sqlite_queues
+from tests.data.python.client_sqlite_queues import sqlite_queue_clients, sqlite_queues
 from tests.data.python.client_stream_lifetimes import stream_lifetimes
 from tests.data.python.client_stream_resume import stream_resume
 from tests.data.python.client_streams import ndjson, ndjson_backends, ndjson_split, stream_backends, streams
@@ -846,6 +846,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "queue-recovery": ("queues", ("pydantic_v2.BaseModel",), queue_recovery),
     "queue-restoration": ("queues-restoration", ("pydantic_v2.BaseModel",), queue_restoration),
     "queue-scope": ("queues", ("pydantic_v2.BaseModel",), queue_scope),
+    "sqlite-queue-clients": ("queues", BACKENDS, sqlite_queue_clients),
     "sqlite-queues": ("queues", ("pydantic_v2.BaseModel",), sqlite_queues),
     "streams": ("streams", ("pydantic_v2.BaseModel",), streams),
     "stream-events": ("streams", ("pydantic_v2.BaseModel",), event_stream_lifetimes),

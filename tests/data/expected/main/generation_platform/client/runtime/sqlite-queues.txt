@@ -8,6 +8,9 @@ AsyncSQLiteQueueStore closed-use QueueStoreError:get/missing/ValueError
 MemoryQueueStore metadata {"blob":[17,"000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f","independent-lease"],"blob_owned":true,"cancel_requested":true,"created_at":"2025-02-03T04:05:06.123456+00:00","delivery_count":4,"entry_id":"original-entry","expires_at":"2025-02-04T04:05:06.123456+00:00","helper_fingerprint":"helper-contract-42","idempotency_key":"stable-idempotency","lease_id":"original-lease","lease_until":"2025-02-03T04:06:06.123456+00:00","not_before":"2025-02-03T04:05:07.123456+00:00","operation_alias":"independent-operation","payload":"00ff6f70617175652d6e6f2d6a736f6e0d0a","policy":{"entry_ttl":86400.5,"lease_grace":31.25,"lease_min":91.5,"max_deliveries":7,"max_delivery_timeout":299.5,"max_entries":19,"max_entry_body_bytes":12345,"parallelism":3,"retry_initial_delay":2.5,"retry_max_delay":77.5},"result":{"category":"success","error_code":"safe-code","response":{"auth_exchange_budget_used":5,"auth_exchange_count":3,"auth_refresh_ids":["refresh-b","refresh-a","refresh-b"],"auth_refresh_pending":2,"call_id":"original-call","content_type":"application/problem+json","elapsed":3.25,"headers":[["X-Duplicate","first"],["x-duplicate","second"],["X-Last","third"]],"network_send_budget_used":13,"network_send_count":11,"redirect_count":2,"request_id":"original-request","resource_attempt_count":6,"status_code":207,"wire_send_count":17},"retry_at":"2025-02-03T04:06:06.123456+00:00"},"saved_wait_seconds":17.25,"security_fingerprint":"partition-tenant-b","send_intent":true,"state":"leased"}
 MemoryQueueStore put-version True missing None
 MemoryQueueStore duplicate QueueStoreError:put/original-entry/NoneType
+MemoryQueueStore optional (None, None, None)
+MemoryQueueStore invalid-entry ProtocolConfigurationError:-/-/NoneType
+MemoryQueueStore invalid-time ProtocolConfigurationError:-/-/NoneType
 MemoryQueueStore recovered-claimed ['crash-unsent', 'crash-intent', 'retry-unsent', 'retry-intent']
 MemoryQueueStore recovery crash-unsent leased/False/4/None
 MemoryQueueStore recovery crash-intent leased/True/4/None
@@ -38,9 +41,13 @@ MemoryQueueStore mismatched-id QueueStoreError:compare_exchange/a/NoneType
 MemoryQueueStore purge-boundary []
 MemoryQueueStore purge-strict ['a'] metadata True
 MemoryQueueStore reclaimed-capacity None ['c', 'b']
+MemoryQueueStore byte-capacity QueueFullError:put/a/NoneType
 AsyncMemoryQueueStore metadata {"blob":[17,"000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f","independent-lease"],"blob_owned":true,"cancel_requested":true,"created_at":"2025-02-03T04:05:06.123456+00:00","delivery_count":4,"entry_id":"original-entry","expires_at":"2025-02-04T04:05:06.123456+00:00","helper_fingerprint":"helper-contract-42","idempotency_key":"stable-idempotency","lease_id":"original-lease","lease_until":"2025-02-03T04:06:06.123456+00:00","not_before":"2025-02-03T04:05:07.123456+00:00","operation_alias":"independent-operation","payload":"00ff6f70617175652d6e6f2d6a736f6e0d0a","policy":{"entry_ttl":86400.5,"lease_grace":31.25,"lease_min":91.5,"max_deliveries":7,"max_delivery_timeout":299.5,"max_entries":19,"max_entry_body_bytes":12345,"parallelism":3,"retry_initial_delay":2.5,"retry_max_delay":77.5},"result":{"category":"success","error_code":"safe-code","response":{"auth_exchange_budget_used":5,"auth_exchange_count":3,"auth_refresh_ids":["refresh-b","refresh-a","refresh-b"],"auth_refresh_pending":2,"call_id":"original-call","content_type":"application/problem+json","elapsed":3.25,"headers":[["X-Duplicate","first"],["x-duplicate","second"],["X-Last","third"]],"network_send_budget_used":13,"network_send_count":11,"redirect_count":2,"request_id":"original-request","resource_attempt_count":6,"status_code":207,"wire_send_count":17},"retry_at":"2025-02-03T04:06:06.123456+00:00"},"saved_wait_seconds":17.25,"security_fingerprint":"partition-tenant-b","send_intent":true,"state":"leased"}
 AsyncMemoryQueueStore put-version True missing None
 AsyncMemoryQueueStore duplicate QueueStoreError:put/original-entry/NoneType
+AsyncMemoryQueueStore optional (None, None, None)
+AsyncMemoryQueueStore invalid-entry ProtocolConfigurationError:-/-/NoneType
+AsyncMemoryQueueStore invalid-time ProtocolConfigurationError:-/-/NoneType
 AsyncMemoryQueueStore recovered-claimed ['crash-unsent', 'crash-intent', 'retry-unsent', 'retry-intent']
 AsyncMemoryQueueStore recovery crash-unsent leased/False/4/None
 AsyncMemoryQueueStore recovery crash-intent leased/True/4/None
@@ -71,9 +78,13 @@ AsyncMemoryQueueStore mismatched-id QueueStoreError:compare_exchange/a/NoneType
 AsyncMemoryQueueStore purge-boundary []
 AsyncMemoryQueueStore purge-strict ['a'] metadata True
 AsyncMemoryQueueStore reclaimed-capacity None ['c', 'b']
+AsyncMemoryQueueStore byte-capacity QueueFullError:put/a/NoneType
 SQLiteQueueStore metadata {"blob":[17,"000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f","independent-lease"],"blob_owned":true,"cancel_requested":true,"created_at":"2025-02-03T04:05:06.123456+00:00","delivery_count":4,"entry_id":"original-entry","expires_at":"2025-02-04T04:05:06.123456+00:00","helper_fingerprint":"helper-contract-42","idempotency_key":"stable-idempotency","lease_id":"original-lease","lease_until":"2025-02-03T04:06:06.123456+00:00","not_before":"2025-02-03T04:05:07.123456+00:00","operation_alias":"independent-operation","payload":"00ff6f70617175652d6e6f2d6a736f6e0d0a","policy":{"entry_ttl":86400.5,"lease_grace":31.25,"lease_min":91.5,"max_deliveries":7,"max_delivery_timeout":299.5,"max_entries":19,"max_entry_body_bytes":12345,"parallelism":3,"retry_initial_delay":2.5,"retry_max_delay":77.5},"result":{"category":"success","error_code":"safe-code","response":{"auth_exchange_budget_used":5,"auth_exchange_count":3,"auth_refresh_ids":["refresh-b","refresh-a","refresh-b"],"auth_refresh_pending":2,"call_id":"original-call","content_type":"application/problem+json","elapsed":3.25,"headers":[["X-Duplicate","first"],["x-duplicate","second"],["X-Last","third"]],"network_send_budget_used":13,"network_send_count":11,"redirect_count":2,"request_id":"original-request","resource_attempt_count":6,"status_code":207,"wire_send_count":17},"retry_at":"2025-02-03T04:06:06.123456+00:00"},"saved_wait_seconds":17.25,"security_fingerprint":"partition-tenant-b","send_intent":true,"state":"leased"}
 SQLiteQueueStore put-version True missing None
 SQLiteQueueStore duplicate QueueStoreError:put/original-entry/NoneType
+SQLiteQueueStore optional (None, None, None)
+SQLiteQueueStore invalid-entry ProtocolConfigurationError:-/-/NoneType
+SQLiteQueueStore invalid-time ProtocolConfigurationError:-/-/NoneType
 SQLiteQueueStore restart True
 SQLiteQueueStore recovered-claimed ['crash-unsent', 'crash-intent', 'retry-unsent', 'retry-intent']
 SQLiteQueueStore recovery crash-unsent leased/False/4/None
@@ -105,9 +116,13 @@ SQLiteQueueStore mismatched-id QueueStoreError:compare_exchange/a/NoneType
 SQLiteQueueStore purge-boundary []
 SQLiteQueueStore purge-strict ['a'] metadata True
 SQLiteQueueStore reclaimed-capacity None ['c', 'b']
+SQLiteQueueStore byte-capacity QueueFullError:put/a/NoneType
 AsyncSQLiteQueueStore metadata {"blob":[17,"000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f","independent-lease"],"blob_owned":true,"cancel_requested":true,"created_at":"2025-02-03T04:05:06.123456+00:00","delivery_count":4,"entry_id":"original-entry","expires_at":"2025-02-04T04:05:06.123456+00:00","helper_fingerprint":"helper-contract-42","idempotency_key":"stable-idempotency","lease_id":"original-lease","lease_until":"2025-02-03T04:06:06.123456+00:00","not_before":"2025-02-03T04:05:07.123456+00:00","operation_alias":"independent-operation","payload":"00ff6f70617175652d6e6f2d6a736f6e0d0a","policy":{"entry_ttl":86400.5,"lease_grace":31.25,"lease_min":91.5,"max_deliveries":7,"max_delivery_timeout":299.5,"max_entries":19,"max_entry_body_bytes":12345,"parallelism":3,"retry_initial_delay":2.5,"retry_max_delay":77.5},"result":{"category":"success","error_code":"safe-code","response":{"auth_exchange_budget_used":5,"auth_exchange_count":3,"auth_refresh_ids":["refresh-b","refresh-a","refresh-b"],"auth_refresh_pending":2,"call_id":"original-call","content_type":"application/problem+json","elapsed":3.25,"headers":[["X-Duplicate","first"],["x-duplicate","second"],["X-Last","third"]],"network_send_budget_used":13,"network_send_count":11,"redirect_count":2,"request_id":"original-request","resource_attempt_count":6,"status_code":207,"wire_send_count":17},"retry_at":"2025-02-03T04:06:06.123456+00:00"},"saved_wait_seconds":17.25,"security_fingerprint":"partition-tenant-b","send_intent":true,"state":"leased"}
 AsyncSQLiteQueueStore put-version True missing None
 AsyncSQLiteQueueStore duplicate QueueStoreError:put/original-entry/NoneType
+AsyncSQLiteQueueStore optional (None, None, None)
+AsyncSQLiteQueueStore invalid-entry ProtocolConfigurationError:-/-/NoneType
+AsyncSQLiteQueueStore invalid-time ProtocolConfigurationError:-/-/NoneType
 AsyncSQLiteQueueStore restart True
 AsyncSQLiteQueueStore recovered-claimed ['crash-unsent', 'crash-intent', 'retry-unsent', 'retry-intent']
 AsyncSQLiteQueueStore recovery crash-unsent leased/False/4/None
@@ -139,6 +154,7 @@ AsyncSQLiteQueueStore mismatched-id QueueStoreError:compare_exchange/a/NoneType
 AsyncSQLiteQueueStore purge-boundary []
 AsyncSQLiteQueueStore purge-strict ['a'] metadata True
 AsyncSQLiteQueueStore reclaimed-capacity None ['c', 'b']
+AsyncSQLiteQueueStore byte-capacity QueueFullError:put/a/NoneType
 SQLiteQueueStore unknown-version QueueStoreError:get/missing/ValueError
 SQLiteQueueStore unknown-version-unchanged True
 AsyncSQLiteQueueStore unknown-version QueueStoreError:get/missing/ValueError
@@ -151,7 +167,24 @@ SQLiteQueueStore malformed QueueStoreError:get/missing/ValueError
 SQLiteQueueStore malformed-unchanged True
 AsyncSQLiteQueueStore malformed QueueStoreError:get/missing/ValueError
 AsyncSQLiteQueueStore malformed-unchanged True
+schema extra-view QueueStoreError:get/missing/ValueError
+schema extra-view-unchanged True
+schema missing-meta QueueStoreError:get/missing/ValueError
+schema missing-meta-unchanged True
+schema empty-namespace QueueStoreError:get/missing/ValueError
+schema empty-namespace-unchanged True
+schema bad-counter QueueStoreError:get/missing/ValueError
+schema bad-counter-unchanged True
+schema negative-counter QueueStoreError:get/missing/ValueError
+schema negative-counter-unchanged True
+schema wrong-singleton QueueStoreError:get/missing/ValueError
+schema wrong-singleton-unchanged True
 SQLiteQueueStore corrupt invalid-json QueueStoreError:claim/corrupted/JSONDecodeError atomic True
+SQLiteQueueStore corrupt nonobject-json QueueStoreError:claim/corrupted/TypeError atomic True
+SQLiteQueueStore corrupt duplicate-json-field QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore corrupt binary-row QueueStoreError:claim/corrupted/TypeError atomic True
+SQLiteQueueStore corrupt wrong-payload-size QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore corrupt wrong-row-id QueueStoreError:claim/corrupted/ValueError atomic True
 SQLiteQueueStore corrupt unknown-version QueueStoreError:claim/corrupted/ValueError atomic True
 SQLiteQueueStore corrupt bool-version QueueStoreError:claim/corrupted/ValueError atomic True
 SQLiteQueueStore corrupt unknown-envelope-field QueueStoreError:claim/corrupted/ValueError atomic True
@@ -178,6 +211,7 @@ SQLiteQueueStore corrupt bad-response-field QueueStoreError:claim/corrupted/Valu
 SQLiteQueueStore corrupt bad-status QueueStoreError:claim/corrupted/ValueError atomic True
 SQLiteQueueStore corrupt bad-headers QueueStoreError:claim/corrupted/TypeError atomic True
 SQLiteQueueStore corrupt bad-header-pair QueueStoreError:claim/corrupted/ValueError atomic True
+SQLiteQueueStore corrupt nonarray-header-pair QueueStoreError:claim/corrupted/TypeError atomic True
 SQLiteQueueStore corrupt bad-header-type QueueStoreError:claim/corrupted/TypeError atomic True
 SQLiteQueueStore corrupt bad-refresh-list QueueStoreError:claim/corrupted/TypeError atomic True
 SQLiteQueueStore corrupt bad-refresh-item QueueStoreError:claim/corrupted/TypeError atomic True
@@ -189,6 +223,11 @@ SQLiteQueueStore corrupt empty-blob-key QueueStoreError:claim/corrupted/ValueErr
 SQLiteQueueStore corrupt missing-lease-time QueueStoreError:claim/corrupted/ValueError atomic True
 SQLiteQueueStore valid-after-corruption ['healthy']
 AsyncSQLiteQueueStore corrupt invalid-json QueueStoreError:claim/corrupted/JSONDecodeError atomic True
+AsyncSQLiteQueueStore corrupt nonobject-json QueueStoreError:claim/corrupted/TypeError atomic True
+AsyncSQLiteQueueStore corrupt duplicate-json-field QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore corrupt binary-row QueueStoreError:claim/corrupted/TypeError atomic True
+AsyncSQLiteQueueStore corrupt wrong-payload-size QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore corrupt wrong-row-id QueueStoreError:claim/corrupted/ValueError atomic True
 AsyncSQLiteQueueStore corrupt unknown-version QueueStoreError:claim/corrupted/ValueError atomic True
 AsyncSQLiteQueueStore corrupt bool-version QueueStoreError:claim/corrupted/ValueError atomic True
 AsyncSQLiteQueueStore corrupt unknown-envelope-field QueueStoreError:claim/corrupted/ValueError atomic True
@@ -215,6 +254,7 @@ AsyncSQLiteQueueStore corrupt bad-response-field QueueStoreError:claim/corrupted
 AsyncSQLiteQueueStore corrupt bad-status QueueStoreError:claim/corrupted/ValueError atomic True
 AsyncSQLiteQueueStore corrupt bad-headers QueueStoreError:claim/corrupted/TypeError atomic True
 AsyncSQLiteQueueStore corrupt bad-header-pair QueueStoreError:claim/corrupted/ValueError atomic True
+AsyncSQLiteQueueStore corrupt nonarray-header-pair QueueStoreError:claim/corrupted/TypeError atomic True
 AsyncSQLiteQueueStore corrupt bad-header-type QueueStoreError:claim/corrupted/TypeError atomic True
 AsyncSQLiteQueueStore corrupt bad-refresh-list QueueStoreError:claim/corrupted/TypeError atomic True
 AsyncSQLiteQueueStore corrupt bad-refresh-item QueueStoreError:claim/corrupted/TypeError atomic True
@@ -230,10 +270,12 @@ worker pending-cancel native-cancel:True
 worker bounded True rejected=True cancellation-excluded=True
 worker retained-close QueueStoreError:get/missing/ValueError
 worker FIFO True
+worker unadmitted-cancel True FIFO True
 processes populated=False ready=['ready', 'ready'] batches=[[], []] exits=[0, 0]
 processes schema 1/wal/(1, 0)
 processes stale=[]
 processes populated=True ready=['ready', 'ready'] batches=[['a', 'b'], ['c', 'd']] exits=[0, 0]
 processes schema 1/wal/(1, 0)
 processes stale=[False, False, False, False]
+worker closed-loop native-cancel True
 worker closed-loop subsequent-use True

@@ -8,6 +8,7 @@
   import threads unchanged=True
   replay loaded with contracts=False
   pagination loaded with contracts=False
+  sqlite loaded with contracts=False
   pagination types=(True, True, True)
   pagination optional imports=[]
   client protocols=False
@@ -508,6 +509,7 @@
   import threads unchanged=True
   replay loaded with contracts=False
   pagination loaded with contracts=False
+  sqlite loaded with contracts=False
   pagination types=(True, True, True)
   pagination optional imports=[]
   client protocols=False
@@ -1008,6 +1010,7 @@
   import threads unchanged=True
   replay loaded with contracts=False
   pagination loaded with contracts=False
+  sqlite loaded with contracts=False
   pagination types=(True, True, True)
   pagination optional imports=[]
   client protocols=False
@@ -1508,6 +1511,7 @@
   import threads unchanged=True
   replay loaded with contracts=False
   pagination loaded with contracts=False
+  sqlite loaded with contracts=False
   pagination types=(True, True, True)
   pagination optional imports=[]
   client protocols=False
@@ -2008,6 +2012,7 @@
   import threads unchanged=True
   replay loaded with contracts=False
   pagination loaded with contracts=False
+  sqlite loaded with contracts=False
   pagination types=(True, True, True)
   pagination optional imports=[]
   client protocols=False

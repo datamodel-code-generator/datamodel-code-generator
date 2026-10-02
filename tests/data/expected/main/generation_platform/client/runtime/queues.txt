@@ -304,7 +304,7 @@ configuration
 memory stores
   put b = None
   put a = None
-  put full ! QueueFullError: QueueFullError(action='put', kind='entries', limit=2, observed=3) [kind='entries', limit=2] queue_full_error action='put' observed=3
+  put full ! QueueFullError: QueueFullError(action='put', kind='entries', limit=2, observed=3) [kind='entries', limit=2] queue_full_error action='put' entry_id='c' observed=3
   put again ! QueueStoreError: QueueStoreError(action='put') [] queue_store_error action='put' entry_id='a'
   put other ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('entry',), condition='invalid_value'] protocol_configuration_error
   claimed ['a', 'b'] lease hidden True
@@ -320,7 +320,7 @@ memory stores
   exchange done = True
   purge = ['a']
   get missing = None
-  bytes full ! QueueFullError: QueueFullError(action='put', kind='bytes', limit=4, observed=5) [kind='bytes', limit=4] queue_full_error action='put' observed=5
+  bytes full ! QueueFullError: QueueFullError(action='put', kind='bytes', limit=4, observed=5) [kind='bytes', limit=4] queue_full_error action='put' entry_id='x' observed=5
   bad limits ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
   naive instant ! ValueError: created_at must be timezone-aware []
   lease pair ! ValueError: lease_id and lease_until must be given together []

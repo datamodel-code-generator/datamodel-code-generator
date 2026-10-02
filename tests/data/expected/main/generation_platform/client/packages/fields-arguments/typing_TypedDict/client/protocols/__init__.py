@@ -100,6 +100,10 @@ if TYPE_CHECKING:
     from .._runtime.protocols.polling import AsyncLroHandle, LroHandle
     from .._runtime.protocols.queue_stores import AsyncMemoryQueueStore, MemoryQueueStore
     from .._runtime.protocols.replay import AsyncMemoryReplayStore, MemoryReplayStore
+    from .._runtime.protocols.sqlite_queue_stores import (
+        AsyncSQLiteQueueStore,
+        SQLiteQueueStore,
+    )
     from .._runtime.protocols.streams import (
         AsyncEventStream,
         EventStream,
@@ -125,6 +129,7 @@ __all__ = [
     "AsyncMemoryCacheStore",
     "AsyncMemoryCircuitStore",
     "AsyncMemoryQueueStore",
+    "AsyncSQLiteQueueStore",
     "AsyncMemoryReplayStore",
     "AsyncPager",
     "AsyncQueueStore",
@@ -159,6 +164,7 @@ __all__ = [
     "MemoryCacheStore",
     "MemoryCircuitStore",
     "MemoryQueueStore",
+    "SQLiteQueueStore",
     "MemoryReplayStore",
     "Message",
     "OperationRef",
@@ -254,6 +260,10 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import queue_stores
 
         return getattr(queue_stores, name)
+    if name in {"AsyncSQLiteQueueStore", "SQLiteQueueStore"}:
+        from .._runtime.protocols import sqlite_queue_stores
+
+        return getattr(sqlite_queue_stores, name)
     if name == "MemoryReplayStore":
         from .._runtime.protocols.replay import MemoryReplayStore
 

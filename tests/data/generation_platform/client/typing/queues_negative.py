@@ -48,7 +48,7 @@ async def store_misuses(entry: QueueEntry) -> None:
     bad_async: AsyncQueueStore = sync  # error
     SQLiteQueueStore(7)  # error
     AsyncSQLiteQueueStore("queue.db", max_bytes="many")  # error
-    await sync.get(entry.entry_id)  # error
+    await sync.claim(now=entry.created_at, lease_until=entry.expires_at, limit=1)  # error
     ordinary: QueueEntry | None = asynchronous.get(entry.entry_id)  # error
-    await sync.close()  # error
-    del bad_sync, bad_async, ordinary
+    closed: None = asynchronous.aclose()  # error
+    del bad_sync, bad_async, ordinary, closed

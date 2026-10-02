@@ -1,0 +1,65 @@
+# queues pydantic_v2.BaseModel
+sync enqueue sends=0 state=pending deliveries=0
+sync restart complete=True payload=True
+sync drain succeeded=1 state=succeeded deliveries=1 status=201 key=True payload=True
+  server POST /orders key=k1 body={"item":"tea","quantity":2} duplicate=False
+sync empty claimed=0 sends=0
+sync purge removed=1 missing=None
+async enqueue sends=0 state=pending deliveries=0
+async restart complete=True payload=True
+async drain succeeded=1 state=succeeded deliveries=1 status=201 key=True payload=True
+  server POST /orders key=k2 body={"item":"tea","quantity":2} duplicate=False
+async empty claimed=0 sends=0
+async purge removed=1 missing=None
+# queues pydantic_v2.dataclass
+sync enqueue sends=0 state=pending deliveries=0
+sync restart complete=True payload=True
+sync drain succeeded=1 state=succeeded deliveries=1 status=201 key=True payload=True
+  server POST /orders key=k1 body={"item":"tea","quantity":2} duplicate=False
+sync empty claimed=0 sends=0
+sync purge removed=1 missing=None
+async enqueue sends=0 state=pending deliveries=0
+async restart complete=True payload=True
+async drain succeeded=1 state=succeeded deliveries=1 status=201 key=True payload=True
+  server POST /orders key=k2 body={"item":"tea","quantity":2} duplicate=False
+async empty claimed=0 sends=0
+async purge removed=1 missing=None
+# queues dataclasses.dataclass
+sync enqueue sends=0 state=pending deliveries=0
+sync restart complete=True payload=True
+sync drain succeeded=1 state=succeeded deliveries=1 status=201 key=True payload=True
+  server POST /orders key=k1 body={"item":"tea","quantity":2} duplicate=False
+sync empty claimed=0 sends=0
+sync purge removed=1 missing=None
+async enqueue sends=0 state=pending deliveries=0
+async restart complete=True payload=True
+async drain succeeded=1 state=succeeded deliveries=1 status=201 key=True payload=True
+  server POST /orders key=k2 body={"item":"tea","quantity":2} duplicate=False
+async empty claimed=0 sends=0
+async purge removed=1 missing=None
+# queues typing.TypedDict
+sync enqueue sends=0 state=pending deliveries=0
+sync restart complete=True payload=True
+sync drain succeeded=1 state=succeeded deliveries=1 status=201 key=True payload=True
+  server POST /orders key=k1 body={"item":"tea","quantity":2} duplicate=False
+sync empty claimed=0 sends=0
+sync purge removed=1 missing=None
+async enqueue sends=0 state=pending deliveries=0
+async restart complete=True payload=True
+async drain succeeded=1 state=succeeded deliveries=1 status=201 key=True payload=True
+  server POST /orders key=k2 body={"item":"tea","quantity":2} duplicate=False
+async empty claimed=0 sends=0
+async purge removed=1 missing=None
+# queues msgspec.Struct
+sync enqueue sends=0 state=pending deliveries=0
+sync restart complete=True payload=True
+sync drain succeeded=1 state=succeeded deliveries=1 status=201 key=True payload=True
+  server POST /orders key=k1 body={"item":"tea","quantity":2} duplicate=False
+sync empty claimed=0 sends=0
+sync purge removed=1 missing=None
+async enqueue sends=0 state=pending deliveries=0
+async restart complete=True payload=True
+async drain succeeded=1 state=succeeded deliveries=1 status=201 key=True payload=True
+  server POST /orders key=k2 body={"item":"tea","quantity":2} duplicate=False
+async empty claimed=0 sends=0
+async purge removed=1 missing=None

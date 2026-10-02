@@ -1,46 +1,67 @@
 mypy pets and queues.py: clean
 pyright pets and queues.py: clean
 ty pets and queues.py: clean
-queues_negative.py 13 marked lines
-mypy queues_negative.py: 13/13 marked lines with one error, 0 elsewhere, 0 in other files
-  14 call-arg
-  15 call-arg
-  16 arg-type
-  17 arg-type
-  18 arg-type
-  19 assignment
-  20 misc
-  21 assignment
-  22 arg-type
-  23 assignment
-  24 misc
-  25 arg-type
-  26 dict-item
-pyright queues_negative.py: 13/13 marked lines with one error, 0 elsewhere, 0 in other files
-  14 reportCallIssue
-  15 reportCallIssue
-  16 reportArgumentType
-  17 reportArgumentType
-  18 reportArgumentType
-  19 reportAssignmentType
-  20 reportGeneralTypeIssues
-  21 reportAssignmentType
-  22 reportArgumentType
-  23 reportAssignmentType
-  24 reportAttributeAccessIssue
-  25 reportArgumentType
-  26 reportArgumentType
-ty queues_negative.py: 13/13 marked lines with one error, 0 elsewhere, 0 in other files
-  14 missing-argument
-  15 unknown-argument
-  16 invalid-argument-type
-  17 invalid-argument-type
-  18 invalid-argument-type
-  19 invalid-assignment
-  20 invalid-await
-  21 invalid-assignment
-  22 invalid-argument-type
-  23 invalid-assignment
-  24 invalid-assignment
-  25 invalid-argument-type
-  26 invalid-argument-type
+queues_negative.py 20 marked lines
+mypy queues_negative.py: 20/20 marked lines with one error, 0 elsewhere, 0 in other files
+  27 call-arg
+  28 call-arg
+  29 arg-type
+  30 arg-type
+  31 arg-type
+  32 assignment
+  33 misc
+  34 assignment
+  35 arg-type
+  36 assignment
+  37 misc
+  38 arg-type
+  39 dict-item
+  47 assignment
+  48 assignment
+  49 arg-type
+  50 arg-type
+  51 misc
+  52 assignment
+  53 assignment
+pyright queues_negative.py: 20/20 marked lines with one error, 0 elsewhere, 0 in other files
+  27 reportCallIssue
+  28 reportCallIssue
+  29 reportArgumentType
+  30 reportArgumentType
+  31 reportArgumentType
+  32 reportAssignmentType
+  33 reportGeneralTypeIssues
+  34 reportAssignmentType
+  35 reportArgumentType
+  36 reportAssignmentType
+  37 reportAttributeAccessIssue
+  38 reportArgumentType
+  39 reportArgumentType
+  47 reportAssignmentType
+  48 reportAssignmentType
+  49 reportArgumentType
+  50 reportArgumentType
+  51 reportGeneralTypeIssues
+  52 reportAssignmentType
+  53 reportAssignmentType
+ty queues_negative.py: 20/20 marked lines with one error, 0 elsewhere, 0 in other files
+  27 missing-argument
+  28 unknown-argument
+  29 invalid-argument-type
+  30 invalid-argument-type
+  31 invalid-argument-type
+  32 invalid-assignment
+  33 invalid-await
+  34 invalid-assignment
+  35 invalid-argument-type
+  36 invalid-assignment
+  37 invalid-assignment
+  38 invalid-argument-type
+  39 invalid-argument-type
+  47 invalid-assignment
+  48 invalid-assignment
+  49 invalid-argument-type
+  50 invalid-argument-type
+  51 invalid-await
+  52 invalid-assignment
+  53 invalid-assignment

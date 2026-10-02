@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from .queues import QueueState
 
 
-def instant(value: datetime, name: str) -> datetime:
+def instant(value: object, name: str) -> datetime:
     """Normalize an aware instant to UTC, rejecting invalid adapter arguments."""
     if not isinstance(value, datetime) or value.utcoffset() is None:
         raise ProtocolConfigurationError(field_path=(name,), condition="invalid_value")

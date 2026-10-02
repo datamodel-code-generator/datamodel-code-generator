@@ -62,12 +62,8 @@ def _compatible(connection: sqlite3.Connection) -> bool:
 def _initialize(connection: sqlite3.Connection) -> None:
     if not _compatible(connection):
         connection.execute("BEGIN IMMEDIATE")
-        try:
+        with connection:
             _create_schema(connection)
-            connection.commit()
-        finally:
-            if connection.in_transaction:
-                connection.rollback()
     connection.execute("PRAGMA foreign_keys = ON")
     connection.execute("PRAGMA journal_mode = WAL")
 

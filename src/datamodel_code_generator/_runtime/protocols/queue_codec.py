@@ -70,10 +70,14 @@ _RESPONSE_FIELDS: Final = frozenset({
 
 
 def _object(value: object, fields: frozenset[str]) -> dict[str, object]:
-    if not isinstance(value, dict) or set(value) != fields:
+    if not isinstance(value, dict):
+        msg = "invalid queue record field inventory"
+        raise TypeError(msg)
+    record = cast("dict[object, object]", value)
+    if frozenset(record) != fields:
         msg = "invalid queue record field inventory"
         raise ValueError(msg)
-    return cast("dict[str, object]", value)
+    return cast("dict[str, object]", record)
 
 
 def _string(value: object) -> str:
@@ -165,11 +169,15 @@ def _headers(value: object) -> HeadersView:
         msg = "queue record ordered headers required"
         raise TypeError(msg)
     pairs: list[tuple[str, str]] = []
-    for pair in value:
-        if not isinstance(pair, list) or len(pair) != _HEADER_PAIR_SIZE:
+    for pair in cast("list[object]", value):
+        if not isinstance(pair, list):
+            msg = "invalid queue record header pair"
+            raise TypeError(msg)
+        items = cast("list[object]", pair)
+        if len(items) != _HEADER_PAIR_SIZE:
             msg = "invalid queue record header pair"
             raise ValueError(msg)
-        pairs.append((_string(pair[0]), _string(pair[1])))
+        pairs.append((_string(items[0]), _string(items[1])))
     return HeadersView(pairs)
 
 
@@ -177,7 +185,7 @@ def _strings(value: object) -> tuple[str, ...]:
     if not isinstance(value, list):
         msg = "queue record string array required"
         raise TypeError(msg)
-    return tuple(_string(item) for item in value)
+    return tuple(_string(item) for item in cast("list[object]", value))
 
 
 def _response(value: object) -> ResponseInfo | None:

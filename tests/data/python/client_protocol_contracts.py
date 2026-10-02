@@ -49,6 +49,12 @@ print('optional imports=' + repr([name for name in optional if name in sys.modul
 print('import threads unchanged=' + repr(threading.active_count() == before))
 print('replay loaded with contracts=' + repr(sys.argv[2] + '._runtime.protocols.replay' in sys.modules))
 print('pagination loaded with contracts=' + repr(sys.argv[2] + '._runtime.protocols.pagination' in sys.modules))
+sqlite_names = ('sqlite', 'sqlite_worker', 'sqlite_queue_stores')
+print('sqlite loaded with contracts=' + repr(
+    'sqlite3' in sys.modules or any(
+        sys.argv[2] + '._runtime.protocols.' + name in sys.modules for name in sqlite_names
+    )
+))
 pagination = importlib.import_module(sys.argv[2] + '._runtime.protocols.pagination')
 print('pagination types=' + repr(tuple(getattr(module, name) is getattr(pagination, name) for name in ('Page', 'Pager', 'AsyncPager'))))
 print('pagination optional imports=' + repr([name for name in optional if name in sys.modules]))

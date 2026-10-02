@@ -18,7 +18,7 @@ from .sqlite_worker import SQLiteWorker
 
 if TYPE_CHECKING:
     import sqlite3
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable, Generator
     from datetime import datetime
     from pathlib import Path
 
@@ -29,7 +29,7 @@ _Action: TypeAlias = Literal["put", "get", "claim", "compare_exchange", "purge_t
 
 
 @contextmanager
-def _transaction(connection: sqlite3.Connection) -> Iterator[None]:
+def _transaction(connection: sqlite3.Connection) -> Generator[None, None, None]:
     connection.execute("BEGIN IMMEDIATE")
     try:
         yield
@@ -93,7 +93,7 @@ class _QueueDatabase:
 
     def put(self, connection: sqlite3.Connection, entry: QueueEntry) -> None:
         with _transaction(connection):
-            if self.get(connection, entry.entry_id) is not None:
+            if self.get(connection, entry.entry_id, "put") is not None:
                 raise QueueStoreError(action="put", entry_id=entry.entry_id)
             self._capacity(connection, len(entry.payload), "put", entry.entry_id)
             stored = replace(entry, version=uuid4().hex)
@@ -102,11 +102,11 @@ class _QueueDatabase:
             )
 
     @staticmethod
-    def get(connection: sqlite3.Connection, entry_id: str) -> QueueEntry | None:
+    def get(connection: sqlite3.Connection, entry_id: str, action: _Action = "get") -> QueueEntry | None:
         row = connection.execute(
             "SELECT entry_id, record, payload_bytes FROM queue_entries WHERE entry_id = ?", (entry_id,)
         ).fetchone()
-        return None if row is None else _row(row, "get")
+        return None if row is None else _row(row, action)
 
     @staticmethod
     def claim(
@@ -137,7 +137,9 @@ class _QueueDatabase:
         self, connection: sqlite3.Connection, entry_id: str, expected_version: str, entry: QueueEntry
     ) -> bool:
         with _transaction(connection):
-            if (current := self.get(connection, entry_id)) is None or current.version != expected_version:
+            if (
+                current := self.get(connection, entry_id, "compare_exchange")
+            ) is None or current.version != expected_version:
                 return False
             if entry.state == "leased" and current.state == "leased" and entry.lease_id != current.lease_id:
                 return False
@@ -216,10 +218,7 @@ class SQLiteQueueStore:
 
     def close(self) -> None:
         """Close the locked connection once; closing an unused store creates no database."""
-        try:
-            self._connection.close()
-        except Exception as error:
-            raise QueueStoreError(action="close", cause=error) from error
+        self._connection.close()
 
 
 class AsyncSQLiteQueueStore:
@@ -276,7 +275,4 @@ class AsyncSQLiteQueueStore:
 
     async def aclose(self) -> None:
         """Close admission, drain accepted work, and share retained settlement across cancelled or repeated closes."""
-        try:
-            await self._worker.aclose()
-        except Exception as error:
-            raise QueueStoreError(action="close", cause=error) from error
+        await self._worker.aclose()

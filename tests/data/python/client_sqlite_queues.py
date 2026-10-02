@@ -11,12 +11,14 @@ import sqlite3
 import subprocess
 import sys
 import threading
+from contextlib import closing
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
+from tests.data.python.client_queues import _Queues
 from tests.data.python.client_runtime import run
 
 if TYPE_CHECKING:
@@ -25,6 +27,25 @@ if TYPE_CHECKING:
 _SOURCE: Final = Path(__file__).parents[1] / "generation_platform/client/sqlite-queues.json"
 _NOW: Final = datetime(2025, 2, 3, 5, tzinfo=timezone.utc)
 _TIMES: Final = ("created_at", "expires_at", "not_before", "lease_until")
+
+
+class _SerializationTime(datetime):
+    """An aware caller-owned instant whose serialization exposes a worker-start resource barrier."""
+
+    entered: threading.Event
+    released: threading.Event
+
+    def isoformat(self, sep: str = "T", timespec: str = "auto") -> str:
+        """Preserve the original public datetime value while holding serialization behind external events."""
+        self.entered.set()
+        self.released.wait()
+        return super().isoformat(sep, timespec)
+
+
+def _serialization_time(value: datetime, entered: threading.Event, released: threading.Event) -> datetime:
+    instant = _SerializationTime.fromtimestamp(value.timestamp(), timezone.utc)
+    instant.entered, instant.released = entered, released
+    return instant
 
 
 def _record(protocols: ModuleType, responses: ModuleType, values: dict[str, Any]) -> Any:
@@ -157,6 +178,24 @@ async def _parity(
             f"{name} put-version {saved.version != entry.version} missing {await _call(store, 'get', 'missing')}",
             f"{name} duplicate {await _error(store, 'put', entry)}",
         ))
+        await _call(
+            store,
+            "put",
+            replace(
+                entry,
+                entry_id="optional",
+                blob=None,
+                blob_owned=False,
+                idempotency_key=None,
+                result=None,
+            ),
+        )
+        reopened = await _call(store, "get", "optional")
+        lines.extend((
+            f"{name} optional {(reopened.blob, reopened.idempotency_key, reopened.result)}",
+            f"{name} invalid-entry {await _error(store, 'put', None)}",
+            f"{name} invalid-time {await _error(store, 'claim', now=None, lease_until=_NOW, limit=1)}",
+        ))
         await _close(store)
         if "SQLite" in name:
             store = constructor(*arguments)
@@ -234,6 +273,13 @@ async def _capacity(protocols: ModuleType, entry: Any, name: str, root: Path, li
         missing = await _call(store, "get", "a")
         final = await _call(store, "purge_terminal", _NOW)
         lines.append(f"{name} reclaimed-capacity {missing} {[item.entry_id for item in final]}")
+        byte_store = constructor(
+            *((root / f"bytes-{name}.db",) if "SQLite" in name else ()), max_entries=3, max_bytes=1
+        )
+        try:
+            lines.append(f"{name} byte-capacity {await _error(byte_store, 'put', first)}")
+        finally:
+            await _close(byte_store)
     finally:
         await _close(store)
 
@@ -246,7 +292,7 @@ async def _schema(protocols: ModuleType, root: Path, lines: list[str]) -> None:
     ):
         for name in ("SQLiteQueueStore", "AsyncSQLiteQueueStore"):
             path = root / f"{label}-{name}.db"
-            with sqlite3.connect(path) as connection:
+            with closing(sqlite3.connect(path)) as connection, connection:
                 connection.executescript(sql)
             original = sha256(path.read_bytes()).digest()
             store = getattr(protocols, name)(path)
@@ -255,6 +301,28 @@ async def _schema(protocols: ModuleType, root: Path, lines: list[str]) -> None:
             finally:
                 await _close(store)
             lines.append(f"{name} {label}-unchanged {sha256(path.read_bytes()).digest() == original}")
+    for label, sql in (
+        ("extra-view", "CREATE VIEW unrelated AS SELECT singleton FROM store_meta"),
+        ("missing-meta", "DELETE FROM store_meta"),
+        ("empty-namespace", "UPDATE store_meta SET namespace = ''"),
+        ("bad-counter", "UPDATE store_meta SET last_lease = 'invalid'"),
+        ("negative-counter", "PRAGMA ignore_check_constraints = ON; UPDATE store_meta SET last_lease = -1"),
+        ("wrong-singleton", "PRAGMA ignore_check_constraints = ON; UPDATE store_meta SET singleton = 2"),
+    ):
+        path = root / f"{label}.db"
+        initial = protocols.SQLiteQueueStore(path)
+        initial.get("missing")
+        initial.close()
+        with closing(sqlite3.connect(path)) as connection, connection:
+            connection.execute("PRAGMA journal_mode = DELETE")
+            connection.executescript(sql)
+        original = sha256(path.read_bytes()).digest()
+        store = protocols.SQLiteQueueStore(path)
+        try:
+            lines.append(f"schema {label} {await _error(store, 'get', 'missing')}")
+        finally:
+            store.close()
+        lines.append(f"schema {label}-unchanged {sha256(path.read_bytes()).digest() == original}")
 
 
 async def _corruption(protocols: ModuleType, entry: Any, root: Path, values: dict[str, Any], lines: list[str]) -> None:
@@ -266,14 +334,14 @@ async def _corruption(protocols: ModuleType, entry: Any, root: Path, values: dic
         try:
             await _call(store, "put", healthy)
             await _call(store, "put", corrupted)
-            with sqlite3.connect(path) as connection:
+            with closing(sqlite3.connect(path)) as connection, connection:
                 original = connection.execute(
                     "SELECT record FROM queue_entries WHERE entry_id = 'corrupted'"
                 ).fetchone()[0]
                 good = connection.execute("SELECT record FROM queue_entries WHERE entry_id = 'healthy'").fetchone()[0]
             for label, target, value in values["corruptions"]:
                 record = json.loads(original)
-                if target == "raw":
+                if target in {"raw", "row-size", "row-type"}:
                     changed = value
                 else:
                     owner = record if target in {"schema_version", "envelope-extra"} else record["entry"]
@@ -282,15 +350,27 @@ async def _corruption(protocols: ModuleType, entry: Any, root: Path, values: dic
                         owner = owner[item]
                     owner[path_items[-1]] = value
                     changed = json.dumps(record)
-                with sqlite3.connect(path) as connection:
-                    connection.execute("UPDATE queue_entries SET record = ? WHERE entry_id = 'corrupted'", (changed,))
+                with closing(sqlite3.connect(path)) as connection, connection:
+                    connection.execute(
+                        "UPDATE queue_entries SET record = ?, payload_bytes = ? WHERE entry_id = 'corrupted'",
+                        (original, len(entry.payload)),
+                    )
+                    if target == "row-size":
+                        connection.execute(
+                            "UPDATE queue_entries SET payload_bytes = ? WHERE entry_id = 'corrupted'", (value,)
+                        )
+                    else:
+                        connection.execute(
+                            "UPDATE queue_entries SET record = ? WHERE entry_id = 'corrupted'",
+                            (bytes(changed) if target == "row-type" else changed,),
+                        )
                 outcome = await _error(store, "claim", now=_NOW, lease_until=_NOW + timedelta(seconds=90), limit=100)
-                with sqlite3.connect(path) as connection:
+                with closing(sqlite3.connect(path)) as connection, connection:
                     retained = connection.execute(
                         "SELECT record FROM queue_entries WHERE entry_id = 'healthy'"
                     ).fetchone()[0]
                 lines.append(f"{name} corrupt {label} {outcome} atomic {retained == good}")
-            with sqlite3.connect(path) as connection:
+            with closing(sqlite3.connect(path)) as connection, connection:
                 connection.execute("UPDATE queue_entries SET record = ? WHERE entry_id = 'corrupted'", (original,))
             claimed = await _call(store, "claim", now=_NOW, lease_until=_NOW + timedelta(seconds=90), limit=100)
             lines.append(f"{name} valid-after-corruption {[lease.entry.entry_id for lease in claimed]}")
@@ -354,7 +434,7 @@ def _processes(package: ModuleType, protocols: ModuleType, entry: Any, root: Pat
                     process.wait(timeout=30)
                 for stream in (process.stdin, process.stdout, process.stderr):
                     stream.close()
-        with sqlite3.connect(path) as connection:
+        with closing(sqlite3.connect(path)) as connection, connection:
             version = connection.execute("PRAGMA user_version").fetchone()[0]
             journal = connection.execute("PRAGMA journal_mode").fetchone()[0]
             metadata = connection.execute("SELECT COUNT(*), MIN(last_lease) FROM store_meta").fetchone()
@@ -371,12 +451,11 @@ def _processes(package: ModuleType, protocols: ModuleType, entry: Any, root: Pat
 
 
 async def _worker(protocols: ModuleType, entry: Any, root: Path, lines: list[str]) -> None:
-    """Observe FIFO settlement and cancellation through an independent SQLite writer lock and public records."""
+    """Observe worker start, bounded FIFO admission and cancellation through a public serialization barrier."""
     path = root / "worker.db"
     store = protocols.AsyncSQLiteQueueStore(path)
     await store.get("missing")
-    blocker = sqlite3.connect(path, isolation_level=None)
-    blocker.execute("BEGIN IMMEDIATE")
+    started, released = threading.Event(), threading.Event()
     entered = [asyncio.Event() for _ in range(68)]
 
     async def put(index: int) -> str:
@@ -384,7 +463,15 @@ async def _worker(protocols: ModuleType, entry: Any, root: Path, lines: list[str
         try:
             await store.put(
                 replace(
-                    entry, entry_id=f"fifo-{index:02}", state="pending", lease_id=None, lease_until=None, result=None
+                    entry,
+                    entry_id=f"fifo-{index:02}",
+                    created_at=_serialization_time(entry.created_at, started, released)
+                    if index == 0
+                    else entry.created_at,
+                    state="pending",
+                    lease_id=None,
+                    lease_until=None,
+                    result=None,
                 )
             )
         except asyncio.CancelledError as error:
@@ -396,14 +483,15 @@ async def _worker(protocols: ModuleType, entry: Any, root: Path, lines: list[str
     tasks = [asyncio.create_task(put(index)) for index in range(68)]
     try:
         await asyncio.gather(*(event.wait() for event in entered))
+        await asyncio.to_thread(started.wait)
         tasks[30].cancel("cancel-pending")
         cancelled = await tasks[30]
-        closing = asyncio.create_task(store.aclose())
+        shutdown = asyncio.create_task(store.aclose())
         admission = asyncio.Event()
 
         async def close() -> None:
             admission.set()
-            await closing
+            await shutdown
 
         wrapped = asyncio.create_task(close())
         await admission.wait()
@@ -412,7 +500,7 @@ async def _worker(protocols: ModuleType, entry: Any, root: Path, lines: list[str
             await wrapped
         except asyncio.CancelledError as error:
             lines.append(f"worker close-native {error.args == ('cancel-close',)}")
-        blocker.rollback()
+        released.set()
         outcomes = await asyncio.gather(*tasks)
         await store.aclose()
         await store.aclose()
@@ -420,18 +508,54 @@ async def _worker(protocols: ModuleType, entry: Any, root: Path, lines: list[str
         saved = [index for index, outcome in enumerate(outcomes) if outcome == "stored"]
         refused = [index for index, outcome in enumerate(outcomes) if outcome.startswith("QueueStoreError")]
         lines.extend((
-            (
-                f"worker bounded {len(saved) in {63, 64}} rejected={len(refused) in {3, 4}} "
-                f"cancellation-excluded={30 not in saved}"
-            ),
+            (f"worker bounded {len(saved) == 64} rejected={len(refused) == 3} cancellation-excluded={30 not in saved}"),
             f"worker retained-close {await _error(store, 'get', 'missing')}",
         ))
-        with sqlite3.connect(path) as connection:
+        with closing(sqlite3.connect(path)) as connection, connection:
             rows = [row[0] for row in connection.execute("SELECT entry_id FROM queue_entries ORDER BY rowid")]
         lines.append(f"worker FIFO {rows == [f'fifo-{index:02}' for index in saved]}")
     finally:
-        blocker.close()
+        released.set()
         await store.aclose()
+
+    await _waiting_cancel(protocols, entry, root, lines)
+
+
+async def _waiting_cancel(protocols: ModuleType, entry: Any, root: Path, lines: list[str]) -> None:
+    """Cancel a genuinely unadmitted waiter and preserve the uncancelled FIFO transactions."""
+    waiting_store = protocols.AsyncSQLiteQueueStore(root / "waiting-cancel.db")
+    started, released = threading.Event(), threading.Event()
+    entered = [asyncio.Event() for _ in range(68)]
+
+    async def waiting(index: int) -> None:
+        entered[index].set()
+        await waiting_store.put(
+            replace(
+                entry,
+                entry_id=f"wait-{index:02}",
+                created_at=_serialization_time(entry.created_at, started, released) if index == 0 else entry.created_at,
+            )
+        )
+
+    tasks = [asyncio.create_task(waiting(index)) for index in range(68)]
+    try:
+        await asyncio.gather(*(event.wait() for event in entered))
+        await asyncio.to_thread(started.wait)
+        tasks[67].cancel("cancel-unadmitted")
+        native = False
+        try:
+            await tasks[67]
+        except asyncio.CancelledError as error:
+            native = error.args == ("cancel-unadmitted",)
+        released.set()
+        await asyncio.gather(*tasks[:67])
+        await waiting_store.aclose()
+        with closing(sqlite3.connect(root / "waiting-cancel.db")) as connection, connection:
+            rows = [row[0] for row in connection.execute("SELECT entry_id FROM queue_entries ORDER BY rowid")]
+        lines.append(f"worker unadmitted-cancel {native} FIFO {rows == [f'wait-{index:02}' for index in range(67)]}")
+    finally:
+        released.set()
+        await waiting_store.aclose()
 
 
 def _closed_loop(protocols: ModuleType, entry: Any, root: Path, lines: list[str]) -> None:
@@ -440,19 +564,27 @@ def _closed_loop(protocols: ModuleType, entry: Any, root: Path, lines: list[str]
     store = protocols.AsyncSQLiteQueueStore(path)
     loop = asyncio.new_event_loop()
     loop.run_until_complete(store.get("missing"))
-    blocker = sqlite3.connect(path, isolation_level=None)
-    blocker.execute("BEGIN IMMEDIATE")
-    entered = asyncio.Event()
+    started, released = threading.Event(), threading.Event()
 
     async def publish() -> None:
-        entered.set()
-        await store.put(replace(entry, entry_id="closed-loop", result=None))
+        await store.put(
+            replace(
+                entry,
+                entry_id="closed-loop",
+                created_at=_serialization_time(entry.created_at, started, released),
+                result=None,
+            )
+        )
 
     task = loop.create_task(publish())
-    loop.run_until_complete(entered.wait())
+    loop.run_until_complete(asyncio.to_thread(started.wait))
+    task.cancel("origin-close")
+    try:
+        loop.run_until_complete(task)
+    except asyncio.CancelledError as error:
+        lines.append(f"worker closed-loop native-cancel {error.args == ('origin-close',)}")
     loop.close()
-    blocker.rollback()
-    blocker.close()
+    released.set()
 
     async def reopen() -> None:
         saved = await store.get("closed-loop")
@@ -460,10 +592,7 @@ def _closed_loop(protocols: ModuleType, entry: Any, root: Path, lines: list[str]
         await store.aclose()
         await store.aclose()
 
-    try:
-        run(reopen)
-    finally:
-        task.get_coro().close()
+    run(reopen)
 
 
 def sqlite_queues(package: ModuleType, lines: list[str]) -> None:
@@ -498,3 +627,69 @@ def sqlite_queues(package: ModuleType, lines: list[str]) -> None:
     run(scenario)
     _processes(package, protocols, entry, root, lines)
     _closed_loop(protocols, entry, root, lines)
+
+
+def sqlite_queue_clients(package: ModuleType, lines: list[str]) -> None:
+    """Save, reopen and deliver one opaque SDK request through both SQLite adapters on every backend."""
+    queue = _Queues(package, lines)
+    root = Path(package.__file__).resolve().parent
+    store = queue.protocols.SQLiteQueueStore(root / "sdk-sync.db")
+    with queue.exchange.client() as native:
+        with package.Client(http_client=native, options=queue.settings(store)) as client:
+            receipt = client.protocols.orders.outbox.operations.create_order.enqueue(body=queue.order)
+        saved = store.get(receipt.entry_id)
+        lines.append(
+            f"sync enqueue sends={len(queue.server.log)} state={saved.state} deliveries={saved.delivery_count}"
+        )
+        store.close()
+        store = queue.protocols.SQLiteQueueStore(root / "sdk-sync.db")
+        reopened = store.get(receipt.entry_id)
+        lines.append(f"sync restart complete={reopened == saved} payload={reopened.payload == saved.payload}")
+        with package.Client(http_client=native, options=queue.settings(store)) as client:
+            outbox = client.protocols.orders.outbox
+            report = outbox.drain()
+            finished = store.get(receipt.entry_id)
+            lines.append(
+                f"sync drain succeeded={len(report.succeeded)} state={finished.state} "
+                f"deliveries={finished.delivery_count} status={finished.result.response.status_code} "
+                f"key={finished.idempotency_key == saved.idempotency_key} "
+                f"payload={finished.payload == saved.payload}"
+            )
+            queue.server.flush(lines)
+            lines.append(f"sync empty claimed={sum(outbox.drain().counts.values())} sends={len(queue.server.log)}")
+            removed = outbox.purge_terminal(before=queue.time.now() + timedelta(seconds=1))
+            lines.append(f"sync purge removed={len(removed)} missing={store.get(receipt.entry_id)}")
+    store.close()
+
+    async def asynchronous() -> None:
+        store = queue.protocols.AsyncSQLiteQueueStore(root / "sdk-async.db")
+        async with queue.exchange.async_client() as native:
+            async with package.AsyncClient(http_client=native, options=queue.settings(store)) as client:
+                receipt = await client.protocols.orders.outbox.operations.create_order.enqueue(body=queue.order)
+            saved = await store.get(receipt.entry_id)
+            lines.append(
+                f"async enqueue sends={len(queue.server.log)} state={saved.state} deliveries={saved.delivery_count}"
+            )
+            await store.aclose()
+            store = queue.protocols.AsyncSQLiteQueueStore(root / "sdk-async.db")
+            reopened = await store.get(receipt.entry_id)
+            lines.append(f"async restart complete={reopened == saved} payload={reopened.payload == saved.payload}")
+            async with package.AsyncClient(http_client=native, options=queue.settings(store)) as client:
+                outbox = client.protocols.orders.outbox
+                report = await outbox.drain()
+                finished = await store.get(receipt.entry_id)
+                lines.append(
+                    f"async drain succeeded={len(report.succeeded)} state={finished.state} "
+                    f"deliveries={finished.delivery_count} status={finished.result.response.status_code} "
+                    f"key={finished.idempotency_key == saved.idempotency_key} "
+                    f"payload={finished.payload == saved.payload}"
+                )
+                queue.server.flush(lines)
+                lines.append(
+                    f"async empty claimed={sum((await outbox.drain()).counts.values())} sends={len(queue.server.log)}"
+                )
+                removed = await outbox.purge_terminal(before=queue.time.now() + timedelta(seconds=1))
+                lines.append(f"async purge removed={len(removed)} missing={await store.get(receipt.entry_id)}")
+        await store.aclose()
+
+    run(asynchronous)

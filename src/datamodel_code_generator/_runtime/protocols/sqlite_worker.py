@@ -117,6 +117,7 @@ class SQLiteWorker:
         """Close admission and drain accepted jobs; repeated or cancelled closes share retained shutdown."""
         loop = asyncio.get_running_loop()
         shutdown: Future[None] | None = None
+        rejected_jobs: list[tuple[_Job, Future[object]]] = []
         with self._lock:
             if self._shutdown is None:
                 self._closed = True
@@ -124,13 +125,15 @@ class SQLiteWorker:
                     job = self._waiting.popleft()
                     rejected: Future[object] = Future()
                     rejected.set_exception(ValueError("SQLite store is closed"))
-                    _notify(job.loop, lambda job=job, rejected=rejected: _completion(job.notification, rejected))
+                    rejected_jobs.append((job, rejected))
                 if self._pool is None:
                     self._shutdown = Future()
                     self._shutdown.set_result(None)
                 else:
                     shutdown = self._shutdown = self._pool.submit(self._connection.close)
             settlement = self._shutdown
+        for job, rejected in rejected_jobs:
+            _notify(job.loop, partial(_completion, job.notification, rejected))
         if shutdown is not None:
             shutdown.add_done_callback(partial(self._shutdown_done, cast("ThreadPoolExecutor", self._pool)))
         notification: asyncio.Future[None] = loop.create_future()
