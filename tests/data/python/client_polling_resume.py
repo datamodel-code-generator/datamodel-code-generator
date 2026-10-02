@@ -550,7 +550,11 @@ async def _async_resume(harness: Polling, lines: list[str]) -> None:
         state = handle.checkpoint()
         resumed = helper.resume(state)
         lines.append(f"  resumed {resumed!r}")
-        step(lines, "async resumed with a coding", lambda: helper.resume(state, options=harness.request(compression="gzip")))
+        step(
+            lines,
+            "async resumed with a coding",
+            lambda: helper.resume(state, options=harness.request(compression="gzip")),
+        )
         exchange.respond(job("done"), report(3))
         await astep(lines, "resumed wait", resumed.wait)
         once = harness.request(retry=harness.options.RetryOptions(max_retries=0))
