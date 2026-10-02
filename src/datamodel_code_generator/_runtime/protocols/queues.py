@@ -293,7 +293,8 @@ class QueueStore(Protocol):
     def claim(self, *, now: datetime, lease_until: datetime, limit: int) -> tuple[QueueLease, ...]:
         """Recover expired leases, then lease up to `limit` ready pending entries in creation-time and ID order.
 
-        Recover entries with send intent to delivery_unknown, and only unsent entries to pending.
+        Retain intent, identity and count when recovering outcome-free crash leases to pending.
+        Cancellation ends unknown after intent, otherwise cancelled; recorded terminal outcomes are never reclaimed.
         """
         ...
 
@@ -319,7 +320,8 @@ class AsyncQueueStore(Protocol):
     async def claim(self, *, now: datetime, lease_until: datetime, limit: int) -> tuple[QueueLease, ...]:
         """Recover expired leases, then lease up to `limit` ready pending entries in creation-time and ID order.
 
-        Recover entries with send intent to delivery_unknown, and only unsent entries to pending.
+        Retain intent, identity and count when recovering outcome-free crash leases to pending.
+        Cancellation ends unknown after intent, otherwise cancelled; recorded terminal outcomes are never reclaimed.
         """
         ...
 

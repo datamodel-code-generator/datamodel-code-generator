@@ -20,7 +20,7 @@ from contextlib import (
 from dataclasses import dataclass, replace
 from functools import partial
 from time import monotonic
-from typing import TYPE_CHECKING, ClassVar, Final, Generic, Literal, TypeVar
+from typing import TYPE_CHECKING, ClassVar, Final, Generic, Literal, TypeVar, cast
 from urllib.parse import quote, unquote_plus, urlsplit
 
 import httpx2
@@ -1497,7 +1497,7 @@ class _SessionCall(_Call):
     It keeps the URL of the hop it sends, credentials excluded, against which a page's relative URLs resolve.
     """
 
-    __slots__ = ("parent", "session", "url")
+    __slots__ = ("admission", "parent", "session", "url")
 
     def __init__(
         self,
@@ -1510,6 +1510,7 @@ class _SessionCall(_Call):
         """Bind the call to its session, ending it no later than the session or a helper's own bound does."""
         super().__init__(settings, scope, operation)
         self.session = self.parent = session
+        self.admission: Callable[[], object] | None = None
         self.url = ""
         for limit in (session.deadline, None if bound is None else on_clock(bound, settings.clock)):
             if limit is not None and ((deadline := self.deadline) is None or limit.at < deadline.at):
@@ -2243,6 +2244,51 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         }
         return facts, context is not None or (declared is None and auth is None)
 
+    def queue_identity(
+        self,
+        operation: OperationPlan[object, object],
+        request: PreparedRequest[EncodedAttempt],
+        options: RequestOptions | None,
+    ) -> WireValue:
+        """Return immutable pre-auth replay facts, excluding every declared credential position."""
+        from base64 import b64encode  # noqa: PLC0415
+
+        from .security import secret_names  # noqa: PLC0415
+
+        headers, query = secret_names(self._shared.security_schemes)
+        auth = self._call_settings(options, operation.operation_id).auth
+        if auth is not None and (bound := self._bound(operation, auth)) is not None:
+            headers |= bound.managed_headers
+            query |= bound.managed_query
+        target = absolute_target(request.url)
+        return {
+            "method": request.method,
+            "url": strip_query(target.url, query),
+            "headers": tuple((name.lower(), value) for name, value in request.headers if name.lower() not in headers),
+            "body": None if request.body is None else b64encode(request.body.content).decode("ascii"),
+        }
+
+    def saved_queue_request(
+        self,
+        operation: OperationPlan[object, object],
+        arguments: tuple[object, ...],
+        body: object,
+        media_type: str | MediaSelector | None,
+        options: RequestOptions | None,
+    ) -> WireValue:
+        """Prepare the non-auth request a queue binds, using the ordinary encoding and patch rules."""
+        request, _ = self._prepare(
+            operation,
+            arguments,
+            self._call_settings(options, operation.operation_id),
+            body=body,
+            media_type=media_type,
+            options=options,
+            accept=operation.responses.accept,
+            narrowed=False,
+        )
+        return self.queue_identity(operation, request, options)
+
     def unsaved_argument(
         self, operation: OperationPlan[object, object], saved: Sequence[WireValue | Unset]
     ) -> tuple[str, str] | None:
@@ -2917,6 +2963,8 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         response_media_type: str | MediaSelector | None = None,
         session: OperationSession | None = None,
         deadline: Deadline | None = None,
+        replay_identity: WireValue = None,
+        admission: Callable[[], object] | None = None,
     ) -> Response[T]:
         """Execute one encoded logical call through its retry and redirect policy.
 
@@ -2929,6 +2977,8 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             if session is None
             else _SessionCall(settings, self._scope, operation, session, deadline)
         )
+        if isinstance(call, _SessionCall):
+            call.admission = admission
         events = call.events = self._started(call, operation.path, options)
         decoder = operation.responses
 
@@ -2936,7 +2986,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             nonlocal decoder
             decoder = self._decoder(operation, response_media_type)
             call.decoder = decoder
-            return self._prepare(
+            request, deferred = self._prepare(
                 operation,
                 arguments,
                 call.settings,
@@ -2946,6 +2996,11 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                 accept=decoder.accept,
                 narrowed=response_media_type is not None,
             )
+            if replay_identity is not None and (
+                not isinstance(deferred, Unset) or self.queue_identity(operation, request, options) != replay_identity
+            ):
+                raise ProtocolConfigurationError(field_path=("payload",), condition="binding_mismatch")
+            return request, deferred
 
         def receive(response: TransportResponse, info: ResponseInfo) -> Response[T]:
             received = self._read(response, info, decoder, call)
@@ -3654,7 +3709,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             if recovering:
                 auth.pending = rejected
 
-    def _send(
+    def _send(  # noqa: PLR0912, PLR0915
         self,
         request: PreparedRequest[BodyAttempt],
         source: BodySource | None,
@@ -3668,7 +3723,13 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         try:
             call.check("encode")
             call.retained()
+            if isinstance(call, _SessionCall) and call.admission is not None:
+                call.admission()
+                call.check("send")
             self._authorize(source, call)
+            if isinstance(call, _SessionCall) and call.admission is not None:
+                call.admission()
+                call.check("send")
             renewed = False
             while True:
                 if (limiter := call.settings.limiter) is not None:
@@ -3696,6 +3757,9 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             call.retained()
             _usable_credentials(call)
             io = call.io_context(trace)
+            if isinstance(call, _SessionCall) and call.admission is not None:
+                call.admission()
+                call.check("send")
             call.admit_send(redirect=call.hop_index != 0)
             if events is not None:
                 events.sending()
@@ -3912,6 +3976,8 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         response_media_type: str | MediaSelector | None = None,
         session: OperationSession | None = None,
         deadline: Deadline | None = None,
+        replay_identity: WireValue = None,
+        admission: Callable[[], object] | None = None,
     ) -> Response[T]:
         """Execute one encoded logical call through its retry and redirect policy.
 
@@ -3925,6 +3991,8 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             else _SessionCall(settings, self._scope, operation, session, deadline)
         )
         self._running(call.operation_id, call.call_id)
+        if isinstance(call, _SessionCall):
+            call.admission = admission
         events = call.events = await self._started(call, operation.path, options)
         decoder = operation.responses
 
@@ -3932,7 +4000,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             nonlocal decoder
             decoder = self._decoder(operation, response_media_type)
             call.decoder = decoder
-            return self._prepare(
+            request, deferred = self._prepare(
                 operation,
                 arguments,
                 call.settings,
@@ -3942,6 +4010,11 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 accept=decoder.accept,
                 narrowed=response_media_type is not None,
             )
+            if replay_identity is not None and (
+                not isinstance(deferred, Unset) or self.queue_identity(operation, request, options) != replay_identity
+            ):
+                raise ProtocolConfigurationError(field_path=("payload",), condition="binding_mismatch")
+            return request, deferred
 
         async def receive(response: AsyncTransportResponse, info: ResponseInfo) -> Response[T]:
             received = await self._read(response, info, decoder, call)
@@ -4659,7 +4732,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             if recovering:
                 auth.pending = rejected
 
-    async def _send(
+    async def _send(  # noqa: PLR0912, PLR0915
         self,
         request: PreparedRequest[AsyncBodyAttempt],
         source: AsyncBodySource | None,
@@ -4673,7 +4746,13 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         try:
             call.check("encode")
             call.retained()
+            if isinstance(call, _SessionCall) and call.admission is not None:
+                await cast("Awaitable[None]", call.admission())
+                call.check("send")
             await self._authorize(source, call)
+            if isinstance(call, _SessionCall) and call.admission is not None:
+                await cast("Awaitable[None]", call.admission())
+                call.check("send")
             renewed = False
             while True:
                 if (limiter := call.settings.limiter) is not None:
@@ -4701,6 +4780,9 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             call.retained()
             _usable_credentials(call)
             io = call.io_context(trace)
+            if isinstance(call, _SessionCall) and call.admission is not None:
+                await cast("Awaitable[None]", call.admission())
+                call.check("send")
             call.admit_send(redirect=call.hop_index != 0)
             if events is not None:
                 events.sending()
