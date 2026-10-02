@@ -180,6 +180,16 @@ def _irregular(stat: os.stat_result) -> None:
         raise NonResumableSourceError(source_kind="stream")
 
 
+def _nonblocking(path: Path) -> BinaryIO:
+    """Open a binary file without waiting for a FIFO writer, closing the descriptor if wrapping fails."""
+    descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_BINARY", 0))
+    with ExitStack() as stack:
+        stack.callback(os.close, descriptor)
+        file = os.fdopen(descriptor, "rb")
+        stack.pop_all()
+    return file
+
+
 def _regular(path: Path) -> BinaryIO:
     """Open a regular file, refusing anything else before opening it and the descriptor it opened.
 
@@ -187,11 +197,9 @@ def _regular(path: Path) -> BinaryIO:
     checked again; nonblocking mode changes nothing for a regular file's reads.
     """
     _irregular(path.stat())
-    descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_BINARY", 0))
     with ExitStack() as stack:
-        stack.callback(os.close, descriptor)
-        _irregular(os.fstat(descriptor))
-        file = os.fdopen(descriptor, "rb")
+        file = stack.enter_context(_nonblocking(path))
+        _irregular(os.fstat(file.fileno()))
         stack.pop_all()
     return file
 
@@ -208,7 +216,7 @@ def _digested(file: BinaryIO, size: int) -> UploadIdentity:
 def _opened(path: Path, stat: _Stat, identity: UploadIdentity, offset: int) -> BinaryIO:
     """Open a file at a range's offset, refusing one whose status changed since it was hashed."""
     with ExitStack() as stack:
-        file = stack.enter_context(path.open("rb"))
+        file = stack.enter_context(_nonblocking(path))
         if _stat(file) != stat:
             raise UploadSourceChangedError(expected=identity, actual=None, offset=offset)
         file.seek(offset)
