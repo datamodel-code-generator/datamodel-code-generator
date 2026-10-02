@@ -163,6 +163,7 @@ class _Counting:
         self.identity = source.identity
         self.max_parallel_ranges = 1
         self.opened = self.closed = self.most = 0
+        self.error: Exception | None = None
 
     def open_range(self, offset: int, length: int) -> Any:
         """Open a range of the wrapped source, counting it."""
@@ -175,6 +176,32 @@ class _Counting:
             try:
                 with self.source.open_range(offset, length) as reader:
                     yield reader
+            except Exception as error:
+                self.error = error
+                raise
+            finally:
+                self.closed += 1
+
+        return counted()
+
+
+class _AsyncCounting(_Counting):
+    """Count borrowed asyncio ranges and retain the original error a range reports."""
+
+    def open_range(self, offset: int, length: int) -> Any:
+        """Open one independent range, counting cleanup even when its entry fails."""
+        from contextlib import asynccontextmanager
+
+        @asynccontextmanager
+        async def counted() -> AsyncIterator[Any]:
+            self.opened += 1
+            self.most = max(self.most, self.opened - self.closed)
+            try:
+                async with self.source.open_range(offset, length) as reader:
+                    yield reader
+            except Exception as error:
+                self.error = error
+                raise
             finally:
                 self.closed += 1
 
@@ -316,6 +343,102 @@ def uploads(package: ModuleType, lines: list[str]) -> None:
             _drained(exchange, lines)
     run(lambda: _async_uploads(harness, server, lines))
     run(lambda: _fifo_ranges(harness, lines))
+    _file_terminal(harness, lines)
+    run(lambda: _async_file_terminal(harness, lines))
+
+
+def _file_terminal(harness: _Uploads, lines: list[str], *, settings: Any = None, token: Any = None) -> None:
+    """Keep builtin file changes terminal even after restoring the bytes and stat."""
+    lines.append("file source change remains terminal")
+    exchange, server = Exchange(lines), _Server()
+    with (
+        tempfile.TemporaryDirectory() as directory,
+        exchange.client() as native,
+        harness.package.Client(
+            http_client=native, options=harness.client_options() if settings is None else settings
+        ) as api,
+    ):
+        path = Path(directory, "content.bin")
+        path.write_bytes(_CONTENT)
+        os.utime(path, ns=(1700000000000000000, 1700000000000000000))
+        source = _Counting(harness.protocols.FileUploadSource.from_path(path))
+        saved = path.stat()
+        exchange.respond(server)
+        handle = api.protocols.files.finish.start(source, tus_resumable=harness.tus)
+        sends = sum(line.startswith("  > ") for line in lines)
+        path.write_bytes(b"x123456789")
+        os.utime(path, ns=(saved.st_atime_ns, saved.st_mtime_ns + 1000000000))
+        try:
+            handle.advance()
+        except harness.errors.UploadSourceChangedError as error:
+            lines.append(f"  first advance ! {_progress(error)} original={error is source.error}")
+        state = handle.checkpoint().export()
+        saved_state = json.loads(state)["state"]
+        lines.append(f"  checkpoint confirmed={saved_state['confirmed']} phase={saved_state['phase']}")
+        path.write_bytes(_CONTENT)
+        os.utime(path, ns=(saved.st_atime_ns, saved.st_mtime_ns))
+        step(lines, "advance after restore", handle.advance)
+        step(lines, "run after restore", handle.run)
+        handle.close()
+        lines.append(f"  checkpoint unchanged after close: {handle.checkpoint().export() == state}")
+        with source.open_range(0, len(_CONTENT)) as reader:
+            lines.append(f"  borrowed source reads after handle close: {reader.read(len(_CONTENT)) == _CONTENT}")
+        lines.extend((
+            f"  readers opened {source.opened}, closed {source.closed}, most at once {source.most}",
+            f"  later resource sends={sum(line.startswith('  > ') for line in lines) - sends}",
+        ))
+        if token is not None:
+            lines.append(f"  provider sends={len(token.methods)}")
+        lines.append(f"  {server.stored('u1')}")
+
+
+async def _async_file_terminal(harness: _Uploads, lines: list[str], *, settings: Any = None, token: Any = None) -> None:
+    """Keep asyncio file changes terminal while leaving the borrowed worker usable until its owner closes it."""
+    lines.append("async file source change remains terminal")
+    exchange, server = Exchange(lines), _Server()
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory, "content.bin")
+        await asyncio.to_thread(path.write_bytes, _CONTENT)
+        os.utime(path, ns=(1700000000000000000, 1700000000000000000))
+        async with (
+            await harness.protocols.AsyncFileUploadSource.from_path(path) as builtin,
+            exchange.async_client() as native,
+            harness.package.AsyncClient(
+                http_client=native, options=harness.client_options() if settings is None else settings
+            ) as api,
+        ):
+            source = _AsyncCounting(builtin)
+            saved = await asyncio.to_thread(path.stat)
+            exchange.respond(server)
+            handle = await api.protocols.files.finish.start(source, tus_resumable=harness.tus)
+            sends = sum(line.startswith("  > ") for line in lines)
+            await asyncio.to_thread(path.write_bytes, b"x123456789")
+            os.utime(path, ns=(saved.st_atime_ns, saved.st_mtime_ns + 1000000000))
+            try:
+                await handle.advance()
+            except harness.errors.UploadSourceChangedError as error:
+                lines.append(f"  first advance ! {_progress(error)} original={error is source.error}")
+            state = handle.checkpoint().export()
+            saved_state = json.loads(state)["state"]
+            lines.append(f"  checkpoint confirmed={saved_state['confirmed']} phase={saved_state['phase']}")
+            await asyncio.to_thread(path.write_bytes, _CONTENT)
+            os.utime(path, ns=(saved.st_atime_ns, saved.st_mtime_ns))
+            await astep(lines, "advance after restore", handle.advance)
+            await astep(lines, "run after restore", handle.run)
+            await handle.aclose()
+            lines.append(f"  checkpoint unchanged after close: {handle.checkpoint().export() == state}")
+            async with source.open_range(0, len(_CONTENT)) as reader:
+                lines.append(
+                    f"  borrowed source reads after handle close: {await reader.read(len(_CONTENT)) == _CONTENT}"
+                )
+            lines.extend((
+                f"  readers opened {source.opened}, closed {source.closed}, most at once {source.most}",
+                f"  later resource sends={sum(line.startswith('  > ') for line in lines) - sends}",
+            ))
+            if token is not None:
+                lines.append(f"  provider sends={len(token.methods)}")
+            lines.append(f"  {server.stored('u1')}")
+        await arecord(lines, "range after owner closes source", lambda: builtin.open_range(0, 1).__aenter__())  # noqa: PLC2801 - Exercise closed source context entry.
 
 
 def _drained(exchange: Exchange, lines: list[str]) -> None:
@@ -1332,6 +1455,37 @@ def uploads_oauth(package: ModuleType, lines: list[str]) -> None:
     api.close()
     provider.close()
     run(lambda: _async_completion_oauth(harness, lines))
+    token = _CompletionTransport(harness, token=True)
+    token.release.set()
+    provider, settings = _completion_provider(harness, token)
+    settings = harness.client_options(
+        auth=settings.auth,
+        protocols=harness.options.ProtocolClientOptions(
+            security=harness.protocols.ProtocolSecurityContext(credential_partition="file-terminal")
+        ),
+    )
+    try:
+        _file_terminal(harness, lines, settings=settings, token=token)
+    finally:
+        provider.close()
+    run(lambda: _async_file_terminal_oauth(harness, lines))
+
+
+async def _async_file_terminal_oauth(harness: _Uploads, lines: list[str]) -> None:
+    """Stop resource and completion credential sends after a terminal file change."""
+    token = _AsyncCompletionTransport(harness, token=True, asynchronous=True)
+    token.release.set()
+    provider, settings = _completion_provider(harness, token, asynchronous=True)
+    settings = harness.client_options(
+        auth=settings.auth,
+        protocols=harness.options.ProtocolClientOptions(
+            security=harness.protocols.ProtocolSecurityContext(credential_partition="file-terminal")
+        ),
+    )
+    try:
+        await _async_file_terminal(harness, lines, settings=settings, token=token)
+    finally:
+        await provider.aclose()
 
 
 async def _async_completion_oauth(harness: _Uploads, lines: list[str]) -> None:

@@ -1010,7 +1010,12 @@ class UploadHandle(_Upload[T]):
     def _buffer(self, index: int, start: int, size: int) -> memoryview:
         """Read one chunk into its own buffer and check it against the digest the scan recorded."""
         chunk = _Chunk(size)
-        self._read_all(start, size, chunk.add)
+        try:
+            self._read_all(start, size, chunk.add)
+        except UploadSourceChangedError:
+            with self._guard:
+                self._changed = True
+            raise
         return self._chunked(chunk, index, size)
 
     def _create(self, arguments: tuple[object, ...], body: object, media_type: str | MediaSelector | None) -> None:
@@ -1229,7 +1234,12 @@ class AsyncUploadHandle(_Upload[T]):
     async def _buffer(self, index: int, start: int, size: int) -> memoryview:
         """Read one chunk into its own buffer and check it against the digest the scan recorded."""
         chunk = _Chunk(size)
-        await self._read_all(start, size, chunk.add)
+        try:
+            await self._read_all(start, size, chunk.add)
+        except UploadSourceChangedError:
+            with self._guard:
+                self._changed = True
+            raise
         return self._chunked(chunk, index, size)
 
     async def _create(
