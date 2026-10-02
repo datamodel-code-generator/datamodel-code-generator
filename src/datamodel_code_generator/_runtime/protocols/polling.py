@@ -8,12 +8,10 @@ creating the operation again.
 
 from __future__ import annotations
 
-import re
 import threading
 from collections.abc import Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
 from enum import Enum
 from hashlib import sha256
 from math import ceil
@@ -63,10 +61,11 @@ from .resume import (
     state_fields,
     state_text,
 )
-from .values import MISSING, Missing, Patch, RepeatedValueError, resolve, selected
+from .values import MISSING, Missing, RepeatedValueError, resolve, selected, server_expiry
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
+    from datetime import datetime
     from types import TracebackType
 
     from ..client.client import AsyncClientCore, ClientCore
@@ -79,7 +78,7 @@ if TYPE_CHECKING:
     from .pagination import PageBinding
     from .records import ProtocolProgress, Selector
     from .references import OperationRef
-    from .writes import ReadPaths
+    from .writes import Targeted
 
 __all__ = (
     "AsyncLroHandle",
@@ -117,10 +116,6 @@ _POLL_FIELDS: Final = 4
 _UNREAD: Final = "unread"
 _RESULT_FIELDS: Final = 3
 _MOST_WAIT_MS: Final = 2**53 - 1
-_RFC3339: Final = re.compile(
-    r"([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:)([0-9]{2})((?:\.[0-9]+)?(?:Z|[+-][0-9]{2}:[0-9]{2}))"
-)
-_LEAP_SECOND: Final = "60"
 _KINDS: Final[Mapping[type, str]] = MappingProxyType({
     type(None): "null",
     bool: "boolean",
@@ -132,71 +127,6 @@ _KINDS: Final[Mapping[type, str]] = MappingProxyType({
 def _kind(value: WireValue) -> str:
     """Return the JSON type of a wire value, every number being one type."""
     return _KINDS.get(type(value)) or ("object" if isinstance(value, Mapping) else "number")
-
-
-def _expiry(value: str, now: float) -> datetime | None:
-    """Return the UTC time an RFC 3339 date-time with an offset or an HTTP date gives, or None for another value.
-
-    A leap second is the second after the one before it, as in an HTTP date, and `now` is the receipt wall time that
-    places an HTTP date's two-digit year.
-    """
-    try:
-        if (matched := _RFC3339.fullmatch(value.upper())) is not None:
-            head, second, tail = matched.groups()
-            leap = second == _LEAP_SECOND
-            parsed = datetime.fromisoformat(f"{head}{'59' if leap else second}{tail}")
-            return (parsed + timedelta(seconds=leap)).astimezone(timezone.utc)
-        from ..client.retry import http_date  # noqa: PLC0415 - Only a helper with an expiry parses HTTP dates.
-
-        return http_date(value, now)
-    except (ValueError, OverflowError):
-        return None
-
-
-@dataclass(frozen=True, slots=True)
-class _Targeted(Generic[T]):
-    """An operation that sends only the values a helper writes into its targets, and where each value goes.
-
-    A write is a parameter's argument position without a pointer, a querystring's position with a pointer into its
-    value, or no position with a pointer into the JSON body. `headers` and `queries` name the header and query
-    parameters it writes, which a call's options must not patch, and `dotted` the path segments a read value is
-    written to, which must not encode to a dot segment.
-    """
-
-    call: OperationPlan[T, object]
-    writes: tuple[tuple[int | None, str | None], ...]
-    headers: frozenset[str]
-    queries: frozenset[str]
-    dotted: ReadPaths
-
-    def request(self, values: tuple[WireValue, ...]) -> tuple[tuple[object, ...], object]:
-        """Return the arguments and body of a request writing each value in order, every other argument omitted.
-
-        A parameter's value replaces its argument, and the values for a querystring or the body are patched into an
-        empty object.
-        """
-        arguments: list[object] = [UNSET] * len(self.call.parameters)
-        patches: dict[int | None, list[tuple[str, WireValue]]] = {}
-        for (position, pointer), value in zip(self.writes, values, strict=True):
-            if pointer is None:
-                arguments[cast("int", position)] = value
-            else:
-                patches.setdefault(position, []).append((pointer, value))
-        body: object = UNSET
-        for position, writes in patches.items():
-            if position is None:
-                body = Patch(UNSET, tuple(writes))
-            else:
-                arguments[position] = Patch(UNSET, tuple(writes))
-        return tuple(arguments), body
-
-
-def _targeted(call: OperationPlan[T, object], bindings: tuple[PageBinding, ...]) -> _Targeted[T]:
-    """Return an operation that takes the values the bindings write to their targets, in order, as wire values."""
-    from .writes import read_paths, targeted  # noqa: PLC0415 - Only a plan loads the operation runtime.
-
-    sources = tuple((binding.target, binding.selector) for binding in bindings)
-    return _Targeted(*targeted(call, (target for target, _ in sources)), read_paths(call, sources))
 
 
 @final
@@ -211,11 +141,14 @@ class CancelPlan(Generic[K]):
     operation: OperationRef
     call: OperationPlan[K, object]
     bindings: tuple[PageBinding, ...] = ()
-    targeted: _Targeted[K] = field(init=False)
+    targeted: Targeted[K] = field(init=False)
 
     def __post_init__(self) -> None:
         """Derive the cancel operation writing the bindings' values."""
-        object.__setattr__(self, "targeted", _targeted(self.call, self.bindings))
+        from .writes import targeted_writes  # noqa: PLC0415 - Only a plan loads the operation runtime.
+
+        targeted = targeted_writes(self.call, (binding.written for binding in self.bindings))
+        object.__setattr__(self, "targeted", targeted)
 
 
 @final
@@ -259,14 +192,16 @@ class PollingPlan(Generic[T, P, C]):
     expires_at: Selector | None = None
     phases: Mapping[bytes, _Phase] = field(init=False)
     kinds: frozenset[str] = field(init=False)
-    polled: _Targeted[P] = field(init=False)
-    fetched: _Targeted[T] | None = field(init=False)
+    polled: Targeted[P] = field(init=False)
+    fetched: Targeted[T] | None = field(init=False)
     headers: frozenset[str] = field(init=False)
     queries: frozenset[str] = field(init=False)
     children: tuple[OperationPlan[Any, object], ...] = field(init=False)
 
     def __post_init__(self) -> None:
         """Index the states by canonical JSON, and derive the poll, fetch, and cancel operations writing values."""
+        from .writes import targeted_writes  # noqa: PLC0415 - Only a plan loads the operation runtime.
+
         phases = {
             canonical_json(value): phase
             for values, phase in (
@@ -277,8 +212,11 @@ class PollingPlan(Generic[T, P, C]):
             )
             for value in values
         }
-        polled = _targeted(self.poll, self.bindings)
-        fetched = None if self.fetch is None else _targeted(self.fetch, self.fetch_bindings)
+        polled = targeted_writes(self.poll, (binding.written for binding in self.bindings))
+        fetch = self.fetch
+        fetched = (
+            None if fetch is None else targeted_writes(fetch, (binding.written for binding in self.fetch_bindings))
+        )
         others = (*(() if fetched is None else (fetched,)), *(() if self.cancel is None else (self.cancel.targeted,)))
         object.__setattr__(self, "phases", MappingProxyType(phases))
         object.__setattr__(
@@ -399,7 +337,7 @@ def _wait_ms(not_before: float, now: float) -> int:
 
 
 def _sent(
-    targeted: _Targeted[Any], values: tuple[WireValue, ...]
+    targeted: Targeted[Any], values: tuple[WireValue, ...]
 ) -> Callable[[], tuple[tuple[object, ...], object, None]]:
     """Return the request a targeted operation sends writing the values, whatever the handle holds later."""
     return lambda: (*targeted.request(values), None)
@@ -722,7 +660,7 @@ class _Operation(Generic[T, P]):
 
     def _values(  # noqa: PLR0913, PLR0917
         self,
-        targeted: _Targeted[Any],
+        targeted: Targeted[Any],
         bindings: tuple[PageBinding, ...],
         wire: WireValue,
         info: ResponseInfo,
@@ -739,7 +677,9 @@ class _Operation(Generic[T, P]):
             else self._value(binding, wire, info, operation)
             for index, binding in enumerate(bindings)
         )
-        if (read := _dotted(targeted, written)) is not None:
+        from .writes import dotted_write  # noqa: PLC0415 - A plan loaded the operation runtime.
+
+        if (read := dotted_write(targeted, written)) is not None:
             raise self._error(info, "value", read, operation)
         return written
 
@@ -756,7 +696,7 @@ class _Operation(Generic[T, P]):
             raise self._error(info, _absence(value), read, plan.operation)
         if not isinstance(value, str):
             raise self._error(info, "type", read, plan.operation)
-        if (expires_at := _expiry(value, self._limits.clock.time())) is None:
+        if (expires_at := server_expiry(value, self._limits.clock.time())) is None:
             raise self._error(info, "value", read, plan.operation)
         return expires_at
 
@@ -996,9 +936,11 @@ class _Operation(Generic[T, P]):
             ),
         )
 
-    def _dots(self, targeted: _Targeted[Any], written: tuple[WireValue, ...]) -> None:
+    def _dots(self, targeted: Targeted[Any], written: tuple[WireValue, ...]) -> None:
         """Refuse saved values making a path segment a dot segment once encoded, as if a server had just given them."""
-        if (read := _dotted(targeted, written)) is not None:
+        from .writes import dotted_write  # noqa: PLC0415 - A plan loaded the operation runtime.
+
+        if (read := dotted_write(targeted, written)) is not None:
             raise self._error(None, "value", read, self._plan.operation)
 
     def _restore(self, state: WireValue, payload: bytes, expires_at: datetime | None) -> None:  # noqa: PLR0914
@@ -1107,21 +1049,6 @@ def _saved_body(saved: WireValue, payload: bytes, offset: int, fields: int) -> t
     content = payload[offset : offset + size]
     require_state(len(content) == size)
     return (content, status, content_type), entry[:-3]
-
-
-def _dotted(targeted: _Targeted[Any], written: tuple[WireValue, ...]) -> Selector | None:
-    """Return the selector of a read value that makes a path segment a dot segment once encoded, or None."""
-    from .writes import dotted_read  # noqa: PLC0415 - A plan loaded the operation runtime.
-
-    parameters = targeted.call.parameters
-    return next(
-        (
-            read
-            for segment, parts in targeted.dotted
-            if (read := dotted_read(parameters, segment, parts, written, dict)) is not None
-        ),
-        None,
-    )
 
 
 def _receipt(

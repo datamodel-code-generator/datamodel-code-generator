@@ -130,6 +130,46 @@ def test_client_typing_polling(backend: DataModelType, tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
+    "backend",
+    [
+        DataModelType.PydanticV2BaseModel,
+        DataModelType.PydanticV2Dataclass,
+        DataModelType.DataclassesDataclass,
+        DataModelType.TypingTypedDict,
+        DataModelType.MsgspecStruct,
+    ],
+)
+def test_client_typing_queues(backend: DataModelType, tmp_path: Path) -> None:
+    """Check queue helpers: typed receipts, entries, reports, store contracts, and misuses of each."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(
+        client_typing_report(tmp_path, backend, "queues", ("queues",)),
+        EXPECTED / f"{backend.value.replace('.', '-')}-queues.txt",
+    )
+
+
+@pytest.mark.parametrize(
+    "backend",
+    [
+        DataModelType.PydanticV2BaseModel,
+        DataModelType.PydanticV2Dataclass,
+        DataModelType.DataclassesDataclass,
+        DataModelType.TypingTypedDict,
+        DataModelType.MsgspecStruct,
+    ],
+)
+def test_client_typing_uploads(backend: DataModelType, tmp_path: Path) -> None:
+    """Check upload helpers: typed results, sync and asyncio handles and sources, and misuses of each."""
+    if not os.environ.get(ENABLED):
+        pytest.skip(f"{ENABLED} enables type checking generated packages")
+    assert_output(
+        client_typing_report(tmp_path, backend, "uploads", ("uploads",)),
+        EXPECTED / f"{backend.value.replace('.', '-')}-uploads.txt",
+    )
+
+
+@pytest.mark.parametrize(
     "case", ["pagination-targets", "pagination-querystring", "pagination-counts", "pagination-links", "streams-mixed"]
 )
 def test_client_typing_package(case: str, tmp_path: Path) -> None:

@@ -72,6 +72,9 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/c
         "pagination-targets",
         "polling",
         "polling-plans",
+        "uploads",
+        "uploads-plans",
+        "queues",
         "webhooks",
         "webhooks-schema",
         "webhooks-public-keys",
@@ -130,6 +133,8 @@ def test_client_render(case: str, tmp_path: Path) -> None:
         "protocols-pagination-querystring-checks",
         "protocols-pagination-count-checks",
         "protocols-polling-checks",
+        "protocols-upload-errors",
+        "protocols-upload-checks",
         "protocols-pagination-link-checks",
         "protocols-pagination-resume-checks",
         "protocols-webhook-errors",
@@ -142,6 +147,8 @@ def test_client_render(case: str, tmp_path: Path) -> None:
         "protocols-socket-scope",
         "protocols-cache-errors",
         "protocols-cache-checks",
+        "protocols-queue-errors",
+        "protocols-queue-checks",
     ],
 )
 def test_client_protocols(case: str, tmp_path: Path) -> None:
@@ -163,6 +170,8 @@ def test_client_protocols(case: str, tmp_path: Path) -> None:
         ("webhooks-public-keys", "webhooks-public-keys-python", "webhook-public-key-records"),
         ("webhooks-adapters", "webhooks-adapters-python", "webhook-adapter-records"),
         ("caching", "caching-python", "cache-records"),
+        ("queues", "queues-python", "queue-records"),
+        ("queues", "queues-schema", "queue-schema"),
     ],
 )
 def test_client_helper_digests(first: str, second: str, expected: str, tmp_path: Path) -> None:
@@ -193,6 +202,8 @@ def test_client_retry_metadata_digests(tmp_path: Path) -> None:
         "pagination-counts",
         "pagination-links",
         "polling",
+        "uploads",
+        "queues",
         "streams",
         "ndjson",
         "sockets",
