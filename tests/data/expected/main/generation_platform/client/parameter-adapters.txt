@@ -214,32 +214,32 @@ render pydantic_v2.BaseModel
   }
   /selection/selected_operations/0 default.list_tags(cookie:tags=tags, cookie:session=session, query:where=where, header:X-Labels=x_labels)
     exports client.types.default.ListTagsResponse client.types.default.ListTagsErrorData client.types.default.ListTagsHTTPError
-    exports client.types.default.ListTagsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.default.ListTagsRequestCodecs None
   /selection/selected_operations/1 default.get_item(path:key=key)
     exports client.types.default.GetItemResponse client.types.default.GetItemErrorData client.types.default.GetItemHTTPError
-    exports client.types.default.GetItemRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.default.GetItemRequestCodecs None
   /selection/selected_operations/2 default.get_segment(path:segment=segment, header:X-Raw=x_raw)
     exports client.types.default.GetSegmentResponse client.types.default.GetSegmentErrorData client.types.default.GetSegmentHTTPError
-    exports client.types.default.GetSegmentRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.default.GetSegmentRequestCodecs None
   /selection/selected_operations/3 default.find(querystring:criteria=criteria)
     exports client.types.default.FindResponse client.types.default.FindErrorData client.types.default.FindHTTPError
-    exports client.types.default.FindRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.default.FindRequestCodecs None
   /selection/selected_operations/4 default.search(query:opts=opts, query:a=a, query:near=near)
     exports client.types.default.SearchResponse client.types.default.SearchErrorData client.types.default.SearchHTTPError
-    exports client.types.default.SearchRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.default.SearchRequestCodecs None
   /selection/selected_operations/5 default.spread(query:opts=opts, query:filter=filter)
     exports client.types.default.SpreadResponse client.types.default.SpreadErrorData client.types.default.SpreadHTTPError
-    exports client.types.default.SpreadRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.default.SpreadRequestCodecs None
   /selection/selected_operations/6 default.list_shelf(path:shelf=shelf, path:rack=rack, path:slot=slot)
     exports client.types.default.ListShelfResponse client.types.default.ListShelfErrorData client.types.default.ListShelfHTTPError
-    exports client.types.default.ListShelfRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.default.ListShelfRequestCodecs None
   /selection/selected_operations/7 default.create_job()
     exports client.types.default.CreateJobResponse client.types.default.CreateJobErrorData client.types.default.CreateJobHTTPError
-    exports client.types.default.CreateJobRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.default.CreateJobRequestCodecs None
   /selection/selected_operations/8 default.get_job(path:jobId=job_id)
     exports client.types.default.GetJobResponse client.types.default.GetJobErrorData client.types.default.GetJobHTTPError
-    exports client.types.default.GetJobRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.default.GetJobRequestCodecs None
   /selection/selected_operations/9 default.get_report(header:X-Tags=x_tags)
     exports client.types.default.GetReportResponse client.types.default.GetReportErrorData client.types.default.GetReportHTTPError
-    exports client.types.default.GetReportRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.default.GetReportRequestCodecs None
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

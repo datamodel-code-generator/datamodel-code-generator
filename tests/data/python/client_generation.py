@@ -189,12 +189,10 @@ def _public_api(content: bytes) -> list[str]:
             f"{item['location']}:{item['wire_name']}={item['python_name']}" for item in operation["parameters"]
         )
         exports = operation["exports"]
-        digests = operation["contract_digests"]
-        valid = all(_DIGEST.fullmatch(value) for value in digests.values())
         lines.extend((
             f"  {operation['operation_ref']} {operation['resource']}.{operation['method']}({parameters})",
             f"    exports {exports['response']} {exports['error_data']} {exports['http_error']}",
-            f"    exports {exports['request_codecs']} {exports['header_decoder']} digests {sorted(digests)} {valid}",
+            f"    exports {exports['request_codecs']} {exports['header_decoder']}",
         ))
     return lines
 
@@ -313,23 +311,6 @@ def _manifest(case: dict[str, Any], root: Path) -> tuple[dict[str, Any], bytes]:
     manifest = next(item for item in project.artifacts if item.path.name == MANIFEST)
     models = next(item for item in project.artifacts if item.path == root / "models.py")
     return json.loads(manifest.content or b"")["target_data"]["client"], models.content or b""
-
-
-def _digests(case: dict[str, Any], root: Path) -> tuple[dict[str, dict[str, str]], bytes]:
-    """Return the contract digests of each operation in the manifest of a rendered case, and its models."""
-    data, models = _manifest(case, root)
-    return {f"{item['resource']}.{item['method']}": item["contract_digests"] for item in data["public_api"]}, models
-
-
-def client_digest_report(first: str, second: str, root: Path) -> str:
-    """Render two cases and report, for each operation, which of its contract digests they share."""
-    cases = json.loads((SOURCE / "cases.json").read_text(encoding="utf-8"))
-    (left, models), (right, other) = (_digests(cases[name], root / name) for name in (first, second))
-    lines = [f"# {first} and {second}", f"  models same {models == other}"]
-    for operation, digests in left.items():
-        same = [name for name, value in sorted(digests.items()) if right[operation][name] == value]
-        lines.append(f"  {operation} same {same} different {sorted(set(digests) - set(same))}")
-    return "\n".join(lines) + "\n"
 
 
 def client_helper_digest_report(first: str, second: str, root: Path) -> str:

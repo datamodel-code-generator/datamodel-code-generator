@@ -176,28 +176,28 @@
   }
   /selection/selected_operations/0 users.get_user(query:fields=fields, header:Accept-Language=accept_language, path:userId=user_id)
     exports client.types.users.GetUserResponse client.types.users.GetUserErrorData client.types.users.GetUserHTTPError
-    exports client.types.users.GetUserRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.users.GetUserRequestCodecs None
   /selection/selected_operations/1 users.check_user(path:userId=user_id)
     exports client.types.users.CheckUserResponse client.types.users.CheckUserErrorData client.types.users.CheckUserHTTPError
-    exports client.types.users.CheckUserRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.users.CheckUserRequestCodecs None
   /selection/selected_operations/2 users.rename_user(path:userId=user_id)
     exports client.types.users.RenameUserResponse client.types.users.RenameUserErrorData client.types.users.RenameUserHTTPError
-    exports client.types.users.RenameUserRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.users.RenameUserRequestCodecs None
   /selection/selected_operations/3 users.delete_user(path:userId=user_id)
     exports client.types.users.DeleteUserResponse client.types.users.DeleteUserErrorData client.types.users.DeleteUserHTTPError
-    exports client.types.users.DeleteUserRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.users.DeleteUserRequestCodecs None
   /selection/selected_operations/4 users.list_users(query:page=page, query:role=role)
     exports client.types.users.ListUsersResponse client.types.users.ListUsersErrorData client.types.users.ListUsersHTTPError
-    exports client.types.users.ListUsersRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.users.ListUsersRequestCodecs None
   /selection/selected_operations/5 users.create_user()
     exports client.types.users.CreateUserResponse client.types.users.CreateUserErrorData client.types.users.CreateUserHTTPError
-    exports client.types.users.CreateUserRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.users.CreateUserRequestCodecs None
   /selection/selected_operations/6 carts.get_current_cart(cookie:cart=cart)
     exports client.types.carts.GetCurrentCartResponse client.types.carts.GetCurrentCartErrorData client.types.carts.GetCurrentCartHTTPError
-    exports client.types.carts.GetCurrentCartRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.carts.GetCurrentCartRequestCodecs None
   /selection/selected_operations/7 secure.get_secure_user(path:userId=user_id)
     exports client.types.secure.GetSecureUserResponse client.types.secure.GetSecureUserErrorData client.types.secure.GetSecureUserHTTPError
-    exports client.types.secure.GetSecureUserRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.secure.GetSecureUserRequestCodecs None
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
   S_OPERATION_EXCLUDED selection /paths/~1items~1{id}/get: GET /items/{id} is excluded by exclude_tags 'items': Checked elsewhere
   S_OPERATION_EXCLUDED selection /paths/~1reports/get: GET /reports is excluded by exclude_tags 'reports': Checked elsewhere

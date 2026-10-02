@@ -30,7 +30,7 @@ S10 resolves these S09 deferrals:
 - A call makes several attempts: `BodyAttemptContext` carries real `attempt_index`, `hop_index`, and `remaining_timeout`, a call binds and encodes its body once, a field body included, and replays it from a `BodySource`, and a factory's `fingerprint` is checked (S10-2).
 - Transport failures are `PhaseTimeoutError` or `DeadlineExceededError` where a limit fired (S10-1), `retry_stop_reason` is set when a retry is refused (S10-2), and security requirements are compiled, selected, and applied to headers, query, and cookies, which header and query patches can no longer override or remove (S10-3).
 
-These remain: `parent_session_id` stays None and `call_start` has no origin until operation sessions arrive with the protocol helpers (S11), where the later events of a call carry its origin; `ProtocolDataError` has no `location` (S11), while #4223 added `OperationRef` and `ProtocolError`'s `helper_id` and `operation`; `AsyncRawResponse.stream_to` still writes with blocking calls on the event loop; and the CLI flags, generated SDK documents, and `api-diff.json` belong to S14.
+These remain: `parent_session_id` stays None and `call_start` has no origin until operation sessions arrive with the protocol helpers (S11), where the later events of a call carry its origin; `ProtocolDataError` has no `location` (S11), while #4223 added `OperationRef` and `ProtocolError`'s `helper_id` and `operation`; `AsyncRawResponse.stream_to` still writes with blocking calls on the event loop; and the CLI flags and generated SDK documents belong to S14.
 
 ## S10-1: deadlines, cancellation, and concurrency limits (#4224)
 

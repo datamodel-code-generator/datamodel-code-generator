@@ -9,7 +9,6 @@ import pytest
 from tests.conftest import assert_generated_modules_output, assert_output
 from tests.data.python.client_generation import (
     client_config_report,
-    client_digest_report,
     client_documentation_report,
     client_helper_digest_report,
     client_input_report,
@@ -192,18 +191,6 @@ def test_client_helper_digests(first: str, second: str, expected: str, tmp_path:
     assert_output(client_helper_digest_report(first, second, tmp_path), EXPECTED / "digests" / f"{expected}.txt")
 
 
-def test_client_signature_style_digests(tmp_path: Path) -> None:
-    """Change only each operation's signature digest when the same API renders with the other signature style."""
-    assert_output(client_digest_report("pets", "pets-unpack", tmp_path), EXPECTED / "digests" / "signature-style.txt")
-
-
-def test_client_retry_metadata_digests(tmp_path: Path) -> None:
-    """Project retry declarations into only the corresponding request or response contracts."""
-    assert_output(
-        client_digest_report("retries-defaults", "retries", tmp_path), EXPECTED / "digests" / "retry-metadata.txt"
-    )
-
-
 @pytest.mark.parametrize(
     "case",
     [
@@ -229,34 +216,6 @@ def test_client_retry_metadata_digests(tmp_path: Path) -> None:
 def test_client_documentation(case: str, tmp_path: Path) -> None:
     """Keep metadata, explicit retry overrides, documentation ownership, and source distribution inputs visible."""
     assert_output(client_documentation_report(case, tmp_path), EXPECTED / "documentation" / f"{case}.txt")
-
-
-@pytest.mark.parametrize("variant", ["auth-no-challenge", "auth-changed", "auth-cosmetic"])
-def test_client_auth_digests(variant: str, tmp_path: Path) -> None:
-    """Keep authentication semantics in the security digest and exclude descriptions and scope ordering."""
-    assert_output(client_digest_report("auth", variant, tmp_path), EXPECTED / "digests" / f"{variant}.txt")
-
-
-def test_client_parameter_adapter_digests(tmp_path: Path) -> None:
-    """Change the request digest of an operation whose adapted parameter explodes or whose adapter differs."""
-    assert_output(
-        client_digest_report("parameter-adapters", "parameter-adapters-variant", tmp_path),
-        EXPECTED / "digests" / "parameter-adapters.txt",
-    )
-
-
-def test_client_validation_digests(tmp_path: Path) -> None:
-    """Keep every operation's contract digests and the models when the same API renders with other validation modes."""
-    assert_output(
-        client_digest_report("validation", "validation-structural", tmp_path), EXPECTED / "digests" / "validation.txt"
-    )
-
-
-def test_client_body_arguments_digests(tmp_path: Path) -> None:
-    """Change only the signature digests of operations whose calls may give fields when an API renders with them."""
-    assert_output(
-        client_digest_report("fields-body", "fields-both", tmp_path), EXPECTED / "digests" / "body-arguments.txt"
-    )
 
 
 @pytest.mark.parametrize(

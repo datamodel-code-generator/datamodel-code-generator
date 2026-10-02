@@ -410,40 +410,40 @@
   }
   /selection/selected_operations/0 items.create_item()
     exports client.types.items.CreateItemResponse client.types.items.CreateItemErrorData client.types.items.CreateItemHTTPError
-    exports client.types.items.CreateItemRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.items.CreateItemRequestCodecs None
   /selection/selected_operations/1 items.list_items(query:cursor=cursor)
     exports client.types.items.ListItemsResponse client.types.items.ListItemsErrorData client.types.items.ListItemsHTTPError
-    exports client.types.items.ListItemsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.items.ListItemsRequestCodecs None
   /selection/selected_operations/2 items.create_note()
     exports client.types.items.CreateNoteResponse client.types.items.CreateNoteErrorData client.types.items.CreateNoteHTTPError
-    exports client.types.items.CreateNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.items.CreateNoteRequestCodecs None
   /selection/selected_operations/3 items.put_blob(header:Content-Length=content_length)
     exports client.types.items.PutBlobResponse client.types.items.PutBlobErrorData client.types.items.PutBlobHTTPError
-    exports client.types.items.PutBlobRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.items.PutBlobRequestCodecs None
   /selection/selected_operations/4 items.search(query:cursor=cursor)
     exports client.types.items.SearchResponse client.types.items.SearchErrorData client.types.items.SearchHTTPError
-    exports client.types.items.SearchRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.items.SearchRequestCodecs None
   /selection/selected_operations/5 items.feed()
     exports client.types.items.FeedResponse client.types.items.FeedErrorData client.types.items.FeedHTTPError
-    exports client.types.items.FeedRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.items.FeedRequestCodecs None
   /selection/selected_operations/6 jobs.create_job()
     exports client.types.jobs.CreateJobResponse client.types.jobs.CreateJobErrorData client.types.jobs.CreateJobHTTPError
-    exports client.types.jobs.CreateJobRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.jobs.CreateJobRequestCodecs None
   /selection/selected_operations/7 jobs.get_job(path:jobId=job_id)
     exports client.types.jobs.GetJobResponse client.types.jobs.GetJobErrorData client.types.jobs.GetJobHTTPError
-    exports client.types.jobs.GetJobRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.jobs.GetJobRequestCodecs None
   /selection/selected_operations/8 checks.create_check()
     exports client.types.checks.CreateCheckResponse client.types.checks.CreateCheckErrorData client.types.checks.CreateCheckHTTPError
-    exports client.types.checks.CreateCheckRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.checks.CreateCheckRequestCodecs None
   /selection/selected_operations/9 checks.check_status()
     exports client.types.checks.CheckStatusResponse client.types.checks.CheckStatusErrorData client.types.checks.CheckStatusHTTPError
-    exports client.types.checks.CheckStatusRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.checks.CheckStatusRequestCodecs None
   /selection/selected_operations/10 events.reopen_events(query:cursor=cursor)
     exports client.types.events.ReopenEventsResponse client.types.events.ReopenEventsErrorData client.types.events.ReopenEventsHTTPError
-    exports client.types.events.ReopenEventsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.events.ReopenEventsRequestCodecs None
   /selection/selected_operations/11 events.watch(query:cursor=cursor)
     exports client.types.events.WatchResponse client.types.events.WatchErrorData client.types.events.WatchHTTPError
-    exports client.types.events.WatchRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.events.WatchRequestCodecs None
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
 
 # artifact client/_generated_docs/README.md

@@ -35,7 +35,6 @@ from datamodel_code_generator._client.protocol_plan import (
 )
 from datamodel_code_generator._client.queues import plan_queues
 from datamodel_code_generator._client.render import ClientRenderer
-from datamodel_code_generator._client.security import security_contract
 from datamodel_code_generator._client.sockets import DEPENDENCY as WEBSOCKETS
 from datamodel_code_generator._client.sockets import plan_sockets, socket_uses
 from datamodel_code_generator._client.streams import plan_streams, stream_uses
@@ -58,14 +57,12 @@ from datamodel_code_generator._target_render import PATTERNS, model_dependencies
 from datamodel_code_generator.enums import DataModelType
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_manifest import JSONObject
     from datamodel_code_generator._api_types import TargetKind
     from datamodel_code_generator._client.caching import CacheSpec
     from datamodel_code_generator._client.pagination import PaginationSpec
-    from datamodel_code_generator._client.plan import ClientPlan, MediaSpec, OperationSpec, ParameterSpec, PartSpec
+    from datamodel_code_generator._client.plan import ClientPlan, OperationSpec, ParameterSpec
     from datamodel_code_generator._client.polling import PollingSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.queues import QueueSpec
@@ -76,7 +73,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator._generation_contract import GeneratedTypeContractBatch, TypeUseBinding, TypeUseId
     from datamodel_code_generator._openapi_codec_plan import CodecBackend, CodecPlan
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
-    from datamodel_code_generator._runtime.model_codecs.parameters import ParameterPlan
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
 
 DEPENDENCIES: Final = ("httpx2>=2.13.0", "typing-extensions>=4.16")
@@ -292,7 +288,7 @@ def _bindings(codecs: CodecPlan, backend: str) -> tuple[TargetBinding, ...]:
 
 
 class _TargetData:
-    """Record the client's namespace and each public operation with the digests of its contract."""
+    """Record the client's namespace and each public operation."""
 
     def __init__(
         self,
@@ -605,127 +601,7 @@ class _TargetData:
                 "request_codecs": f"{types}.{spec.pascal}RequestCodecs",
                 "header_decoder": f"{types}.decode_{spec.name}_header" if headers else None,
             },
-            "contract_digests": {name: _digest(value) for name, value in self.contracts(spec)},
         }
-
-    def contracts(self, spec: OperationSpec) -> tuple[tuple[str, object], ...]:
-        """Return the operation's public signature, request, response, and security contracts."""
-        body = spec.body
-        signature: dict[str, object] = {
-            "style": self.config.signature_style,
-            "resource": spec.resource,
-            "method": spec.name,
-            "parameters": [(item.python_name, item.required, self.type(item.use)) for item in spec.parameters],
-            "body": None
-            if body is None
-            else (
-                body.required,
-                body.default,
-                [
-                    (media.media_type, self.type(media.use))
-                    if media.members is None
-                    else (media.media_type, self.type(media.use), self.members(media, self.type))
-                    for media in body.media
-                ],
-            ),
-            "responses": [
-                (
-                    item.status,
-                    [
-                        self.type(media.use)
-                        if media.members is None
-                        else (self.type(media.use), self.members(media, self.type))
-                        for media in item.media
-                    ],
-                )
-                for item in spec.responses
-            ],
-            "response_media_type": spec.response_media_type,
-        }
-        if spec.fields:
-            signature["fields"] = [
-                (
-                    branch.media_type,
-                    [
-                        (field.python_name, field.wire_name, field.required, self.spelling.static(field.type))
-                        for field in branch.fields
-                    ],
-                )
-                for branch in spec.fields
-            ]
-        request = {
-            "method": spec.contract.method,
-            "path": spec.contract.path,
-            "servers": spec.servers,
-            "parameters": [self.parameter(item) for item in spec.parameters],
-            "retry_safety": spec.retry_safety,
-            "idempotency": None
-            if (idempotency := spec.idempotency) is None
-            else {
-                "header_name": idempotency.header_name,
-                "replay_safe_with_key": idempotency.replay_safe_with_key,
-                "retention_seconds": idempotency.retention_seconds,
-                "scope": idempotency.scope,
-            },
-            "body": None
-            if body is None
-            else [
-                (
-                    item.media_type,
-                    item.fields,
-                    item.additional,
-                    self.contract(item.use),
-                    *item.encoded,
-                    *item.content_types,
-                )
-                if item.members is None
-                else (item.media_type, self.contract(item.use), self.members(item, self.contract))
-                for item in body.media
-            ],
-        }
-        if spec.circuit_group is not None:
-            request["circuit_group"] = spec.circuit_group
-        if spec.accepted_content_encodings:
-            request["accepted_content_encodings"] = spec.accepted_content_encodings
-        response = {
-            "success_statuses": spec.success_statuses,
-            "request_id_header": spec.request_id_header,
-            "retry_after_ms_header": spec.retry_after_ms_header,
-            "should_retry_header": spec.should_retry_header,
-            "responses": [
-                (
-                    item.status,
-                    [
-                        (media.media_type, self.contract(media.use))
-                        if media.members is None
-                        else (media.media_type, self.contract(media.use), self.members(media, self.contract))
-                        for media in item.media
-                    ],
-                    [(header.name, header.required, header.plan, self.contract(header.use)) for header in item.headers],
-                )
-                for item in spec.responses
-            ],
-        }
-        security = security_contract(
-            self.request.batch, spec.contract, spec.security, challenge_less=spec.auth_challenge_less_401
-        )
-        return (("signature", signature), ("request", request), ("response", response), ("security", security))
-
-    @staticmethod
-    def members(media: MediaSpec, project: Callable[[TypeUseBinding | None], object]) -> object:
-        """Return each member plan of media sent or read as parts with a projection of its use, then any other's."""
-        extra = media.extra
-        return (
-            [
-                (
-                    *_plan(part),
-                    project(part.use),
-                    [(header.name, header.required, header.plan, project(header.use)) for header in part.headers],
-                )
-                for part in media.members or ()
-            ],
-            None if extra is None else (*_plan(extra), project(extra.use)),
-        )
 
     def type(self, use: TypeUseBinding | None) -> str | None:
         """Return a use's final type spelled with the import locations of its names, or None without a schema."""
@@ -743,12 +619,6 @@ class _TargetData:
         if use is None or use.schema is None:
             return None
         return (self.bindings.get(use.id), self.wire.schema(use.schema)[1])
-
-
-def _plan(part: PartSpec) -> tuple[str, bool, bool, bool, tuple[str, ...], ParameterPlan | None]:
-    """Return a part's name, whether it repeats, holds files, or is required, and its encoding's media and style."""
-    plan = part.plan
-    return plan.name, plan.repeated, plan.file, plan.required, plan.content_types, plan.style
 
 
 def _digest(value: object) -> str:
