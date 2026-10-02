@@ -1,0 +1,289 @@
+# input-aliases
+render
+  target=fastapi schema_version=1
+  write target server/__init__.py (target)
+  write target server/application.py (target)
+  write target server/routers/__init__.py (target)
+  write target server/routers/untagged.py (target)
+  write target server/_generated/__init__.py (target)
+  write target server/_generated/contract.py (target)
+  write target server/_generated/model_bindings.py (target)
+  write target server/_generated/openapi.py (target)
+  write target server/model_codecs.py (target)
+  write target server/responses.py (target)
+  write target server/errors.py (target)
+  write target server/auth_types.py (target)
+  write target server/services.py (target)
+  write target server/README.md (target)
+  write target server/py.typed (target)
+  write model_inventory server/.dcg-state/model-artifacts.json (target)
+  write target_manifest server/.dcg-target-manifest.json (target)
+  23 runtime modules ['write']
+{
+  "bindings": [],
+  "diagnostics": [],
+  "extensions": {
+    "formatters": [],
+    "hooks": [],
+    "templates": []
+  },
+  "files": [
+    {
+      "group": null,
+      "kind": "package",
+      "path": "__init__.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": null,
+      "kind": "application",
+      "path": "application.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": null,
+      "kind": "package",
+      "path": "routers/__init__.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": "untagged",
+      "kind": "router",
+      "path": "routers/untagged.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": null,
+      "kind": "package",
+      "path": "_generated/__init__.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": null,
+      "kind": "contract",
+      "path": "_generated/contract.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": null,
+      "kind": "model_bindings",
+      "path": "_generated/model_bindings.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": null,
+      "kind": "openapi",
+      "path": "_generated/openapi.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": null,
+      "kind": "model_codecs",
+      "path": "model_codecs.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": null,
+      "kind": "responses",
+      "path": "responses.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": null,
+      "kind": "errors",
+      "path": "errors.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": null,
+      "kind": "auth_types",
+      "path": "auth_types.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": null,
+      "kind": "services",
+      "path": "services.py",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": null,
+      "kind": "readme",
+      "path": "README.md",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    },
+    {
+      "group": null,
+      "kind": "typing",
+      "path": "py.typed",
+      "sha256": "<sha256>",
+      "size": "<masked>"
+    }
+  ],
+  "generator": {
+    "name": "datamodel-code-generator",
+    "runtime_revision": "<masked>",
+    "version": "<masked>"
+  },
+  "inputs": {
+    "documents": [],
+    "provenance": [
+      {
+        "digest": "<sha256>",
+        "identity": null,
+        "opaque": false,
+        "option_path": "model_config.target_python_version"
+      },
+      {
+        "digest": "<sha256>",
+        "identity": null,
+        "opaque": false,
+        "option_path": "model_config.disable_timestamp"
+      },
+      {
+        "digest": "<sha256>",
+        "identity": null,
+        "opaque": false,
+        "option_path": "model_config.formatters"
+      },
+      {
+        "digest": "<sha256>",
+        "identity": null,
+        "opaque": false,
+        "option_path": "model_config.openapi_scopes"
+      }
+    ],
+    "root": {
+      "digest": "<sha256>",
+      "kind": "file",
+      "uri": "../spec/input-aliases.yaml"
+    },
+    "target_config": {
+      "opaque_options": [],
+      "protocol_metadata": {},
+      "public_options": {
+        "body_mode": "typed",
+        "body_modes": {},
+        "builtin_codec_compatibility": [],
+        "codec_adapters": [],
+        "custom_formatter_kwargs": {},
+        "custom_formatters": [],
+        "distribution_name": null,
+        "encoding": "utf-8",
+        "export_bindings": [],
+        "formatter_settings": null,
+        "formatters": [
+          "builtin"
+        ],
+        "handler_mode": "sync",
+        "handler_modes": {},
+        "header": null,
+        "hooks": [],
+        "include_request": false,
+        "include_timestamp": false,
+        "layout": "routers",
+        "model_dependency": null,
+        "model_mode": "generate",
+        "model_package": "example.models",
+        "operation_names": {},
+        "output": ".",
+        "package": "example.server",
+        "package_mode": "embedded",
+        "package_version": null,
+        "parameter_names": {},
+        "primary_responses": {},
+        "router_names": {},
+        "templates": null,
+        "update_groups": null
+      },
+      "runtime_defaults": {}
+    }
+  },
+  "model": {
+    "artifacts": [],
+    "fingerprint": "<sha256>",
+    "mode": "generate",
+    "output_uri": "../models.py",
+    "package": "example.models"
+  },
+  "schema_version": 1,
+  "selection": {
+    "excluded_operations": [],
+    "reason": null,
+    "rules": {
+      "exclude_operations": [],
+      "exclude_tags": [],
+      "include_operations": [],
+      "include_tags": [],
+      "reason": null
+    },
+    "selected_operations": [
+      {
+        "document": "/inputs/root",
+        "pointer": "/paths/~1items/get"
+      }
+    ]
+  },
+  "target": {
+    "id": "<sha256>",
+    "kind": "fastapi",
+    "package": "example.server",
+    "root_uri": "."
+  },
+  "target_data": "<fastapi>"
+}
+generate
+  target=fastapi schema_version=1
+  written target server/__init__.py (target)
+  written target server/application.py (target)
+  written target server/routers/__init__.py (target)
+  written target server/routers/untagged.py (target)
+  written target server/_generated/__init__.py (target)
+  written target server/_generated/contract.py (target)
+  written target server/_generated/model_bindings.py (target)
+  written target server/_generated/openapi.py (target)
+  written target server/model_codecs.py (target)
+  written target server/responses.py (target)
+  written target server/errors.py (target)
+  written target server/auth_types.py (target)
+  written target server/services.py (target)
+  written target server/README.md (target)
+  written target server/py.typed (target)
+  written model_inventory server/.dcg-state/model-artifacts.json (target)
+  written target_manifest server/.dcg-target-manifest.json (target)
+  23 runtime modules ['written']
+tree
+  .dcg-api-state/locks/b3eacd33433b31b5252351032c9b3e7a2e7aa7738d5decdf0dd6c62680853c06.lock
+  .dcg-api-state/locks/dcfeaa5ac3dffd54264034760914588d92fc7395c81eaa9274715840dc28100b.lock
+  server/.dcg-state/model-artifacts.json
+  server/.dcg-target-manifest.json
+  server/README.md
+  server/__init__.py
+  server/_generated/__init__.py
+  server/_generated/contract.py
+  server/_generated/model_bindings.py
+  server/_generated/openapi.py
+  server/application.py
+  server/auth_types.py
+  server/errors.py
+  server/model_codecs.py
+  server/py.typed
+  server/responses.py
+  server/routers/__init__.py
+  server/routers/untagged.py
+  server/services.py
+  23 runtime modules ['present']

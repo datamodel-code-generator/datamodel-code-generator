@@ -19,7 +19,9 @@ from tests.data.python.client_generation import (
 EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/client"
 
 
-@pytest.mark.parametrize("case", ["input-cycle-dict", "input-cycle-list", "input-cycle-mutual", "input-aliases"])
+@pytest.mark.parametrize(
+    "case", ["input-cycle-dict", "input-cycle-list", "input-cycle-mutual", "input-cycle-reference", "input-aliases"]
+)
 def test_client_input(case: str, tmp_path: Path) -> None:
     """Refuse cyclic input before publication while accepting shared aliases and recording their JSON digest."""
     assert_output(client_input_report(case, tmp_path), EXPECTED / f"{case}.txt")

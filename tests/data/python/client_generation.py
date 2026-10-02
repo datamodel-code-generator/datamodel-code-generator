@@ -10,7 +10,7 @@ from dataclasses import fields
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any, TypeAlias
 
-from datamodel_code_generator import DataModelType, GenerateConfig
+from datamodel_code_generator import DataModelType, GenerateConfig, generate
 from datamodel_code_generator._api_generation import generate_target, render_target
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, GeneratedProject, OperationSelection
 from datamodel_code_generator._client.config import (
@@ -366,6 +366,7 @@ def client_input_report(case_name: str, root: Path) -> str:
             attempt = root / backend.replace(".", "_") / name
             attempt.mkdir(parents=True)
             source = shutil.copy2(SOURCE / case["input"], attempt / case["input"])
+            copy_references(case, attempt)
             config = client_config(case.get("config", {}), attempt)
             lines.append(f"{name} {backend}")
             try:
@@ -386,11 +387,24 @@ def client_input_report(case_name: str, root: Path) -> str:
                 document = json.loads(manifest or b"")["inputs"]["root"]
                 lines.append(f"  source {document['uri']} digest {document['digest']}")
             files = sorted(
-                path.relative_to(attempt).as_posix()
+                _DIGEST.sub("<sha256>", path.relative_to(attempt).as_posix())
                 for path in attempt.rglob("*")
-                if path.is_file() and path != source and "_runtime" not in path.parts
+                if path.is_file()
+                and path.relative_to(attempt).as_posix() not in {case["input"], *case.get("references", ())}
             )
-            lines.append(f"  files {files}")
+            lines.extend((
+                f"  files {[path for path in files if '_runtime' not in Path(path).parts]}",
+                f"  runtime files {sum('_runtime' in Path(path).parts for path in files)}",
+            ))
+        if case.get("model_only"):
+            attempt = root / backend.replace(".", "_") / "models-only"
+            attempt.mkdir(parents=True)
+            source = shutil.copy2(SOURCE / case["input"], attempt / case["input"])
+            copy_references(case, attempt)
+            output = attempt / "models.py"
+            generate(source, config=model_config(output, backend, case.get("model", {})))
+            lines.append(f"model-only {backend}")
+            lines.extend(f"  | {line}" for line in output.read_text(encoding="utf-8").splitlines())
     return "\n".join(lines) + "\n"
 
 

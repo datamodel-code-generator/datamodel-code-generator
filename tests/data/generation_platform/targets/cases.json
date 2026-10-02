@@ -789,5 +789,69 @@
         "tree": null
       }
     ]
+  },
+  "input-cycle-reference": {
+    "input": {
+      "path": "input-cycle-reference.yaml"
+    },
+    "model": {
+      "openapi_scopes": [
+        "api"
+      ]
+    },
+    "steps": [
+      {
+        "render": {
+          "input": {
+            "path": "input-cycle-reference.yaml"
+          },
+          "model": {
+            "output_model_type": "pydantic_v2.BaseModel"
+          }
+        }
+      },
+      {
+        "tree": null
+      },
+      {
+        "generate": {
+          "input": {
+            "path": "input-cycle-reference.yaml"
+          },
+          "model": {
+            "output_model_type": "pydantic_v2.BaseModel"
+          }
+        }
+      },
+      {
+        "tree": null
+      },
+      {
+        "render": {
+          "input": {
+            "path": "input-cycle-reference.yaml"
+          },
+          "model": {
+            "output_model_type": "pydantic_v2.dataclass"
+          }
+        }
+      },
+      {
+        "tree": null
+      },
+      {
+        "generate": {
+          "input": {
+            "path": "input-cycle-reference.yaml"
+          },
+          "model": {
+            "output_model_type": "pydantic_v2.dataclass"
+          }
+        }
+      },
+      {
+        "tree": null
+      }
+    ]
   }
 }
