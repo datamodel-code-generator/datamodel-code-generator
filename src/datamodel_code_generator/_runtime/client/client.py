@@ -83,6 +83,7 @@ from .options import (
     DEFAULT_VALIDATION,
     ClientOptions,
     CompressionOrigin,
+    GenerationDefaults,
     HeaderPatch,
     IdempotencyKey,
     QueryPatch,
@@ -92,7 +93,6 @@ from .options import (
     Settings,
     TimeoutOptions,
     ValidationModes,
-    _GenerationDefaults,
     awaited,
     checked_base_url,
     context,
@@ -234,7 +234,7 @@ class ClientDefaults:
     security_schemes: tuple[SecuritySchemeEntry, ...] = ()
     helpers: tuple[tuple[str, str], ...] = ()
     circuit_groups: frozenset[str] = frozenset()
-    runtime: _GenerationDefaults | None = None
+    runtime: GenerationDefaults | None = None
 
 
 _DEFAULT_SERVER: Final = ServerSelection()

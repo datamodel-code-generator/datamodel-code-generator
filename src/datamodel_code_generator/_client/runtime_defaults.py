@@ -10,10 +10,10 @@ from urllib.parse import urlsplit
 
 from datamodel_code_generator._runtime.client.errors import ConfigurationError
 from datamodel_code_generator._runtime.client.options import (
+    GenerationDefaults,
     RedirectOptions,
     RetryOptions,
     TimeoutOptions,
-    _GenerationDefaults,
 )
 from datamodel_code_generator._runtime.model_codecs.unset import UNSET, Unset
 from datamodel_code_generator._target_config import _ConfigValueError
@@ -119,7 +119,7 @@ def _record(value: object, kind: type[DefaultsRecord], path: tuple[str, ...]) ->
     return {item.name: field for item in fields(kind) if not isinstance(field := getattr(value, item.name), Unset)}
 
 
-def checked_defaults(value: object) -> tuple[_GenerationDefaults, JSONObject]:
+def checked_defaults(value: object) -> tuple[GenerationDefaults, JSONObject]:
     """Validate through runtime owners and produce the one sparse canonical data projection."""
     values = _record(value, RuntimeDefaultsConfig, ())
     for name, (record, runtime) in _NESTED.items():
@@ -134,7 +134,7 @@ def checked_defaults(value: object) -> tuple[_GenerationDefaults, JSONObject]:
                 )
         else:
             del values[name]
-    layer = _GenerationDefaults(**values)
+    layer = GenerationDefaults(**values)
     projected: JSONObject = {}
     for name in values:
         field = getattr(layer, name)

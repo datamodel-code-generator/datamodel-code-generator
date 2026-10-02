@@ -792,7 +792,7 @@ class Settings:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class _GenerationDefaults:
+class GenerationDefaults:
     """A closed data layer applied once at client construction, before runtime client options."""
 
     timeout: TimeoutOptions | Unset | None = UNSET
@@ -851,7 +851,7 @@ class _GenerationDefaults:
         )
 
 
-def _check_runtime_defaults(layer: _Options | _GenerationDefaults) -> None:
+def _check_runtime_defaults(layer: _Options | GenerationDefaults) -> None:
     """Validate the shared closed runtime fields without constructing synthetic request options."""
     checked_instance(layer.timeout, (TimeoutOptions, Unset, type(None)), ("timeout",))
     checked_instance(layer.retry, (RetryOptions, Unset), ("retry",))

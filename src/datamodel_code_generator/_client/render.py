@@ -4688,7 +4688,7 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
                 literal = repr(value)
             entries.append(f"{name}={literal}")
         constant = (
-            f"RUNTIME_DEFAULTS = {module.local('_runtime.client.options', '_GenerationDefaults')}({', '.join(entries)})"
+            f"RUNTIME_DEFAULTS = {module.local('_runtime.client.options', 'GenerationDefaults')}({', '.join(entries)})"
         )
         docstring = '"""Sparse generated runtime settings shared by sync and async clients."""'
         return f"{docstring}\n\n{module.imports()}\n\n{constant}\n"
