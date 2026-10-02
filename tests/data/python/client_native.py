@@ -145,9 +145,11 @@ def _wire(package: ModuleType, options: ModuleType, lines: list[str], *, asynchr
             server.stop()
 
     defaults = json.loads((SOURCE / "defaults.json").read_text(encoding="utf-8"))
-    environment_cases = defaults["transport_environment"] + [
-        {"name": name, "proxy": None} for name in defaults["transport_direct"]
-    ] + defaults["transport_ca"]
+    environment_cases = (
+        defaults["transport_environment"]
+        + [{"name": name, "proxy": None} for name in defaults["transport_direct"]]
+        + defaults["transport_ca"]
+    )
     for case in environment_cases:
         name = case["name"]
         server = NativeFixture(proxy="forward" if case["proxy"] in {"forward", "all"} else case["proxy"])
@@ -166,7 +168,9 @@ def _wire(package: ModuleType, options: ModuleType, lines: list[str], *, asynchr
                     ca_directory = Path(directory) / "certs"
                     ca_directory.mkdir()
                     ca_file = Path(directory) / "ca.pem"
-                    authority = peer if case.get("https_proxy") or "context" in setting or "verify-off" in setting else server
+                    authority = (
+                        peer if case.get("https_proxy") or "context" in setting or "verify-off" in setting else server
+                    )
                     ca_file.write_bytes(authority.ca_pem)
                     (ca_directory / defaults["ca_directory_filename"]).write_bytes(authority.ca_pem)
                     if case.get("ca_source") == "directory":
@@ -240,7 +244,11 @@ def _wire(package: ModuleType, options: ModuleType, lines: list[str], *, asynchr
                 lines.append(
                     f"  origin arrivals={len(server.requests)} connects={server.connects} "
                     f"proxy arrivals={len(peer.requests)} connects={peer.connects}"
-                    + (f" methods={[request[0].decode() for request in peer.requests]}" if case.get("https_proxy") else "")
+                    + (
+                        f" methods={[request[0].decode() for request in peer.requests]}"
+                        if case.get("https_proxy")
+                        else ""
+                    )
                 )
         finally:
             server.stop()
