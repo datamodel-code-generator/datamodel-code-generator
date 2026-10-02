@@ -1,7 +1,10 @@
 {
   "openapi": "3.0.3",
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "info": {"title": "First root", "version": "1"},
+  "info": {
+    "title": "First root",
+    "version": "1"
+  },
   "paths": {
     "/old": {
       "get": {
@@ -14,9 +17,13 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "value": {"$ref": "#/components/schemas/Value", "maxLength": 3}
+                    "value": {
+                      "$ref": "#/components/schemas/Limited"
+                    }
                   },
-                  "required": ["value"]
+                  "required": [
+                    "value"
+                  ]
                 }
               }
             }
@@ -25,5 +32,19 @@
       }
     }
   },
-  "components": {"schemas": {"Value": {"type": "string"}}}
+  "components": {
+    "schemas": {
+      "Value": {
+        "type": "string"
+      },
+      "Limited": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Value",
+            "maxLength": 3
+          }
+        ]
+      }
+    }
+  }
 }

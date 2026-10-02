@@ -1,7 +1,10 @@
 {
   "openapi": "3.2.0",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "info": {"title": "Second root", "version": "1"},
+  "info": {
+    "title": "Second root",
+    "version": "1"
+  },
   "paths": {
     "/new": {
       "get": {
@@ -14,9 +17,13 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "value": {"$ref": "#/components/schemas/Value", "maxLength": 3}
+                    "value": {
+                      "$ref": "#/components/schemas/Limited"
+                    }
                   },
-                  "required": ["value"]
+                  "required": [
+                    "value"
+                  ]
                 }
               }
             }
@@ -34,8 +41,14 @@
               "application/x-ndjson": {
                 "itemSchema": {
                   "type": "object",
-                  "properties": {"stream_only": {"type": "integer"}},
-                  "required": ["stream_only"]
+                  "properties": {
+                    "stream_only": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "stream_only"
+                  ]
                 }
               }
             }
@@ -44,5 +57,19 @@
       }
     }
   },
-  "components": {"schemas": {"Value": {"type": "string"}}}
+  "components": {
+    "schemas": {
+      "Value": {
+        "type": "string"
+      },
+      "Limited": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Value",
+            "maxLength": 3
+          }
+        ]
+      }
+    }
+  }
 }
