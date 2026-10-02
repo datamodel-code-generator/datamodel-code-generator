@@ -1964,26 +1964,24 @@ class AsyncPartsUploadHandle(_Parts[T], AsyncUploadHandle[T]):
             )
 
     async def _upload_wave(self) -> None:
-        import asyncio  # ruff: ignore[import-outside-top-level]
+        from asyncio import create_task, gather  # ruff: ignore[import-outside-top-level]
 
         indices = self._wave()
-        readers = [asyncio.create_task(self._part_buffer(index)) for index in indices]
+        readers = [create_task(self._part_buffer(index)) for index in indices]
         tasks: list[Task[Any]] = list(readers)
         for task in tasks:
             task.add_done_callback(_observed)
         try:
-            buffers = await asyncio.gather(*readers)
-            sends = [
-                asyncio.create_task(self._part(index, buffer)) for index, buffer in zip(indices, buffers, strict=True)
-            ]
+            buffers = await gather(*readers)
+            sends = [create_task(self._part(index, buffer)) for index, buffer in zip(indices, buffers, strict=True)]
             for task in sends:
                 task.add_done_callback(_observed)
             tasks.extend(sends)
-            await asyncio.gather(*sends)
+            await gather(*sends)
         except BaseException:
             for task in tasks:
                 task.cancel()
-            await asyncio.gather(*tasks, return_exceptions=True)
+            await gather(*tasks, return_exceptions=True)
             raise
 
     async def _step(self) -> None:
