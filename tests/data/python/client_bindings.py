@@ -11,6 +11,8 @@ from __future__ import annotations
 import ast
 import difflib
 import json
+import shutil
+import warnings
 from collections import defaultdict
 from contextlib import contextmanager
 from itertools import product
@@ -20,6 +22,7 @@ from unittest.mock import patch
 
 import yaml
 
+import datamodel_code_generator
 from tests.data.python.client_generation import render_client
 
 if TYPE_CHECKING:
@@ -37,15 +40,26 @@ MODEL = {
     "use_standard_collections": False,
     "field_extra_keys": {"default_factory"},
 }
-BINDINGS = ("client", "_generated", "model_bindings.py")
-MODELS = ("models.py",)
+GENERATOR = Path(datamodel_code_generator.__file__).parent
+PACKAGE = "client"
+BINDINGS = (PACKAGE, "_generated", "model_bindings.py")
 STAGING = ".datamodel-codegen-"
 
 
-def _document(source: Path, root: Path, skipped: list[str]) -> Path:
-    """Copy a model fixture as JSON, adding one operation that sends and returns each component schema not skipped."""
+def _document(source: Path, root: Path, case: dict[str, Any]) -> Path:
+    """Copy a model fixture and the documents it references beside it.
+
+    A fixture becomes JSON with one more operation that sends and returns each component schema the case does not
+    skip. A verbatim fixture keeps its own text, YAML aliases included, and declares its operations itself.
+    """
+    (inputs := root / "inputs").mkdir(parents=True, exist_ok=True)
+    for reference in case.get("references", ()):
+        shutil.copy2(source.parent / reference, inputs / reference)
+    if case.get("verbatim"):
+        return Path(shutil.copy2(source, inputs / source.name))
     text = source.read_text(encoding="utf-8")
     document = json.loads(text) if source.suffix == ".json" else yaml.safe_load(text)
+    skipped = case.get("skip", ())
     schemas = [name for name in document.get("components", {}).get("schemas", {}) if name not in skipped]
     document["paths"] = {
         **document.get("paths", {}),
@@ -62,7 +76,7 @@ def _document(source: Path, root: Path, skipped: list[str]) -> Path:
             for reference in (f"#/components/schemas/{name.replace('~', '~0').replace('/', '~1')}",)
         },
     }
-    (path := root / "inputs" / f"{source.stem}.json").parent.mkdir(parents=True, exist_ok=True)
+    path = inputs / f"{source.stem}.json"
     path.write_text(json.dumps(document, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return path
 
@@ -73,11 +87,23 @@ def _options(values: dict[str, Any]) -> dict[str, Any]:
     return values
 
 
+def _warnings(caught: list[warnings.WarningMessage]) -> list[str]:
+    """Return the generator's own warnings as report lines, and warn again of any other warning."""
+    lines: list[str] = []
+    for item in caught:
+        if item.category.__module__.startswith(GENERATOR.name) or Path(item.filename).is_relative_to(GENERATOR):
+            lines.append(f"warning {item.category.__name__}: {item.message}")
+        else:
+            warnings.warn_explicit(item.message, item.category, item.filename, item.lineno, source=item.source)
+    return lines
+
+
 def _shipped(diagnostics: list[str], modules: Modules) -> list[str]:
     """Return the refusal or diagnostics, the models, and each model binding and codec of a rendered package."""
     lines = [f"diagnostic {item}" for item in diagnostics]
-    if MODELS in modules:
-        lines.extend(["models.py", *modules[MODELS].splitlines()])
+    for parts, text in modules.items():
+        if parts[0] != PACKAGE:
+            lines.extend(["/".join(parts), *text.splitlines()])
     if BINDINGS in modules:
         lines.append("model_bindings.py")
         lines.extend(_bindings(modules[BINDINGS]))
@@ -110,8 +136,9 @@ def _difference(before: list[str], after: list[str]) -> list[str]:
 
 def _renders(case: dict[str, Any], root: Path) -> Iterator[tuple[str, Callable[..., list[str]]]]:
     """Yield the label of each backend and variant of a case, and a function that renders it under a directory."""
-    source = _document(DATA / case["source"], root, case.get("skip", []))
+    source = _document(DATA / case["source"], root, case)
     config = {**CLIENT, **case.get("config", {})}
+    models = case.get("models", "models.py")
     for count, (backend, (variant, options)) in enumerate(
         product(case.get("backends", ["pydantic_v2.BaseModel"]), case.get("variants", {"default": {}}).items())
     ):
@@ -130,15 +157,21 @@ def _renders(case: dict[str, Any], root: Path) -> Iterator[tuple[str, Callable[.
             backend: str = backend,
             model: dict = model,
         ) -> list[str]:
-            shipped = render_client(
-                source,
-                root / name,
-                backend,
-                {**model, **(extra or {})},
-                config,
-                binding_diagnostics=binding_diagnostics,
-            )
-            return _shipped(*shipped)
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always")
+                try:
+                    diagnostics, modules = render_client(
+                        source,
+                        root / name,
+                        backend,
+                        {**model, **(extra or {})},
+                        config,
+                        models=models,
+                        binding_diagnostics=binding_diagnostics,
+                    )
+                except datamodel_code_generator.Error as error:
+                    diagnostics, modules = [f"{type(error).__name__}: {error}"], {}
+            return [*_warnings(caught), *_shipped(diagnostics, modules)]
 
         yield f"{count} {backend} {variant}", render
 

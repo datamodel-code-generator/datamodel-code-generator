@@ -266,17 +266,19 @@ def render_client(
     model: Mapping[str, Any],
     config: Mapping[str, Any],
     *,
+    models: str = "models.py",
     binding_diagnostics: bool = False,
 ) -> tuple[list[str], Modules]:
     """Render a document's client package under a root, returning the refusal or diagnostics and the Python modules.
 
-    With binding_diagnostics, the diagnostics also hold those of the model binding batch, which no package shows.
+    The models go to the module or package path models names under the root. With binding_diagnostics, the
+    diagnostics also hold those of the model binding batch, which no package shows.
     """
     target = _BindingDiagnosticsTarget()
     try:
         project = render_target(
             source,
-            model_config=model_config(root / "models.py", backend, model),
+            model_config=model_config(root / models, backend, model),
             config=client_config(dict(config), root),
             generator=target,
         )
