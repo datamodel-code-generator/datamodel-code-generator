@@ -1217,10 +1217,11 @@ def _completion_provider(harness: _Uploads, token: Any, *, asynchronous: bool = 
 
     auth = importlib.import_module(f"{harness.package.__name__}.auth")
     kind = auth.AsyncClientCredentialsProvider if asynchronous else auth.ClientCredentialsProvider
+    secret = auth.AsyncStaticCredentialProvider if asynchronous else auth.StaticCredentialProvider
     provider = kind(
         "https://auth.example.com/token",
         client_id="upload-control",
-        client_secret=auth.StaticCredentialProvider(auth.ApiKeyCredential("control")),
+        client_secret=secret(auth.ApiKeyCredential("control")),
         token_transport=token,
     )
     return provider, harness.options.ClientOptions(auth=auth.AuthConfig({"oauth": provider}), cleanup_timeout=0)
