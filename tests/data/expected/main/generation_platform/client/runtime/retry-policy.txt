@@ -452,8 +452,24 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   > GET https://api.example.com/safe
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  retries on a frozen clock = Response(FieldSafeGetResponse(root='server payload'), 200, 'text/plain', None, [('content-type', 'text/plain'), ('content-length', '14')])
+    attempts=3
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
   async retry = Response(FieldSafeGetResponse(root='server payload'), 200, 'text/plain', None, [('content-type', 'text/plain'), ('content-length', '14')])
     counts=(2, 2) events=[('call_start', None, None, False, None, None, 0, 0), ('attempt_start', 0, None, False, None, None, 0, 0), ('response_headers', 0, 503, True, None, None, 1, 1), ('attempt_end', 0, 503, True, None, None, 1, 1), ('retry_scheduled', 0, None, True, None, 'status', 1, 1), ('attempt_start', 1, None, False, None, None, 1, 1), ('response_headers', 1, 200, True, None, None, 2, 2), ('attempt_end', 1, 200, True, None, None, 2, 2), ('call_end', 1, 200, True, 'success', None, 2, 2)]
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  > GET https://api.example.com/safe
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain] b''
+  async retries on a frozen clock = Response(FieldSafeGetResponse(root='server payload'), 200, 'text/plain', None, [('content-type', 'text/plain'), ('content-length', '14')])
+    attempts=3
   > POST https://api.example.com/key-only
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/plain, content-type: application/octet-stream, idempotency-key: <call>, content-length: 9] b'automatic'
   async automatic false declaration ! PostKeyOnlyHTTPError: PostKeyOnlyHTTPError(status_code=503, operation_id='postKeyOnly', call_id='<call>', retry_stop_reason='unsafe_operation') [operation_id='postKeyOnly', status_code=503, error_decoded=True, error_data=FieldKeyOnlyPostResponse(root='server payload'), body_bytes=b'server payload', truncated=False] post_key_only_http_error

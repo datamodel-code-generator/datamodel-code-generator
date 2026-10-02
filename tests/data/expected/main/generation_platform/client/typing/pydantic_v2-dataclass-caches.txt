@@ -1,0 +1,37 @@
+mypy pets and cache_helpers.py: clean
+pyright pets and cache_helpers.py: clean
+ty pets and cache_helpers.py: clean
+cache_helpers_negative.py 10 marked lines
+mypy cache_helpers_negative.py: 10/10 marked lines with one error, 0 elsewhere, 0 in other files
+  15 assignment
+  16 arg-type
+  17 arg-type
+  18 call-arg
+  19 call-arg
+  20 arg-type
+  21 call-arg
+  22 assignment
+  23 misc
+  24 call-arg
+pyright cache_helpers_negative.py: 10/10 marked lines with one error, 0 elsewhere, 0 in other files
+  15 reportAssignmentType
+  16 reportArgumentType
+  17 reportArgumentType
+  18 reportCallIssue
+  19 reportCallIssue
+  20 reportArgumentType
+  21 reportCallIssue
+  22 reportAssignmentType
+  23 reportAttributeAccessIssue
+  24 reportCallIssue
+ty cache_helpers_negative.py: 10/10 marked lines with one error, 0 elsewhere, 0 in other files
+  15 invalid-assignment
+  16 invalid-argument-type
+  17 invalid-argument-type
+  18 unknown-argument
+  19 missing-argument
+  20 invalid-argument-type
+  21 missing-argument
+  22 invalid-assignment
+  23 invalid-assignment
+  24 missing-argument

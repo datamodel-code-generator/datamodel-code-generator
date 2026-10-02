@@ -339,7 +339,7 @@ class _Polls:
     ) -> Iterator[Diagnostic]:
         """Refuse a required parameter or body of a complete request no binding writes, and a body other than JSON.
 
-        A written body must have a default media type, since a request the helper builds names none.
+        A written body must have a default media type, since a poll, a result fetch, or a remote cancel names none.
         """
         label = _label(spec)
         locations = {key[0] for key in written}

@@ -35,7 +35,7 @@ from ..client.errors import (
 )
 from ..client.options import RequestOptions
 from ..client.raw import afinished, aheld, checked, finished, held
-from ..client.timing import SessionOptions
+from ..client.timing import SYSTEM_CLOCK, SessionOptions
 from ..model_codecs.errors import (
     CodecBindingError,
     CodecError,
@@ -84,7 +84,7 @@ if TYPE_CHECKING:
     from ..client.operations import OperationPlan
     from ..client.raw import AsyncRawResponse, RawResponse
     from ..client.responses import ResponseInfo
-    from ..client.timing import Deadline
+    from ..client.timing import Clock, Deadline
     from ..model_codecs.selectors import MediaSelector
     from ..model_codecs.wire import WireValue
     from .errors import _DataCondition  # pyright: ignore[reportPrivateUsage]
@@ -514,6 +514,7 @@ class _Limits:
     deadline: Deadline | None = None
     max_network_sends: int | None = 16
     options: RequestOptions | None = None
+    clock: Clock = SYSTEM_CLOCK
 
 
 _DEFAULTS: Final = _Limits()
@@ -570,6 +571,7 @@ def _limits(
         deadline=layered(sessions, "deadline", _DEFAULTS.deadline),
         max_network_sends=layered(sessions, "max_network_sends", _DEFAULTS.max_network_sends),
         options=request,
+        clock=core.clock,
     )
 
 
@@ -606,7 +608,10 @@ def _session(plan: EventPlan[T], limits: _Limits) -> OperationSession:
     from ..client.logical import OperationSession  # noqa: PLC0415 - Only an open loads the call runtime.
 
     session = OperationSession(
-        total_timeout=limits.total_timeout, deadline=limits.deadline, max_network_sends=limits.max_network_sends
+        total_timeout=limits.total_timeout,
+        deadline=limits.deadline,
+        max_network_sends=limits.max_network_sends,
+        clock=limits.clock,
     )
     if (limit := session.send_limit) is not None and limit <= 0:
         raise SessionLimitError(
@@ -1289,6 +1294,8 @@ class _Events(Generic[T]):
         A stream of a helper declaring resumption is also interrupted by a read timeout the call's own read timeout
         set, which it may reconnect after, but never by its idle limit.
         """
+        if isinstance(error, StreamDecodeError):
+            return error.with_traceback(None)
         if not isinstance(error, TransportError) or (
             isinstance(error, PhaseTimeoutError) and (self._resume is None or not self._retryable(error))
         ):

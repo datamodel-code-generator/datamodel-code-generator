@@ -1285,19 +1285,14 @@ class _ArtifactIndexBuilder:
         matcher.match_field(field.type, annotation)
         return replace(_emitted_facts(field, annotation, assignment, self.bindings), meta_layers=tuple(matcher.layers))
 
-    def finish(
-        self, body: str, expected: tuple[ExpectedFieldDeclaration, ...], *, collect_errors: bool
-    ) -> BuiltinFieldArtifactIndex:
-        """Freeze in expected consumer order after proving each requested declaration exists."""
+    def finish(self, body: str, expected: tuple[ExpectedFieldDeclaration, ...]) -> BuiltinFieldArtifactIndex:
+        """Freeze in expected consumer order, marking models whose requested declarations are absent invalid."""
         ordered: list[FieldArtifactDeclaration] = []
         for field in expected:
             if field.excluded_by_tag:
                 if field.model_name not in self.defined:
-                    if collect_errors:
-                        self.invalid_models[field.model_name] = None
-                        continue
-                    msg = "A tag-excluded field's final symbol is absent from its accepted artifact"
-                    raise BindingCaptureError(msg)
+                    self.invalid_models[field.model_name] = None
+                    continue
                 ordered.append(
                     FieldArtifactDeclaration(
                         field,
@@ -1322,11 +1317,8 @@ class _ArtifactIndexBuilder:
                 continue
             key = field.entry_ordinal if field.form == "typeddict_entry" else field.native_name
             if (declaration := self.found.get((field.model_name, key))) is None:
-                if collect_errors:
-                    self.invalid_models[field.model_name] = None
-                    continue
-                msg = "An expected final field is absent from its accepted artifact"
-                raise BindingCaptureError(msg)
+                self.invalid_models[field.model_name] = None
+                continue
             ordered.append(declaration)
         return BuiltinFieldArtifactIndex(
             sha256(body.encode()).hexdigest(),
@@ -1388,7 +1380,7 @@ def index_builtin_field_declarations(
             if not collect_errors or model is None:
                 raise
             builder.invalid_models[model] = None
-    return builder.finish(body, expected, collect_errors=collect_errors)
+    return builder.finish(body, expected)
 
 
 def same_emitted_field_facts(expected: EmittedFieldFacts, actual: EmittedFieldFacts) -> bool:
@@ -1477,9 +1469,7 @@ def split_artifact_models(index: BuiltinFieldArtifactIndex) -> dict[str, Builtin
     return result
 
 
-def same_artifact_model_facts(
-    expected: BuiltinFieldArtifactIndex, actual: BuiltinFieldArtifactIndex, *, model_name: str | None = None
-) -> bool:
+def same_artifact_model_facts(expected: BuiltinFieldArtifactIndex, actual: BuiltinFieldArtifactIndex) -> bool:
     """Corroborate bases, decorators, enum values, own fields, and adopted class settings."""
 
     def same_source(left: SourceExpression, right: SourceExpression) -> bool:
@@ -1488,31 +1478,17 @@ def same_artifact_model_facts(
     def same_sequence(left: tuple[SourceExpression, ...], right: tuple[SourceExpression, ...]) -> bool:
         return len(left) == len(right) and all(starmap(same_source, zip(left, right, strict=True)))
 
-    left_definitions = tuple(
-        value
-        for value in expected.definitions
-        if value.kind != "import" and (model_name is None or value.name == model_name)
-    )
-    right_definitions = tuple(
-        value
-        for value in actual.definitions
-        if value.kind != "import" and (model_name is None or value.name == model_name)
-    )
-    left_models = tuple(value for value in expected.models if model_name is None or value.name == model_name)
-    right_models = tuple(value for value in actual.models if model_name is None or value.name == model_name)
+    left_definitions = tuple(value for value in expected.definitions if value.kind != "import")
+    right_definitions = tuple(value for value in actual.definitions if value.kind != "import")
+    left_models = expected.models
+    right_models = actual.models
     if len(left_definitions) != len(right_definitions) or len(left_models) != len(right_models):
         return False
     namespace = dict(actual.namespace)
     sources = (
         *(source.text for definition in left_definitions for source in (definition.signature, *definition.decorators)),
         *(source.text for model in left_models for source in model.settings),
-        *(
-            text
-            for field in expected.fields
-            if model_name is None or field.expected.model_name == model_name
-            for text in (field.annotation, field.assignment)
-            if text is not None
-        ),
+        *(text for field in expected.fields for text in (field.annotation, field.assignment) if text is not None),
     )
     used = {token.string for text in sources for token in _expression_tokens(text) if token.type == tokenize.NAME}
     expected_namespace = dict(expected.namespace)
@@ -1542,7 +1518,6 @@ class FieldProjectionContext:
     explicit_nullable: bool | None
     preexisting_null: bool | None
     configuration_nullable: bool
-    builtin_semantics: bool
     backend: BackendName | None = None
     constructor_init: bool | None = None
     kw_only: bool | None = None
@@ -1612,19 +1587,6 @@ def freeze_builtin_field_facts(
     if (backend := projection.backend) is None:
         msg = "A builtin field projection requires its established backend"
         raise BindingCaptureError(msg)
-    names = (
-        "name",
-        "original_name",
-        "alias",
-        "validation_aliases",
-        "serialization_alias",
-        "use_serialization_alias",
-    )
-    if not projection.builtin_semantics:
-        opaque = OpaqueBackendValue("custom_origin")
-        return BackendFieldFacts(
-            backend, tuple((name, opaque) for name in names), emitted, opaque, opaque, opaque, opaque, opaque
-        )
     declarations = (
         ("name", _backend_value(field.name)),
         ("original_name", _backend_value(field.original_name)),
@@ -1695,7 +1657,6 @@ class ModelProjectionContext:
     """Carry final backend and type identities without invoking model callbacks."""
 
     backend: BackendName
-    builtin_semantics: bool
     functional_typeddict: bool = False
     extra_items: FinalPythonType | None = None
     custom_base: bool = False
@@ -1788,11 +1749,9 @@ def _model_parameter_values(  # ruff: ignore[too-many-return-statements]
     internal: dict[str, object] = model._internal_template_data  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
     match backend:
         case "dataclass" | "pydantic_dataclass":
-            if (arguments := _raw_mapping(model.dataclass_arguments)) is None:
-                return None, False
             return {
                 name: _backend_value(value)
-                for name, value in arguments.items()
+                for name, value in model.dataclass_arguments.items()
                 if value is not False and value is not None
             }, False
         case "msgspec":
@@ -1816,35 +1775,15 @@ def _model_parameter_values(  # ruff: ignore[too-many-return-statements]
 
 def _model_configuration(
     model: DataModel, backend: Literal["pydantic", "pydantic_dataclass"]
-) -> dict[str, BackendValue] | None:
+) -> dict[str, BackendValue]:
     key = "config_items" if backend == "pydantic" else "_safe_config_items"
-    values: object = model._internal_template_data.get(key, ())  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
-    if type(values) not in {tuple, list}:
-        return None
-    settings: dict[str, BackendValue] = {}
-    for item in cast("tuple[object, ...] | list[object]", values):
-        if type(item) is not tuple:
-            return None
-        pair = cast("Sequence[object]", item)
-        if len(pair) != _PAIR_SIZE or type(pair[0]) is not str:
-            return None
-        if pair[0] in _PYDANTIC_CONFIGURATION:
-            settings[pair[0]] = _syntax_value(pair[1])
-    return settings
+    items: list[tuple[str, str]] = model._internal_template_data.get(key, [])  # pyright: ignore[reportPrivateUsage] # ruff: ignore[private-member-access]
+    return {name: _syntax_value(value) for name, value in items if name in _PYDANTIC_CONFIGURATION}
 
 
 def freeze_builtin_model_facts(model: DataModel, *, projection: ModelProjectionContext) -> BackendModelFacts:
     """Read final finite template inputs without rendering or recomputing configuration."""
     backend = projection.backend
-    if not projection.builtin_semantics:
-        return BackendModelFacts(
-            backend,
-            _freeze_settings(_model_parameters(backend), None),
-            _freeze_settings(_PYDANTIC_CONFIGURATION, None) if backend in {"pydantic", "pydantic_dataclass"} else (),
-            projection.functional_typeddict,
-            None,
-            None,
-        )
     values, extra_present = _model_parameter_values(model, backend)
     if values is not None and extra_present != (projection.extra_items is not None):
         msg = "TypedDict extra_items does not match its captured final type"
@@ -1871,18 +1810,14 @@ def freeze_none_default_provenance(
 ) -> NoneDefaultProvenance:
     """Prove ordinary None synthesis from producer facts and accepted syntax, never a getter."""
     default_kind = _PROVENANCE_DEFAULTS[emitted.emitted_default_kind]
-    unknown = (
-        not projection.builtin_semantics
-        or type(field.extras) is not dict
-        or any(
-            value is None
-            for value in (
-                projection.original_required,
-                projection.schema_default,
-                projection.explicit_model_default,
-                projection.explicit_nullable,
-                projection.preexisting_null,
-            )
+    unknown = type(field.extras) is not dict or any(
+        value is None
+        for value in (
+            projection.original_required,
+            projection.schema_default,
+            projection.explicit_model_default,
+            projection.explicit_nullable,
+            projection.preexisting_null,
         )
     )
     fallback = (
@@ -1995,7 +1930,7 @@ def freeze_reference_policy(model: DataModel, *, serialize_as_any: bool) -> Fina
 
 
 if TYPE_CHECKING:
-    from collections.abc import Container, Iterator, Sequence
+    from collections.abc import Container, Iterator
 
     from datamodel_code_generator._generation_contract import (
         AttemptId,

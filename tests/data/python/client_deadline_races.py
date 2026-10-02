@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import importlib
-from contextlib import ExitStack
 from typing import TYPE_CHECKING
-from unittest.mock import patch
 
 import httpx2
 
@@ -23,14 +21,6 @@ class _Clock:
 
     def __call__(self) -> float:
         return self.value
-
-
-def _clock(package: ModuleType, clock: Callable[[], float]) -> ExitStack:
-    stack = ExitStack()
-    for name in ("logical", "timing"):
-        module = importlib.import_module(f"{package.__name__}._runtime.client.{name}")
-        stack.enter_context(patch.object(module, "monotonic", clock))
-    return stack
 
 
 def _snapshot(error: BaseException) -> tuple[object, ...]:
@@ -170,52 +160,52 @@ class _AsyncFault:
 
 
 def _phase_sources(package: ModuleType, options: ModuleType, lines: list[str]) -> None:
-    clock = _Clock()
-    with _clock(package, clock):
-        for phase, failure in (
-            ("connect", httpx2.ConnectTimeout),
-            ("read", httpx2.ReadTimeout),
-            ("write", httpx2.WriteTimeout),
-            ("pool", httpx2.PoolTimeout),
+    clock = options.Clock(monotonic=_Clock())
+    for phase, failure in (
+        ("connect", httpx2.ConnectTimeout),
+        ("read", httpx2.ReadTimeout),
+        ("write", httpx2.WriteTimeout),
+        ("pool", httpx2.PoolTimeout),
+    ):
+
+        def failed(request: httpx2.Request) -> httpx2.Response:
+            raise failure("injected timeout", request=request)
+
+        for label, configured, total in (
+            ("tie", 1.0, 1.0),
+            ("phase", 0.5, 1.0),
+            ("none", None, 1.0),
+            ("unlimited", None, None),
+            ("absolute", 1.0, 2.0),
         ):
+            timeout = options.TimeoutOptions(**{phase: configured})
+            with httpx2.Client(transport=httpx2.MockTransport(failed)) as native:
+                with package.Client(
+                    http_client=native,
+                    options=options.ClientOptions(
+                        timeout=timeout,
+                        retry=options.RetryOptions(max_retries=0),
+                        total_timeout=total,
+                        deadline=options.Deadline.after(0.5, clock=clock) if label == "absolute" else None,
+                        clock=clock,
+                    ),
+                ) as api:
+                    record(
+                        lines,
+                        f"phase source {phase} {label}",
+                        lambda: _captured(lambda: api.request_raw("GET", "https://race.example/timeout")),
+                    )
 
-            def failed(request: httpx2.Request) -> httpx2.Response:
-                raise failure("injected timeout", request=request)
+    def unknown(request: httpx2.Request) -> httpx2.Response:
+        raise httpx2.TimeoutException("unclassified timeout", request=request)
 
-            for label, configured, total in (
-                ("tie", 1.0, 1.0),
-                ("phase", 0.5, 1.0),
-                ("none", None, 1.0),
-                ("unlimited", None, None),
-                ("absolute", 1.0, 2.0),
-            ):
-                timeout = options.TimeoutOptions(**{phase: configured})
-                with httpx2.Client(transport=httpx2.MockTransport(failed)) as native:
-                    with package.Client(
-                        http_client=native,
-                        options=options.ClientOptions(
-                            timeout=timeout,
-                            retry=options.RetryOptions(max_retries=0),
-                            total_timeout=total,
-                            deadline=options.Deadline.after(0.5) if label == "absolute" else None,
-                        ),
-                    ) as api:
-                        record(
-                            lines,
-                            f"phase source {phase} {label}",
-                            lambda: _captured(lambda: api.request_raw("GET", "https://race.example/timeout")),
-                        )
-
-        def unknown(request: httpx2.Request) -> httpx2.Response:
-            raise httpx2.TimeoutException("unclassified timeout", request=request)
-
-        with httpx2.Client(transport=httpx2.MockTransport(unknown)) as native:
-            with package.Client(http_client=native) as api:
-                record(
-                    lines,
-                    "native timeout unknown phase",
-                    lambda: _captured(lambda: api.request_raw("GET", "https://race.example/timeout")),
-                )
+    with httpx2.Client(transport=httpx2.MockTransport(unknown)) as native:
+        with package.Client(http_client=native, options=options.ClientOptions(clock=clock)) as api:
+            record(
+                lines,
+                "native timeout unknown phase",
+                lambda: _captured(lambda: api.request_raw("GET", "https://race.example/timeout")),
+            )
 
 
 def _admission_race(
@@ -231,13 +221,12 @@ def _admission_race(
         return 100.0
 
     adapter = _Fault(transports, responses, lambda: None)
-    api = package.Client(transport_adapter=adapter)
-    with _clock(package, at):
-        record(
-            lines,
-            "closing during admission",
-            lambda: _captured(lambda: api.request_raw("GET", "https://race.example/admit")),
-        )
+    api = package.Client(transport_adapter=adapter, options=options.ClientOptions(clock=options.Clock(monotonic=at)))
+    record(
+        lines,
+        "closing during admission",
+        lambda: _captured(lambda: api.request_raw("GET", "https://race.example/admit")),
+    )
     record(lines, "closing during admission sends", lambda: adapter.sent)
     api.close()
 
@@ -255,16 +244,15 @@ def _sync_races(
                 raise interrupt()
 
         adapter = _Fault(transports, responses, action)
-        with _clock(package, clock):
-            with package.Client(
-                transport_adapter=adapter,
-                options=options.ClientOptions(total_timeout=1.0, cancel_token=token),
-            ) as api:
-                record(
-                    lines,
-                    f"sync native/token/deadline {None if interrupt is None else interrupt.__name__}",
-                    lambda: _captured(lambda: api.request_raw("GET", "https://race.example/precedence")),
-                )
+        with package.Client(
+            transport_adapter=adapter,
+            options=options.ClientOptions(total_timeout=1.0, cancel_token=token, clock=options.Clock(monotonic=clock)),
+        ) as api:
+            record(
+                lines,
+                f"sync native/token/deadline {None if interrupt is None else interrupt.__name__}",
+                lambda: _captured(lambda: api.request_raw("GET", "https://race.example/precedence")),
+            )
         record(lines, "sync race resources", lambda: (adapter.sent, adapter.response.closed))
 
 
@@ -314,16 +302,19 @@ async def _async_races(
                 caller.cancel()
 
         adapter = _AsyncFault(transports, responses, action)
-        with _clock(package, clock):
-            api = package.AsyncClient(
-                transport_adapter=adapter,
-                options=options.ClientOptions(total_timeout=1.0, cancel_token=token if cancelled else None),
-            )
-            caller = asyncio.create_task(_acaptured(lambda: api.request_raw("GET", "https://race.example/race")))
-            await arecord(lines, f"async {label}", lambda: caller)
-            for closer in closers:
-                await closer
-            await api.aclose()
+        api = package.AsyncClient(
+            transport_adapter=adapter,
+            options=options.ClientOptions(
+                total_timeout=1.0,
+                cancel_token=token if cancelled else None,
+                clock=options.Clock(monotonic=clock),
+            ),
+        )
+        caller = asyncio.create_task(_acaptured(lambda: api.request_raw("GET", "https://race.example/race")))
+        await arecord(lines, f"async {label}", lambda: caller)
+        for closer in closers:
+            await closer
+        await api.aclose()
         record(lines, "async race resources", lambda: (adapter.sent, adapter.response.closed))
 
 
@@ -341,18 +332,18 @@ async def _capped_timeout(
 
     adapter = _AsyncFault(transports, responses, timed_out)
     attempt = _GatedBody()
-    with _clock(package, clock):
-        api = package.AsyncClient(
-            transport_adapter=adapter, options=options.ClientOptions(total_timeout=0.05, cleanup_timeout=1.0)
-        )
-        body = attempt.factory(bodies)
-        await arecord(
-            lines,
-            "deadline timer during the release of a capped timeout",
-            lambda: _acaptured(lambda: api.request_raw("POST", "https://race.example/capped", body=body)),
-        )
-        attempt.proceed.set()
-        await api.aclose()
+    api = package.AsyncClient(
+        transport_adapter=adapter,
+        options=options.ClientOptions(total_timeout=0.05, cleanup_timeout=1.0, clock=options.Clock(monotonic=clock)),
+    )
+    body = attempt.factory(bodies)
+    await arecord(
+        lines,
+        "deadline timer during the release of a capped timeout",
+        lambda: _acaptured(lambda: api.request_raw("POST", "https://race.example/capped", body=body)),
+    )
+    attempt.proceed.set()
+    await api.aclose()
 
 
 async def _foreign_cancellation(
@@ -396,15 +387,15 @@ async def _early_timer(
         await asyncio.Event().wait()
 
     adapter = _AsyncFault(transports, responses, blocked)
-    with _clock(package, clock):
-        async with package.AsyncClient(
-            transport_adapter=adapter, options=options.ClientOptions(total_timeout=0.05)
-        ) as api:
-            await arecord(
-                lines,
-                "deadline timer ahead of the clock",
-                lambda: _acaptured(lambda: api.request_raw("GET", "https://race.example/early")),
-            )
+    async with package.AsyncClient(
+        transport_adapter=adapter,
+        options=options.ClientOptions(total_timeout=0.05, clock=options.Clock(monotonic=clock)),
+    ) as api:
+        await arecord(
+            lines,
+            "deadline timer ahead of the clock",
+            lambda: _acaptured(lambda: api.request_raw("GET", "https://race.example/early")),
+        )
 
 
 async def _expired_read(
@@ -417,15 +408,15 @@ async def _expired_read(
 
     adapter = _AsyncFault(transports, responses, sent)
     adapter.response = _ExpiringResponse(responses, clock)
-    with _clock(package, clock):
-        async with package.AsyncClient(
-            transport_adapter=adapter, options=options.ClientOptions(total_timeout=60.0)
-        ) as api:
-            await arecord(
-                lines,
-                "deadline after buffered read",
-                lambda: _acaptured(lambda: api.request_raw("GET", "https://race.example/expired")),
-            )
+    async with package.AsyncClient(
+        transport_adapter=adapter,
+        options=options.ClientOptions(total_timeout=60.0, clock=options.Clock(monotonic=clock)),
+    ) as api:
+        await arecord(
+            lines,
+            "deadline after buffered read",
+            lambda: _acaptured(lambda: api.request_raw("GET", "https://race.example/expired")),
+        )
     record(lines, "deadline after buffered read resources", lambda: (adapter.sent, adapter.response.closed))
 
 
@@ -460,28 +451,28 @@ async def _nested_waits(
             raise RuntimeError("send after a stopped hook")
 
         adapter = _AsyncFault(transports, responses, unexpected_send)
-        with _clock(package, _Clock()):
-            api = package.AsyncClient(
-                transport_adapter=adapter,
-                options=options.ClientOptions(
-                    hooks=(hook,),
-                    total_timeout=0.2 if reason == "deadline" else None,
-                    cancel_token=token if reason == "token" else None,
-                ),
-            )
-            caller = asyncio.create_task(_acaptured(lambda: api.request_raw("GET", "https://race.example/nested")))
-            await hook.entered.wait()
-            closer: asyncio.Task[None] | None = None
-            if reason == "token":
-                token.cancel()
-            elif reason == "closing":
-                closer = asyncio.create_task(api.aclose())
-            elif reason == "native":
-                caller.cancel()
-            await arecord(lines, f"nested hook {reason}", lambda: caller)
-            if closer is not None:
-                await closer
-            await api.aclose()
+        api = package.AsyncClient(
+            transport_adapter=adapter,
+            options=options.ClientOptions(
+                hooks=(hook,),
+                total_timeout=0.2 if reason == "deadline" else None,
+                cancel_token=token if reason == "token" else None,
+                clock=options.Clock(monotonic=_Clock()),
+            ),
+        )
+        caller = asyncio.create_task(_acaptured(lambda: api.request_raw("GET", "https://race.example/nested")))
+        await hook.entered.wait()
+        closer: asyncio.Task[None] | None = None
+        if reason == "token":
+            token.cancel()
+        elif reason == "closing":
+            closer = asyncio.create_task(api.aclose())
+        elif reason == "native":
+            caller.cancel()
+        await arecord(lines, f"nested hook {reason}", lambda: caller)
+        if closer is not None:
+            await closer
+        await api.aclose()
         record(lines, f"nested hook {reason} sends", lambda: adapter.sent)
 
 
@@ -591,22 +582,22 @@ async def _stopped_releases(
         adapter = _AsyncFault(transports, responses, sent)
         response = _GatedResponse(responses, failure=True)
         adapter.response = response
-        with _clock(package, _Clock()):
-            api = package.AsyncClient(
-                transport_adapter=adapter,
-                options=options.ClientOptions(
-                    total_timeout=0.1 if reason == "deadline" else None,
-                    cancel_token=token if reason == "token" else None,
-                    cleanup_timeout=1.0,
-                ),
-            )
-            errors: list[BaseException] = []
-            label = f"{reason} stops response release"
-            await arecord(
-                lines, label, lambda: _acaptured(lambda: api.request_raw("GET", "https://race.example/release"), errors)
-            )
-            response.proceed.set()
-            await arecord(lines, f"{label} close", lambda: _acaptured(api.aclose))
+        api = package.AsyncClient(
+            transport_adapter=adapter,
+            options=options.ClientOptions(
+                total_timeout=0.1 if reason == "deadline" else None,
+                cancel_token=token if reason == "token" else None,
+                cleanup_timeout=1.0,
+                clock=options.Clock(monotonic=_Clock()),
+            ),
+        )
+        errors: list[BaseException] = []
+        label = f"{reason} stops response release"
+        await arecord(
+            lines, label, lambda: _acaptured(lambda: api.request_raw("GET", "https://race.example/release"), errors)
+        )
+        response.proceed.set()
+        await arecord(lines, f"{label} close", lambda: _acaptured(api.aclose))
         record(
             lines,
             f"{label} late failure",
@@ -686,29 +677,29 @@ async def _stopped_binding(
             raise RuntimeError("send after a stopped binding")
 
         adapter = _AsyncFault(transports, responses, unexpected_send)
-        with _clock(package, _Clock()):
-            api = package.AsyncClient(
-                transport_adapter=adapter,
-                options=options.ClientOptions(
-                    total_timeout=0.1 if reason == "deadline" else None,
-                    cancel_token=token if reason == "token" else None,
-                    retry=options.RetryOptions(max_retries=0),
-                    cleanup_timeout=1.0,
-                ),
-            )
-            body = bodies.AsyncMultipartBody((
-                bodies.FilePart("a", bodies.AsyncBodyFactory(first, content_length=3)),
-                bodies.FilePart("b", bodies.AsyncBodyFactory(second, content_length=3)),
-            ))
-            errors: list[BaseException] = []
-            caller = asyncio.create_task(
-                _acaptured(lambda: api.request_raw("POST", "https://race.example/upload", body=body), errors)
-            )
-            await opening.wait()
-            if reason == "token":
-                token.cancel()
-            await arecord(lines, f"{reason} stops multipart binding", lambda: caller)
-            await api.aclose()
+        api = package.AsyncClient(
+            transport_adapter=adapter,
+            options=options.ClientOptions(
+                total_timeout=0.1 if reason == "deadline" else None,
+                cancel_token=token if reason == "token" else None,
+                retry=options.RetryOptions(max_retries=0),
+                cleanup_timeout=1.0,
+                clock=options.Clock(monotonic=_Clock()),
+            ),
+        )
+        body = bodies.AsyncMultipartBody((
+            bodies.FilePart("a", bodies.AsyncBodyFactory(first, content_length=3)),
+            bodies.FilePart("b", bodies.AsyncBodyFactory(second, content_length=3)),
+        ))
+        errors: list[BaseException] = []
+        caller = asyncio.create_task(
+            _acaptured(lambda: api.request_raw("POST", "https://race.example/upload", body=body), errors)
+        )
+        await opening.wait()
+        if reason == "token":
+            token.cancel()
+        await arecord(lines, f"{reason} stops multipart binding", lambda: caller)
+        await api.aclose()
         record(
             lines,
             f"{reason} stops multipart binding late failure",
@@ -742,19 +733,20 @@ async def _stopped_attempts(
         label = f"deadline stops body release after {type(failure).__name__}{' and a late close failure' * late}"
         body = attempt.factory(bodies)
         errors: list[BaseException] = []
-        with _clock(package, _Clock()):
-            api = package.AsyncClient(
-                transport_adapter=adapter,
-                options=options.ClientOptions(total_timeout=0.1, limiter=limiter, cleanup_timeout=1.0),
-            )
-            await arecord(
-                lines,
-                label,
-                lambda: _acaptured(lambda: api.request_raw("POST", "https://race.example/body", body=body), errors),
-            )
-            record(lines, f"{label} permit", lambda: (limiter.permit.released, attempt.closed))
-            attempt.proceed.set()
-            await api.aclose()
+        api = package.AsyncClient(
+            transport_adapter=adapter,
+            options=options.ClientOptions(
+                total_timeout=0.1, limiter=limiter, cleanup_timeout=1.0, clock=options.Clock(monotonic=_Clock())
+            ),
+        )
+        await arecord(
+            lines,
+            label,
+            lambda: _acaptured(lambda: api.request_raw("POST", "https://race.example/body", body=body), errors),
+        )
+        record(lines, f"{label} permit", lambda: (limiter.permit.released, attempt.closed))
+        attempt.proceed.set()
+        await api.aclose()
         record(
             lines,
             f"{label} resources",
@@ -785,19 +777,23 @@ async def _stopped_owned_release(
         label = f"deadline stops owned stream release after a limiter failure{' and a late close failure' * late}"
         body = bodies.AsyncStreamBody(chunks, ownership="owned")
         errors: list[BaseException] = []
-        with _clock(package, _Clock()):
-            api = package.AsyncClient(
-                transport_adapter=adapter,
-                options=options.ClientOptions(total_timeout=0.1, limiter=_FailedLimiter(), cleanup_timeout=1.0),
-            )
-            await arecord(
-                lines,
-                label,
-                lambda: _acaptured(lambda: api.request_raw("POST", "https://race.example/owned", body=body), errors),
-            )
-            record(lines, f"{label} closed", lambda: chunks.closed)
-            chunks.proceed.set()
-            await api.aclose()
+        api = package.AsyncClient(
+            transport_adapter=adapter,
+            options=options.ClientOptions(
+                total_timeout=0.1,
+                limiter=_FailedLimiter(),
+                cleanup_timeout=1.0,
+                clock=options.Clock(monotonic=_Clock()),
+            ),
+        )
+        await arecord(
+            lines,
+            label,
+            lambda: _acaptured(lambda: api.request_raw("POST", "https://race.example/owned", body=body), errors),
+        )
+        record(lines, f"{label} closed", lambda: chunks.closed)
+        chunks.proceed.set()
+        await api.aclose()
         record(
             lines,
             f"{label} resources",

@@ -1,0 +1,35 @@
+openapi: 3.1.0
+info:
+  title: Split records
+  version: "1"
+servers:
+  - url: https://api.example.com
+paths:
+  /records:
+    get:
+      operationId: streamRecords
+      tags: [records]
+      responses:
+        "200":
+          description: The records, one JSON value a line, split into request and response models.
+          content:
+            application/x-ndjson:
+              schema: {$ref: "#/components/schemas/Note"}
+components:
+  schemas:
+    Note:
+      type: object
+      required: [type, text]
+      properties:
+        type: {type: string}
+        text: {type: string}
+        id: {type: integer, readOnly: true}
+        secret: {type: string, writeOnly: true}
+    Failure:
+      type: object
+      required: [type, message]
+      properties:
+        type: {type: string}
+        message: {type: string}
+        trace: {type: string, readOnly: true}
+        token: {type: string, writeOnly: true}

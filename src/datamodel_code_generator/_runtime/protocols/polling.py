@@ -8,15 +8,15 @@ creating the operation again.
 
 from __future__ import annotations
 
+import re
 import threading
 from collections.abc import Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from hashlib import sha256
 from math import ceil
-from time import monotonic, time
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, Generic, Literal, TypeAlias, cast, final, overload
 
@@ -31,7 +31,7 @@ from ..client.errors import (
 )
 from ..client.options import RequestOptions
 from ..client.responses import ResponseInfo
-from ..client.timing import SessionOptions
+from ..client.timing import SYSTEM_CLOCK, SessionOptions
 from ..model_codecs.errors import CodecError
 from ..model_codecs.media import decode_json
 from ..model_codecs.unset import UNSET
@@ -58,13 +58,12 @@ from .resume import (
     ResumeState,
     helper_state,
     require_state,
-    server_expiry,
     state_array,
     state_count,
     state_fields,
     state_text,
 )
-from .values import MISSING, Missing, RepeatedValueError, resolve, selected, written
+from .values import MISSING, Missing, Patch, RepeatedValueError, resolve, selected
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
@@ -73,7 +72,7 @@ if TYPE_CHECKING:
     from ..client.client import AsyncClientCore, ClientCore
     from ..client.logical import LogicalCallContext, OperationSession
     from ..client.operations import OperationPlan
-    from ..client.timing import Deadline
+    from ..client.timing import Clock, Deadline
     from ..model_codecs.selectors import MediaSelector
     from ..model_codecs.wire import WireValue
     from .errors import _DataCondition  # pyright: ignore[reportPrivateUsage]
@@ -118,6 +117,10 @@ _POLL_FIELDS: Final = 4
 _UNREAD: Final = "unread"
 _RESULT_FIELDS: Final = 3
 _MOST_WAIT_MS: Final = 2**53 - 1
+_RFC3339: Final = re.compile(
+    r"([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:)([0-9]{2})((?:\.[0-9]+)?(?:Z|[+-][0-9]{2}:[0-9]{2}))"
+)
+_LEAP_SECOND: Final = "60"
 _KINDS: Final[Mapping[type, str]] = MappingProxyType({
     type(None): "null",
     bool: "boolean",
@@ -129,6 +132,25 @@ _KINDS: Final[Mapping[type, str]] = MappingProxyType({
 def _kind(value: WireValue) -> str:
     """Return the JSON type of a wire value, every number being one type."""
     return _KINDS.get(type(value)) or ("object" if isinstance(value, Mapping) else "number")
+
+
+def _expiry(value: str, now: float) -> datetime | None:
+    """Return the UTC time an RFC 3339 date-time with an offset or an HTTP date gives, or None for another value.
+
+    A leap second is the second after the one before it, as in an HTTP date, and `now` is the receipt wall time that
+    places an HTTP date's two-digit year.
+    """
+    try:
+        if (matched := _RFC3339.fullmatch(value.upper())) is not None:
+            head, second, tail = matched.groups()
+            leap = second == _LEAP_SECOND
+            parsed = datetime.fromisoformat(f"{head}{'59' if leap else second}{tail}")
+            return (parsed + timedelta(seconds=leap)).astimezone(timezone.utc)
+        from ..client.retry import http_date  # noqa: PLC0415 - Only a helper with an expiry parses HTTP dates.
+
+        return http_date(value, now)
+    except (ValueError, OverflowError):
+        return None
 
 
 @dataclass(frozen=True, slots=True)
@@ -153,7 +175,20 @@ class _Targeted(Generic[T]):
         A parameter's value replaces its argument, and the values for a querystring or the body are patched into an
         empty object.
         """
-        return written(self.writes, (UNSET,) * len(self.call.parameters), UNSET, values)
+        arguments: list[object] = [UNSET] * len(self.call.parameters)
+        patches: dict[int | None, list[tuple[str, WireValue]]] = {}
+        for (position, pointer), value in zip(self.writes, values, strict=True):
+            if pointer is None:
+                arguments[cast("int", position)] = value
+            else:
+                patches.setdefault(position, []).append((pointer, value))
+        body: object = UNSET
+        for position, writes in patches.items():
+            if position is None:
+                body = Patch(UNSET, tuple(writes))
+            else:
+                arguments[position] = Patch(UNSET, tuple(writes))
+        return tuple(arguments), body
 
 
 def _targeted(call: OperationPlan[T, object], bindings: tuple[PageBinding, ...]) -> _Targeted[T]:
@@ -269,6 +304,7 @@ class _Limits:
     deadline: Deadline | None = None
     max_network_sends: int | None = 2000
     options: RequestOptions | None = None
+    clock: Clock = SYSTEM_CLOCK
 
 
 _DEFAULTS: Final = _Limits(interval=1.0)
@@ -322,6 +358,7 @@ def _limits(
         deadline=layered(sessions, "deadline", _DEFAULTS.deadline),
         max_network_sends=layered(sessions, "max_network_sends", _DEFAULTS.max_network_sends),
         options=request,
+        clock=core.clock,
     )
     interval, deadline = limits.interval, limits.deadline
     session = (limits.total_timeout, None if deadline is None else deadline.remaining())
@@ -356,9 +393,9 @@ def _literals(bindings: tuple[PageBinding, ...], values: tuple[WireValue, ...]) 
     )
 
 
-def _wait_ms(not_before: float) -> int:
-    """Return the milliseconds left before a time, rounded up, and at most 2**53 - 1, which any longer wait saves."""
-    return min(ceil(min(max(0.0, not_before - monotonic()), _MOST_WAIT_MS) * 1000), _MOST_WAIT_MS)
+def _wait_ms(not_before: float, now: float) -> int:
+    """Return the milliseconds from now until a time, rounded up, and at most 2**53 - 1, which any longer wait saves."""
+    return min(ceil(min(max(0.0, not_before - now), _MOST_WAIT_MS) * 1000), _MOST_WAIT_MS)
 
 
 def _sent(
@@ -507,7 +544,7 @@ class _Operation(Generic[T, P]):
         state: WireValue = {
             "phase": phase.value,
             "polls": self._polls,
-            "wait_ms": _wait_ms(self._not_before),
+            "wait_ms": _wait_ms(self._not_before, self._limits.clock.monotonic()),
             "bound": self._bound,
             "seed": self._seed if phase is _Phase.PENDING else (),
             "cancel": self._cancel,
@@ -630,7 +667,7 @@ class _Operation(Generic[T, P]):
         if call is self._plan.polled.call and (limit := self._limits.max_polls) is not None and self._polls >= limit:
             raise self._limit(limit, "polls")
         self._sendable()
-        if (required := self._not_before - monotonic()) <= 0:
+        if (required := self._not_before - self._limits.clock.monotonic()) <= 0:
             return None
         limits = self._limits
         if (allowed := limits.max_wait) is not None and required > allowed:
@@ -719,7 +756,7 @@ class _Operation(Generic[T, P]):
             raise self._error(info, _absence(value), read, plan.operation)
         if not isinstance(value, str):
             raise self._error(info, "type", read, plan.operation)
-        if (expires_at := server_expiry(value)) is None:
+        if (expires_at := _expiry(value, self._limits.clock.time())) is None:
             raise self._error(info, "value", read, plan.operation)
         return expires_at
 
@@ -728,12 +765,12 @@ class _Operation(Generic[T, P]):
 
         Only the header the helper declares gives a server delay; one that is not a valid delay is ignored.
         """
-        received = monotonic()
-        delay = self._limits.interval
+        limits = self._limits
+        received, delay = limits.clock.monotonic(), limits.interval
         if (name := self._plan.retry_after_header) is not None:
             from ..client.retry import header_delay  # noqa: PLC0415 - Only a helper with a delay header reads one.
 
-            if (server := header_delay(info.headers, name, time())) is not None:
+            if (server := header_delay(info.headers, name, limits.clock.time())) is not None:
                 delay = max(delay, server)
         return received + delay
 
@@ -814,7 +851,14 @@ class _Operation(Generic[T, P]):
         result: T | Missing = MISSING
         if phase is _Phase.SUCCEEDED:
             bound, result = self._succeeded(data, wire, info)
-        return _Step(phase, monotonic(), snapshot, bound, result, body=(content, info.status_code, info.content_type))
+        return _Step(
+            phase,
+            self._limits.clock.monotonic(),
+            snapshot,
+            bound,
+            result,
+            body=(content, info.status_code, info.content_type),
+        )
 
     def _succeeded(self, data: P, wire: WireValue, info: ResponseInfo) -> tuple[tuple[WireValue, ...], T | Missing]:
         """Return what the result fetch writes after a successful poll, or the result the poll carries itself."""
@@ -1009,7 +1053,7 @@ class _Operation(Generic[T, P]):
             case _:
                 require_state(poll is not None and kept is None and not bound and not seed and not cancel)
         self._phase, self._polls, self._expires_at = phase, polls, expires_at
-        self._not_before = monotonic() + wait / 1000
+        self._not_before = self._limits.clock.monotonic() + wait / 1000
 
     def _restored_result(
         self, bound: tuple[WireValue, ...], polled: tuple[object, WireValue, ResponseInfo | None]
@@ -1404,7 +1448,10 @@ def _session(limits: _Limits) -> OperationSession:
     from ..client.logical import OperationSession  # noqa: PLC0415 - Only a started helper loads the call runtime.
 
     return OperationSession(
-        total_timeout=limits.total_timeout, deadline=limits.deadline, max_network_sends=limits.max_network_sends
+        total_timeout=limits.total_timeout,
+        deadline=limits.deadline,
+        max_network_sends=limits.max_network_sends,
+        clock=limits.clock,
     )
 
 
@@ -1423,8 +1470,8 @@ def _restored(
 ) -> OperationT:
     """Return the handle a checkpoint continues in a session of its own, without sending.
 
-    The checkpoint must be this helper's, made under the security the call runs with, and unexpired; a state or saved
-    body that does not fit the helper is malformed.
+    The checkpoint must be this helper's, made under the security the call runs with, and unexpired by the client's
+    wall clock; a state or saved body that does not fit the helper is malformed.
     """
     if not isinstance(state, ResumeState):
         raise _invalid(plan, ("state",))
@@ -1433,7 +1480,7 @@ def _restored(
         raise _resume_error(plan, "fingerprint")
     if security != _security(core, plan, limits.options)[0]:
         raise _resume_error(plan, "security")
-    if expires_at is not None and expires_at <= datetime.now(timezone.utc):
+    if expires_at is not None and expires_at.timestamp() <= limits.clock.time():
         raise _resume_error(plan, "expired")
     handle = make(_session(limits))
     try:

@@ -1,0 +1,14 @@
+schema_version: 1
+helpers:
+  records.all:
+    kind: ndjson
+    operation: /paths/~1records/get
+    media: application/x-ndjson
+    event_schema:
+      discriminator: {from: body, pointer: /type}
+      mapping:
+        note: {pointer: /components/schemas/Note}
+    error_events:
+      failed: {pointer: /components/schemas/Failure}
+    completion: {kind: eof}
+    final_line: require_newline

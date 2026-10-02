@@ -271,15 +271,21 @@ def http_date(value: str, received_wall_time: float) -> datetime | None:
     return date + timedelta(seconds=second == _LEAP_SECOND)
 
 
+def http_timestamp(value: str, received_wall_time: float) -> float | None:
+    """Return the POSIX time of an HTTP date within ASCII whitespace, or None for no date or an impossible one."""
+    try:
+        date = http_date(value.strip(_ASCII_WHITESPACE), received_wall_time)
+    except (ValueError, OverflowError, OSError):
+        return None
+    return None if date is None else date.timestamp()
+
+
 def _seconds(value: str, received_wall_time: float) -> float | None:
     normalized = value.strip(_ASCII_WHITESPACE)
     if (integer := _integer(normalized)) is not None:
         return integer
-    try:
-        date = http_date(normalized, received_wall_time)
-    except (ValueError, OverflowError, OSError):
-        return None
-    return None if date is None else max(0.0, date.timestamp() - received_wall_time)
+    date = http_timestamp(normalized, received_wall_time)
+    return None if date is None else max(0.0, date - received_wall_time)
 
 
 def _maximum(values: Iterable[str], parse: Callable[[str], float | None]) -> float | None:

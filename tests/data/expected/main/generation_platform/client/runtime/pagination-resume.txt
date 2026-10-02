@@ -291,6 +291,8 @@
   > GET https://api.example.com/v1/secure/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
   bearer tenant resumed ['1']
+  expiry before the client's wall clock = mappingproxy({'pages': 0, 'items': 0, 'network_send_count': 0, 'network_send_budget_used': 0})
+  expiry at the client's wall clock ! ResumeStateError: ResumeStateError(condition='expired') [condition='expired'] resume_state_error
   audience a checkpointed
   audience a again resumes = mappingproxy({'pages': 0, 'items': 0, 'network_send_count': 0, 'network_send_budget_used': 0})
   audience b resumes ! ResumeStateError: ResumeStateError(condition='security') [condition='security'] resume_state_error

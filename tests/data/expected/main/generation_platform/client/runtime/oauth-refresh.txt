@@ -161,6 +161,8 @@
     refresh tokens sent = ['refresh-1']
   answer after the session and its grace = AuthStateUncertainError state=UNCERTAIN delivery_state=MAYBE_SENT phase=unknown failure_kind=deadline refresh_id=<call>
     later get = AuthStateUncertainError state=UNCERTAIN delivery_state=MAYBE_SENT phase=unknown failure_kind=deadline refresh_id=<call> sent=['refresh-1']
+  answer after the session and its grace on a frozen clock = AuthStateUncertainError state=UNCERTAIN delivery_state=MAYBE_SENT phase=unknown failure_kind=deadline refresh_id=<call>
+    later get = AuthStateUncertainError state=UNCERTAIN delivery_state=MAYBE_SENT phase=unknown failure_kind=deadline refresh_id=<call> sent=['refresh-1']
   public refresh held past its session = AuthTimeoutError state=FAILED_NOT_SENT delivery_state=NOT_SENT phase=unknown timeout_kind=provider refresh_id=<call>
     later get = access-2 scopes=None expires_in_minutes=60 sent=['refresh-1']
   interrupted once its worker started = KeyboardInterrupt
