@@ -294,6 +294,7 @@ class _Batches(Generic[R]):
     """
 
     __slots__ = (
+        "_admitted",
         "_arguments",
         "_buffered",
         "_cancelled",
@@ -348,6 +349,7 @@ class _Batches(Generic[R]):
         self._halted = False
         self._cancelled = False
         self._checked = False
+        self._admitted = False
         self._done = False
 
     def __repr__(self) -> str:
@@ -380,7 +382,11 @@ class _Batches(Generic[R]):
         """Check the shared arguments once, before anything is sent, as the operation's own calls are checked."""
         if not self._checked:
             self._arguments = core.validated_arguments(self._plan.call, self._arguments, self._limits.options)
-            if (options := self._limits.options) is not None and isinstance(coding := options.compression, str):
+            if (
+                (options := self._limits.options) is not None
+                and isinstance(coding := options.compression, str)
+                and coding not in self._plan.call.accepted_content_encodings
+            ):
                 from ..client.compression import helper_children  # noqa: PLC0415 - Only an explicit coding loads it.
 
                 helper_children(coding, ((self._plan.call, True),))
@@ -490,6 +496,7 @@ class _Batches(Generic[R]):
         """Return whether one more item is read: the next request is incomplete, and input and buffer remain."""
         return (
             not self._halted
+            and self._limits.max_items != 0
             and not self._front()[2]
             and not self._exhausted
             and self._buffered + self._item_bytes <= self._limits.max_buffer_bytes
@@ -498,6 +505,12 @@ class _Batches(Generic[R]):
     def _cut(self) -> _Batch[R] | None:
         """Return the next request, or None when no item is held or a request cut short by the buffer should wait."""
         items, size, complete = self._front()
+        if not self._admitted and (items or self._failure is None):
+            if (options := self._limits.options) is not None and isinstance(coding := options.compression, str):
+                from ..client.compression import helper_children  # noqa: PLC0415 - Only an explicit coding loads it.
+
+                helper_children(coding, ((self._plan.call, bool(items)),))
+            self._admitted = True
         if not items or (not complete and not self._exhausted and self._slots):
             return None
         for _ in items:
