@@ -127,6 +127,10 @@
   after the last page ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
   > POST https://api.example.com/search
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"text":"q"}'
+  zero next page ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  > POST https://api.example.com/search
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 12] b'{"text":"q"}'
+  zero resume ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
   > POST https://api.example.com/search?cursor=c2
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip again b'{"text":"q"}'
   next page = (Item(name='b'),)
@@ -143,6 +147,8 @@
   > POST https://api.example.com/checks/status
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip b'{"id":"c1"}'
   check = Outcome(value='ok')
+  completed check resume ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  completed check inherited resume = Outcome(value='ok')
   > POST https://api.example.com/events
     [host: api.example.com, accept-encoding: gzip, deflate, accept: text/event-stream, content-type: application/json, content-encoding: gzip, content-length: <gzip>] gzip b'{"text":"q"}'
   events [Message(text='a')]

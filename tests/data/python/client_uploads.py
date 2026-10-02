@@ -7,6 +7,7 @@ stored with the original content, and break appends, probes, and completions to 
 from __future__ import annotations
 
 import asyncio
+import gzip
 import io
 import json
 import os
@@ -85,7 +86,10 @@ class _Server:
         stored = self.uploads[upload]
         if int(request.headers["Upload-Offset"]) != len(stored):
             return raw_response(409)(request)
-        stored.extend(request.content[:keep])
+        content = (
+            gzip.decompress(request.content) if request.headers.get("content-encoding") == "gzip" else request.content
+        )
+        stored.extend(content[:keep])
         return raw_response(204, b"", None, **{"Upload-Offset": str(len(stored))})(request)
 
     def put(self, request: httpx2.Request, upload: str) -> httpx2.Response:
@@ -1124,3 +1128,69 @@ async def _async_ranges(source: Any) -> str:
     except ValueError:
         refused = "refused"
     return f"{first!r} {rest!r} {end!r} after close {closed!r}, past the end {refused}"
+
+
+def upload_compression(package: ModuleType, lines: list[str]) -> None:
+    """Compress original upload ranges and recheck each new resume, refusing workflows without a declared body."""
+    harness, exchange, server = _Uploads(package), Exchange(lines), _Server()
+    coding = harness.options.RequestOptions(compression="gzip")
+    source = harness.source()
+    with exchange.client() as native, package.Client(http_client=native) as api:
+        helper = api.protocols.files.upload
+        exchange.respond(*(server for _ in range(12)))
+        handle = step(lines, "start gzip", lambda: helper.start(source, tus_resumable=harness.tus, options=coding))
+        if handle is not None:
+            step(lines, "compressed range", handle.advance)
+            state = handle.checkpoint()
+            handle.close()
+            with helper.resume(source, state, options=coding) as resumed:
+                step(lines, "compressed resume", resumed.run)
+                state = resumed.checkpoint()
+            record(lines, "completed gzip resume", lambda: helper.resume(source, state, options=coding))
+            with helper.resume(source, state) as complete:
+                step(lines, "completed plain resume", complete.run)
+            lines.append(f"  {server.stored('u1')}")
+        record(
+            lines,
+            "empty gzip upload",
+            lambda: helper.start(harness.source(b""), tus_resumable=harness.tus, options=coding),
+        )
+        record(
+            lines,
+            "empty operation completion",
+            lambda: api.protocols.files.finish.start(harness.source(b""), tus_resumable=harness.tus, options=coding),
+        )
+        lines.append(f"  creates={len(server.uploads)}")
+    exchange.responders.clear()
+    run(lambda: _async_upload_compression(harness, exchange, server, lines))
+
+
+async def _async_upload_compression(harness: _Uploads, exchange: Exchange, server: _Server, lines: list[str]) -> None:
+    """Apply the same compression admission to asyncio upload entries and completed resumes."""
+    coding = harness.options.RequestOptions(compression="gzip")
+    source = harness.protocols.AsyncBytesUploadSource.from_bytes(_CONTENT)
+    async with exchange.async_client() as native, harness.package.AsyncClient(http_client=native) as api:
+        helper = api.protocols.files.upload
+        exchange.respond(*(server for _ in range(12)))
+        handle = await astep(
+            lines, "async start gzip", lambda: helper.start(source, tus_resumable=harness.tus, options=coding)
+        )
+        if handle is not None:
+            await astep(lines, "async compressed range", handle.advance)
+            state = handle.checkpoint()
+            await handle.aclose()
+            async with await helper.resume(source, state, options=coding) as resumed:
+                await astep(lines, "async compressed resume", resumed.run)
+                state = resumed.checkpoint()
+            await arecord(lines, "async completed gzip resume", lambda: helper.resume(source, state, options=coding))
+            async with await helper.resume(source, state) as complete:
+                await astep(lines, "async completed plain resume", complete.run)
+        empty = harness.protocols.AsyncBytesUploadSource.from_bytes(b"")
+        await arecord(lines, "async empty gzip", lambda: helper.start(empty, tus_resumable=harness.tus, options=coding))
+        await arecord(
+            lines,
+            "async empty completion",
+            lambda: api.protocols.files.finish.start(empty, tus_resumable=harness.tus, options=coding),
+        )
+        lines.append(f"  creates={len(server.uploads)}")
+    exchange.responders.clear()

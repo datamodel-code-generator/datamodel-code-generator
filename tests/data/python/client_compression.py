@@ -277,6 +277,15 @@ def _helpers(harness: _Harness, lines: list[str]) -> None:
         record(lines, "after the last page", lambda: helpers.search_all.next_page(last, options=gzip))
         exchange.respond(*_results((["a"], "c2")))
         first = helpers.search_all.page(body=harness.query())
+        zero = protocols.PaginationOptions(max_items=0)
+        record(
+            lines, "zero next page", lambda: helpers.search_all.next_page(first, options=gzip, pagination_options=zero)
+        )
+        exchange.respond(*_results((["a"], "c2")))
+        with helpers.search_all.iterate(body=harness.query()) as pager:
+            next(pager)
+            state = pager.checkpoint()
+        record(lines, "zero resume", lambda: helpers.search_all.resume(state, options=gzip, pagination_options=zero))
         exchange.respond(*_results((["b"], None)))
         record(lines, "next page", lambda: helpers.search_all.next_page(first, options=gzip).items)
         exchange.respond(json_response(200, {"data": [{"name": "a"}], "next": "https://api.example.com/feed?page=2"}))
@@ -293,7 +302,14 @@ def _helpers(harness: _Harness, lines: list[str]) -> None:
             json_response(202, {"id": "c1", "status": "running"}),
             json_response(200, {"id": "c1", "status": "done", "result": {"value": "ok"}}),
         )
-        record(lines, "check", api.protocols.checks.run.start(options=gzip, poll_options=fast).wait)
+        check = api.protocols.checks.run.start(options=gzip, poll_options=fast)
+        state = check.checkpoint()
+        check.close()
+        resumed = api.protocols.checks.run.resume(state, options=gzip, poll_options=fast)
+        record(lines, "check", resumed.wait)
+        state = resumed.checkpoint()
+        record(lines, "completed check resume", lambda: api.protocols.checks.run.resume(state, options=gzip))
+        record(lines, "completed check inherited resume", api.protocols.checks.run.resume(state).wait)
         exchange.respond(raw_response(200, b'data: {"text":"a"}\n\n', "text/event-stream"))
         with api.protocols.events.watch.open(body=harness.query(), options=gzip) as stream:
             lines.append(f"  events {[event.data for event in stream]}")

@@ -1142,8 +1142,10 @@ def _coded(walk: _Walk[T, P]) -> _Walk[T, P]:
     writes = any(isinstance(target, BodyTarget) for target in written)
     continued = (plan.continued, (body or writes) and plan.continued.body is not None)
     children: tuple[tuple[OperationPlan[P, object], bool], ...]
-    if link is None:
-        children = () if walk.limits.max_items == 0 else ((plan.call, body), continued)
+    if walk.limits.max_items == 0:
+        children = ()
+    elif link is None:
+        children = ((plan.call, body), continued)
     else:
         children = () if link.digest is None else (continued,)
     helper_children(selected, children)

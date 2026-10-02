@@ -1372,7 +1372,9 @@ class AsyncLroHandle(_Operation[T, P]):
         self._close("aclose", quiet=exc is not None)
 
 
-def _coded(plan: PollingPlan[T, P, C], limits: _Limits, body: object) -> None:
+def _coded(
+    plan: PollingPlan[T, P, C], limits: _Limits, body: object, *, polling: bool = True, fetching: bool = True
+) -> None:
     """Refuse a coding the helper call selects unless one of its requests sends a body its operation accepts.
 
     The create request sends the caller's body, which a resumed handle never sends again; a poll or the result fetch
@@ -1381,13 +1383,17 @@ def _coded(plan: PollingPlan[T, P, C], limits: _Limits, body: object) -> None:
     if (options := limits.options) is not None and isinstance(selected := options.compression, str):
         from ..client.compression import helper_children  # noqa: PLC0415 - Only a selected coding loads the encoder.
 
-        polls = (plan.poll, any(isinstance(binding.target, BodyTarget) for binding in plan.bindings))
+        polls = (
+            ()
+            if not polling
+            else ((plan.poll, any(isinstance(binding.target, BodyTarget) for binding in plan.bindings)),)
+        )
         fetches = (
             ()
-            if plan.fetch is None
+            if plan.fetch is None or not fetching
             else ((plan.fetch, any(isinstance(binding.target, BodyTarget) for binding in plan.fetch_bindings)),)
         )
-        helper_children(selected, ((plan.create, not isinstance(body, Unset)), polls, *fetches))
+        helper_children(selected, ((plan.create, not isinstance(body, Unset)), *polls, *fetches))
 
 
 def _session(limits: _Limits) -> OperationSession:
@@ -1433,6 +1439,13 @@ def _restored(
         handle._restore(decode_json(state_json), payload, expires_at)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     except MalformedStateError:
         raise _resume_error(plan, "malformed") from None
+    _coded(
+        plan,
+        limits,
+        UNSET,
+        polling=handle._phase is _Phase.PENDING,  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+        fetching=handle._phase in {_Phase.PENDING, _Phase.SUCCEEDED} and handle._result is MISSING,  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    )
     return handle
 
 
@@ -1586,7 +1599,6 @@ def resume_operation(  # noqa: PLR0913
     It sends nothing, and never creates the operation again; `status` or `wait` sends its first poll.
     """
     limits = _limits(core, plan, poll_options, options, session_options)
-    _coded(plan, limits, UNSET)
     return _restored(core, plan, state, limits, lambda session: handle(core, plan, limits, session))
 
 
@@ -1633,5 +1645,4 @@ def aresume_operation(  # noqa: PLR0913
     poll.
     """
     limits = _limits(core, plan, poll_options, options, session_options)
-    _coded(plan, limits, UNSET)
     return _restored(core, plan, state, limits, lambda session: handle(core, plan, limits, session))
