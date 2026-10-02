@@ -541,7 +541,7 @@ def _offsets(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
 
 
 def _completions(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lines: list[str]) -> None:
-    """Never send a completion of unknown outcome again; send one an error answered again."""
+    """Never send a completion of unknown outcome, a 502 or 504 included, again; send one an error answered again."""
     helper = api.protocols.files.finish
     lines.append("a completion of unknown outcome")
     exchange.respond(server, server, server, failing(httpx2.ReadError))
@@ -556,6 +556,15 @@ def _completions(harness: _Uploads, api: Any, server: _Server, exchange: Exchang
     handle = helper.start(harness.source(), tus_resumable=harness.tus)
     step(lines, "run", handle.run)
     step(lines, "run again", handle.run)
+    for status in (502, 504):
+        lines.append(f"a completion a gateway answered with {status}")
+        exchange.respond(server, server, server, raw_response(status))
+        handle = helper.start(harness.source(), tus_resumable=harness.tus)
+        step(lines, "run", handle.run)
+        step(lines, "run again", handle.run)
+        step(lines, "advance again", handle.advance)
+        state = handle.checkpoint()
+        step(lines, "resume", lambda: helper.resume(harness.source(), state))
     lines.append("a completion the server answered with a body that does not decode")
     exchange.respond(server, server, server, json_response(200, {"id": 5}))
     handle = helper.start(harness.source(), tus_resumable=harness.tus)
@@ -728,8 +737,14 @@ def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
         ("another helper", lambda: finish.resume(harness.source(), state)),
         ("not a state", lambda: helper.resume(harness.source(), "state")),
         ("bytes", lambda: helper.resume(_CONTENT, state)),
-        ("a smaller chunk size", lambda: helper.resume(harness.source(), state, upload_options=harness.uploads(chunk_bytes=2))),
-        ("fewer chunks allowed", lambda: helper.resume(harness.source(), state, upload_options=harness.uploads(max_parts=2))),
+        (
+            "a smaller chunk size",
+            lambda: helper.resume(harness.source(), state, upload_options=harness.uploads(chunk_bytes=2)),
+        ),
+        (
+            "fewer chunks allowed",
+            lambda: helper.resume(harness.source(), state, upload_options=harness.uploads(max_parts=2)),
+        ),
     ):
         record(lines, f"resume with {label}", call)
     envelope = json.loads(exported)
@@ -787,7 +802,8 @@ def _expiry(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, li
     for label, value in (
         ("no date", "tomorrow"),
         ("no day", "2999-02-30T00:00:00Z"),
-        ("a leap second", "2999-12-31T23:59:60Z"), ("a fraction", "2999-01-01t00:00:00.123456789z"),
+        ("a leap second", "2999-12-31T23:59:60Z"),
+        ("a fraction", "2999-01-01t00:00:00.123456789z"),
     ):
         server.expires = value
         exchange.respond(server)
@@ -819,7 +835,9 @@ def _clock(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, lin
         handle = helper.start(harness.source(), tus_resumable=harness.tus)
         step(lines, "advance", handle.advance)
         state = handle.checkpoint()
-        record(lines, "resume a checkpoint whose expiry the clock passed", lambda: helper.resume(harness.source(), state))
+        record(
+            lines, "resume a checkpoint whose expiry the clock passed", lambda: helper.resume(harness.source(), state)
+        )
         ticks[0] += 601
         step(lines, "advance once the clock passed the session's total timeout", handle.advance)
 
