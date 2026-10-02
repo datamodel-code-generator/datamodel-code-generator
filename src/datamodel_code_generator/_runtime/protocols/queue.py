@@ -34,7 +34,7 @@ from ..client.options import IdempotencyKey, RequestOptions
 from ..client.retry import retry_after, status_retry_reason
 from ..client.timing import Deadline, SessionOptions, absolute_deadline
 from ..model_codecs.errors import CodecError
-from ..model_codecs.media import decode_json
+from ..model_codecs.media import decode_json, encode_json
 from ..model_codecs.unset import UNSET, Unset
 from .errors import ProtocolStateError, QueueBindingError, QueuePolicyConflictError, QueueStoreError
 from .options import QueueOptions, layered, resolved_queue
@@ -319,7 +319,7 @@ def _new_entry(  # noqa: PLR0913, PLR0917
     now = _now(core.clock)
     key = None if queued.dedupe_ttl is None else str(uuid4())
     identity = core.saved_queue_request(queued.call, arguments, body, media_type, None)
-    payload = canonical_json({
+    payload = encode_json({
         "version": _VERSION,
         "request": identity,
         "key": key,

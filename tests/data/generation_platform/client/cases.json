@@ -4308,5 +4308,18 @@
       "pydantic_v2.BaseModel"
     ],
     "modules": false
+  },
+  "queue-order": {
+    "input": "queue-order.json",
+    "references": [
+      "protocols/queue-order.json"
+    ],
+    "config": {
+      "protocols": "protocols/queue-order.json"
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": false
   }
 }
