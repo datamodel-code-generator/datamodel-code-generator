@@ -63,6 +63,8 @@ from tests.data.python.client_polling_resume import polling_resume
 from tests.data.python.client_protocol_contracts import protocol_contracts
 from tests.data.python.client_protocol_errors import protocol_errors
 from tests.data.python.client_query import query
+from tests.data.python.client_queue_credentials import queue_credentials
+from tests.data.python.client_queue_order import queue_order
 from tests.data.python.client_queue_recovery import queue_recovery, queue_restoration, queue_scope
 from tests.data.python.client_queues import queue_compression, queues
 from tests.data.python.client_raw import raw
@@ -836,6 +838,8 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "polling-resume": ("polling", ("pydantic_v2.BaseModel",), polling_resume),
     "circuits": ("circuits", ("pydantic_v2.BaseModel",), circuits),
     "compression": ("compression", ("pydantic_v2.BaseModel",), compression),
+    "queue-credentials": ("queue-credentials", ("pydantic_v2.BaseModel",), queue_credentials),
+    "queue-order": ("queue-order", ("pydantic_v2.BaseModel",), queue_order),
     "queues": ("queues", ("pydantic_v2.BaseModel",), queues),
     "queue-compression": ("queues", ("pydantic_v2.BaseModel",), queue_compression),
     "queue-recovery": ("queues", ("pydantic_v2.BaseModel",), queue_recovery),

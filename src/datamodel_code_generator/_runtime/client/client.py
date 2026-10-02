@@ -525,8 +525,8 @@ def _auth_identity(auth: AuthConfig) -> WireValue:
 def _secret(spec: ParameterSpec, value: WireValue, headers: frozenset[str], queries: frozenset[str]) -> bool:
     """Return whether an argument carries credentials: a cookie, a credential header, or a scheme's query field.
 
-    An exploded form object query parameter sends each of its properties as a query field of its own, as a querystring
-    does, an additional property included.
+    Exploded form and deepObject query parameters send their properties as fields of their own, with brackets around
+    deepObject properties, an additional property included.
     """
     plan = spec.plan
     name = plan.name
@@ -537,9 +537,17 @@ def _secret(spec: ParameterSpec, value: WireValue, headers: frozenset[str], quer
         case "header":
             secret = name.lower() in headers
         case "query":
-            secret = name in queries or (
-                _exploded(plan) and isinstance(value, Mapping) and not queries.isdisjoint(value)
-            )
+            secret = name in queries
+            if (
+                plan.shape == "object"
+                and plan.explode
+                and plan.style in {"form", "deepObject"}
+                and isinstance(value, Mapping)
+            ):
+                if plan.style == "form":
+                    secret = secret or not queries.isdisjoint(value)
+                else:
+                    secret = secret or any(f"{name}[{member}]" in queries for member in value)
         case "querystring":
             secret = isinstance(value, Mapping) and not queries.isdisjoint(value)
         case _:
@@ -2244,6 +2252,38 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         }
         return facts, context is not None or (declared is None and auth is None)
 
+    def _secret_positions(
+        self, operation: OperationPlan[object, object] | None, options: RequestOptions | None
+    ) -> tuple[frozenset[str], frozenset[str]]:
+        """Return catalog and configured signer credential positions without acquiring credentials."""
+        from .security import secret_names  # noqa: PLC0415
+
+        headers, query = secret_names(self._shared.security_schemes)
+        auth = self._call_settings(options, None if operation is None else operation.operation_id).auth
+        if auth is not None:
+            for signer in auth.signers:
+                capabilities = signer.capabilities
+                headers |= frozenset(name.lower() for name in capabilities.managed_headers)
+                query |= frozenset(capabilities.managed_query)
+        return headers, query
+
+    def saved_response(
+        self,
+        info: ResponseInfo,
+        operation: OperationPlan[object, object] | None,
+        options: RequestOptions | None,
+    ) -> ResponseInfo:
+        """Copy response metadata without catalog, signer, or cookie credential positions."""
+        headers, _ = self._secret_positions(operation, options)
+        headers |= {"set-cookie", "set-cookie2"}
+        source = None if operation is None else operation.request_id_header
+        return replace(
+            info,
+            headers=HeadersView((name, value) for name, value in info.headers if name.lower() not in headers),
+            request_id=None if source is None or source.lower() in headers else info.request_id,
+            content_type=None if "content-type" in headers else info.content_type,
+        )
+
     def queue_identity(
         self,
         operation: OperationPlan[object, object],
@@ -2253,13 +2293,10 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         """Return immutable pre-auth replay facts, excluding every declared credential position."""
         from base64 import b64encode  # noqa: PLC0415
 
-        from .security import secret_names  # noqa: PLC0415
-
-        headers, query = secret_names(self._shared.security_schemes)
         auth = self._call_settings(options, operation.operation_id).auth
-        if auth is not None and (bound := self._bound(operation, auth)) is not None:
-            headers |= bound.managed_headers
-            query |= bound.managed_query
+        if auth is not None:
+            self._bound(operation, auth)
+        headers, query = self._secret_positions(operation, options)
         target = absolute_target(request.url)
         return {
             "method": request.method,
@@ -2297,9 +2334,7 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         It is a cookie, a header the client treats as a credential, a query parameter at the position of a declared
         security scheme, or a querystring whose value has a field at such a position.
         """
-        from .security import secret_names  # noqa: PLC0415 - Only a checkpoint needs the schemes.
-
-        headers, queries = secret_names(self._shared.security_schemes)
+        headers, queries = self._secret_positions(operation, None)
         return next(
             (
                 (spec.plan.location, spec.plan.name)
