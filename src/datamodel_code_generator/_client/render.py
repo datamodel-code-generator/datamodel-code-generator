@@ -4277,8 +4277,10 @@ options must not fix an idempotency key or patch a header or query parameter the
 A queue helper saves calls of its declared operations in a borrowed store and sends them only when the caller drains
 it; nothing runs in the background and nothing is sent when connectivity returns. `enqueue` sends nothing: it encodes
 and checks the call's arguments and JSON body as the call would, and saves their wire values with the operation's
-fingerprint and the client's security binding. Credentials, tokens, auth headers, and the client's header and query
-patches are never saved; a drain sends each entry through the client's current auth. The types are imported from:
+fingerprint and the client's security binding. Credential-bearing arguments are refused. Credentials, tokens and
+auth headers are never saved; a drain uses the client's current auth. Non-auth header and query patches are captured
+in the immutable saved request identity, and a drain refuses changes to that identity. Stored outcomes contain only
+response metadata with known credential header positions removed, never response bodies. The types are imported from:
 
 - `{self.config.package}.protocols`: `QueueOptions`, `QueueStore`, `AsyncQueueStore`, `QueueEntry`, `QueueLease`,
   `QueueOutcome`, `QueueReceipt`, `DrainReport`, `ResolvedQueueOptions`, `BlobRef`, and the builtin

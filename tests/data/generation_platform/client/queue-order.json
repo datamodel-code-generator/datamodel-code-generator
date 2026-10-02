@@ -1,0 +1,223 @@
+{
+  "openapi": "3.2.0",
+  "info": {
+    "title": "Saved queue argument order",
+    "version": "1"
+  },
+  "servers": [
+    {
+      "url": "https://api.example.com"
+    }
+  ],
+  "paths": {
+    "/deep": {
+      "get": {
+        "operationId": "getDeep",
+        "tags": [
+          "cases"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "filter",
+            "style": "deepObject",
+            "explode": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "alpha": {
+                  "type": "string"
+                },
+                "zulu": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "ok"
+          }
+        }
+      }
+    },
+    "/form": {
+      "get": {
+        "operationId": "getForm",
+        "tags": [
+          "cases"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "filter",
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "alpha": {
+                  "type": "string"
+                },
+                "zulu": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "ok"
+          }
+        }
+      }
+    },
+    "/joined": {
+      "get": {
+        "operationId": "getJoined",
+        "tags": [
+          "cases"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "filter",
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "alpha": {
+                  "type": "string"
+                },
+                "zulu": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "ok"
+          }
+        }
+      }
+    },
+    "/whole": {
+      "get": {
+        "operationId": "getWhole",
+        "tags": [
+          "cases"
+        ],
+        "parameters": [
+          {
+            "in": "querystring",
+            "name": "whole",
+            "content": {
+              "application/x-www-form-urlencoded": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "alpha": {
+                      "type": "string"
+                    },
+                    "zulu": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "ok"
+          }
+        }
+      }
+    },
+    "/nested": {
+      "get": {
+        "operationId": "getNested",
+        "tags": [
+          "cases"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "filter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "ok"
+          }
+        }
+      }
+    },
+    "/repeated": {
+      "get": {
+        "operationId": "getRepeated",
+        "tags": [
+          "cases"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tag",
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "ok"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}
