@@ -10,11 +10,13 @@ from models import JobRequest as _dcg_type_0
 from models import Report as _dcg_type_1
 
 from .._runtime.client.client import ClientCore
-from .._runtime.protocols.polling import LroHandle, start_operation
+from .._runtime.protocols.polling import LroHandle, resume_operation, start_operation
+from .._runtime.protocols.records import CancelReceipt
+from .._runtime.protocols.resume import ResumeState
 from ..model_codecs import ModelValue, RequestMedia
 from ..options import RequestOptions, SessionOptions
-from ..types.exports import ExportStatusResponse
-from ..types.jobs import GetJobResponse, GetReportResponse
+from ..types.exports import CancelExportsResponse, ExportStatusResponse
+from ..types.jobs import CancelJobResponse, GetJobResponse, GetReportResponse
 from ..types.reports import FindReportResponse, LatestReportResponse
 from . import PollOptions, _plans
 
@@ -58,6 +60,11 @@ class JobsProtocols:
     def report(self) -> JobsReportPolling:
         """The jobs.report polling helper."""
         return JobsReportPolling(self._core)
+
+    @cached_property
+    def tracked(self) -> JobsTrackedPolling:
+        """The jobs.tracked polling helper."""
+        return JobsTrackedPolling(self._core)
 
 
 class ExportsProtocols:
@@ -106,6 +113,24 @@ class JobsRunPolling:
             session_options=session_options,
         )
 
+    def resume(
+        self,
+        state: ResumeState,
+        *,
+        poll_options: PollOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> LroHandle[GetReportResponse, GetJobResponse]:
+        """Return a handle continuing a checkpoint of this helper; it sends nothing until it polls."""
+        return resume_operation(
+            self._core,
+            _plans.PLAN_0,
+            state,
+            poll_options=poll_options,
+            options=options,
+            session_options=session_options,
+        )
+
 
 class JobsInlinePolling:
     """The jobs.inline polling helper of POST /jobs."""
@@ -130,6 +155,24 @@ class JobsInlinePolling:
             (),
             body=body,
             media_type=media_type,
+            poll_options=poll_options,
+            options=options,
+            session_options=session_options,
+        )
+
+    def resume(
+        self,
+        state: ResumeState,
+        *,
+        poll_options: PollOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> LroHandle[_dcg_type_1, GetJobResponse]:
+        """Return a handle continuing a checkpoint of this helper; it sends nothing until it polls."""
+        return resume_operation(
+            self._core,
+            _plans.PLAN_1,
+            state,
             poll_options=poll_options,
             options=options,
             session_options=session_options,
@@ -164,6 +207,24 @@ class JobsReportPolling:
             session_options=session_options,
         )
 
+    def resume(
+        self,
+        state: ResumeState,
+        *,
+        poll_options: PollOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> LroHandle[FindReportResponse, GetJobResponse]:
+        """Return a handle continuing a checkpoint of this helper; it sends nothing until it polls."""
+        return resume_operation(
+            self._core,
+            _plans.PLAN_2,
+            state,
+            poll_options=poll_options,
+            options=options,
+            session_options=session_options,
+        )
+
 
 class ExportsRunPolling:
     """The exports.run polling helper of POST /exports."""
@@ -178,16 +239,46 @@ class ExportsRunPolling:
         poll_options: PollOptions | None = None,
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
-    ) -> LroHandle[None, ExportStatusResponse]:
+    ) -> ExportsRunHandle:
         """Create the operation of POST /exports and return the handle that polls it."""
         return start_operation(
             self._core,
             _plans.PLAN_3,
             (),
+            handle=ExportsRunHandle,
             poll_options=poll_options,
             options=options,
             session_options=session_options,
         )
+
+    def resume(
+        self,
+        state: ResumeState,
+        *,
+        poll_options: PollOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> ExportsRunHandle:
+        """Return a handle continuing a checkpoint of this helper; it sends nothing until it polls."""
+        return resume_operation(
+            self._core,
+            _plans.PLAN_3,
+            state,
+            handle=ExportsRunHandle,
+            poll_options=poll_options,
+            options=options,
+            session_options=session_options,
+        )
+
+
+class ExportsRunHandle(LroHandle[None, ExportStatusResponse]):
+    """A handle of the exports.run polling helper, which also cancels the operation with DELETE /exports."""
+
+    __slots__ = ()
+
+    def cancel_remote(self) -> CancelReceipt[CancelExportsResponse]:
+        """Ask the server to cancel the operation; the handle keeps its last poll until it polls again."""
+        return self._cancel_remote(_plans.CANCEL_3)
 
 
 class ExportsLatestPolling:
@@ -213,3 +304,80 @@ class ExportsLatestPolling:
             options=options,
             session_options=session_options,
         )
+
+    def resume(
+        self,
+        state: ResumeState,
+        *,
+        poll_options: PollOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> LroHandle[LatestReportResponse, ExportStatusResponse]:
+        """Return a handle continuing a checkpoint of this helper; it sends nothing until it polls."""
+        return resume_operation(
+            self._core,
+            _plans.PLAN_4,
+            state,
+            poll_options=poll_options,
+            options=options,
+            session_options=session_options,
+        )
+
+
+class JobsTrackedPolling:
+    """The jobs.tracked polling helper of POST /jobs."""
+
+    def __init__(self, core: ClientCore) -> None:
+        """Keep the client core the helper sends through."""
+        self._core = core
+
+    def start(
+        self,
+        *,
+        body: _dcg_type_0 | ModelValue[_dcg_type_0],
+        media_type: Literal['application/json'] | RequestMedia[_dcg_type_0 | ModelValue[_dcg_type_0], _dcg_type_0 | ModelValue[_dcg_type_0]] | None = None,
+        poll_options: PollOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> JobsTrackedHandle:
+        """Create the operation of POST /jobs and return the handle that polls it."""
+        return start_operation(
+            self._core,
+            _plans.PLAN_5,
+            (),
+            body=body,
+            media_type=media_type,
+            handle=JobsTrackedHandle,
+            poll_options=poll_options,
+            options=options,
+            session_options=session_options,
+        )
+
+    def resume(
+        self,
+        state: ResumeState,
+        *,
+        poll_options: PollOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> JobsTrackedHandle:
+        """Return a handle continuing a checkpoint of this helper; it sends nothing until it polls."""
+        return resume_operation(
+            self._core,
+            _plans.PLAN_5,
+            state,
+            handle=JobsTrackedHandle,
+            poll_options=poll_options,
+            options=options,
+            session_options=session_options,
+        )
+
+
+class JobsTrackedHandle(LroHandle[_dcg_type_1, GetJobResponse]):
+    """A handle of the jobs.tracked polling helper, which also cancels the operation with DELETE /jobs/{jobId}."""
+
+    __slots__ = ()
+
+    def cancel_remote(self) -> CancelReceipt[CancelJobResponse]:
+        """Ask the server to cancel the operation; the handle keeps its last poll until it polls again."""
+        return self._cancel_remote(_plans.CANCEL_5)

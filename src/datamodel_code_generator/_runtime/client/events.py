@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import inspect
 from dataclasses import replace
-from time import monotonic
 from types import MappingProxyType
 from typing import TYPE_CHECKING
 from urllib.parse import urlsplit
@@ -67,6 +66,7 @@ class CallEvents:
         "handed",
         "hooks",
         "info",
+        "monotonic",
         "operation_id",
         "origin",
         "path",
@@ -103,6 +103,7 @@ class CallEvents:
         self.attempt: float | None = None
         self.handed: float | None = None
         self.started = call.started
+        self.monotonic = call.monotonic
         self.terminal = False
 
     def event(  # noqa: PLR0913
@@ -292,7 +293,7 @@ class CallEvents:
         self.delivery = DeliveryState.NOT_SENT
         if index is not None:
             self.attempts = index + 1
-            self.attempt = monotonic()
+            self.attempt = self.monotonic()
             self.attempt_sent = False
 
     def attempting(self) -> CallEvent:
@@ -320,7 +321,9 @@ class CallEvents:
             events.append(self.event("transport_failure", sent=self.attempt_sent, failure=error))
         if self.attempt is not None:
             events.append(
-                self.event("attempt_end", sent=self.attempt_sent, status=status, duration=monotonic() - self.attempt)
+                self.event(
+                    "attempt_end", sent=self.attempt_sent, status=status, duration=self.monotonic() - self.attempt
+                )
             )
             self.attempt = None
         return events
@@ -332,17 +335,20 @@ class CallEvents:
         self.terminal = True
         events = self._attempt_ending(error)
         status = None if self.info is None else self.info.status_code
+        outcome: CallOutcome = "cancel"
         match error:
             case None:
-                outcome: CallOutcome = "handed_off" if handed_off else "success"
+                outcome = "handed_off" if handed_off else "success"
             case RequestCancelledError():
-                outcome = "cancel"
+                pass
             case Exception():
                 outcome = "error"
             case _:
-                outcome = "cancel"
+                pass
         events.append(
-            self.event("call_end", sent=self.sent, status=status, duration=monotonic() - self.started, outcome=outcome)
+            self.event(
+                "call_end", sent=self.sent, status=status, duration=self.monotonic() - self.started, outcome=outcome
+            )
         )
         return events
 
@@ -382,7 +388,7 @@ class CallEvents:
             for failure in failed[1]:
                 add_secondary(error, failure)
         if handed_off:
-            self.handed = monotonic()
+            self.handed = self.monotonic()
 
     def _notified_end(
         self, pending: list[CallEvent], error: BaseException | None
@@ -419,7 +425,7 @@ class CallEvents:
         """
         await self._aterminal(error, completed, handed_off=handed_off, intermediate=intermediate)
         if handed_off:
-            self.handed = monotonic()
+            self.handed = self.monotonic()
 
     async def _aterminal(
         self,
@@ -477,24 +483,25 @@ class CallEvents:
                 if isinstance(primary, RequestCancelledError) or not isinstance(primary, Exception)
                 else "error"
             )
-        return replace(event, outcome=outcome, duration=monotonic() - self.started), primary
+        return replace(event, outcome=outcome, duration=self.monotonic() - self.started), primary
 
     def stream_ending(self, error: BaseException | None, *, early: bool) -> CallEvent | None:
         """Return the end of a handed-over stream: read to its end, closed early, failed, or cancelled."""
         if (handed := self.handed) is None:
             return None
         self.handed = None
+        outcome: CallOutcome = "cancel"
         match error:
             case None:
-                outcome: CallOutcome = "cancel" if early else "success"
+                outcome = "cancel" if early else "success"
             case RequestCancelledError():
-                outcome = "cancel"
+                pass
             case Exception():
                 outcome = "error"
             case _:
-                outcome = "cancel"
+                pass
         status = None if self.info is None else self.info.status_code
-        return self.event("stream_end", sent=True, status=status, duration=monotonic() - handed, outcome=outcome)
+        return self.event("stream_end", sent=True, status=status, duration=self.monotonic() - handed, outcome=outcome)
 
     def streamed(self, error: BaseException | None, *, early: bool) -> None:
         """Report a handed-over stream's end, raising a hook failure unless the stream already failed."""
@@ -521,7 +528,7 @@ class CallEvents:
 
 def auth_ended(events: CallEvents, started: float, error: BaseException | None = None) -> None:
     """Complete actual credential work while retaining an existing callback or termination failure."""
-    event = events.event("auth_end", sent=events.sent, duration=monotonic() - started)
+    event = events.event("auth_end", sent=events.sent, duration=events.monotonic() - started)
     if error is None:
         events.emit(event)
     elif failures := events.notify(event, terminal=True, error=error):
@@ -530,7 +537,7 @@ def auth_ended(events: CallEvents, started: float, error: BaseException | None =
 
 async def aauth_ended(events: CallEvents, started: float, error: BaseException | None = None) -> None:
     """Complete an asynchronous credential span without losing its primary failure."""
-    event = events.event("auth_end", sent=events.sent, duration=monotonic() - started)
+    event = events.event("auth_end", sent=events.sent, duration=events.monotonic() - started)
     if error is None:
         await events.aemit(event)
     elif failures := await events.anotify(event, terminal=True, error=error):

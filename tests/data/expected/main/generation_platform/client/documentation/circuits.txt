@@ -184,6 +184,9 @@ refunded. `Deadline.after(seconds)` shares an absolute monotonic expiry across c
 the relative total timeout wins. `CancelToken` is thread-safe and remains cancelled once signalled. Sync callbacks,
 DNS, I/O, and cleanup are cooperative and may return after a deadline. Async SDK waits enforce their budgets.
 Native cancellation remains the original exception. No work starts after an observed cancellation or expiry.
+`ClientOptions(clock=Clock(monotonic=..., time=..., random=...))` replaces the time and jitter sources of every call;
+`OAuthProviderOptions(clock=...)` does so for a provider, and `Deadline.after(seconds, clock=...)` creates a deadline
+on that clock. Waits still pass in real time, so a test clock skips one by advancing itself.
 
 ## Retry decisions and delays
 
@@ -353,7 +356,8 @@ consecutive failures opens the circuit for the cooldown; then one call probes it
 it on failure, while other calls raise `CircuitOpenError`; a cancelled or neutral probe frees the slot.
 
 `circuit_store` borrows a `CircuitStore` (an `AsyncCircuitStore` for `AsyncClient`) and never closes it; clients
-sharing one store share circuits with the same key. Its methods receive the SDK's monotonic `now`, which is process
-local. A store failure raises `CircuitStoreError`, or becomes a secondary error of a call that already failed; no
-request is resent because of it. `reset_circuit(group, origin=Origin(...))` closes one circuit of this client's
-partition without sending anything, and permits admitted before it cannot change the state after it.
+sharing one store share circuits with the same key. Its methods receive `now` from the monotonic source of the
+client's clock, `ClientOptions(clock=...)`, which is process local. A store failure raises `CircuitStoreError`, or
+becomes a secondary error of a call that already failed; no request is resent because of it.
+`reset_circuit(group, origin=Origin(...))` closes one circuit of this client's partition without sending anything,
+and permits admitted before it cannot change the state after it.

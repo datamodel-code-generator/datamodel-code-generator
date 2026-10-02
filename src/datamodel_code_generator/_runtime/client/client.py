@@ -19,7 +19,7 @@ from contextlib import (
 )
 from dataclasses import dataclass, replace
 from functools import partial
-from time import monotonic, time
+from time import monotonic
 from typing import TYPE_CHECKING, ClassVar, Final, Generic, Literal, TypeVar
 from urllib.parse import quote, unquote_plus, urlsplit
 
@@ -66,7 +66,7 @@ from .errors import (
 from .events import CallEvents, aauth_ended, auth_ended, call_events
 from .hooks import LimiterContext
 from .lifecycle import AsyncOwnedProviders, OwnedProviders, Scope, cleanup_secondary
-from .logical import LogicalCallContext
+from .logical import LogicalCallContext, joined_cap
 from .media import normalized
 from .multipart import MultipartSource, is_multipart, new_boundary, quiet_aclose, quiet_close
 from .native import (
@@ -96,10 +96,11 @@ from .options import (
     layered_redirects,
     layered_retry,
     network_send_limit,
+    new_key,
     resolve_transport_options,
 )
 from .paths import PLACEHOLDER, dot_segment, dotted_route, path_segments
-from .raw import AsyncRawResponse, RawResponse
+from .raw import AsyncRawResponse, RawResponse, arefused, refused
 from .redirects import RedirectState, redirect_target
 from .responses import HeadersView, Response, ResponseInfo
 from .retry import (
@@ -177,6 +178,7 @@ if TYPE_CHECKING:
     from .options import RequestValidation, ResolvedTransportOptions
     from .retry import RetryDelay
     from .security import SecuritySchemeEntry
+    from .timing import Clock
     from .transports import AsyncTransportAdapter, AsyncTransportResponse, TransportAdapter, TransportResponse
     from .urls import Origin
 
@@ -210,8 +212,11 @@ _DOT_CAUSE: Final = "A path value cannot make its segment '.' or '..', which URL
 _OWNERSHIPS: Final = frozenset({"borrowed", "owned"})
 _BINARY: Final = "A body must be bytes or a file, stream, factory, or multipart body of the client's mode"
 _MIN_STATUS: Final = 200
+_NOT_MODIFIED: Final = 304
 _MAX_STATUS: Final = 599
 _ERROR_STATUS: Final = 400
+_SWITCHING: Final = 101
+_SOCKET_SCHEMES: Final = (("wss:", "https:"), ("ws:", "http:"))
 _UNAUTHORIZED: Final = 401
 _EMPTY_VISITED: Final[frozenset[tuple[str, str]]] = frozenset()
 
@@ -287,6 +292,7 @@ def _layered(
             if isinstance(layer.stream_total_timeout, Unset)
             else layer.stream_total_timeout
         ),
+        clock=settings.clock,
     )
 
 
@@ -304,14 +310,28 @@ def _timeouts(current: ResolvedTimeoutOptions, layer: TimeoutOptions | Unset | N
     )
 
 
-def _protocol_options(options: ClientOptions | None, defaults: ClientDefaults) -> ProtocolClientOptions | None:
-    """Return the client's protocol settings, refusing defaults for a helper the package lacks or of another kind."""
+def _protocol_options(
+    options: ClientOptions | None, defaults: ClientDefaults, *, asynchronous: bool
+) -> ProtocolClientOptions | None:
+    """Return the client's protocol settings, refusing defaults or stores for a helper the package lacks.
+
+    Defaults of another kind's helper, a cache store the client's mode cannot call, and a WebSocket connector of the
+    other execution mode are refused too.
+    """
     if options is None or (protocols := options.protocols) is None or isinstance(protocols, Unset):
         return None
     if not isinstance(helpers := protocols.defaults, Unset) and helpers:
         from ..protocols.options import checked_defaults  # noqa: PLC0415 - Only helper defaults load the helper settings.
 
         checked_defaults(helpers, defaults.helpers)
+    if not isinstance(stores := protocols.cache_stores, Unset) and stores:
+        from ..protocols.options import checked_stores  # noqa: PLC0415 - Only cache stores load the helper settings.
+
+        checked_stores(stores, defaults.helpers, asynchronous=asynchronous)
+    if (connector := protocols.websocket_connector) is not None and not isinstance(connector, Unset):
+        from ..protocols.options import checked_connector  # noqa: PLC0415 - Only a connector loads the helper settings.
+
+        checked_connector(connector, asynchronous=asynchronous)
     return protocols
 
 
@@ -330,6 +350,8 @@ def _client_settings(options: object, defaults: ClientDefaults) -> Settings:
         case None:
             return settings
         case ClientOptions():
+            if not isinstance(clock := options.clock, Unset):
+                settings = replace(settings, clock=clock)
             return _layered(settings, options, modes)
         case _:
             pass
@@ -511,6 +533,15 @@ def _coded(operation: OperationPlan[object, object], spec: ParameterSpec, code: 
         raise _encoding_error(operation, (spec.plan.location, spec.plan.name), error) from None
 
 
+def _parameter(spec: ParameterSpec, value: object, mode: RequestValidation) -> object:
+    """Return the contribution of one argument to its request, encoded as a call encodes it, adapter included."""
+    wire = spec.encode(value, mode)
+    if (adapter := spec.adapter) is None:
+        return encode_parameter(spec.plan, wire)
+    get, context = adapter
+    return get().encode(wire, context)
+
+
 def _unsaved(plan: _PagePlan, path: tuple[str, ...]) -> ProtocolConfigurationError:
     return ProtocolConfigurationError(
         field_path=path, condition="wrong_capability", helper_id=plan.helper_id, operation=plan.operation
@@ -632,7 +663,7 @@ def _info(status: int, headers: HeadersView, request_id_header: str | None, call
         auth_exchange_budget_used=call.auth_exchange_budget_used,
         auth_refresh_ids=call.auth_refresh_ids,
         auth_refresh_pending=call.auth_refresh_pending,
-        elapsed=monotonic() - call.started,
+        elapsed=call.monotonic() - call.started,
         content_type=None if content_type is None else normalized(content_type),
         request_id=None if request_id_header is None else headers.get(request_id_header),
     )
@@ -776,15 +807,33 @@ def _page(  # noqa: PLR0913
 RAW_DECODER: Final[ResponseDecoder[object, object]] = ResponseDecoder((), (), HTTPStatusError)
 
 
+def stored_value(operation: OperationPlan[T, object], info: ResponseInfo, body: bytes, settings: Settings) -> T:
+    """Decode a stored success body as a call's decoder decodes a received one, under the call's settings."""
+    received = _Body(settings.max_response_bytes, success=True)
+    received.add(body)
+    return _completed(operation.responses, info, received, settings, operation.operation_id).data
+
+
+@dataclass(frozen=True, slots=True)
+class CacheRequest:
+    """What a cache fetch keys and sends, prepared once before its call.
+
+    `credentials` identifies the credentials the request carries, None for none; `foreign_auth` tells that a view or
+    the call replaced the client's own auth; `credential_headers` are the lowercase names of the headers credentials
+    travel in, which the auth may add after the cache looked the request up.
+    """
+
+    settings: Settings
+    request: PreparedRequest[EncodedAttempt]
+    url: str
+    credentials: WireValue
+    partition: str | None
+    foreign_auth: bool
+    credential_headers: frozenset[str]
+
+
 def _retry_error(error: BaseException) -> TypeIs[HTTPStatusError[object] | TransportError]:
     return isinstance(error, (HTTPStatusError, TransportError))
-
-
-def _draw() -> float:
-    """Load the random generator only for a retry whose jitter is actually needed."""
-    from secrets import randbits  # noqa: PLC0415
-
-    return randbits(53) / (1 << 53)
 
 
 _EMPTY_ORIGINS: Final[frozenset[Origin]] = frozenset()
@@ -908,7 +957,7 @@ async def _aauth_event(call: _Call, name: Literal["auth_start", "auth_wait"]) ->
 def _auth_work(call: _Call) -> Generator[None, None, None]:
     call.check("auth")
     events = call.events
-    started = monotonic() if events is not None else 0.0
+    started = call.monotonic() if events is not None else 0.0
     try:
         _auth_event(call, "auth_start")
         yield
@@ -926,7 +975,7 @@ def _auth_work(call: _Call) -> Generator[None, None, None]:
 async def _aauth_work(call: _Call) -> AsyncGenerator[None, None]:
     call.check("auth")
     events = call.events
-    started = monotonic() if events is not None else 0.0
+    started = call.monotonic() if events is not None else 0.0
     try:
         await _aauth_event(call, "auth_start")
         yield
@@ -960,7 +1009,7 @@ def _expired_credentials(call: _Call) -> bool:
 
     assert call.auth is not None
     credentials = call.auth.credentials
-    return credentials is not None and credentials_expired(credentials, now=monotonic())
+    return credentials is not None and credentials_expired(credentials, now=call.monotonic())
 
 
 def _reauthorizing(call: _Call) -> bool:
@@ -1026,13 +1075,15 @@ class _Call(LogicalCallContext):
         )
         self.idempotency = None if operation is None else operation.idempotency
         key = settings.idempotency_key
-        self.key = IdempotencyKey.new() if self.idempotency is not None and isinstance(key, Unset) else key
+        self.key = new_key(settings.clock) if self.idempotency is not None and isinstance(key, Unset) else key
         self.key_expires_at: float | None = None
         self.last_failure: BaseException | None = None
         self.last_info: ResponseInfo | None = None
         if self.idempotency is not None and isinstance(self.key, IdempotencyKey) and self.key.first_used_at is not None:
             self.key_expires_at = (
-                self.started + self.idempotency.retention_seconds - (time() - self.key.first_used_at.timestamp())
+                self.started
+                + self.idempotency.retention_seconds
+                - (settings.clock.time() - self.key.first_used_at.timestamp())
             )
         self.retry_headers = EMPTY_RETRY_HEADERS
         self.allowed_origins = _EMPTY_ORIGINS
@@ -1044,7 +1095,7 @@ class _Call(LogicalCallContext):
         self.hop_index = 0
         self.previous_cap: float | None = None
         self.stop_reason: RetryStopReason | None = None
-        self.trace = AttemptTrace()
+        self.trace = AttemptTrace(clock=self.settings.clock)
         self.method = ""
         self.received_at = self.started
         self.received_wall_time = 0.0
@@ -1124,7 +1175,8 @@ class _Call(LogicalCallContext):
         if (head := response_head(self.trace)) is not None:
             self.received_at, self.received_wall_time = head.received_at, head.received_wall_time
         elif info.status_code >= _ERROR_STATUS and self.settings.retry.respect_retry_after:
-            self.received_at, self.received_wall_time = monotonic(), time()
+            clock = self.settings.clock
+            self.received_at, self.received_wall_time = clock.monotonic(), clock.time()
 
     def retry(
         self,
@@ -1166,7 +1218,7 @@ class _Call(LogicalCallContext):
             reason = "auth_invalid_token" if auth.rejected is not None else None
             exchange = auth.exchange_needed()
         self.trace.connect_failure = None
-        now = monotonic()
+        now = self.monotonic()
         self.stop_reason = retry_stop(
             RetryState(
                 failure_kind="auth" if auth_candidate else "transport" if error is not None else "status",
@@ -1205,7 +1257,9 @@ class _Call(LogicalCallContext):
             retry,
             reason=reason,
             server=server,
-            timing=RetryTiming(self.previous_cap, now, None if self.deadline is None else self.deadline.at, _draw),
+            timing=RetryTiming(
+                self.previous_cap, now, None if self.deadline is None else self.deadline.at, self.settings.clock.random
+            ),
         )
         if isinstance(planned, str):
             self.stop_reason = planned
@@ -1230,13 +1284,13 @@ class _Call(LogicalCallContext):
         if self.retry_blocked:
             self.stop_reason = "callback_failure"
             raise self.stopped(error)
-        if self.key_expires_at is not None and monotonic() >= self.key_expires_at:
+        if self.key_expires_at is not None and self.monotonic() >= self.key_expires_at:
             self.stop_reason = "unsafe_operation"
             raise self.stopped(error)
 
     def retained(self) -> None:
         """Do not admit a resend after its stable idempotency key has expired during preparation."""
-        if self.key_expires_at is None or monotonic() < self.key_expires_at:
+        if self.key_expires_at is None or self.monotonic() < self.key_expires_at:
             return
         if self.hop_index:
             raise self.snapshot_error(
@@ -1253,12 +1307,17 @@ class _Call(LogicalCallContext):
         self.hop_index = 0
         self.body_enabled = True
         self.current_origin = self.initial_origin
-        self.trace = AttemptTrace()
+        self.trace = AttemptTrace(clock=self.settings.clock)
         self.phase_caps = ()
         self.stop_reason = None
         if self.events is not None:
             self.events.prepare(original.url, self.attempt_index)
         return frozenset({(original.method, original.url)}) if self.settings.redirects.enabled else _EMPTY_VISITED
+
+    @staticmethod
+    def redirect_headers(headers: HeadersView) -> HeadersView:
+        """Return the response headers whose Location a redirect follows."""
+        return headers
 
     def redirected(
         self,
@@ -1280,7 +1339,7 @@ class _Call(LogicalCallContext):
         assert self.current_origin is not None
         target = redirect_target(
             info.status_code,
-            info.headers,
+            self.redirect_headers(info.headers),
             RedirectState(
                 method=request.method,
                 url=request.url,
@@ -1295,7 +1354,7 @@ class _Call(LogicalCallContext):
                 body_replayable=replayable,
             ),
             redirects,
-            now=monotonic(),
+            now=self.monotonic(),
         )
         if self.send_limit is not None and self.network_send_budget_used >= self.send_limit:
             raise RedirectPolicyError(delivery_state=DeliveryState.RESPONSE_STARTED, info=info)
@@ -1409,6 +1468,55 @@ class _SessionCall(_Call):
         return planned
 
 
+def _http_location(location: str) -> str:
+    """Return a ws or wss URL as the http or https URL of its handshake, and any other location unchanged."""
+    lowered = location[:4].lower()
+    for socket_scheme, http_scheme in _SOCKET_SCHEMES:
+        if lowered.startswith(socket_scheme):
+            return http_scheme + location[len(socket_scheme) :]
+    return location
+
+
+class _SocketCall(_SessionCall):
+    """The handshake of a WebSocket helper: a session child call whose open has one cap for all of its phases.
+
+    The cap is the least of the open timeout and the connect, read, and write timeouts, bounded by the deadline, so a
+    cap the deadline binds ends the call with DeadlineExceededError. WebSockets have no pool.
+    """
+
+    __slots__ = ("open_timeout",)
+
+    def __init__(
+        self,
+        settings: Settings,
+        scope: Scope[HandleT],
+        operation: OperationPlan[object, object],
+        session: OperationSession,
+        open_timeout: float | None,
+    ) -> None:
+        """Bind the call to its session and keep the open timeout."""
+        super().__init__(settings, scope, operation, session)
+        self.open_timeout = open_timeout
+
+    def timeout(self) -> ResolvedTimeoutOptions:
+        """Resolve the open's one cap for the connect, read, and write phases; a handed-over socket keeps the rest."""
+        if self.streaming:
+            return super().timeout()
+        configured = self.settings.timeout
+        cap = joined_cap(
+            (self.open_timeout, configured.connect, configured.read, configured.write), self.remaining(), self.deadline
+        )
+        self.phase_caps = (cap, cap, cap, cap)
+        return ResolvedTimeoutOptions(connect=cap.effective, read=cap.effective, write=cap.effective, pool=None)
+
+    @staticmethod
+    def redirect_headers(headers: HeadersView) -> HeadersView:
+        """Read a ws or wss Location as the http or https URL a handshake requests, so the shared policy applies."""
+        return HeadersView(
+            (name, _http_location(value) if name.lower() == "location" else value) for name, value in headers.items()
+        )
+
+
 class _SessionWait(LogicalCallContext):
     """A wait of a protocol helper session between its child calls, ending no later than the session does."""
 
@@ -1441,7 +1549,9 @@ class _Shared(Generic[AdapterT]):
         "modes",
         "protocols",
         "providers",
+        "root_auth",
         "security_schemes",
+        "socket_connector",
         "transport",
         "trusted",
     )
@@ -1461,19 +1571,21 @@ class _Shared(Generic[AdapterT]):
         self.closing_tasks: dict[Scope[AsyncRawResponse], asyncio.Task[list[Exception]]] | None = None
         self.loop: asyncio.AbstractEventLoop | None = None
         self.protocols: ProtocolClientOptions | None = None
+        self.root_auth: AuthConfig | None = None
+        self.socket_connector: object = None
         self.breaker: Breaker | None = None
         self.circuit_groups = defaults.circuit_groups
 
-    def protect(self, protocols: ProtocolClientOptions | None, *, asynchronous: bool) -> None:
-        """Keep the client's protocol settings and create its breaker when they enable one."""
+    def protect(self, protocols: ProtocolClientOptions | None, clock: Clock, *, asynchronous: bool) -> None:
+        """Keep the client's protocol settings and create its breaker, on the client's clock, if they enable one."""
         self.protocols = protocols
         if protocols is not None and not isinstance(protocols.circuit, Unset):
             from ..protocols.circuits import breaker  # noqa: PLC0415 - Only circuit settings load the breaker.
 
-            self.breaker = breaker(protocols, asynchronous=asynchronous)
+            self.breaker = breaker(protocols, clock, asynchronous=asynchronous)
 
 
-class _Core(Generic[AdapterT, HandleT]):
+class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call and helper kind.
     __slots__ = ("_owned", "_scope", "_settings", "_shared", "_urls")
     _asynchronous: ClassVar[bool] = False
 
@@ -1483,6 +1595,11 @@ class _Core(Generic[AdapterT, HandleT]):
         self._scope = scope
         self._owned = owned
         self._urls: dict[int, tuple[tuple[ServerPlan, ...], str]] = {}
+
+    @property
+    def clock(self) -> Clock:
+        """Return the clock that times this client's calls and helper sessions."""
+        return self._settings.clock
 
     def fixes_key(self, options: RequestOptions | None) -> bool:
         """Return whether a call's effective options, its own, a view's, or the client's, fix an idempotency key."""
@@ -1509,6 +1626,16 @@ class _Core(Generic[AdapterT, HandleT]):
     def native_responses(self, options: RequestOptions | None, operation_id: str | None) -> bool:
         """Return whether a call with these options reads response values through their converters alone."""
         return self._call_settings(options, operation_id).validation.response == "native"
+
+    def protocol_options(self) -> ProtocolClientOptions | None:
+        """Return the client's protocol settings, or None."""
+        return self._shared.protocols
+
+    def owned_connector(self, native: Callable[[], object]) -> object:
+        """Return the WebSocket connector the client owns, created on first use and shared with its views."""
+        if (connector := self._shared.socket_connector) is None:
+            connector = self._shared.socket_connector = native()
+        return connector
 
     def _raw_call(
         self, operation: OperationPlan[object, object], options: RequestOptions | None, session: OperationSession | None
@@ -1594,18 +1721,23 @@ class _Core(Generic[AdapterT, HandleT]):
             return selected
         return call.snapshot_error(AdapterExecutionError(delivery_state=delivery, cause=selected))
 
+    @staticmethod
     def _response_info(
-        self,
         response: TransportResponse | AsyncTransportResponse,
         trace: AttemptTrace,
         request_id_header: str | None,
         call: LogicalCallContext,
+        *,
+        trusted: bool,
     ) -> ResponseInfo:
-        """Return received metadata only after checking the response and the call's termination signals."""
+        """Return received metadata only after checking the response and the call's termination signals.
+
+        A trusted adapter's response is used as it is; another one's status must be final and its trace intact.
+        """
         call.delivery_state = DeliveryState.RESPONSE_STARTED
         status, headers = (
             (response.status_code, response.headers)
-            if self._shared.trusted
+            if trusted
             else _head(response.status_code, response.headers, trace)
         )
         info = _info(status, headers, request_id_header, call)
@@ -1690,26 +1822,32 @@ class _Core(Generic[AdapterT, HandleT]):
             validate_auth_mode(options.auth, asynchronous=self._asynchronous)
         return _layered(self._settings, options, self._shared.modes, operation_id)
 
-    def _bind_auth(self, call: _Call) -> None:
-        """Bind effective security once, leaving anonymous calls without authentication state."""
-        operation = call.operation
+    def _bound(
+        self, operation: OperationPlan[object, object] | None, config: AuthConfig | None
+    ) -> BoundAuth | AsyncBoundAuth | None:
+        """Select the auth a call binds without invoking callbacks, refusing missing credentials it requires."""
         security = None if operation is None else operation.security
-        config = call.settings.auth
         if config is None:
             if security is not None and security.alternatives and all(security.alternatives):
                 from .errors import AuthConfigurationError  # noqa: PLC0415
 
                 raise AuthConfigurationError(field_path=("auth",), condition="missing_credentials")
-            return
-        from .auth_policy import bind_async_auth, bind_auth, validate_ownership, validate_patches  # noqa: PLC0415
+            return None
+        from .auth_policy import bind_async_auth, bind_auth  # noqa: PLC0415
 
-        bound = (
+        return (
             bind_async_auth(config, security, self._shared.security_schemes)
             if self._asynchronous
             else bind_auth(config, security, self._shared.security_schemes)
         )
-        if bound is None:
+
+    def _bind_auth(self, call: _Call) -> None:
+        """Bind effective security once, leaving anonymous calls without authentication state."""
+        operation, config = call.operation, call.settings.auth
+        if (bound := self._bound(operation, config)) is None or config is None:
             return
+        from .auth_policy import validate_ownership, validate_patches  # noqa: PLC0415
+
         call.auth = _Authentication(bound)
         if any(binding.acquirer is not None for binding in bound.credentials):
             call.send_limit = network_send_limit(call.settings, exchanges=config.max_token_exchanges)
@@ -1842,6 +1980,72 @@ class _Core(Generic[AdapterT, HandleT]):
             return HeadersView(generated)
         _unframed((*self._settings.headers, call), media_type, accept, operation_id)
         return _headers(generated, (*self._settings.headers, params, call), media_type)
+
+    def call_settings(self, options: RequestOptions | None, operation: OperationPlan[object, object]) -> Settings:
+        """Return the settings a call of the operation runs with under these options."""
+        return self._call_settings(options, operation.operation_id)
+
+    def cache_store(self, name: str) -> object:
+        """Return the cache store the client's protocol settings lend a helper, or None without one."""
+        if (protocols := self._shared.protocols) is None or isinstance(stores := protocols.cache_stores, Unset):
+            return None
+        return stores.get(name)
+
+    def cache_request(
+        self, operation: OperationPlan[object, object], arguments: tuple[object, ...], options: RequestOptions | None
+    ) -> CacheRequest:
+        """Return what a cache fetch keys and sends: its settings, its request before auth, and its credentials.
+
+        A cancelled, closing, or expired fetch is refused first, as a call is. The URL is the request's own as the
+        client interprets it. The credentials are, for each credential the auth binds, its scheme, kind, and required
+        scopes and the audience and requested scopes of an SDK token provider, and each signer's declared capabilities;
+        they are None for a request that carries no credential, from the auth or from a credential header, a cookie, or
+        a security scheme's header or query field.
+        """
+        settings = self._call_settings(options, operation.operation_id)
+        LogicalCallContext(settings, self._scope, operation.operation_id).check()
+        request, _ = self._prepare(
+            operation,
+            arguments,
+            settings,
+            body=UNSET,
+            media_type=None,
+            options=options,
+            accept=operation.responses.accept,
+            narrowed=False,
+        )
+        partition = None if (security := self._security_context()) is None else security.credential_partition
+        url = absolute_target(request.url).url
+        bound = self._bound(operation, settings.auth)
+        from .security import secret_names  # noqa: PLC0415 - Only a cache fetch needs the schemes.
+
+        names, queries = secret_names(self._shared.security_schemes)
+        credential: WireValue = None
+        if bound is not None:
+            from .grants import grant_identity  # noqa: PLC0415 - Only an authenticated cache fetch keys its credentials.
+
+            names = names.union(bound.managed_headers, ("cookie",) if bound.managed_cookies else ())
+            credential = (
+                tuple(
+                    (item.scheme.name, item.scheme.kind, item.required_scopes, grant_identity(item.provider))
+                    for item in bound.credentials
+                ),
+                tuple(
+                    (
+                        tuple(sorted(capabilities.allowed_origins)),
+                        tuple(sorted(capabilities.managed_headers)),
+                        tuple(sorted(capabilities.managed_query)),
+                        capabilities.requires_body_digest,
+                    )
+                    for capabilities in (signer.capabilities for signer in bound.signers)
+                ),
+            )
+        elif any(name.lower() in names for name, _ in request.headers) or any(
+            unquote_plus(pair.partition("=")[0]) in queries for pair in urlsplit(url).query.split("&") if pair
+        ):
+            credential = ((), ())
+        foreign = bound is not None and settings.auth is not self._shared.root_auth
+        return CacheRequest(settings, request, url, credential, partition, foreign, names)
 
     def _security_context(self) -> ProtocolSecurityContext | None:
         """Return the client's protocol security context, or None without one."""
@@ -1999,6 +2203,23 @@ class _Core(Generic[AdapterT, HandleT]):
         )[0]
         return prepared.url, prepared.headers
 
+    def checked_arguments(
+        self, operation: OperationPlan[object, object], given: Mapping[int, WireValue], options: RequestOptions | None
+    ) -> None:
+        """Encode some arguments of a helper's request, by position, as its call encodes them, sending nothing.
+
+        Arguments a later response gives are left out, even required ones; one that does not fit raises
+        RequestEncodingError.
+        """
+        mode = self._call_settings(options, operation.operation_id).validation.request
+        for position, value in given.items():
+            spec = operation.parameters[position]
+            _coded(operation, spec, partial(_parameter, spec, value, mode))
+
+    def response_limit(self, operation: OperationPlan[object, object], options: RequestOptions | None) -> int | None:
+        """Return the largest successful response body a call of the operation accepts, or None without a limit."""
+        return self._call_settings(options, operation.operation_id).max_response_bytes
+
     def saved_page(
         self,
         operation: OperationPlan[T, object],
@@ -2006,10 +2227,11 @@ class _Core(Generic[AdapterT, HandleT]):
         status_code: int,
         content_type: str | None,
         options: RequestOptions | None,
-    ) -> tuple[T, WireValue]:
-        """Decode a page a helper saved in a checkpoint as its response decoded it, without any other response metadata.
+    ) -> tuple[T, WireValue, ResponseInfo]:
+        """Decode a body a helper saved in a checkpoint as its response decoded it, without any other response metadata.
 
-        The page's response metadata is not saved, so it is decoded under its status and media type alone.
+        The response's metadata is not saved, so it is decoded under its status and media type alone, which the
+        returned metadata holds with an empty call identifier.
         """
         settings = self._call_settings(options, operation.operation_id)
         info = ResponseInfo(
@@ -2022,7 +2244,8 @@ class _Core(Generic[AdapterT, HandleT]):
             network_send_count=0,
             network_send_budget_used=0,
         )
-        return operation.responses.decode_page(info, content, native=settings.validation.response == "native")
+        data, wire = operation.responses.decode_page(info, content, native=settings.validation.response == "native")
+        return data, wire, info
 
     def _page_request(
         self,
@@ -2521,11 +2744,12 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             from .auth_policy import validate_auth_mode  # noqa: PLC0415
 
             validate_auth_mode(settings.auth, asynchronous=False)
-        protocols = _protocol_options(options, defaults)
+        protocols = _protocol_options(options, defaults, asynchronous=False)
         transport = _transport(options, http_client, transport_adapter)
         adapter, owned = _adapter(http_client, http_client_ownership, transport_adapter, transport)
         shared = _Shared(defaults, adapter, transport, trusted=isinstance(adapter, Httpx2Transport))
-        shared.protect(protocols, asynchronous=False)
+        shared.protect(protocols, settings.clock, asynchronous=False)
+        shared.root_auth = settings.auth
         result = cls(shared, settings, Scope(), owned=owned)
         if settings.auth is not None:
             result._adopt_auth(settings.auth)
@@ -2629,6 +2853,52 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
 
         try:
             completed, result = self._run(call, body, prepare, receive, options)
+            call.check("decode")
+            if events is not None:
+                events.finish(completed)
+            call.check("decode")
+        except BaseException as error:  # noqa: BLE001
+            failure = call.stopped(error)
+            if events is not None:
+                events.ended(failure)
+            raise failure from None
+        else:
+            return result
+        finally:
+            self._scope.release()
+            call.finish()
+
+    def execute_cached(  # noqa: PLR0913, PLR0917
+        self,
+        operation: OperationPlan[T, object],
+        request: PreparedRequest[EncodedAttempt],
+        settings: Settings,
+        modified: Callable[[Response[T], bytes], tuple[Response[T], R]],
+        not_modified: Callable[[ResponseInfo], tuple[Response[T], R]],
+        options: RequestOptions | None,
+    ) -> R:
+        """Send a cache fetch's prepared request as one logical call, building what its response gives.
+
+        A 304 is built from the stored representation by `not_modified`; any other response is decoded as the
+        operation's calls decode it and given to `modified` with its body after content decoding.
+        """
+        call = _Call(settings, self._scope, operation)
+        events = call.events = self._started(call, operation.path, options)
+        decoder = call.decoder = operation.responses
+
+        def receive(response: TransportResponse, info: ResponseInfo) -> tuple[Response[T], R]:
+            received = self._read(response, info, decoder, call)
+            call.check("decode")
+            built = (
+                not_modified(info)
+                if info.status_code == _NOT_MODIFIED
+                else modified(_completed(decoder, info, received, call.settings, call.operation_id), received.content)
+            )
+            call.check("decode")
+            return built
+
+        try:
+            completed, result = self._run(call, UNSET, lambda: (request, UNSET), receive, options)
             call.check("decode")
             if events is not None:
                 events.finish(completed)
@@ -2807,22 +3077,92 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         """Return a block that sends a raw request on entry and yields its streaming response until exit."""
         return _streamed(lambda: self.request_raw(method, url, body=body, options=options, stream=True))
 
-    def _run(  # noqa: PLR0912
+    def open_socket(  # noqa: PLR0913
+        self,
+        operation: OperationPlan[object, object],
+        arguments: tuple[object, ...],
+        adapter: TransportAdapter,
+        *,
+        options: RequestOptions | None,
+        session: OperationSession,
+        open_timeout: float | None,
+        check: Callable[[HeadersView], None],
+    ) -> tuple[RawResponse, LogicalCallContext]:
+        """Open a WebSocket helper's handshake through its adapter, as one child call of the helper's session.
+
+        The headers prepared pass the check before anything is sent. The 101 is handed over as a streaming handle,
+        whose close closes the connection, with the call whose deadline bounds it; any other response raises the call's
+        typed failure.
+        """
+        settings = self._call_settings(options, operation.operation_id)
+        call = _SocketCall(settings, self._scope, operation, session, open_timeout)
+        events = call.events = self._started(call, operation.path, options)
+        call.decoder = operation.responses
+        result: RawResponse | None = None
+        handed = False
+
+        def prepare() -> tuple[PreparedRequest[EncodedAttempt], object]:
+            request, deferred = self._prepare(
+                operation,
+                arguments,
+                call.settings,
+                body=UNSET,
+                media_type=None,
+                options=options,
+                accept=None,
+                narrowed=False,
+            )
+            check(request.headers)
+            return request, deferred
+
+        def receive(response: TransportResponse, info: ResponseInfo) -> RawResponse:
+            return self._raw_response(response, info, call, stream=True)
+
+        try:
+            result = self._run(call, UNSET, prepare, receive, options, adapter)
+            call.check("send")
+            if result.info.status_code != _SWITCHING:
+                refused(result)
+            self._scope.handoff(result)
+            handed = True
+            if events is not None:
+                events.finish(UNSET, handed_off=True)
+            call.check("send")
+            call.handoff()
+        except BaseException as error:  # noqa: BLE001
+            failure = call.stopped(error)
+            if result is not None:
+                result.discard(failure)
+            if events is not None:
+                events.ended(failure)
+            raise failure from None
+        else:
+            return result, call
+        finally:
+            if not handed:
+                self._scope.release()
+            if not call.streaming:
+                call.finish()
+
+    def _run(  # noqa: PLR0912, PLR0913, PLR0917
         self,
         call: _Call,
         body: object,
         prepare: Callable[[], tuple[PreparedRequest[EncodedAttempt], object]],
         receive: Callable[[TransportResponse, ResponseInfo], T],
         options: RequestOptions | None,
+        adapter: TransportAdapter | None = None,
     ) -> T:
         """Own entry capture, the single encode, every hop, and final source release.
 
-        A call of a grouped operation passes its circuit once encoded, before any credential or send, and records its
-        outcome there once its hops and retries end.
+        A WebSocket handshake sends through its own adapter instead of the client's. A call of a grouped operation
+        passes its circuit once encoded, before any credential or send, and records its outcome there once its hops
+        and retries end.
         """
         entry: BodyBindings | None = None
         source: BodySource | None = None
         admission: tuple[Breaker, CircuitPermit] | None = None
+        adapter = self._shared.adapter if adapter is None else adapter
         try:
             entry = (
                 capture_body(body)
@@ -2830,7 +3170,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                 else None
             )
             call.check("encode")
-            call.bind(self._shared.adapter.capabilities, options)
+            call.bind(adapter.capabilities, options)
             if call.settings.auth is not None or (call.operation is not None and call.operation.security is not None):
                 self._bind_auth(call)
             if (events := call.events) is not None:
@@ -2850,7 +3190,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             call.check("encode")
             if (breaker := self._shared.breaker) is not None:
                 admission = _admission(breaker, call, request.url)
-            result = self._exchange(request, source, call, receive)
+            result = self._exchange(request, source, call, receive, adapter)
             if admission is not None:
                 admitted, admission = admission, None
                 _circuit_recorded(admitted, result, call)
@@ -2872,16 +3212,18 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                 raise
         return result
 
-    def _exchange(
+    def _exchange(  # noqa: PLR0915
         self,
         original: PreparedRequest[EncodedAttempt],
         source: BodySource | None,
         call: _Call,
         receive: Callable[[TransportResponse, ResponseInfo], T],
+        adapter: TransportAdapter,
     ) -> T:
         """Run resource candidates and their redirect hops without exposing intermediate payloads."""
         request = original
         events = call.events
+        trusted = adapter is not self._shared.adapter or self._shared.trusted
         visited: frozenset[tuple[str, str]] = (
             frozenset({(request.method, request.url)}) if call.settings.redirects.enabled else _EMPTY_VISITED
         )
@@ -2893,8 +3235,8 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             sends_before = call.network_send_count
             call.response_transferred = False
             try:
-                response = self._send(request, source, call)
-                info = self._response_info(response, call.trace, call.request_id_header, call)
+                response = self._send(request, source, call, adapter)
+                info = self._response_info(response, call.trace, call.request_id_header, call, trusted=trusted)
                 call.received(info)
                 if events is not None:
                     events.emit(events.responding(info))
@@ -2915,7 +3257,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                     request = redirected
                     visited |= {(request.method, request.url)}
                     call.hop_index += 1
-                    call.trace = AttemptTrace()
+                    call.trace = AttemptTrace(clock=call.settings.clock)
                     call.phase_caps = ()
                     continue
                 planned = self._status_plan(info, source, call)
@@ -3002,7 +3344,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                 events.event(
                     "retry_scheduled",
                     sent=True,
-                    duration=max(0.0, planned.not_before - monotonic()),
+                    duration=max(0.0, planned.not_before - call.monotonic()),
                     retry_reason=planned.reason,
                 )
             )
@@ -3078,10 +3420,10 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                     and pending[0] == index
                     and rejected_version(value, pending[1])
                 ):
-                    values.append(refresh_credential(binding, context, delivery))
+                    values.append(refresh_credential(binding, context, delivery, call.settings.clock))
                     call.check("auth")
                 else:
-                    values.append(accept_credential(value, binding, context, delivery))
+                    values.append(accept_credential(value, binding, context, delivery, call.settings.clock))
             auth.credentials = HopCredentials(tuple(values))
             auth.pending = None
 
@@ -3159,6 +3501,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         request: PreparedRequest[BodyAttempt],
         source: BodySource | None,
         call: _Call,
+        adapter: TransportAdapter,
     ) -> TransportResponse:
         """Open one body after its permit and transfer resource ownership only after cleanup."""
         attempt = request.body
@@ -3199,7 +3542,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             if events is not None:
                 events.sending()
             try:
-                response = self._shared.adapter.send(request, io)
+                response = adapter.send(request, io)
             finally:
                 call.observe_send(trace)
         except BaseException as error:  # noqa: BLE001
@@ -3374,11 +3717,12 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             from .auth_policy import validate_auth_mode  # noqa: PLC0415
 
             validate_auth_mode(settings.auth, asynchronous=True)
-        protocols = _protocol_options(options, defaults)
+        protocols = _protocol_options(options, defaults, asynchronous=True)
         transport = _transport(options, http_client, transport_adapter)
         adapter, owned = _async_adapter(http_client, http_client_ownership, transport_adapter, transport)
         shared = _Shared(defaults, adapter, transport, trusted=isinstance(adapter, AsyncHttpx2Transport))
-        shared.protect(protocols, asynchronous=True)
+        shared.protect(protocols, settings.clock, asynchronous=True)
+        shared.root_auth = settings.auth
         with suppress(RuntimeError):
             shared.loop = asyncio.get_running_loop()
         result = cls(shared, settings, Scope(), owned=owned)
@@ -3498,6 +3842,55 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
 
         try:
             completed, result = await call.bounded(lambda: self._run(call, body, prepare, receive, options))
+            call.check("decode")
+            if events is not None:
+                await events.afinish(completed)
+            call.check("decode")
+        except BaseException as error:  # noqa: BLE001
+            failure = call.stopped(error)
+            if events is not None:
+                await events.aended(failure)
+            raise failure from None
+        else:
+            return result
+        finally:
+            self._scope.release()
+            call.finish()
+
+    async def execute_cached(  # noqa: PLR0913, PLR0917
+        self,
+        operation: OperationPlan[T, object],
+        request: PreparedRequest[EncodedAttempt],
+        settings: Settings,
+        modified: Callable[[Response[T], bytes], tuple[Response[T], R]],
+        not_modified: Callable[[ResponseInfo], tuple[Response[T], R]],
+        options: RequestOptions | None,
+    ) -> R:
+        """Send a cache fetch's prepared request as one logical asyncio call, building what its response gives.
+
+        A 304 is built from the stored representation by `not_modified`; any other response is decoded as the
+        operation's calls decode it and given to `modified` with its body after content decoding.
+        """
+        call = _Call(settings, self._scope, operation)
+        self._running(call.operation_id, call.call_id)
+        events = call.events = await self._started(call, operation.path, options)
+        decoder = call.decoder = operation.responses
+
+        async def receive(response: AsyncTransportResponse, info: ResponseInfo) -> tuple[Response[T], R]:
+            received = await self._read(response, info, decoder, call)
+            call.check("decode")
+            built = (
+                not_modified(info)
+                if info.status_code == _NOT_MODIFIED
+                else modified(_completed(decoder, info, received, call.settings, call.operation_id), received.content)
+            )
+            call.check("decode")
+            return built
+
+        try:
+            completed, result = await call.bounded(
+                lambda: self._run(call, UNSET, lambda: (request, UNSET), receive, options)
+            )
             call.check("decode")
             if events is not None:
                 await events.afinish(completed)
@@ -3682,18 +4075,88 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         """Return a block that sends a raw request on entry and yields its streaming response until exit."""
         return _astreamed(lambda: self.request_raw(method, url, body=body, options=options, stream=True))
 
-    async def _run(  # noqa: PLR0912
+    async def open_socket(  # noqa: PLR0913
+        self,
+        operation: OperationPlan[object, object],
+        arguments: tuple[object, ...],
+        adapter: AsyncTransportAdapter,
+        *,
+        options: RequestOptions | None,
+        session: OperationSession,
+        open_timeout: float | None,
+        check: Callable[[HeadersView], None],
+    ) -> tuple[AsyncRawResponse, LogicalCallContext]:
+        """Open a WebSocket helper's handshake with asyncio, as the synchronous core does."""
+        settings = self._call_settings(options, operation.operation_id)
+        call = _SocketCall(settings, self._scope, operation, session, open_timeout)
+        self._running(call.operation_id, call.call_id)
+        events = call.events = await self._started(call, operation.path, options)
+        call.decoder = operation.responses
+        result: AsyncRawResponse | None = None
+        handed = False
+
+        def prepare() -> tuple[PreparedRequest[EncodedAttempt], object]:
+            request, deferred = self._prepare(
+                operation,
+                arguments,
+                call.settings,
+                body=UNSET,
+                media_type=None,
+                options=options,
+                accept=None,
+                narrowed=False,
+            )
+            check(request.headers)
+            return request, deferred
+
+        async def receive(response: AsyncTransportResponse, info: ResponseInfo) -> AsyncRawResponse:
+            return await self._raw_response(response, info, call, stream=True)
+
+        try:
+            result = await call.bounded(
+                lambda: self._run(call, UNSET, prepare, receive, options, adapter), cleanup=AsyncRawResponse.aclose
+            )
+            call.check("send")
+            if result.info.status_code != _SWITCHING:
+                await arefused(result)
+            self._scope.handoff(result)
+            handed = True
+            if events is not None:
+                await events.afinish(UNSET, handed_off=True)
+            call.check("send")
+            call.handoff()
+        except BaseException as error:  # noqa: BLE001
+            failure = call.stopped(error)
+            if result is not None:
+                await result.discard(failure)
+            if events is not None:
+                await events.aended(failure)
+            raise failure from None
+        else:
+            return result, call
+        finally:
+            if not handed:
+                self._scope.release()
+            if not call.streaming:
+                call.finish()
+
+    async def _run(  # noqa: PLR0912, PLR0913, PLR0917
         self,
         call: _Call,
         body: object,
         prepare: Callable[[], tuple[PreparedRequest[EncodedAttempt], object]],
         receive: Callable[[AsyncTransportResponse, ResponseInfo], Awaitable[T]],
         options: RequestOptions | None,
+        adapter: AsyncTransportAdapter | None = None,
     ) -> T:
-        """Own entry capture, the single encode, every hop, and final source release, passing grouped calls' circuit."""
+        """Own entry capture, the single encode, every hop, and final source release, passing grouped calls' circuit.
+
+        A WebSocket handshake sends through its own adapter instead of the client's.
+        """
         entry: AsyncBodyBindings | None = None
         source: AsyncBodySource | None = None
         admission: tuple[Breaker, CircuitPermit] | None = None
+        adapter = self._shared.adapter if adapter is None else adapter
         try:
             entry = (
                 await capture_async_body(body, cleanup=call.cleanup)
@@ -3701,7 +4164,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 else None
             )
             call.check("encode")
-            call.bind(self._shared.adapter.capabilities, options)
+            call.bind(adapter.capabilities, options)
             if call.settings.auth is not None or (call.operation is not None and call.operation.security is not None):
                 self._bind_auth(call)
             if (events := call.events) is not None:
@@ -3721,7 +4184,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             call.check("encode")
             if (breaker := self._shared.breaker) is not None:
                 admission = await _aadmission(breaker, call, request.url)
-            result = await self._exchange(request, source, call, receive)
+            result = await self._exchange(request, source, call, receive, adapter)
             if admission is not None:
                 admitted, admission = admission, None
                 await _acircuit_recorded(admitted, result, call)
@@ -3743,16 +4206,18 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 raise
         return result
 
-    async def _exchange(
+    async def _exchange(  # noqa: PLR0915
         self,
         original: PreparedRequest[EncodedAttempt],
         source: AsyncBodySource | None,
         call: _Call,
         receive: Callable[[AsyncTransportResponse, ResponseInfo], Awaitable[T]],
+        adapter: AsyncTransportAdapter,
     ) -> T:
         """Run resource candidates and their redirect hops without exposing intermediate payloads."""
         request = original
         events = call.events
+        trusted = adapter is not self._shared.adapter or self._shared.trusted
         visited: frozenset[tuple[str, str]] = (
             frozenset({(request.method, request.url)}) if call.settings.redirects.enabled else _EMPTY_VISITED
         )
@@ -3764,8 +4229,8 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             sends_before = call.network_send_count
             call.response_transferred = False
             try:
-                response = await self._send(request, source, call)
-                info = self._response_info(response, call.trace, call.request_id_header, call)
+                response = await self._send(request, source, call, adapter)
+                info = self._response_info(response, call.trace, call.request_id_header, call, trusted=trusted)
                 call.received(info)
                 if events is not None:
                     await events.aemit(events.responding(info))
@@ -3786,7 +4251,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                     request = redirected
                     visited |= {(request.method, request.url)}
                     call.hop_index += 1
-                    call.trace = AttemptTrace()
+                    call.trace = AttemptTrace(clock=call.settings.clock)
                     call.phase_caps = ()
                     continue
                 planned = await self._status_plan(info, source, call)
@@ -3873,7 +4338,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 events.event(
                     "retry_scheduled",
                     sent=True,
-                    duration=max(0.0, planned.not_before - monotonic()),
+                    duration=max(0.0, planned.not_before - call.monotonic()),
                     retry_reason=planned.reason,
                 )
             )
@@ -3949,10 +4414,10 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                     and pending[0] == index
                     and rejected_version(value, pending[1])
                 ):
-                    values.append(await arefresh_credential(binding, context, delivery))
+                    values.append(await arefresh_credential(binding, context, delivery, call.settings.clock))
                     call.check("auth")
                 else:
-                    values.append(accept_credential(value, binding, context, delivery))
+                    values.append(accept_credential(value, binding, context, delivery, call.settings.clock))
             auth.credentials = AsyncHopCredentials(tuple(values))
             auth.pending = None
 
@@ -4033,6 +4498,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         request: PreparedRequest[AsyncBodyAttempt],
         source: AsyncBodySource | None,
         call: _Call,
+        adapter: AsyncTransportAdapter,
     ) -> AsyncTransportResponse:
         """Open one body after its permit and transfer resource ownership only after cleanup."""
         attempt = request.body
@@ -4073,7 +4539,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             if events is not None:
                 events.sending()
             try:
-                response = await self._shared.adapter.send(request, io)
+                response = await adapter.send(request, io)
             finally:
                 call.observe_send(trace)
         except BaseException as error:  # noqa: BLE001

@@ -1,0 +1,544 @@
+# caching pydantic_v2.BaseModel
+  entry = CacheEntry(status_code=200)
+  entry version ! TypeError: version has the wrong type []
+  entry vary list ! TypeError: vary has the wrong type []
+  entry vary item ! TypeError: vary has the wrong type []
+  entry boolean status ! TypeError: status_code has the wrong type []
+  entry status ! ValueError: status_code must be from 100 to 599 []
+  entry fingerprints ! ValueError: vary_fingerprints must match vary one to one []
+  entry naive time ! ValueError: stored_at must be timezone-aware []
+  entry negative freshness ! ValueError: freshness_seconds must be finite and not negative []
+  entry infinite age ! ValueError: initial_age_seconds must be finite and not negative []
+  entry text freshness ! TypeError: freshness_seconds has the wrong type []
+  entry text body ! TypeError: body has the wrong type []
+  entry headers ! TypeError: headers has the wrong type []
+  result = CacheResult(source='network', response=ResponseInfo(status_code=200, headers=HeadersView(<1 headers>), call_id='c', elapsed=0.0, content_type=None, request_id=None, resource_attempt_count=1, redirect_count=0, auth_exchange_count=0, network_send_count=1, network_send_budget_used=1, auth_exchange_budget_used=0, auth_refresh_ids=(), auth_refresh_pending=0, wire_send_count=None), network_status=200)
+  result source ! ValueError: source must be network, fresh_cache, or revalidated []
+  result response ! TypeError: response has the wrong type []
+  result status ! TypeError: network_status has the wrong type []
+  options = CacheOptions(max_entry_bytes=1, max_ttl=0.5)
+  options zero bytes ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entry_bytes',), condition='invalid_value'] protocol_configuration_error
+  options boolean ttl ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_ttl',), condition='invalid_value'] protocol_configuration_error
+  defaults = ProtocolDefaults(session=UNSET, options=CacheOptions(max_entry_bytes=UNSET, max_ttl=1))
+  stores list ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('cache_stores',), condition='invalid_value'] protocol_configuration_error
+  stores name ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('cache_stores',), condition='invalid_value'] protocol_configuration_error
+  conflict = CacheValidatorConflictError: CacheValidatorConflictError(condition='binding_mismatch') [field_path=('If-None-Match',), condition='binding_mismatch'] cache_validator_conflict_error
+  conflict header ! ValueError: header_name must be one of its declared values []
+  protocol error = CacheProtocolError: CacheProtocolError(condition='inconsistent') [condition='inconsistent'] cache_protocol_error
+  store error = CacheStoreError: CacheStoreError(action='lookup') [] cache_store_error
+  invalidation tags ! ValueError: tags must be a tuple of strings []
+  manual invalidation error invalidate False UNSET
+  manual invalidation result ! ResultUnavailableError: ResultUnavailableError() [] result_unavailable_error
+  completed invalidation error True
+  completed invalidation result = None
+  bases ['CacheStoreError', 'ProtocolStoreError', 'ProtocolError']
+  memory zero entries ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_entries',), condition='invalid_value'] protocol_configuration_error
+  memory boolean bytes ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('max_bytes',), condition='invalid_value'] protocol_configuration_error
+  memory fingerprints [32, 32, 32, 32] distinct=4
+  memory english True
+  memory french True
+  memory english lookup en
+  memory french lookup fr
+  memory no language lookup None
+  memory stale expectation False
+  memory too large False
+  memory third evicts the least recently used True
+  memory french after eviction fr
+  memory english after eviction None
+  memory expired True
+  memory fourth evicts the expired True
+  memory expired after eviction None
+  memory least recently used kept fr
+  memory replaced True
+  memory replaced lookup w2
+  memory over the bytes True
+  memory evicted by bytes None
+  memory kept by bytes v
+  memory delete other False
+  memory delete True
+  memory expired small True
+  memory fresh large True
+  memory evicting both True
+  memory expired small after both None
+  memory fresh large after both None
+  memory tagged True
+  memory invalidate 1 0
+  memory expired then deleted True
+  memory delete expired True
+  memory fresh after a deleted expired True
+  memory full after a deleted expired True
+  memory least recently used after a deleted expired None
+  memory newest after a deleted expired b
+  memory lookup key ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('base_key',), condition='invalid_value'] protocol_configuration_error
+  memory fingerprint names ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('names',), condition='invalid_value'] protocol_configuration_error
+  memory exchange key ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('base_key',), condition='invalid_value'] protocol_configuration_error
+  memory exchange version ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('expected_version',), condition='invalid_value'] protocol_configuration_error
+  memory exchange entry ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('entry',), condition='invalid_value'] protocol_configuration_error
+  memory delete key ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('base_key',), condition='invalid_value'] protocol_configuration_error
+  memory delete version ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('version',), condition='invalid_value'] protocol_configuration_error
+  memory invalidate tags ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('tags',), condition='invalid_value'] protocol_configuration_error
+  async memory exchange True
+  async memory lookup True
+  async memory delete False
+  async memory invalidate 1
+  unknown helper store ! ProtocolConfigurationError: ProtocolConfigurationError(condition='unknown_field') [field_path=('protocols', 'cache_stores', 'users.unknown'), condition='unknown_field'] protocol_configuration_error
+  pagination-free name ! ProtocolConfigurationError: ProtocolConfigurationError(condition='unknown_field') [field_path=('protocols', 'cache_stores', 'users'), condition='unknown_field'] protocol_configuration_error
+  object store ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('protocols', 'cache_stores', 'users.profile'), condition='wrong_capability'] protocol_configuration_error
+  asynchronous store ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('protocols', 'cache_stores', 'users.profile'), condition='wrong_capability'] protocol_configuration_error
+  synchronous store ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('protocols', 'cache_stores', 'users.profile'), condition='wrong_capability'] protocol_configuration_error
+  session defaults ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('protocols', 'defaults', 'users.profile', 'session'), condition='invalid_value'] protocol_configuration_error
+  pagination defaults ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('protocols', 'defaults', 'users.profile', 'options'), condition='invalid_value'] protocol_configuration_error
+  no store ! ProtocolConfigurationError: ProtocolConfigurationError(condition='missing_adapter') [field_path=('protocols', 'cache_stores', 'users.profile'), condition='missing_adapter'] protocol_configuration_error
+  no store invalidation ! ProtocolConfigurationError: ProtocolConfigurationError(condition='missing_adapter') [field_path=('protocols', 'cache_stores', 'users.profile'), condition='missing_adapter'] protocol_configuration_error
+  no store rename ! ProtocolConfigurationError: ProtocolConfigurationError(condition='missing_adapter') [field_path=('protocols', 'cache_stores', 'users.profile'), condition='missing_adapter'] protocol_configuration_error
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+  > GET https://api.example.com/users/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  default entry limit = network 3:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '21'), ('content-type', 'application/json')]
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+  > GET https://api.example.com/users/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    fingerprint_vary ('accept-language',)
+    compare_exchange expected=False status=200 vary=('accept-language',) fingerprints=1 bytes=21 headers=['cache-control', 'content-type', 'Content-Length'] fresh=True tags=('user:3', 'users')
+  call entry limit = network 3:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '21'), ('content-type', 'application/json')]
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+  call entry limit hit = fresh_cache 3:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '21')]
+  pagination options ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('cache_options',), condition='invalid_value'] protocol_configuration_error
+  text options ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('options',), condition='invalid_value'] protocol_configuration_error
+  closed client ! ClientClosedError: ClientClosedError(operation_id='getUser', call_id='<call>', state='CLOSED', owner='client') [operation_id='getUser'] client_closed_error
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/21
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    event response_headers status=200
+    event attempt_end status=200
+    event call_end status=200
+    fingerprint_vary ('accept-language',)
+    compare_exchange expected=False status=200 vary=('accept-language',) fingerprints=1 bytes=22 headers=['etag', 'cache-control', 'content-type', 'Content-Length'] fresh=False tags=('user:21', 'users')
+  recorded miss = network 21:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"a"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/21
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "a"] b''
+    event response_headers status=304
+    event attempt_end status=304
+    event call_end status=304
+    fingerprint_vary ('accept-language',)
+    compare_exchange expected=True status=200 vary=('accept-language',) fingerprints=1 bytes=22 headers=['cache-control', 'content-type', 'etag', 'Content-Length'] fresh=False tags=('user:21', 'users')
+  recorded revalidation = revalidated 21:cat status=200 network=304 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=0'), ('content-type', 'application/json'), ('etag', '"a"'), ('Content-Length', '22')]
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/21
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "a"] b''
+    event response_headers status=200
+    event attempt_end status=200
+    event call_end status=200
+    delete
+  recorded unstored = network 21:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    event response_headers status=200
+    event attempt_end status=200
+    event call_end status=200
+    fingerprint_vary ()
+    compare_exchange expected=False status=200 vary=() fingerprints=0 bytes=11 headers=['etag', 'cache-control', 'content-type', 'Content-Length'] fresh=False tags=('users',)
+  list without vary = network [] status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"l"'), ('cache-control', 'max-age=0'), ('content-length', '11'), ('content-type', 'application/json')]
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "l"] b''
+    event response_headers status=200
+    event attempt_end status=200
+    event call_end status=200
+    fingerprint_vary ('accept-language',)
+    compare_exchange expected=False status=200 vary=('accept-language',) fingerprints=1 bytes=11 headers=['vary', 'cache-control', 'content-type', 'Content-Length'] fresh=True tags=('users',)
+    delete
+  list in another vary slot = network [] status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('vary', 'Accept-Language'), ('cache-control', 'max-age=60'), ('content-length', '11'), ('content-type', 'application/json')]
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/21
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    event response_headers status=200
+    event attempt_end status=200
+    event call_end status=200
+    fingerprint_vary ('accept-language',)
+    compare_exchange expected=False status=200 vary=('accept-language',) fingerprints=1 bytes=22 headers=['etag', 'cache-control', 'content-type', 'Content-Length'] fresh=False tags=('user:21', 'users')
+  healing stored = network 21:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"h"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/21
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
+    event response_headers status=304
+    event attempt_end status=304
+    event call_end status=304
+    delete
+  refused 304 with a failed deletion ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent'] cache_protocol_error ["CacheStoreError: CacheStoreError(action='delete') [cause=OSError('gone')] cache_store_error"]
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/21
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
+    event response_headers status=304
+    event attempt_end status=304
+    event call_end status=304
+    delete
+  refused 304 with a deletion result ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent'] cache_protocol_error ["CacheStoreError: CacheStoreError(action='delete') [] cache_store_error"]
+  cancelled before lookup ! RequestCancelledError: RequestCancelledError(operation_id='getUser', call_id='<call>', source='cancel_token', delivery_state='NOT_SENT') [operation_id='getUser', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>] request_cancelled_error
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+  lookup failure ! CacheStoreError: CacheStoreError(action='lookup') [cause=OSError('disk')] cache_store_error
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+  lookup result ! CacheStoreError: CacheStoreError(action='lookup') [] cache_store_error
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+  lookup store error ! CacheStoreError: CacheStoreError(action='lookup') [] cache_store_error
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/21
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
+    event response_headers status=200
+    event attempt_end status=200
+    event call_end status=200
+    fingerprint_vary ('accept-language',)
+  fingerprint result ! CacheStoreError: CacheStoreError(action='fingerprint_vary') [] cache_store_error
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/21
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
+    event response_headers status=200
+    event attempt_end status=200
+    event call_end status=200
+    fingerprint_vary ('accept-language',)
+    compare_exchange expected=True status=200 vary=('accept-language',) fingerprints=1 bytes=22 headers=['cache-control', 'content-type', 'Content-Length'] fresh=True tags=('user:21', 'users')
+  exchange failure ! CacheStoreError: CacheStoreError(action='compare_exchange') [cause=RuntimeError('down')] cache_store_error
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/21
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
+    event response_headers status=200
+    event attempt_end status=200
+    event call_end status=200
+    fingerprint_vary ('accept-language',)
+    compare_exchange expected=True status=200 vary=('accept-language',) fingerprints=1 bytes=22 headers=['cache-control', 'content-type', 'Content-Length'] fresh=True tags=('user:21', 'users')
+  exchange result ! CacheStoreError: CacheStoreError(action='compare_exchange') [] cache_store_error
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/21
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
+    event response_headers status=200
+    event attempt_end status=200
+    event call_end status=200
+    fingerprint_vary ('accept-language',)
+    compare_exchange expected=True status=200 vary=('accept-language',) fingerprints=1 bytes=22 headers=['cache-control', 'etag', 'content-type', 'Content-Length'] fresh=False tags=('user:21', 'users')
+  exchange refused = network 21:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=0'), ('etag', '"b"'), ('content-length', '22'), ('content-type', 'application/json')]
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/21
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
+    event response_headers status=200
+    event attempt_end status=200
+    event call_end status=200
+    fingerprint_vary ('accept-language',)
+    compare_exchange expected=True status=200 vary=('accept-language',) fingerprints=1 bytes=22 headers=['etag', 'cache-control', 'content-type', 'Content-Length'] fresh=False tags=('user:21', 'users')
+  deletable stored = network 21:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"b"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/21
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "b"] b''
+    event response_headers status=200
+    event attempt_end status=200
+    event call_end status=200
+    delete
+  delete result ! CacheStoreError: CacheStoreError(action='delete') [] cache_store_error
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/21
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "b"] b''
+    event response_headers status=200
+    event attempt_end status=200
+    event call_end status=200
+    fingerprint_vary ('accept-language',)
+    compare_exchange expected=True status=200 vary=('accept-language',) fingerprints=1 bytes=22 headers=['etag', 'cache-control', 'content-type', 'Content-Length'] fresh=False tags=('user:21', 'users')
+  deletable stored again = network 21:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"b"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/21
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "b"] b''
+    event response_headers status=200
+    event attempt_end status=200
+    event call_end status=200
+    delete
+  delete failure ! CacheStoreError: CacheStoreError(action='delete') [cause=OSError('gone')] cache_store_error
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/22
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    event response_headers status=200
+    event attempt_end status=200
+    event call_end status=200
+    fingerprint_vary ('accept-language',)
+    compare_exchange expected=False status=200 vary=('accept-language',) fingerprints=1 bytes=22 headers=['cache-control', 'content-type', 'Content-Length'] fresh=True tags=('user:22', 'users')
+  race stored = network 22:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '22'), ('content-type', 'application/json')]
+    invalidate ('user:22',)
+  race cleared = 1
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/22
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    event response_headers status=200
+    event attempt_end status=200
+    event call_end status=200
+    fingerprint_vary ('accept-language',)
+    compare_exchange expected=False status=200 vary=('accept-language',) fingerprints=1 bytes=22 headers=['cache-control', 'content-type', 'Content-Length'] fresh=True tags=('user:22', 'users')
+  race lost = network 22:dog status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '22'), ('content-type', 'application/json')]
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+  race winner = fresh_cache 22:racer status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '22')]
+    invalidate ('users',)
+  invalidation failure ! CacheInvalidationError: CacheInvalidationError(action='invalidate') [cause=OSError('down')] cache_invalidation_error
+    invalidate ('users',)
+  invalidation count ! CacheInvalidationError: CacheInvalidationError(action='invalidate') [] cache_invalidation_error
+    event call_start status=None
+    event attempt_start status=None
+  > PATCH https://api.example.com/users/22
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 14] b'{"name":"dog"}'
+    event response_headers status=200
+    event attempt_end status=200
+    event call_end status=200
+    invalidate ('user:22',)
+  rename invalidation failure ! CacheInvalidationError: CacheInvalidationError(action='invalidate') [cause=OSError('down')] cache_invalidation_error result=22:dog tags=('user:22',)
+    event call_start status=None
+    event attempt_start status=None
+  > PATCH https://api.example.com/users/22
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 14] b'{"name":"dog"}'
+    event response_headers status=200
+    event attempt_end status=200
+    event call_end status=200
+    invalidate ('user:22',)
+  rename invalidation count ! CacheInvalidationError: CacheInvalidationError(action='invalidate') [] cache_invalidation_error result=22:dog tags=('user:22',)
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/23
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    event response_headers status=200
+    event attempt_end status=200
+    event call_end status=200
+  hook failure stores nothing ! HookExecutionError: HookExecutionError(operation_id='getUser', call_id='<call>', event_name='call_end', sent=True) [operation_id='getUser', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, cause=RuntimeError('hook failed')] hook_execution_error
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/23
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    event response_headers status=200
+    event attempt_end status=200
+    event call_end status=200
+    fingerprint_vary ('accept-language',)
+    compare_exchange expected=False status=200 vary=('accept-language',) fingerprints=1 bytes=22 headers=['cache-control', 'content-type', 'Content-Length'] fresh=True tags=('user:23', 'users')
+  after a hook failure = network 23:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '22'), ('content-type', 'application/json')]
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+  hit without events = fresh_cache 23:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '22')]
+  no partition ! ProtocolConfigurationError: ProtocolConfigurationError(condition='security_partition') [field_path=('protocols', 'security'), condition='security_partition'] protocol_configuration_error
+  no credentials ! AuthConfigurationError: AuthConfigurationError(condition='missing_credentials') [field_path=('auth',), condition='missing_credentials'] auth_configuration_error
+  > GET https://api.example.com/secure/users/1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
+  tenant a stored = network 1:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"t"'), ('cache-control', 'max-age=60'), ('content-length', '21'), ('content-type', 'application/json')]
+  tenant a shared = fresh_cache 1:cat status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('etag', '"t"'), ('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '21')]
+  > GET https://api.example.com/secure/users/1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
+  tenant b isolated = network 1:other status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('content-length', '23'), ('content-type', 'application/json')]
+  > GET https://api.example.com/users/1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  anonymous helper = network 1:anonymous status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '27'), ('content-type', 'application/json')]
+  anonymous helper with a credential ! ProtocolConfigurationError: ProtocolConfigurationError(condition='binding_mismatch') [field_path=('auth',), condition='binding_mismatch'] protocol_configuration_error
+  anonymous helper same tenant = fresh_cache 1:anonymous status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '27')]
+  > GET https://api.example.com/users/1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  anonymous helper other tenant = network 1:b status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('content-length', '19'), ('content-type', 'application/json')]
+  > GET https://api.example.com/secure/users/2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer alice] b''
+  alice varying on authorization = network 2:alice status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Authorization'), ('content-length', '23'), ('content-type', 'application/json')]
+  > GET https://api.example.com/secure/users/2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer bob] b''
+  bob in the same partition = network 2:bob status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Authorization'), ('content-length', '21'), ('content-type', 'application/json')]
+  > GET https://api.example.com/secure/users/2
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer alice] b''
+  alice again = network 2:alice again status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'Authorization'), ('content-length', '29'), ('content-type', 'application/json')]
+  view with other auth ! ProtocolConfigurationError: ProtocolConfigurationError(condition='security_partition') [field_path=('options', 'auth'), condition='security_partition'] protocol_configuration_error
+  call with other auth ! ProtocolConfigurationError: ProtocolConfigurationError(condition='security_partition') [field_path=('options', 'auth'), condition='security_partition'] protocol_configuration_error
+  anonymous view = fresh_cache 1:anonymous status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '27')]
+  > GET https://api.example.com/secure/users/4
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-on-behalf-of: user-u, authorization: Bearer token] b''
+  on behalf of u = network 4:u status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '19'), ('content-type', 'application/json')]
+  > GET https://api.example.com/secure/users/4
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
+  service after u = network 4:service status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '25'), ('content-type', 'application/json')]
+  on behalf of u again = fresh_cache 4:u status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '19')]
+  service again = fresh_cache 4:service status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '25')]
+  > GET https://api.example.com/secure/users/5
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
+  service first = network 5:service status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '25'), ('content-type', 'application/json')]
+  > GET https://api.example.com/secure/users/5
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-on-behalf-of: user-u, authorization: Bearer token] b''
+  on behalf of u after the service = network 5:u status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '19'), ('content-type', 'application/json')]
+  view patching the bound authorization ! AuthConfigurationError: AuthConfigurationError(operation_id='getSecureUser', call_id='<call>', condition='managed_field') [operation_id='getSecureUser', field_path=('auth',), condition='managed_field'] auth_configuration_error
+  > GET https://api.example.com/carts/current
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cookie: cart=alice] b''
+  alice cart = network 44:alice status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '24'), ('content-type', 'application/json')]
+  > GET https://api.example.com/carts/current
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cookie: cart=bob] b''
+  bob cart = network 44:bob status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '22'), ('content-type', 'application/json')]
+  alice cart again = fresh_cache 44:alice status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '24')]
+  > GET https://api.example.com/secure/users/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer alice, x-signature: signed] b''
+  vary on a signed header = network 3:first status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'X-Signature'), ('content-length', '23'), ('content-type', 'application/json')]
+  > GET https://api.example.com/secure/users/3
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer alice, x-signature: signed] b''
+  vary on a signed header again = network 3:second status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('vary', 'X-Signature'), ('content-length', '24'), ('content-type', 'application/json')]
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+  granted and signed ! CacheStoreError: CacheStoreError(action='lookup') [cause=OSError('down')] cache_store_error
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/24
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    event response_headers status=200
+    event attempt_end status=200
+    event call_end status=200
+    fingerprint_vary ('accept-language',)
+    compare_exchange expected=False status=200 vary=('accept-language',) fingerprints=1 bytes=22 headers=['etag', 'cache-control', 'content-type', 'Content-Length'] fresh=False tags=('user:24', 'users')
+  async recorded stored = network 24:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"a"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/24
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "a"] b''
+    event response_headers status=200
+    event attempt_end status=200
+    event call_end status=200
+    delete
+  async recorded unstored = network 24:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/24
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    event response_headers status=404
+    event attempt_end status=404
+    event call_end status=404
+  async recorded error ! GetUserHTTPError: GetUserHTTPError(status_code=404, operation_id='getUser', call_id='<call>', retry_stop_reason='status_not_retryable') [operation_id='getUser', status_code=404, error_decoded=True, error_data=Error(message='no'), body_bytes=b'{"message":"no"}', truncated=False] get_user_http_error
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+  async lookup failure ! CacheStoreError: CacheStoreError(action='lookup') [cause=OSError('disk')] cache_store_error
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+  async lookup store error ! CacheStoreError: CacheStoreError(action='lookup') [] cache_store_error
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/24
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    event response_headers status=200
+    event attempt_end status=200
+    event call_end status=200
+    fingerprint_vary ('accept-language',)
+  async fingerprint result ! CacheStoreError: CacheStoreError(action='fingerprint_vary') [] cache_store_error
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/24
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    event response_headers status=200
+    event attempt_end status=200
+    event call_end status=200
+    fingerprint_vary ('accept-language',)
+    compare_exchange expected=False status=200 vary=('accept-language',) fingerprints=1 bytes=22 headers=['cache-control', 'content-type', 'Content-Length'] fresh=True tags=('user:24', 'users')
+  async exchange result ! CacheStoreError: CacheStoreError(action='compare_exchange') [] cache_store_error
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/24
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+    event response_headers status=200
+    event attempt_end status=200
+    event call_end status=200
+    fingerprint_vary ('accept-language',)
+    compare_exchange expected=False status=200 vary=('accept-language',) fingerprints=1 bytes=22 headers=['etag', 'cache-control', 'content-type', 'Content-Length'] fresh=False tags=('user:24', 'users')
+  async healing stored = network 24:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"h"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/24
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
+    event response_headers status=304
+    event attempt_end status=304
+    event call_end status=304
+    delete
+  async refused 304 with a failed deletion ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent'] cache_protocol_error ["CacheStoreError: CacheStoreError(action='delete') [cause=OSError('gone')] cache_store_error"]
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/24
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
+    event response_headers status=304
+    event attempt_end status=304
+    event call_end status=304
+    delete
+  async refused 304 with a deletion result ! CacheProtocolError: CacheProtocolError(operation_id='getUser', call_id='<call>', condition='inconsistent') [operation_id='getUser', condition='inconsistent'] cache_protocol_error ["CacheStoreError: CacheStoreError(action='delete') [] cache_store_error"]
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/24
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "h"] b''
+    event response_headers status=200
+    event attempt_end status=200
+    event call_end status=200
+    fingerprint_vary ('accept-language',)
+    compare_exchange expected=True status=200 vary=('accept-language',) fingerprints=1 bytes=22 headers=['etag', 'cache-control', 'content-type', 'Content-Length'] fresh=False tags=('user:24', 'users')
+  async deletable = network 24:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('etag', '"b"'), ('cache-control', 'max-age=0'), ('content-length', '22'), ('content-type', 'application/json')]
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+    event call_start status=None
+    event attempt_start status=None
+  > GET https://api.example.com/users/24
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, if-none-match: "b"] b''
+    event response_headers status=200
+    event attempt_end status=200
+    event call_end status=200
+    delete
+  async delete result ! CacheStoreError: CacheStoreError(action='delete') [] cache_store_error
+    invalidate ('users',)
+  async invalidation failure ! CacheInvalidationError: CacheInvalidationError(action='invalidate') [cause=OSError('down')] cache_invalidation_error
+    invalidate ('users',)
+  async invalidation count ! CacheInvalidationError: CacheInvalidationError(action='invalidate') [] cache_invalidation_error
+    event call_start status=None
+    event attempt_start status=None
+  > PATCH https://api.example.com/users/24
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 14] b'{"name":"dog"}'
+    event response_headers status=200
+    event attempt_end status=200
+    event call_end status=200
+    invalidate ('user:24',)
+  async rename invalidation failure ! CacheInvalidationError: CacheInvalidationError(action='invalidate') [cause=OSError('down')] cache_invalidation_error
+  > GET https://api.example.com/secure/users/1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token] b''
+  async service = network 1:service status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '25'), ('content-type', 'application/json')]
+  > GET https://api.example.com/secure/users/1
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, x-on-behalf-of: user-u, authorization: Bearer token] b''
+  async on behalf of u = network 1:u status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-length', '19'), ('content-type', 'application/json')]
+  async on behalf of u again = fresh_cache 1:u status=200 network=None sends=0 attempts=0 type=application/json request_id=None headers=[('cache-control', 'max-age=60'), ('content-type', 'application/json'), ('Content-Length', '19')]
+    lookup key=32 headers=['Accept-Encoding', 'Accept']
+  async granted ! CacheStoreError: CacheStoreError(action='lookup') [cause=OSError('down')] cache_store_error

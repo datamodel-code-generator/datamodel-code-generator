@@ -13,7 +13,6 @@ if TYPE_CHECKING:
     from datamodel_code_generator.model.binding_fields import FieldOwnershipProjection
     from datamodel_code_generator.parser.base import Result
     from datamodel_code_generator.parser.openapi_contract import ContractOpenAPIParser
-    from datamodel_code_generator.parser.openapi_contract_freeze import FinalModelInventory
 
 
 def final_import_snapshot(batch: GeneratedTypeContractBatch) -> str:
@@ -41,6 +40,7 @@ def final_import_snapshot(batch: GeneratedTypeContractBatch) -> str:
         if isinstance(value, BoundType):
             lines.append(f"  expression: {render_python_type_expr(value.binding.expression)}")
     return "\n".join(lines) + "\n"
+
 
 def type_snapshot(value: object, names: dict[SymbolId, str] | None = None) -> object:
     """Keep node kinds and literal kinds distinct without rendering model annotations."""
@@ -174,16 +174,3 @@ def module_result_snapshot(
         }
         for binding in parser.resolve_module_results(results)
     ]
-
-
-def inventory_tuple_snapshot(inventory: FinalModelInventory) -> dict[str, object]:
-    """Present the emitted tuple fixture's immutable identities independently of graph IDs."""
-    return {
-        "attempt": inventory.attempt,
-        "models": [model.name for model in inventory.models],
-        "fields": [
-            [field.slot.name, type_snapshot(field.projection)] for model in inventory.models for field in model.fields
-        ],
-        "path": inventory.models[0].artifact.relative_path if inventory.models[0].artifact is not None else None,
-        "package": inventory.models[0].artifact.model_package if inventory.models[0].artifact is not None else None,
-    }

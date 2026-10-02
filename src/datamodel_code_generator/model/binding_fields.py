@@ -6,8 +6,6 @@ from collections import Counter
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
-from datamodel_code_generator._generation_contract import BindingCaptureError
-
 
 @dataclass(frozen=True, slots=True)
 class DeclaredField:
@@ -49,32 +47,23 @@ class FieldOwnershipView:
         self, model_name: str, declarations: Mapping[FieldSlot, ExpectedFieldDeclaration]
     ) -> tuple[ExpectedFieldDeclaration, ...]:
         """Associate expanded entries with their declaring slots and this consumer."""
-        entries: list[ExpectedFieldDeclaration] = []
-        for ordinal, field in enumerate(self.fields):
-            if (declaration := declarations.get(field.slot)) is None:
-                msg = "A functional TypedDict entry has no final declaring field"
-                raise BindingCaptureError(msg)
-            if declaration.backend != "typeddict" or declaration.excluded_by_tag:
-                msg = "A functional TypedDict entry has incompatible declaring field semantics"
-                raise BindingCaptureError(msg)
-            entries.append(
-                replace(
-                    declaration,
-                    consumer=self.consumer,
-                    model_name=model_name,
-                    form="typeddict_entry",
-                    entry_key=field.wire_name,
-                    entry_ordinal=ordinal,
-                )
+        return tuple(
+            replace(
+                declarations[field.slot],
+                consumer=self.consumer,
+                model_name=model_name,
+                form="typeddict_entry",
+                entry_key=field.wire_name,
+                entry_ordinal=ordinal,
             )
-        return tuple(entries)
+            for ordinal, field in enumerate(self.fields)
+        )
 
 
-_UNRESOLVED: Final = "BND_FIELD_UNRESOLVED"
 _AMBIGUOUS: Final = "BND_FIELD_AMBIGUOUS"
 _CUSTOM: Final = "BND_CUSTOM_BINDING_REQUIRED"
 
-FieldOwnershipReason: TypeAlias = Literal["BND_FIELD_UNRESOLVED", "BND_FIELD_AMBIGUOUS", "BND_CUSTOM_BINDING_REQUIRED"]
+FieldOwnershipReason: TypeAlias = Literal["BND_FIELD_AMBIGUOUS", "BND_CUSTOM_BINDING_REQUIRED"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -117,21 +106,15 @@ class FieldOwnershipIndex:
         fields: dict[str, DeclaredField] = {}
         overrides: list[FieldOverride] = []
         for owner_id in order:
-            own_names: set[str] = set()
             for field in self._owner(owner_id).fields:
                 field_key = field.wire_name if functional_typeddict else field.slot.name
-                if field_key in own_names:
-                    raise _OwnershipError(_AMBIGUOUS)
-                own_names.add(field_key)
                 if (previous := fields.get(field_key)) is not None and previous.slot != field.slot:
                     overrides.append(FieldOverride(field_key, previous.slot, field.slot))
                 fields[field_key] = field
         return FieldOwnershipView(symbol, tuple(fields.values()), tuple(overrides))
 
     def _owner(self, symbol: SymbolId) -> FieldOwner:
-        if (owner := self._owners.get(symbol)) is None:
-            raise _OwnershipError(_UNRESOLVED)
-        if owner.unknown_bases:
+        if (owner := self._owners[symbol]).unknown_bases:
             raise _OwnershipError(_CUSTOM)
         return owner
 
