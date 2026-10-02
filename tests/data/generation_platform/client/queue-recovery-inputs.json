@@ -1,0 +1,11 @@
+{
+  "crashes": ["before_intent", "after_intent", "after_effect"],
+  "stops": ["expiry", "cap", "payload", "missing_key", "changed_key", "future", "cancel"],
+  "patches": ["basepath", "header", "query"],
+  "records": ["success", "unknown", "permanent", "cancelled"],
+  "body": {"item": "tea", "quantity": 2},
+  "lease_seconds": 400,
+  "ttl_seconds": 3,
+  "backoff_seconds": 120,
+  "payload_versions": [1, true, 1.0, "1", 2]
+}

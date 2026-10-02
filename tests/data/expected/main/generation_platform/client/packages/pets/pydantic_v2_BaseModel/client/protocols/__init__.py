@@ -18,10 +18,22 @@ from .._runtime.protocols.options import (
     PollOptions,
     ProtocolDefaults,
     ProtocolSecurityContext,
+    QueueOptions,
     StreamOptions,
     UploadOptions,
     WebSocketTransportOptions,
     WSOptions,
+)
+from .._runtime.protocols.queues import (
+    AsyncQueueStore,
+    BlobRef,
+    DrainReport,
+    QueueEntry,
+    QueueLease,
+    QueueOutcome,
+    QueueReceipt,
+    QueueStore,
+    ResolvedQueueOptions,
 )
 from .._runtime.protocols.records import (
     BodySelector,
@@ -76,6 +88,7 @@ if TYPE_CHECKING:
     from .._runtime.protocols.cache_stores import AsyncMemoryCacheStore, MemoryCacheStore
     from .._runtime.protocols.pagination import AsyncPager, Page, Pager
     from .._runtime.protocols.polling import AsyncLroHandle, LroHandle
+    from .._runtime.protocols.queue_stores import AsyncMemoryQueueStore, MemoryQueueStore
     from .._runtime.protocols.replay import AsyncMemoryReplayStore, MemoryReplayStore
     from .._runtime.protocols.streams import (
         AsyncEventStream,
@@ -99,8 +112,10 @@ __all__ = [
     "AsyncFileUploadSource",
     "AsyncLroHandle",
     "AsyncMemoryCacheStore",
+    "AsyncMemoryQueueStore",
     "AsyncMemoryReplayStore",
     "AsyncPager",
+    "AsyncQueueStore",
     "AsyncRangeReader",
     "AsyncReplayStore",
     "AsyncUploadHandle",
@@ -108,6 +123,7 @@ __all__ = [
     "AsyncWebSocketConnection",
     "AsyncWebSocketConnector",
     "AsyncWebSocketSession",
+    "BlobRef",
     "BodySelector",
     "BodyTarget",
     "BytesUploadSource",
@@ -117,12 +133,14 @@ __all__ = [
     "CacheStore",
     "CancelReceipt",
     "Continuation",
+    "DrainReport",
     "EventStream",
     "FileUploadSource",
     "HeaderSelector",
     "KeySet",
     "LroHandle",
     "MemoryCacheStore",
+    "MemoryQueueStore",
     "MemoryReplayStore",
     "Message",
     "OperationRef",
@@ -140,9 +158,16 @@ __all__ = [
     "ProtocolProgress",
     "ProtocolSecurityContext",
     "QuerystringTarget",
+    "QueueEntry",
+    "QueueLease",
+    "QueueOptions",
+    "QueueOutcome",
+    "QueueReceipt",
+    "QueueStore",
     "RangeReader",
     "ReplayStore",
     "RequestTarget",
+    "ResolvedQueueOptions",
     "ResolvedWSOptions",
     "ResolvedWebSocketTransportOptions",
     "ResolvedWebhookOptions",
@@ -202,6 +227,10 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import websocket
 
         return getattr(websocket, name)
+    if name in {"AsyncMemoryQueueStore", "MemoryQueueStore"}:
+        from .._runtime.protocols import queue_stores
+
+        return getattr(queue_stores, name)
     if name == "MemoryReplayStore":
         from .._runtime.protocols.replay import MemoryReplayStore
 

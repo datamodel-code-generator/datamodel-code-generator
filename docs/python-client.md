@@ -113,8 +113,8 @@ delivery IDs, namespaces, operation references, entry IDs, and causes; callers m
 
 ## Protocol contracts
 
-Generated packages also expose the shared contracts of pagination, polling, stream, cache, and upload helpers. Records,
-options, cache stores, and resume state come from `pkg.protocols`; `ProtocolClientOptions` comes from `pkg.options`;
+Generated packages also expose the shared contracts of pagination, polling, stream, cache, upload, and queue helpers.
+Records, options, cache and queue stores, and resume state come from `pkg.protocols`; `ProtocolClientOptions` comes from `pkg.options`;
 exceptions come from `pkg.errors`. These imports need no HTTP library and start no threads. A client that uses no
 protocol settings
 loads none of these definitions: `pkg.options` and `pkg.errors` load them the first time one of their names is used. The
@@ -256,6 +256,7 @@ booleans. Durations are finite numbers of seconds, excluding booleans; integers 
 | | `compression` | `None` | `"deflate"` or `None` |
 | | `reconnect` | `False` | `bool` |
 | | `max_reconnects` | `5` | Nonnegative integer or `None` |
+| `QueueOptions` | `max_entries`, `parallelism`, and the entry policy fields | See [queue limits](#limits-and-policies) | Positive integers and durations; `max_delivery_timeout` at most 300 |
 
 `ProtocolSecurityContext(*, credential_partition: str, allowed_origins: tuple[Origin, ...] = ())` names the
 nonsecret credential partition of helper state and the origins permitted in addition to the same origin. The
@@ -292,10 +293,11 @@ client = Client(options=options)
 | `ProtocolClientOptions.security` | `ProtocolSecurityContext \| None`, default `UNSET` | `None` means anonymous use. Its `allowed_origins` are the origins beyond the server's that a next-URL or Link pagination helper may follow a URL to |
 | `ProtocolClientOptions.defaults` | `Mapping[str, ProtocolDefaults]`, default `UNSET` | Keys are helper names: Python identifiers separated by dots, without keywords or empty parts. The mapping is copied into a read-only mapping, and its values keep their identity |
 | `ProtocolDefaults.session` | `SessionOptions`, default `UNSET` | Session limits of that helper |
-| `ProtocolDefaults.options` | `PaginationOptions \| PollOptions \| StreamOptions \| CacheOptions \| WSOptions \| UploadOptions`, default `UNSET` | Kind-specific options of that helper |
+| `ProtocolDefaults.options` | `PaginationOptions \| PollOptions \| StreamOptions \| CacheOptions \| WSOptions \| UploadOptions \| QueueOptions`, default `UNSET` | Kind-specific options of that helper |
 | `ProtocolClientOptions.cache_stores` | `Mapping[str, CacheStore \| AsyncCacheStore]`, default `UNSET` | The store each [cache helper](#cache-helpers) keeps its entries in, by helper name. The mapping is copied into a read-only mapping that keeps each store's identity; the client borrows the stores and never closes them |
 | `ProtocolClientOptions.websocket_connector` | `WebSocketConnector \| AsyncWebSocketConnector \| None`, default `UNSET` | A borrowed connector that opens WebSocket connections; see [connectors and transports](#connectors-and-transports) |
 | `ProtocolClientOptions.websocket_transport` | `WebSocketTransportOptions`, default `UNSET` | TLS contexts, proxy, and `trust_env` of WebSocket connections |
+| `ProtocolClientOptions.queue_stores` | `Mapping[str, QueueStore \| AsyncQueueStore]`, default `UNSET` | The borrowed store of each [queue helper](#queue-helpers), by its name. The mapping is copied into a read-only mapping, and its values keep their identity |
 
 Invalid values inside `ProtocolClientOptions` and `ProtocolDefaults` raise `ProtocolConfigurationError`. Explicit
 call options take precedence over these defaults, which take precedence over the effective defaults above.
@@ -338,6 +340,10 @@ Invalid field values raise `ValueError`.
 | `UploadSourceChangedError` | `ProtocolDataError` | `expected: UploadIdentity`, `actual: UploadIdentity \| None`, `offset: int \| None = None`; `condition` is always `inconsistent` |
 | `UploadOffsetError` | `ProtocolDataError` | `confirmed_offset: int`, `expected_offset: int`, `remote_offset: int`, `size: int`, `resume_state: ResumeState \| None = None`; `condition` is always `inconsistent` |
 | `UploadExpiredError` | `ResumeStateError` | `expires_at: datetime`, timezone-aware; `condition` is always `expired` |
+| `QueueStoreError` | `ProtocolStoreError` | `action`, `entry_id: str \| None = None` |
+| `QueueFullError` | `QueueStoreError` | `kind: Literal['entries', 'bytes']`, `limit: int`, `observed: int` |
+| `QueueBindingError` | `ProtocolConfigurationError` | `entry_id: str`; `condition` is always `binding_mismatch` |
+| `QueuePolicyConflictError` | `ProtocolConfigurationError` | `fields: tuple[str, ...]`, nonempty; `condition` is always `invalid_value` |
 
 A field whose value is fixed is not a constructor argument, so passing it raises `TypeError`. `progress` is copied into
 a read-only mapping. Messages and representations exclude locations, progress, resume state, snapshots, raw bytes, event
@@ -347,16 +353,17 @@ using it as a model.
 
 ## Protocol helper configuration
 
-Pagination, polling, SSE or NDJSON stream, WebSocket, webhook, cache, and resumable upload helpers of an API are declared
+Pagination, polling, SSE or NDJSON stream, WebSocket, webhook, cache, resumable upload, and queue helpers of an API are declared
 in a helper configuration, which the client target reads through its `protocols` setting. The helpers are still being
 implemented: generation validates every helper, resolves its references against the selected API, and records it in the
 target manifest. An enabled pagination helper generates the [pagination helper](#pagination-helpers) below, an enabled
 polling helper the [polling helper](#polling-helpers), an enabled `offset` upload helper the
 [upload helper](#upload-helpers), an enabled SSE helper the [SSE stream helper](#sse-stream-helpers), an enabled NDJSON
 helper the [NDJSON stream helper](#ndjson-stream-helpers), an enabled WebSocket helper the
-[WebSocket helper](#websocket-helpers), an enabled cache helper the [cache helper](#cache-helpers), and an enabled
-webhook helper the [webhook verification helper](#webhook-verification-helpers). A disabled helper generates nothing,
-so the package is the same as without it. The `batch` and `queue` kinds, and the `parts` profile of `resumable_upload`,
+[WebSocket helper](#websocket-helpers), an enabled cache helper the [cache helper](#cache-helpers), an enabled queue
+helper the [queue helper](#queue-helpers), and an enabled webhook helper the
+[webhook verification helper](#webhook-verification-helpers). A disabled helper generates nothing, so the package is the
+same as without it. The `batch` kind, and the `parts` profile of `resumable_upload`,
 fail with `E_CLIENT_UNSUPPORTED` whether they are enabled or not, and their settings are not read yet; an enabled
 upload helper declaring `abort` or `create.session_url` fails with `E_CLIENT_UNSUPPORTED` too.
 
@@ -508,6 +515,7 @@ querystring, or its request body. An operation that owns a querystring takes no 
 | `webhook` | `event_schema`, `signature` (see [webhook verification helpers](#webhook-verification-helpers)) | `duplicates` (`report`, the default, or `reject`, which needs a signature) |
 | `cache` | `operation`, `validator` (`etag`, `last_modified`, or `both`), `authenticated` (a boolean) | `statuses` (`[200]`), `vary_allowlist` (`[]`), `tags` (`[]`), `mutations` (`{}`); see [cache helpers](#cache-helpers) |
 | `resumable_upload` | `profile` (`offset`), `create` (`{operation, size?, expires_at?}`), `probe` (`{operation, remote_offset, bindings?}`), `append` (`{operation, offset, length?, bindings?}`), `max_chunk_bytes` (a positive integer), `partial_commit` (`allowed` or `forbidden`), `completion` | `abort` (`{operation, bindings?}`) and `create.session_url`, both refused as not supported yet |
+| `queue` | `operations`, a nonempty mapping of aliases to `{operation, side_effects}` (see [queue helpers](#queue-helpers)) | Per operation, `key_binding` and `dedupe_ttl`, given together and required with side effects |
 
 A pagination `continuation` is one of these:
 
@@ -566,7 +574,8 @@ or `"none"`, and `signed_parts` entries `"raw-body"`, `"timestamp"`, and `"deliv
 declares an unsigned webhook. An event mapping is an `EventMapping` with an `EventDiscriminator(from_="body",
 pointer=...)`, a cache mutation a `CacheMutation(operation=..., invalidate_tags=(...))`, and an upload takes
 `UploadCreate`, `UploadProbe`, `UploadAppend`, `LengthCompletion()` or `OperationCompletion`, and `UploadAbort`
-records. They are validated as the file is, with the same diagnostics, when the client configuration is constructed.
+records. A queue is a `QueueHelper` whose `operations` map aliases to `QueuedOperation(operation=..., side_effects=...,
+key_binding=..., dedupe_ttl=...)`. They are validated as the file is, with the same diagnostics, when the client configuration is constructed.
 The later kinds have no records yet.
 
 ```python
@@ -2341,6 +2350,266 @@ E_CONFIG_VALUE config protocols.helpers['items.ambiguous'].tags[1] /paths/~1item
 
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.cache.diagnostics -->
+
+## Queue helpers
+
+An enabled `queue` helper saves calls of its declared operations in a store the caller lends, and sends them only when
+the caller drains it: nothing runs in the background, and nothing is sent when connectivity returns. It is generated at
+`client.protocols.<name>` on `Client` and `AsyncClient` alike. `operations.<alias>.enqueue` takes the alias
+operation's parameters and its body as keywords, never field arguments, then `queue_options`; it sends nothing and
+returns a `QueueReceipt`:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.queues.helper -->
+<!-- fmt: off -->
+
+```python
+    def enqueue(
+        self,
+        *,
+        x_trace: _dcg_type_0 | ModelValue[_dcg_type_0] | Unset = UNSET,
+        session: _dcg_type_1 | ModelValue[_dcg_type_1] | Unset = UNSET,
+        body: _dcg_type_2 | ModelValue[_dcg_type_2],
+        media_type: Literal['application/json'] | RequestMedia[_dcg_type_2 | ModelValue[_dcg_type_2], _dcg_type_2 | ModelValue[_dcg_type_2]] | None = None,
+        queue_options: QueueOptions | None = None,
+    ) -> QueueReceipt:
+        """Save a call of POST /orders in the queue's store, sending nothing."""
+        return enqueue_entry(
+            self._core,
+            _plans.PLAN_0,
+            0,
+            (x_trace, session),
+            body=body,
+            media_type=media_type,
+            queue_options=queue_options,
+        )
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.queues.helper -->
+
+The helper itself drains the queue and manages its entries; on `AsyncClient` every method is a coroutine:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.queues.drain -->
+<!-- fmt: off -->
+
+```python
+    def drain(
+        self,
+        *,
+        queue_options: QueueOptions | None = None,
+        options: RequestOptions | None = None,
+        session_options: SessionOptions | None = None,
+    ) -> DrainReport:
+        """Deliver this queue's ready entries in creation order and report how each ended."""
+        return drain_queue(
+            self._core,
+            _plans.PLAN_0,
+            queue_options=queue_options,
+            options=options,
+            session_options=session_options,
+        )
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.queues.drain -->
+
+```python
+from pkg import Client
+from pkg.options import ClientOptions, ProtocolClientOptions
+from pkg.protocols import MemoryQueueStore, ProtocolSecurityContext
+
+store = MemoryQueueStore()
+options = ClientOptions(
+    protocols=ProtocolClientOptions(
+        queue_stores={"orders.outbox": store},
+        security=ProtocolSecurityContext(credential_partition="tenant-a"),
+    )
+)
+with Client(options=options) as client:
+    receipt = client.protocols.orders.outbox.operations.create_order.enqueue(body=order)
+    report = client.protocols.orders.outbox.drain()
+```
+
+```yaml
+helpers:
+  orders.outbox:
+    kind: queue
+    operations:
+      create_order:
+        operation: /paths/~1orders/post
+        side_effects: true
+        key_binding: {in: header, name: Idempotency-Key}
+        dedupe_ttl: 3600
+      refresh:
+        operation: "/paths/~1orders~1{orderId}/get"
+        side_effects: false
+```
+
+`operations` maps each alias, a Python identifier that is not a keyword and does not start with `_`, to an operation
+and how it may be sent again. `side_effects: false` declares a safe operation, which only GET, HEAD, and OPTIONS are.
+An operation with side effects needs `key_binding`, the header of the operation's idempotency contract
+(`operations[].runtime.idempotency` with `replay_safe_with_key: true`), and `dedupe_ttl`, the seconds the server
+deduplicates that key, at most its `retention_seconds`; `key_binding` and `dedupe_ttl` always come together.
+
+### Entries and what they keep
+
+`enqueue` encodes and checks the arguments and JSON body as the call would, then saves their wire values as the entry's
+`payload`, with the operation's alias and contract fingerprint, the client's security binding, a stable idempotency key
+for a keyed operation, and the entry's policy. Its opaque payload also binds the prepared pre-auth URL, headers and body bytes, including non-auth client/view
+patches. It excludes credentials, tokens, auth headers, cookies and declared credential query positions: an argument at a credential position, such as a cookie or a
+security scheme's header, raises `ProtocolConfigurationError` with the condition `wrong_capability`, and a drain sends
+each entry through the client's current auth, so a refreshed token is used as it is. An operation that may
+authenticate needs `ProtocolClientOptions.security`, or `enqueue` raises `ProtocolConfigurationError` with the
+condition `security_partition`; the partition, the allowed origins, the server's origin, the security requirements,
+and the auth's identity, never a secret, bind every entry. A payload over `max_entry_body_bytes` raises
+`ProtocolSizeError` with the kind `body`. Request bodies other than JSON need a blob store, which is not supported yet.
+
+These records, imported from `pkg.protocols`, are immutable and keyword-only, and their representations leave out
+payloads, keys, fingerprints, versions, and lease identifiers:
+
+| Record | Fields |
+|---|---|
+| `QueueReceipt` | `entry_id`, `state`, `created_at`, `expires_at` |
+| `QueueEntry` | `entry_id`, `version`, `operation_alias`, `helper_fingerprint`, `security_fingerprint`, `payload: bytes`, `blob: BlobRef \| None`, `blob_owned`, `idempotency_key`, `created_at`, `expires_at`, `not_before`, `saved_wait_seconds`, `state`, `delivery_count`, `send_intent`, `cancel_requested`, `lease_id`, `lease_until`, `policy: ResolvedQueueOptions`, `result: QueueOutcome \| None` |
+| `QueueOutcome` | `category: Literal['success', 'retryable', 'permanent', 'unknown', 'cancelled']`, `response: ResponseInfo \| None`, `retry_at`, `error_code`, the failure's reason code or `expired`, `max_deliveries`, or `malformed_entry` |
+| `QueueLease` | `entry`, leased under `lease_id` |
+| `DrainReport` | Entry IDs in claim order: `succeeded`, `rescheduled`, `dead`, `unknown`, `deferred`, and `cancelled`, and `counts` |
+| `BlobRef` | `size`, `sha256` (32 bytes), `key`; queues keep `blob=None` until blob stores are supported |
+
+An entry's `state` is `pending`, `leased`, or one of the ended states `succeeded`, `dead`, `delivery_unknown`, and
+`cancelled`. Instants are timezone-aware UTC.
+
+Queue crash recovery occurs only inside the next explicit `drain()`. It preserves the original request, key, first-use
+time, policy and conservative intent count. Recorded `delivery_unknown` requires `retry_unknown`; that explicit retry
+retains historical uncertainty if cancellation or a delivery stop follows. `dead` means automatic delivery stopped: an
+`unknown` outcome in a dead entry does not establish that an earlier request failed remotely. All deliveries, including
+unkeyed requests, consume their fixed TTL deadline during restoration and authentication. A known clock rollback
+never shortens the saved backoff. Adapters must use a consistent trusted UTC clock domain across restart; saved UTC
+fields do not prove arbitrary real elapsed time under an untrusted clock. Memory stores do not survive process restart.
+A payload missing immutable replay facts stops safely; changed base paths or non-auth header/query patches raise
+`QueueBindingError` before provider or resource admission. Credential refresh in the same partition remains supported.
+
+### Stores
+
+`ProtocolClientOptions.queue_stores` lends each queue helper, by its name, a `QueueStore`, or an `AsyncQueueStore` for
+`AsyncClient`:
+
+| Method | Contract |
+|---|---|
+| `put(entry)` | Keeps a new entry atomically; a full store raises `QueueFullError` and evicts nothing |
+| `get(entry_id)` | Returns the entry, or None |
+| `claim(*, now, lease_until, limit)` | Recovers outcome-free expired crash leases without cancellation to pending while retaining intent/key/request/time/count; cancellation ends unknown after intent or cancelled before intent; recorded terminal outcomes remain terminal. Then leases up to `limit` pending entries whose `not_before` has come, in `created_at` and ID order, as `QueueLease` records |
+| `compare_exchange(entry_id, expected_version, entry)` | Replaces the entry only when its stored version is `expected_version`, giving it a new version, and returns whether it did |
+| `purge_terminal(before)` | Removes and returns the ended entries created before `before` |
+
+The client never creates, keeps, or closes a store. Constructing a client raises `ProtocolConfigurationError` for a
+store under a name that is no queue helper of the package (`unknown_field`), and for one missing a method or whose
+methods do not match the client's mode (`wrong_capability`); a helper whose client lends no store raises it with the
+condition `missing_adapter` before anything else. A store failure raises `QueueStoreError` with the store's action and
+its cause, or passes a `QueueStoreError` such as `QueueFullError` unchanged; a result of the wrong type raises
+`QueueStoreError` without a cause. No request is sent again because of a store failure.
+
+The store is the trust boundary of a queue: the client takes the entries it returns as its own writes, so a store holds
+them as safely as the requests they replay need. Even so, a keyed entry is never sent after the `dedupe_ttl` its
+operation declares from its `created_at`, whatever `expires_at` the store returns, and a payload that does not restore
+the declared request, a required argument or body missing included, ends the entry `dead` without a send.
+
+`MemoryQueueStore(*, max_entries=10000, max_bytes=268435456)` and `AsyncMemoryQueueStore` keep entries of one process
+under one lock, count payload bytes toward `max_bytes`, and refuse a new entry over either limit with `QueueFullError`.
+A store that outlives the process, such as one backed by a database, is the caller's own implementation of the same
+methods; builtin SQLite stores are not supported yet.
+
+### Draining
+
+`drain` claims ready entries and delivers them, `parallelism` at once, each as one call in the drain's session with the
+shared retries inside it, and returns a `DrainReport`. An entry ready again during the same drain is held, leased, until
+the drain ends and then returned to pending, so a drain delivers each entry at most once. Before the first send of a
+delivery, the drain saves the entry's send intent and its delivery count plus one, and sends nothing unless that save
+succeeds; a keyed entry sends its stable key on every attempt and every delivery, so the server can deduplicate it.
+An expired crash lease without a recorded outcome or cancellation returns to pending during the next explicit drain,
+keeping the request identity, key, first-use time, delivery count and send intent. The drain may redeliver within the
+binding, retention, lifetime and delivery limits, providing bounded at-least-once delivery; server deduplication can
+prevent duplicate effects, but the SDK does not guarantee exactly-once effects. A crash after the intent consumes a
+delivery even when nothing was sent. Recorded success and terminal unknown are not automatically redelivered;
+terminal unknown requires explicit `retry_unknown`. A cancellation remains cancelled when nothing may have been
+sent, or of unknown delivery when a request may have arrived, and is never recovered automatically.
+
+| Delivery ends | Entry becomes | Report |
+|---|---|---|
+| A response with a success status, even if decoding or a hook fails after it | `succeeded` | `succeeded` |
+| A status the shared retry policy retries, or an authentication status (401, 403, 407), even when its body failed; or a request proven unsent | `pending` after a full-jitter backoff from `retry_initial_delay` doubling up to `retry_max_delay`, never before the server's `Retry-After` | `rescheduled` |
+| An HTTP error the shared retry policy does not retry, an entry past its lifetime or `max_deliveries`, or a saved request that is malformed or no longer encodes | `dead` | `dead` |
+| A response whose body failed, or that is no declared error, with a status the policy does not retry | `delivery_unknown` | `unknown` |
+| A request that may have arrived without a response, or a send stopped by a native cancellation or interrupt | `delivery_unknown`, never sent again unless `retry_unknown` returns it to pending with its key | `unknown` |
+| A failure before anything was sent, such as a token that cannot be acquired | `pending`, with its delivery count and intent as before | `deferred` |
+
+A wait past the entry's lifetime ends it `dead` instead of rescheduling it; a wait longer than the drain's session, or
+than a call's `max_retry_after`, still reschedules it. A keyed entry's lifetime is at most its `dedupe_ttl`, and a
+delivery's time ends before it, so a key is never sent after the server forgets it; an entry whose lifetime ends while
+its intent is saved ends `dead` without a send, its delivery count unchanged. A cancellation of the options'
+`CancelToken`, and a closed client, end the drain after the delivery is saved, and are raised. An entry whose
+operation contract, partition, origins, required security, or auth identity changed since it was enqueued raises
+`QueueBindingError`, with its `entry_id`, and is returned to pending: entries are never migrated. Another failure, a
+store's included, is raised. A native cancellation of the drain's task or an interrupt during a send ends the entry
+`delivery_unknown` before it propagates, so it is never sent again automatically; at any other point it, and a failure
+that is no SDK error, leave the lease to expire. Times are read from the client's `Clock`: wall-clock instants, leases,
+and Retry-After dates from its `time`, deadlines from its `monotonic`, and the backoff's jitter from its `random`.
+
+`cancel(entry_id)` ends a pending entry `cancelled`, or `delivery_unknown` when a crash after its intent may have sent
+it, and asks the drain that holds a leased entry to end it at its next boundary: before the send it is cancelled, and
+after the send it keeps a success or an end, or becomes `delivery_unknown`. Cancelling an ended entry other than a
+cancelled one raises `ProtocolStateError`. `retry_unknown(entry_id)` returns a `delivery_unknown` entry to pending with
+its key, or ends it `dead` when its lifetime or deliveries are spent, and raises `ProtocolStateError` for any other
+state. `inspect`, `cancel`, and `retry_unknown` return None for an unknown entry, and `purge_terminal(before)`
+returns the ended entries it removed. A write another writer beat is evaluated again against the entry it left.
+
+### Limits and policies
+
+`QueueOptions` comes from `pkg.protocols`. Each field comes from the call's `queue_options`, then the helper's
+`ProtocolDefaults`, then the default below. `max_entries` and `parallelism` bound one drain, so `enqueue` refuses them;
+the other fields are the entry's policy, fixed when it is enqueued, so `drain` refuses them. Both raise
+`QueuePolicyConflictError` with the `fields` given.
+
+| Field | Default | Valid values |
+|---|---|---|
+| `max_entries` | 100 entries per drain | Positive integer |
+| `parallelism` | 1 delivery at once | Positive integer |
+| `max_entry_body_bytes` | 8388608 bytes of saved request | Positive integer |
+| `max_deliveries` | 5 | Positive integer |
+| `entry_ttl` | 86400 seconds, at most a keyed operation's `dedupe_ttl` | Positive duration |
+| `retry_initial_delay` | 5 seconds | Positive duration |
+| `retry_max_delay` | 600 seconds, at least `retry_initial_delay` | Positive duration |
+| `lease_min` | 90 seconds | Positive duration |
+| `lease_grace` | 30 seconds added to a delivery's time | Positive duration |
+| `max_delivery_timeout` | 300 seconds | Positive duration of at most 300 |
+
+A drain's session lasts `SessionOptions.total_timeout`, 300 seconds by default, and sends at most `max_network_sends`,
+1000 by default; `None` removes either. A drain ends when nothing is ready, at `max_entries`, or once its session has no
+time or sends left. Its options must not fix an idempotency key, which raises `ProtocolConfigurationError`.
+`ResolvedQueueOptions` has the same fields with every default applied, as an entry's `policy` keeps them.
+
+### Queue generation checks
+
+Each queued operation is checked: an operation without side effects must be safe, a key binding needs the operation's
+idempotency contract and names its header, a deduplication period fits its key retention, and every operation of the
+helper is checked for the reserved arguments:
+
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.queues.diagnostics -->
+<!-- fmt: off -->
+
+```text
+E_NAME_COLLISION target protocols.helpers['checks.reserved_first'] /paths/~1filtered/get: The queue helper 'checks.reserved_first' reserves the argument 'queue_options' of GET /filtered; rename them with parameter_names or body_field_names
+E_CONFIG_VALUE config protocols.helpers['checks.unsafe'].operations['note'].side_effects /paths/~1orders~1{orderId}~1notes/post: The queued operation 'note' of 'checks.unsafe' declares POST /orders/{orderId}/notes free of side effects, which only GET, HEAD, and OPTIONS are; declare side_effects: true with a key_binding
+E_CONFIG_VALUE config protocols.helpers['checks.contract'].operations['note'].key_binding /paths/~1orders~1{orderId}~1notes/post: The queued operation 'note' of 'checks.contract' sends POST /orders/{orderId}/notes again with its key, which needs the operation's runtime idempotency with replay_safe_with_key: true
+E_CONFIG_VALUE config protocols.helpers['checks.header'].operations['order'].key_binding /paths/~1orders/post: The key_binding of 'order' in 'checks.header' must be the idempotency header 'Idempotency-Key' of POST /orders
+E_CONFIG_VALUE config protocols.helpers['checks.location'].operations['order'].key_binding /paths/~1orders/post: The key_binding of 'order' in 'checks.location' must be the idempotency header 'Idempotency-Key' of POST /orders
+E_CONFIG_VALUE config protocols.helpers['checks.period'].operations['order'].dedupe_ttl /paths/~1orders/post: The dedupe_ttl of 'order' in 'checks.period' exceeds the 86400 seconds POST /orders retains its idempotency keys
+E_CLIENT_UNSUPPORTED target protocols.helpers['checks.blob'].operations['receipt'].operation /paths/~1orders~1{orderId}~1receipt/put: The queued operation 'receipt' of 'checks.blob' sends a request body of PUT /orders/{orderId}/receipt other than JSON, which needs a blob store, not supported yet
+E_NAME_COLLISION target protocols.helpers['checks.reserved'].operations['filtered'].operation /paths/~1filtered/get: The queue helper 'checks.reserved' reserves the argument 'queue_options' of GET /filtered; rename them with parameter_names or body_field_names
+```
+
+<!-- fmt: on -->
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.queues.diagnostics -->
 
 ## Signature style
 
