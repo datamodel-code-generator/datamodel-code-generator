@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import string
 from dataclasses import replace
 from functools import reduce
 from typing import TYPE_CHECKING
@@ -347,7 +348,7 @@ INVALID = ProtocolConfiguration(
 SHAPE = ProtocolConfiguration(helpers=[DISABLED])  # ty: ignore[invalid-argument-type]
 
 DOT = SignedLiteral(literal=".")
-DIGITS = AsciiBytes(ascii_bytes="0123456789")
+DIGITS = AsciiBytes(ascii_bytes=string.digits)
 STANDARD = HmacSignature(
     kind="hmac-sha256",
     header="webhook-signature",

@@ -1,7 +1,7 @@
 """Explicit offline queues: enqueue saves a call in a borrowed store, and only an explicit drain sends what it holds.
 
-Each operation of a queue helper is either side-effect free or written with a stable idempotency key, so a delivery a
-crash interrupts is sent again with the same key: delivery is at least once, never exactly once. Every store and
+Each operation of a queue helper is either side-effect free or written with a stable idempotency key. Saved send
+intent after a crash is of unknown delivery until an explicit retry reuses the key. Every store and
 network step is a value one shared plan yields, run by the synchronous or asyncio driver.
 """
 
