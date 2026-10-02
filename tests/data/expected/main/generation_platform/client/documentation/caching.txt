@@ -585,3 +585,8 @@ only, capped by `max_ttl`; a stale entry is revalidated with its validator, and 
 removes the entry it supersedes. Store failures raise `CacheStoreError` and never resend a request. A mutation removes
 the entries its tags name only after it succeeds; a store failure then raises `CacheInvalidationError`, whose
 `require_result()` returns the mutation's result.
+
+## Request compression
+
+No operation of this package declares a request content coding, so `compression` in `ClientOptions` and views turns
+off for every call, and a call's own `RequestOptions(compression="gzip")` raises `ConfigurationError` before sending.

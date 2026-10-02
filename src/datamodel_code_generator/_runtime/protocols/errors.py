@@ -27,10 +27,12 @@ from ..client.errors import (
     error_count,
     error_string,
     error_time,
+    is_sequence,
 )
 from ..client.responses import HeadersView, ResponseInfo
 from ..model_codecs.unset import UNSET, Unset
 from .caches import string_tuple
+from .circuit_records import CircuitKey
 from .records import (
     PROGRESS_KEYS,
     PollSnapshot,
@@ -51,6 +53,7 @@ __all__ = (
     "CacheProtocolError",
     "CacheStoreError",
     "CacheValidatorConflictError",
+    "CircuitOpenError",
     "ConcurrentReceiveError",
     "DeliveryUnknownError",
     "HandshakeResponse",
@@ -63,6 +66,10 @@ __all__ = (
     "PollingStateError",
     "ProtocolDataError",
     "ProtocolStateError",
+    "QueueBindingError",
+    "QueueFullError",
+    "QueuePolicyConflictError",
+    "QueueStoreError",
     "ResumeStateError",
     "ResumeStateTooLargeError",
     "SessionLimitError",
@@ -161,6 +168,12 @@ def _context(helper_id: object, operation: object) -> None:
     if operation is not None and not isinstance(operation, OperationRef):
         msg = "operation must be an OperationRef or None"
         raise ValueError(msg)
+
+
+def _circuit_key(value: object) -> None:
+    if not isinstance(value, CircuitKey):
+        msg = "key must be a CircuitKey"
+        raise ValueError(msg)  # noqa: TRY004 - Exception constructors reject invalid fields with ValueError.
 
 
 def _upload_progress(value: object) -> None:
@@ -546,6 +559,61 @@ class PollingStateError(ProtocolDataError):
             auth_refresh_pending=auth_refresh_pending,
             wire_send_count=wire_send_count,
         )
+
+
+class CircuitOpenError(ProtocolError):
+    """An open circuit, or a half-open one already probing, refused the call before any credential or send."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        key: CircuitKey,
+        retry_at: float,
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+        resource_attempt_count: int = 0,
+        redirect_count: int = 0,
+        auth_exchange_count: int = 0,
+        network_send_count: int = 0,
+        network_send_budget_used: int = 0,
+        auth_exchange_budget_used: int = 0,
+        auth_refresh_ids: tuple[str, ...] = (),
+        auth_refresh_pending: int = 0,
+        wire_send_count: int | None = None,
+    ) -> None:
+        """Keep the circuit's key and the monotonic time at which it admits a call again."""
+        _circuit_key(key)
+        when = error_time(retry_at, "retry_at")
+        super().__init__(
+            helper_id=helper_id,
+            operation=operation,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+            resource_attempt_count=resource_attempt_count,
+            redirect_count=redirect_count,
+            auth_exchange_count=auth_exchange_count,
+            network_send_count=network_send_count,
+            network_send_budget_used=network_send_budget_used,
+            auth_exchange_budget_used=auth_exchange_budget_used,
+            auth_refresh_ids=auth_refresh_ids,
+            auth_refresh_pending=auth_refresh_pending,
+            wire_send_count=wire_send_count,
+        )
+        self.key = key
+        self.retry_at = when
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("group", self.key.group))
 
 
 class PollWaitLimitError(ProtocolError):
@@ -1930,3 +1998,124 @@ class BatchDeliveryUnknownError(DeliveryUnknownError, Generic[R_co]):
 
     def _details(self) -> tuple[tuple[str, object], ...]:
         return (*super()._details(), ("batch_indices", self.batch_indices))
+
+
+class QueueStoreError(ProtocolStoreError):
+    """A queue store operation that failed; no request is sent again because of it."""
+
+
+class QueueFullError(QueueStoreError):
+    """A queue store without room for a new entry; no unprocessed entry is discarded to make room."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        kind: Literal["entries", "bytes"],
+        limit: int,
+        observed: int,
+        action: Literal["put", "compare_exchange"] = "put",
+        entry_id: str | None = None,
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+    ) -> None:
+        """Keep which capacity ran out, the limit, and what storing the entry would take."""
+        error_choice(kind, ("entries", "bytes"), "kind")
+        super().__init__(
+            action=action,
+            entry_id=entry_id,
+            helper_id=helper_id,
+            operation=operation,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+        )
+        self.kind = kind
+        self.limit = error_count(limit, "limit")
+        self.observed = error_count(observed, "observed")
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("kind", self.kind), ("limit", self.limit), ("observed", self.observed))
+
+
+class QueueBindingError(ProtocolConfigurationError):
+    """A queued entry saved for another helper contract, partition, or auth; it is never migrated automatically."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        entry_id: str,
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+    ) -> None:
+        """Keep the entry; the condition is binding_mismatch at the entry identifier."""
+        error_string(entry_id, "entry_id")
+        super().__init__(
+            field_path=("entry_id",),
+            condition="binding_mismatch",
+            helper_id=helper_id,
+            operation=operation,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+        )
+        self.entry_id = entry_id
+
+
+def _policy_fields(value: object) -> None:
+    if not is_sequence(value) or isinstance(value, list) or not value or not all(isinstance(n, str) for n in value):
+        msg = "fields must be a nonempty tuple of field names"
+        raise ValueError(msg)
+
+
+class QueuePolicyConflictError(ProtocolConfigurationError):
+    """Queue options naming a field the call cannot set: a drain field at enqueue, or an entry policy at drain."""
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        fields: tuple[str, ...],
+        helper_id: str | None = None,
+        operation: OperationRef | None = None,
+        operation_id: str | None = None,
+        call_id: str | None = None,
+        parent_session_id: str | None = None,
+        info: ResponseInfo | None = None,
+        cause: BaseException | None = None,
+        secondary_errors: tuple[BaseException, ...] = (),
+    ) -> None:
+        """Keep the misplaced fields; the condition is invalid_value at the queue options."""
+        _policy_fields(fields)
+        super().__init__(
+            field_path=("queue_options",),
+            condition="invalid_value",
+            helper_id=helper_id,
+            operation=operation,
+            operation_id=operation_id,
+            call_id=call_id,
+            parent_session_id=parent_session_id,
+            info=info,
+            cause=cause,
+            secondary_errors=secondary_errors,
+        )
+        self.fields = fields
+
+    def _details(self) -> tuple[tuple[str, object], ...]:
+        return (*super()._details(), ("fields", self.fields))

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import gzip
 import json
 import re
 import shutil
@@ -71,6 +72,7 @@ class Exchange:
         self.responders: list[Callable[[httpx2.Request], httpx2.Response]] = []
         self.server: FixtureServer | None = None
         self.transports = 0
+        self.gzipped: bytes | None = None
 
     def respond(self, *responders: Callable[[httpx2.Request], httpx2.Response]) -> None:
         """Queue the responders of the next requests."""
@@ -108,10 +110,22 @@ class Exchange:
             server.stop()
 
     def handle(self, request: httpx2.Request) -> httpx2.Response:
-        """Record a request and answer it with the next queued responder."""
+        """Record a request and answer it with the next queued responder.
+
+        A gzip body is recorded decompressed, with its compressed length masked, which zlib builds may change, and
+        marked when its compressed bytes repeat the previous gzip body's.
+        """
         request.read()
-        headers = ", ".join(f"{name}: {value}" for name, value in request.headers.multi_items())
-        self.lines.extend((f"  > {request.method} {request.url}", f"    [{headers}] {request.content!r}"))
+        content, coded = request.content, request.headers.get("content-encoding") == "gzip"
+        headers = ", ".join(
+            f"{name}: {'<gzip>' if coded and name == 'content-length' else value}"
+            for name, value in request.headers.multi_items()
+        )
+        body = repr(content)
+        if coded:
+            body = f"gzip{' again' if content == self.gzipped else ''} {gzip.decompress(content)!r}"
+            self.gzipped = content
+        self.lines.extend((f"  > {request.method} {request.url}", f"    [{headers}] {body}"))
         return self.responders.pop(0)(request)
 
     async def ahandle(self, request: httpx2.Request) -> httpx2.Response:

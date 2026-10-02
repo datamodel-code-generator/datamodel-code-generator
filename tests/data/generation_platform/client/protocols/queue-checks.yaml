@@ -1,0 +1,35 @@
+schema_version: 1
+helpers:
+  checks.unsafe:
+    kind: queue
+    operations:
+      note: {operation: "/paths/~1orders~1{orderId}~1notes/post", side_effects: false}
+  checks.contract:
+    kind: queue
+    operations:
+      note: {operation: "/paths/~1orders~1{orderId}~1notes/post", side_effects: true, key_binding: {in: header, name: Idempotency-Key}, dedupe_ttl: 60}
+  checks.header:
+    kind: queue
+    operations:
+      order: {operation: /paths/~1orders/post, side_effects: true, key_binding: {in: header, name: X-Trace}, dedupe_ttl: 60}
+  checks.location:
+    kind: queue
+    operations:
+      order: {operation: /paths/~1orders/post, side_effects: true, key_binding: {in: query, name: Idempotency-Key}, dedupe_ttl: 60}
+  checks.period:
+    kind: queue
+    operations:
+      order: {operation: /paths/~1orders/post, side_effects: true, key_binding: {in: header, name: idempotency-key}, dedupe_ttl: 90000}
+  checks.blob:
+    kind: queue
+    operations:
+      receipt: {operation: "/paths/~1orders~1{orderId}~1receipt/put", side_effects: true, key_binding: {in: header, name: Idempotency-Key}, dedupe_ttl: 60}
+  checks.reserved:
+    kind: queue
+    operations:
+      order: {operation: "/paths/~1orders~1{orderId}/get", side_effects: false}
+      filtered: {operation: /paths/~1filtered/get, side_effects: false}
+  checks.reserved_first:
+    kind: queue
+    operations:
+      filtered: {operation: /paths/~1filtered/get, side_effects: false}

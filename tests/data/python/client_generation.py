@@ -61,10 +61,12 @@ def _operation(value: object) -> object:
         )
     if isinstance(runtime := value.get("runtime"), dict):
         statuses = runtime.get("success_statuses", ())
+        encodings = runtime.get("accepted_content_encodings", ())
         idempotency = runtime.get("idempotency")
         converted["runtime"] = RuntimeOperationMetadata(**{
             **runtime,
             "success_statuses": tuple(statuses) if isinstance(statuses, list) else statuses,
+            "accepted_content_encodings": tuple(encodings) if isinstance(encodings, list) else encodings,
             "idempotency": IdempotencyMetadata(**idempotency) if isinstance(idempotency, dict) else idempotency,
         })
     return ClientOperationConfig(**converted)

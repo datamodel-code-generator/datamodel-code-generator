@@ -24,6 +24,9 @@ python-client.uploads.diagnostics: python-client.md
 python-client.batches.helper: python-client.md
 python-client.batches.records: python-client.md
 python-client.batches.diagnostics: python-client.md
+python-client.queues.helper: python-client.md
+python-client.queues.drain: python-client.md
+python-client.queues.diagnostics: python-client.md
 python-client.streams.helper: python-client.md
 python-client.streams.diagnostics: python-client.md
 python-client.streams.resume-yaml: python-client.md
