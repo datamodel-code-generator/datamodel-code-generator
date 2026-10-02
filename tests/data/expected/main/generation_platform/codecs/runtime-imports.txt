@@ -13,7 +13,7 @@ client/codecs.py: ..model_codecs.context, ..model_codecs.errors, ..model_codecs.
 client/coding.py: ..protocols.errors, .errors, .responses, __future__, collections.abc, typing, zlib
 client/compression.py: .bodies, .body_sources, .coding, .errors, .operations, .options, __future__, collections.abc, typing, zlib
 client/disk.py: .errors, .tasks, __future__, asyncio, collections.abc, concurrent.futures, threading, typing
-client/errors.py: ..model_codecs.unset, ..protocols.references, .responses, .scopes, __future__, datetime, enum, re, typing, typing_extensions
+client/errors.py: ..model_codecs.unset, ..protocols.references, .responses, __future__, datetime, enum, re, typing, typing_extensions
 client/events.py: ..model_codecs.unset, ..model_codecs.wire, .errors, .hooks, .logical, .options, .responses, __future__, asyncio, collections.abc, dataclasses, inspect, types, typing, urllib.parse
 client/evidence.py: __future__, dataclasses, errno, socket, ssl, sys, typing, typing_extensions
 client/grants.py: ..model_codecs.unset, .admission, .auth, .auth_policy, .errors, .oauth, .options, .refresh, .rotation, .timing, .transports, __future__, asyncio, base64, concurrent.futures, contextlib, dataclasses, hashlib, hmac, secrets, threading, typing, typing_extensions, weakref

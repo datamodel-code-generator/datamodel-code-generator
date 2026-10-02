@@ -598,7 +598,7 @@ or token HTTP. `EnvironmentCredentialProvider(variable_name, kind="api_key")` re
 its async counterpart has the same explicit selection. Imports and constructors do not discover environment secrets.
 
 Known scopes are canonical tuples: None means unknown and leaves authorization to the server; () is known empty.
-Insufficient known grants fail before sending with `InsufficientScopeError`; 403 never expands scope automatically.
+Token grants are metadata; the resource server authorizes scopes. A 403 never expands scope or triggers recovery.
 Provider contexts carry current origin/deadline/cancellation/requirements, and audience is currently None.
 Borrow providers by default; only `OwnedCredentialProvider` transfers a closeable provider to the root scope.
 Views share that ownership. Provider and signer callbacks consume the call deadline; synchronous callbacks are
@@ -673,7 +673,7 @@ and idempotency key; the session bounds all of them. Each limit comes from the c
 | chunk size | 8 MiB, or the helper's smaller `max_chunk_bytes` |
 | chunks per upload | 10000; None removes it |
 | probes after an append of unknown outcome | 3; 0 probes none |
-| session total timeout | 600 seconds from `start` or `resume`, the reading of the source included; None removes it |
+| session total timeout | None (no limit), including reading the source at `start` or `resume` |
 | network sends per session | 10000; None removes it |
 
 A source has an immutable identity, its size and SHA-256 digest, and opens an independent reader for each range. Before
