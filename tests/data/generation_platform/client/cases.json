@@ -4281,5 +4281,32 @@
     "backends": [
       "pydantic_v2.BaseModel"
     ]
+  },
+  "queue-credentials": {
+    "input": "queue-credentials.json",
+    "references": [
+      "protocols/queue-credentials.json"
+    ],
+    "config": {
+      "protocols": "protocols/queue-credentials.json",
+      "operations": [
+        {
+          "ref": "/paths/~1matrix/get",
+          "runtime": {
+            "request_id_header": "X-Catalog-Key"
+          }
+        },
+        {
+          "ref": "/paths/~1safe/get",
+          "runtime": {
+            "request_id_header": "X-Request-ID"
+          }
+        }
+      ]
+    },
+    "backends": [
+      "pydantic_v2.BaseModel"
+    ],
+    "modules": false
   }
 }
