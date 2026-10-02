@@ -5,7 +5,6 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping
 from datetime import datetime, timedelta, timezone
-from time import time
 from typing import Final, Literal, TypeAlias, cast, final, get_args
 
 from ..client.errors import ProtocolConfigurationError, ProtocolError, error_choice, error_count
@@ -287,10 +286,11 @@ def state_fields(state: ResumeState) -> tuple[str, str, bytes, bytes, datetime |
     )
 
 
-def server_expiry(value: str) -> datetime | None:
+def server_expiry(value: str, now: float) -> datetime | None:
     """Return the UTC time an RFC 3339 date-time with an offset or an HTTP date gives, or None for another value.
 
-    A leap second is the second after the one before it, as in an HTTP date.
+    A leap second is the second after the one before it, as in an HTTP date, and `now` is the receipt wall time that
+    places an HTTP date's two-digit year.
     """
     try:
         if (matched := _RFC3339.fullmatch(value.upper())) is not None:
@@ -300,7 +300,7 @@ def server_expiry(value: str) -> datetime | None:
             return (parsed + timedelta(seconds=leap)).astimezone(timezone.utc)
         from ..client.retry import http_date  # noqa: PLC0415 - Only a helper with an expiry parses HTTP dates.
 
-        return http_date(value, time())
+        return http_date(value, now)
     except (ValueError, OverflowError):
         return None
 

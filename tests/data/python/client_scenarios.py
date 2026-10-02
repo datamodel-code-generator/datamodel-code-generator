@@ -17,10 +17,10 @@ from tests.data.python.client_auth_flows import auth_flows
 from tests.data.python.client_auth_options import auth_options
 from tests.data.python.client_auth_values import auth_values
 from tests.data.python.client_bodies import bodies
-from tests.data.python.client_caching import cache_backends, cache_stores, caching
 from tests.data.python.client_body_digest import body_digest
 from tests.data.python.client_body_replay import body_replay, multipart_replay
 from tests.data.python.client_body_replay_faults import body_replay_faults
+from tests.data.python.client_caching import cache_backends, cache_stores, caching
 from tests.data.python.client_deadline_cleanup import deadline_cleanup
 from tests.data.python.client_deadline_files import deadline_files
 from tests.data.python.client_deadline_options import deadline_options

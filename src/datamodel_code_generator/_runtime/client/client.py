@@ -1567,7 +1567,7 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         It is a read-phase failure the shared retry classification retries. A read timeout qualifies only when the
         call's own read timeout set its cap, not the stream's idle limit, which wins a tie.
         """
-        if error.phase != "read" or transport_retry_reason(error, AttemptTrace()) is None:
+        if error.phase != "read" or transport_retry_reason(error, AttemptTrace(clock=self.clock)) is None:
             return False
         if not isinstance(error, PhaseTimeoutError):
             return True

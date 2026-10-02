@@ -14,7 +14,6 @@ import re
 import threading
 from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
-from datetime import datetime, timezone
 from enum import Enum
 from functools import partial
 from hashlib import sha256
@@ -75,6 +74,7 @@ from .values import MISSING, Missing, Patch, RepeatedValueError, resolve, select
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Iterator
+    from datetime import datetime
     from types import TracebackType
     from typing import TypeAlias
 
@@ -773,7 +773,7 @@ def _absence(value: WireValue | Missing) -> Literal["missing", "null"]:
     return "missing" if value is MISSING else "null"
 
 
-def _expiry(plan: EventPlan[T], read: HeaderSelector, info: ResponseInfo) -> datetime:
+def _expiry(plan: EventPlan[T], read: HeaderSelector, info: ResponseInfo, clock: Clock) -> datetime:
     """Return the server's expiry an open response's header gives, an RFC 3339 date-time with offset or an HTTP date.
 
     A value that is no string, which only a selector of every occurrence would read, is refused like an unreadable one.
@@ -784,18 +784,18 @@ def _expiry(plan: EventPlan[T], read: HeaderSelector, info: ResponseInfo) -> dat
         raise _data_error(plan, plan.operation, info, "malformed", read) from None
     if value is MISSING:
         raise _data_error(plan, plan.operation, info, "missing", read)
-    if (expires_at := server_expiry(value) if isinstance(value, str) else None) is None:
+    if (expires_at := server_expiry(value, clock.time()) if isinstance(value, str) else None) is None:
         raise _data_error(plan, plan.operation, info, "value", read)
     return expires_at
 
 
-def _opened(plan: EventPlan[T], resume: StreamResumePlan, given: _Given, info: ResponseInfo) -> _Position:
+def _opened(plan: EventPlan[T], resume: StreamResumePlan, given: _Given, clock: Clock, info: ResponseInfo) -> _Position:
     """Return where a stream starts after its open response: the bindings' values and the server's expiry it gives."""
     kept = given if resume.own else None
     return _Position(
         given=kept,
         bound=_bound(plan, resume, plan.operation, info, kept),
-        expires_at=None if (read := resume.expires_at) is None else _expiry(plan, read, info),
+        expires_at=None if (read := resume.expires_at) is None else _expiry(plan, read, info, clock),
     )
 
 
@@ -1775,7 +1775,7 @@ def _restored(
         raise _resume_error(plan, "fingerprint")
     if security != _security(core, resume, limits.options)[0]:
         raise _resume_error(plan, "security")
-    if expires_at is not None and expires_at <= datetime.now(timezone.utc):
+    if expires_at is not None and expires_at.timestamp() <= limits.clock.time():
         raise _resume_error(plan, "expired")
     try:
         position = _restore(core, plan, resume, decode_json(state_json), payload, expires_at)
@@ -1872,7 +1872,11 @@ def open_events(  # noqa: PLR0913
         if error.budget_kind != "parent_network":
             raise
         raise _refused(plan, plan.operation, _progress(session), error) from None
-    position = _START if (resume := plan.resume) is None else _accepted(response, partial(_opened, plan, resume, given))
+    position = (
+        _START
+        if (resume := plan.resume) is None
+        else _accepted(response, partial(_opened, plan, resume, given, limits.clock))
+    )
     return EventStream(core, plan, limits, session, response, native=native, position=position)
 
 
@@ -1899,7 +1903,9 @@ async def aopen_events(  # noqa: PLR0913
             raise
         raise _refused(plan, plan.operation, _progress(session), error) from None
     position = (
-        _START if (resume := plan.resume) is None else await _aaccepted(response, partial(_opened, plan, resume, given))
+        _START
+        if (resume := plan.resume) is None
+        else await _aaccepted(response, partial(_opened, plan, resume, given, limits.clock))
     )
     return AsyncEventStream(core, plan, limits, session, response, native=native, position=position)
 

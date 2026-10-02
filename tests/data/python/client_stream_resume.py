@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import importlib
+import itertools
 import json
 from datetime import datetime, timezone
 from functools import partial
@@ -76,8 +77,7 @@ def _drained(lines: list[str], label: str, stream: Iterable[Any]) -> Any:
     """Report every event a stream yields, then its end or its failure, returning the failure's resume state."""
     lines.append(f"  {label}")
     try:
-        for event in stream:
-            lines.append(f"    {_event(event)}")
+        lines.extend(f"    {_event(event)}" for event in stream)
     except Exception as error:  # noqa: BLE001
         return _kept(lines, error)
     lines.append("    end")
@@ -89,7 +89,7 @@ async def _adrained(lines: list[str], label: str, stream: AsyncIterator[Any]) ->
     lines.append(f"  {label}")
     try:
         async for event in stream:
-            lines.append(f"    {_event(event)}")
+            lines.append(f"    {_event(event)}")  # noqa: PERF401 - Keep events delivered before an interruption.
     except Exception as error:  # noqa: BLE001
         return _kept(lines, error)
     lines.append("    end")
@@ -169,6 +169,77 @@ def stream_resume(package: ModuleType, lines: list[str]) -> None:
         _exploded(resumes, api)
         _refusals(resumes, api)
     run(lambda: _async_resume(package, lines))
+    _clocked(package, lines)
+    run(lambda: _aclocked(package, lines))
+
+
+def _clock_options(resumes: _Resumes) -> Any:
+    """Advance past backoff and SSE retry waits on every clock read, with a wall clock before the server expiry."""
+    options = resumes.harness.options
+    ticks = itertools.count(100.0, 10.0)
+    return options.ClientOptions(
+        clock=options.Clock(monotonic=lambda: next(ticks), time=lambda: 0.0, random=lambda: 0.5),
+        total_timeout=None,
+        stream_idle_timeout=None,
+        timeout=options.TimeoutOptions(connect=None, read=None, write=None, pool=None),
+        retry=options.RetryOptions(initial_delay=8.0, max_delay=16.0),
+    )
+
+
+def _clock_replies(resumes: _Resumes) -> Any:
+    """Queue an open, explicit resume, and automatic reconnect, whose six-second retry exceeds jittered backoff."""
+    headers = (*_TRACKED[:2], ("X-Stream-Expires", "2000-01-01T00:00:00Z"))
+    resumes.reply(b'event: created\nid: 1\ndata: {"id": "1"}\n\n', headers=headers)
+    resumes.reply(
+        b'retry: 6000\nevent: created\nid: 2\ndata: {"id": "2"}\n\n',
+        resumes.harness.interrupted(),
+        headers=headers,
+    )
+    resumes.reply(b'event: created\nid: 3\ndata: {"id": "3"}\n\nevent: done\ndata: {}\n\n', headers=headers)
+    return resumes.harness.options.SessionOptions(total_timeout=10000.0)
+
+
+def _clocked(package: ModuleType, lines: list[str]) -> None:
+    """Checkpoint, resume, and reconnect on an injected stepped clock without real waits."""
+    transports = importlib.import_module(f"{package.__name__}.transports")
+    resumes = _Resumes(package, lines, _Reopens(transports, lines))
+    lines.append("stepped client clock")
+    session = _clock_replies(resumes)
+    with package.Client(transport_adapter=resumes.adapter, options=_clock_options(resumes)) as api:
+        helper = api.protocols.events.tracked
+        stream = helper.open(session_options=session)
+        lines.append(f"  {_event(next(stream))}")
+        state = stream.checkpoint()
+        stream.close()
+        resumed = helper.resume(state, stream_options=resumes.reconnect, session_options=session)
+        _drained(lines, "resumed and reconnected", resumed)
+        _saved(lines, "clock checkpoint", resumed.checkpoint())
+        lines.append(f"  clock progress {dict(resumed.progress)}")
+        record(
+            lines,
+            "expired on the client wall clock",
+            lambda: helper.resume(
+                _crafted(resumes.harness, state, expires_at=datetime(1960, 1, 1, tzinfo=timezone.utc))
+            ),
+        )
+
+
+async def _aclocked(package: ModuleType, lines: list[str]) -> None:
+    """Resume and reconnect with asyncio on the same stepped-clock schedule."""
+    transports = importlib.import_module(f"{package.__name__}.transports")
+    resumes = _Resumes(package, lines, _AsyncReopens(transports, lines), AsyncResponse)
+    lines.append("async stepped client clock")
+    session = _clock_replies(resumes)
+    async with package.AsyncClient(transport_adapter=resumes.adapter, options=_clock_options(resumes)) as api:
+        helper = api.protocols.events.tracked
+        stream = await helper.open(session_options=session)
+        lines.append(f"  {_event(await anext(stream))}")
+        state = stream.checkpoint()
+        await stream.aclose()
+        resumed = await helper.resume(state, stream_options=resumes.reconnect, session_options=session)
+        await _adrained(lines, "resumed and reconnected", resumed)
+        _saved(lines, "clock checkpoint", resumed.checkpoint())
+        lines.append(f"  clock progress {dict(resumed.progress)}")
 
 
 def _cursors(resumes: _Resumes, api: Any) -> None:
@@ -502,7 +573,7 @@ def _unencodable(resumes: _Resumes, api: Any) -> None:
 
 
 def _exploded(resumes: _Resumes, api: Any) -> None:
-    """Never checkpoint a cursor written to an exploded object query parameter whose property is a scheme's query field."""
+    """Refuse a checkpoint whose exploded object query cursor contains a credential field."""
     lines, harness, helper = resumes.lines, resumes.harness, api.protocols.marks.scoped
     lines.append("cursors written as exploded query fields")
     resumes.reply(*_events('data: {"scope": {"after": "5"}}\n\n', 'data: {"scope": {"api_key": "k"}}\n\n'))
@@ -523,8 +594,7 @@ def _refused(lines: list[str], label: str, stream: Iterable[Any]) -> None:
     """Drain a stream whose reconnection is refused, reporting the refusal's operation, cause, and context."""
     lines.append(f"  {label}")
     try:
-        for event in stream:
-            lines.append(f"    {_event(event)}")
+        lines.extend(f"    {_event(event)}" for event in stream)
     except Exception as error:  # noqa: BLE001
         _origins(lines, error)
 
@@ -580,6 +650,23 @@ def _refusals(resumes: _Resumes, api: Any) -> None:
         "object cursor",
         lambda: api.protocols.records.all.resume(_crafted(harness, other, _replaced(other, cursor={"a": 1}))),
     )
+    _cursor_refusals(resumes, api)
+    nothing = options.SessionOptions(max_network_sends=0)
+    record(lines, "resume without send slots", lambda: helper.resume(state, session_options=nothing))
+    one = options.SessionOptions(max_network_sends=1)
+    resumes.redirect()
+    record(
+        lines,
+        "resume redirected past the sends",
+        lambda: helper.resume(state, options=resumes.redirects(), session_options=one),
+    )
+    resumes.reply(*_events('id: 2\ndata: {"text": "b"}\n\n'))
+    _drained(lines, "resume after the refusals", helper.resume(state))
+
+
+def _cursor_refusals(resumes: _Resumes, api: Any) -> None:
+    """Refuse checkpoint fields and body cursors that do not fit the reopen operation."""
+    lines, harness = resumes.lines, resumes.harness
     resumes.reply(*_events('id: 1\ndata: {"text": "a"}\n\n'), headers=_TRACKED)
     tracked = api.protocols.events.tracked.open()
     next(tracked)
@@ -604,17 +691,6 @@ def _refusals(resumes: _Resumes, api: Any) -> None:
         "ticks cursor replaced by an object",
         lambda: api.protocols.feed.ticks.resume(_crafted(harness, tick, _replaced(tick, cursor={"$gt": 0}))),
     )
-    nothing = options.SessionOptions(max_network_sends=0)
-    record(lines, "resume without send slots", lambda: helper.resume(state, session_options=nothing))
-    one = options.SessionOptions(max_network_sends=1)
-    resumes.redirect()
-    record(
-        lines,
-        "resume redirected past the sends",
-        lambda: helper.resume(state, options=resumes.redirects(), session_options=one),
-    )
-    resumes.reply(*_events('id: 2\ndata: {"text": "b"}\n\n'))
-    _drained(lines, "resume after the refusals", helper.resume(state))
 
 
 def resumes_client(resumes: _Resumes, options: Any) -> Any:

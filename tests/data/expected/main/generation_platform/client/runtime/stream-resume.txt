@@ -456,3 +456,32 @@ asyncio
   > GET https://api.example.com/streams/s1?token=t1&mode=resume last-event-id='1'
   < closed
   async resume without the token ! ProtocolDataError: ProtocolDataError(condition='missing') [condition='missing', location=HeaderSelector(name='X-Resume-Token', occurrence='single')] protocol_data_error
+stepped client clock
+  > GET https://api.example.com/events last-event-id=None
+  1 created id='1' retry=None data=Created{'id': '1'} raw='{"id": "1"}'
+  < closed
+  > GET https://api.example.com/streams/s1?token=t1&mode=resume last-event-id='1'
+  resumed and reconnected
+    2 created id='2' retry=6000 data=Created{'id': '2'} raw='{"id": "2"}'
+  < closed
+  > GET https://api.example.com/streams/s1?token=t1&mode=resume last-event-id='2'
+    3 created id='3' retry=6000 data=Created{'id': '3'} raw='{"id": "3"}'
+  < closed
+    end
+  clock checkpoint saved {"arguments": [], "body": [], "bound": ["s1", "t1", "resume"], "cursor": "3", "reconnects": 1, "retry_ms": 6000, "sequence": 4} expires_at=2000-01-01T00:00:00+00:00
+  clock progress {'reconnects': 1, 'network_send_count': 2, 'network_send_budget_used': 2}
+  expired on the client wall clock ! ResumeStateError: ResumeStateError(condition='expired') [condition='expired'] resume_state_error
+async stepped client clock
+  > GET https://api.example.com/events last-event-id=None
+  1 created id='1' retry=None data=Created{'id': '1'} raw='{"id": "1"}'
+  < closed
+  > GET https://api.example.com/streams/s1?token=t1&mode=resume last-event-id='1'
+  resumed and reconnected
+    2 created id='2' retry=6000 data=Created{'id': '2'} raw='{"id": "2"}'
+  < closed
+  > GET https://api.example.com/streams/s1?token=t1&mode=resume last-event-id='2'
+    3 created id='3' retry=6000 data=Created{'id': '3'} raw='{"id": "3"}'
+  < closed
+    end
+  clock checkpoint saved {"arguments": [], "body": [], "bound": ["s1", "t1", "resume"], "cursor": "3", "reconnects": 1, "retry_ms": 6000, "sequence": 4} expires_at=2000-01-01T00:00:00+00:00
+  clock progress {'reconnects': 1, 'network_send_count': 2, 'network_send_budget_used': 2}
