@@ -99,7 +99,15 @@ def options(origin: Origin) -> ClientOptions:
     defaults = ProtocolDefaults(session=SessionOptions(max_network_sends=3), options=pagination)
     assert_type(
         defaults.options,
-        PaginationOptions | PollOptions | StreamOptions | CacheOptions | WSOptions | UploadOptions | BatchOptions | QueueOptions | Unset,
+        PaginationOptions
+        | PollOptions
+        | StreamOptions
+        | CacheOptions
+        | WSOptions
+        | UploadOptions
+        | BatchOptions
+        | QueueOptions
+        | Unset,
     )
     protocols = ProtocolClientOptions(security=security, defaults={"users.all": defaults, "jobs": ProtocolDefaults()})
     assert_type(protocols.security, ProtocolSecurityContext | Unset | None)
