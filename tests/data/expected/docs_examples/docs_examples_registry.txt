@@ -21,6 +21,9 @@ python-client.polling.tracked: python-client.md
 python-client.polling.diagnostics: python-client.md
 python-client.streams.helper: python-client.md
 python-client.streams.diagnostics: python-client.md
+python-client.streams.resume-yaml: python-client.md
+python-client.streams.resume: python-client.md
+python-client.streams.resume-diagnostics: python-client.md
 python-client.ndjson.helper: python-client.md
 python-client.ndjson.diagnostics: python-client.md
 python-client.cache.yaml: python-client.md

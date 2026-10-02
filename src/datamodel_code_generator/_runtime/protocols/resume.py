@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Mapping
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Final, Literal, TypeAlias, cast, final, get_args
 
 from ..client.errors import ProtocolConfigurationError, ProtocolError, error_choice, error_count
@@ -23,6 +23,7 @@ __all__ = (
     "helper_state",
     "import_state",
     "require_state",
+    "server_expiry",
     "state_array",
     "state_count",
     "state_fields",
@@ -43,6 +44,10 @@ _FIELDS: Final = frozenset({
     "version",
 })
 _DIGEST: Final = re.compile(r"[0-9a-f]{64}")
+_RFC3339: Final = re.compile(
+    r"([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:)([0-9]{2})((?:\.[0-9]+)?(?:Z|[+-][0-9]{2}:[0-9]{2}))"
+)
+_LEAP_SECOND: Final = "60"
 
 
 class ResumeStateError(ProtocolError):
@@ -279,6 +284,25 @@ def state_fields(state: ResumeState) -> tuple[str, str, bytes, bytes, datetime |
         state._payload,  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
         state._expires_at,  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     )
+
+
+def server_expiry(value: str, now: float) -> datetime | None:
+    """Return the UTC time an RFC 3339 date-time with an offset or an HTTP date gives, or None for another value.
+
+    A leap second is the second after the one before it, as in an HTTP date, and `now` is the receipt wall time that
+    places an HTTP date's two-digit year.
+    """
+    try:
+        if (matched := _RFC3339.fullmatch(value.upper())) is not None:
+            head, second, tail = matched.groups()
+            leap = second == _LEAP_SECOND
+            parsed = datetime.fromisoformat(f"{head}{'59' if leap else second}{tail}")
+            return (parsed + timedelta(seconds=leap)).astimezone(timezone.utc)
+        from ..client.retry import http_date  # noqa: PLC0415 - Only a helper with an expiry parses HTTP dates.
+
+        return http_date(value, now)
+    except (ValueError, OverflowError):
+        return None
 
 
 class MalformedStateError(Exception):

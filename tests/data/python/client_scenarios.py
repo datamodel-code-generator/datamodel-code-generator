@@ -17,10 +17,10 @@ from tests.data.python.client_auth_flows import auth_flows
 from tests.data.python.client_auth_options import auth_options
 from tests.data.python.client_auth_values import auth_values
 from tests.data.python.client_bodies import bodies
-from tests.data.python.client_caching import cache_backends, cache_stores, caching
 from tests.data.python.client_body_digest import body_digest
 from tests.data.python.client_body_replay import body_replay, multipart_replay
 from tests.data.python.client_body_replay_faults import body_replay_faults
+from tests.data.python.client_caching import cache_backends, cache_stores, caching
 from tests.data.python.client_deadline_cleanup import deadline_cleanup
 from tests.data.python.client_deadline_files import deadline_files
 from tests.data.python.client_deadline_options import deadline_options
@@ -89,6 +89,7 @@ from tests.data.python.client_signatures import keywords, signatures
 from tests.data.python.client_socket_connectors import socket_connectors
 from tests.data.python.client_sockets import sockets
 from tests.data.python.client_stream_lifetimes import stream_lifetimes
+from tests.data.python.client_stream_resume import stream_resume
 from tests.data.python.client_streams import ndjson, ndjson_backends, ndjson_split, stream_backends, streams
 from tests.data.python.client_streams import stream_lifetimes as event_stream_lifetimes
 from tests.data.python.client_transports import lifecycle, transports
@@ -827,6 +828,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "stream-backends": ("streams", BACKENDS, stream_backends),
     "ndjson": ("ndjson", ("pydantic_v2.BaseModel",), ndjson),
     "ndjson-backends": ("ndjson", BACKENDS, ndjson_backends),
+    "stream-resume": ("stream-resume", ("pydantic_v2.BaseModel",), stream_resume),
     "ndjson-split": ("ndjson-split", STRUCTURAL, ndjson_split),
     "sockets": ("sockets", ("pydantic_v2.BaseModel",), sockets),
     "socket-connectors": ("sockets", ("pydantic_v2.BaseModel",), socket_connectors),

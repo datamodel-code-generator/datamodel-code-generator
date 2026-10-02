@@ -1,0 +1,30 @@
+mypy pets and stream_resume.py: clean
+pyright pets and stream_resume.py: clean
+ty pets and stream_resume.py: clean
+stream_resume_negative.py 7 marked lines
+mypy stream_resume_negative.py: 7/7 marked lines with one error, 0 elsewhere, 0 in other files
+  12 attr-defined
+  13 misc
+  14 call-overload
+  15 arg-type
+  16 call-arg
+  17 assignment
+  18 attr-defined
+pyright stream_resume_negative.py: 5/7 marked lines with one error, 0 elsewhere, 0 in other files
+  12 reportAttributeAccessIssue
+  12 reportUnknownMemberType
+  13 reportGeneralTypeIssues
+  14 reportArgumentType
+  15 reportArgumentType
+  16 reportCallIssue
+  17 reportAssignmentType
+  18 reportAttributeAccessIssue
+  18 reportUnknownMemberType
+ty stream_resume_negative.py: 7/7 marked lines with one error, 0 elsewhere, 0 in other files
+  12 unresolved-attribute
+  13 invalid-await
+  14 invalid-argument-type
+  15 invalid-argument-type
+  16 unknown-argument
+  17 invalid-assignment
+  18 unresolved-attribute

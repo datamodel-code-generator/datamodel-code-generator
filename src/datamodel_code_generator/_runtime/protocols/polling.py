@@ -8,12 +8,10 @@ creating the operation again.
 
 from __future__ import annotations
 
-import re
 import threading
 from collections.abc import Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
 from enum import Enum
 from hashlib import sha256
 from math import ceil
@@ -58,6 +56,7 @@ from .resume import (
     ResumeState,
     helper_state,
     require_state,
+    server_expiry,
     state_array,
     state_count,
     state_fields,
@@ -67,6 +66,7 @@ from .values import MISSING, Missing, Patch, RepeatedValueError, resolve, select
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
+    from datetime import datetime
     from types import TracebackType
 
     from ..client.client import AsyncClientCore, ClientCore
@@ -117,10 +117,6 @@ _POLL_FIELDS: Final = 4
 _UNREAD: Final = "unread"
 _RESULT_FIELDS: Final = 3
 _MOST_WAIT_MS: Final = 2**53 - 1
-_RFC3339: Final = re.compile(
-    r"([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:)([0-9]{2})((?:\.[0-9]+)?(?:Z|[+-][0-9]{2}:[0-9]{2}))"
-)
-_LEAP_SECOND: Final = "60"
 _KINDS: Final[Mapping[type, str]] = MappingProxyType({
     type(None): "null",
     bool: "boolean",
@@ -132,25 +128,6 @@ _KINDS: Final[Mapping[type, str]] = MappingProxyType({
 def _kind(value: WireValue) -> str:
     """Return the JSON type of a wire value, every number being one type."""
     return _KINDS.get(type(value)) or ("object" if isinstance(value, Mapping) else "number")
-
-
-def _expiry(value: str, now: float) -> datetime | None:
-    """Return the UTC time an RFC 3339 date-time with an offset or an HTTP date gives, or None for another value.
-
-    A leap second is the second after the one before it, as in an HTTP date, and `now` is the receipt wall time that
-    places an HTTP date's two-digit year.
-    """
-    try:
-        if (matched := _RFC3339.fullmatch(value.upper())) is not None:
-            head, second, tail = matched.groups()
-            leap = second == _LEAP_SECOND
-            parsed = datetime.fromisoformat(f"{head}{'59' if leap else second}{tail}")
-            return (parsed + timedelta(seconds=leap)).astimezone(timezone.utc)
-        from ..client.retry import http_date  # noqa: PLC0415 - Only a helper with an expiry parses HTTP dates.
-
-        return http_date(value, now)
-    except (ValueError, OverflowError):
-        return None
 
 
 @dataclass(frozen=True, slots=True)
@@ -756,7 +733,7 @@ class _Operation(Generic[T, P]):
             raise self._error(info, _absence(value), read, plan.operation)
         if not isinstance(value, str):
             raise self._error(info, "type", read, plan.operation)
-        if (expires_at := _expiry(value, self._limits.clock.time())) is None:
+        if (expires_at := server_expiry(value, self._limits.clock.time())) is None:
             raise self._error(info, "value", read, plan.operation)
         return expires_at
 

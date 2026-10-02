@@ -434,9 +434,10 @@ class _TargetData:
         })
 
     def stream(self, spec: StreamSpec, settings: JSONValue) -> str:
-        """Return the digest of a stream helper's contract closure: its signature, settings, operation, and schemas.
+        """Return the digest of a stream helper's contract closure: its signature, settings, operations, and schemas.
 
-        Each event and error use contributes its type and contract, so a changed schema changes the digest.
+        Each event and error use contributes its type and contract, so a changed schema changes the digest, and a helper
+        reopening its stream with another operation adds that operation.
         """
         operation, helper = spec.operation, spec.helper
         body = operation.body
@@ -453,7 +454,10 @@ class _TargetData:
         return _digest({
             "kind": helper.kind,
             "signatures": [signature],
-            "operations": [self.request.documents.operation(operation.contract.id)],
+            "operations": [
+                self.request.documents.operation(item.contract.id)
+                for item in (operation, *(() if spec.reopen is None or spec.own else (spec.reopen,)))
+            ],
             "schemas": list(spec.schemas),
             "type_uses": [self.contract(use) for use in spec.uses],
             "adapters": [],
