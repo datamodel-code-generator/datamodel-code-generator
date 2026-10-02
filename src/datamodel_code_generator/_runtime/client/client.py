@@ -117,6 +117,7 @@ from .retry import (
     status_retry_reason,
 )
 from .tasks import TaskInterruptionError, task_result
+from .timing import on_clock
 from .transports import (
     AttemptTrace,
     OwnedTransportAdapter,
@@ -179,7 +180,7 @@ if TYPE_CHECKING:
     from .options import RequestValidation, ResolvedTransportOptions
     from .retry import RetryDelay
     from .security import SecuritySchemeEntry
-    from .timing import Clock
+    from .timing import Clock, Deadline
     from .transports import AsyncTransportAdapter, AsyncTransportResponse, TransportAdapter, TransportResponse
     from .urls import Origin
 
@@ -325,8 +326,8 @@ def _protocol_options(
 ) -> ProtocolClientOptions | None:
     """Return the client's protocol settings, refusing defaults or stores for a helper the package lacks.
 
-    Defaults of another kind's helper, a cache store the client's mode cannot call, and a WebSocket connector of the
-    other execution mode are refused too.
+    Defaults of another kind's helper, a cache or queue store the client's mode cannot call, and a WebSocket connector
+    of the other execution mode are refused too.
     """
     if options is None or (protocols := options.protocols) is None or isinstance(protocols, Unset):
         return None
@@ -334,6 +335,10 @@ def _protocol_options(
         from ..protocols.options import checked_defaults  # noqa: PLC0415 - Only helper defaults load the helper settings.
 
         checked_defaults(helpers, defaults.helpers)
+    if not isinstance(queues := protocols.queue_stores, Unset) and queues:
+        from ..protocols.options import checked_stores  # noqa: PLC0415 - Only queue stores load the helper settings.
+
+        checked_stores(queues, defaults.helpers, asynchronous=asynchronous, kind="queue")
     if not isinstance(stores := protocols.cache_stores, Unset) and stores:
         from ..protocols.options import checked_stores  # noqa: PLC0415 - Only cache stores load the helper settings.
 
@@ -1485,14 +1490,15 @@ class _SessionCall(_Call):
         scope: Scope[HandleT],
         operation: OperationPlan[object, object],
         session: OperationSession,
+        bound: Deadline | None = None,
     ) -> None:
-        """Bind the call to its session, ending it no later than the session does."""
+        """Bind the call to its session, ending it no later than the session or a helper's own bound does."""
         super().__init__(settings, scope, operation)
         self.session = self.parent = session
         self.url = ""
-        deadline = self.deadline
-        if (limit := session.deadline) is not None and (deadline is None or limit.at < deadline.at):
-            self.deadline = limit
+        for limit in (session.deadline, None if bound is None else on_clock(bound, settings.clock)):
+            if limit is not None and ((deadline := self.deadline) is None or limit.at < deadline.at):
+                self.deadline = limit
 
     def prepared(self, request: PreparedRequest[EncodedAttempt]) -> PreparedRequest[EncodedAttempt]:
         """Prepare the request as an ordinary call does, keeping its URL."""
@@ -1708,6 +1714,12 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         if (protocols := self._shared.protocols) is None or isinstance(defaults := protocols.defaults, Unset):
             return None
         return defaults.get(name)
+
+    def queue_store(self, name: str) -> object:
+        """Return the queue store the client's protocol settings lend one helper, or None."""
+        if (protocols := self._shared.protocols) is None or isinstance(stores := protocols.queue_stores, Unset):
+            return None
+        return stores.get(name)
 
     def native_responses(self, options: RequestOptions | None, operation_id: str | None) -> bool:
         """Return whether a call with these options reads response values through their converters alone."""
@@ -2851,9 +2863,20 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         media_type: str | MediaSelector | None = None,
         options: RequestOptions | None = None,
         response_media_type: str | MediaSelector | None = None,
+        session: OperationSession | None = None,
+        deadline: Deadline | None = None,
     ) -> Response[T]:
-        """Execute one encoded logical call through its retry and redirect policy."""
-        call = _Call(self._call_settings(options, operation.operation_id), self._scope, operation)
+        """Execute one encoded logical call through its retry and redirect policy.
+
+        A helper's call passes its session, and any deadline of its own: the call is a child of the session, and a
+        deadline without a session is ignored.
+        """
+        settings = self._call_settings(options, operation.operation_id)
+        call = (
+            _Call(settings, self._scope, operation)
+            if session is None
+            else _SessionCall(settings, self._scope, operation, session, deadline)
+        )
         events = call.events = self._started(call, operation.path, options)
         decoder = operation.responses
 
@@ -3835,9 +3858,20 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         media_type: str | MediaSelector | None = None,
         options: RequestOptions | None = None,
         response_media_type: str | MediaSelector | None = None,
+        session: OperationSession | None = None,
+        deadline: Deadline | None = None,
     ) -> Response[T]:
-        """Execute one encoded logical call through its retry and redirect policy."""
-        call = _Call(self._call_settings(options, operation.operation_id), self._scope, operation)
+        """Execute one encoded logical call through its retry and redirect policy.
+
+        A helper's call passes its session, and any deadline of its own: the call is a child of the session, and a
+        deadline without a session is ignored.
+        """
+        settings = self._call_settings(options, operation.operation_id)
+        call = (
+            _Call(settings, self._scope, operation)
+            if session is None
+            else _SessionCall(settings, self._scope, operation, session, deadline)
+        )
         self._running(call.operation_id, call.call_id)
         events = call.events = await self._started(call, operation.path, options)
         decoder = operation.responses

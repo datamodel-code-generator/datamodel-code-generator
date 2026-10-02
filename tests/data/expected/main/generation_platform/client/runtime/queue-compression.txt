@@ -1,0 +1,17 @@
+# queues pydantic_v2.BaseModel
+  enqueue coding ! TypeError: _OrdersOutboxQueueOperation0.enqueue() got an unexpected keyword argument 'options' []
+  stored=0 sends=0
+  drain coding ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  still pending = e1 create_order pending deliveries=0 intent=False cancel=False leased=False outcome=-
+  claims=0 sends=0
+  drain off = succeeded=['e1']
+  server POST /orders key=k1 body={"item":"tea","quantity":2} duplicate=False
+  drain inherited coding = succeeded=['e2']
+  server POST /orders coding=gzip key=k2 body={"item":"tea","quantity":2} duplicate=False
+  async enqueue coding ! TypeError: _AsyncOrdersOutboxQueueOperation0.enqueue() got an unexpected keyword argument 'options' []
+  stored=0 sends=0
+  async drain coding ! ConfigurationError: ConfigurationError(field_path='options.compression', condition='no_applicable_helper_child') [field_path=('options', 'compression'), condition='no_applicable_helper_child'] configuration_error
+  async still pending = e3 create_order pending deliveries=0 intent=False cancel=False leased=False outcome=-
+  claims=0 sends=0
+  async drain unset = succeeded=['e3']
+  server POST /orders key=k3 body={"item":"tea","quantity":2} duplicate=False

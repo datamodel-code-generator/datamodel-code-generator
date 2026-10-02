@@ -254,6 +254,12 @@ server expiries
   lowercase date-time expires_at=2999-01-01T00:00:00+00:00
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  fraction in UTC expires_at=2999-01-01T00:00:00.100000+00:00
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
+  fraction past microseconds expires_at=2999-01-01T00:00:00.123456+00:00
+  > POST https://api.example.com/jobs
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'
   HTTP date expires_at=2999-01-01T00:00:00+00:00
   > POST https://api.example.com/jobs
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 18] b'{"name":"nightly"}'

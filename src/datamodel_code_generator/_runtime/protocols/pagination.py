@@ -216,6 +216,11 @@ class PageBinding:
         """Freeze the literal."""
         object.__setattr__(self, "literal", frozen_wire(self.literal))
 
+    @property
+    def written(self) -> tuple[RequestTarget, Selector | None]:
+        """The target the value is written to, and the selector that reads it or None for the literal."""
+        return self.target, self.selector
+
 
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -257,7 +262,7 @@ class PaginationPlan(Generic[T, P]):
 
         rule = self.continuation
         follows = isinstance(rule, (NextUrlPlan, LinkPlan))
-        sources = tuple((binding.target, binding.selector) for binding in self.bindings)
+        sources = tuple(binding.written for binding in self.bindings)
         if isinstance(rule, (CursorPlan, CountPlan)):
             sources = (*sources, (rule.write, rule.read if isinstance(rule, CursorPlan) else None))
         continued, writes, headers, queries = targeted(self.call, (target for target, _ in sources))

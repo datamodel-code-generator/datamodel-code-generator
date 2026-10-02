@@ -1,0 +1,10 @@
+schema_version: 1
+helpers:
+  errors.profile:
+    {kind: resumable_upload, profile: chunks, create: {operation: /paths/~1files/post}, probe: {operation: "/paths/~1files~1{fileId}/head", bindings: [{target: {in: path, name: fileId}, value: {source: initial, selector: {from: body, pointer: /id}}}], remote_offset: {from: header, name: Upload-Offset}}, append: {operation: "/paths/~1files~1{fileId}/patch", bindings: [{target: {in: path, name: fileId}, value: {source: initial, selector: {from: body, pointer: /id}}}], offset: {in: header, name: Upload-Offset}}, max_chunk_bytes: 8, partial_commit: allowed, completion: {kind: length}}
+  errors.missing:
+    {kind: resumable_upload, profile: offset}
+  errors.values:
+    {kind: resumable_upload, profile: offset, create: {operation: /paths/~1files/post, size: {in: nowhere, name: x}, extra: 1}, probe: {operation: "/paths/~1files~1{fileId}/head"}, append: {operation: "/paths/~1files~1{fileId}/patch", length: {in: header, name: X-Chunk-Length}}, max_chunk_bytes: 0, partial_commit: sometimes, completion: {kind: later}}
+  errors.completion:
+    {kind: resumable_upload, profile: offset, create: {operation: /paths/~1files/post}, probe: {operation: "/paths/~1files~1{fileId}/head", bindings: [{target: {in: path, name: fileId}, value: {source: initial, selector: {from: body, pointer: /id}}}], remote_offset: {from: header, name: Upload-Offset}}, append: {operation: "/paths/~1files~1{fileId}/patch", bindings: [{target: {in: path, name: fileId}, value: {source: initial, selector: {from: body, pointer: /id}}}], offset: {in: header, name: Upload-Offset}}, max_chunk_bytes: 8, partial_commit: allowed, completion: {kind: operation, operation: "/paths/~1files~1{fileId}~1complete/post"}, abort: {bindings: []}}

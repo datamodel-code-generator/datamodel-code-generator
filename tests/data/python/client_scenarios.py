@@ -63,6 +63,7 @@ from tests.data.python.client_polling_resume import polling_resume
 from tests.data.python.client_protocol_contracts import protocol_contracts
 from tests.data.python.client_protocol_errors import protocol_errors
 from tests.data.python.client_query import query
+from tests.data.python.client_queues import queue_compression, queues
 from tests.data.python.client_raw import raw
 from tests.data.python.client_redirects import head_redirects, redirects
 from tests.data.python.client_regressions import json_decode_errors, no_success
@@ -95,6 +96,7 @@ from tests.data.python.client_streams import ndjson, ndjson_backends, ndjson_spl
 from tests.data.python.client_streams import stream_lifetimes as event_stream_lifetimes
 from tests.data.python.client_transports import lifecycle, transports
 from tests.data.python.client_unions import schema_unions, split_unions, unions
+from tests.data.python.client_uploads import uploads
 from tests.data.python.client_validation import arguments, validation
 from tests.data.python.client_webhook_adapters import (
     webhook_adapter_imports,
@@ -823,9 +825,12 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "pagination-links": ("pagination-links", ("pydantic_v2.BaseModel",), pagination_links),
     "pagination-resume": ("pagination-resume", ("pydantic_v2.BaseModel",), pagination_resume),
     "polling": ("polling", ("pydantic_v2.BaseModel",), polling),
+    "uploads": ("uploads", ("pydantic_v2.BaseModel",), uploads),
     "polling-resume": ("polling", ("pydantic_v2.BaseModel",), polling_resume),
     "circuits": ("circuits", ("pydantic_v2.BaseModel",), circuits),
     "compression": ("compression", ("pydantic_v2.BaseModel",), compression),
+    "queues": ("queues", ("pydantic_v2.BaseModel",), queues),
+    "queue-compression": ("queues", ("pydantic_v2.BaseModel",), queue_compression),
     "streams": ("streams", ("pydantic_v2.BaseModel",), streams),
     "stream-events": ("streams", ("pydantic_v2.BaseModel",), event_stream_lifetimes),
     "stream-backends": ("streams", BACKENDS, stream_backends),
