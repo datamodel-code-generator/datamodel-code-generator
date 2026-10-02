@@ -142,6 +142,7 @@ class NativeFixture(ThreadingTCPServer):
         self, *, http2: bool = False, proxy: str | None = None, malformed: bool = False, ipv6: bool = False
     ) -> None:
         authority = trustme.CA()
+        self.ca_pem = authority.cert_pem.bytes()
         self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         self.context.minimum_version = ssl.TLSVersion.TLSv1_2
         self.context.set_alpn_protocols(["h2"] if http2 else ["http/1.1"])
