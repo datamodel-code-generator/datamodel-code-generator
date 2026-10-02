@@ -4019,8 +4019,10 @@ default origin TLS and an explicit HTTPS proxy's independent default TLS use cer
 without CA environment overrides. Plain HTTP proxies retain native behavior. Caller `ssl_context` or `verify=False`
 controls origin TLS; injected native clients retain their settings and ownership. For enterprise roots with
 `trust_env=False`, supply an `SSLContext`.
-Buffered success responses have no default size cap. Set `max_response_bytes` on client, view, or request options
-to bound them; `None` removes an inherited cap. Error bodies retain their 64 KiB default cap. HTTP/2 is opt-in and requires its optional dependency.
+Typed error handling and exception body prefixes use `max_error_body_bytes`, which defaults to 64 KiB.
+Buffered raw responses of every status use `max_response_bytes`, which defaults to `None` (no cap). Set it on client,
+view, or request options to bound them; `None` removes an inherited cap. For buffered raw responses, only
+`raise_for_status()` applies the error-prefix cap. HTTP/2 is opt-in and requires its optional dependency.
 
 ```python
 from ssl import create_default_context
