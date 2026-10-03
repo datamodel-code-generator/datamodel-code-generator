@@ -6457,7 +6457,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         closed = [type(model) is self.data_model_type and backend in ordinary_backends for model in models]
         ordered = True
         for index, model in enumerate(models):
-            ctx_index, _ = positions[index]
+            ctx_index, _ = positions[identities[id(model)]]
             ctx = contexts[ctx_index]
             for base in emitted_bases(model):
                 reference = base.reference
@@ -6525,7 +6525,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                         stack.append((parent, iter(parents[parent])))
 
             for index, direct in enumerate(parents):
-                ctx_index, position = positions[index]
+                ctx_index, position = positions[identities[id(models[index])]]
                 for parent in direct:
                     parent_ctx_index, parent_position = positions[parent]
                     if ctx_index == parent_ctx_index and parent_position >= position:
