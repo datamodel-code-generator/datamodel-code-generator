@@ -151,7 +151,7 @@
   > GET https://api.example.com/v1/archive/a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   resumed archive ['2']
-  pydantic arguments saved {"arguments": [[], [], [2], [], [], []], "body": [], "page": null} payload=b''
+  arguments saved {"arguments": [[], [], [2], [], [], []], "body": [], "page": null} payload=b''
   cookie argument ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('arguments', 'cookie', 'session'), condition='wrong_capability'] protocol_configuration_error
   > GET https://api.example.com/v1/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cookie: session=secret] b''

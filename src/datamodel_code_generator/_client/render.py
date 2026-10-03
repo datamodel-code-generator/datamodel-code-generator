@@ -1183,7 +1183,6 @@ class _Resources(_Typing):
         modes = (
             ("request", allowed(validation.request, validation.request_overrides), ("none",)),
             ("response", allowed(validation.response, validation.response_overrides), ("native",)),
-            ("arguments", allowed(validation.arguments, validation.argument_overrides), ("none",)),
         )
         arguments = ", ".join(f"{axis}={selected!r}" for axis, selected, runtime in modes if selected != runtime)
         entries: list[tuple[str, Doc]] = [("user_agent=", repr(self.user_agent))]
@@ -1644,107 +1643,6 @@ class _Records:
         )
 
 
-class _Checks(_Typing):
-    """The Pydantic validation of the arguments each branch of each operation takes as native values.
-
-    A branch is one declared request media type, whose body joins the operation's parameters unless it is sent as
-    parts or as binary; an operation without a body has one branch.
-    """
-
-    def __init__(
-        self, plan: ClientPlan, codecs: CodecPlan, accessors: dict[TypeUseId, UseAccessors], *, strict: bool
-    ) -> None:
-        """Spell each branch's function and accessor in the module that defines them."""
-        super().__init__(plan, codecs, accessors)
-        self.strict = strict
-        self.module = Module((), self.symbols, level=2)
-        self.sections: list[str] = []
-        self.branches: dict[int, tuple[tuple[str | None, str], ...]] = {}
-        self.fields: dict[tuple[int, str], str] = {}
-        for spec in plan.operations:
-            media = spec.body.media if spec.body is not None else (None,)
-            branches = tuple(
-                branch for position, item in enumerate(media) if (branch := self.branch(spec, item, position))
-            )
-            if branches:
-                self.branches[spec.index] = branches
-            fields = {field.media_type: field for field in spec.fields}
-            for position, item in enumerate(media):
-                if item is not None and (field := fields.get(item.media_type)) is not None:
-                    self.fields[spec.index, item.media_type] = self.field_branch(spec, field, position)
-
-    def native(self, use: TypeUseBinding | None) -> str | None:
-        """Return the final type of a use a call takes as a native value, or None when it has none."""
-        return None if use is None or use.type is None else self.module.types.static(use.type)
-
-    def branch(self, spec: OperationSpec, media: MediaSpec | None, position: int) -> tuple[str | None, str] | None:
-        """Return the media type and accessor of one branch's check, or None when the branch takes no argument."""
-        arguments: list[tuple[str, tuple[str, ...], str]] = [
-            (parameter.python_name, (parameter.location, parameter.wire_name), self.native(parameter.use) or "object")
-            for parameter in spec.parameters
-        ]
-        if (
-            media is not None
-            and media.members is None
-            and media.kind != "binary"
-            and (body := self.native(media.use)) is not None
-        ):
-            arguments.append(("body", ("body",), body))
-        if not arguments:
-            return None
-        name = f"operation_{spec.index}" if media is None else f"operation_{spec.index}_{position}"
-        self.section(name, arguments, f"{spec.name}{'' if media is None else f' sending {media.media_type}'}")
-        return None if media is None else media.media_type, name
-
-    def field_branch(self, spec: OperationSpec, branch: FieldBranch, position: int) -> str:
-        """Return the accessor of the check of a call giving one media's fields with the operation's parameters."""
-        arguments: list[tuple[str, tuple[str, ...], str]] = [
-            (parameter.python_name, (parameter.location, parameter.wire_name), self.native(parameter.use) or "object")
-            for parameter in spec.parameters
-        ]
-        arguments.extend(
-            (field.python_name, ("body", field.wire_name), self.module.types.static(field.type))
-            for field in branch.fields
-        )
-        name = f"operation_{spec.index}_{position}_fields"
-        self.section(name, arguments, f"{spec.name} giving the fields of {branch.media_type}")
-        return name
-
-    def section(self, name: str, arguments: Sequence[tuple[str, tuple[str, ...], str]], called: str) -> None:
-        """Add a branch's function, whose parameters take its arguments' types, and its cached check."""
-        module = self.module
-        omitted = module.local("_runtime.client.checks", "OMITTED")
-        parameters = "".join(f"    {argument}: {annotation} = {omitted},\n" for argument, _, annotation in arguments)
-        returned = ", ".join(argument for argument, _, _ in arguments)
-        returned = f"({returned},)" if len(arguments) == 1 else returned
-        check = module.local("_runtime.client.checks", "ArgumentCheck")
-        head = "    return "
-        call = _call(
-            check,
-            (
-                ("", _tuple(_tuple((repr(argument), repr(location))) for argument, location, _ in arguments)),
-                ("", f"_{name}"),
-                ("strict=", repr(self.strict)),
-            ),
-        )
-        self.sections.extend((
-            f"def _{name}(\n    *,\n{parameters}) -> tuple[object, ...]:\n    return {returned}",
-            (
-                f"@{module.name('functools', 'cache')}\ndef {name}() -> {check}:\n"
-                f'    """Return the validation of the arguments of {called}."""\n'
-                f"{head}{layout(call, 4, len(head), WIDTH)}"
-            ),
-        ))
-
-    def source(self) -> str:
-        """Return the private module of the argument checks."""
-        return types_template.render(
-            docstring="The Pydantic validation of each operation's arguments; regenerate it instead of editing.",
-            imports=self.module.imports(),
-            sections=self.sections,
-        )
-
-
 class _Types(_Typing):
     """Render each resource's types module: result aliases, HTTP errors, request codecs, and header accessors."""
 
@@ -2091,9 +1989,7 @@ class _Security:
 
 
 class _Registry(_Typing):
-    """Render the operation registry: each operation's servers, parameters, body, response decoder, and checks."""
-
-    checks: _Checks | None = None
+    """Render the operation registry: each operation's servers, parameters, body, and response decoder."""
 
     def module(self) -> str:
         """Return the operation registry module."""
@@ -2175,9 +2071,6 @@ class _Registry(_Typing):
         entries.extend(self.protection_metadata(spec))
         if (spec.body is not None and spec.body.media) or success_media(spec.responses, ranges=True):
             entries.append(("codecs=", module.local(f"types.{spec.resource}", f"{spec.pascal}RequestCodecs")))
-        if self.checks is not None and (branches := self.checks.branches.get(spec.index)):
-            checks = module.local("_generated", "client_checks")
-            entries.append(("checks=", _tuple(_tuple((repr(media), f"{checks}.{name}")) for media, name in branches)))
         if spec.fields:
             entries.append(("fields=", self.field_arguments(module, spec)))
         return _call(module.local(_RUNTIME, "OperationPlan"), entries)
@@ -2218,11 +2111,11 @@ class _Registry(_Typing):
         )
         return entries
 
-    def field_arguments(self, module: Module, spec: OperationSpec) -> Group:
+    @staticmethod
+    def field_arguments(module: Module, spec: OperationSpec) -> Group:
         """Return the FieldArguments constructor of an operation: each media's fields by their argument positions."""
         names = spec.field_names
         positions = {name: index for index, name in enumerate(names)}
-        checks = {} if self.checks is None else self.checks.fields
         media: list[Doc] = []
         for branch in spec.fields:
             entries: list[tuple[str, Doc]] = [
@@ -2235,8 +2128,6 @@ class _Registry(_Typing):
                     ),
                 ),
             ]
-            if (check := checks.get((spec.index, branch.media_type))) is not None:
-                entries.append(("check=", f"{module.local('_generated', 'client_checks')}.{check}"))
             media.append(_call(module.local(_RUNTIME, "BodyFields"), entries))
         return _call(
             module.local(_RUNTIME, "FieldArguments"),
@@ -4637,9 +4528,6 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
         )
         types = _Types(self.plan, self.codecs, self.accessors)
         registry = _Registry(self.plan, self.codecs, self.accessors)
-        validation = config.validation
-        if "pydantic" in allowed(validation.arguments, validation.argument_overrides):
-            registry.checks = _Checks(self.plan, self.codecs, self.accessors, strict=validation.pydantic_strict)
         files = [
             self.file(PurePosixPath("__init__.py"), "package", _PACKAGE),
             self.file(PurePosixPath("_client.py"), "client", resources.client(asynchronous=False)),
@@ -4677,8 +4565,6 @@ raise `ProtocolDataError`; positions only grow, so they never repeat.
         ))
         if (records := resources.records) is not None:
             files.append(self.file(PurePosixPath("_generated", "client_arguments.py"), "arguments", records.source()))
-        if (checks := registry.checks) is not None:
-            files.append(self.file(PurePosixPath("_generated", "client_checks.py"), "checks", checks.source()))
         if self.plan.security_schemes or any(spec.security is not None for spec in self.plan.operations):
             files.append(
                 self.file(PurePosixPath("_generated", "security.py"), "security", _Security(self.plan).source())

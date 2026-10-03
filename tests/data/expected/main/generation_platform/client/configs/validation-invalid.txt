@@ -3,6 +3,3 @@ APIGenerationError
   E_CONFIG_VALUE config validation.request_overrides: validation.request_overrides lists 'schema' twice
   E_CONFIG_VALUE config validation.response: validation.response must be 'native' or 'schema'
   E_CONFIG_VALUE config validation.response_overrides: validation.response_overrides must be a tuple whose modes are 'native' or 'schema'
-  E_CONFIG_VALUE config validation.arguments: validation.arguments must be 'none' or 'pydantic'
-  E_CONFIG_VALUE config validation.argument_overrides: validation.argument_overrides must be a tuple whose modes are 'none' or 'pydantic'
-  E_CONFIG_VALUE config validation.pydantic_strict: validation.pydantic_strict must be a boolean

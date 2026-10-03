@@ -231,7 +231,7 @@ class PaginationPlan(Generic[T, P]):
 
     Pages after the first call `continued`, the same operation taking each binding's value and then the cursor or
     position as wire values: a parameter's replaces its argument, and a querystring property or a JSON body member
-    is written into the caller's encoded value. They skip the schema and argument checks, since the server chose them.
+    is written into the caller's encoded value. They skip the schema checks, since the server chose them.
     A helper that `follows` a server's URLs writes no cursor and sends each later page to the URL with GET and no body,
     unless it repeats the request body with the operation's method. `headers` and `queries` name the header and query
     parameters it writes, which a call's options must not patch, and `dotted` the path segments a read value is written

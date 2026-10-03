@@ -499,23 +499,12 @@ def _validator(plan: CachePlan[T], headers: HeadersView) -> tuple[str, str] | No
     return None
 
 
-def _tags(  # noqa: PLR0913
-    call: OperationPlan[object, object],
-    templates: tuple[Tag, ...],
-    arguments: tuple[object, ...],
-    settings: Settings,
-    *,
-    body: object = UNSET,
-    media_type: str | MediaSelector | None = None,
+def _tags(
+    call: OperationPlan[object, object], templates: tuple[Tag, ...], arguments: tuple[object, ...], settings: Settings
 ) -> tuple[str, ...]:
-    """Return each tag with every argument position filled in by that argument's wire value as text.
-
-    The arguments are checked first, as the call checks them, when Pydantic validates a call's arguments.
-    """
+    """Return each tag with every argument position filled in by that argument's wire value as text."""
     if not templates:
         return ()
-    if settings.validation.arguments == "pydantic":
-        arguments, _ = call.checked(arguments, body, media_type)
     mode = settings.validation.request
     return tuple(
         "".join(
@@ -785,9 +774,7 @@ def mutate(  # noqa: PLR0913
     never sent again.
     """
     store: CacheStore = _store(core, plan)
-    tags = _tags(
-        plan.call, plan.tags, arguments, core.call_settings(options, plan.call), body=body, media_type=media_type
-    )
+    tags = _tags(plan.call, plan.tags, arguments, core.call_settings(options, plan.call))
     result = core.execute(plan.call, arguments, body=body, media_type=media_type, options=options).data
     try:
         count = store.invalidate(tags)
@@ -808,9 +795,7 @@ async def amutate(  # noqa: PLR0913
 ) -> T:
     """Call the mutation as `mutate` does, awaiting the asyncio call and the asynchronous store."""
     store: AsyncCacheStore = _store(core, plan)
-    tags = _tags(
-        plan.call, plan.tags, arguments, core.call_settings(options, plan.call), body=body, media_type=media_type
-    )
+    tags = _tags(plan.call, plan.tags, arguments, core.call_settings(options, plan.call))
     result = (await core.execute(plan.call, arguments, body=body, media_type=media_type, options=options)).data
     try:
         count = await store.invalidate(tags)

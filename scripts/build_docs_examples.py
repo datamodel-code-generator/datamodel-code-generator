@@ -845,30 +845,12 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
-            example_id="python-client.validation.arguments",
-            path=DOCS / "python-client.md",
-            render=lambda: fenced(
-                "python",
-                blocks(
-                    CLIENT_PACKAGES
-                    / "validation-arguments"
-                    / "pydantic_v2_BaseModel"
-                    / "client"
-                    / "_generated"
-                    / "client_checks.py",
-                    "_operation_1_0",
-                    separator="\n\n\n",
-                ),
-            ),
-        ),
-        DocsExample(
             example_id="python-client.validation.options",
             path=DOCS / "python-client.md",
             render=lambda: fenced(
                 "text",
                 report_lines(
                     EXPECTED_CLIENT / "runtime" / "validation-structural.txt",
-                    "client selecting",
                     "view selecting",
                     "call selecting",
                     "request mode None",
@@ -883,8 +865,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
                 "text",
                 "\n".join(
                     line.strip()
-                    for name in ("validation-ambiguous.txt", "validation-arguments-msgspec.txt")
-                    for line in read_text(EXPECTED_CLIENT / name).splitlines()
+                    for line in read_text(EXPECTED_CLIENT / "validation-ambiguous.txt").splitlines()
                     if "E_CONFIG_VALUE" in line
                 ),
             ),

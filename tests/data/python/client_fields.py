@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 from tests.data.python.client_hooks import Recorder
 from tests.data.python.client_runtime import Exchange, arecord, json_response, raw_response, record, run
-from tests.data.python.client_validation import _PYDANTIC_DOCS, _aexchanged, _exchanged
+from tests.data.python.client_validation import _aexchanged, _exchanged
 
 if TYPE_CHECKING:
     from types import ModuleType
@@ -267,38 +267,3 @@ def optional_models(package: ModuleType, lines: list[str]) -> None:
         )
     http.close()
 
-
-def field_arguments(package: ModuleType, lines: list[str]) -> None:
-    """Validate field arguments with Pydantic when a call asks, as the branch of the fields' media checks them."""
-    context = _Fields(package)
-    checks = importlib.import_module(f"{package.__name__}._generated.client_checks")
-    exchange = Exchange(lines)
-    http = exchange.client()
-    pydantic = context.call(arguments="pydantic")
-    kind = context.kind()
-    with package.Client(http_client=http) as api:
-        pets = api.default
-        lines.append(f"  field checks built before a call selects them: {checks.operation_0_0_fields.cache_info().currsize}")
-        for label, call in (
-            ("create from fields", lambda: pets.create_pet(name="Mimi", kind=kind, media_type=_JSON, options=pydantic)),
-            ("create a numeric name", lambda: pets.create_pet(name=5, kind=kind, media_type=_JSON, options=pydantic)),
-            ("create a kind by its value", lambda: pets.create_pet(name="Mimi", kind="cat", media_type=_JSON, options=pydantic)),
-            (
-                "create an owner of a numeric email",
-                lambda: pets.create_pet(name="Mimi", kind=kind, owner={"email": 5}, media_type=_JSON, options=pydantic),
-            ),
-            ("create a numeric query tag", lambda: pets.create_pet(tag=5, name="Mimi", media_type=_FORM, options=pydantic)),
-            ("create form fields", lambda: pets.create_pet(name="Mimi", pet_tag="t", media_type=_FORM, options=pydantic)),
-            ("create from a body", lambda: pets.create_pet(body=context.models.NewPet(name="Mimi", kind=kind), media_type=_JSON, options=pydantic)),
-        ):
-            _exchanged(exchange, lines, label, call, json_response(201, _CREATED))
-        _exchanged(
-            exchange,
-            lines,
-            "log a visit giving nothing",
-            lambda: pets.log_visit(pet_id=context.pet_id("VisitsPost"), media_type=_JSON, options=pydantic),
-            raw_response(204),
-        )
-        lines.append(f"  field checks built once: {checks.operation_0_0_fields.cache_info().currsize}")
-    http.close()
-    lines[:] = [_PYDANTIC_DOCS.sub("<pydantic errors>/", line) for line in lines]

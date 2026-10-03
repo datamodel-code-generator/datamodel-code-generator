@@ -351,12 +351,11 @@ def _body(harness: Harness, resource: str, operation: str, wire: object) -> obje
 
 
 def _requests(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) -> None:
-    """Save validated arguments and selected media, and refuse cookies and arguments their schemas refuse."""
+    """Save encoded arguments and selected media, and refuse cookies and arguments their schemas refuse."""
     options, protocols = harness.options, harness.protocols
     helper = api.protocols.users.all
-    checked = options.RequestOptions(validation=options.ValidationOptions(arguments="pydantic"))
     limit = harness.argument("users", "ListUsers", "query", "limit", 2)
-    _saved(lines, "pydantic arguments", helper.iterate(limit=limit, options=checked).checkpoint())
+    _saved(lines, "arguments", helper.iterate(limit=limit).checkpoint())
     session = harness.argument("users", "ListUsers", "cookie", "session", "secret")
     record(lines, "cookie argument", helper.iterate(session=session).checkpoint)
     exchange.respond(user_page("1", next_cursor="a"))

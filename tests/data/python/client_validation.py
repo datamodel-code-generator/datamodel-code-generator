@@ -13,7 +13,6 @@ if TYPE_CHECKING:
     from types import ModuleType
 
 _BOUNDARY: Final = re.compile(r"dcg[0-9a-f]{32}")
-_PYDANTIC_DOCS: Final = re.compile(r"https://errors\.pydantic\.dev/[0-9.]+/")
 _LARGE: Final = 2**40
 _NAMED: Final = b'Content-Disposition: form-data; name="%s"'
 _PHOTO: Final = (_NAMED % b"photo" + b'; filename="a.png"\r\nContent-Type: image/png', b"\x89PNG")
@@ -303,16 +302,9 @@ def _layers(context: _Validation, api: Any, http: Any, exchange: Exchange, lines
     )
     _exchanged(exchange, lines, "list through its view", view.default.list_pets, json_response(200, [payload]))
     for label, build in (
-        (
-            "client selecting Pydantic arguments",
-            lambda: context.package.Client(
-                http_client=http, options=options.ClientOptions(validation=validation(arguments="pydantic"))
-            ),
-        ),
         ("view selecting native requests", lambda: type(api.with_options(context.call(request="native"))).__name__),
         ("request mode None", lambda: validation(request=None)),
         ("response mode none", lambda: validation(response="none")),
-        ("arguments mode of another type", lambda: validation(arguments=1)),
         ("validation of another type", lambda: options.RequestOptions(validation="schema")),
         ("unset", lambda: validation()),
     ):
@@ -357,132 +349,3 @@ async def _async_validation(context: _Validation, lines: list[str]) -> None:
         await arecord(lines, "async raw list failing, response native", raw.raise_for_status)
     await http.aclose()
 
-
-def arguments(package: ModuleType, lines: list[str]) -> None:
-    """Validate the arguments of calls with Pydantic when a package allows it, as its generated strictness decides."""
-    context = _Validation(package)
-    checks = importlib.import_module(f"{package.__name__}._generated.client_checks")
-    types = importlib.import_module(f"{package.__name__}.types.default")
-    exchange = Exchange(lines)
-    http = exchange.client()
-    pydantic = context.call(arguments="pydantic")
-    with package.Client(http_client=http) as api:
-        pets = api.default
-        lines.append(f"  checks built before a call selects them: {checks.operation_1_0.cache_info().currsize}")
-        for label, body in (
-            ("a pet", context.pet(age=3)),
-            ("a pet mutated to a string age", _mutated(context.pet(), age="3")),
-            ("a mapping with an undeclared key", {"id": 1, "name": "Mimi", "extra": 1}),
-            ("a snapshot", types.CreatePetRequestCodecs.body().from_wire({"name": "Mimi"})),
-        ):
-            _exchanged(
-                exchange,
-                lines,
-                f"create {label}",
-                lambda: pets.create_pet(body=body, options=pydantic),
-                json_response(201, {"id": 1, "name": "Mimi"}),
-            )
-        limit = context.value("FieldPetsGetQueryLimitParameter", 5)
-        for label, value in (("a limit", limit), ("a string limit", "5"), ("no limit", context.options.UNSET)):
-            _exchanged(
-                exchange,
-                lines,
-                f"list with {label}",
-                lambda: pets.list_pets(limit=value, options=pydantic),
-                json_response(200, []),
-            )
-        account = context.value("FieldAccountsAccountIdGetPathAccountIdParameter", 1)
-        _exchanged(
-            exchange,
-            lines,
-            "account",
-            lambda: pets.get_account(account_id=account, options=pydantic),
-            json_response(200, {"id": 1}),
-        )
-        _exchanged(
-            exchange,
-            lines,
-            "account by a string id",
-            lambda: pets.get_account(account_id="1", options=pydantic),
-            json_response(200, {"id": 1}),
-        )
-        body, field, file = context.bodies.MultipartBody, context.bodies.FieldPart, context.bodies.FilePart
-        card = context.value("FieldPetsPetIdCardGetPathPetIdParameter", 3)
-        _exchanged(
-            exchange,
-            lines,
-            "put a card",
-            lambda: pets.put_card(pet_id=card, body=body((file("photo", b"\x89PNG"),)), options=pydantic),
-            raw_response(204),
-        )
-        _exchanged(
-            exchange,
-            lines,
-            "put a card of a string id",
-            lambda: pets.put_card(pet_id="3", body=body((file("photo", b"\x89PNG"),)), options=pydantic),
-            raw_response(204),
-        )
-        _exchanged(
-            exchange,
-            lines,
-            "create a pet mutated to a string age by default",
-            lambda: pets.create_pet(body=_mutated(context.pet(), age="3")),
-            json_response(201, {"id": 1, "name": "Mimi"}),
-        )
-        _exchanged(
-            exchange,
-            lines,
-            "health, which takes no argument",
-            lambda: pets.get_health(options=pydantic),
-            raw_response(204),
-        )
-        for label, tag in (("a note", "t"), ("a note of a numeric tag", 5)):
-            _exchanged(
-                exchange, lines, label, lambda: pets.post_note(tag=tag, body="n", options=pydantic), raw_response(204)
-            )
-        _exchanged(
-            exchange,
-            lines,
-            "put a photo link",
-            lambda: pets.put_photo(body="https://example.com/p.png", media_type="application/json", options=pydantic),
-            raw_response(204),
-        )
-        _exchanged(
-            exchange,
-            lines,
-            "put photo bytes, whose branch takes no argument",
-            lambda: pets.put_photo(body=b"\x89PNG", media_type="image/png", options=pydantic),
-            raw_response(204),
-        )
-        _exchanged(
-            exchange,
-            lines,
-            "select no argument validation",
-            lambda: pets.list_pets(options=context.call(arguments="none")),
-            json_response(200, []),
-        )
-        lines.append(f"  checks built once: {checks.operation_1_0.cache_info().currsize}")
-    http.close()
-    run(lambda: _async_arguments(context, pydantic, lines))
-    lines[:] = [_BOUNDARY.sub("<boundary>", _PYDANTIC_DOCS.sub("<pydantic errors>/", line)) for line in lines]
-
-
-async def _async_arguments(context: _Validation, pydantic: Any, lines: list[str]) -> None:
-    exchange = Exchange(lines)
-    http = exchange.async_client()
-    async with context.package.AsyncClient(http_client=http) as api:
-        await _aexchanged(
-            exchange,
-            lines,
-            "async create a pet",
-            lambda: api.default.create_pet(body=context.pet(age=3), options=pydantic),
-            json_response(201, {"id": 1, "name": "Mimi"}),
-        )
-        await _aexchanged(
-            exchange,
-            lines,
-            "async create a pet mutated to a string age",
-            lambda: api.default.create_pet(body=_mutated(context.pet(), age="3"), options=pydantic),
-            json_response(201, {"id": 1, "name": "Mimi"}),
-        )
-    await http.aclose()

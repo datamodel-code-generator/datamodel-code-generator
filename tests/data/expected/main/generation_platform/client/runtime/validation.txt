@@ -146,13 +146,11 @@
   > GET https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   list through its view ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listPets', call_id='<call>') [operation_id='listPets', body_bytes=b'[{"id":1,"name":"Mimi","age":1099511627776}]', truncated=False, cause=WireValidationError("The value does not match format 'int32' at /0/age")] response_validation_error
-  client selecting Pydantic arguments ! ConfigurationError: ConfigurationError(field_path='validation.arguments', condition='not_allowed') [field_path=('validation', 'arguments'), condition='not_allowed'] configuration_error
   view selecting native requests = 'Client'
   request mode None ! ConfigurationError: ConfigurationError(field_path='validation.request', condition='invalid_value') [field_path=('validation', 'request'), condition='invalid_value'] configuration_error
   response mode none ! ConfigurationError: ConfigurationError(field_path='validation.response', condition='invalid_value') [field_path=('validation', 'response'), condition='invalid_value'] configuration_error
-  arguments mode of another type ! ConfigurationError: ConfigurationError(field_path='validation.arguments', condition='invalid_value') [field_path=('validation', 'arguments'), condition='invalid_value'] configuration_error
   validation of another type ! ConfigurationError: ConfigurationError(field_path='validation', condition='invalid_type') [field_path=('validation',), condition='invalid_type'] configuration_error
-  unset = ValidationOptions(request=UNSET, response=UNSET, arguments=UNSET)
+  unset = ValidationOptions(request=UNSET, response=UNSET)
   > GET https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   call selecting native requests = FieldPetsGetResponse(root=[])
@@ -314,13 +312,11 @@
   > GET https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   list through its view ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listPets', call_id='<call>') [operation_id='listPets', body_bytes=b'[{"id":1,"name":"Mimi","age":1099511627776}]', truncated=False, cause=WireValidationError("The value does not match format 'int32' at /0/age")] response_validation_error
-  client selecting Pydantic arguments ! ConfigurationError: ConfigurationError(field_path='validation.arguments', condition='not_allowed') [field_path=('validation', 'arguments'), condition='not_allowed'] configuration_error
   view selecting native requests = 'Client'
   request mode None ! ConfigurationError: ConfigurationError(field_path='validation.request', condition='invalid_value') [field_path=('validation', 'request'), condition='invalid_value'] configuration_error
   response mode none ! ConfigurationError: ConfigurationError(field_path='validation.response', condition='invalid_value') [field_path=('validation', 'response'), condition='invalid_value'] configuration_error
-  arguments mode of another type ! ConfigurationError: ConfigurationError(field_path='validation.arguments', condition='invalid_value') [field_path=('validation', 'arguments'), condition='invalid_value'] configuration_error
   validation of another type ! ConfigurationError: ConfigurationError(field_path='validation', condition='invalid_type') [field_path=('validation',), condition='invalid_type'] configuration_error
-  unset = ValidationOptions(request=UNSET, response=UNSET, arguments=UNSET)
+  unset = ValidationOptions(request=UNSET, response=UNSET)
   > GET https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   call selecting native requests = []
@@ -482,13 +478,11 @@
   > GET https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   list through its view ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listPets', call_id='<call>') [operation_id='listPets', body_bytes=b'[{"id":1,"name":"Mimi","age":1099511627776}]', truncated=False, cause=WireValidationError("The value does not match format 'int32' at /0/age")] response_validation_error
-  client selecting Pydantic arguments ! ConfigurationError: ConfigurationError(field_path='validation.arguments', condition='not_allowed') [field_path=('validation', 'arguments'), condition='not_allowed'] configuration_error
   view selecting native requests = 'Client'
   request mode None ! ConfigurationError: ConfigurationError(field_path='validation.request', condition='invalid_value') [field_path=('validation', 'request'), condition='invalid_value'] configuration_error
   response mode none ! ConfigurationError: ConfigurationError(field_path='validation.response', condition='invalid_value') [field_path=('validation', 'response'), condition='invalid_value'] configuration_error
-  arguments mode of another type ! ConfigurationError: ConfigurationError(field_path='validation.arguments', condition='invalid_value') [field_path=('validation', 'arguments'), condition='invalid_value'] configuration_error
   validation of another type ! ConfigurationError: ConfigurationError(field_path='validation', condition='invalid_type') [field_path=('validation',), condition='invalid_type'] configuration_error
-  unset = ValidationOptions(request=UNSET, response=UNSET, arguments=UNSET)
+  unset = ValidationOptions(request=UNSET, response=UNSET)
   > GET https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   call selecting native requests = []

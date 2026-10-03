@@ -2015,8 +2015,6 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         gave replaces the one the operation's path and query build, without the query patches.
         """
         validation = settings.validation
-        if validation.arguments == "pydantic":
-            arguments, body = operation.checked(arguments, body, media_type)
         request = _parameters(operation, arguments, validation.request)
         encoded = (
             None
@@ -2314,8 +2312,6 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         giving one cannot be checkpointed.
         """
         validation = self._call_settings(options, operation.operation_id).validation
-        if validation.arguments == "pydantic":
-            arguments, body = operation.checked(arguments, body, media_type)
         saved = tuple(
             value
             if isinstance(value, Unset)
