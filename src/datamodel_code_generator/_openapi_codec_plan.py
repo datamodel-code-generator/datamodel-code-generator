@@ -310,12 +310,11 @@ class _CodecPlanner:
         self.models: dict[str, ModelBinding] = {}
         self.building: set[str] = set()
         self.aliases: set[int] = set()
-        self.diagnostics: list[CodecDiagnostic] = []
+        self.diagnostics: dict[CodecDiagnostic, None] = {}
         self.msgspec = _MsgspecTypes(self)
 
     def report(self, code: CodecReason, source: SourceLocation, message: str) -> None:
-        if (diagnostic := CodecDiagnostic(code, source, message)) not in self.diagnostics:
-            self.diagnostics.append(diagnostic)
+        self.diagnostics[CodecDiagnostic(code, source, message)] = None
 
     def spelled(self, use: TypeUseBinding, value: FinalPythonType) -> bool:
         if (reason := type_reason(value, self.imports)) is not None:

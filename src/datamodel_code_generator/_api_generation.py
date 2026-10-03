@@ -573,22 +573,15 @@ class _Planner:
             return self.operations.get(reference.pointer)
         return None
 
-    def refer(self, reference: OperationRef | SchemaRef, *, option_path: str) -> JSONValue:
-        match reference:
-            case OperationRef() if (operation := self.operation(reference)) is not None:
-                return self.documents.operation(operation.id)
-            case SchemaRef() if (located := self.documents.pointer(reference.document, self.cwd)) is not None:
-                return {"document": located, "pointer": reference.pointer}
-        raise config_error(
-            code="E_OPERATION_REF" if isinstance(reference, OperationRef) else "E_CONFIG_VALUE",
-            option_path=option_path,
-            message="The reference names no operation or document of the accepted input",
-        )
+    def refer(self, reference: OperationRef | SchemaRef) -> JSONValue:
+        """Return the manifest reference of a configured operation, which validation already resolved.
+
+        No target setting holds a schema reference, so every reference is a validated root operation.
+        """
+        return self.documents.operation(self.operations[reference.pointer].id)
 
     def portable(self, value: object, option_path: str) -> JSONValue:
-        return portable(
-            value, partial(self.locate, option_path=option_path), partial(self.refer, option_path=option_path)
-        )
+        return portable(value, partial(self.locate, option_path=option_path), self.refer)
 
     def provenance(self) -> Iterator[JSONValue]:
         config = self.effective
