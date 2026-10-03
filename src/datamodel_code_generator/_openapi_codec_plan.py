@@ -318,7 +318,7 @@ def _bound(words: list[str]) -> list[str]:
         return [group[-1] if "as" in group else group[0] for group in groups if group and group[0] != "*"]
     if head in {"class", "def"} or (head == "type" and rest[1:2] in (["="], ["["])):
         return rest[:1]
-    return [head] if rest[:1] in (["="], [":"]) and not iskeyword(head) else []
+    return [head] if (rest[:1] == ["="] or (rest[:1] == [":"] and "=" in rest)) and not iskeyword(head) else []
 
 
 def _accepted(facts: ModelFieldFacts, slot: FieldSlot, wire_name: str, *, generated: bool) -> frozenset[str]:
