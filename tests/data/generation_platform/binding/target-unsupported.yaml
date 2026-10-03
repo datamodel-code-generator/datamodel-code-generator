@@ -1,0 +1,42 @@
+openapi: 3.2.0
+info:
+  title: Inputs the client refuses after binding
+  version: '1'
+paths:
+  /search:
+    get:
+      parameters:
+        - in: querystring
+          content:
+            application/x-www-form-urlencoded:
+              schema:
+                type: object
+                properties:
+                  q:
+                    type: string
+      responses:
+        '200':
+          description: Searched.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Result'
+        '201':
+          description: Anchored.
+          content:
+            application/json:
+              schema:
+                $ref: '#Anchored'
+components:
+  schemas:
+    Result:
+      type: object
+      properties:
+        anchored:
+          $ref: '#Anchored'
+    Anchored:
+      $anchor: Anchored
+      type: object
+      properties:
+        id:
+          type: integer

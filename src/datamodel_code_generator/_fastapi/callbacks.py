@@ -11,11 +11,7 @@ from datamodel_code_generator._runtime.model_codecs.wire import escape_pointer_t
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from datamodel_code_generator._generation_contract import (
-        GeneratedTypeContractBatch,
-        OperationContract,
-        SourceLocation,
-    )
+    from datamodel_code_generator._target_contract import GeneratedTypeContractBatch, OperationContract, SourceLocation
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

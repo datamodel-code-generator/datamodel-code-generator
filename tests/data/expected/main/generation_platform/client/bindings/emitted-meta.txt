@@ -95,11 +95,7 @@ change msgspec.Struct annotated malformed-meta-position
   @@ -30 +30 @@
   -    nested: Annotated[List[List[NestedItem]], Meta(max_length=4, min_length=1)]
   +    nested: Annotated[List[List[NestedItem]], Meta(4)]
-  @@ -40 +39,0 @@
-  -  FieldBinding(field_id='models:Metadata.nested', native_name='nested', wire_name='nested', validation_key='nested', validation_keys=('nested',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ArrayNode(item=LeafNode())))
 change msgspec.Struct annotated malformed-meta-key
   @@ -30 +30 @@
   -    nested: Annotated[List[List[NestedItem]], Meta(max_length=4, min_length=1)]
   +    nested: Annotated[List[List[NestedItem]], Meta("max_length"=4)]
-  @@ -40 +39,0 @@
-  -  FieldBinding(field_id='models:Metadata.nested', native_name='nested', wire_name='nested', validation_key='nested', validation_keys=('nested',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=ArrayNode(item=LeafNode())))

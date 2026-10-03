@@ -17,11 +17,12 @@ from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._client._compiled_templates import types as types_template
 from datamodel_code_generator._client.naming import folded
 from datamodel_code_generator._client.render import WIDTH, Module
-from datamodel_code_generator._generation_contract import BindingCaptureError, OperationId, SourceLocation
+from datamodel_code_generator._generation_contract import BindingCaptureError
 from datamodel_code_generator._openapi_wire_plan import plan_wire
 from datamodel_code_generator._python_layout import Chain, Group, layout
 from datamodel_code_generator._runtime.model_codecs.codec import needs_schema
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
+from datamodel_code_generator._target_contract import OperationId, SourceLocation
 from datamodel_code_generator._target_render import items
 
 if TYPE_CHECKING:
@@ -33,9 +34,9 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
     from datamodel_code_generator._codec_declarations import SchemaRef
-    from datamodel_code_generator._generation_contract import TypeUseBinding, TypeUseId
     from datamodel_code_generator._openapi_codec_plan import CodecPlan
     from datamodel_code_generator._openapi_codec_render import UseAccessors
+    from datamodel_code_generator._target_contract import TypeUseBinding, TypeUseId
 
 __all__ = (
     "WebhookEvent",

@@ -13,17 +13,11 @@ render pydantic_v2.BaseModel default
       name: Optional[str] = None
   
   
-  class PetsGetResponse(RootModel[List[Pet]]):
+  class PetPageResponse(RootModel[List[Pet]]):
       root: List[Pet]
-  
-  
-  class PetsGetResponse1(BaseModel):
-      count: Optional[int] = None
   model_bindings.py
   _model_0 symbol='models:Pet', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Pet'
     FieldBinding(field_id='models:Pet.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_1 symbol='models:PetsGetResponse', native_kind='root', schema_id=None, root=ArrayNode(item=ModelNode(symbol='models:Pet'))
-  _model_2 symbol='models:PetsGetResponse1', native_kind='model', schema_id=None
-    FieldBinding(field_id='models:PetsGetResponse1.count', native_name='count', wire_name='count', validation_key='count', validation_keys=('count',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  codec_0 -> PydanticModelCodec[models.PetsGetResponse]
-  codec_1 -> PydanticModelCodec[models.PetsGetResponse1]
+  _model_1 symbol='models:PetPageResponse', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/responses/PetPage/content/application~1json/schema', root=ArrayNode(item=ModelNode(symbol='models:Pet'))
+  codec_0 -> PydanticModelCodec[models.PetPageResponse]
+  codec_1 -> PydanticModelCodec[models.PetPageResponse]

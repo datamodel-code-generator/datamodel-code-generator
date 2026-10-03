@@ -33,11 +33,11 @@ from datamodel_code_generator._fastapi.openapi import documentation
 from datamodel_code_generator._fastapi.plan import Default
 from datamodel_code_generator._fastapi.render import Module
 from datamodel_code_generator._fastapi.routes import tags
-from datamodel_code_generator._generation_contract import GeneratedSymbolType, LiteralScalar
 from datamodel_code_generator._openapi_codec_plan import artifact_module
 from datamodel_code_generator._openapi_wire_plan import operation_uses
 from datamodel_code_generator._runtime.model_codecs.unset import UNSET, Unset
 from datamodel_code_generator._runtime.model_codecs.wire import checked_wire, escape_pointer_token, freeze_wire
+from datamodel_code_generator._target_contract import GeneratedSymbolType, LiteralScalar
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -56,8 +56,8 @@ if TYPE_CHECKING:
         ResponseSpec,
     )
     from datamodel_code_generator._fastapi.render import ServerRenderer
-    from datamodel_code_generator._generation_contract import FrozenLiteral, SourceLocation, TypeUseBinding, TypeUseId
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue, WireValue
+    from datamodel_code_generator._target_contract import FrozenLiteral, SourceLocation, TypeUseBinding, TypeUseId
 
 _PRINCIPAL: Final = ("_runtime.server.security", "PrincipalT")
 
