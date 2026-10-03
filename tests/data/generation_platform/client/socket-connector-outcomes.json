@@ -264,5 +264,100 @@
         "kind": "turn"
       }
     ]
+  },
+  {
+    "name": "first episode cancellation during cleanup, repeated, existing cause",
+    "stopped_turn": false,
+    "hold_entry": false,
+    "hold_send_release": true,
+    "actions": [
+      {
+        "kind": "ack",
+        "name": "cleanup-wait"
+      },
+      {
+        "kind": "ack",
+        "name": "send-released"
+      },
+      {
+        "kind": "episode_cancel",
+        "message": "cleanup one"
+      },
+      {
+        "kind": "ack",
+        "name": "body-cancel-1"
+      },
+      {
+        "kind": "decorate_body"
+      },
+      {
+        "kind": "episode_cancel",
+        "message": "cleanup two"
+      },
+      {
+        "kind": "ack",
+        "name": "body-cancel-2"
+      },
+      {
+        "kind": "finish_send"
+      }
+    ]
+  },
+  {
+    "name": "late borrowed send registration after cancelled entry cleanup",
+    "stopped_turn": false,
+    "hold_entry": true,
+    "hold_send_start": true,
+    "actions": [
+      {
+        "kind": "ack",
+        "name": "send-started"
+      },
+      {
+        "kind": "episode_cancel",
+        "message": "before borrowed entry"
+      },
+      {
+        "kind": "ack",
+        "name": "body-cancel-1"
+      },
+      {
+        "kind": "entry"
+      },
+      {
+        "kind": "ack",
+        "name": "cleanup-wait"
+      },
+      {
+        "kind": "start_send"
+      },
+      {
+        "kind": "ack",
+        "name": "send-entered"
+      }
+    ]
+  },
+  {
+    "name": "successful public owner ends before requested acknowledgement",
+    "stopped_turn": false,
+    "hold_entry": false,
+    "actions": [
+      {
+        "kind": "ack",
+        "name": "not-reached"
+      }
+    ]
+  },
+  {
+    "name": "failed public owner ends before requested acknowledgement",
+    "stopped_turn": false,
+    "hold_entry": true,
+    "closed_session": true,
+    "actions": [
+      {
+        "kind": "ack",
+        "name": "not-reached"
+      }
+    ]
   }
 ]
