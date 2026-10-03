@@ -397,7 +397,7 @@ def _records(harness: _Uploads, lines: list[str]) -> None:
         record(lines, label, create)
     lines.append("upload errors")
     progress = protocols.UploadProgress(confirmed_bytes=4, total_bytes=10)
-    state = protocols.ResumeState(helper_fingerprint="h", security_fingerprint="s", state={})
+    state = protocols.ResumeState(helper="h", state={})
     delivery = harness.package.errors.DeliveryState
     for name, fields in (
         ("DeliveryUnknownError", {"delivery_state": delivery.MAYBE_SENT, "resume_state": state, "message_id": "m-1"}),
@@ -743,7 +743,7 @@ def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
     ):
         record(lines, f"resume with {label}", call)
     envelope = json.loads(exported)
-    fingerprints = {name: envelope[name] for name in ("helper_fingerprint", "security_fingerprint")}
+    fingerprints = {"helper": envelope["helper"]}
     saved = envelope["state"]
     upload = saved["bound"][1][0]
     for label, change in (
@@ -757,6 +757,9 @@ def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
         ("missing bound values", {"bound": [[], [], []]}),
         ("a path value of dots", {"bound": [["..", "1.0.0"], [upload, "1.0.0"], []]}),
         ("a path value of another shape", {"bound": [[{"id": upload}, "1.0.0"], [upload, "1.0.0"], []]}),
+        ("an expiry of another form", {"expires_at": "tomorrow"}),
+        ("a naive expiry", {"expires_at": "2999-01-01T00:00:00"}),
+        ("an expiry spelled otherwise", {"expires_at": "2999-01-01T00:00:00Z"}),
     ):
         broken = protocols.ResumeState(**fingerprints, state={**saved, **change})
         record(lines, f"resume with {label}", lambda broken=broken: helper.resume(harness.source(), broken))
@@ -765,15 +768,14 @@ def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
     record(
         lines, "resume with a path value of dots and an iterator for a source", lambda: helper.resume(iter(()), dotted)
     )
-    padded = protocols.ResumeState(**fingerprints, state=saved, payload=b"digests")
-    record(lines, "resume with a payload", lambda: helper.resume(harness.source(), padded))
-    lines.append("a checkpoint of another security partition")
+    lines.append("a checkpoint resumed under another security partition, with that client's own credentials")
     secured = harness.client_options(
         protocols=harness.options.ProtocolClientOptions(
             security=protocols.ProtocolSecurityContext(credential_partition="tenant-a")
         )
     )
     with exchange.client() as native, harness.package.Client(http_client=native, options=secured) as secured_api:
+        exchange.respond(server)
         record(lines, "resume", lambda: secured_api.protocols.files.upload.resume(harness.source(), state))
 
 
