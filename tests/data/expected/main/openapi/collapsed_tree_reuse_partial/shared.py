@@ -2,6 +2,7 @@
 #   filename:  shared.py
 
 from __future__ import annotations
+
 from pydantic import BaseModel, RootModel, constr
 
 
