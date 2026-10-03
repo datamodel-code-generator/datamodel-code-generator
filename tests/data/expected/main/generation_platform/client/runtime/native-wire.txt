@@ -39,70 +39,12 @@
   origin arrivals=1 connects=0 proxy arrivals=0 connects=0
   sync environment ca-default-upper = 'Response status=200 attempts=1 sends=1 wire=1'
   origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  sync environment ca-opt-out = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
-  origin arrivals=0 connects=0 proxy arrivals=0 connects=0
+  sync environment ca-opt-out = 'Response status=200 attempts=1 sends=1 wire=1'
+  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
   sync environment ca-context = 'Response status=200 attempts=1 sends=1 wire=1'
   origin arrivals=1 connects=0 proxy arrivals=0 connects=0
   sync environment injected = 'Response status=200 attempts=1 sends=1 wire=None'
   native closed=False
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  sync environment ca-file-default = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  sync environment ca-file-true = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  sync environment ca-file-false = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
-  origin arrivals=0 connects=0 proxy arrivals=0 connects=0
-  sync environment ca-file-context-true = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  sync environment ca-file-context-false = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  sync environment ca-file-verify-off-true = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  sync environment ca-file-verify-off-false = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  sync environment https-proxy-file-true = 'TransportError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ProxyError'
-  origin arrivals=0 connects=0 proxy arrivals=1 connects=0 methods=['CONNECT']
-  sync environment https-proxy-file-false = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
-  origin arrivals=0 connects=0 proxy arrivals=0 connects=0 methods=[]
-  sync environment https-proxy-file-context-true = 'TransportError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ProxyError'
-  origin arrivals=0 connects=0 proxy arrivals=1 connects=0 methods=['CONNECT']
-  sync environment https-proxy-file-context-false = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
-  origin arrivals=0 connects=0 proxy arrivals=0 connects=0 methods=[]
-  sync environment https-proxy-file-verify-off-true = 'TransportError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ProxyError'
-  origin arrivals=0 connects=0 proxy arrivals=1 connects=0 methods=['CONNECT']
-  sync environment https-proxy-file-verify-off-false = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
-  origin arrivals=0 connects=0 proxy arrivals=0 connects=0 methods=[]
-  sync environment ca-directory-default = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  sync environment ca-directory-true = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  sync environment ca-directory-false = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
-  origin arrivals=0 connects=0 proxy arrivals=0 connects=0
-  sync environment ca-directory-context-true = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  sync environment ca-directory-context-false = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  sync environment ca-directory-verify-off-true = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  sync environment ca-directory-verify-off-false = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  sync environment https-proxy-directory-true = 'TransportError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ProxyError'
-  origin arrivals=0 connects=0 proxy arrivals=1 connects=0 methods=['CONNECT']
-  sync environment https-proxy-directory-false = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
-  origin arrivals=0 connects=0 proxy arrivals=0 connects=0 methods=[]
-  sync environment https-proxy-directory-context-true = 'TransportError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ProxyError'
-  origin arrivals=0 connects=0 proxy arrivals=1 connects=0 methods=['CONNECT']
-  sync environment https-proxy-directory-context-false = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
-  origin arrivals=0 connects=0 proxy arrivals=0 connects=0 methods=[]
-  sync environment https-proxy-directory-verify-off-true = 'TransportError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ProxyError'
-  origin arrivals=0 connects=0 proxy arrivals=1 connects=0 methods=['CONNECT']
-  sync environment https-proxy-directory-verify-off-false = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
-  origin arrivals=0 connects=0 proxy arrivals=0 connects=0 methods=[]
-  sync environment plain-proxy-context-false = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=1 proxy arrivals=0 connects=0
-  sync environment plain-proxy-verify-off-false = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=1 proxy arrivals=0 connects=0
-  sync environment plain-proxy-default-false = 'Response status=200 attempts=1 sends=1 wire=1'
   origin arrivals=1 connects=0 proxy arrivals=0 connects=0
 sync size default/16777217 raw=False: status=200 bytes=16777217
   arrivals=1
@@ -409,70 +351,12 @@ sync size error-explicit/65537 raw=True: ResponseTooLargeError limit=8 bytes=0 t
   origin arrivals=1 connects=0 proxy arrivals=0 connects=0
   async environment ca-default-upper = 'Response status=200 attempts=1 sends=1 wire=1'
   origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  async environment ca-opt-out = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
-  origin arrivals=0 connects=0 proxy arrivals=0 connects=0
+  async environment ca-opt-out = 'Response status=200 attempts=1 sends=1 wire=1'
+  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
   async environment ca-context = 'Response status=200 attempts=1 sends=1 wire=1'
   origin arrivals=1 connects=0 proxy arrivals=0 connects=0
   async environment injected = 'Response status=200 attempts=1 sends=1 wire=None'
   native closed=False
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  async environment ca-file-default = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  async environment ca-file-true = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  async environment ca-file-false = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
-  origin arrivals=0 connects=0 proxy arrivals=0 connects=0
-  async environment ca-file-context-true = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  async environment ca-file-context-false = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  async environment ca-file-verify-off-true = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  async environment ca-file-verify-off-false = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  async environment https-proxy-file-true = 'TransportError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ProxyError'
-  origin arrivals=0 connects=0 proxy arrivals=1 connects=0 methods=['CONNECT']
-  async environment https-proxy-file-false = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
-  origin arrivals=0 connects=0 proxy arrivals=0 connects=0 methods=[]
-  async environment https-proxy-file-context-true = 'TransportError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ProxyError'
-  origin arrivals=0 connects=0 proxy arrivals=1 connects=0 methods=['CONNECT']
-  async environment https-proxy-file-context-false = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
-  origin arrivals=0 connects=0 proxy arrivals=0 connects=0 methods=[]
-  async environment https-proxy-file-verify-off-true = 'TransportError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ProxyError'
-  origin arrivals=0 connects=0 proxy arrivals=1 connects=0 methods=['CONNECT']
-  async environment https-proxy-file-verify-off-false = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
-  origin arrivals=0 connects=0 proxy arrivals=0 connects=0 methods=[]
-  async environment ca-directory-default = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  async environment ca-directory-true = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  async environment ca-directory-false = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
-  origin arrivals=0 connects=0 proxy arrivals=0 connects=0
-  async environment ca-directory-context-true = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  async environment ca-directory-context-false = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  async environment ca-directory-verify-off-true = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  async environment ca-directory-verify-off-false = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  async environment https-proxy-directory-true = 'TransportError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ProxyError'
-  origin arrivals=0 connects=0 proxy arrivals=1 connects=0 methods=['CONNECT']
-  async environment https-proxy-directory-false = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
-  origin arrivals=0 connects=0 proxy arrivals=0 connects=0 methods=[]
-  async environment https-proxy-directory-context-true = 'TransportError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ProxyError'
-  origin arrivals=0 connects=0 proxy arrivals=1 connects=0 methods=['CONNECT']
-  async environment https-proxy-directory-context-false = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
-  origin arrivals=0 connects=0 proxy arrivals=0 connects=0 methods=[]
-  async environment https-proxy-directory-verify-off-true = 'TransportError delivery=DeliveryState.MAYBE_SENT phase=unknown stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ProxyError'
-  origin arrivals=0 connects=0 proxy arrivals=1 connects=0 methods=['CONNECT']
-  async environment https-proxy-directory-verify-off-false = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
-  origin arrivals=0 connects=0 proxy arrivals=0 connects=0 methods=[]
-  async environment plain-proxy-context-false = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=1 proxy arrivals=0 connects=0
-  async environment plain-proxy-verify-off-false = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=1 proxy arrivals=0 connects=0
-  async environment plain-proxy-default-false = 'Response status=200 attempts=1 sends=1 wire=1'
   origin arrivals=1 connects=0 proxy arrivals=0 connects=0
 async size default/16777217 raw=False: status=200 bytes=16777217
   arrivals=1
