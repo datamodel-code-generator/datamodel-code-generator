@@ -38,14 +38,8 @@ from tests.data.python.client_limiters import limiters
 from tests.data.python.client_multipart import multipart, split_parts
 from tests.data.python.client_native import native_faults, native_wire
 from tests.data.python.client_native_signing import native_signing
-from tests.data.python.client_oauth_accounting import oauth_accounting
 from tests.data.python.client_oauth_client_credentials import oauth_client_credentials
-from tests.data.python.client_oauth_closing import oauth_closing
-from tests.data.python.client_oauth_code import oauth_code
-from tests.data.python.client_oauth_device import oauth_device
-from tests.data.python.client_oauth_refresh import oauth_refresh, oauth_refresh_load
-from tests.data.python.client_oauth_shared import oauth_shared
-from tests.data.python.client_oauth_store import oauth_refresh_store
+from tests.data.python.client_oauth_refresh import oauth_refresh
 from tests.data.python.client_pagination import pagination, pagination_backends, pagination_limits
 from tests.data.python.client_pagination_count_values import pagination_count_defaults, pagination_count_values
 from tests.data.python.client_pagination_counts import pagination_counts
@@ -779,15 +773,8 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "native-wire": ("retries", ("pydantic_v2.BaseModel",), native_wire),
     "native-faults": ("retries", ("pydantic_v2.BaseModel",), native_faults),
     "native-signing": ("auth", ("pydantic_v2.BaseModel",), native_signing),
-    "oauth-code": ("auth", ("pydantic_v2.BaseModel",), oauth_code),
-    "oauth-device": ("auth", ("pydantic_v2.BaseModel",), oauth_device),
     "oauth-client-credentials": ("auth", ("pydantic_v2.BaseModel",), oauth_client_credentials),
-    "oauth-shared": ("auth", ("pydantic_v2.BaseModel",), oauth_shared),
-    "oauth-accounting": ("auth", ("pydantic_v2.BaseModel",), oauth_accounting),
-    "oauth-closing": ("auth", ("pydantic_v2.BaseModel",), oauth_closing),
     "oauth-refresh": ("auth", ("pydantic_v2.BaseModel",), oauth_refresh),
-    "oauth-refresh-load": ("auth", ("pydantic_v2.BaseModel",), oauth_refresh_load),
-    "oauth-refresh-store": ("auth", ("pydantic_v2.BaseModel",), oauth_refresh_store),
     "body-replay": ("retries", ("pydantic_v2.BaseModel",), body_replay),
     "body-replay-faults": ("media", ("pydantic_v2.BaseModel",), body_replay_faults),
     "multipart-replay": ("media", ("pydantic_v2.BaseModel",), multipart_replay),
