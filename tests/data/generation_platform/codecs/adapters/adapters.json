@@ -1061,6 +1061,36 @@
     "name": "q",
     "media_type": "application/json"
    }
+  ],
+  [
+   "adapters",
+   {
+    "kind": "model",
+    "name": "repeated",
+    "import_ref": "app.codecs:pet_model",
+    "capabilities": {
+     "record": "CodecCapabilities",
+     "backends": [
+      "pydantic_v2.BaseModel"
+     ],
+     "native_kinds": [
+      "model"
+     ]
+    },
+    "uses": [
+     {
+      "schema": {
+       "pointer": "/components/schemas/Pet"
+      },
+      "direction": "request"
+     }
+    ],
+    "dependencies": [
+     "app-codecs",
+     "app-codecs"
+    ],
+    "python_requires": ">=3.10"
+   }
   ]
  ],
  "config": {

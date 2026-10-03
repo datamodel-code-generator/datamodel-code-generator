@@ -308,12 +308,11 @@ class _CodecPlanner:
         self.caches: dict[bool, dict[str, ModelBinding]] = {False: {}, True: {}}
         self.building: set[tuple[bool, str]] = set()
         self.aliases: set[int] = set()
-        self.diagnostics: list[CodecDiagnostic] = []
+        self.diagnostics: dict[CodecDiagnostic, None] = {}
         self.msgspec = _MsgspecTypes(self)
 
     def report(self, code: CodecReason, source: SourceLocation, message: str) -> None:
-        if (diagnostic := CodecDiagnostic(code, source, message)) not in self.diagnostics:
-            self.diagnostics.append(diagnostic)
+        self.diagnostics[CodecDiagnostic(code, source, message)] = None
 
     def spelled(self, use: TypeUseBinding, value: FinalPythonType) -> bool:
         types = [value]
