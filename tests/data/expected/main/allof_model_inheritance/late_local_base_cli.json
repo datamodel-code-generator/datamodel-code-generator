@@ -1,0 +1,10 @@
+{
+  "success": false,
+  "exit": 2,
+  "stdout": "",
+  "stderr": "Generated model Child (z.json#) requires local base Base (z.json#/$defs/Base) before its definition.\n",
+  "output_exists": true,
+  "files": {
+    "existing.py": "existing = True\n"
+  }
+}

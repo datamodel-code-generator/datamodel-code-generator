@@ -1,0 +1,5 @@
+{
+  "title": "Base",
+  "type": "object",
+  "properties": {"base": {"type": "string"}}
+}

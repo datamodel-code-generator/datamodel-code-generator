@@ -246,3 +246,25 @@ def inheritance_report(tmp_path: Path, run_cli: Any) -> str:
     sys.modules.pop("allof_models", None)
     text = json.dumps(report, indent=2) + "\n"
     return text.replace(str(tmp_path), "$WORK")
+
+
+def late_local_base_report(entry: str, tmp_path: Path, run_cli: Any) -> str:
+    """Record tree reuse rejecting a child moved to shared.py before its base."""
+    output = tmp_path / "package"
+    output.mkdir()
+    (output / "existing.py").write_text("existing = True\n")
+    row = {
+        "entry": entry,
+        "input": "jsonschema",
+        "backend": "pydantic_v2.BaseModel",
+        "candidate_expectation": "new generation Error before output",
+        "options": {"reuse_model": True, "reuse_scope": "tree"},
+    }
+    record = generation_row(
+        row,
+        Path("tests/data/allof_model_inheritance/fixtures/late_local_base"),
+        output,
+        run_cli,
+    )
+    record["files"] = {path.name: path.read_text() for path in output.iterdir()}
+    return json.dumps(record, indent=2) + "\n"
