@@ -8,12 +8,17 @@ paths:
         required: true
         content:
           application/json:
-            schema: {type: object, required: [id], properties: {id: {type: integer}}}
+            schema: {$ref: "#/components/schemas/First"}
       responses:
         "204": {description: Done.}
 components:
   schemas:
-    Unused:
-      type: object
-      properties:
-        id: {type: integer}
+    Third:
+      type: string
+    Second:
+      oneOf:
+        - $ref: "#/components/schemas/First"
+        - $ref: "#/components/schemas/Third"
+    First:
+      oneOf:
+        - $ref: "#/components/schemas/Second"

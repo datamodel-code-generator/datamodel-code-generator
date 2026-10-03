@@ -26,7 +26,7 @@ from datamodel_code_generator._client.pagination import (
     credential_place,
 )
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
-from datamodel_code_generator._generation_contract import AnnotatedType, NoneType, UnionType
+from datamodel_code_generator._target_contract import AnnotatedType, NoneType, UnionType
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
@@ -37,10 +37,10 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
     from datamodel_code_generator._codec_declarations import OperationRef
-    from datamodel_code_generator._generation_contract import FinalPythonType, OperationId, TypeUseBinding
     from datamodel_code_generator._openapi_codec_plan import CodecPlan
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.bindings import UseBinding
+    from datamodel_code_generator._target_contract import FinalPythonType, OperationId, TypeUseBinding
 
 STATES: Final = ("pending", "succeeded", "failed", "cancelled")
 _KINDS: Final = {"polling": "polling", "sse": "SSE", "ndjson": "NDJSON"}

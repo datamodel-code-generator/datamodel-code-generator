@@ -38,47 +38,31 @@ change pydantic_v2.BaseModel default discriminator
   @@ -20 +20 @@
   -    values: List[Annotated[Union[A, B], Field(discriminator='kind')]]
   +    values: List[Annotated[Union[A, B], Field(discriminator='other')]]
-  @@ -28 +27,0 @@
-  -  FieldBinding(field_id='models:Envelope.values', native_name='values', wire_name='values', validation_key='values', validation_keys=('values',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=UnionNode(members=(ModelNode(symbol='models:A'), ModelNode(symbol='models:B')))))
 change pydantic_v2.BaseModel default missing-metadata
   @@ -20 +20 @@
   -    values: List[Annotated[Union[A, B], Field(discriminator='kind')]]
   +    values: List[Union[A, B]]
-  @@ -28 +27,0 @@
-  -  FieldBinding(field_id='models:Envelope.values', native_name='values', wire_name='values', validation_key='values', validation_keys=('values',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=UnionNode(members=(ModelNode(symbol='models:A'), ModelNode(symbol='models:B')))))
 change pydantic_v2.BaseModel default wrong-callee
   @@ -20 +20 @@
   -    values: List[Annotated[Union[A, B], Field(discriminator='kind')]]
   +    values: List[Annotated[Union[A, B], BaseModel(discriminator='kind')]]
-  @@ -28 +27,0 @@
-  -  FieldBinding(field_id='models:Envelope.values', native_name='values', wire_name='values', validation_key='values', validation_keys=('values',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=UnionNode(members=(ModelNode(symbol='models:A'), ModelNode(symbol='models:B')))))
 change pydantic_v2.BaseModel default missing-keyword
   @@ -20 +20 @@
   -    values: List[Annotated[Union[A, B], Field(discriminator='kind')]]
   +    values: List[Annotated[Union[A, B], Field()]]
-  @@ -28 +27,0 @@
-  -  FieldBinding(field_id='models:Envelope.values', native_name='values', wire_name='values', validation_key='values', validation_keys=('values',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=UnionNode(members=(ModelNode(symbol='models:A'), ModelNode(symbol='models:B')))))
 change pydantic_v2.BaseModel default positional
   @@ -20 +20 @@
   -    values: List[Annotated[Union[A, B], Field(discriminator='kind')]]
   +    values: List[Annotated[Union[A, B], Field('kind')]]
-  @@ -28 +27,0 @@
-  -  FieldBinding(field_id='models:Envelope.values', native_name='values', wire_name='values', validation_key='values', validation_keys=('values',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=UnionNode(members=(ModelNode(symbol='models:A'), ModelNode(symbol='models:B')))))
 change pydantic_v2.BaseModel default short-annotated
   @@ -20 +20 @@
   -    values: List[Annotated[Union[A, B], Field(discriminator='kind')]]
   +    values: List[Annotated[Union[A, B]]]
-  @@ -28 +27,0 @@
-  -  FieldBinding(field_id='models:Envelope.values', native_name='values', wire_name='values', validation_key='values', validation_keys=('values',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=UnionNode(members=(ModelNode(symbol='models:A'), ModelNode(symbol='models:B')))))
 change pydantic_v2.BaseModel default literal-metadata
   @@ -20 +20 @@
   -    values: List[Annotated[Union[A, B], Field(discriminator='kind')]]
   +    values: List[Annotated[Union[A, B], 'kind']]
-  @@ -28 +27,0 @@
-  -  FieldBinding(field_id='models:Envelope.values', native_name='values', wire_name='values', validation_key='values', validation_keys=('values',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=UnionNode(members=(ModelNode(symbol='models:A'), ModelNode(symbol='models:B')))))
 change pydantic_v2.BaseModel default metadata-unpack
   @@ -20 +20 @@
   -    values: List[Annotated[Union[A, B], Field(discriminator='kind')]]
   +    values: List[Annotated[Union[A, B], Field(**settings)]]
-  @@ -28 +27,0 @@
-  -  FieldBinding(field_id='models:Envelope.values', native_name='values', wire_name='values', validation_key='values', validation_keys=('values',), required=True, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=UnionNode(members=(ModelNode(symbol='models:A'), ModelNode(symbol='models:B')))))

@@ -1,4 +1,4 @@
-"""Exercise the real capture session through the existing generation driver."""
+"""Exercise the target generation session through the existing generation driver."""
 
 from __future__ import annotations
 
@@ -7,8 +7,7 @@ import hashlib
 import sys
 import weakref
 from contextlib import suppress
-from contextvars import copy_context
-from dataclasses import replace
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -22,94 +21,124 @@ from datamodel_code_generator import (
     _run_generation,
 )
 from datamodel_code_generator._generation_contract import BindingCaptureError
-from datamodel_code_generator._openapi_artifacts import ModelArtifact
-from datamodel_code_generator._openapi_generation import (
-    OpenAPIGenerationSession,
-)
-from datamodel_code_generator.enums import AllOfMergeMode
-from datamodel_code_generator.parser import openapi_contract
+from datamodel_code_generator._openapi_generation import TargetGenerationSession
 from datamodel_code_generator.parser.openapi import OpenAPIParser
-from datamodel_code_generator.parser.openapi_contract import BindingCaptureMixin
 
 if TYPE_CHECKING:
     from types import FrameType
-
-    from datamodel_code_generator._openapi_generation import ModelGenerationProduct
 
 
 class GenerationSessionObserver:
     """Profile completed real calls without replacing parsers, stores, or sessions."""
 
-    def __init__(self) -> None:
-        """Keep only traces, digests, and weak object handles."""
+    def __init__(self, session: type[TargetGenerationSession] = TargetGenerationSession) -> None:
+        """Keep only traces, digests, and weak object handles for one session type."""
+        self.session = session
         self.events: list[str] = []
         self.parsers: list[weakref.ReferenceType[OpenAPIParser]] = []
         self.graph: list[weakref.ReferenceType[object]] = []
         self.hashes: dict[int, str] = {}
         self.factory_reads = 0
-        self.import_contexts = []
+        self.dispose_codes: set[object] = set()
 
     def record(self, frame: FrameType, event: str, value: Any) -> None:
         """Observe real driver boundaries without modifying return values."""
-        code = frame.f_code
-        if event == "return" and code is BindingCaptureMixin._collect_used_names_from_models.__func__.__code__:
-            self.import_contexts.append(copy_context())
-        if event == "return" and code is OpenAPIGenerationSession.__call__.__code__ and value is not None:
+        code, session = frame.f_code, self.session
+        if event == "return" and code is session.__call__.__code__ and value is not None:
             self.parsers.append(weakref.ref(value))
+            self.dispose_codes.add(type(value).dispose.__code__)
         if event != "call":
             return
+        if code in self.dispose_codes:
+            self.events.append(f"dispose:{frame.f_locals['self'].attempt}")
+            return
         if code not in {
-            OpenAPIGenerationSession.parser_factory.fget.__code__,
-            OpenAPIGenerationSession.__call__.__code__,
+            session.parser_factory.fget.__code__,
+            session.__call__.__code__,
             OpenAPIParser.parse.__code__,
-            BindingCaptureMixin.dispose.__code__,
-            OpenAPIGenerationSession.freeze_attempt.__code__,
-            OpenAPIGenerationSession.accept_attempt.__code__,
-            OpenAPIGenerationSession.discard_attempt.__code__,
-            OpenAPIGenerationSession.close.__code__,
+            session.freeze_attempt.__code__,
+            session.accept_attempt.__code__,
+            session.discard_attempt.__code__,
+            session.close.__code__,
         }:
             return
         local = frame.f_locals
-        if code is OpenAPIGenerationSession.parser_factory.fget.__code__:
+        if code is session.parser_factory.fget.__code__:
             self.factory_reads += 1
-        if code is OpenAPIGenerationSession.__call__.__code__:
-            self.events.append(f"construct:{local['self']._next_attempt + 1}")
+        if code is session.__call__.__code__:
+            self.events.append(f"construct:{len(self.parsers) + 1}")
         elif code is OpenAPIParser.parse.__code__:
-            self.events.append(f"parse:{local['self'].binding_ledger.attempt_id}")
-        elif code is BindingCaptureMixin.dispose.__code__:
-            self.events.append(f"dispose:{local['self'].binding_ledger.attempt_id}")
-        elif code is OpenAPIGenerationSession.freeze_attempt.__code__:
+            self.events.append(f"parse:{local['self'].attempt}")
+        elif code is session.freeze_attempt.__code__:
             parser, results = local["parser"], local["results"]
-            if not isinstance(parser, BindingCaptureMixin):
-                return
-            attempt = parser.binding_ledger.attempt_id
-            self.events.append(f"freeze:{attempt}:{bool(parser.results)}")
+            self.events.append(f"freeze:{parser.attempt}:{bool(parser.results)}")
             body = results if isinstance(results, str) else "\n".join(result.body for result in results.values())
-            self.hashes[attempt] = hashlib.sha256(body.encode()).hexdigest()
-            self.graph.extend(weakref.ref(node) for node in parser.binding_ledger._anchors)
-        elif code is OpenAPIGenerationSession.accept_attempt.__code__:
+            self.hashes[parser.attempt] = hashlib.sha256(body.encode()).hexdigest()
+            self.graph.extend(
+                weakref.ref(model) for _, models, _ in getattr(parser, "module_outputs", ()) for model in models
+            )
+        elif code is session.accept_attempt.__code__:
             self.events.append(f"accept:{local['attempt_id']}")
-        elif code is OpenAPIGenerationSession.discard_attempt.__code__:
-            if isinstance(parser := local["parser"], BindingCaptureMixin):
-                self.events.append(f"discard:{parser.binding_ledger.attempt_id}")
-        elif code is OpenAPIGenerationSession.close.__code__:
+        elif code is session.discard_attempt.__code__:
+            self.events.append(f"discard:{local['parser'].attempt}")
+        elif code is session.close.__code__:
             self.events.append("close")
 
 
-@pytest.mark.abnormal_path("traces the session lifecycle while a test injects capture, parse, or release faults")
+@dataclass(frozen=True)
+class _Accepted:
+    attempt: int
+
+
+class OrdinaryCaptureSession(TargetGenerationSession):
+    """Capture attempts of ordinary OpenAPI parsing, which only the released driver contract sees."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Count attempts without binding operations."""
+        super().__init__(**kwargs)
+        self.attempts = 0
+        self.accepted = 0
+
+    def __call__(self, *, source: Any, config: Any) -> OpenAPIParser:
+        """Construct an ordinary parser for the next attempt."""
+        self.attempts += 1
+        parser = OpenAPIParser(source, config=config)
+        parser.attempt = self.attempts
+        return parser
+
+    def freeze_attempt(self, parser: Any, results: Any) -> Any:
+        """Remember the attempt without projecting its graph."""
+        self.accepted = parser.attempt
+        return parser.attempt
+
+    @staticmethod
+    def discard_attempt(parser: Any) -> None:
+        """Hold no attempt state to release."""
+
+    def take_accepted_batch(self) -> Any:
+        """Return the accepted attempt."""
+        return _Accepted(self.accepted)
+
+
+def _session(source: Path, session: type[TargetGenerationSession] = TargetGenerationSession) -> TargetGenerationSession:
+    return session(output=Path("models.py"), model_package="models", root_selector_document=source.as_uri())
+
+
+@pytest.mark.abnormal_path("traces the session lifecycle while a test injects parse, bind, or release faults")
 def run_generation_session(
     source: Path,
     *,
     failure: str = "",
     monkeypatch: pytest.MonkeyPatch | None = None,
     output: Path | None = None,
-    document: dict[str, Any] | None = None,
-    field_constraints: bool = False,
-    api_scope: bool = False,
-    allof_merge_mode: AllOfMergeMode = AllOfMergeMode.Constraints,
+    api_scope: bool = True,
 ) -> tuple[dict[str, object], int]:
-    """Use the real accepted batch while preserving the independent S01 trace oracle."""
-    observer = GenerationSessionObserver()
+    """Use the real accepted batch while preserving the independent S01 trace oracle.
+
+    Without the API scope, an ordinary capture session drives the released driver contract instead of a target.
+    """
+    session_type = TargetGenerationSession if api_scope else OrdinaryCaptureSession
+    observer = GenerationSessionObserver(session_type)
     config = _prepare_generate_facade_config(
         GenerateConfig(
             input_file_type="openapi",
@@ -117,14 +146,10 @@ def run_generation_session(
             disable_timestamp=True,
             collapse_root_models=True,
             output=output,
-            field_constraints=field_constraints,
-            openapi_scopes=[OpenAPIScope.Api] if api_scope else None,
-            allof_merge_mode=allof_merge_mode,
+            openapi_scopes=[OpenAPIScope.Schemas, OpenAPIScope.Api] if api_scope else None,
         ).model_copy(update={"repair_invalid_dotted_stdout": True})
     )
-    session = OpenAPIGenerationSession(
-        output=Path("models.py"), model_package="models", root_selector_document=source.as_uri()
-    )
+    session = _session(source, session_type)
     if failure and monkeypatch is not None:
         _inject_session_failure(monkeypatch, failure, source)
     previous = sys.getprofile()
@@ -133,9 +158,7 @@ def run_generation_session(
     accepted = None
     error = None
     try:
-        result = _run_generation(
-            document if document is not None else source, config, Path.cwd(), use_output_cwd=False, capture=session
-        )
+        result = _run_generation(source, config, Path.cwd(), use_output_cwd=False, capture=session)
         batch = session.take_accepted_batch()
         accepted = (batch.attempt, observer.hashes[batch.attempt])
         session.close()
@@ -157,14 +180,6 @@ def run_generation_session(
         else None,
         "retained_parsers": sum(parser() is not None for parser in observer.parsers),
     }
-    if failure in {"import_observation", "repair_import_observation", "import_engine", "repair_import_engine"}:
-        observation["import_observations"] = bool(observer.import_contexts)
-        observation["import_contexts_cleared"] = all(
-            not frame.values and frame.failure is None
-            for context in observer.import_contexts
-            for frame in (context.run(openapi_contract._module_import_frame.get),)
-        )
-        observation["ambient_context_clear"] = openapi_contract._module_import_frame.get() is None
     return observation, sum(node() is not None for node in observer.graph)
 
 
@@ -174,9 +189,7 @@ def observe_api_session(
 ) -> tuple[Any, dict[str, object]]:
     """Observe real API factory selection, acceptance, and disposal against the S02 oracle."""
     observer = GenerationSessionObserver()
-    session = OpenAPIGenerationSession(
-        output=Path("models.py"), model_package="models", root_selector_document=source.as_uri()
-    )
+    session = _session(source)
     if failure and monkeypatch is not None:
         _inject_session_failure(monkeypatch, failure, source)
     previous = sys.getprofile()
@@ -200,32 +213,16 @@ def observe_api_session(
 
 @pytest.mark.abnormal_path("replaces session and parser boundaries to inject faults no input can cause")
 def _inject_session_failure(monkeypatch: pytest.MonkeyPatch, failure: str, source: Path) -> None:
-    """Inject only exceptional boundaries while preserving the real session and frozen batches."""
-    construct = BindingCaptureMixin.__init__
+    """Inject only exceptional boundaries while preserving the real session and bound batches."""
     ordinary_parse = OpenAPIParser.parse
     ordinary_dispose = OpenAPIParser.dispose
-    freeze = OpenAPIGenerationSession.freeze_attempt
-    accept = OpenAPIGenerationSession.accept_attempt
-    discard = OpenAPIGenerationSession.discard_attempt
-    close = OpenAPIGenerationSession.close
-    import_frame = openapi_contract.ModuleImportFrame
+    freeze = TargetGenerationSession.freeze_attempt
+    accept = TargetGenerationSession.accept_attempt
+    discard = TargetGenerationSession.discard_attempt
+    close = TargetGenerationSession.close
 
-    class FailedImportValues(dict):
-        def update(self, *args: Any, **kwargs: Any) -> None:
-            raise RuntimeError("import observation failed")
-
-    def failed_import_frame(values: Any) -> Any:
-        return import_frame(FailedImportValues())
-
-    def failed_import_collector(cls: type, *args: Any, **kwargs: Any) -> Any:
-        raise RuntimeError("ordinary imports failed")
-
-    def mismatched_construct(self: BindingCaptureMixin, *args: Any, **kwargs: Any) -> None:
-        kwargs["binding_ledger"].attempt_id += 1
-        construct(self, *args, **kwargs)
-
-    def failed_parse(self: BindingCaptureMixin, *args: Any, **kwargs: Any) -> Any:
-        attempt = self.binding_ledger.attempt_id
+    def failed_parse(self: OpenAPIParser, *args: Any, **kwargs: Any) -> Any:
+        attempt = self.attempt
         match failure:
             case "collapse_always" | "collapse_once" if failure == "collapse_always" or attempt == 1:
                 message = "collapse failed"
@@ -236,26 +233,11 @@ def _inject_session_failure(monkeypatch: pytest.MonkeyPatch, failure: str, sourc
             case "repair_parse" if attempt == 2:
                 message = "repair parse failed"
                 raise RuntimeError(message)
-            case "repair_capture" if attempt == 2:
-                error = BindingCaptureError("record failed")
-                self.binding_ledger.remember_failure(error)
-                raise error
-            case "import_observation" | "repair_import_observation" | "import_engine" | "repair_import_engine" if (
-                failure in {"import_observation", "import_engine"} or attempt == 2
-            ):
-                with monkeypatch.context() as fault:
-                    if failure.endswith("_engine"):
-                        fault.setattr(
-                            OpenAPIParser, "_collect_used_names_from_models", classmethod(failed_import_collector)
-                        )
-                    else:
-                        fault.setattr(openapi_contract, "ModuleImportFrame", failed_import_frame)
-                    return ordinary_parse(self, *args, **kwargs)
         return ordinary_parse(self, *args, **kwargs)
 
-    def failed_dispose(self: BindingCaptureMixin) -> None:
+    def failed_dispose(self: OpenAPIParser) -> None:
         ordinary_dispose(self)
-        attempt = self.binding_ledger.attempt_id
+        attempt = self.attempt
         if attempt == 1 and failure in {"source_change", "discard"}:
             with source.open("a", encoding="utf-8") as stream:
                 stream.write("\nx-test-repair: changed\n")
@@ -263,271 +245,33 @@ def _inject_session_failure(monkeypatch: pytest.MonkeyPatch, failure: str, sourc
             message = "dispose failed"
             raise RuntimeError(message)
 
-    def failed_freeze(self: OpenAPIGenerationSession, parser: BindingCaptureMixin, results: Any) -> Any:
-        if failure == "lease_lost":
-            parser.source_lease._by_uri.clear()
-        if failure in {"freeze", "freeze_dispose"} or (
-            failure == "repair_freeze" and parser.binding_ledger.attempt_id == 2
-        ):
-            error = BindingCaptureError("freeze failed")
-            parser.binding_ledger.remember_failure(error)
-            raise error
+    def failed_freeze(self: TargetGenerationSession, parser: OpenAPIParser, results: Any) -> Any:
+        if failure in {"freeze", "freeze_dispose"} or (failure == "repair_freeze" and parser.attempt == 2):
+            message = "freeze failed"
+            raise BindingCaptureError(message)
         return freeze(self, parser, results)
 
-    def failed_accept(self: OpenAPIGenerationSession, attempt_id: Any) -> None:
+    def failed_accept(self: TargetGenerationSession, attempt_id: Any) -> None:
         if failure == "accept":
             message = "accept failed"
             raise BindingCaptureError(message)
         accept(self, attempt_id)
 
-    def failed_discard(self: OpenAPIGenerationSession, parser: BindingCaptureMixin) -> None:
+    def failed_discard(parser: OpenAPIParser) -> None:
         if failure == "discard":
             message = "discard failed"
             raise RuntimeError(message)
-        discard(self, parser)
+        discard(parser)
 
-    def failed_close(self: OpenAPIGenerationSession) -> None:
+    def failed_close(self: TargetGenerationSession) -> None:
         close(self)
         if failure in {"close", "parse_close"}:
             message = "close failed"
             raise RuntimeError(message)
 
     monkeypatch.setattr(OpenAPIParser, "parse", failed_parse)
-    if failure == "parser_attempt":
-        monkeypatch.setattr(BindingCaptureMixin, "__init__", mismatched_construct)
     monkeypatch.setattr(OpenAPIParser, "dispose", failed_dispose)
-    monkeypatch.setattr(OpenAPIGenerationSession, "freeze_attempt", failed_freeze)
-    monkeypatch.setattr(OpenAPIGenerationSession, "accept_attempt", failed_accept)
-    monkeypatch.setattr(OpenAPIGenerationSession, "discard_attempt", failed_discard)
-    monkeypatch.setattr(OpenAPIGenerationSession, "close", failed_close)
-
-
-def generate_product(
-    source: Path,
-    config: GenerateConfig,
-    *,
-    artifact_failure: str = "",
-) -> ModelGenerationProduct:
-    """Finish ordinary emission, then transfer real immutable values and borrowed sources."""
-    session = OpenAPIGenerationSession(
-        output=Path("models.py"), model_package="models", root_selector_document=source.as_uri()
-    )
-    try:
-        result = _run_generation(
-            source, _prepare_generate_facade_config(config), Path.cwd(), use_output_cwd=False, capture=session
-        )
-        artifacts = (
-            (ModelArtifact(("models.py",), result.encode()),)
-            if isinstance(result, str)
-            else tuple(ModelArtifact(key, value.encode()) for key, value in result.items())
-            if isinstance(result, dict)
-            else ()
-        )
-        match artifact_failure:
-            case "duplicate":
-                artifacts = (*artifacts, artifacts[0])
-            case "missing":
-                artifacts = ()
-            case "encoding":
-                artifacts = (replace(artifacts[0], content=b"\xff"),)
-            case "syntax":
-                artifacts = (replace(artifacts[0], content=b'"""'),)
-            case "unknown_encoding":
-                artifacts = (replace(artifacts[0], encoding="unknown-artifact-encoding"),)
-        product = session.take_product(artifacts, allow_empty_api=True)
-    finally:
-        session.close()
-    return product
-
-
-@pytest.mark.abnormal_path("drives the session protocol with foreign and repeated transfers no caller makes")
-def _exercise_session_protocol(
-    source: Path, case: str, observer: GenerationSessionObserver
-) -> tuple[list[tuple[str, str]], int | None]:
-    """Exercise invalid ownership and transfer requests around one real driver execution."""
-    from datamodel_code_generator._generation_contract import AttemptId
-    from datamodel_code_generator.config import OpenAPIParserConfig
-
-    session = OpenAPIGenerationSession(
-        output=Path("models.py"), model_package="models", root_selector_document=source.as_uri()
-    )
-    other = OpenAPIGenerationSession(
-        output=Path("models.py"), model_package="models", root_selector_document=source.as_uri()
-    )
-    parsers = []
-    errors = []
-    accepted = None
-    previous = sys.getprofile()
-
-    def record(frame: FrameType, event: str, value: Any) -> None:
-        observer.record(frame, event, value)
-        if event == "return" and frame.f_code is OpenAPIGenerationSession.__call__.__code__ and value is not None:
-            parsers.append(value)
-
-    sys.setprofile(record)
-    try:
-        if case in {"batch_before_generation", "lease_before_generation", "product_before_generation"}:
-            try:
-                if case == "batch_before_generation":
-                    session.take_accepted_batch()
-                elif case == "lease_before_generation":
-                    session.source_lease
-                else:
-                    session.take_product((), allow_empty_api=True)
-            except RuntimeError as error:
-                errors.append((type(error).__name__, str(error)))
-        if case == "unused_attempt":
-            session(source=source, config=OpenAPIParserConfig(formatters=[]))
-        result = _run_generation(
-            source,
-            _prepare_generate_facade_config(
-                GenerateConfig(input_file_type="openapi", formatters=[], disable_timestamp=True)
-            ),
-            Path.cwd(),
-            use_output_cwd=False,
-            capture=session,
-        )
-        if not isinstance(result, str):
-            raise TypeError(type(result))
-        match case:
-            case "closed_session":
-                session.close()
-                session.take_accepted_batch()
-            case "duplicate_transfer":
-                accepted = session.take_accepted_batch().attempt
-                session.take_accepted_batch()
-            case "discard_accepted":
-                session.discard_attempt(parsers[-1])
-                session.discard_attempt(parsers[-1])
-                session.source_lease
-            case "foreign_freeze":
-                foreign = other(source=source, config=OpenAPIParserConfig(formatters=[]))
-                session.freeze_attempt(foreign, result)
-            case "ordinary_freeze":
-                foreign = OpenAPIParser(source, config=OpenAPIParserConfig(formatters=[]))
-                parsers.append(foreign)
-                session.freeze_attempt(foreign, result)
-            case "foreign_discard":
-                foreign = other(source=source, config=OpenAPIParserConfig(formatters=[]))
-                session.discard_attempt(foreign)
-                accepted = session.take_accepted_batch().attempt
-            case "ordinary_discard":
-                foreign = OpenAPIParser(source, config=OpenAPIParserConfig(formatters=[]))
-                parsers.append(foreign)
-                session.discard_attempt(foreign)
-                accepted = session.take_accepted_batch().attempt
-            case "wrong_accept":
-                session.accept_attempt(AttemptId(99))
-            case "product_after_transfer":
-                accepted = session.take_accepted_batch().attempt
-                session.take_product((ModelArtifact(("models.py",), result.encode()),), allow_empty_api=True)
-            case _:
-                accepted = session.take_accepted_batch().attempt
-    except RuntimeError as error:
-        errors.append((type(error).__name__, str(error)))
-    finally:
-        sys.setprofile(previous)
-        for parser in parsers:
-            parser.dispose()
-        parsers.clear()
-        foreign = None
-        parser = None
-        session.close()
-        other.close()
-    return errors, accepted
-
-
-def session_protocol_failure(source: Path, case: str) -> dict[str, object]:
-    """Measure retained graphs after the complete failing ownership call returns."""
-    observer = GenerationSessionObserver()
-    errors, accepted = _exercise_session_protocol(source, case, observer)
-    gc.collect()
-    return {
-        "errors": errors,
-        "accepted": accepted,
-        "retained_graph": sum(node() is not None for node in observer.graph),
-        "retained_parsers": sum(node() is not None for node in observer.parsers),
-    }
-
-
-@pytest.mark.abnormal_path("injects cleanup failures into the session release path")
-def session_cleanup_failures(source: Path, case: str, monkeypatch: pytest.MonkeyPatch) -> dict[str, object]:
-    """Check first-failure identity and resource release after the entire failed call returns."""
-    from datamodel_code_generator._openapi_generation import SourceLease
-    from datamodel_code_generator.config import OpenAPIParserConfig
-    from datamodel_code_generator.parser import openapi_contract_freeze
-    from datamodel_code_generator.parser.openapi_contract_store import BindingLedger
-
-    observer = GenerationSessionObserver()
-
-    def exercise() -> dict[str, object]:
-        session = OpenAPIGenerationSession(
-            output=Path("models.py"), model_package="models", root_selector_document=source.as_uri()
-        )
-        config = _prepare_generate_facade_config(
-            GenerateConfig(input_file_type="openapi", formatters=[], disable_timestamp=True)
-        )
-        first = ValueError("freeze projection failed") if case == "freeze" else RuntimeError("release:1")
-        ledger_close, lease_close = BindingLedger.close, SourceLease.close
-        closed = []
-        unused = None
-        result = {}
-
-        def fail_freeze(*args: Any, **kwargs: Any) -> None:
-            raise first
-
-        def fail_release(ledger: BindingLedger) -> None:
-            ledger_close(ledger)
-            if ledger.attempt_id == 1:
-                raise first
-            raise RuntimeError("release:2")
-
-        def release_lease(lease: SourceLease) -> None:
-            lease_close(lease)
-            closed.append(lease)
-            if case == "reentrant" and len(closed) == 1:
-                session.close()
-
-        previous = sys.getprofile()
-        sys.setprofile(observer.record)
-        try:
-            with monkeypatch.context() as fault:
-                if case == "freeze":
-                    fault.setattr(openapi_contract_freeze, "freeze_generation_attempt", fail_freeze)
-                try:
-                    _run_generation(source, config, Path.cwd(), use_output_cwd=False, capture=session)
-                    unused = session(source=source, config=OpenAPIParserConfig(formatters=[]))
-                    fault.setattr(BindingLedger, "close", fail_release)
-                    fault.setattr(SourceLease, "close", release_lease)
-                    session.close()
-                except (BindingCaptureError, RuntimeError) as error:
-                    result = {
-                        "error": str(error),
-                        "first_failure_preserved": error.__cause__ is first if case == "freeze" else error is first,
-                    }
-                    if case == "freeze":
-                        try:
-                            session.raise_if_failed()
-                        except BindingCaptureError as latched:
-                            result["latched"] = latched is error
-            if unused is not None:
-                unused.dispose()
-            result["closed_leases"] = len(closed)
-            for lease in closed:
-                try:
-                    lease.documents()
-                except RuntimeError:
-                    continue
-                raise AssertionError("A failed release left a source lease open")
-        finally:
-            session.close()
-            sys.setprofile(previous)
-        return result
-
-    result = exercise()
-    gc.collect()
-    result.update(
-        retained_graph=sum(node() is not None for node in observer.graph),
-        retained_parsers=sum(node() is not None for node in observer.parsers),
-    )
-    return result
+    monkeypatch.setattr(TargetGenerationSession, "freeze_attempt", failed_freeze)
+    monkeypatch.setattr(TargetGenerationSession, "accept_attempt", failed_accept)
+    monkeypatch.setattr(TargetGenerationSession, "discard_attempt", staticmethod(failed_discard))
+    monkeypatch.setattr(TargetGenerationSession, "close", failed_close)

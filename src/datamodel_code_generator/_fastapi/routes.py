@@ -9,12 +9,12 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
 
 from datamodel_code_generator._fastapi.naming import file_stem_conflict, normalize
-from datamodel_code_generator._generation_contract import LiteralScalar, LiteralSequence
+from datamodel_code_generator._target_contract import LiteralScalar, LiteralSequence
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from datamodel_code_generator._generation_contract import OperationContract
+    from datamodel_code_generator._target_contract import OperationContract
 
 MARKER: Final = "x-dcg-operation"
 _PLACEHOLDER: Final = re.compile(r"\{([^{}]*)\}")

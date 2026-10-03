@@ -19,6 +19,7 @@ render pydantic_v2.BaseModel default
       mode: Optional[Mode] = Mode.eval
   model_bindings.py
   _model_0 symbol='models:Model', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Model'
+    FieldBinding(field_id='models:Model.mode', native_name='mode', wire_name='mode', validation_key='mode', validation_keys=('mode',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   codec_0 -> PydanticModelCodec[models.Mode]
   codec_1 -> PydanticModelCodec[models.Mode]
   codec_2 -> PydanticModelCodec[models.Model]

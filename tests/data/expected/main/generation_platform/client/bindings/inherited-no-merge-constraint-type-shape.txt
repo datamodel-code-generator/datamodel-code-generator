@@ -302,7 +302,7 @@ render pydantic_v2.BaseModel default
   _model_20 symbol='models:NestedObjectValue', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Child/allOf/1/properties/nestedObjectValue'
     FieldBinding(field_id='models:NestedObjectValue.detail', native_name='detail', wire_name='detail', validation_key='detail', validation_keys=('detail',), required=True, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:Detail'))
     FieldBinding(field_id='models:NestedObjectValue.label', native_name='label', wire_name='label', validation_key='label', validation_keys=('label',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_21 symbol='models:TupleValueItem1', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Child/allOf/1/properties/tupleValue/prefixItems/0', root=LeafNode()
+  _model_21 symbol='models:TupleValueItem1', native_kind='root', schema_id=None, root=LeafNode()
   _model_22 symbol='models:UnionArrayContainsValue', native_kind='root', schema_id=None, root=ArrayNode(item=LeafNode())
   _model_23 symbol='models:UnionArrayLengthValue', native_kind='root', schema_id=None, root=ArrayNode(item=LeafNode())
   _model_24 symbol='models:UnionObjectCountValue', native_kind='root', schema_id=None, root=MapNode(value=LeafNode())
