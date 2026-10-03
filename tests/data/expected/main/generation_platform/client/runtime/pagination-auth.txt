@@ -3,23 +3,11 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token-1] b''
   > GET https://api.example.com/secure/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token-1] b''
-  tokens counted ['1', '2']
-    progress {'pages': 2, 'items': 2, 'network_send_count': 3, 'network_send_budget_used': 3} token sends=1
-  no room for a token [] ! AuthBudgetExceededError: AuthBudgetExceededError(operation_id='listSecureUsers', call_id='<call>', state='UNINITIALIZED', delivery_state='NOT_SENT', phase='admission', budget_kind='parent_network', limit=1, used=0) [operation_id='listSecureUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='admission', limit=1] auth_budget_exceeded_error
-    progress {'pages': 0, 'items': 0, 'network_send_count': 0, 'network_send_budget_used': 0} token sends=0
-  > GET https://api.example.com/secure/users
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token-1] b''
-  no room to recover from a rejected token [] ! ListSecureUsersHTTPError: ListSecureUsersHTTPError(status_code=401, operation_id='listSecureUsers', call_id='<call>', retry_stop_reason='parent_budget_exhausted') [operation_id='listSecureUsers', status_code=401, error_decoded=False, body_bytes=b'{"message":"expired"}', truncated=False] list_secure_users_http_error
-    progress {'pages': 0, 'items': 0, 'network_send_count': 2, 'network_send_budget_used': 2} token sends=1
+  pages share one token ['1', '2']
+    progress {'pages': 2, 'items': 2, 'network_send_count': 2, 'network_send_budget_used': 2} token sends=1
   > GET https://api.example.com/secure/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token-1] b''
   > GET https://api.example.com/secure/users?cursor=a
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token-1] b''
-  async tokens counted ['1', '2']
-    progress {'pages': 2, 'items': 2, 'network_send_count': 3, 'network_send_budget_used': 3} token sends=1
-  async no room for a token [] ! AuthBudgetExceededError: AuthBudgetExceededError(operation_id='listSecureUsers', call_id='<call>', state='UNINITIALIZED', delivery_state='NOT_SENT', phase='admission', budget_kind='parent_network', limit=1, used=0) [operation_id='listSecureUsers', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='admission', limit=1] auth_budget_exceeded_error
-    progress {'pages': 0, 'items': 0, 'network_send_count': 0, 'network_send_budget_used': 0} token sends=0
-  > GET https://api.example.com/secure/users
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, authorization: Bearer token-1] b''
-  async no room to recover from a rejected token [] ! ListSecureUsersHTTPError: ListSecureUsersHTTPError(status_code=401, operation_id='listSecureUsers', call_id='<call>', retry_stop_reason='parent_budget_exhausted') [operation_id='listSecureUsers', status_code=401, error_decoded=False, body_bytes=b'{"message":"expired"}', truncated=False] list_secure_users_http_error
-    progress {'pages': 0, 'items': 0, 'network_send_count': 2, 'network_send_budget_used': 2} token sends=1
+  async pages share one token ['1', '2']
+    progress {'pages': 2, 'items': 2, 'network_send_count': 2, 'network_send_budget_used': 2} token sends=1
