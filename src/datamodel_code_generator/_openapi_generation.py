@@ -92,7 +92,7 @@ class TargetGenerationSession:
         """Bind an attempt before its parser is disposed, replacing the previous candidate on success."""
         from datamodel_code_generator._target_binding import bind_operations  # noqa: PLC0415
 
-        target = cast("TargetApiOpenAPIParser", parser)
+        target: TargetApiOpenAPIParser = cast("TargetApiOpenAPIParser", parser)
         try:
             self._candidate = bind_operations(
                 target,
@@ -114,7 +114,8 @@ class TargetGenerationSession:
     @staticmethod
     def discard_attempt(parser: OpenAPIParser) -> None:
         """Release a rejected attempt's records after the driver's original parser disposal."""
-        cast("TargetApiOpenAPIParser", parser).release_records()
+        target: TargetApiOpenAPIParser = cast("TargetApiOpenAPIParser", parser)
+        target.release_records()
 
     def raise_if_failed(self) -> None:
         """Binding failures propagate where they occur, so no repair can hide one."""
