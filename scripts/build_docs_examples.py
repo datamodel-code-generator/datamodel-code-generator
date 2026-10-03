@@ -591,6 +591,15 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
+            example_id="python-client.cache.keys",
+            path=DOCS / "python-client.md",
+            render=lambda: (
+                "\n"
+                + blocks(EXPECTED_CLIENT / "documentation" / "caching.txt", "`fetch` returns a `CacheResult`")
+                + "\n"
+            ),
+        ),
+        DocsExample(
             example_id="python-client.cache.yaml",
             path=DOCS / "python-client.md",
             render=lambda: fenced("yaml", yaml_helpers(CLIENT_DATA / "protocols" / "caching.yaml", "users.profile")),

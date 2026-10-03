@@ -59,10 +59,10 @@ model_codecs/views.py: .bindings, .capabilities, .context, .parameters, .wire, _
 model_codecs/wire.py: .errors, __future__, collections.abc, dataclasses, decimal, math, re, types, typing, typing_extensions
 protocols/__init__.py: -
 protocols/adapters.py: ..client.errors, .webhook_events, .webhooks, __future__, collections.abc, dataclasses, datetime, types, typing, typing_extensions
-protocols/cache.py: ..client.bodies, ..client.client, ..client.compression, ..client.errors, ..client.media, ..client.operations, ..client.options, ..client.responses, ..client.retry, ..client.transports, ..model_codecs.selectors, ..model_codecs.unset, ..model_codecs.wire, .caches, .errors, .options, .records, .references, __future__, collections.abc, dataclasses, datetime, hashlib, re, typing, typing_extensions, uuid
-protocols/cache_stores.py: ..client.errors, ..client.responses, .caches, .options, __future__, collections, hashlib, heapq, hmac, math, secrets, threading, time, typing
+protocols/cache.py: ..client.bodies, ..client.client, ..client.compression, ..client.errors, ..client.media, ..client.operations, ..client.options, ..client.responses, ..client.retry, ..client.transports, ..model_codecs.unset, .caches, .errors, .options, .records, .references, __future__, collections.abc, dataclasses, datetime, hashlib, re, typing, typing_extensions, uuid
+protocols/cache_stores.py: ..client.errors, .caches, .options, __future__, collections, threading
 protocols/caches.py: ..client.responses, __future__, dataclasses, datetime, math, typing, typing_extensions
-protocols/errors.py: ..client.errors, ..client.responses, ..model_codecs.unset, .caches, .records, .references, .resume, .sources, __future__, collections.abc, datetime, types, typing, typing_extensions
+protocols/errors.py: ..client.errors, ..client.responses, .records, .references, .resume, .sources, __future__, collections.abc, datetime, types, typing, typing_extensions
 protocols/links.py: __future__, collections.abc, re, string, typing
 protocols/names.py: .options, __future__, typing
 protocols/options.py: ..client.errors, ..client.timing, ..model_codecs.unset, .caches, .origins, .queues, .websocket_types, __future__, collections.abc, dataclasses, inspect, keyword, re, ssl, sys, types, typing, typing_extensions, urllib.parse
