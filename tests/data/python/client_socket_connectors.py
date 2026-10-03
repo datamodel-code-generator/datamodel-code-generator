@@ -25,6 +25,7 @@ class _Connection:
     def __init__(self, harness: _Harness, *, frames: tuple[object, ...] = (), **failures: object) -> None:
         self.harness = harness
         self.lines = harness.lines
+        self.abort_lines = self.lines
         self.frames = list(frames)
         self.failures = failures
         self.handshake_headers: Any = harness.responses.HeadersView((("x-socket", "1"),))
@@ -73,7 +74,7 @@ class _Connection:
         self._fail("close")
 
     def abort(self) -> None:
-        self.lines.append("    connection abort")
+        self.abort_lines.append("    connection abort")
         self.closed.set()
 
 
@@ -181,6 +182,8 @@ class _SendEpisode:
                     error = self.outcomes[task][1]
                     if error is not None and (name in {"entry", "release"} or not isinstance(error, Exception)):
                         raise error
+        if connection.abort_lines is not lines:
+            lines.extend(connection.abort_lines)
         label = "async send holding the turn past its cap" if now is not None else "async send stopped at its timeout"
         record(lines, label, lambda: self.replay(first))
         if second is not None:
@@ -696,6 +699,7 @@ async def _async_connectors(harness: _Harness) -> None:
         connection.gated = True
         connector.queue.append(connection)
         session = await api.protocols.feed.text.connect(ws_options=harness.protocols.WSOptions(send_timeout=0.05))
+        connection.abort_lines = []
         await _owned_sends(connection, session)
         for label, frames in (
             ("async receive at the connection's deadline", (TimeoutError(),)),
