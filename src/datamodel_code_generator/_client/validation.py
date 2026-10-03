@@ -5,17 +5,17 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Final, TypeVar
 
 from datamodel_code_generator._api_types import Diagnostic
-from datamodel_code_generator._generation_contract import OperationId
 from datamodel_code_generator._runtime.model_codecs.codec import has_models, needs_schema
+from datamodel_code_generator._target_contract import OperationId
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from datamodel_code_generator._client.config import ClientValidationConfig
     from datamodel_code_generator._client.plan import ClientPlan
-    from datamodel_code_generator._generation_contract import TypeUseId
     from datamodel_code_generator._openapi_codec_plan import CodecPlan
     from datamodel_code_generator._runtime.model_codecs.bindings import UseBinding
+    from datamodel_code_generator._target_contract import TypeUseId
 
 ModeT = TypeVar("ModeT", bound=str)
 

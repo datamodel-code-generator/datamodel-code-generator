@@ -19,11 +19,11 @@ from datamodel_code_generator._fastapi.plan import PlanError, Planner, Revision
 from datamodel_code_generator._fastapi.render import ServerRenderer
 from datamodel_code_generator._fastapi.templates import OPERATION, ROUTER, TemplateSet
 from datamodel_code_generator._fastapi.views import ContextBuilder
-from datamodel_code_generator._generation_contract import GeneratedSymbolType
 from datamodel_code_generator._openapi_codec_adapters import select_adapters
 from datamodel_code_generator._openapi_codec_plan import artifact_module, plan_model_codecs
 from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
 from datamodel_code_generator._runtime.model_codecs.wire import checked_wire, thaw_wire
+from datamodel_code_generator._target_contract import GeneratedSymbolType
 from datamodel_code_generator._target_render import PATTERNS, model_dependencies, patterned
 from datamodel_code_generator.enums import DataModelType
 
@@ -38,11 +38,10 @@ if TYPE_CHECKING:
     from datamodel_code_generator._fastapi.openapi import ServedDocs
     from datamodel_code_generator._fastapi.plan import OperationSpec, ServerPlan
     from datamodel_code_generator._fastapi.templates import ExtraFile
-    from datamodel_code_generator._generation_contract import TypeUseId
-    from datamodel_code_generator._openapi_artifacts import ModelArtifact
     from datamodel_code_generator._openapi_codec_plan import CodecPlan, PydanticBackend
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue, WireValue
+    from datamodel_code_generator._target_contract import ModelArtifact, TypeUseId
 
 DEPENDENCIES: Final = (
     "fastapi>=0.141.1",

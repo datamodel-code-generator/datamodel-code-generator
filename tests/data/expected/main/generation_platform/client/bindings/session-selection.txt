@@ -25,8 +25,6 @@ change pydantic_v2.BaseModel default field
   @@ -14 +14 @@
   -    bad: str
   +    bad: int
-  @@ -19 +18,0 @@
-  -  FieldBinding(field_id='models:Bad.bad', native_name='bad', wire_name='bad', validation_key='bad', validation_keys=('bad',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change pydantic_v2.BaseModel default function
   @@ -14,0 +15,3 @@
   +
@@ -80,8 +78,6 @@ change pydantic_v2.dataclass default field
   @@ -18 +18 @@
   -    bad: str
   +    bad: int
-  @@ -23 +22,0 @@
-  -  FieldBinding(field_id='models:Bad.bad', native_name='bad', wire_name='bad', validation_key='bad', validation_keys=('bad',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change pydantic_v2.dataclass default function
   @@ -18,0 +19,3 @@
   +
@@ -129,8 +125,6 @@ change dataclasses.dataclass default field
   @@ -18 +18 @@
   -    bad: str
   +    bad: int
-  @@ -23 +22,0 @@
-  -  FieldBinding(field_id='models:Bad.bad', native_name='bad', wire_name='bad', validation_key='bad', validation_keys=('bad',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change dataclasses.dataclass default function
   @@ -18,0 +19,3 @@
   +
@@ -176,8 +170,6 @@ change typing.TypedDict default field
   @@ -16 +16 @@
   -    bad: str
   +    bad: int
-  @@ -21 +20,0 @@
-  -  FieldBinding(field_id='models:Bad.bad', native_name='bad', wire_name='bad', validation_key='bad', validation_keys=('bad',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change typing.TypedDict default function
   @@ -16,0 +17,3 @@
   +
@@ -223,8 +215,6 @@ change msgspec.Struct default field
   @@ -16 +16 @@
   -    bad: str
   +    bad: int
-  @@ -21 +20,0 @@
-  -  FieldBinding(field_id='models:Bad.bad', native_name='bad', wire_name='bad', validation_key='bad', validation_keys=('bad',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change msgspec.Struct default function
   @@ -16,0 +17,3 @@
   +

@@ -24,6 +24,7 @@ class UntaggedService(Protocol):
         id: int,
         at: AwareDatetime | Unset,
         tags: list[str] | Unset,
+        x_label: models.FieldValuesIdGetHeaderXLabelParameter | Unset,
     ) -> (
         models.Value
         | ModelValue[models.Value]

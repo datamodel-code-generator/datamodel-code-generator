@@ -31,7 +31,7 @@ render pydantic_v2.BaseModel default
   _model_2 symbol='models:ForwardBase', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/ForwardBase'
     FieldBinding(field_id='models:ForwardBase.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   _model_3 symbol='models:Holder', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Holder'
-    FieldBinding(field_id='models:Holder.base', native_name='base', wire_name='base', validation_key='base', validation_keys=('base',), required=False, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:ForwardBase'))
+    FieldBinding(field_id='models:Holder.base', native_name='base', wire_name='base', validation_key='base', validation_keys=('base',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:ForwardBase'))
   codec_0 -> PydanticModelCodec[models.Base]
   codec_1 -> PydanticModelCodec[models.Base]
   codec_2 -> PydanticModelCodec[models.ForwardDerived]

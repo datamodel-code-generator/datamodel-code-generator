@@ -142,10 +142,10 @@ render pydantic_v2.BaseModel constraints
     FieldBinding(field_id='models:ChildResponse.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw-note', validation_keys=('raw-note',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:ChildResponse.id', native_name='id', wire_name='id', validation_key='id', validation_keys=('id',), required=False, read_only=True, write_only=False, omit_none=True, type=LeafNode())
   _model_4 symbol='models:GrandChildRequest', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/GrandChild'
-    FieldBinding(field_id='models:GrandChildRequest.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw-note', validation_keys=('raw-note',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+    FieldBinding(field_id='models:GrandChildRequest.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw-note', validation_keys=('raw-note',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:GrandChildRequest.secret', native_name='secret', wire_name='secret', validation_key='secret', validation_keys=('secret',), required=False, read_only=False, write_only=True, omit_none=True, type=LeafNode())
   _model_5 symbol='models:GrandChildResponse', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/GrandChild'
-    FieldBinding(field_id='models:GrandChildResponse.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw-note', validation_keys=('raw-note',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+    FieldBinding(field_id='models:GrandChildResponse.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw-note', validation_keys=('raw-note',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:GrandChildResponse.id', native_name='id', wire_name='id', validation_key='id', validation_keys=('id',), required=False, read_only=True, write_only=False, omit_none=True, type=LeafNode())
   codec_0 -> PydanticModelCodec[models.BaseRequest]
   codec_1 -> PydanticModelCodec[models.BaseResponse]
@@ -219,10 +219,10 @@ render pydantic_v2.BaseModel none
     FieldBinding(field_id='models:ChildResponse.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw-note', validation_keys=('raw-note',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:ChildResponse.id', native_name='id', wire_name='id', validation_key='id', validation_keys=('id',), required=False, read_only=True, write_only=False, omit_none=True, type=LeafNode())
   _model_4 symbol='models:GrandChildRequest', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/GrandChild'
-    FieldBinding(field_id='models:GrandChildRequest.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw-note', validation_keys=('raw-note',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+    FieldBinding(field_id='models:GrandChildRequest.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw-note', validation_keys=('raw-note',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:GrandChildRequest.secret', native_name='secret', wire_name='secret', validation_key='secret', validation_keys=('secret',), required=False, read_only=False, write_only=True, omit_none=True, type=LeafNode())
   _model_5 symbol='models:GrandChildResponse', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/GrandChild'
-    FieldBinding(field_id='models:GrandChildResponse.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw-note', validation_keys=('raw-note',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+    FieldBinding(field_id='models:GrandChildResponse.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw-note', validation_keys=('raw-note',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:GrandChildResponse.id', native_name='id', wire_name='id', validation_key='id', validation_keys=('id',), required=False, read_only=True, write_only=False, omit_none=True, type=LeafNode())
   codec_0 -> PydanticModelCodec[models.BaseRequest]
   codec_1 -> PydanticModelCodec[models.BaseResponse]
@@ -411,10 +411,10 @@ render pydantic_v2.dataclass constraints
     FieldBinding(field_id='models:ChildResponse.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw-note', validation_keys=('raw-note',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:ChildResponse.id', native_name='id', wire_name='id', validation_key='id', validation_keys=('id',), required=False, read_only=True, write_only=False, omit_none=True, type=LeafNode())
   _model_4 symbol='models:GrandChildRequest', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/GrandChild'
-    FieldBinding(field_id='models:GrandChildRequest.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw-note', validation_keys=('raw-note',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+    FieldBinding(field_id='models:GrandChildRequest.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw-note', validation_keys=('raw-note',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:GrandChildRequest.secret', native_name='secret', wire_name='secret', validation_key='secret', validation_keys=('secret',), required=False, read_only=False, write_only=True, omit_none=True, type=LeafNode())
   _model_5 symbol='models:GrandChildResponse', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/GrandChild'
-    FieldBinding(field_id='models:GrandChildResponse.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw-note', validation_keys=('raw-note',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+    FieldBinding(field_id='models:GrandChildResponse.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw-note', validation_keys=('raw-note',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:GrandChildResponse.id', native_name='id', wire_name='id', validation_key='id', validation_keys=('id',), required=False, read_only=True, write_only=False, omit_none=True, type=LeafNode())
   codec_0 -> PydanticModelCodec[models.BaseRequest]
   codec_1 -> PydanticModelCodec[models.BaseResponse]
@@ -507,10 +507,10 @@ render pydantic_v2.dataclass none
     FieldBinding(field_id='models:ChildResponse.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw-note', validation_keys=('raw-note',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:ChildResponse.id', native_name='id', wire_name='id', validation_key='id', validation_keys=('id',), required=False, read_only=True, write_only=False, omit_none=True, type=LeafNode())
   _model_4 symbol='models:GrandChildRequest', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/GrandChild'
-    FieldBinding(field_id='models:GrandChildRequest.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw-note', validation_keys=('raw-note',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+    FieldBinding(field_id='models:GrandChildRequest.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw-note', validation_keys=('raw-note',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:GrandChildRequest.secret', native_name='secret', wire_name='secret', validation_key='secret', validation_keys=('secret',), required=False, read_only=False, write_only=True, omit_none=True, type=LeafNode())
   _model_5 symbol='models:GrandChildResponse', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/GrandChild'
-    FieldBinding(field_id='models:GrandChildResponse.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw-note', validation_keys=('raw-note',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+    FieldBinding(field_id='models:GrandChildResponse.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw-note', validation_keys=('raw-note',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:GrandChildResponse.id', native_name='id', wire_name='id', validation_key='id', validation_keys=('id',), required=False, read_only=True, write_only=False, omit_none=True, type=LeafNode())
   codec_0 -> PydanticModelCodec[models.BaseRequest]
   codec_1 -> PydanticModelCodec[models.BaseResponse]
@@ -697,10 +697,10 @@ render dataclasses.dataclass constraints
     FieldBinding(field_id='models:ChildResponse.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw_note', validation_keys=('raw_note',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:ChildResponse.id', native_name='id', wire_name='id', validation_key='id', validation_keys=('id',), required=False, read_only=True, write_only=False, omit_none=True, type=LeafNode())
   _model_4 symbol='models:GrandChildRequest', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/GrandChild'
-    FieldBinding(field_id='models:GrandChildRequest.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw_note', validation_keys=('raw_note',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+    FieldBinding(field_id='models:GrandChildRequest.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw_note', validation_keys=('raw_note',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:GrandChildRequest.secret', native_name='secret', wire_name='secret', validation_key='secret', validation_keys=('secret',), required=False, read_only=False, write_only=True, omit_none=True, type=LeafNode())
   _model_5 symbol='models:GrandChildResponse', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/GrandChild'
-    FieldBinding(field_id='models:GrandChildResponse.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw_note', validation_keys=('raw_note',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+    FieldBinding(field_id='models:GrandChildResponse.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw_note', validation_keys=('raw_note',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:GrandChildResponse.id', native_name='id', wire_name='id', validation_key='id', validation_keys=('id',), required=False, read_only=True, write_only=False, omit_none=True, type=LeafNode())
   codec_0 -> StructuralModelCodec[models.BaseRequest]
   codec_1 -> StructuralModelCodec[models.BaseResponse]
@@ -792,10 +792,10 @@ render dataclasses.dataclass none
     FieldBinding(field_id='models:ChildResponse.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw_note', validation_keys=('raw_note',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:ChildResponse.id', native_name='id', wire_name='id', validation_key='id', validation_keys=('id',), required=False, read_only=True, write_only=False, omit_none=True, type=LeafNode())
   _model_4 symbol='models:GrandChildRequest', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/GrandChild'
-    FieldBinding(field_id='models:GrandChildRequest.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw_note', validation_keys=('raw_note',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+    FieldBinding(field_id='models:GrandChildRequest.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw_note', validation_keys=('raw_note',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:GrandChildRequest.secret', native_name='secret', wire_name='secret', validation_key='secret', validation_keys=('secret',), required=False, read_only=False, write_only=True, omit_none=True, type=LeafNode())
   _model_5 symbol='models:GrandChildResponse', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/GrandChild'
-    FieldBinding(field_id='models:GrandChildResponse.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw_note', validation_keys=('raw_note',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+    FieldBinding(field_id='models:GrandChildResponse.raw_note', native_name='raw_note', wire_name='raw-note', validation_key='raw_note', validation_keys=('raw_note',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:GrandChildResponse.id', native_name='id', wire_name='id', validation_key='id', validation_keys=('id',), required=False, read_only=True, write_only=False, omit_none=True, type=LeafNode())
   codec_0 -> StructuralModelCodec[models.BaseRequest]
   codec_1 -> StructuralModelCodec[models.BaseResponse]

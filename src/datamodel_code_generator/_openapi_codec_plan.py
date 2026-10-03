@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import tokenize
 from dataclasses import dataclass, replace
 from functools import cached_property
+from io import StringIO
+from keyword import iskeyword
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
 from datamodel_code_generator._codec_declarations import (
@@ -13,32 +16,6 @@ from datamodel_code_generator._codec_declarations import (
     SchemaRef,
 )
 from datamodel_code_generator._codec_type_source import type_reason
-from datamodel_code_generator._generation_contract import (
-    AnnotatedType,
-    BindingCaptureError,
-    BoundType,
-    BuiltinType,
-    ConstructorType,
-    FieldSlot,
-    FieldUseBinding,
-    FinalModelSymbol,
-    FinalPythonType,
-    GeneratedSymbolType,
-    GeneratedTypeContractBatch,
-    GenericType,
-    ImportedType,
-    LiteralScalar,
-    LiteralType,
-    ModelArtifactAddress,
-    ModelFieldFacts,
-    NoneType,
-    OperationId,
-    SourceLocation,
-    SymbolId,
-    TypeUseBinding,
-    TypeUseId,
-    UnionType,
-)
 from datamodel_code_generator._openapi_codec_adapters import (
     AdapterPlan,
     AdapterSelection,
@@ -66,11 +43,32 @@ from datamodel_code_generator._runtime.model_codecs.bindings import (
     UnionNode,
     UseBinding,
 )
-from datamodel_code_generator.model.binding import (
-    FrozenImportBindings,
+from datamodel_code_generator._target_contract import (
+    AnnotatedType,
+    BoundType,
+    BuiltinType,
+    ConstructorType,
+    FieldSlot,
+    FieldUseBinding,
+    FinalModelSymbol,
+    FinalPythonType,
+    GeneratedSymbolType,
+    GeneratedTypeContractBatch,
+    GenericType,
+    ImportedType,
     KnownBackendValue,
+    LiteralScalar,
+    LiteralType,
+    ModelArtifactAddress,
+    ModelFieldFacts,
+    NoneType,
     OpaqueBackendValue,
-    index_builtin_field_declarations,
+    OperationId,
+    SourceLocation,
+    SymbolId,
+    TypeUseBinding,
+    TypeUseId,
+    UnionType,
 )
 
 if TYPE_CHECKING:
@@ -126,6 +124,7 @@ _MSGSPEC_UNSUPPORTED: Final = frozenset({
     "pathlib.Path",
 })
 _MAPPINGS: Final = frozenset({"dict", "typing.Mapping", "collections.abc.Mapping"})
+_DYNAMIC: Final = frozenset({"exec", "eval", "globals", "locals", "vars", "setattr", "__builtins__", "__import__"})
 _STRUCTURAL_KEYS: Final = frozenset({"str", "object", "typing.Any"})
 _STRUCTURAL_LEAVES: Final = _STRUCTURAL_KEYS | {
     "bool",
@@ -273,12 +272,53 @@ def _symbol_key(symbol: FinalModelSymbol) -> str:
     return f"{artifact_module(symbol.artifact) if symbol.artifact else ''}:{symbol.name}"
 
 
+def _statements(source: str) -> Iterator[tuple[int, list[str]]]:
+    """Yield each logical statement's indentation and its name and operator tokens."""
+    words: list[str] = []
+    indent = 0
+    for token in tokenize.generate_tokens(StringIO(source).readline):
+        if token.type == tokenize.INDENT:
+            indent += 1
+        elif token.type == tokenize.DEDENT:
+            indent -= 1
+        elif token.type in {tokenize.NAME, tokenize.OP}:
+            words.append(token.string)
+        elif token.type == tokenize.NEWLINE and words:
+            yield indent, words
+            words = []
+
+
 def _defined(source: str) -> frozenset[str]:
+    """Return the names a generated module binds at its top level.
+
+    A module that does not tokenize, or that runs dynamic code, defines none.
+    """
+    names: set[str] = set()
     try:
-        index = index_builtin_field_declarations(source, expected=(), imports=FrozenImportBindings(()))
-    except BindingCaptureError:
+        for indent, words in _statements(source):
+            if _DYNAMIC.intersection(words[2:] if words[1:2] in (["="], [":"]) else words):
+                return frozenset()
+            if indent == 0:
+                names.update(_bound(words))
+    except (tokenize.TokenError, SyntaxError):
         return frozenset()
-    return frozenset(definition.name for definition in index.definitions)
+    return frozenset(names)
+
+
+def _bound(words: list[str]) -> list[str]:
+    """Return the names one top-level statement binds: a definition, an assignment, or its imports."""
+    head, rest = words[0], words[1:]
+    if head == "import" or (head == "from" and "import" in rest):
+        groups: list[list[str]] = [[]]
+        for word in rest[rest.index("import") + 1 :] if head == "from" else rest:
+            if word == ",":
+                groups.append([])
+            elif word not in {"(", ")"}:
+                groups[-1].append(word)
+        return [group[-1] if "as" in group else group[0] for group in groups if group and group[0] != "*"]
+    if head in {"class", "def"} or (head == "type" and rest[1:2] in (["="], ["["])):
+        return rest[:1]
+    return [head] if (rest[:1] == ["="] or (rest[:1] == [":"] and "=" in rest)) and not iskeyword(head) else []
 
 
 def _accepted(facts: ModelFieldFacts, slot: FieldSlot, wire_name: str, *, generated: bool) -> frozenset[str]:
