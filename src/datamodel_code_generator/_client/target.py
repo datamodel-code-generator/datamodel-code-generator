@@ -70,7 +70,12 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.streams import StreamSpec
     from datamodel_code_generator._client.uploads import UploadSpec
     from datamodel_code_generator._client.webhooks import WebhookSpec
-    from datamodel_code_generator._generation_contract import GeneratedTypeContractBatch, TypeUseBinding, TypeUseId
+    from datamodel_code_generator._generation_contract import (
+        GeneratedTypeContractBatch,
+        SourceLocation,
+        TypeUseBinding,
+        TypeUseId,
+    )
     from datamodel_code_generator._openapi_codec_plan import CodecBackend, CodecPlan
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
@@ -608,17 +613,16 @@ class _TargetData:
         return None if use is None or use.type is None else self.spelling.static(use.type)
 
     def parameter(self, parameter: ParameterSpec) -> tuple[object, ...]:
-        """Return a parameter's plan and use contract, with the registered adapter that carries it, if any."""
-        contract = (parameter.plan, self.contract(parameter.use))
-        if (use := parameter.use) is None or (adapter := self.adapters.get(use.id)) is None:
+        """Return a schema-bearing parameter's plan and contract, including its registered adapter, if any."""
+        use = cast("TypeUseBinding", parameter.use)
+        contract = (parameter.plan, self.contract(use))
+        if (adapter := self.adapters.get(use.id)) is None:
             return contract
         return (*contract, adapter)
 
-    def contract(self, use: TypeUseBinding | None) -> object:
-        """Return a use's codec binding and the normalized schema at its site, or None without a schema."""
-        if use is None or use.schema is None:
-            return None
-        return (self.bindings.get(use.id), self.wire.schema(use.schema)[1])
+    def contract(self, use: TypeUseBinding) -> tuple[object, ...]:
+        """Return a schema-bearing helper use's codec binding and normalized schema."""
+        return (self.bindings.get(use.id), self.wire.schema(cast("SourceLocation", use.schema))[1])
 
 
 def _digest(value: object) -> str:
