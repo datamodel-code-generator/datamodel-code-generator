@@ -104,10 +104,6 @@ def _is_tuple(value: object) -> TypeIs[tuple[object, ...]]:
     return isinstance(value, tuple)
 
 
-def _is_frozenset(value: object) -> TypeIs[frozenset[object]]:
-    return isinstance(value, frozenset)
-
-
 def _json(value: object) -> Doc:
     match value:
         case _ if _is_mapping(value):
@@ -174,8 +170,6 @@ class _Records:
                 return Group(f"{self.name('wire', 'freeze_wire')}({{", items, "})")
             case _ if _is_tuple(value):
                 return Group("(", tuple(("", self.doc(item)) for item in value), ")", ",")
-            case _ if _is_frozenset(value):
-                return Group("frozenset({", tuple(("", repr(item)) for item in sorted(value, key=repr)), "})")
             case _ if dataclasses.is_dataclass(value) and not isinstance(value, type):
                 return self.record(value)
             case _:

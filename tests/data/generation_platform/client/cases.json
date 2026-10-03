@@ -792,6 +792,23 @@
       }
     }
   },
+  "type-spellings": {
+    "input": "type-spellings.yaml",
+    "model": {
+      "use_enum_values_in_discriminator": true
+    },
+    "config": {
+      "body_arguments": "both"
+    },
+    "modules": [
+      [
+        "client",
+        "resources",
+        "default",
+        "_sync.py"
+      ]
+    ]
+  },
   "retries": {
     "input": "retries.yaml",
     "config": {

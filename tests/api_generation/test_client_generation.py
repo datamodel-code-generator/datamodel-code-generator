@@ -68,6 +68,7 @@ def test_client_input(case: str, tmp_path: Path) -> None:
         "fields-errors",
         "fields-cycle",
         "fields-optional-models",
+        "type-spellings",
         "helpers",
         "pagination",
         "pagination-counts",

@@ -1,0 +1,15 @@
+{
+  "backend": "pydantic_v2.BaseModel",
+  "package": "codec_types_annotated",
+  "scopes": ["schemas", "paths"],
+  "options": {"collapse_root_models": true, "enum_field_as_literal": "all", "use_annotated": true, "field_constraints": true},
+  "cases": [
+    {"name": "code", "use": "/paths/~1scalars/post parameter query code", "op": "decode", "value": "abc"},
+    {"name": "code-invalid", "use": "/paths/~1scalars/post parameter query code", "op": "decode", "value": "ABC"},
+    {"name": "price", "use": "/paths/~1scalars/post parameter query price", "op": "decode", "value": "9.5"},
+    {"name": "price-invalid", "use": "/paths/~1scalars/post parameter query price", "op": "decode", "value": "10.5"},
+    {"name": "counts", "use": "/paths/~1scalars/post parameter header X-Counts", "op": "decode", "value": {"a": 1, "b": 2}},
+    {"name": "words", "use": "/paths/~1scalars/post response_body 200", "op": "encode", "value": {"ab": 1}},
+    {"name": "words-invalid", "use": "/paths/~1scalars/post response_body 200", "op": "encode", "value": {"AB": 1}}
+  ]
+}
