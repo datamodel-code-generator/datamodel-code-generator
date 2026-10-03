@@ -69,6 +69,7 @@ class SocketServer:
     def __init__(self) -> None:
         """Start serving in a daemon thread."""
         self.plays: list[Play] = []
+        self.upgrade_count = 0
         self._server = serve(
             self._handle,
             "127.0.0.1",
@@ -91,6 +92,7 @@ class SocketServer:
         return plays
 
     def _process(self, connection: ServerConnection, request: Request) -> Response | None:
+        self.upgrade_count += 1
         play = self.plays.pop(0)
         play.request = _request(request)
         connection.play = play  # ty: ignore[unresolved-attribute]
@@ -142,6 +144,12 @@ class _RawHandler(BaseRequestHandler):
             head = b""
             while b"\r\n\r\n" not in head and (received := stream.recv(65536)):
                 head += received
+            if b"\r\n\r\n" not in head:
+                return
+            with self.server._arrival:
+                self.server.upgrade_count += 1
+                self.server.upgraded.set()
+                self.server._arrival.notify_all()
             if (reply := self.server.reply) == b"":
                 return
             if reply is not None:
@@ -161,7 +169,6 @@ class _RawHandler(BaseRequestHandler):
             pass
         finally:
             stream.close()
-
 
     def _released(self, stream: socket.socket) -> None:
         """Hang up once the peer is released, which ends the read loop; the TLS state is left to the reading thread."""
@@ -190,6 +197,8 @@ class RawPeer(ThreadingTCPServer):
         self.hangup = hangup
         self.release = threading.Event()
         self.records = 0
+        self.upgrade_count = 0
+        self.upgraded = threading.Event()
         self._arrival = threading.Condition()
         self.url = f"https://localhost:{self.server_address[1]}"
         self.thread = threading.Thread(target=self.serve_forever, kwargs={"poll_interval": 0.005}, daemon=True)
