@@ -66,7 +66,7 @@ def test_collapsed_tree_reuse_partial(output_dir: Path, entrypoint: str, *, incl
         "allTrueValue": {"code": "ok"},
         "nullableValue": {"code": "ok"},
         "nullableObjectValue": {"code": "ok"},
-        "directScalarValue": "a",
+        "directScalarValue": "ab",
         "directScalarInferred": "a",
         "inlineScalarInferred": "a",
         "scalarArrayInferred": ["a"],
