@@ -3,10 +3,10 @@ serve pydantic_v2.BaseModel
 service UntaggedService: get_value
 service UntaggedService without its methods: TypeError
 > GET /values/7
-  get_value(id=7, at=UNSET, tags=UNSET)
+  get_value(id=7, at=UNSET, tags=UNSET, x_label=UNSET)
 < 200 application/json {"id":7}
 > GET /values/42?at=2026-10-02T12%3A34%3A56Z&tags=alpha&tags=two%20words
-  get_value(id=42, at=datetime.datetime(2026, 10, 2, 12, 34, 56, tzinfo=TzInfo(0)), tags=['alpha', 'two words'])
+  get_value(id=42, at=datetime.datetime(2026, 10, 2, 12, 34, 56, tzinfo=TzInfo(0)), tags=['alpha', 'two words'], x_label=UNSET)
 < 200 application/json {"id":42}
 > GET /values/invalid
 < 422 application/json [{"type": "int_parsing", "loc": ["path", "id"]}]
@@ -18,10 +18,10 @@ serve pydantic_v2.dataclass
 service UntaggedService: get_value
 service UntaggedService without its methods: TypeError
 > GET /values/7
-  get_value(id=7, at=UNSET, tags=UNSET)
+  get_value(id=7, at=UNSET, tags=UNSET, x_label=UNSET)
 < 200 application/json {"id":7}
 > GET /values/42?at=2026-10-02T12%3A34%3A56Z&tags=alpha&tags=two%20words
-  get_value(id=42, at=datetime.datetime(2026, 10, 2, 12, 34, 56, tzinfo=TzInfo(0)), tags=['alpha', 'two words'])
+  get_value(id=42, at=datetime.datetime(2026, 10, 2, 12, 34, 56, tzinfo=TzInfo(0)), tags=['alpha', 'two words'], x_label=UNSET)
 < 200 application/json {"id":42}
 > GET /values/invalid
 < 422 application/json [{"type": "int_parsing", "loc": ["path", "id"]}]
