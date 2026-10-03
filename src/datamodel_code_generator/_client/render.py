@@ -210,15 +210,9 @@ _AUTH_NAMES: Final = (
     "TokenVersion",
 )
 _OAUTH_NAMES: Final = (
-    "AsyncAuthorizationCodeFlow",
     "AsyncClientCredentialsProvider",
-    "AsyncDeviceAuthorizationFlow",
     "AsyncRefreshTokenProvider",
-    "AuthorizationCodeFlow",
-    "AuthorizationRequest",
     "ClientCredentialsProvider",
-    "DeviceAuthorization",
-    "DeviceAuthorizationFlow",
     "OAuthProviderOptions",
     "RefreshTokenProvider",
     "TokenSet",
@@ -4120,20 +4114,13 @@ Credential/signature values do not appear in repr or hook events. Query credenti
 request URL, which the `httpx2` logger records at INFO level. Causes are retained without automatically formatting
 their potentially sensitive messages.
 
-`AuthorizationCodeFlow` and `AsyncAuthorizationCodeFlow` create PKCE S256 authorization requests without I/O and
-exchange each request's code once, without redirects or retries, through a token transport of their own that must
-verify TLS. `DeviceAuthorizationFlow` and `AsyncDeviceAuthorizationFlow` run one device authorization per flow, polling
-at the server's interval within the response's lifetime and the `SessionOptions` limits. No flow opens a browser or a
-verification URI; the returned `TokenSet` omits its tokens from repr. `ClientCredentialsProvider` and
-`AsyncClientCredentialsProvider` acquire a client's own token when a call first needs it, share one acquisition among
-concurrent callers within `OAuthProviderOptions` limits, and renew the token before it expires. The call needing a
-new acquisition, or a queued one's oldest waiting call, pays one `AuthConfig.max_token_exchanges` exchange and one
-network send, and joiners report `auth_wait`. `RefreshTokenProvider` and `AsyncRefreshTokenProvider` keep one token
-family current from a `TokenSet`, following the rotation of its refresh token and never sending a spent one again; a
-refresh whose outcome is rejected or unknown stops the family until `replace_token_set`, or `reload_token_set` with
-a `load` callback supplying the persisted token set. A `store` callback stores each refreshed token set before it
-becomes current, and `retry_store` stores one whose store failed. Basic charset overrides, resource audience metadata,
-and generated OAuth factories are not available yet. Providers are explicit.
+OAuth providers exchange tokens without redirects or retries, through a token transport of their own that must verify
+TLS; a `TokenSet` omits its tokens from repr. `ClientCredentialsProvider` and `AsyncClientCredentialsProvider` acquire
+a client's own token when a call first needs it, and `RefreshTokenProvider` and `AsyncRefreshTokenProvider` keep a
+`TokenSet` current with its refresh token. The call needing a new token requests it inline under the provider's lock,
+which concurrent callers wait for; a refresh token provider hands each refreshed token set to `on_token_refreshed`, and
+the SDK persists nothing. Basic charset overrides, resource audience metadata, and generated OAuth factories are not
+available yet. Providers are explicit.
 
 ## Counters and cleanup
 

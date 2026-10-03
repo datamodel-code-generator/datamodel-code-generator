@@ -3441,9 +3441,8 @@ correctly. A call given a deadline made on another `Clock` object moves it onto 
 call entry. A deadline made on the client's own `Clock` object stays the same object, so
 `DeadlineExceededError.deadline_at` equals its `at`.
 
-The client still waits in real time. A retry sleep, a wait before a poll, a device flow's poll interval, or a wait for
-a token refresh ends once its clock reaches the target or once as much real time has passed as the wait measured on its
-clock when it began, whichever comes first, so a frozen clock still waits as long as the policy chose. An I/O timeout
+The client still waits in real time. A retry sleep, a wait before a poll, or a wait for a token refresh ends once its
+clock reaches the target or once as much real time has passed as the wait measured on its clock when it began, whichever comes first, so a frozen clock still waits as long as the policy chose. An I/O timeout
 or an asyncio deadline timer lasts the time left that was measured on the clock when it started. Closing a client and its cleanup
 limits use the system clock, and closing an OAuth provider waits for its running token requests until their sessions
 end on the provider's clock or in real time, whichever comes first.
@@ -4248,116 +4247,6 @@ on its `httpx2` logger, so keep that logger above INFO wherever URLs must stay p
 common send/attempt counters, and causes without automatically formatting secret-bearing callback messages.
 Applications must apply their own policy before explicitly inspecting those causes.
 
-### Exchange an authorization code
-
-`AuthorizationCodeFlow` and `AsyncAuthorizationCodeFlow` implement the OAuth authorization code grant with PKCE S256
-for applications that obtain the code themselves. `authorization_request(redirect_uri, scopes)` performs no I/O: it
-creates a fresh state and code verifier and returns the authorization URL for the application to open. The SDK never
-opens a browser or listens for the redirect. `exchange_code(code, returned_state, request)` compares the returned state
-in constant time, sends one token request, and returns a `TokenSet` whose repr omits both tokens.
-
-```python
-from pets.auth import AccessToken, AuthorizationCodeFlow, AuthorizationRequest
-
-
-def login_flow() -> AuthorizationCodeFlow:
-    return AuthorizationCodeFlow(
-        "https://auth.example.com/authorize",
-        "https://auth.example.com/token",
-        client_id="pets-cli",
-        client_auth_method="none",
-    )
-
-
-def begin_login(flow: AuthorizationCodeFlow) -> AuthorizationRequest:
-    return flow.authorization_request("http://127.0.0.1:8400/callback", ("pets.read",))
-
-
-def finish_login(flow: AuthorizationCodeFlow, request: AuthorizationRequest, code: str, state: str) -> AccessToken:
-    return flow.exchange_code(code, state, request).access_token
-```
-
-A request belongs to the flow that created it and allows one exchange. A mismatched state, or a code that is empty or
-not visible ASCII, is refused with `AuthConfigurationError` before the request is used; the first exchange then
-consumes it whatever the outcome, and a later one raises `AuthStateConflictError`. The requested scopes, in canonical
-order, become the token's scopes when the token response omits its `scope` member. The authorization URL may carry
-its own query, but not the parameters the flow adds.
-
-`client_secret_basic` (the default) and `client_secret_post` take a `client_secret` provider returning an
-`ApiKeyCredential` of visible ASCII; it is called once per exchange with a context naming the token endpoint's origin
-and the scheme `oauth_client_secret`. `none` sends only the client id. Both endpoints must be HTTPS; plain HTTP to a
-loopback host requires `OAuthProviderOptions(allow_insecure_loopback=True)`.
-
-Token requests use a transport the flow owns, separate from every client: an HTTPX2 client created at the first
-exchange from `OAuthProviderOptions.transport`, or an adapter passed as `token_transport`, which is borrowed unless
-wrapped in `OwnedTransportAdapter`. Its settings must verify certificates and host names and leave retries to the
-SDK, and an injected adapter must declare `internal_retry_limit=0`. Token requests never follow redirects or retry,
-and closing the flow, or leaving its `with` block, closes an owned transport. `refresh_timeout` (30 seconds by default)
-bounds each exchange, the client secret lookup included, independently of any resource call; the synchronous flow
-checks it when the secret provider returns and at each response chunk. `phase_timeout` caps connecting, reading,
-writing, and pool waits at 5, 15, 15, and 5 seconds unless overridden. The async flow binds to the event loop it was created on, or else to the
-first one that exchanges a code.
-
-`invalid_grant` raises `AuthReauthorizationRequiredError`. Another RFC 6749 error code in a 400 response, or
-`invalid_client` in a 401, raises `OAuthExchangeError` with its `oauth_error`. A client secret provider's failure
-raises its own auth error or `AuthProviderExecutionError`, and a failure proven to happen before sending raises
-`OAuthExchangeError`, or `AuthTimeoutError` when a time limit ran out; none of them sent the code, but the request is
-still used. When the endpoint may have issued tokens that did not arrive intact (a transport failure after sending, the
-session deadline, an unexpected status, or a malformed or unusable response), `AuthStateUncertainError` reports the
-`failure_kind`, and the application starts a new authorization. Only a transport that declares delivery evidence can
-prove that a failed request was never sent. Responses are read up to 64 KiB and must be UTF-8 JSON objects. Errors
-keep no response body or error description, but a transport failure's cause is the native exception, which can hold
-the token request and its client authentication, so apply your own policy before logging causes.
-
-### Authorize a device
-
-`DeviceAuthorizationFlow` and `AsyncDeviceAuthorizationFlow` implement the OAuth device authorization grant for
-devices that cannot open a browser. One flow owns exactly one transaction: `begin(scopes)` requests a device
-authorization and returns a `DeviceAuthorization` whose user code and verification URIs the application shows; the SDK
-never opens them. `poll()` then waits the server's interval, five seconds unless the response names another, and polls
-the token endpoint until the user approves, returning a `TokenSet`.
-
-```python
-from collections.abc import Callable
-
-from pets.auth import AccessToken, DeviceAuthorizationFlow
-
-
-def device_login(show: Callable[[str, str], None]) -> AccessToken:
-    with DeviceAuthorizationFlow(
-        "https://auth.example.com/device",
-        "https://auth.example.com/token",
-        client_id="pets-tv",
-        client_auth_method="none",
-    ) as flow:
-        authorization = flow.begin(("pets.read",))
-        show(authorization.user_code, authorization.verification_uri)
-        return flow.poll().access_token
-```
-
-`authorization_pending` waits within the same `poll` call, and `slow_down` adds five seconds to every later wait.
-`access_denied` and `expired_token` end the transaction with `OAuthExchangeError` in the `REAUTH_REQUIRED` state, whose
-cause's message names which of the two the server sent. A transaction never resumes, so a new authorization needs a
-new flow, and calling `begin` twice, `poll` before `begin`, `poll` concurrently, or either after the end raises
-`AuthStateConflictError`. `begin` validates every member of the device authorization response first and refuses a
-response without a positive `expires_in`; the requested scopes become the token's scopes when the token response
-omits its `scope` member.
-
-The transaction ends at the response's `expires_in`, or earlier at the limit of the `SessionOptions` (from
-`pets.options`) given to `begin`, whose `total_timeout` counts from the `begin` call and whose `deadline` is absolute.
-The `begin` and every poll count against `max_network_sends`, 128 by default; `None` removes that limit, while `0` or
-a limit that already passed refuses the `begin` itself. A poll that could not be sent before the deadline or within the
-limit raises `DeadlineExceededError` or `BudgetExceededError` at once instead of waiting, and a send the session limit
-cuts short raises `DeadlineExceededError`. `poll(cancel_token=...)` stops a wait with `RequestCancelledError`, and
-closing the flow stops it with `AuthProviderClosedError`.
-
-Client authentication, endpoints, and the token transport follow the authorization code flow; the client secret
-lookup for `begin` names the device authorization endpoint's origin. Unlike the code flow, every answer the flow cannot
-continue from, including an invalid token response, an unexpected status, or a malformed body, raises
-`OAuthExchangeError` in the `EXCHANGE_REJECTED` state. A transport failure raises `OAuthExchangeError`, or
-`AuthTimeoutError` when a time limit ran out, in the `UNCERTAIN` state when the request may have been sent and in the
-`FAILED_NOT_SENT` state otherwise.
-
 ### Acquire client credentials
 
 `ClientCredentialsProvider` and `AsyncClientCredentialsProvider` implement the OAuth client credentials grant for a
@@ -4433,7 +4322,23 @@ for a shared acquisition stops with its own error, `ClientClosedError` once its 
 cancel token every 50 milliseconds and waking at its deadline; an asyncio call stops as soon as its client closes or its
 deadline passes, and within 50 milliseconds of its cancel token. The async provider belongs to the event loop it was
 created on or first used from, and its `aclose` runs in a task of its own that a later `aclose` awaits when the first
-was cancelled. Client authentication, endpoints, and the token transport otherwise follow the authorization code flow.
+was cancelled.
+
+`client_secret_basic` (the default) and `client_secret_post` take a `client_secret` provider returning an
+`ApiKeyCredential` of visible ASCII; it is called once per token request with a context naming the token endpoint's
+origin and the scheme `oauth_client_secret`. The token endpoint must be HTTPS; plain HTTP to a loopback host requires
+`OAuthProviderOptions(allow_insecure_loopback=True)`.
+
+Token requests use a transport the provider owns, separate from every client: an HTTPX2 client created at the first
+token request from `OAuthProviderOptions.transport`, or an adapter passed as `token_transport`, which is borrowed unless
+wrapped in `OwnedTransportAdapter`. Its settings must verify certificates and host names and leave retries to the SDK,
+and an injected adapter must declare `internal_retry_limit=0`. Token requests never follow redirects or retry, and
+closing the provider, or leaving its `with` block, closes an owned transport. `refresh_timeout` (30 seconds by default)
+bounds each token request, the client secret lookup included; `phase_timeout` caps connecting, reading, writing, and
+pool waits at 5, 15, 15, and 5 seconds unless overridden. Responses are read up to 64 KiB and must be UTF-8 JSON
+objects. Only a transport that declares delivery evidence can prove that a failed request was never sent. Errors keep
+no response body or error description, but a transport failure's cause is the native exception, which can hold the
+token request and its client authentication, so apply your own policy before logging causes.
 
 ### Refresh a token family
 

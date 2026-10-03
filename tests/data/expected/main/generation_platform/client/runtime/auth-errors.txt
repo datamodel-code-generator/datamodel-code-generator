@@ -335,10 +335,10 @@
   family AuthStateConflictError bases=('AuthRefreshError',) code=auth_state_conflict_error
   signature AuthStateConflictError keyword-only=True required=('action',)
   hints AuthStateConflictError ('action', 'provider_id', 'refresh_id', 'state', 'delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
-  defaults AuthStateConflictError fields=(('provider_id', None), ('refresh_id', None), ('state', 'UNKNOWN'), ('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('action', 'exchange_code')) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
+  defaults AuthStateConflictError fields=(('provider_id', None), ('refresh_id', None), ('state', 'UNKNOWN'), ('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('action', 'get')) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
   metadata AuthStateConflictError call=('auth_operation', 'auth-call', 'auth-parent') info=True headers=True cause=True secondary=True counters=(1, 2, 3, 4, 5, 6, ('refresh-one',), 7, 8)
-  supplied AuthStateConflictError (('provider_id', 'private-secret-provider'), ('refresh_id', 'private-secret-refresh'), ('state', 'READY'), ('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('action', 'exchange_code'))
-  safe AuthStateConflictError True text="AuthStateConflictError(operation_id='auth_operation', call_id='auth-call', state='READY', delivery_state='NOT_SENT', phase='validate', action='exchange_code')"
+  supplied AuthStateConflictError (('provider_id', 'private-secret-provider'), ('refresh_id', 'private-secret-refresh'), ('state', 'READY'), ('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('action', 'get'))
+  safe AuthStateConflictError True text="AuthStateConflictError(operation_id='auth_operation', call_id='auth-call', state='READY', delivery_state='NOT_SENT', phase='validate', action='get')"
   readonly AuthStateConflictError.resource_attempt_count AttributeError secondary [] unchanged=True
   readonly AuthStateConflictError.redirect_count AttributeError secondary [] unchanged=True
   readonly AuthStateConflictError.auth_exchange_count AttributeError secondary [] unchanged=True

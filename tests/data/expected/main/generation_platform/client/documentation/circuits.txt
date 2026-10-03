@@ -324,12 +324,8 @@ Credential/signature values do not appear in repr or hook events. Query credenti
 request URL, which the `httpx2` logger records at INFO level. Causes are retained without automatically formatting
 their potentially sensitive messages.
 
-`AuthorizationCodeFlow` and `AsyncAuthorizationCodeFlow` create PKCE S256 authorization requests without I/O and
-exchange each request's code once, without redirects or retries, through a token transport of their own that must
-verify TLS. `DeviceAuthorizationFlow` and `AsyncDeviceAuthorizationFlow` run one device authorization per flow, polling
-at the server's interval within the response's lifetime and the `SessionOptions` limits. No flow opens a browser or a
-verification URI; the returned `TokenSet` omits its tokens from repr. `ClientCredentialsProvider` and
-`AsyncClientCredentialsProvider` acquire a client's own token when a call first needs it, share one acquisition among
+OAuth providers exchange tokens without redirects or retries, through a token transport of their own that must verify
+TLS; a `TokenSet` omits its tokens from repr. `ClientCredentialsProvider` and `AsyncClientCredentialsProvider` acquire a client's own token when a call first needs it, share one acquisition among
 concurrent callers within `OAuthProviderOptions` limits, and renew the token before it expires. The call needing a
 new acquisition, or a queued one's oldest waiting call, pays one `AuthConfig.max_token_exchanges` exchange and one
 network send, and joiners report `auth_wait`. `RefreshTokenProvider` and `AsyncRefreshTokenProvider` keep one token

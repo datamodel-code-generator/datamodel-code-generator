@@ -72,9 +72,6 @@ AuthAction: TypeAlias = Literal[
     "retry_store",
     "replace_token_set",
     "reload_token_set",
-    "exchange_code",
-    "begin",
-    "poll",
     "close",
     "aclose",
 ]

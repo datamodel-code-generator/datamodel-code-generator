@@ -37,7 +37,7 @@ _FAMILIES = (
     ("AuthTimeoutError", {"effective_timeout": 5.0, "timeout_kind": "phase"}, ("effective_timeout", "timeout_kind")),
     ("AuthStateUncertainError", {"failure_kind": "transport"}, ("failure_kind", "status_code")),
     ("AuthReauthorizationRequiredError", {"condition": "invalid_grant"}, ("condition",)),
-    ("AuthStateConflictError", {"action": "exchange_code"}, ("action",)),
+    ("AuthStateConflictError", {"action": "get"}, ("action",)),
     ("AuthConcurrencyLimitError", {"limit_kind": "waiters", "limit": 3}, ("limit_kind", "limit")),
     (
         "AuthBudgetExceededError",
