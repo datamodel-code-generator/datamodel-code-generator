@@ -100,7 +100,8 @@ def _clocked(harness: Polling, lines: list[str]) -> None:
         tracked = api.protocols.jobs.tracked
         exchange.respond(_tracked("queued", 202, expires="Thursday, 01-Jan-99 00:00:00 GMT"))
         state = tracked.start(body=body).checkpoint()
-        lines.append(f"  two-digit year by the client's wall clock expires_at={_envelope(state)['state']['expires_at']}")
+        expires_at = _envelope(state)["state"]["expires_at"]
+        lines.append(f"  two-digit year by the client's wall clock expires_at={expires_at}")
         exchange.respond(_tracked("queued", 202, expires="2000-01-01T00:00:00Z"))
         state = tracked.start(body=body).checkpoint()
         for label, now in (("before", _PAST.timestamp() - 1), ("at", _PAST.timestamp())):
@@ -151,36 +152,29 @@ def _pending(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -
 
 
 def _settled(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -> None:
-    """Resume settled operations by polling them again; an operation that completed at once has no checkpoint."""
+    """Refuse checkpoints of settled operations, and resume a success whose result fetch is due by fetching it."""
     helper = api.protocols.jobs.run
     body = harness.body
     lines.append("settled operations")
     exchange.respond(job("queued", 202), job("done"), report(6))
     handle = helper.start(body=body)
     step(lines, "wait", handle.wait)
-    state = handle.checkpoint()
-    _saved(lines, "fetched", state)
-    resumed = helper.resume(state)
-    exchange.respond(job("done"), report(6))
-    step(lines, "resumed wait", resumed.wait)
-    step(lines, "resumed status", resumed.status)
-    lines.append(f"  resumed progress {dict(resumed.progress)!r}")
+    step(lines, "checkpoint of a fetched result", handle.checkpoint)
     for status in ("failed", "cancelled"):
         exchange.respond(job("queued", 202), job(status))
         handle = helper.start(body=body)
         step(lines, f"{status} wait", handle.wait)
-        resumed = helper.resume(handle.checkpoint())
-        exchange.respond(job(status))
-        step(lines, f"resumed {status} wait", resumed.wait)
-        step(lines, f"resumed {status} status", resumed.status)
+        step(lines, f"{status} checkpoint", handle.checkpoint)
     once = harness.request(retry=harness.options.RetryOptions(max_retries=0))
     exchange.respond(job("queued", 202), job("done"), json_response(500, {}))
     handle = helper.start(body=body, options=once)
     step(lines, "failed fetch", handle.wait)
     state = handle.checkpoint()
     _saved(lines, "fetch due", state)
-    exchange.respond(job("done"), report(7))
-    step(lines, "resumed fetch", helper.resume(state).wait)
+    resumed = helper.resume(state)
+    step(lines, "resumed fetch status", resumed.status)
+    exchange.respond(report(7))
+    step(lines, "resumed fetch", resumed.wait)
     inline = api.protocols.jobs.inline
     exchange.respond(job("done", 200, "j3", result={"rows": 1}))
     immediate = inline.start(body=body)
@@ -191,16 +185,12 @@ def _settled(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -
     )
     handle = inline.start(body=body)
     step(lines, "inline wait", handle.wait)
-    state = handle.checkpoint()
-    _saved(lines, "inline", state)
-    exchange.respond(json_response(200, {"id": "j2", "status": "any", "result": {"rows": 8}}, **{"X-State": "done"}))
-    step(lines, "resumed inline wait", inline.resume(state).wait)
+    step(lines, "inline checkpoint", handle.checkpoint)
     exports = api.protocols.exports.run
     exchange.respond(raw_response(202, **{"Operation-Id": "e1"}), json_response(200, {"state": 1}))
     handle = exports.start()
     step(lines, "wait without a result", handle.wait)
-    exchange.respond(json_response(200, {"state": 1}))
-    step(lines, "resumed without a result", exports.resume(handle.checkpoint()).wait)
+    step(lines, "checkpoint without a result", handle.checkpoint)
 
 
 def _errors(harness: Polling, api: Any, exchange: Exchange, lines: list[str]) -> None:
@@ -271,6 +261,9 @@ def _malformed(harness: Polling, api: Any, exchange: Exchange, lines: list[str])
     pending = helper.start(body=body).checkpoint()
     for label, saved in (
         ("unknown member", {**_envelope(pending)["state"], "extra": 1}),
+        ("unknown phase", _replaced(pending, ("phase",), "settled")),
+        ("fetch with values of the poll", _replaced(pending, ("phase",), "fetch")),
+        ("fetch with values of the create response", {**_envelope(pending)["state"], "phase": "fetch", "bound": [1]}),
         ("fetch value of another type", _replaced(pending, ("seed", 0), 5)),
         ("null fetch value", _replaced(pending, ("seed", 0), None)),
         ("object fetch value", _replaced(pending, ("seed", 0), {"x": 1})),
@@ -281,6 +274,11 @@ def _malformed(harness: Polling, api: Any, exchange: Exchange, lines: list[str])
         ("expiry without an offset", _replaced(pending, ("expires_at",), "2999-01-01T00:00:00")),
     ):
         step(lines, label, lambda saved=saved: helper.resume(_crafted(harness, pending, saved)))
+    inline = api.protocols.jobs.inline
+    exchange.respond(job("queued", 202, "j2"))
+    queued = inline.start(body=body).checkpoint()
+    fetchless = {**_envelope(queued)["state"], "phase": "fetch", "bound": []}
+    step(lines, "fetch of a helper without one", lambda: inline.resume(_crafted(harness, queued, fetchless)))
     for label, path in (("dot segment for a poll", ("bound", 0)), ("dot segment for a fetch", ("seed", 0))):
         step(
             lines,
@@ -394,7 +392,7 @@ async def _async_resume(harness: Polling, lines: list[str]) -> None:
         exchange.respond(job("queued", 202), job("done"), json_response(500, {}))
         handle = await helper.start(body=body, options=once)
         await astep(lines, "failed fetch", handle.wait)
-        exchange.respond(job("done"), report(4))
+        exchange.respond(report(4))
         await astep(lines, "resumed fetch", helper.resume(handle.checkpoint()).wait)
         exchange.respond(json_response(202, {"id": "j1", "status": "queued"}, **{"Retry-After": "120"}))
         handle = await helper.start(body=body)

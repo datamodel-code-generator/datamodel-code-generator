@@ -307,7 +307,6 @@ def _helpers(harness: _Harness, lines: list[str]) -> None:
         check.close()
         resumed = api.protocols.checks.run.resume(state, options=gzip, poll_options=fast)
         record(lines, "check", resumed.wait)
-        state = resumed.checkpoint()
         record(lines, "completed check resume", lambda: api.protocols.checks.run.resume(state, options=gzip))
         exchange.respond(json_response(200, {"id": "c1", "status": "done", "result": {"value": "ok"}}))
         record(lines, "completed check inherited resume", api.protocols.checks.run.resume(state).wait)
@@ -410,8 +409,8 @@ async def _async(harness: _Harness, lines: list[str]) -> None:
         check = await api.protocols.checks.run.start(
             options=gzip, poll_options=harness.protocols.PollOptions(interval=0.000001)
         )
-        await arecord(lines, "async check", check.wait)
         state = check.checkpoint()
+        await arecord(lines, "async check", check.wait)
         record(lines, "async completed check resume", lambda: api.protocols.checks.run.resume(state, options=gzip))
         exchange.respond(json_response(200, {"id": "c1", "status": "done", "result": {"value": "ok"}}))
         resumed = api.protocols.checks.run.resume(state)

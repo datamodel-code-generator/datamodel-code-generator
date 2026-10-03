@@ -1084,11 +1084,14 @@ it, never waiting for a step and never refusing. An operation that completed at 
 poll: its `checkpoint()` raises `ProtocolStateError` with `state="succeeded"`. The helper's
 `resume(state, *, poll_options=None, options=None, session_options=None)` is not awaited, even on `AsyncClient`, and
 returns the handle type `start` returns, pending, in a session of its own, without sending: it never creates the
-operation again, and `status` or `wait` sends its first poll at once.
+operation again, and `status` or `wait` sends its first poll at once. A checkpoint does not keep a server's delay,
+so a caller resuming after `PollWaitLimitError` waits out its `required_wait` itself before polling.
 
 ```python
+import time
+
 from pkg.errors import PollWaitLimitError
-from pkg.protocols import PollOptions, import_state
+from pkg.protocols import import_state
 
 with Client() as client:
     helper = client.protocols.jobs.run
@@ -1099,7 +1102,8 @@ with Client() as client:
         helper.start(body=job).wait()
     except PollWaitLimitError as error:
         if error.resume_state is not None:
-            later = helper.resume(error.resume_state, poll_options=PollOptions(max_wait=None))
+            time.sleep(error.required_wait)
+            later = helper.resume(error.resume_state)
 ```
 
 | Saved | Never saved |
@@ -3386,8 +3390,8 @@ cannot change it. Each of the three sources is a function that takes no argument
 
 | Source | Default | Read for |
 |---|---|---|
-| `monotonic` | `time.monotonic` | Deadlines, elapsed times, retry targets, idempotency key retention, token expiry, hook event durations, and protocol helper sessions, poll intervals, a polling checkpoint's `wait_ms`, and stream deadlines |
-| `time` | `time.time` | Placing a wall-clock instant on the monotonic scale once: an HTTP-date `Retry-After` or polling delay header at receipt, an idempotency key's `first_used_at` at call entry, and an access token's `expires_at`; a resumed pager's or polling handle's check of its state's `expires_at`; and a cache fetch's request, response, and age times |
+| `monotonic` | `time.monotonic` | Deadlines, elapsed times, retry targets, idempotency key retention, token expiry, hook event durations, and protocol helper sessions, poll intervals, and stream deadlines |
+| `time` | `time.time` | Placing a wall-clock instant on the monotonic scale once: an HTTP-date `Retry-After` or polling delay header at receipt, an idempotency key's `first_used_at` at call entry, and an access token's `expires_at`; a polling, stream, or upload helper's `resume` check of its state's `expires_at`; and a cache fetch's request, response, and age times |
 | `random` | A secure uniform draw | The fraction in `[0, 1)` of a full-jitter backoff, drawn only when a retry needs one |
 
 A source that cannot be called raises `ConfigurationError` with the `field_path` `("clock", name)`. OAuth providers
