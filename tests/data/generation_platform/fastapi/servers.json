@@ -181,6 +181,10 @@
         "status_code": 200,
         "name": "part"
       }
+    ],
+    "package_snapshots": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
     ]
   },
   "parameters": {
