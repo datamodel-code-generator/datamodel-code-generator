@@ -442,7 +442,7 @@ class GraphCheck:
             self.report("source_assertion_not_projected", location)
 
 
-def leaf_kind(value: FinalPythonType) -> tuple[str | None, Constraints]:
+def leaf_kind(value: FinalPythonType | None) -> tuple[str | None, Constraints]:
     """Classify a final scalar type, with the constraints its constructor carries."""
     match value:
         case BuiltinType():

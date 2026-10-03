@@ -4,11 +4,16 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import Final, Literal, TypeAlias, TypedDict
 
+import models
 from typing_extensions import Never
 
+from .._runtime.model_codecs.parameters import ParameterPlan
+from .._runtime.model_codecs.unset import Unset
 from .._runtime.server.application import Dependency, OperationPlan
+from .._runtime.server.requests import ParameterAdapter, ParameterArgument
 from .._runtime.server.responses import MediaPlan, OperationResponses, ResponsePlan
 from . import model_bindings
 
@@ -31,7 +36,23 @@ class GetValue:
         name='get_value',
         key='/paths/~1values~1{id}/get',
         service='untagged',
-        keywords=('id', 'at', 'tags'),
+        keywords=('id', 'at', 'tags', 'x_label'),
+    )
+    @dataclass(frozen=True, slots=True, kw_only=True)
+    class Parameters:
+        """The adapter parameters of get_value."""
+
+        x_label: models.FieldValuesIdGetHeaderXLabelParameter | Unset
+
+    PARAMETERS: Final = ParameterAdapter(
+        arguments=(
+            ParameterArgument(
+                name='x_label',
+                plan=ParameterPlan(location='header', name='X-Label', style='simple'),
+                codec=(model_bindings.codec_0, model_bindings.CONTEXT_0),
+            ),
+        ),
+        record=Parameters,
     )
     RESPONSES: Final = OperationResponses(
         responses=(
@@ -41,7 +62,7 @@ class GetValue:
                     MediaPlan(
                         media_type='application/json',
                         kind='json',
-                        codec=(model_bindings.codec_0, model_bindings.CONTEXT_0),
+                        codec=(model_bindings.codec_1, model_bindings.CONTEXT_1),
                     ),
                 ),
             ),

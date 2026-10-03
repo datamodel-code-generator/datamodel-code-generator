@@ -43,7 +43,7 @@ class _GetValueResponseCodecs(ResponseCodecs[NativeOutboundCodec[models.Value]])
 
 
 GetValueResponseCodecs: Final = _GetValueResponseCodecs(
-    (('200', (('application/json', model_bindings.outbound_0),)),),
+    (('200', (('application/json', model_bindings.outbound_1),)),),
 )
 
 

@@ -13,6 +13,22 @@ _BUNDLE = r"""{
    "route_path": "/values/{id}",
    "slots": [],
    "fragment": {
+    "parameters": [
+     {
+      "name": "X-Label",
+      "in": "header",
+      "schema": {
+       "allOf": [
+        {
+         "type": "string"
+        },
+        {
+         "minLength": 1
+        }
+       ]
+      }
+     }
+    ],
     "responses": {
      "200": {
       "description": "The value.",
@@ -20,6 +36,29 @@ _BUNDLE = r"""{
        "application/json": {
         "schema": {
          "$ref": "#/components/schemas/Value__d6fa783cfbdd"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "Invalid request",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_http_error__b3eacd33433b"
+        },
+        "example": {
+         "detail": "Invalid request"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/dcg_validation_error__b3eacd33433b"
         }
        }
       }
@@ -51,6 +90,55 @@ _BUNDLE = r"""{
       "type": "integer"
      }
     }
+   },
+   "dcg_http_error__b3eacd33433b": {
+    "type": "object",
+    "properties": {
+     "detail": {}
+    },
+    "required": [
+     "detail"
+    ]
+   },
+   "dcg_validation_error__b3eacd33433b": {
+    "type": "object",
+    "properties": {
+     "detail": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "loc": {
+         "type": "array",
+         "items": {
+          "anyOf": [
+           {
+            "type": "string"
+           },
+           {
+            "type": "integer"
+           }
+          ]
+         }
+        },
+        "msg": {
+         "type": "string"
+        },
+        "type": {
+         "type": "string"
+        }
+       },
+       "required": [
+        "loc",
+        "msg",
+        "type"
+       ]
+      }
+     }
+    },
+    "required": [
+     "detail"
+    ]
    },
    "dcg_server_error__b3eacd33433b": {
     "type": "string"

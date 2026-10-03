@@ -1806,7 +1806,11 @@ class _SchemaUses(_Models):
     """Bind the schemas the models were generated from, nested ones included."""
 
     def projection(self, declaration: _Declaration, projection: Projection, direction: Direction) -> TypeProjection:
-        """Bind an acquired declaration: its emitted model wins over a direct reference type."""
+        """Bind an acquired declaration: its emitted model wins over a direct reference type.
+
+        A declaration the parser emitted nothing for, such as a recursive reference with sibling keywords, binds
+        the model-free type of its schema, which is the referenced model.
+        """
         binder = self.binder
         parser = self.parser
         engine = parser.acquisitions.get((declaration, projection))
@@ -1823,7 +1827,7 @@ class _SchemaUses(_Models):
             return projector.declaration(reference)
         if data_type is not None:
             return projector.project(data_type)
-        return TypeProjection(None, "BND_SYMBOL_NOT_EMITTED")
+        return self.lightweight(declaration, direction)
 
     def members_at(self, symbol: SymbolId, schema: _Declaration, direction: Direction) -> tuple[FieldUseBinding, ...]:
         """Return a model's members anchored at the properties of the schema a use reads."""

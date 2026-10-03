@@ -770,8 +770,8 @@ class Planner:  # noqa: PLR0904
         )
         return field, "native_supported", None
 
-    def bound(self, value: FinalPythonType | None) -> str | Literal[False] | None:
-        """Return the builtin leaf a parameter's final type projects to, False for opaque types, None if unknown."""
+    def bound(self, value: FinalPythonType | None) -> str | Literal[False]:
+        """Return the builtin leaf a parameter's final type projects to, or False for opaque or unbound types."""
         seen: set[int] = set()
         while isinstance(value, GeneratedSymbolType) and value.symbol not in seen:
             seen.add(value.symbol)
@@ -782,8 +782,6 @@ class Planner:  # noqa: PLR0904
             if symbol.kind not in {"root", "alias"} or facts is None:
                 return False
             value = facts.type
-        if value is None:
-            return None
         if isinstance(value, GenericType) and len(value.arguments) == 1:
             return self.bound(value.arguments[0])
         kind, _ = leaf_kind(value)

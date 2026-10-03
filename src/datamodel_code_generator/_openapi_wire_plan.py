@@ -1116,10 +1116,6 @@ def _content_parameter(
     planner: _WirePlanner, declaration: WireDeclaration, location: ParameterLocation, name: str, *, required: bool
 ) -> ParameterPlan:
     source = declaration.use_site
-    if len(declaration.children) != 1 or declaration.schemas:
-        raise _PlanError(
-            code="MC_PARAMETER_ENCODING", source=source, message="Parameter content must declare exactly one media type"
-        )
     if location == "querystring" and not planner.version.startswith("3.2"):
         raise _PlanError(
             code="MC_PARAMETER_ENCODING", source=source, message="Querystring parameters require OpenAPI 3.2"
