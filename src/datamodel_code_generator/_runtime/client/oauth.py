@@ -1,4 +1,4 @@
-"""Send one OAuth request through a provider-owned transport and classify what the token or device endpoint answered.
+"""Send one OAuth request through a provider-owned transport and classify what the token endpoint answered.
 
 Errors built here keep no token value, client secret, response body, or OAuth error description.
 """
@@ -14,7 +14,7 @@ from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Final, Generic, Literal, TypeVar, get_args
-from urllib.parse import parse_qsl, quote_plus, urlencode, urlsplit
+from urllib.parse import quote_plus, urlencode, urlsplit
 
 from typing_extensions import TypeIs
 
@@ -28,13 +28,9 @@ from .errors import (
     AuthConfigurationError,
     AuthProviderClosedError,
     AuthProviderExecutionError,
-    AuthReauthorizationRequiredError,
     AuthRefreshError,
-    AuthStateUncertainError,
-    AuthTimeoutError,
     DeliveryState,
     OAuthErrorCode,
-    OAuthExchangeError,
     PhaseTimeoutError,
     TokenExpiredError,
     TransportError,
@@ -65,21 +61,11 @@ if TYPE_CHECKING:
 
 ClientAuthMethod = Literal["none", "client_secret_basic", "client_secret_post"]
 Outcome = Literal["success", "rejected", "http_status", "malformed_response", "unsent", "lost"]
-ConsumableState = Literal["REAUTH_REQUIRED", "EXCHANGE_REJECTED", "FAILED_NOT_SENT", "UNCERTAIN"]
 SecretT = TypeVar("SecretT")
 AdapterT = TypeVar("AdapterT", bound="TransportAdapter | AsyncTransportAdapter")
 T = TypeVar("T")
 
 _LOOPBACK: Final = frozenset({"localhost", "127.0.0.1", "::1"})
-_AUTHORIZATION_PARAMETERS: Final = frozenset({
-    "response_type",
-    "client_id",
-    "redirect_uri",
-    "scope",
-    "state",
-    "code_challenge",
-    "code_challenge_method",
-})
 _MAX_BODY: Final = 65536
 _UNSAFE: Final = re.compile(r"[\x00-\x20\x7f]")
 _VSCHAR: Final = re.compile(r"[\x20-\x7e]+")
@@ -92,8 +78,6 @@ _BAD_REQUEST: Final = 400
 _UNAUTHORIZED: Final = 401
 _SUCCESS: Final = range(200, 300)
 _PHASES: Final[tuple[str, ...]] = ("connect", "read", "write", "pool")
-_DEFAULT_INTERVAL: Final = 5.0
-DEVICE_GRANT_TYPE: Final = "urn:ietf:params:oauth:grant-type:device_code"
 
 
 @dataclass(frozen=True, slots=True)
@@ -126,38 +110,13 @@ def endpoint_url(value: object, name: str, *, allow_insecure_loopback: bool) -> 
     return Endpoint(value, origin_text(origin))
 
 
-def authorization_url(value: object, *, allow_insecure_loopback: bool) -> str:
-    """Accept an authorization endpoint whose own query leaves every authorization request parameter to the flow."""
-    url = endpoint_url(value, "authorization_url", allow_insecure_loopback=allow_insecure_loopback).url
-    if any(name in _AUTHORIZATION_PARAMETERS for name, _ in parse_qsl(urlsplit(url).query, keep_blank_values=True)):
-        raise AuthConfigurationError(field_path=("authorization_url",), condition="reserved_parameter")
-    return url
-
-
-def redirect_uri(value: object) -> str:
-    """Accept an absolute redirect URI without a fragment, as RFC 6749 requires of a redirection endpoint."""
-    if not isinstance(value, str):
-        raise AuthConfigurationError(field_path=("redirect_uri",), condition="invalid_type")
-    if not uri_reference(value, absolute=True):
-        raise AuthConfigurationError(field_path=("redirect_uri",), condition="invalid_url")
-    return value
-
-
-def request_url(base: str, query: list[tuple[str, str]]) -> str:
-    """Append parameters to a URL, keeping the query it already has."""
-    separator = "" if base.endswith(("?", "&")) else "&" if urlsplit(base).query else "?"
-    return f"{base}{separator}{urlencode(query)}"
-
-
-def uri_reference(value: str, *, absolute: bool = False) -> bool:
-    """Check RFC 3986 URI-reference syntax, or absolute-URI syntax, in time linear in the value's length."""
+def uri_reference(value: str) -> bool:
+    """Check RFC 3986 URI-reference syntax in time linear in the value's length."""
     if not _URI_TEXT.fullmatch(value):
         return False
     try:
         parts = urlsplit(value)
     except ValueError:
-        return False
-    if absolute and (not parts.scheme or "#" in value):
         return False
     if not parts.scheme and ":" in parts.path.partition("/")[0]:
         return False
@@ -166,13 +125,6 @@ def uri_reference(value: str, *, absolute: bool = False) -> bool:
         and "#" not in parts.fragment
         and not any(bracket in f"{parts.path}{parts.query}{parts.fragment}" for bracket in "[]")
     )
-
-
-def authorization_code(value: object) -> str:
-    """Accept an authorization code of visible ASCII characters, as RFC 6749 defines it."""
-    if not isinstance(value, str) or not _VSCHAR.fullmatch(value):
-        raise AuthConfigurationError(field_path=("code",), condition="invalid_value")
-    return value
 
 
 def _is_method(value: str) -> TypeIs[ClientAuthMethod]:
@@ -276,11 +228,11 @@ def _secret_value(value: object) -> str:
     raise AuthConfigurationError(field_path=("client_secret",), condition="invalid_material")
 
 
-def _provider_failure(error: Exception, state: str) -> Exception:
+def _provider_failure(error: Exception) -> Exception:
     """Keep classified auth failures of the secret provider and wrap any other exception it raised."""
     if isinstance(error, (AuthConfigurationError, AuthRefreshError)):
         return error
-    return AuthProviderExecutionError(callback="get", state=state, delivery_state=DeliveryState.NOT_SENT, cause=error)
+    return AuthProviderExecutionError(callback="get", delivery_state=DeliveryState.NOT_SENT, cause=error)
 
 
 def token_request(
@@ -329,7 +281,6 @@ class Session:
     total: float
     phases: tuple[float, float, float, float]
     clock: Clock
-    limited: bool = False
 
     @classmethod
     def start(
@@ -344,7 +295,7 @@ class Session:
         )
         now = clock.monotonic()
         if limit is not None and (limit := on_clock(limit, clock)).at < now + refresh_timeout:
-            return cls(limit, refresh_timeout, phases, clock, limited=True)
+            return cls(limit, refresh_timeout, phases, clock)
         return cls(absolute_deadline(now + refresh_timeout, clock=clock), refresh_timeout, phases, clock)
 
     def context(self, trace: AttemptTrace) -> tuple[AttemptIOContext, tuple[bool, ...]]:
@@ -359,21 +310,10 @@ class Session:
 
 @dataclass(slots=True)
 class Progress:
-    """How far an exchange got, kept by its caller so an interruption is classified by what was sent.
-
-    A guard, when given, marks the request sent itself, and refuses once the exchange's job already ended.
-    """
+    """How far an asyncio exchange got, so the session deadline cutting it short is classified by what was sent."""
 
     sent: bool = False
     answered: bool = False
-    guard: Callable[[], bool] | None = None
-
-    def start(self) -> bool:
-        """Mark the request sent right before it is, unless the guard refuses."""
-        if (guard := self.guard) is not None:
-            return guard()
-        self.sent = True
-        return True
 
     @property
     def delivery(self) -> DeliveryState:
@@ -392,7 +332,6 @@ class Exchanged:
     status_code: int | None = None
     fields: Mapping[str, object] | None = field(default=None, repr=False)
     oauth_error: OAuthErrorCode | None = None
-    error: str | None = None
     received: datetime | None = None
     receipt: float | None = None
     cause: BaseException | None = None
@@ -498,7 +437,7 @@ def _answered(status: int, headers: HeadersView, body: bytes | None, received: d
     if code is None or (status == _UNAUTHORIZED and code != "invalid_client"):
         return Exchanged(defect, delivery, status)
     known = code if _is_oauth_error(code) else None
-    return Exchanged("rejected", delivery, status, oauth_error=known, error=code, receipt=receipt)
+    return Exchanged("rejected", delivery, status, oauth_error=known)
 
 
 def _head(status: object, headers: object) -> tuple[int, HeadersView]:
@@ -638,7 +577,7 @@ class TokenEndpoint:
 
     def _open(self) -> None:
         if self.closed:
-            raise AuthProviderClosedError(state="CLOSED", delivery_state=DeliveryState.NOT_SENT)
+            raise AuthProviderClosedError(delivery_state=DeliveryState.NOT_SENT)
 
     def prepare(self) -> None:
         """Create the SDK-owned transport once, before any exchange consumes its credential, unless already closed."""
@@ -655,29 +594,25 @@ class TokenEndpoint:
         self,
         fields: tuple[tuple[str, str], ...],
         session: Session,
-        progress: Progress,
-        state: str,
-        endpoint: Endpoint | None = None,
     ) -> Exchanged:
         """Acquire the client secret, then send the form once, without redirects or retries, reading a bounded body.
 
-        The form goes to the token endpoint unless another endpoint of the grant is given, and never once the session
-        ended. A secret provider's failure propagates; `state` names the state it leaves the caller in.
+        The form is never sent once the session ended, and a secret provider's failure propagates.
         """
-        target = endpoint or self.endpoint
+        target = self.endpoint
         authentication = self.authentication
         secret = None
         if (provider := authentication.secret) is not None:
             try:
                 secret = _secret_value(provider.get(_secret_context(target.origin, session.deadline)))
             except Exception as error:  # noqa: BLE001 - Classified by the secret provider's failure contract.
-                raise _provider_failure(error, state) from None
+                raise _provider_failure(error) from None
         request = token_request(target.url, authentication.client_id, authentication.method, fields, secret)
         trace = AttemptTrace(clock=session.clock)
         context, caps = session.context(trace)
         with self._lock:
             self._open()
-            if session.deadline.remaining() <= 0 or not progress.start():
+            if session.deadline.remaining() <= 0:
                 return expired(session, DeliveryState.NOT_SENT)
             adapter = self._adapter
         assert adapter is not None
@@ -685,7 +620,6 @@ class TokenEndpoint:
             response = adapter.send(request, context)
         except Exception as error:  # noqa: BLE001 - Every adapter failure is classified by its evidence.
             return _failed(error, _claimed(error, trace, trusted=adapter.capabilities.delivery_evidence), caps, session)
-        progress.answered = True
         status = None
         try:
             status, headers = _head(response.status_code, response.headers)
@@ -736,7 +670,7 @@ class AsyncTokenEndpoint:
 
     def _open(self) -> None:
         if self.closed:
-            raise AuthProviderClosedError(state="CLOSED", delivery_state=DeliveryState.NOT_SENT)
+            raise AuthProviderClosedError(delivery_state=DeliveryState.NOT_SENT)
 
     def bind(self) -> None:
         """Refuse a caller outside asyncio or on another event loop than the one the endpoint belongs to."""
@@ -766,35 +700,30 @@ class AsyncTokenEndpoint:
         self,
         fields: tuple[tuple[str, str], ...],
         session: Session,
-        progress: Progress,
-        state: str,
-        endpoint: Endpoint | None = None,
     ) -> Exchanged:
         """Acquire the client secret and send the form once, both within the session deadline."""
+        progress = Progress()
         try:
-            return await within(
-                self._exchange(fields, session, progress, state, endpoint or self.endpoint),
-                session.deadline.remaining(),
-            )
+            return await within(self._exchange(fields, session, progress), session.deadline.remaining())
         except TimeoutError as error:
             return expired(session, progress.delivery, cause=error)
 
-    async def _exchange(
-        self, fields: tuple[tuple[str, str], ...], session: Session, progress: Progress, state: str, target: Endpoint
-    ) -> Exchanged:
+    async def _exchange(self, fields: tuple[tuple[str, str], ...], session: Session, progress: Progress) -> Exchanged:
+        target = self.endpoint
         authentication = self.authentication
         secret = None
         if (provider := authentication.secret) is not None:
             try:
                 secret = _secret_value(await provider.get(_secret_context(target.origin, session.deadline)))
             except Exception as error:  # noqa: BLE001 - Classified by the secret provider's failure contract.
-                raise _provider_failure(error, state) from None
+                raise _provider_failure(error) from None
         request = token_request(target.url, authentication.client_id, authentication.method, fields, secret)
         trace = AttemptTrace(clock=session.clock)
         context, caps = session.context(trace)
         self._open()
-        if session.deadline.remaining() <= 0 or not progress.start():
+        if session.deadline.remaining() <= 0:
             return expired(session, DeliveryState.NOT_SENT)
+        progress.sent = True
         adapter = self._adapter
         assert adapter is not None
         try:
@@ -862,8 +791,8 @@ def _expiry(value: object, received: datetime) -> datetime:
 
 def token_material(
     fields: Mapping[str, object], received: datetime, snapshot: tuple[str, ...] | None
-) -> tuple[AccessToken, str | None, bool]:
-    """Build the access token, the refresh token, and whether the response carried one, from a 2xx response.
+) -> tuple[AccessToken, str | None]:
+    """Build the access token and the refresh token from a 2xx response.
 
     An omitted scope member inherits the grant's snapshot; a present one, even null, must be valid on its own.
     """
@@ -887,169 +816,4 @@ def token_material(
     return (
         AccessToken(access, token_type="Bearer", expires_at=expires_at, scopes=scopes),  # noqa: S106
         refresh if isinstance(refresh, str) else None,
-        "refresh_token" in fields,
-    )
-
-
-def failure_kind(error: BaseException) -> Literal["malformed_response", "invalid_token_response"]:
-    """Separate a successful response's member defects, expiry included, from its format defects."""
-    if isinstance(error, (InvalidTokenResponseError, TokenExpiredError)):
-        return "invalid_token_response"
-    return "malformed_response"
-
-
-def unusable_success(
-    exchanged: Exchanged, cause: Exception, *, provider_id: str | None = None, refresh_id: str | None = None
-) -> AuthStateUncertainError:
-    """Return the error of a successful answer whose members form no token set: the credential it used is spent."""
-    return AuthStateUncertainError(
-        failure_kind=failure_kind(cause),
-        status_code=exchanged.status_code,
-        state="UNCERTAIN",
-        delivery_state=exchanged.delivery,
-        phase="validate",
-        cause=cause,
-        provider_id=provider_id,
-        refresh_id=refresh_id,
-    )
-
-
-def consumable_failure(
-    exchanged: Exchanged, *, provider_id: str | None = None, refresh_id: str | None = None
-) -> tuple[ConsumableState, AuthRefreshError]:
-    """Classify an exchange of a single-use credential, a code or a refresh token, that did not succeed.
-
-    Return the state it leaves the credential in with the error to raise: invalid_grant requires reauthorization,
-    another known error code rejects it, an unsent request consumed nothing, and any other answer or a request that
-    may have been sent leaves its fate unknown.
-    """
-    delivery = exchanged.delivery
-    if exchanged.outcome == "rejected" and exchanged.oauth_error == "invalid_grant":
-        return "REAUTH_REQUIRED", AuthReauthorizationRequiredError(
-            condition="invalid_grant",
-            state="REAUTH_REQUIRED",
-            delivery_state=delivery,
-            provider_id=provider_id,
-            refresh_id=refresh_id,
-        )
-    if exchanged.outcome == "rejected" and exchanged.oauth_error is not None:
-        return "EXCHANGE_REJECTED", OAuthExchangeError(
-            status_code=exchanged.status_code,
-            oauth_error=exchanged.oauth_error,
-            state="EXCHANGE_REJECTED",
-            delivery_state=delivery,
-            provider_id=provider_id,
-            refresh_id=refresh_id,
-        )
-    if exchanged.outcome == "unsent":
-        if exchanged.timeout_kind is None:
-            return "FAILED_NOT_SENT", OAuthExchangeError(
-                state="FAILED_NOT_SENT",
-                delivery_state=delivery,
-                phase=exchanged.phase,
-                cause=exchanged.cause,
-                provider_id=provider_id,
-                refresh_id=refresh_id,
-            )
-        assert exchanged.timeout is not None
-        return "FAILED_NOT_SENT", AuthTimeoutError(
-            effective_timeout=exchanged.timeout,
-            timeout_kind=exchanged.timeout_kind,
-            state="FAILED_NOT_SENT",
-            delivery_state=delivery,
-            phase=exchanged.phase,
-            cause=exchanged.cause,
-            provider_id=provider_id,
-            refresh_id=refresh_id,
-        )
-    return "UNCERTAIN", AuthStateUncertainError(
-        failure_kind=_uncertain_kind(exchanged),
-        status_code=exchanged.status_code,
-        state="UNCERTAIN",
-        delivery_state=delivery,
-        phase="validate" if exchanged.outcome in {"malformed_response", "rejected"} else exchanged.phase,
-        cause=exchanged.cause,
-        provider_id=provider_id,
-        refresh_id=refresh_id,
-    )
-
-
-def _uncertain_kind(exchanged: Exchanged) -> Literal["transport", "deadline", "http_status", "malformed_response"]:
-    """Name what left an exchange's outcome unknown: the session deadline, the transport, or the answer."""
-    if exchanged.timeout_kind == "provider":
-        return "deadline"
-    if exchanged.outcome == "lost":
-        return "transport"
-    if exchanged.outcome == "http_status":
-        return "http_status"
-    return "malformed_response"
-
-
-class InvalidDeviceResponseError(ValueError):
-    """A device authorization response whose members cannot start a device transaction."""
-
-
-class DeviceAuthorizationEndedError(Exception):
-    """The authorization server ended a device transaction: the user denied it, or its device code expired."""
-
-    def __init__(self, reason: str) -> None:
-        """Keep the server's error code, one of the two RFC 8628 codes that end a transaction."""
-        super().__init__(f"The authorization server ended the device authorization with {reason}.")
-        self.reason = reason
-
-
-@dataclass(frozen=True, slots=True)
-class DeviceGrant:
-    """A validated device authorization response: the codes, where the user goes, and the transaction's timing."""
-
-    device_code: str = field(repr=False)
-    user_code: str = field(repr=False)
-    verification_uri: str
-    verification_uri_complete: str | None
-    expires_in: float
-    interval: float
-
-
-def _device_invalid(name: str) -> InvalidDeviceResponseError:
-    return InvalidDeviceResponseError(f"The device authorization response has no valid {name}.")
-
-
-def _device_code(fields: Mapping[str, object], name: str) -> str:
-    """Return a code the device sends or shows, which RFC 8628 leaves to visible ASCII characters in practice."""
-    value = fields.get(name)
-    if not isinstance(value, str) or not _VSCHAR.fullmatch(value):
-        raise _device_invalid(name)
-    return value
-
-
-def _device_uri(fields: Mapping[str, object], name: str) -> str:
-    value = fields.get(name)
-    if not isinstance(value, str) or not uri_reference(value, absolute=True):
-        raise _device_invalid(name)
-    return value
-
-
-def _device_seconds(value: object, name: str) -> float:
-    if (number := finite_number(value)) is None or number <= 0:
-        raise _device_invalid(name)
-    return number
-
-
-def device_grant(fields: Mapping[str, object]) -> DeviceGrant:
-    """Validate every RFC 8628 section 3.2 member before a transaction may start, ignoring unknown members.
-
-    expires_in is required with no fallback lifetime; only an omitted interval takes the five-second default.
-    """
-    if "error" in fields:
-        msg = "The device authorization response mixes success and error members."
-        raise ValueError(msg)
-    return DeviceGrant(
-        device_code=_device_code(fields, "device_code"),
-        user_code=_device_code(fields, "user_code"),
-        verification_uri=_device_uri(fields, "verification_uri"),
-        verification_uri_complete=(
-            _device_uri(fields, "verification_uri_complete") if "verification_uri_complete" in fields else None
-        ),
-        expires_in=_device_seconds(fields.get("expires_in"), "expires_in"),
-        interval=_device_seconds(fields["interval"], "interval") if "interval" in fields else _DEFAULT_INTERVAL,
     )
