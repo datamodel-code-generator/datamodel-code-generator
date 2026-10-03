@@ -9,50 +9,41 @@ paths:
         - name: code
           in: query
           schema:
-            type: string
-            pattern: "^[a-z]+$"
+            $ref: "#/components/schemas/CodeQuery"
         - name: count
           in: query
           schema:
-            type: integer
-            minimum: 1
+            $ref: "#/components/schemas/CountQuery"
         - name: ratio
           in: query
           schema:
-            type: number
-            maximum: 1.5
+            $ref: "#/components/schemas/RatioQuery"
         - name: when
           in: query
           schema:
-            type: string
-            format: date-time
+            $ref: "#/components/schemas/WhenQuery"
         - name: mode
           in: query
           schema:
-            type: string
-            enum: [a, b]
+            $ref: "#/components/schemas/ModeQuery"
         - name: price
           in: query
           schema:
-            type: string
-            format: decimal
-            maximum: 10
+            $ref: "#/components/schemas/PriceQuery"
         - name: tags
           in: query
           schema:
-            type: array
-            items:
-              type: string
+            $ref: "#/components/schemas/TagsQuery"
         - name: pet
           in: query
           style: deepObject
           explode: true
           schema:
-            oneOf:
-              - $ref: "#/components/schemas/Cat"
-              - $ref: "#/components/schemas/Dog"
-            discriminator:
-              propertyName: kind
+            $ref: "#/components/schemas/Pets"
+        - name: X-Counts
+          in: header
+          schema:
+            $ref: "#/components/schemas/Counts"
       requestBody:
         required: true
         content:
@@ -65,7 +56,7 @@ paths:
           content:
             application/json:
               schema:
-                type: [string, "null"]
+                $ref: "#/components/schemas/Name"
   /ordered:
     get:
       parameters:
@@ -79,6 +70,56 @@ paths:
           description: No content.
 components:
   schemas:
+    Filters:
+      type: object
+      properties:
+        code:
+          $ref: "#/components/schemas/CodeQuery"
+        count:
+          $ref: "#/components/schemas/CountQuery"
+        ratio:
+          $ref: "#/components/schemas/RatioQuery"
+        when:
+          $ref: "#/components/schemas/WhenQuery"
+        mode:
+          $ref: "#/components/schemas/ModeQuery"
+        price:
+          $ref: "#/components/schemas/PriceQuery"
+        tags:
+          $ref: "#/components/schemas/TagsQuery"
+        name:
+          $ref: "#/components/schemas/Name"
+        counts:
+          $ref: "#/components/schemas/Counts"
+    CodeQuery:
+      type: string
+      pattern: "^[a-z]+$"
+    CountQuery:
+      type: integer
+      minimum: 1
+    RatioQuery:
+      type: number
+      maximum: 1.5
+    WhenQuery:
+      type: string
+      format: date-time
+    ModeQuery:
+      type: string
+      enum: [a, b]
+    PriceQuery:
+      type: string
+      format: decimal
+      maximum: 10
+    Name:
+      type: [string, "null"]
+    Counts:
+      type: object
+      additionalProperties:
+        type: integer
+    TagsQuery:
+      type: array
+      items:
+        type: string
     Cat:
       type: object
       required: [kind]

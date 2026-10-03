@@ -35,7 +35,6 @@ Generate the models and the server:
 datamodel-codegen \
   --input openapi.yaml \
   --input-file-type openapi \
-  --openapi-scopes schemas api \
   --output-model-type pydantic_v2.BaseModel \
   --preset standard-py312-20260909 \
   --output models.py \
@@ -96,8 +95,10 @@ object with the right methods works, and type checkers check it where you pass i
 - `--output-model-type` is `pydantic_v2.BaseModel` or `pydantic_v2.dataclass`; the other backends are
   `E_FASTAPI_BACKEND_UNSUPPORTED`. Custom templates, base classes, types, and codec registrations do not add
   backends.
-- `--openapi-scopes` includes `api`, so that the models cover the parameters, bodies, and responses of the
-  operations.
+- The server adds `api` to `--openapi-scopes`, keeping the scopes you give, so that the models cover the
+  parameters, bodies, and responses of the operations.
+- Custom templates and custom formatters must keep the class and field names of the models: the server binds each
+  operation to the names in the generated model graph and does not read the rendered model source.
 - `--output` names the model file or package, and `model_package` is its import path.
 - The generated package needs FastAPI 0.141 and the other requirements it lists.
 

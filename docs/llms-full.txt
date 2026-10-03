@@ -11098,7 +11098,6 @@ Generate the models and the server:
 datamodel-codegen \
   --input openapi.yaml \
   --input-file-type openapi \
-  --openapi-scopes schemas api \
   --output-model-type pydantic_v2.BaseModel \
   --preset standard-py312-20260909 \
   --output models.py \
@@ -11159,8 +11158,10 @@ object with the right methods works, and type checkers check it where you pass i
 - `--output-model-type` is `pydantic_v2.BaseModel` or `pydantic_v2.dataclass`; the other backends are
   `E_FASTAPI_BACKEND_UNSUPPORTED`. Custom templates, base classes, types, and codec registrations do not add
   backends.
-- `--openapi-scopes` includes `api`, so that the models cover the parameters, bodies, and responses of the
-  operations.
+- The server adds `api` to `--openapi-scopes`, keeping the scopes you give, so that the models cover the
+  parameters, bodies, and responses of the operations.
+- Custom templates and custom formatters must keep the class and field names of the models: the server binds each
+  operation to the names in the generated model graph and does not read the rendered model source.
 - `--output` names the model file or package, and `model_package` is its import path.
 - The generated package needs FastAPI 0.141 and the other requirements it lists.
 
@@ -40621,7 +40622,7 @@ default, prints a `uv add` command, and `requirements` prints the lines of a req
 
     ```bash
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --openapi-scopes schemas api --target-python-version 3.12 --output models.py \
+      --target-python-version 3.12 --output models.py \
       --generate-server fastapi --target-config fastapi.toml \
       --dependency-format requirements > requirements.txt
     ```
@@ -40655,7 +40656,7 @@ Write the selected target's diagnostics as JSON to a file, or to stdout with `-`
 
     ```bash
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --openapi-scopes schemas api --target-python-version 3.12 --output models.py \
+      --target-python-version 3.12 --output models.py \
       --generate-server fastapi --target-config fastapi.toml \
       --diagnostics-json diagnostics.json
     ```
@@ -40784,10 +40785,10 @@ The only choice is `fastapi`.
 
     ```bash
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --openapi-scopes schemas api --target-python-version 3.12 --output models.py \
+      --target-python-version 3.12 --output models.py \
       --generate-server fastapi --target-config fastapi.toml # (1)!
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --openapi-scopes schemas api --target-python-version 3.12 --output models.py \
+      --target-python-version 3.12 --output models.py \
       --generate-server fastapi --target-config fastapi.toml --check # (2)!
     ```
 
@@ -41186,7 +41187,7 @@ Read the selected target's settings from a flat TOML file (experimental). `--gen
 
     ```bash
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --openapi-scopes schemas api --target-python-version 3.12 --output models.py \
+      --target-python-version 3.12 --output models.py \
       --generate-server fastapi --target-config fastapi.toml
     ```
 
@@ -41216,7 +41217,7 @@ Write the selected target to a directory instead of the `output` its target conf
 
     ```bash
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --openapi-scopes schemas api --target-python-version 3.12 --output src/example/models.py \
+      --target-python-version 3.12 --output src/example/models.py \
       --generate-server fastapi --target-config fastapi.toml \
       --target-output src/example/server
     ```
@@ -43571,14 +43572,12 @@ circular module SCCs into `_internal.py` forwarder modules when imports would ot
 
 ```mermaid
 classDiagram
-    ApiOpenAPIParser <|-- ContractApiOpenAPIParser
     JsonSchemaParser <|-- AvroParser
     JsonSchemaParser <|-- OpenAPIParser
     JsonSchemaParser <|-- ProtobufParser
     JsonSchemaParser <|-- XMLSchemaParser
     OpenAPIParser <|-- ApiOpenAPIParser
     OpenAPIParser <|-- AsyncAPIParser
-    OpenAPIParser <|-- ContractOpenAPIParser
     Parser <|-- GraphQLParser
     Parser <|-- JsonSchemaParser
 ```

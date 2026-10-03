@@ -4,8 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Final
 
-from datamodel_code_generator._binding_literals import UnsupportedBindingValueError
-from datamodel_code_generator._generation_contract import (
+from datamodel_code_generator._target_contract import (
     AnnotatedType,
     BuiltinType,
     ConstructorType,
@@ -18,16 +17,13 @@ from datamodel_code_generator._generation_contract import (
     NoneType,
     SourceExpression,
     UnionType,
+    UnsupportedBindingValueError,
 )
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
 
-    from datamodel_code_generator._generation_contract import (
-        FinalPythonType,
-        TypeArgument,
-        TypeProjectionReason,
-    )
+    from datamodel_code_generator._target_contract import FinalPythonType, TypeArgument, TypeProjectionReason
 
 _UNSUPPORTED: Final = "BND_TYPE_EXPRESSION_UNSUPPORTED"
 _BUILTINS: Final = (

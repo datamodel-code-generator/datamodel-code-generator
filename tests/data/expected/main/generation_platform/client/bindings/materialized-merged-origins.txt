@@ -34,10 +34,10 @@ render pydantic_v2.BaseModel default
       shared_key: Optional[constr(max_length=9)] = Field(None, alias='shared-key')
   model_bindings.py
   _model_0 symbol='models:RefUse', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RefUse', root=ModelNode(symbol='models:RefUse1')
-  _model_1 symbol='models:RefUse1', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RefUse/anyOf/0'
+  _model_1 symbol='models:RefUse1', native_kind='model', schema_id=None
     FieldBinding(field_id='models:RefUse1.shared_key', native_name='shared_key', wire_name='shared-key', validation_key='shared-key', validation_keys=('shared-key',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:RefUse1.side_key', native_name='side_key', wire_name='side-key', validation_key='side-key', validation_keys=('side-key',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:SideKey'))
-  _model_2 symbol='models:SideKey', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RefUse/anyOf/0/properties/side-key'
+  _model_2 symbol='models:SideKey', native_kind='model', schema_id=None
     FieldBinding(field_id='models:SideKey.nested_key', native_name='nested_key', wire_name='nested-key', validation_key='nested-key', validation_keys=('nested-key',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   _model_3 symbol='models:Combined', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Combined'
     FieldBinding(field_id='models:Combined.shared_key', native_name='shared_key', wire_name='shared-key', validation_key='shared-key', validation_keys=('shared-key',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
@@ -99,10 +99,10 @@ render pydantic_v2.dataclass default
   class Other:
       shared_key: Optional[constr(max_length=9)] = Field(None, alias='shared-key')
   model_bindings.py
-  _model_0 symbol='models:RefUse1', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RefUse/anyOf/0'
+  _model_0 symbol='models:RefUse1', native_kind='dataclass', schema_id=None
     FieldBinding(field_id='models:RefUse1.shared_key', native_name='shared_key', wire_name='shared-key', validation_key='shared-key', validation_keys=('shared-key',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:RefUse1.side_key', native_name='side_key', wire_name='side-key', validation_key='side-key', validation_keys=('side-key',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:SideKey'))
-  _model_1 symbol='models:SideKey', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RefUse/anyOf/0/properties/side-key'
+  _model_1 symbol='models:SideKey', native_kind='dataclass', schema_id=None
     FieldBinding(field_id='models:SideKey.nested_key', native_name='nested_key', wire_name='nested-key', validation_key='nested-key', validation_keys=('nested-key',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   _model_2 symbol='models:Combined', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Combined'
     FieldBinding(field_id='models:Combined.shared_key', native_name='shared_key', wire_name='shared-key', validation_key='shared-key', validation_keys=('shared-key',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
@@ -162,10 +162,10 @@ render dataclasses.dataclass default
   class Other:
       shared_key: Optional[str] = None
   model_bindings.py
-  _model_0 symbol='models:RefUse1', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RefUse/anyOf/0'
+  _model_0 symbol='models:RefUse1', native_kind='dataclass', schema_id=None
     FieldBinding(field_id='models:RefUse1.shared_key', native_name='shared_key', wire_name='shared-key', validation_key='shared_key', validation_keys=('shared_key',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:RefUse1.side_key', native_name='side_key', wire_name='side-key', validation_key='side_key', validation_keys=('side_key',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:SideKey'))
-  _model_1 symbol='models:SideKey', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RefUse/anyOf/0/properties/side-key'
+  _model_1 symbol='models:SideKey', native_kind='dataclass', schema_id=None
     FieldBinding(field_id='models:SideKey.nested_key', native_name='nested_key', wire_name='nested-key', validation_key='nested_key', validation_keys=('nested_key',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   _model_2 symbol='models:Combined', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Combined'
     FieldBinding(field_id='models:Combined.shared_key', native_name='shared_key', wire_name='shared-key', validation_key='shared_key', validation_keys=('shared_key',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
@@ -228,10 +228,10 @@ render typing.TypedDict default
   Other = TypedDict('Other', {
       'shared-key': NotRequired[str],})
   model_bindings.py
-  _model_0 symbol='models:RefUse1', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RefUse/anyOf/0'
+  _model_0 symbol='models:RefUse1', native_kind='typed_dict', schema_id=None
     FieldBinding(field_id='models:RefUse1.shared_key', native_name='shared-key', wire_name='shared-key', validation_key='shared-key', validation_keys=('shared-key',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:RefUse1.side_key', native_name='side-key', wire_name='side-key', validation_key='side-key', validation_keys=('side-key',), required=False, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:SideKey'))
-  _model_1 symbol='models:SideKey', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RefUse/anyOf/0/properties/side-key'
+  _model_1 symbol='models:SideKey', native_kind='typed_dict', schema_id=None
     FieldBinding(field_id='models:SideKey.nested_key', native_name='nested-key', wire_name='nested-key', validation_key='nested-key', validation_keys=('nested-key',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   _model_2 symbol='models:Combined', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Combined'
     FieldBinding(field_id='models:Combined.shared_key', native_name='shared-key', wire_name='shared-key', validation_key='shared-key', validation_keys=('shared-key',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
@@ -286,10 +286,10 @@ render msgspec.Struct default
   class Other(Struct):
       shared_key: Union[str, UnsetType] = field(name='shared-key', default=UNSET)
   model_bindings.py
-  _model_0 symbol='models:RefUse1', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RefUse/anyOf/0'
+  _model_0 symbol='models:RefUse1', native_kind='struct', schema_id=None
     FieldBinding(field_id='models:RefUse1.shared_key', native_name='shared_key', wire_name='shared-key', validation_key='shared_key', validation_keys=('shared_key',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:RefUse1.side_key', native_name='side_key', wire_name='side-key', validation_key='side_key', validation_keys=('side_key',), required=False, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:SideKey'))
-  _model_1 symbol='models:SideKey', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RefUse/anyOf/0/properties/side-key'
+  _model_1 symbol='models:SideKey', native_kind='struct', schema_id=None
     FieldBinding(field_id='models:SideKey.nested_key', native_name='nested_key', wire_name='nested-key', validation_key='nested_key', validation_keys=('nested_key',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   _model_2 symbol='models:Combined', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Combined'
     FieldBinding(field_id='models:Combined.shared_key', native_name='shared_key', wire_name='shared-key', validation_key='shared_key', validation_keys=('shared_key',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
