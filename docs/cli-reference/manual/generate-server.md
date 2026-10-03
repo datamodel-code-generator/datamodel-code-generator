@@ -16,10 +16,10 @@ The only choice is `fastapi`.
 
     ```bash
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --openapi-scopes schemas api --target-python-version 3.12 --output models.py \
+      --target-python-version 3.12 --output models.py \
       --generate-server fastapi --target-config fastapi.toml # (1)!
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --openapi-scopes schemas api --target-python-version 3.12 --output models.py \
+      --target-python-version 3.12 --output models.py \
       --generate-server fastapi --target-config fastapi.toml --check # (2)!
     ```
 

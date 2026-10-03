@@ -70,15 +70,15 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.streams import StreamSpec
     from datamodel_code_generator._client.uploads import UploadSpec
     from datamodel_code_generator._client.webhooks import WebhookSpec
-    from datamodel_code_generator._generation_contract import (
+    from datamodel_code_generator._openapi_codec_plan import CodecBackend, CodecPlan
+    from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
+    from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
+    from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
         SourceLocation,
         TypeUseBinding,
         TypeUseId,
     )
-    from datamodel_code_generator._openapi_codec_plan import CodecBackend, CodecPlan
-    from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
-    from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
 
 DEPENDENCIES: Final = ("httpx2>=2.13.0", "typing-extensions>=4.16")
 VALIDATION: Final = ("jsonschema[format-nongpl]>=4.26", "referencing>=0.37")
@@ -104,7 +104,7 @@ class ClientTarget:
     backends: frozenset[DataModelType] = frozenset(_BACKENDS)
     unsupported_backend: str = "E_CONFIG_VALUE"
 
-    def render(self, request: TargetRequest) -> TargetRender:  # noqa: PLR6301, PLR0914, PLR0915
+    def render(self, request: TargetRequest) -> TargetRender:  # ruff: ignore[no-self-use, too-many-locals, too-many-statements]
         """Plan the selected operations, bind their codecs, and render the package."""
         config = request.config
         assert isinstance(config, ClientGenerationConfig)

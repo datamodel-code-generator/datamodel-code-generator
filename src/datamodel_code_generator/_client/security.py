@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 
 from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._client.naming import token
-from datamodel_code_generator._generation_contract import LiteralMapping, LiteralScalar, LiteralSequence
 from datamodel_code_generator._runtime.client.scopes import scope_tuple
 from datamodel_code_generator._runtime.client.security import (
     SecurityBinding,
@@ -14,15 +13,16 @@ from datamodel_code_generator._runtime.client.security import (
     SecurityScheme,
     UnavailableSecurityScheme,
 )
+from datamodel_code_generator._target_contract import LiteralMapping, LiteralScalar, LiteralSequence
 
 if TYPE_CHECKING:
-    from datamodel_code_generator._generation_contract import (
+    from datamodel_code_generator._runtime.client.security import SecuritySchemeEntry
+    from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
         OperationContract,
         SourceDocumentId,
         WireDeclaration,
     )
-    from datamodel_code_generator._runtime.client.security import SecuritySchemeEntry
 
 
 def _facts(declaration: WireDeclaration) -> dict[str, object]:

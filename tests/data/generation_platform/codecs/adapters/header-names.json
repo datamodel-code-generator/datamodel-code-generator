@@ -1,0 +1,16 @@
+{
+  "options": {
+    "custom_file_header": "from typing import (\n    Any,\n)\n\nAlias = Any"
+  },
+  "declarations": {
+    "exports": [
+      {
+        "schema": {
+          "pointer": "/components/schemas/Scope"
+        },
+        "module": "adapted_models",
+        "symbol": "Scope"
+      }
+    ]
+  }
+}

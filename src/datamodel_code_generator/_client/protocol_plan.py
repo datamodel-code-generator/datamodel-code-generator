@@ -20,8 +20,8 @@ if TYPE_CHECKING:
     from datamodel_code_generator._api_types import DiagnosticStage
     from datamodel_code_generator._client.plan import ClientPlan
     from datamodel_code_generator._client.protocols import Helper, Link, ProtocolConfiguration
-    from datamodel_code_generator._generation_contract import OperationContract, OperationId
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
+    from datamodel_code_generator._target_contract import OperationContract, OperationId
 
 _METADATA: Final = "/inputs/target_config/protocol_metadata/helpers/"
 
