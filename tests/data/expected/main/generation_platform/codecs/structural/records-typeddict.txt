@@ -4,8 +4,8 @@ use /paths/~1counts/post request_body: native typed_dict models:Counts models=[(
 use /paths/~1counts/post response_body 200: native typed_dict models:Counts models=[('models:Counts', 'typed_dict', 'allow', True)]
 use /paths/~1shelves/post request_body: native typed_dict models:Shelf models=[('models:Item', 'typed_dict', 'ignore', True), ('models:Shelf', 'typed_dict', 'allow', True)]
 use /paths/~1shelves/post response_body 200: native typed_dict models:Shelf models=[('models:Item', 'typed_dict', 'ignore', True), ('models:Shelf', 'typed_dict', 'allow', True)]
-use /paths/~1pets/post request_body: native alias models:PetsPostRequest models=[('models:Cat', 'typed_dict', 'ignore', True), ('models:Dog', 'typed_dict', 'ignore', True)]
-use /paths/~1pets/post response_body 200: native alias models:PetsPostResponse models=[('models:Cat', 'typed_dict', 'ignore', True), ('models:Dog', 'typed_dict', 'ignore', True)]
+use /paths/~1pets/post request_body: native alias models:FieldPetsPostRequest models=[('models:Cat', 'typed_dict', 'ignore', True), ('models:Dog', 'typed_dict', 'ignore', True)]
+use /paths/~1pets/post response_body 200: native alias models:FieldPetsPostResponse models=[('models:Cat', 'typed_dict', 'ignore', True), ('models:Dog', 'typed_dict', 'ignore', True)]
 use /paths/~1kittens/post request_body: native typed_dict models:Kitten models=[('models:Kitten', 'typed_dict', 'ignore', True)]
 sealed-server-decode: model {'a': 'x', 'b': 1} wire={"a":"x","b":1} presence=['', '/a', '/b'] extras={}
 sealed-server-decode-extra: WireValidationError schema.false@/c

@@ -14,7 +14,7 @@ from dataclasses import dataclass, field, fields
 from datetime import datetime, timezone
 from functools import partial
 from pathlib import Path, PurePosixPath
-from typing import TYPE_CHECKING, Literal, Protocol, TypeAlias
+from typing import TYPE_CHECKING, Any, Literal, Protocol, TypeAlias
 from urllib.parse import ParseResult
 
 from datamodel_code_generator._api_manifest import (
@@ -365,7 +365,7 @@ def _generate_models(
     input_: _GenerationInput, config: GenerateConfig, target: TargetConfig, cwd: Path, *, use_output_cwd: bool
 ) -> _Models:
     from datamodel_code_generator import _run_generation  # noqa: PLC0415  # pyright: ignore[reportPrivateUsage]
-    from datamodel_code_generator._openapi_generation import OpenAPIGenerationSession  # noqa: PLC0415
+    from datamodel_code_generator._openapi_generation import TargetGenerationSession  # noqa: PLC0415
     from datamodel_code_generator.enums import OpenAPIScope  # noqa: PLC0415
 
     source = _root_input(input_, cwd)
@@ -380,7 +380,10 @@ def _generate_models(
         staged_output = _staging(stack, output, cwd) / (output.name or "output")
         if (cwd / output).is_dir():
             staged_output.mkdir()
-        updates = {"output": staged_output}
+        scopes = list(prepared.openapi_scopes) if prepared.openapi_scopes is not None else [OpenAPIScope.Schemas]
+        if OpenAPIScope.Api not in scopes:
+            scopes.append(OpenAPIScope.Api)
+        updates: dict[str, Any] = {"output": staged_output, "openapi_scopes": scopes}
         if (metadata := config.emit_model_metadata) is not None:
             updates["emit_model_metadata"] = _staging(stack, metadata, cwd) / (metadata.name or "model-metadata.json")
         staged = prepared.model_copy(update=updates)
@@ -388,16 +391,14 @@ def _generate_models(
         staged._logical_model_metadata = prepared.emit_model_metadata  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
         if lock is not None or not staged.remote_lock_resolved:
             staged.resolve_remote_lock(lock)
-        session = OpenAPIGenerationSession(
+        session = TargetGenerationSession(
             output=output, model_package=target.model_package, root_selector_document=source.identity
         )
         try:
             _run_generation(input_, staged, cwd, use_output_cwd=use_output_cwd, capture=session)
             artifacts = _staged_models(staged_output, output, prepared.encoding)
             metadata_file = None if metadata is None else (metadata, updates["emit_model_metadata"].read_bytes())
-            product = session.take_product(
-                artifacts, allow_empty_api=OpenAPIScope.Api in (prepared.openapi_scopes or ())
-            )
+            product = session.take_product(artifacts, allow_empty_api=True)
         finally:
             session.close()
         return _Models(

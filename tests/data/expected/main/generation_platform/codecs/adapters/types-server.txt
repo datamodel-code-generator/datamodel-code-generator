@@ -4,9 +4,9 @@ use /paths/~1scalars/post parameter query pet: codec_2 None None pydantic_type_a
 use /paths/~1scalars/post request_body: codec_3 None None registered_adapter native
 adapter holder-model /paths/~1scalars/post request_body: model
 use /paths/~1scalars/post response_body 201: codec_4 outbound_4 None pydantic_type_adapter native
-code: model str 'abc' wire="abc" presence=['']
+code: model FieldScalarsPostQueryCodeParameter 'abc' wire="abc" presence=['']
 code-invalid: WireValidationError schema.pattern@
-price: model Decimal Decimal('9.5') wire="9.5" presence=['']
-pet: model Dog {'kind': 'dog'} wire={"kind":"dog"} presence=['', '/kind']
+price: model FieldScalarsPostQueryPriceParameter Decimal('9.5') wire="9.5" presence=['']
+pet: model FieldScalarsPostQueryPetParameter {'kind': 'dog'} wire={"kind":"dog"} presence=['', '/kind']
 holder: model Holder {'pets': [{'kind': 'cat'}, {'kind': 'dog'}], 'label': 'abcd', 'mode': 'a'} wire={"pets":[{"kind":"cat"},{"kind":"dog"}],"label":"abcd","mode":"a"} presence=['', '/pets', '/pets/0', '/pets/0/kind', '/pets/1', '/pets/1/kind', '/label', '/mode']
-name: model NoneType None wire=null presence=['']
+name: model FieldScalarsPostResponse None wire=null presence=['']
