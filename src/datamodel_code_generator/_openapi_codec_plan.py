@@ -282,7 +282,9 @@ class _CodecPlanner:
         self.backend: CodecBackend = backend
         self.structural = _STRATEGIES[backend] != "pydantic_type_adapter"
         self.gaps: set[str] = set()
-        self.imports = {symbol.id: _symbol_key(symbol) for symbol in batch.symbols if symbol.artifact is not None}
+        self.imports: dict[int, str] = {
+            symbol.id: _symbol_key(symbol) for symbol in batch.symbols if symbol.artifact is not None
+        }
         self.symbols = {symbol.id: symbol for symbol in batch.symbols}
         self.schema_ids = dict(wire.schema_ids)
         self.locations: dict[str, SourceLocation] = {}
