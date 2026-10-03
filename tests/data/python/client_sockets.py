@@ -42,6 +42,7 @@ def _described(value: object) -> str:
     if isinstance(value, BaseException) and hasattr(value, "resource_attempt_count"):
         text += (
             f" attempts={value.resource_attempt_count} sends={value.network_send_count} wire={value.wire_send_count}"
+            f" stop={getattr(value, 'retry_stop_reason', None)}"
         )
     return text
 
@@ -295,7 +296,15 @@ def _refusals(harness: _Harness, api: Any) -> None:
         ("undeclared success", (Play(refuse=(200, (), b"plain")),), {}),
         ("service refusal", (Play(refuse=(503, (), b"")),), {}),
         ("rate limit refusal", (Play(refuse=(429, (("Retry-After", "120"),), b"")),), {}),
-        ("redirect refusal", (Play(refuse=(302, (("Location", "/rooms/r2/socket"),), b"")),), {}),
+        (
+            "redirect refusal",
+            (Play(refuse=(302, (("Location", "/rooms/r2/socket"),), b"")),),
+            {
+                "options": options.RequestOptions(
+                    redirects=options.RedirectOptions(enabled=True), retry=options.RetryOptions(max_retries=1)
+                )
+            },
+        ),
         ("subprotocol not selected", (Play(subprotocol=None),), {}),
     )
     for label, plays, arguments in cases:
@@ -951,7 +960,8 @@ async def _async_sockets(harness: _Harness) -> None:
     await arecord(lines, "async receive stopped by the client closing", lambda: waiting)
     harness.report(play)
     peer = RawPeer(
-        b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {accept}\r\n\r\n"
+        b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+        b"Sec-WebSocket-Accept: {accept}\r\n\r\n"
     )
     try:
         async with harness.package.AsyncClient(options=harness.client(peer.url)) as api:
@@ -995,6 +1005,12 @@ async def _async_sockets(harness: _Harness) -> None:
             lines.append(f"  async ping cancelled by its task {type(cancelled).__name__} {session!r}")
     finally:
         silent_pongs.stop()
+    await _async_handshakes(harness)
+
+
+async def _async_handshakes(harness: _Harness) -> None:
+    """Keep uncertain native upgrades and authenticated refusals terminal in asyncio."""
+    lines, server, options = harness.lines, harness.server, harness.options
     for label, reply in (
         ("native-open-uncertain-timeout", None),
         ("native-open-uncertain-eof", b""),

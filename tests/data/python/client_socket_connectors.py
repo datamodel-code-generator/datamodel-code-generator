@@ -517,7 +517,8 @@ def _handshake_failures(harness: _Harness, connector: _Connector, api: Any) -> N
             )
             if session is not None:
                 lines.append(
-                    f"    attempts={session.response.resource_attempt_count} sends={session.response.network_send_count} "
+                    f"    attempts={session.response.resource_attempt_count} "
+                    f"sends={session.response.network_send_count} "
                     f"wire={session.response.wire_send_count}"
                 )
                 session.close()
@@ -731,7 +732,8 @@ async def _async_connectors(harness: _Harness) -> None:
                 )
                 if session is not None:
                     lines.append(
-                        f"    attempts={session.response.resource_attempt_count} sends={session.response.network_send_count} "
+                        f"    attempts={session.response.resource_attempt_count} "
+                        f"sends={session.response.network_send_count} "
                         f"wire={session.response.wire_send_count}"
                     )
                     await session.aclose()
