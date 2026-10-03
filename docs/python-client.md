@@ -2787,8 +2787,6 @@ def forward(client: Client, arguments: ListArguments) -> ListPetsResponse:
 - **Type checkers.** Both styles give the same keywords the same types. Checkers treat a TypedDict with extra keys
   differently: forwarding one to an `explicit` method is an error for mypy, Pyright, and ty, while for an `unpack`
   method only mypy reports it. The method still refuses the extra key at runtime.
-- **Contract records.** The style is part of the package's public signature: switching it changes each operation's
-  signature digest in the target manifest, and nothing else.
 
 The binding differences, as the tests of this repository record them for the same `get_pet` and `list_pets` calls:
 
@@ -3762,8 +3760,8 @@ ref = "/paths/~1status/get"
 circuit_group = "backend"
 ```
 
-An invalid group receives `E_CONFIG_VALUE`. The group is part of the operation's request digest, and the generated
-README lists each group's operations. Only a package that declares a group gets `Client.reset_circuit` and
+An invalid group receives `E_CONFIG_VALUE`. The generated README lists each group's operations. Only a package that
+declares a group gets `Client.reset_circuit` and
 `AsyncClient.reset_circuit`, whose `group` parameter is a `Literal` of its groups.
 
 ### Enable the breaker
@@ -3883,8 +3881,7 @@ ref = "/paths/~1items/post"
 accepted_content_encodings = ["gzip"]
 ```
 
-The declaration is part of the operation's request digest, and the generated README lists the operations that accept
-a coding.
+The generated README lists the operations that accept a coding.
 
 ### Select a coding
 
@@ -4167,8 +4164,9 @@ replayability, retry count, send slots, and the original deadline. `max_retries=
 credential acquisition is still allowed. These callbacks add no implicit token HTTP traffic.
 
 Use the existing internal generation API to declare an API-specific challenge-less 401 contract. It is false unless
-explicitly set, is recorded under `operations[].runtime.auth_challenge_less_401` in generated documentation, and affects
-only the security contract digest. It is not a client option or an inferred response behavior.
+explicitly set and is recorded under `operations[].runtime.auth_challenge_less_401` in generated documentation.
+It allows token-expired recovery after a 401 without a challenge, subject to the retry rules above.
+It is not a client option or an inferred response behavior.
 
 ```python
 from datamodel_code_generator._client.config import ClientOperationConfig, RuntimeOperationMetadata

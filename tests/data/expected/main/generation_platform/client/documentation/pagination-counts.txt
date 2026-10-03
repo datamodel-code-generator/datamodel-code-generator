@@ -357,13 +357,13 @@
   }
   /selection/selected_operations/0 users.list_users(query:offset=offset, query:page=page, query:limit=limit, query:cursor=cursor, query:position=position, header:X-Page=x_page)
     exports client.types.users.ListUsersResponse client.types.users.ListUsersErrorData client.types.users.ListUsersHTTPError
-    exports client.types.users.ListUsersRequestCodecs client.types.users.decode_list_users_header digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.users.ListUsersRequestCodecs client.types.users.decode_list_users_header
   /selection/selected_operations/1 searches.search()
     exports client.types.searches.SearchResponse client.types.searches.SearchErrorData client.types.searches.SearchHTTPError
-    exports client.types.searches.SearchRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.searches.SearchRequestCodecs None
   /selection/selected_operations/2 finds.find(querystring:criteria=criteria)
     exports client.types.finds.FindResponse client.types.finds.FindErrorData client.types.finds.FindHTTPError
-    exports client.types.finds.FindRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.finds.FindRequestCodecs None
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
 
 # artifact client/_generated_docs/README.md

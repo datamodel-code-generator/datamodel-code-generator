@@ -116,13 +116,13 @@
   }
   /selection/selected_operations/0 rooms.room_socket(path:room=room, query:since=since)
     exports client.types.rooms.RoomSocketResponse client.types.rooms.RoomSocketErrorData client.types.rooms.RoomSocketHTTPError
-    exports client.types.rooms.RoomSocketRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.rooms.RoomSocketRequestCodecs None
   /selection/selected_operations/1 feed.feed_socket()
     exports client.types.feed.FeedSocketResponse client.types.feed.FeedSocketErrorData client.types.feed.FeedSocketHTTPError
-    exports client.types.feed.FeedSocketRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.feed.FeedSocketRequestCodecs None
   /selection/selected_operations/2 secure.secure_socket(header:X-Trace=x_trace)
     exports client.types.secure.SecureSocketResponse client.types.secure.SecureSocketErrorData client.types.secure.SecureSocketHTTPError
-    exports client.types.secure.SecureSocketRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.secure.SecureSocketRequestCodecs None
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'websockets>=17.1', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
 
 # artifact client/_generated_docs/README.md
