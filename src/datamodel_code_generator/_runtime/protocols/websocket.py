@@ -184,13 +184,7 @@ _SOCKET: Final = ResolvedWSOptions(
     ping_interval=20.0,
     pong_timeout=20.0,
     close_timeout=5.0,
-    resume_ack_timeout=30.0,
-    max_ack_buffer_messages=16,
-    max_ack_buffer_bytes=16777216,
-    max_unacked=100,
     compression=None,
-    reconnect=False,
-    max_reconnects=5,
 )
 _SENDS: Final = 16
 
@@ -215,18 +209,12 @@ def _socket(layers: tuple[object, ...], idle: float | None) -> ResolvedWSOptions
         ping_interval=_first(layers, "ping_interval", d.ping_interval),
         pong_timeout=_first(layers, "pong_timeout", d.pong_timeout),
         close_timeout=_first(layers, "close_timeout", d.close_timeout),
-        resume_ack_timeout=_first(layers, "resume_ack_timeout", d.resume_ack_timeout),
-        max_ack_buffer_messages=_first(layers, "max_ack_buffer_messages", d.max_ack_buffer_messages),
-        max_ack_buffer_bytes=_first(layers, "max_ack_buffer_bytes", d.max_ack_buffer_bytes),
-        max_unacked=_first(layers, "max_unacked", d.max_unacked),
         compression=_first(layers, "compression", d.compression),
-        reconnect=_first(layers, "reconnect", d.reconnect),
-        max_reconnects=_first(layers, "max_reconnects", d.max_reconnects),
     )
 
 
 def _invalid(
-    plan: ChannelPlan[SendT, RecvT], path: tuple[str, ...], condition: Literal["invalid_value", "missing_metadata"]
+    plan: ChannelPlan[SendT, RecvT], path: tuple[str, ...], condition: Literal["invalid_value"]
 ) -> ProtocolConfigurationError:
     return ProtocolConfigurationError(
         field_path=path, condition=condition, helper_id=plan.helper_id, operation=plan.operation
@@ -242,8 +230,8 @@ def _limits(
 ) -> _Limits:
     """Check the call's option types and merge each limit: the call's, the client's helper defaults, the kind's.
 
-    An idle timeout neither layer sets is the call's merged stream idle timeout. Reconnecting needs resume metadata,
-    and compression the helper's permission, so either is refused without them.
+    An idle timeout neither layer sets is the call's merged stream idle timeout. Compression requires the helper's
+    permission.
     """
     for name, value, kind in (
         ("ws_options", ws_options, WSOptions),
@@ -257,8 +245,6 @@ def _limits(
     kinds = (ws_options, UNSET if defaults is None else defaults.options)
     sessions = (session_options, UNSET if defaults is None else defaults.session)
     socket = _socket(kinds, core.call_settings(request, plan.call).stream_idle_timeout)
-    if socket.reconnect:
-        raise _invalid(plan, ("ws_options", "reconnect"), "missing_metadata")
     if socket.compression is not None and not plan.compression:
         raise _invalid(plan, ("ws_options", "compression"), "invalid_value")
     protocols = core.protocol_options()
@@ -275,7 +261,6 @@ def _limits(
 
 def _progress(session: OperationSession, sent: int = 0, received: int = 0) -> ProtocolProgress:
     return MappingProxyType({
-        "reconnects": 0,
         "network_send_count": session.network_send_count,
         "network_send_budget_used": session.network_send_budget_used,
         "messages_sent": sent,
@@ -661,7 +646,7 @@ class _Sockets(Generic[SendT, RecvT]):
 
     @property
     def progress(self) -> ProtocolProgress:
-        """Return the reconnections, none without resume metadata, the session's sends, and the messages so far."""
+        """Return the session's sends and the messages sent and received so far."""
         return _progress(self._session, self._sent, self._received)
 
     def _stamped(self, error: ErrorT) -> ErrorT:
