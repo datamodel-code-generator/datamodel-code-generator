@@ -67,15 +67,15 @@ render pydantic_v2.BaseModel default
       ship_to: str = Field(..., alias='ship-to')
       values: Optional[List[constr(min_length=1)]] = None
   model_bindings.py
-  _model_0 symbol='models.item_request:ItemRequest', native_kind='model', schema_id=None
+  _model_0 symbol='models.item_request:ItemRequest', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Item'
     FieldBinding(field_id='models.item_request:ItemRequest.ship_to', native_name='ship_to', wire_name='ship-to', validation_key='ship-to', validation_keys=('ship-to',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models.item_request:ItemRequest.secret', native_name='secret', wire_name='secret', validation_key='secret', validation_keys=('secret',), required=False, read_only=False, write_only=True, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models.item_request:ItemRequest.values', native_name='values', wire_name='values', validation_key='values', validation_keys=('values',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=LeafNode()))
-  _model_1 symbol='models.item_response:ItemResponse', native_kind='model', schema_id=None
+  _model_1 symbol='models.item_response:ItemResponse', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Item'
     FieldBinding(field_id='models.item_response:ItemResponse.id', native_name='id', wire_name='id', validation_key='id', validation_keys=('id',), required=False, read_only=True, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models.item_response:ItemResponse.ship_to', native_name='ship_to', wire_name='ship-to', validation_key='ship-to', validation_keys=('ship-to',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models.item_response:ItemResponse.values', native_name='values', wire_name='values', validation_key='values', validation_keys=('values',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=LeafNode()))
-  _model_2 symbol='models.base_request:BaseRequest', native_kind='model', schema_id=None
+  _model_2 symbol='models.base_request:BaseRequest', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Base'
     FieldBinding(field_id='models.base_request:BaseRequest.ship_to', native_name='ship_to', wire_name='ship-to', validation_key='ship-to', validation_keys=('ship-to',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   _model_3 symbol='models.base:Base', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Base'
     FieldBinding(field_id='models.base:Base.id', native_name='id', wire_name='id', validation_key='id', validation_keys=('id',), required=False, read_only=True, write_only=False, omit_none=True, type=LeafNode())

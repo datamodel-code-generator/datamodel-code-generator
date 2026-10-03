@@ -108,9 +108,6 @@ change pydantic_v2.BaseModel default import-identity
   @@ -8 +8 @@
   -from pydantic import BaseModel, ConfigDict, Field, RootModel, conint
   +from custom_backend import BaseModel, ConfigDict, Field, RootModel, conint
-  @@ -59 +59 @@
-  -  FieldBinding(field_id='models:Record.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire-name', validation_keys=('wire-name',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  +  FieldBinding(field_id='models:Record.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire-name', validation_keys=('wire-name',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 render pydantic_v2.dataclass default
   warning FutureWarning: Black/isort will become optional. Declare the corresponding extras; see --help.
   models.py
