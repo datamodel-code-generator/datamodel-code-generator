@@ -779,8 +779,9 @@ call's `options` must not patch a header or a query parameter the helper writes:
 
 A pager, and each `page` or `next_page` call, is one session. Every page is its own call, with its own retries, total
 timeout, and idempotency key, and the session bounds all of them: a page's deadline is the earlier of its own and the
-session's, and each of its sends, token requests included, takes a slot of the session too. Each limit comes from the
-call's options, then the helper's `ProtocolDefaults` in `ProtocolClientOptions.defaults`, then the default below:
+session's, and each of its sends takes a slot of the session too; an OAuth token request takes none. Each limit comes
+from the call's options, then the helper's `ProtocolDefaults` in `ProtocolClientOptions.defaults`, then the default
+below:
 
 | Limit | Default | None |
 |---|---|---|
@@ -792,14 +793,14 @@ call's options, then the helper's `ProtocolDefaults` in `ProtocolClientOptions.d
 | `SessionOptions.deadline` | None | No deadline |
 | `SessionOptions.max_network_sends` | No limit | Removes the limit |
 
-A limit reached while pages remain raises `SessionLimitError` with the progress so far; the last page ends normally
-even exactly at a limit. An item limit is exact for items, while `iter_pages` checks it before each fetch, so a page
-that crosses it is delivered whole, and `page` or `next_page` with `max_items=0` raises
-`SessionLimitError(kind="items", limit=0)` without sending. A retry the session has no slot for is not made, and the
-page's error keeps `retry_stop_reason="parent_budget_exhausted"`; so does a rejected token's recovery when the session lacks slots for
-the new token request and the resend. Defaults naming a helper the package lacks, or giving it another kind's options,
-fail the client's construction with `ProtocolConfigurationError`, and so do options of another type, and an idempotency
-key fixed by the client's options, `with_options`, or the call, when a helper is called.
+A limit reached while pages remain raises `SessionLimitError` with the progress so far; the last page ends normally even
+exactly at a limit. An item limit is exact for items, while `iter_pages` checks it before each fetch, so a page that
+crosses it is delivered whole, and `page` or `next_page` with `max_items=0` raises `SessionLimitError(kind="items",
+limit=0)` without sending. A retry the session has no slot for is not made, and the page's error keeps
+`retry_stop_reason="parent_budget_exhausted"`, as does a rejected token's recovery when the session has no slot for the
+resend. Defaults naming a helper the package lacks, or giving it another kind's options, fail the client's construction
+with `ProtocolConfigurationError`, and so do options of another type, and an idempotency key fixed by the client's
+options, `with_options`, or the call, when a helper is called.
 
 A pager is used by one consumer at a time and in one mode: stepping it while it fetches, closing it then, and
 mixing items with pages raise `ProtocolStateError`. After a failure, cancellation included, and after `close()`,
@@ -2070,7 +2071,7 @@ ends once that clock reaches its end, or once as much real time passed as the cl
 | `WSOptions.ping_interval`, `pong_timeout` | 20 seconds each | No keepalive pings |
 | `WSOptions.close_timeout` | 5 seconds | Not allowed |
 | `SessionOptions.total_timeout`, `deadline` | None | No session deadline |
-| `SessionOptions.max_network_sends` | 16 sends, for handshakes and token requests | Removes the limit |
+| `SessionOptions.max_network_sends` | 16 handshake sends | Removes the limit |
 
 A message over `max_message_bytes` raises `ProtocolSizeError` with the kind `message` after the connection closed with
 1009. A receive that waits longer than the idle timeout raises `PhaseTimeoutError` with the phase `read` and closes with
@@ -3007,7 +3008,7 @@ caller.
 | `total_timeout` | `60` | Relative budget from call entry through encoding, callbacks, sending, reading, and decoding |
 | `deadline` | `None` | An absolute monotonic deadline created by `Deadline.after(seconds)` |
 | `cancel_token` | `None` | An explicit cancellation signal shared with the call |
-| `max_network_sends` | `1 + max_retries + (max_redirects if enabled)`, plus `AuthConfig.max_token_exchanges` with an OAuth provider of the SDK | Maximum number of send slots the call may reserve; `3` with the fixed defaults |
+| `max_network_sends` | `1 + max_retries + (max_redirects if enabled)` | Maximum number of send slots the call may reserve; `3` with the fixed defaults |
 | `stream_idle_timeout` | `60` | Read inactivity limit after a streaming response is handed to the caller |
 | `stream_total_timeout` | `None` | Total stream lifetime after handoff |
 | `cleanup_timeout` | `5` | Separate positive, finite budget for releasing resources |
@@ -3029,8 +3030,7 @@ Durations must be finite and nonnegative, and send limits must be nonnegative in
 `cleanup_timeout` must be strictly positive and cannot be `None`. Invalid values raise `ConfigurationError` with the
 option's `field_path`, such as `("timeout", "read")`. `total_timeout=0` raises `DeadlineExceededError` before body
 factories, limiter acquisition, or sending; hooks still receive `call_start` and `call_end` with zero sends.
-`max_network_sends=0` raises `BudgetExceededError` before a send, or `AuthBudgetExceededError` when an OAuth provider of
-the SDK would first acquire a token.
+`max_network_sends=0` raises `BudgetExceededError` before a send.
 
 ### A budget shared by every phase
 
@@ -3172,12 +3172,10 @@ correctly. A call given a deadline made on another `Clock` object moves it onto 
 call entry. A deadline made on the client's own `Clock` object stays the same object, so
 `DeadlineExceededError.deadline_at` equals its `at`.
 
-The client still waits in real time. A retry sleep, a wait before a poll, a device flow's poll interval, or a wait for
-a token refresh ends once its clock reaches the target or once as much real time has passed as the wait measured on its
-clock when it began, whichever comes first, so a frozen clock still waits as long as the policy chose. An I/O timeout
-or an asyncio deadline timer lasts the time left that was measured on the clock when it started. Closing a client and its cleanup
-limits use the system clock, and closing an OAuth provider waits for its running token requests until their sessions
-end on the provider's clock or in real time, whichever comes first.
+The client still waits in real time. A retry sleep or a wait before a poll ends once its clock reaches the target or
+once as much real time has passed as the wait measured on its clock when it began, whichever comes first, so a frozen
+clock still waits as long as the policy chose. An I/O timeout or an asyncio deadline timer lasts the time left that was
+measured on the clock when it started. Closing a client and its cleanup limits use the system clock.
 
 A test clock that should skip a wait advances itself, for example from a hook when a retry is scheduled:
 
@@ -3973,125 +3971,13 @@ on its `httpx2` logger, so keep that logger above INFO wherever URLs must stay p
 common send/attempt counters, and causes without automatically formatting secret-bearing callback messages.
 Applications must apply their own policy before explicitly inspecting those causes.
 
-### Exchange an authorization code
-
-`AuthorizationCodeFlow` and `AsyncAuthorizationCodeFlow` implement the OAuth authorization code grant with PKCE S256
-for applications that obtain the code themselves. `authorization_request(redirect_uri, scopes)` performs no I/O: it
-creates a fresh state and code verifier and returns the authorization URL for the application to open. The SDK never
-opens a browser or listens for the redirect. `exchange_code(code, returned_state, request)` compares the returned state
-in constant time, sends one token request, and returns a `TokenSet` whose repr omits both tokens.
-
-```python
-from pets.auth import AccessToken, AuthorizationCodeFlow, AuthorizationRequest
-
-
-def login_flow() -> AuthorizationCodeFlow:
-    return AuthorizationCodeFlow(
-        "https://auth.example.com/authorize",
-        "https://auth.example.com/token",
-        client_id="pets-cli",
-        client_auth_method="none",
-    )
-
-
-def begin_login(flow: AuthorizationCodeFlow) -> AuthorizationRequest:
-    return flow.authorization_request("http://127.0.0.1:8400/callback", ("pets.read",))
-
-
-def finish_login(flow: AuthorizationCodeFlow, request: AuthorizationRequest, code: str, state: str) -> AccessToken:
-    return flow.exchange_code(code, state, request).access_token
-```
-
-A request belongs to the flow that created it and allows one exchange. A mismatched state, or a code that is empty or
-not visible ASCII, is refused with `AuthConfigurationError` before the request is used; the first exchange then
-consumes it whatever the outcome, and a later one raises `AuthStateConflictError`. The requested scopes, in canonical
-order, become the token's scopes when the token response omits its `scope` member. The authorization URL may carry
-its own query, but not the parameters the flow adds.
-
-`client_secret_basic` (the default) and `client_secret_post` take a `client_secret` provider returning an
-`ApiKeyCredential` of visible ASCII; it is called once per exchange with a context naming the token endpoint's origin
-and the scheme `oauth_client_secret`. `none` sends only the client id. Both endpoints must be HTTPS; plain HTTP to a
-loopback host requires `OAuthProviderOptions(allow_insecure_loopback=True)`.
-
-Token requests use a transport the flow owns, separate from every client: an HTTPX2 client created at the first
-exchange from `OAuthProviderOptions.transport`, or an adapter passed as `token_transport`, which is borrowed unless
-wrapped in `OwnedTransportAdapter`. Its settings must verify certificates and host names and leave retries to the
-SDK, and an injected adapter must declare `internal_retry_limit=0`. Token requests never follow redirects or retry,
-and closing the flow, or leaving its `with` block, closes an owned transport. `refresh_timeout` (30 seconds by default)
-bounds each exchange, the client secret lookup included, independently of any resource call; the synchronous flow
-checks it when the secret provider returns and at each response chunk. `phase_timeout` caps connecting, reading,
-writing, and pool waits at 5, 15, 15, and 5 seconds unless overridden. The async flow binds to the event loop it was created on, or else to the
-first one that exchanges a code.
-
-`invalid_grant` raises `AuthReauthorizationRequiredError`. Another RFC 6749 error code in a 400 response, or
-`invalid_client` in a 401, raises `OAuthExchangeError` with its `oauth_error`. A client secret provider's failure
-raises its own auth error or `AuthProviderExecutionError`, and a failure proven to happen before sending raises
-`OAuthExchangeError`, or `AuthTimeoutError` when a time limit ran out; none of them sent the code, but the request is
-still used. When the endpoint may have issued tokens that did not arrive intact (a transport failure after sending, the
-session deadline, an unexpected status, or a malformed or unusable response), `AuthStateUncertainError` reports the
-`failure_kind`, and the application starts a new authorization. Only a transport that declares delivery evidence can
-prove that a failed request was never sent. Responses are read up to 64 KiB and must be UTF-8 JSON objects. Errors
-keep no response body or error description, but a transport failure's cause is the native exception, which can hold
-the token request and its client authentication, so apply your own policy before logging causes.
-
-### Authorize a device
-
-`DeviceAuthorizationFlow` and `AsyncDeviceAuthorizationFlow` implement the OAuth device authorization grant for
-devices that cannot open a browser. One flow owns exactly one transaction: `begin(scopes)` requests a device
-authorization and returns a `DeviceAuthorization` whose user code and verification URIs the application shows; the SDK
-never opens them. `poll()` then waits the server's interval, five seconds unless the response names another, and polls
-the token endpoint until the user approves, returning a `TokenSet`.
-
-```python
-from collections.abc import Callable
-
-from pets.auth import AccessToken, DeviceAuthorizationFlow
-
-
-def device_login(show: Callable[[str, str], None]) -> AccessToken:
-    with DeviceAuthorizationFlow(
-        "https://auth.example.com/device",
-        "https://auth.example.com/token",
-        client_id="pets-tv",
-        client_auth_method="none",
-    ) as flow:
-        authorization = flow.begin(("pets.read",))
-        show(authorization.user_code, authorization.verification_uri)
-        return flow.poll().access_token
-```
-
-`authorization_pending` waits within the same `poll` call, and `slow_down` adds five seconds to every later wait.
-`access_denied` and `expired_token` end the transaction with `OAuthExchangeError` in the `REAUTH_REQUIRED` state, whose
-cause's message names which of the two the server sent. A transaction never resumes, so a new authorization needs a
-new flow, and calling `begin` twice, `poll` before `begin`, `poll` concurrently, or either after the end raises
-`AuthStateConflictError`. `begin` validates every member of the device authorization response first and refuses a
-response without a positive `expires_in`; the requested scopes become the token's scopes when the token response
-omits its `scope` member.
-
-The transaction ends at the response's `expires_in`, or earlier at the limit of the `SessionOptions` (from
-`pets.options`) given to `begin`, whose `total_timeout` counts from the `begin` call and whose `deadline` is absolute.
-The `begin` and every poll count against `max_network_sends`, 128 by default; `None` removes that limit, while `0` or
-a limit that already passed refuses the `begin` itself. A poll that could not be sent before the deadline or within the
-limit raises `DeadlineExceededError` or `BudgetExceededError` at once instead of waiting, and a send the session limit
-cuts short raises `DeadlineExceededError`. `poll(cancel_token=...)` stops a wait with `RequestCancelledError`, and
-closing the flow stops it with `AuthProviderClosedError`.
-
-Client authentication, endpoints, and the token transport follow the authorization code flow; the client secret
-lookup for `begin` names the device authorization endpoint's origin. Unlike the code flow, every answer the flow cannot
-continue from, including an invalid token response, an unexpected status, or a malformed body, raises
-`OAuthExchangeError` in the `EXCHANGE_REJECTED` state. A transport failure raises `OAuthExchangeError`, or
-`AuthTimeoutError` when a time limit ran out, in the `UNCERTAIN` state when the request may have been sent and in the
-`FAILED_NOT_SENT` state otherwise.
-
 ### Acquire client credentials
 
 `ClientCredentialsProvider` and `AsyncClientCredentialsProvider` implement the OAuth client credentials grant for a
 confidential client acting on its own behalf. Each is a refreshable token provider for an OAuth scheme of `AuthConfig`:
-the first call that needs a token acquires it, later calls share it, and a call renews it once a tenth of its lifetime,
-at most thirty seconds, remains. Until the token expires, such a call keeps using it and starts the renewal in the
-background, which later calls share, so a slow or failing renewal delays no call before expiry; a forced `refresh` waits
-for the renewal and raises its failure. A token without `expires_in` is kept until a resource rejects it, when 401
-recovery invalidates that exact version and acquires another.
+the first call that needs a token acquires it, later calls share it, and the call that finds a tenth of its lifetime,
+at most thirty seconds, left acquires a new one. A token without `expires_in` is kept until a resource rejects it, when
+401 recovery invalidates that exact version and acquires another.
 
 ```python
 from pets import Client
@@ -4115,59 +4001,45 @@ client has no credentials of its own. The configured scopes become the token's s
 `scope` member, and a caller whose context requires another audience than the configured one fails with
 `AuthConfigurationError` before any request.
 
-Concurrent callers share one acquisition. It runs on a worker thread of the provider, or in a task on its event loop,
-under the provider's own `refresh_timeout`; callers only wait for it, each within its own deadline and cancel token, so
-a caller that leaves never cancels it and its token still serves later calls. `OAuthProviderOptions` bound the sharing:
-`max_concurrent_refreshes` acquisitions run at once (one by default), `max_pending_refreshes` (32) counts the running
-and queued ones, and `max_waiters` (1024) callers may wait for one; a caller beyond a limit gets
-`AuthConcurrencyLimitError`. An acquisition still running a second after its `refresh_timeout` fails its waiters with
-`AuthTimeoutError` and keeps its slot until it returns, and its late token is discarded.
+The call that needs a token requests it inline, while holding the provider's lock: a `threading.Lock`, or an
+`asyncio.Lock` for the async provider. Concurrent callers wait for that lock, a synchronous one no longer than its
+deadline, and then use the token it obtained, so one token request serves them all; the provider starts no thread or
+task of its own. A token request ends within `refresh_timeout`, and at the calling request's deadline at the latest;
+cancelling an asyncio caller cancels its token request. A failed request leaves nothing behind, and the next call
+acquires again. When an early renewal fails, the call keeps using the current token until it expires; a failure raises
+once the token expired, or when a resource's rejection forced the request. A rejection, an unexpected status, or an
+unusable response raises `OAuthExchangeError`; a transport failure raises `OAuthExchangeError`, or `AuthTimeoutError`
+when a time limit ran out, with the `delivery_state` the request reached.
 
-A failed acquisition leaves nothing behind: each waiter receives its own instance of the same error, and the next call
-acquires again. A rejection, an unexpected status, or an unusable response raises `OAuthExchangeError` in the
-`EXCHANGE_REJECTED` state; a transport failure raises `OAuthExchangeError`, or `AuthTimeoutError` when a time limit ran
-out, in the `FAILED_NOT_SENT` state when the request provably never left and in the `EXCHANGE_REJECTED` state
-otherwise. The auth refresh errors of an acquisition carry its `refresh_id`, unless a client secret provider's own error
-already names another one, and `refresh_snapshot(refresh_id)` returns its `RefreshInfo`: `PENDING` while it is queued
-or runs, then the state it ended in, whether it sent a token request, and its failure's reason code, without tokens.
-Snapshots of the latest 128 ended acquisitions are kept for five minutes.
+`get` returns the current token, acquiring one when none is usable; `refresh` acquires a new one, unless another caller
+replaced the token while this one waited for the lock; `invalidate(version)` forgets the held token only if it is that
+version. Closing the provider closes an owned token transport, and later calls raise `AuthProviderClosedError`; a client
+closes a provider it owns through `OwnedCredentialProvider`. The async provider belongs to the event loop it was
+created on or first used from.
 
-A generated call accounts for these acquisitions. The call that needs a new one pays one of its
-`AuthConfig.max_token_exchanges` exchanges (two by default) and one network send, and it needs room for the request the
-token serves too; when `max_network_sends` is omitted, the call's send limit makes room for its exchanges. A call that
-joins an acquisition another caller started pays nothing and reports `auth_wait` to its hooks; when a queued acquisition
-starts later, its oldest waiter pays for it if that waiter is a call. A call that cannot pay raises
-`AuthBudgetExceededError` before the token request, and recovering from a rejected token stops with
-`auth_exchange_budget_exhausted` when the recovery needs an acquisition the call can no longer pay for. `ResponseInfo`
-and errors report `auth_exchange_count`, `auth_exchange_budget_used`, the `auth_refresh_ids` of the acquisitions the
-call started or waited for, and `auth_refresh_pending`, how many of them were still queued or running. Custom providers,
-wrappers of these providers included, take no part in this accounting.
+`client_secret_basic` (the default) and `client_secret_post` take a `client_secret` provider returning an
+`ApiKeyCredential` of visible ASCII; it is called once per token request with a context naming the token endpoint's
+origin and the scheme `oauth_client_secret`. The token endpoint must be HTTPS; plain HTTP to a loopback host requires
+`OAuthProviderOptions(allow_insecure_loopback=True)`.
 
-`get` returns the shared token, waiting for it when none is usable; `refresh` acquires a new one, or joins the running
-acquisition, whatever the provider holds; `invalidate(version)` forgets the held token only if it is that version.
-Closing the provider refuses new acquisitions with `AuthProviderClosedError`, ends a queued one, lets a running one
-finish within its session, and then closes an owned token transport; a concurrent `close` returns once that is done, and
-every `close` raises that release's failure. The synchronous provider's `request_close()` does the same without waiting
-and returns a `concurrent.futures.Future` of the release: an idle provider releases on its worker, or in a thread of its
-own when it never started one (in the calling thread only when no thread can start), and a busy one in a thread of its
-own once its running acquisition returns or its session ends. A client that owns the provider through
-`OwnedCredentialProvider` starts that release, or the async provider's `aclose`, and waits for it only until its
-`cleanup_timeout`, measured from the start of its close, runs out; otherwise it raises `CleanupError` with
-`pending_providers`, a later close waits again, and each release failure is reported once. A synchronous call waiting
-for a shared acquisition stops with its own error, `ClientClosedError` once its client closes, checking its client and
-cancel token every 50 milliseconds and waking at its deadline; an asyncio call stops as soon as its client closes or its
-deadline passes, and within 50 milliseconds of its cancel token. The async provider belongs to the event loop it was
-created on or first used from, and its `aclose` runs in a task of its own that a later `aclose` awaits when the first
-was cancelled. Client authentication, endpoints, and the token transport otherwise follow the authorization code flow.
+Token requests use a transport the provider owns, separate from every client: an HTTPX2 client created at the first
+token request from `OAuthProviderOptions.transport`, or an adapter passed as `token_transport`, which is borrowed unless
+wrapped in `OwnedTransportAdapter`. Its settings must verify certificates and host names and leave retries to the SDK,
+and an injected adapter must declare `internal_retry_limit=0`. Token requests never follow redirects or retry, and
+closing the provider, or leaving its `with` block, closes an owned transport. `refresh_timeout` (30 seconds by default)
+bounds each token request, the client secret lookup included; `phase_timeout` caps connecting, reading, writing, and
+pool waits at 5, 15, 15, and 5 seconds unless overridden. Responses are read up to 64 KiB and must be UTF-8 JSON
+objects. Only a transport that declares delivery evidence can prove that a failed request was never sent. Errors keep
+no response body or error description, but a transport failure's cause is the native exception, which can hold the
+token request and its client authentication, so apply your own policy before logging causes.
 
-### Refresh a token family
+### Refresh a token set
 
-`RefreshTokenProvider` and `AsyncRefreshTokenProvider` keep one token family current with the OAuth refresh token grant,
-starting from the `TokenSet` an authorization produced. The provider alone refreshes its family: no other provider,
-process, or event loop may send the same refresh token. It serves the access token while it lasts, and a call refreshes
-it once a tenth of its lifetime, at most thirty seconds, remains, or after a resource rejected it. A call past that
-renewal point keeps using the unexpired token while the refresh runs in the background, as with the client credentials
-provider.
+`RefreshTokenProvider` and `AsyncRefreshTokenProvider` keep an access token current with the OAuth refresh token grant,
+starting from the `TokenSet` an authorization produced. The provider alone refreshes it: no other provider, process,
+or event loop may send the same refresh token. It serves the access token while it lasts, and the call that finds a
+tenth of its lifetime, at most thirty seconds, left, or that follows a resource's rejection, refreshes it inline under
+the provider's lock, as the client credentials provider acquires.
 
 ```python
 from pets import Client
@@ -4175,9 +4047,16 @@ from pets.auth import AuthConfig, OwnedCredentialProvider, RefreshTokenProvider,
 from pets.options import ClientOptions
 
 
+def save(tokens: TokenSet) -> None: ...
+
+
 def user_client(tokens: TokenSet) -> Client:
     provider = RefreshTokenProvider(
-        "https://auth.example.com/token", client_id="pets-app", token_set=tokens, client_auth_method="none"
+        "https://auth.example.com/token",
+        client_id="pets-app",
+        token_set=tokens,
+        on_token_refreshed=save,
+        client_auth_method="none",
     )
     return Client(options=ClientOptions(auth=AuthConfig({"oauth": OwnedCredentialProvider(provider)})))
 ```
@@ -4185,86 +4064,23 @@ def user_client(tokens: TokenSet) -> Client:
 The refresh request sends the refresh token with the client authentication, never the configured `scopes` or `audience`:
 `none` sends the `client_id` of a public client, and `client_secret_basic` (the default) and `client_secret_post` need a
 `client_secret`. A caller whose context requires another audience than the configured one fails with
-`AuthConfigurationError`, as does a token whose own `audience` differs from it, leaving the family as it was. A token
-set needs the Bearer type, and a timezone-aware `expires_at` when its access token expires.
+`AuthConfigurationError`, and so does a token set whose access token names another audience. A token set needs the
+Bearer type, and a timezone-aware `expires_at` when its access token expires.
 
-Each refresh replaces the token set with one of the next revision. The response's refresh token rotates the family, and
-a response without one keeps the refresh token sent; a response without `scope` keeps the grants of the access token it
-replaces, known or unknown. Narrower refreshed grants remain token metadata: subsequent resource calls reach the
-server, and its 403 remains terminal. Acquisition and refresh retain the configured requested scopes. A refresh
-token the family rotated away from, or sent in a request that may have been delivered without a usable answer, is spent:
-the family never sends it again, and a response returning a spent one is unusable.
+Each successful refresh makes a new `TokenSet` current. The response's refresh token replaces the one sent, and a
+response without one keeps it; a response without `scope` keeps the grants of the access token it replaces, known or
+unknown. Narrower refreshed grants remain token metadata: subsequent resource calls reach the server, and its 403
+remains terminal. The provider then passes the new token set to `on_token_refreshed`, a coroutine function for the async
+provider, while still holding its lock, so an application can persist each token set in order; the SDK itself
+persists nothing. An exception the callback raises reaches the caller, and the refreshed token set stays current, as it
+does when an asyncio caller is cancelled while the callback runs, which may then not finish. The callback must not call
+its own provider, which holds its lock until the callback returns.
 
-A refresh that may have spent its refresh token stops the family: `invalid_grant` raises
-`AuthReauthorizationRequiredError` in the `REAUTH_REQUIRED` state, another known error code `OAuthExchangeError` in the
-`EXCHANGE_REJECTED` state, and any other answer, an unusable one, or a lost request `AuthStateUncertainError` in the
-`UNCERTAIN` state, as does a refresh still running a second after its `refresh_timeout`. Every later `get` and `refresh`
-raises a new instance of that error without a request, until `replace_token_set` adopts a token set of a higher
-revision, or `reload_token_set` loads one; `replace_token_set` refuses one whose refresh token the family spent, or that
-has neither a refresh token nor an unexpired access token, with `AuthConfigurationError`. A new authorization's token
-set has revision 0; without a load, which returns the current token set, the family's revision is not exposed, so a
-stopped family is restarted with a new provider from that token set. A refresh that provably sent nothing, as when the
-client secret provider fails, raises its error in the `FAILED_NOT_SENT` state and leaves the family as it was, so the
-next call sends the same refresh token. A token set without a refresh token serves its access token until it expires or
-a resource rejects it, then stops the family with `AuthReauthorizationRequiredError`, as a forced `refresh` does at
-once.
-
-Concurrent callers, `OAuthProviderOptions`, snapshots, call accounting, and closing follow the client credentials
-provider. `replace_token_set` raises `AuthStateConflictError` while a refresh, load, reload, or store runs, including a
-store whose session ended before its callback returned, or once the provider is closing; its `persist` argument has no
-effect without a token store.
-
-`TokenLoad` and `TokenStore`, with `AsyncTokenLoad` and `AsyncTokenStore`, are the callbacks that persist a token
-family, each bound to the storage namespace of one family: `load(context)` returns the stored `TokenSet` or None, and
-`store(token_set, expected_revision=..., context=...)` saves it durably only if the stored revision is
-`expected_revision`, or if nothing is stored for None, treating an identical stored token set as success and raising
-`AuthTokenStoreConflictError` on any other conflict. Their `TokenPersistenceContext` names the provider, the session,
-its deadline, the `purpose`, and the `cache_key` fingerprinting the family's configuration without tokens or secrets;
-the key alone is no global store key, since families of different users share it.
-
-A provider needs a `token_set`, a `load`, or both. With a load, the first call loads the persisted token set once, in a
-session of the provider's own that no call pays for, and keeps the newer of it and the constructor's token set by
-revision; callers arriving meanwhile wait for that load. A failing load, or a stored token set that differs from the
-constructor's at the same revision, stops the family in the `LOAD_FAILED` state with `AuthTokenLoadError` or
-`AuthTokenStoreConflictError`, without loading again by itself; a newer token set that can never serve is made current
-and stops the family with `AuthReauthorizationRequiredError`, as does a family with no token set at all.
-
-Each refresh then reads the persisted token set right before its request. A newer one that can serve is used without a
-request, although the refresh keeps what it charged its call; a newer expired one is refreshed instead of the current
-one, and one that can never serve stops the family; an older one, or one bringing back a spent refresh token, changes
-nothing. A failed read, or another token set at the same revision, ends the refresh without a request in the
-`FAILED_NOT_SENT` state. After `invalid_grant`, the family requires reauthorization while the refresh reads once more,
-and recovers only with a newer token set whose access token has not expired and whose refresh token the family never
-spent; otherwise `AuthReauthorizationRequiredError` keeps a failed read or a conflict as its cause.
-
-`reload_token_set()` loads once more, or raises `AuthStateConflictError` while a refresh, load, reload, or store runs,
-including one whose session ended before its work returned, while a store is pending, or once the provider is closing.
-It makes a newer token set current unless that brings back a spent refresh token, recovering a family that failed its
-load or stopped once the token set can serve; a family a refresh stopped keeps its state otherwise, and any other family
-stops for reauthorization when the newer token set can never serve. It returns the current token set, or None once the
-family stopped, and its own failures are raised to its caller alone, leaving the family as it was.
-
-A provider with a `store` needs a `load` too. A refresh that receives a token set stores it once before it becomes
-current, expecting the stored revision the last load or store confirmed, or None while none did, so callers are served
-only once storage succeeds. Credentials are still selected for the request's origin, audience, and partition; requested
-OAuth scopes and token grant metadata do not authorize a request. Scope authorization is the resource server's
-responsibility. A store that fails, conflicts, outlives the refresh's session, or is
-interrupted keeps the token set pending in the `PERSIST_PENDING` state: the refresh raises `AuthTokenStoreError`, or
-`AuthTokenStoreConflictError` with the revision the store observed, and later calls raise a new instance of the latest
-store failure without a request, while callers arriving during a store wait for it. `retry_store()` stores the same
-token set once more, expecting the same revision, and returns it once current; concurrent retries expecting the same
-revision share one store. Since a conflict repeats until the expected revision changes,
-`retry_store(expected_revision=...)` stores the same pending token set expecting another revision, such as the
-`observed_revision` of the conflict once the application has checked what is stored; a revision that is negative or not
-an integer, or one at or above the pending token set's, which storing would roll back, raises `AuthConfigurationError`,
-and a newer stored token set is adopted with `replace_token_set(..., persist=False)` instead. It raises
-`AuthStateConflictError` without a pending store, while a refresh, load, reload, or store runs, including one whose
-session ended before its work returned, or once the provider is closing. `replace_token_set` needs a revision above the
-pending one too, and by default stores the token set first under the same conditions, expecting the confirmed revision;
-one whose store fails is pending as a refreshed one is. With `persist=False` it becomes current at once and is not
-stored, leaving the stored revision as it is. A refresh that already failed, as one whose work outlived its session by
-more than a second, stores nothing, and a pending token set lives only in its provider, which drops it once closed. Load
-and store callbacks must not call their own provider, which waits for them.
+`invalid_grant` raises `AuthReauthorizationRequiredError`, and the application starts a new authorization. Any other
+failure raises as for client credentials and leaves the token set as it was, so the next call sends the same refresh
+token again. A token set without a refresh token serves its access token until it expires or a resource rejects it, and
+then raises `AuthReauthorizationRequiredError` without a request, as a forced `refresh` does at once. Token requests,
+client authentication, and closing otherwise follow the client credentials provider.
 
 Basic charset overrides, resource audience metadata, and generated OAuth provider factories are not available yet;
 applications construct providers explicitly.
