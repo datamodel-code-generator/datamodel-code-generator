@@ -12,13 +12,7 @@ from typing import Generic, Literal, Protocol, TypeAlias, TypeVar, final
 from typing_extensions import TypeIs
 
 from ..model_codecs.unset import UNSET, Unset
-from .errors import (
-    PERSISTENCE_PURPOSES,
-    AuthConfigurationError,
-    ConfigurationError,
-    SigningConfigurationError,
-    TokenPersistencePurpose,
-)
+from .errors import AuthConfigurationError, ConfigurationError, SigningConfigurationError
 from .responses import HeadersView  # noqa: TC001 - Public annotations support get_type_hints().
 from .scopes import scope_tuple
 from .timing import CancelToken, Deadline
@@ -33,8 +27,6 @@ __all__ = (
     "AsyncRequestSigner",
     "AsyncStaticCredentialProvider",
     "AsyncStaticTokenProvider",
-    "AsyncTokenLoad",
-    "AsyncTokenStore",
     "AuthConfig",
     "BasicCredential",
     "BearerCredential",
@@ -45,7 +37,6 @@ __all__ = (
     "CredentialProviderInput",
     "EnvironmentCredentialProvider",
     "OwnedCredentialProvider",
-    "RefreshInfo",
     "RefreshableTokenProvider",
     "RequestSigner",
     "SignatureFields",
@@ -53,9 +44,6 @@ __all__ = (
     "SigningInput",
     "StaticCredentialProvider",
     "StaticTokenProvider",
-    "TokenLoad",
-    "TokenPersistenceContext",
-    "TokenStore",
     "TokenVersion",
 )
 
@@ -162,77 +150,15 @@ def _refresh_token(value: object) -> None:
 @final
 @dataclass(frozen=True, slots=True)
 class TokenSet:
-    """An access token with the refresh token and revision of its token family; its repr omits both tokens."""
+    """An access token with the refresh token that renews it; its repr omits both tokens."""
 
     access_token: AccessToken = field(repr=False)
     refresh_token: str | None = field(repr=False)
-    revision: int = 0
 
     def __post_init__(self) -> None:
-        """Refuse other token types, empty refresh tokens, and revisions that are not nonnegative integers."""
+        """Refuse other token types and empty refresh tokens."""
         checked_type(self.access_token, (AccessToken,), ("access_token",))
         _refresh_token(self.refresh_token)
-        if type(self.revision) is not int or self.revision < 0:
-            raise AuthConfigurationError(field_path=("revision",), condition="invalid_value")
-
-
-@final
-@dataclass(frozen=True, slots=True, kw_only=True)
-class TokenPersistenceContext:
-    """What a token load or store serves: its provider, family, session, and deadline, and why it runs.
-
-    The cache key fingerprints the family's fixed configuration without tokens or secrets. It identifies no persistent
-    family on its own: each callback is bound to the namespace of one family.
-    """
-
-    provider_id: str
-    cache_key: str
-    session_id: str
-    deadline: Deadline
-    purpose: TokenPersistencePurpose
-
-    def __post_init__(self) -> None:
-        """Refuse values of other types and purposes the SDK does not declare."""
-        checked_type(self.provider_id, (str,), ("provider_id",))
-        checked_type(self.cache_key, (str,), ("cache_key",))
-        checked_type(self.session_id, (str,), ("session_id",))
-        checked_type(self.deadline, (Deadline,), ("deadline",))
-        if self.purpose not in PERSISTENCE_PURPOSES:
-            raise AuthConfigurationError(field_path=("purpose",), condition="invalid_value")
-
-
-class TokenLoad(Protocol):
-    """A synchronous callback reading the persisted token set of the family namespace it is bound to."""
-
-    def load(self, context: TokenPersistenceContext) -> TokenSet | None:
-        """Return the persisted token set, or None when nothing is stored."""
-
-
-class AsyncTokenLoad(Protocol):
-    """An asyncio callback reading the persisted token set of the family namespace it is bound to."""
-
-    async def load(self, context: TokenPersistenceContext) -> TokenSet | None:
-        """Return the persisted token set, or None when nothing is stored."""
-
-
-class TokenStore(Protocol):
-    """A synchronous callback durably storing a token set in the family namespace it is bound to."""
-
-    def store(self, token_set: TokenSet, *, expected_revision: int | None, context: TokenPersistenceContext) -> None:
-        """Store the token set if the stored one has the expected revision, or if nothing is stored for None.
-
-        An identical stored token set succeeds whatever the expected revision; any other conflict raises
-        AuthTokenStoreConflictError.
-        """
-
-
-class AsyncTokenStore(Protocol):
-    """An asyncio callback durably storing a token set in the family namespace it is bound to."""
-
-    async def store(
-        self, token_set: TokenSet, *, expected_revision: int | None, context: TokenPersistenceContext
-    ) -> None:
-        """Store the token set as the synchronous callback does."""
 
 
 CredentialMaterial: TypeAlias = ApiKeyCredential | BasicCredential | BearerCredential
@@ -477,7 +403,6 @@ class AuthConfig:
     credentials: Mapping[str, CredentialProviderInput] = field(repr=False)
     selection: int | Unset = field(default=UNSET, kw_only=True, repr=False)
     allowed_origins: tuple[str, ...] = field(default=(), kw_only=True, repr=False)
-    max_token_exchanges: int = field(default=2, kw_only=True)
     send_on_anonymous: bool = field(default=False, kw_only=True)
     anonymous_schemes: tuple[str, ...] = field(default=(), kw_only=True, repr=False)
     signers: tuple[RequestSigner | AsyncRequestSigner, ...] = field(default=(), kw_only=True, repr=False)
@@ -492,7 +417,6 @@ class AuthConfig:
         object.__setattr__(self, "signers", _signers(self.signers))
         if not isinstance(self.selection, Unset):
             _count(self.selection, ("auth", "selection"))
-        _count(self.max_token_exchanges, ("auth", "max_token_exchanges"))
         checked_type(self.send_on_anonymous, (bool,), ("auth", "send_on_anonymous"))
         owned: list[_CloseableProvider] = []
         identities: set[int] = set()
@@ -617,30 +541,3 @@ class AsyncEnvironmentCredentialProvider(_EnvironmentCredentials):
         """Read the current value without worker delegation or inferred bearer grants."""
         del context
         return self._read()
-
-
-RefreshState: TypeAlias = Literal[
-    "PENDING",
-    "READY",
-    "PERSIST_PENDING",
-    "LOAD_FAILED",
-    "EXCHANGE_REJECTED",
-    "UNCERTAIN",
-    "REAUTH_REQUIRED",
-    "FAILED_NOT_SENT",
-]
-
-
-@final
-@dataclass(frozen=True, slots=True)
-class RefreshInfo:
-    """A snapshot of one shared token acquisition, without tokens, bodies, URLs, or scopes.
-
-    `state` is PENDING while the job is queued or runs, then the state it ended in; `token_send_count` says whether it
-    sent a token request, and `failure` is the reason code of its error.
-    """
-
-    refresh_id: str
-    state: RefreshState
-    token_send_count: int
-    failure: str | None
