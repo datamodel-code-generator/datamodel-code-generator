@@ -401,9 +401,7 @@ def _limits(harness: _Harness, api: Any) -> None:
 
 
 def _clocked(harness: _Harness) -> None:
-    """Time a session's waits on the client's clock: a stepped clock expires an idle wait at once, and a frozen one
-    ends it once as much real time passed.
-    """
+    """Time waits and whole-message sends on the client's stepped or frozen clock."""
     lines, server, options = harness.lines, harness.server, harness.options
     ticks = itertools.count(step=30.0)
     for label, clock, idle in (
@@ -419,6 +417,20 @@ def _clocked(harness: _Harness) -> None:
             )
             record(lines, label, session.receive)
         harness.report(play)
+    for label, timeout in (("send expires before native write", 60.0), ("whole send crosses its deadline", 90.0)):
+        ticks = itertools.count(step=30.0)
+        clock = options.Clock(monotonic=lambda ticks=ticks: float(next(ticks)))
+        server.play(Play(talk=_large))
+        with harness.package.Client(
+            options=harness.client(
+                clock=clock, total_timeout=None, auth=harness.auth.AuthConfig({"bearer": _Tokens(harness.auth)})
+            )
+        ) as api:
+            session = api.protocols.secure.chat.connect(ws_options=harness.ws(send_timeout=timeout))
+            record(lines, label, lambda session=session: session.send(b"y" * 100000))
+            if timeout == 90.0:
+                record(lines, "send after uncertain completion", lambda session=session: session.send(b"again"))
+            session.close()
 
 
 def _closing_sessions(harness: _Harness, api: Any) -> None:

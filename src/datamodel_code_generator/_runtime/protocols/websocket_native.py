@@ -413,13 +413,15 @@ class NativeConnection:
         return _closed(error, self._connection.protocol.parser_exc, self._limit)
 
     def send(self, data: bytes, *, text: bool, deadline: Deadline | None) -> None:
-        """Send one whole message, refusing to start after the deadline."""
+        """Send one whole message, keeping a completed write past its deadline uncertain."""
         if deadline is not None and deadline.remaining() <= 0:
             raise TimeoutError
         try:
             self._connection.send(data, text=text)
         except ConnectionClosed as error:
             raise self._undelivered(error) from None
+        if deadline is not None and deadline.remaining() <= 0:
+            raise TransportError(delivery_state=DeliveryState.MAYBE_SENT, phase="write", cause=TimeoutError())
 
     def _undelivered(self, error: ConnectionClosed) -> Exception:
         """Return a send's closed connection, retaining uncertainty when an I/O failure may have written it."""

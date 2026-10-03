@@ -96,6 +96,9 @@
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1001 ''
   idle on a frozen clock ! PhaseTimeoutError: PhaseTimeoutError(operation_id='roomSocket', call_id='<call>', delivery_state='RESPONSE_STARTED', phase='read', effective_timeout=0.05) [operation_id='roomSocket', delivery_state=<DeliveryState.RESPONSE_STARTED: 'RESPONSE_STARTED'>, phase='read'] phase_timeout_error attempts=1 sends=1 wire=1 stop=transport_not_retryable
     server GET /rooms/r1/socket [sec-websocket-protocol: chat.v2, chat.v1] | closed 1001 ''
+  send expires before native write ! PhaseTimeoutError: PhaseTimeoutError(operation_id='secureSocket', call_id='<call>', delivery_state='NOT_SENT', phase='write', effective_timeout=60.0) [operation_id='secureSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='write'] phase_timeout_error attempts=1 sends=1 wire=1 stop=transport_not_retryable
+  whole send crosses its deadline ! DeliveryUnknownError: DeliveryUnknownError(operation_id='secureSocket', call_id='<call>', delivery_state='MAYBE_SENT') [operation_id='secureSocket', delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, cause=TransportError] delivery_unknown_error attempts=1 sends=1 wire=1 stop=None
+  send after uncertain completion ! ProtocolStateError: ProtocolStateError(operation_id='secureSocket', call_id='<call>', state='failed', action='send') [operation_id='secureSocket'] protocol_state_error attempts=1 sends=1 wire=1 stop=None
   whole large message 1 text str'100000' raw=b'100000'
     server GET /secure/socket [authorization: Bearer first-material] | closed 1000 ''
   send past its timeout ! PhaseTimeoutError: PhaseTimeoutError(operation_id='feedSocket', call_id='<call>', delivery_state='NOT_SENT', phase='write', effective_timeout=1e-09) [operation_id='feedSocket', delivery_state=<DeliveryState.NOT_SENT: 'NOT_SENT'>, phase='write'] phase_timeout_error attempts=1 sends=1 wire=1 stop=transport_not_retryable
