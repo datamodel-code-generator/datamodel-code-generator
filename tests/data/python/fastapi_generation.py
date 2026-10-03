@@ -141,9 +141,7 @@ def _decisions(project: GeneratedProject) -> list[str]:
         for projection in operation["projections"]:
             use = projection["use_ids"][0]["use_site"]["pointer"] if projection["use_ids"] else "-"
             source = "" if projection["source"] is None else f" at {projection['source']['pointer']}"
-            lines.append(
-                f"    {projection['site']} {use}: {projection['transport']} {projection['reason']}{source}"
-            )
+            lines.append(f"    {projection['site']} {use}: {projection['transport']} {projection['reason']}{source}")
     lines.extend(
         f"  group {group['key']} -> {group['file_stem']} ({len(group['operations'])})" for group in data["groups"]
     )
@@ -204,7 +202,10 @@ def _render(case: dict[str, Any], backend: str, root: Path, modules: Modules) ->
                 if backend in case.get("runtime", ()):
                     modules[parts] = content.decode(encoding)
             case ".py", parts:
-                modules[parts] = content.decode(encoding)
+                if parts[0] != PACKAGE or backend in case.get(
+                    "package_snapshots", case.get("backends", ["pydantic_v2.BaseModel"])
+                ):
+                    modules[parts] = content.decode(encoding)
             case _ if path.name != MANIFEST:
                 files.append(f"  file {path.as_posix()}")
                 shown = _SIZE.sub('"size":"<size>"', _DIGEST.sub('"<sha256>"', content.decode()))
@@ -265,7 +266,9 @@ def fastapi_scenario_report(case_name: str, root: Path) -> str:
                 for token in parents:
                     container = container[int(token)] if isinstance(container, list) else container[token]
                 container[last] = replacement
-                (root / name).write_text(json.dumps(data, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
+                (root / name).write_text(
+                    json.dumps(data, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8"
+                )
                 lines.append(f"patch {name} {pointer}")
             case _:
                 raise ValueError(step)
