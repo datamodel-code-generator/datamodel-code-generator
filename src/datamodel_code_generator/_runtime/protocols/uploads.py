@@ -310,23 +310,23 @@ class _Content:
                 return view.nbytes
         return max(file.seek(0, SEEK_END) - self.base, 0)
 
-    def read(self, plan: UploadPlan[Any, Any], start: int, length: int) -> bytes:
-        """Return up to `length` bytes from an offset of the content, fewer only at its end."""
+    def read(self, plan: UploadPlan[Any, Any], start: int, length: int) -> bytes | memoryview:
+        """Return up to `length` bytes from an offset of the content, fewer only at its end, in one buffer."""
         if (file := self.file) is None:
             with memoryview(cast("bytes", self.source)) as view, view.cast("B") as flat:
                 return flat[start : start + length].tobytes()
         file.seek(self.base + start)
-        parts: list[bytes] = []
-        left = length
-        while left:
-            data = cast("object", file.read(min(left, _READ)))
-            if not isinstance(data, bytes) or len(data) > left:
+        buffer = memoryview(bytearray(length))
+        got = 0
+        while got < length:
+            data = cast("object", file.read(min(length - got, _READ)))
+            if not isinstance(data, bytes) or len(data) > length - got:
                 raise _invalid(plan, ("source",), "wrong_capability")
             if not data:
                 break
-            parts.append(data)
-            left -= len(data)
-        return b"".join(parts)
+            buffer[got : got + len(data)] = data
+            got += len(data)
+        return buffer[:got]
 
 
 def _content(plan: UploadPlan[T, C], source: object) -> _Content:

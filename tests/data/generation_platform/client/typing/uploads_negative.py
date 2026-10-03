@@ -7,7 +7,7 @@ from io import StringIO
 
 from pets import AsyncClient, Client
 from pets.options import SessionOptions
-from pets.protocols import AsyncUploadHandle, UploadHandle, UploadProgress
+from pets.protocols import AsyncUploadHandle, UploadHandle
 from pets.types.files import CompleteFileResponse
 from pets_models import FieldFilesPostHeaderTusResumableParameter
 
@@ -29,5 +29,4 @@ async def wrong_uploads(
     client.protocols.files.upload.resume(source, b"state")  # error
     client.protocols.files.upload.start(source, tus_resumable=version).run(True)  # error
     client.protocols.files.upload.start(source, tus_resumable=version).advance().complete = True  # error
-    UploadProgress(confirmed_bytes=1, total_bytes=2, confirmed_parts=())  # error
     del unawaited, results, finished
