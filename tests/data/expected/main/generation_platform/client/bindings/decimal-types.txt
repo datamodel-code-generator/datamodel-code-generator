@@ -25,59 +25,39 @@ change pydantic_v2.BaseModel default different-value
   @@ -12 +12 @@
   -    price: Optional[condecimal(ge=Decimal('-1.5'), le=Decimal('12.3'), multiple_of=Decimal('0.1'))] = None
   +    price: Optional[condecimal(ge=Decimal('-1.5'), le=Decimal('12.3'), multiple_of=Decimal('0.2'))] = None
-  @@ -15 +14,0 @@
-  -  FieldBinding(field_id='models:Prices.price', native_name='price', wire_name='price', validation_key='price', validation_keys=('price',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
 change pydantic_v2.BaseModel default plain-float
   @@ -12 +12 @@
   -    price: Optional[condecimal(ge=Decimal('-1.5'), le=Decimal('12.3'), multiple_of=Decimal('0.1'))] = None
   +    price: Optional[condecimal(ge=Decimal('-1.5'), le=Decimal('12.3'), multiple_of=0.1)] = None
-  @@ -15 +14,0 @@
-  -  FieldBinding(field_id='models:Prices.price', native_name='price', wire_name='price', validation_key='price', validation_keys=('price',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
 change pydantic_v2.BaseModel default different-callee
   @@ -12 +12 @@
   -    price: Optional[condecimal(ge=Decimal('-1.5'), le=Decimal('12.3'), multiple_of=Decimal('0.1'))] = None
   +    price: Optional[condecimal(ge=Decimal('-1.5'), le=Decimal('12.3'), multiple_of=float('0.1'))] = None
-  @@ -15 +14,0 @@
-  -  FieldBinding(field_id='models:Prices.price', native_name='price', wire_name='price', validation_key='price', validation_keys=('price',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
 change pydantic_v2.BaseModel default extra-argument
   @@ -12 +12 @@
   -    price: Optional[condecimal(ge=Decimal('-1.5'), le=Decimal('12.3'), multiple_of=Decimal('0.1'))] = None
   +    price: Optional[condecimal(ge=Decimal('-1.5'), le=Decimal('12.3'), multiple_of=Decimal('0.1', None))] = None
-  @@ -15 +14,0 @@
-  -  FieldBinding(field_id='models:Prices.price', native_name='price', wire_name='price', validation_key='price', validation_keys=('price',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
 change pydantic_v2.BaseModel default non-string
   @@ -12 +12 @@
   -    price: Optional[condecimal(ge=Decimal('-1.5'), le=Decimal('12.3'), multiple_of=Decimal('0.1'))] = None
   +    price: Optional[condecimal(ge=Decimal('-1.5'), le=Decimal('12.3'), multiple_of=Decimal(0.1))] = None
-  @@ -15 +14,0 @@
-  -  FieldBinding(field_id='models:Prices.price', native_name='price', wire_name='price', validation_key='price', validation_keys=('price',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
 change pydantic_v2.BaseModel default invalid-value
   @@ -12 +12 @@
   -    price: Optional[condecimal(ge=Decimal('-1.5'), le=Decimal('12.3'), multiple_of=Decimal('0.1'))] = None
   +    price: Optional[condecimal(ge=Decimal('-1.5'), le=Decimal('12.3'), multiple_of=Decimal('invalid'))] = None
-  @@ -15 +14,0 @@
-  -  FieldBinding(field_id='models:Prices.price', native_name='price', wire_name='price', validation_key='price', validation_keys=('price',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
 change pydantic_v2.BaseModel default infinity
   @@ -12 +12 @@
   -    price: Optional[condecimal(ge=Decimal('-1.5'), le=Decimal('12.3'), multiple_of=Decimal('0.1'))] = None
   +    price: Optional[condecimal(ge=Decimal('-1.5'), le=Decimal('12.3'), multiple_of=Decimal('Infinity'))] = None
-  @@ -15 +14,0 @@
-  -  FieldBinding(field_id='models:Prices.price', native_name='price', wire_name='price', validation_key='price', validation_keys=('price',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
 change pydantic_v2.BaseModel default signaling-nan
   @@ -12 +12 @@
   -    price: Optional[condecimal(ge=Decimal('-1.5'), le=Decimal('12.3'), multiple_of=Decimal('0.1'))] = None
   +    price: Optional[condecimal(ge=Decimal('-1.5'), le=Decimal('12.3'), multiple_of=Decimal('sNaN'))] = None
-  @@ -15 +14,0 @@
-  -  FieldBinding(field_id='models:Prices.price', native_name='price', wire_name='price', validation_key='price', validation_keys=('price',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
 change pydantic_v2.BaseModel default qualified-callee
   @@ -12 +12 @@
   -    price: Optional[condecimal(ge=Decimal('-1.5'), le=Decimal('12.3'), multiple_of=Decimal('0.1'))] = None
   +    price: Optional[condecimal(ge=Decimal('-1.5'), le=Decimal('12.3'), multiple_of=decimal.Decimal('0.1'))] = None
-  @@ -15 +14,0 @@
-  -  FieldBinding(field_id='models:Prices.price', native_name='price', wire_name='price', validation_key='price', validation_keys=('price',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
 change pydantic_v2.BaseModel default bare-callee
   @@ -12 +12 @@
   -    price: Optional[condecimal(ge=Decimal('-1.5'), le=Decimal('12.3'), multiple_of=Decimal('0.1'))] = None
   +    price: Optional[condecimal(ge=Decimal('-1.5'), le=Decimal('12.3'), multiple_of=Decimal)] = None
-  @@ -15 +14,0 @@
-  -  FieldBinding(field_id='models:Prices.price', native_name='price', wire_name='price', validation_key='price', validation_keys=('price',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())

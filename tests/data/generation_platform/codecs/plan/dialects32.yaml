@@ -12,6 +12,12 @@ paths:
         - {name: prefs, in: cookie, style: form, explode: false, schema: {type: array, items: {type: string}}}
       responses:
         "204": {description: none}
+  /blank:
+    get:
+      parameters:
+        - {name: filter, in: querystring, content: {application/x-www-form-urlencoded: {}}}
+      responses:
+        "204": {description: none}
   /alternatives:
     get:
       security:

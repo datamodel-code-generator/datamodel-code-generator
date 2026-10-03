@@ -49,6 +49,7 @@ render pydantic_v2.BaseModel
     parameter /paths/~1values~1{id}/get/parameters/0: fastapi_native native_supported
     parameter /paths/~1values~1{id}/get/parameters/1: fastapi_native native_supported
     parameter /paths/~1values~1{id}/get/parameters/2: fastapi_native native_supported
+    parameter /paths/~1values~1{id}/get/parameters/3: codec_adapter opaque_native_semantics at /paths/~1values~1{id}/get/parameters/3/schema
     primary_response /paths/~1values~1{id}/get/responses/200: fastapi_native native_supported
   group untagged -> untagged (1)
   file server/README.md
