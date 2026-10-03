@@ -1,0 +1,268 @@
+[
+  {
+    "name": "parent cancellation during entry, repeated, existing cause",
+    "stopped_turn": false,
+    "hold_entry": true,
+    "actions": [
+      {
+        "kind": "ack",
+        "name": "entry-wait"
+      },
+      {
+        "kind": "ack",
+        "name": "send-entered"
+      },
+      {
+        "kind": "parent_cancel",
+        "message": "parent entry one"
+      },
+      {
+        "kind": "ack",
+        "name": "parent-cancel-1"
+      },
+      {
+        "kind": "decorate_parent"
+      },
+      {
+        "kind": "parent_cancel",
+        "message": "parent entry two"
+      },
+      {
+        "kind": "ack",
+        "name": "parent-cancel-2"
+      },
+      {
+        "kind": "entry"
+      }
+    ]
+  },
+  {
+    "name": "parent cancellation at the stopped turn, repeated",
+    "stopped_turn": true,
+    "hold_entry": false,
+    "actions": [
+      {
+        "kind": "ack",
+        "name": "stopped-turn"
+      },
+      {
+        "kind": "parent_cancel",
+        "message": "parent turn one"
+      },
+      {
+        "kind": "ack",
+        "name": "parent-cancel-1"
+      },
+      {
+        "kind": "parent_cancel",
+        "message": "parent turn two"
+      },
+      {
+        "kind": "ack",
+        "name": "parent-cancel-2"
+      },
+      {
+        "kind": "turn"
+      }
+    ]
+  },
+  {
+    "name": "episode cancelled during checked entry, repeated, existing cause",
+    "stopped_turn": false,
+    "hold_entry": true,
+    "actions": [
+      {
+        "kind": "ack",
+        "name": "send-entered"
+      },
+      {
+        "kind": "episode_cancel",
+        "message": "episode entry one"
+      },
+      {
+        "kind": "ack",
+        "name": "body-cancel-1"
+      },
+      {
+        "kind": "decorate_body"
+      },
+      {
+        "kind": "episode_cancel",
+        "message": "episode entry two"
+      },
+      {
+        "kind": "ack",
+        "name": "body-cancel-2"
+      },
+      {
+        "kind": "entry"
+      }
+    ]
+  },
+  {
+    "name": "episode cancelled at the stopped turn",
+    "stopped_turn": true,
+    "hold_entry": false,
+    "actions": [
+      {
+        "kind": "ack",
+        "name": "stopped-turn"
+      },
+      {
+        "kind": "episode_cancel",
+        "message": "episode stopped turn"
+      },
+      {
+        "kind": "ack",
+        "name": "body-cancel-1"
+      }
+    ]
+  },
+  {
+    "name": "native child cancellation notes without a parent primary",
+    "stopped_turn": false,
+    "hold_entry": true,
+    "actions": [
+      {
+        "kind": "ack",
+        "name": "send-entered"
+      },
+      {
+        "kind": "child_cancel",
+        "message": "native child one"
+      },
+      {
+        "kind": "ack",
+        "name": "send-cancel-1"
+      },
+      {
+        "kind": "child_cancel",
+        "message": "native child two"
+      },
+      {
+        "kind": "ack",
+        "name": "send-cancel-2"
+      },
+      {
+        "kind": "entry"
+      }
+    ]
+  },
+  {
+    "name": "native child cancellation notes beside a parent primary",
+    "stopped_turn": false,
+    "hold_entry": true,
+    "actions": [
+      {
+        "kind": "ack",
+        "name": "send-entered"
+      },
+      {
+        "kind": "parent_cancel",
+        "message": "parent with native child"
+      },
+      {
+        "kind": "ack",
+        "name": "parent-cancel-1"
+      },
+      {
+        "kind": "decorate_parent"
+      },
+      {
+        "kind": "child_cancel",
+        "message": "native secondary one"
+      },
+      {
+        "kind": "ack",
+        "name": "send-cancel-1"
+      },
+      {
+        "kind": "child_cancel",
+        "message": "native secondary two"
+      },
+      {
+        "kind": "ack",
+        "name": "send-cancel-2"
+      },
+      {
+        "kind": "entry"
+      }
+    ]
+  },
+  {
+    "name": "release and parent cancellation in the same loop turn",
+    "stopped_turn": false,
+    "hold_entry": true,
+    "actions": [
+      {
+        "kind": "ack",
+        "name": "send-entered"
+      },
+      {
+        "kind": "release_cancel",
+        "message": "release overlap"
+      },
+      {
+        "kind": "ack",
+        "name": "parent-cancel-1"
+      }
+    ]
+  },
+  {
+    "name": "genuine unsignalled entry watchdog",
+    "stopped_turn": false,
+    "hold_entry": true,
+    "actions": [
+      {
+        "kind": "ack",
+        "name": "entry-wait"
+      }
+    ],
+    "closed_session": true
+  },
+  {
+    "name": "genuine unsignalled release watchdog without a parent primary",
+    "stopped_turn": true,
+    "hold_entry": false,
+    "actions": [
+      {
+        "kind": "ack",
+        "name": "stopped-turn"
+      },
+      {
+        "kind": "release_watchdog"
+      },
+      {
+        "kind": "turn"
+      }
+    ]
+  },
+  {
+    "name": "genuine unsignalled release watchdog beside a parent primary",
+    "stopped_turn": true,
+    "hold_entry": false,
+    "actions": [
+      {
+        "kind": "ack",
+        "name": "stopped-turn"
+      },
+      {
+        "kind": "parent_cancel",
+        "message": "parent with failed release"
+      },
+      {
+        "kind": "ack",
+        "name": "parent-cancel-1"
+      },
+      {
+        "kind": "decorate_parent"
+      },
+      {
+        "kind": "release_watchdog"
+      },
+      {
+        "kind": "turn"
+      }
+    ]
+  }
+]

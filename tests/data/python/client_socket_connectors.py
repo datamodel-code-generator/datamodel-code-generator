@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import asyncio
 import importlib
+import json
 import ssl
 import threading
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
 from tests.data.python.client_runtime import arecord, record, run
@@ -74,15 +76,138 @@ class _Connection:
         self.closed.set()
 
 
+class _SendEpisode:
+    """Own one borrowed send episode and retain each terminal task outcome once."""
+
+    def __init__(self, connection: _AsyncConnection, *, observed: bool = False) -> None:
+        self.connection = connection
+        connection.episode = self
+        self.tasks: dict[str, asyncio.Task[Any]] = {}
+        self.outcomes: dict[asyncio.Task[Any], tuple[Any, BaseException | None]] = {}
+        self.parent_stops: list[asyncio.CancelledError] = []
+        self.send_stops: list[asyncio.CancelledError] = []
+        self.body_stops: list[asyncio.CancelledError] = []
+        self.primary: BaseException | None = None
+        self.observed = observed
+        self.signals: dict[str, asyncio.Future[None]] = {}
+        self.turn_resume: asyncio.Event | None = None
+
+    def signal(self, name: str) -> asyncio.Future[None]:
+        if name not in self.signals:
+            self.signals[name] = asyncio.get_running_loop().create_future()
+        return self.signals[name]
+
+    def mark(self, name: str) -> None:
+        if self.observed:
+            self.signal(name).set_result(None)
+
+    def own(self, name: str, operation: Any) -> asyncio.Task[Any]:
+        task = self.tasks[name] = asyncio.create_task(operation)
+        return task
+
+    def take(self, task: asyncio.Task[Any]) -> None:
+        if task not in self.outcomes:
+            try:
+                value = task.result()
+            except BaseException as error:  # noqa: BLE001
+                self.outcomes[task] = (None, error)
+            else:
+                self.outcomes[task] = (value, None)
+
+    def replay(self, task: asyncio.Task[Any]) -> Any:
+        value, error = self.outcomes[task]
+        if error is not None:
+            raise error
+        return value
+
+    async def terminal(
+        self, tasks: tuple[asyncio.Task[Any], ...], stops: list[asyncio.CancelledError], role: str
+    ) -> None:
+        while pending := tuple(task for task in tasks if not task.done()):
+            try:
+                await asyncio.wait(pending)
+            except asyncio.CancelledError as error:
+                if stops:
+                    stops[0].add_note(f"Further cancellation while joining socket fixture {role}: {error!r}")
+                stops.append(error)
+                self.mark(f"{role}-cancel-{len(stops)}")
+        for task in tasks:
+            self.take(task)
+
+    async def join(self, task: asyncio.Task[Any], stops: list[asyncio.CancelledError], role: str) -> Any:
+        await self.terminal((task,), stops, role)
+        if stops:
+            raise stops[0]
+        return self.replay(task)
+
+    async def gate(self, event: threading.Event, name: str) -> None:
+        if not await asyncio.to_thread(event.wait, 10):
+            raise RuntimeError(f"socket fixture {name} gate was not signalled before its watchdog")
+
+    async def run(self, session: Any, now: list[float] | None = None, *, compete: bool = True) -> None:
+        connection, lines = self.connection, self.connection.lines
+        second: asyncio.Task[Any] | None = None
+        try:
+            first = self.own("first", session.send("first"))
+            entry = self.own("entry", self.gate(connection.blocked, "entry"))
+            self.mark("entry-wait")
+            await self.join(entry, self.body_stops, "body")
+            if now is not None:
+                connection.blocked = None
+                second = self.own("second", session.send("second"))
+                self.mark("stopped-turn")
+                await asyncio.sleep(0)
+                if self.turn_resume is not None:
+                    await self.turn_resume.wait()
+                now[0] = 20.0
+            elif compete:
+                await arecord(lines, "async send that waits too long", lambda: session.send("second"))
+        except BaseException as error:  # noqa: BLE001
+            self.primary = error
+            if isinstance(error, asyncio.CancelledError) and not self.body_stops:
+                self.body_stops.append(error)
+                self.mark("body-cancel-1")
+            raise
+        finally:
+            connection.released.set()
+            await self.terminal(tuple(self.tasks.values()), self.body_stops, "body")
+            if self.primary is None:
+                if self.body_stops:
+                    raise self.body_stops[0]
+                for name, task in self.tasks.items():
+                    error = self.outcomes[task][1]
+                    if error is not None and (name in {"entry", "release"} or not isinstance(error, Exception)):
+                        raise error
+        label = (
+            "async send holding the turn past its cap" if now is not None else "async send stopped at its timeout"
+        )
+        record(lines, label, lambda: self.replay(first))
+        if second is not None:
+            record(lines, "async send given the turn past its cap", lambda: self.replay(second))
+            await arecord(lines, "async send after the stopped turn", lambda: session.send("third"))
+
+
+async def _owned_sends(connection: _AsyncConnection, session: Any, now: list[float] | None = None) -> None:
+    episode = _SendEpisode(connection)
+    owner = asyncio.create_task(episode.run(session, now))
+    await episode.join(owner, episode.parent_stops, "parent")
+
+
 class _AsyncConnection(_Connection):
     """The asyncio form of the scripted connection."""
+
+    episode: _SendEpisode
+    signal_entry = True
 
     async def send(self, data: bytes, *, text: bool, deadline: object) -> None:  # ty: ignore[invalid-method-override]
         self.lines.append(f"    connection send text={text} {data!r} deadline={deadline is not None}")
         if self.blocked is not None:
-            self.blocked.set()
+            if self.signal_entry:
+                self.blocked.set()
             if self.gated:
-                await asyncio.to_thread(self.released.wait, 10)
+                release = self.episode.own("release", self.episode.gate(self.released, "release"))
+                self.episode.mark("send-entered")
+                await self.episode.join(release, self.episode.send_stops, "send")
             else:
                 await asyncio.sleep(10)
         self._fail("send")
@@ -499,16 +624,7 @@ async def _stopped_turn(harness: _Harness) -> None:
         session = await api.protocols.feed.text.connect(
             options=options.RequestOptions(total_timeout=None), ws_options=harness.protocols.WSOptions(send_timeout=10)
         )
-        first = asyncio.create_task(session.send("first"))
-        await asyncio.to_thread(connection.blocked.wait, 5)
-        connection.blocked = None
-        second = asyncio.create_task(session.send("second"))
-        await asyncio.sleep(0)
-        now[0] = 20.0
-        connection.released.set()
-        await arecord(lines, "async send holding the turn past its cap", lambda: first)
-        await arecord(lines, "async send given the turn past its cap", lambda: second)
-        await arecord(lines, "async send after the stopped turn", lambda: session.send("third"))
+        await _owned_sends(connection, session, now)
 
 
 async def _async_connectors(harness: _Harness) -> None:
@@ -546,12 +662,10 @@ async def _async_connectors(harness: _Harness) -> None:
         await arecord(lines, "async failing close", session.aclose)
         connection = _AsyncConnection(harness)
         connection.blocked = threading.Event()
+        connection.gated = True
         connector.queue.append(connection)
         session = await api.protocols.feed.text.connect(ws_options=harness.protocols.WSOptions(send_timeout=0.05))
-        blocked = asyncio.create_task(session.send("first"))
-        await asyncio.sleep(0)
-        await arecord(lines, "async send that waits too long", lambda: session.send("second"))
-        await arecord(lines, "async send stopped at its timeout", lambda: blocked)
+        await _owned_sends(connection, session)
         for label, frames in (
             ("async receive at the connection's deadline", (TimeoutError(),)),
             ("async server closed", (errors.WebSocketClosedError(code=1000, reason="", clean=True),)),
@@ -606,5 +720,112 @@ async def _async_connectors(harness: _Harness) -> None:
         sending = asyncio.create_task(session.send("first"))
         await asyncio.sleep(0)
         sending.cancel()
-        cancelled = (await asyncio.gather(sending, return_exceptions=True))[0]
+        episode = _SendEpisode(connection)
+        await episode.terminal((sending,), [], "send")
+        cancelled = episode.outcomes[sending][1]
         lines.append(f"  async send cancelled by its task {type(cancelled).__name__} {session!r}")
+
+
+def socket_connector_outcomes(package: ModuleType, lines: list[str]) -> None:
+    """Drive native cancellation and real gate watchdogs through public borrowed sessions."""
+    source = Path(__file__).parents[1] / "generation_platform/client/socket-connector-outcomes.json"
+    vectors = json.loads(source.read_text())
+    run(lambda: _connector_outcomes(_Harness(package, lines), vectors))
+
+
+async def _connector_outcomes(harness: _Harness, vectors: list[dict[str, Any]]) -> None:
+    for vector in vectors:
+        record(harness.lines, "socket outcome vector", lambda: vector["name"])
+        connector = _AsyncConnector(harness)
+        now = [0.0] if vector["stopped_turn"] else None
+        settings = {} if now is None else {"clock": harness.options.Clock(monotonic=lambda: now[0])}
+        async with harness.package.AsyncClient(options=harness.client(connector, **settings)) as api:
+            connection = _AsyncConnection(harness)
+            connection.blocked = threading.Event()
+            connection.gated = True
+            connection.signal_entry = not vector["hold_entry"]
+            episode = _SendEpisode(connection, observed=True)
+            if vector["stopped_turn"]:
+                episode.turn_resume = asyncio.Event()
+            connector.queue.append(connection)
+            session = await api.protocols.feed.text.connect(
+                options=harness.options.RequestOptions(total_timeout=None),
+                ws_options=harness.protocols.WSOptions(send_timeout=None),
+            )
+            if vector.get("closed_session"):
+                await session.aclose()
+            owner = asyncio.create_task(episode.run(session, now, compete=False))
+            parent = asyncio.create_task(episode.join(owner, episode.parent_stops, "parent"))
+            prior = RuntimeError("existing parent cause")
+            try:
+                for action in vector["actions"]:
+                    match action["kind"]:
+                        case "ack":
+                            signal = episode.signal(action["name"])
+                            await asyncio.wait((signal, parent), return_when=asyncio.FIRST_COMPLETED)
+                            if not signal.done():
+                                await episode.terminal((parent,), [], "driver")
+                                episode.replay(parent)
+                                raise RuntimeError(f"socket fixture ended before acknowledgement {action['name']}")
+                        case "parent_cancel":
+                            parent.cancel(action["message"])
+                        case "episode_cancel":
+                            owner.cancel(action["message"])
+                        case "decorate_body":
+                            episode.body_stops[0].__cause__ = prior
+                            episode.body_stops[0].add_note("existing episode note")
+                        case "child_cancel":
+                            episode.tasks["first"].cancel(action["message"])
+                        case "decorate_parent":
+                            episode.parent_stops[0].__cause__ = prior
+                            episode.parent_stops[0].add_note("existing parent note")
+                        case "entry":
+                            connection.blocked.set()
+                        case "turn":
+                            episode.turn_resume.set()
+                        case "release_cancel":
+                            connection.released.set()
+                            parent.cancel(action["message"])
+                            connection.blocked.set()
+                        case "release_watchdog":
+                            await episode.terminal((episode.tasks["release"],), [], "driver")
+                await episode.terminal((parent,), [], "driver")
+            finally:
+                connection.released.set()
+                if connection.blocked is not None:
+                    connection.blocked.set()
+                if episode.turn_resume is not None:
+                    episode.turn_resume.set()
+                await episode.terminal((owner, parent), [], "driver")
+            error = episode.outcomes[parent][1]
+            captured = episode.parent_stops[0] if episode.parent_stops else error
+            record(
+                harness.lines,
+                "socket primary and owned outcomes",
+                lambda: {
+                    "public_primary": _socket_error(error),
+                    "captured_parent": _socket_error(captured),
+                    "episode_primary": _socket_error(episode.primary),
+                    "captured_body": tuple(_socket_error(item) for item in episode.body_stops),
+                    "captured_send": tuple(_socket_error(item) for item in episode.send_stops),
+                    "existing_parent_cause_retained": bool(episode.parent_stops) and captured.__cause__ is prior,
+                    "existing_body_cause_retained": episode.primary is not None and episode.primary.__cause__ is prior,
+                    "all_terminal": all(task.done() for task in (*episode.tasks.values(), owner, parent)),
+                    "all_retrieved": all(task in episode.outcomes for task in (*episode.tasks.values(), owner, parent)),
+                    "children": {name: _socket_error(episode.outcomes[task][1]) for name, task in episode.tasks.items()},
+                    "session": repr(session),
+                },
+            )
+            await session.aclose()
+
+
+def _socket_error(error: BaseException | None) -> object:
+    if error is None:
+        return None
+    return {
+        "type": type(error).__name__,
+        "args": error.args,
+        "notes": tuple(getattr(error, "__notes__", ())),
+        "cause": None if error.__cause__ is None else type(error.__cause__).__name__,
+        "self_cause": error.__cause__ is error,
+    }
