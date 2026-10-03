@@ -27,5 +27,6 @@
     }
   },
   "directions": {},
-  "legacy": {"model": {"openapi_scopes": ["schemas", "paths"]}}
+  "legacy": {"model": {"openapi_scopes": ["schemas", "paths"]}},
+  "querystring-version": {"model": {"schema_version": "3.2"}}
 }

@@ -449,7 +449,8 @@
     "model": {
       "openapi_scopes": [
         "schemas"
-      ]
+      ],
+      "collapse_root_models": true
     }
   },
   "argument-errors": {

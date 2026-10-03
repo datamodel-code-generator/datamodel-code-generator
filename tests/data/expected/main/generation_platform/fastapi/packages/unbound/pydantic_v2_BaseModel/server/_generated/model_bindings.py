@@ -40,6 +40,7 @@ def _resources() -> tuple[SchemaResource, ...]:
                                 {'schema': {'type': 'integer', 'minimum': 1}},
                                 {'schema': {'type': 'string', 'format': 'date-time'}},
                                 {'schema': {'type': 'array', 'items': {'type': 'string'}}},
+                                {'schema': {'allOf': [{'type': 'string'}, {'minLength': 1}]}},
                             ],
                             'responses': {
                                 '200': {
@@ -61,6 +62,7 @@ def _resources() -> tuple[SchemaResource, ...]:
                 '/paths/~1values~1{id}/get/parameters/0/schema',
                 '/paths/~1values~1{id}/get/parameters/1/schema',
                 '/paths/~1values~1{id}/get/parameters/2/schema',
+                '/paths/~1values~1{id}/get/parameters/3/schema',
                 '/paths/~1values~1{id}/get/responses/200/content/application~1json/schema',
             ),
         ),
@@ -68,8 +70,18 @@ def _resources() -> tuple[SchemaResource, ...]:
 
 
 @cache
+def _request_view() -> DirectionalView:
+    return DirectionalView(direction='request')
+
+
+@cache
 def _response_view() -> DirectionalView:
     return DirectionalView(direction='response')
+
+
+@cache
+def request_bundle() -> SchemaBundle:
+    return SchemaBundle(_resources(), _request_view())
 
 
 @cache
@@ -79,6 +91,15 @@ def response_bundle() -> SchemaBundle:
 
 @cache
 def _model_0() -> ModelBinding:
+    return ModelBinding(
+        symbol='models:FieldValuesIdGetHeaderXLabelParameter',
+        native_kind='model',
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1values~1%7Bid%7D/get/parameters/3/schema',
+    )
+
+
+@cache
+def _model_1() -> ModelBinding:
     return ModelBinding(
         symbol='models:Value',
         native_kind='model',
@@ -102,6 +123,38 @@ def _model_0() -> ModelBinding:
 
 CONTEXT_0: Final = CodecContext(
     surface='server',
+    direction='request',
+    schema_id='https://dcg.invalid/inputs/root#/paths/~1values~1%7Bid%7D/get/parameters/3/schema',
+    operation_id='/paths/~1values~1{id}/get',
+)
+
+
+@cache
+def codec_0() -> PydanticModelCodec[models.FieldValuesIdGetHeaderXLabelParameter]:
+    """Codec of /paths/~1values~1{id}/get parameter (request header X-Label)."""
+    return PydanticModelCodec(
+        UseBinding(
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1values~1%7Bid%7D/get/parameters/3/schema|ModelNode(symbol='models:FieldValuesIdGetHeaderXLabelParameter')",
+            direction='request',
+            schema_id='https://dcg.invalid/inputs/root#/paths/~1values~1%7Bid%7D/get/parameters/3/schema',
+            operation_id='/paths/~1values~1{id}/get',
+            media_type=None,
+            backend='pydantic_v2.BaseModel',
+            native_kind='model',
+            native_export='models:FieldValuesIdGetHeaderXLabelParameter',
+            projection_mode='native',
+            converter_strategy='pydantic_type_adapter',
+            type=ModelNode(symbol='models:FieldValuesIdGetHeaderXLabelParameter'),
+            models=(_model_0(),),
+        ),
+        models.FieldValuesIdGetHeaderXLabelParameter,
+        {'models:FieldValuesIdGetHeaderXLabelParameter': models.FieldValuesIdGetHeaderXLabelParameter},
+        request_bundle,
+    )
+
+
+CONTEXT_1: Final = CodecContext(
+    surface='server',
     direction='response',
     schema_id='https://dcg.invalid/inputs/root#/paths/~1values~1%7Bid%7D/get/responses/200/content/application~1json/schema',
     operation_id='/paths/~1values~1{id}/get',
@@ -110,7 +163,7 @@ CONTEXT_0: Final = CodecContext(
 
 
 @cache
-def codec_0() -> PydanticModelCodec[models.Value]:
+def codec_1() -> PydanticModelCodec[models.Value]:
     """Codec of /paths/~1values~1{id}/get response_body (response 200 application/json)."""
     return PydanticModelCodec(
         UseBinding(
@@ -125,7 +178,7 @@ def codec_0() -> PydanticModelCodec[models.Value]:
             projection_mode='native',
             converter_strategy='pydantic_type_adapter',
             type=ModelNode(symbol='models:Value'),
-            models=(_model_0(),),
+            models=(_model_1(),),
         ),
         models.Value,
         {'models:Value': models.Value},
@@ -134,5 +187,5 @@ def codec_0() -> PydanticModelCodec[models.Value]:
 
 
 @cache
-def outbound_0() -> NativeOutboundCodec[models.Value]:
-    return NativeOutboundCodec(codec_0(), CONTEXT_0)
+def outbound_1() -> NativeOutboundCodec[models.Value]:
+    return NativeOutboundCodec(codec_1(), CONTEXT_1)

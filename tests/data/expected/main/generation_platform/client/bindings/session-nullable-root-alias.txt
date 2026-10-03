@@ -71,30 +71,18 @@ change pydantic_v2.BaseModel plain wrapper-0
   @@ -15 +15 @@
   -Nullable = RootModel[str | None]
   +Nullable = str | None
-  @@ -59 +59 @@
-  -  FieldBinding(field_id='models:Model.nullable', native_name='nullable', wire_name='nullable', validation_key='nullable', validation_keys=('nullable',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Nullable'))
-  +  FieldBinding(field_id='models:Model.nullable', native_name='nullable', wire_name='nullable', validation_key='nullable', validation_keys=('nullable',), required=False, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:Nullable'))
 change pydantic_v2.BaseModel plain wrapper-1
   @@ -15 +15 @@
   -Nullable = RootModel[str | None]
   +Nullable = list[str | None]
-  @@ -59 +59 @@
-  -  FieldBinding(field_id='models:Model.nullable', native_name='nullable', wire_name='nullable', validation_key='nullable', validation_keys=('nullable',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Nullable'))
-  +  FieldBinding(field_id='models:Model.nullable', native_name='nullable', wire_name='nullable', validation_key='nullable', validation_keys=('nullable',), required=False, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:Nullable'))
 change pydantic_v2.BaseModel plain wrapper-2
   @@ -15 +15 @@
   -Nullable = RootModel[str | None]
   +Nullable = RootModel[str, None]
-  @@ -59 +59 @@
-  -  FieldBinding(field_id='models:Model.nullable', native_name='nullable', wire_name='nullable', validation_key='nullable', validation_keys=('nullable',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Nullable'))
-  +  FieldBinding(field_id='models:Model.nullable', native_name='nullable', wire_name='nullable', validation_key='nullable', validation_keys=('nullable',), required=False, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:Nullable'))
 change pydantic_v2.BaseModel plain wrapper-3
   @@ -15 +15 @@
   -Nullable = RootModel[str | None]
   +Nullable = RootModel[]
-  @@ -59 +59 @@
-  -  FieldBinding(field_id='models:Model.nullable', native_name='nullable', wire_name='nullable', validation_key='nullable', validation_keys=('nullable',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Nullable'))
-  +  FieldBinding(field_id='models:Model.nullable', native_name='nullable', wire_name='nullable', validation_key='nullable', validation_keys=('nullable',), required=False, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:Nullable'))
 change pydantic_v2.BaseModel plain wrapper-4
   @@ -15 +15 @@
   -Nullable = RootModel[str | None]
@@ -128,11 +116,11 @@ render pydantic_v2.BaseModel collapsed
     FieldBinding(field_id='models:Model.any_chain', native_name='any_chain', wire_name='any_chain', validation_key='any_chain', validation_keys=('any_chain',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:Model.required_any', native_name='required_any', wire_name='required_any', validation_key='required_any', validation_keys=('required_any',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:Model.imported_none', native_name='imported_none', wire_name='imported_none', validation_key='imported_none', validation_keys=('imported_none',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Model.plain', native_name='plain', wire_name='plain', validation_key='plain', validation_keys=('plain',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Model.nullable', native_name='nullable', wire_name='nullable', validation_key='nullable', validation_keys=('nullable',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+    FieldBinding(field_id='models:Model.plain', native_name='plain', wire_name='plain', validation_key='plain', validation_keys=('plain',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
+    FieldBinding(field_id='models:Model.nullable', native_name='nullable', wire_name='nullable', validation_key='nullable', validation_keys=('nullable',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Model.union', native_name='union', wire_name='union', validation_key='union', validation_keys=('union',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(LeafNode(),), nullable=True))
-    FieldBinding(field_id='models:Model.chain', native_name='chain', wire_name='chain', validation_key='chain', validation_keys=('chain',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-    FieldBinding(field_id='models:Model.items', native_name='items', wire_name='items', validation_key='items', validation_keys=('items',), required=False, read_only=False, write_only=False, omit_none=False, type=ArrayNode(item=LeafNode()))
+    FieldBinding(field_id='models:Model.chain', native_name='chain', wire_name='chain', validation_key='chain', validation_keys=('chain',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
+    FieldBinding(field_id='models:Model.items', native_name='items', wire_name='items', validation_key='items', validation_keys=('items',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=LeafNode()))
     FieldBinding(field_id='models:Model.required_nullable', native_name='required_nullable', wire_name='required_nullable', validation_key='required_nullable', validation_keys=('required_nullable',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   codec_0 -> PydanticModelCodec[models.Model]
 render pydantic_v2.BaseModel annotated-remapped

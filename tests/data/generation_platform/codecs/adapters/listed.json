@@ -14,7 +14,7 @@
         "name": "names",
         "import_ref": "app.codecs:names_model",
         "capabilities": {"record": "CodecCapabilities", "backends": ["pydantic_v2.BaseModel"], "native_kinds": ["array"]},
-        "uses": [{"schema": {"pointer": "/paths/~1scalars/post/parameters/6/schema"}, "direction": "request"}]
+        "uses": [{"schema": {"pointer": "/components/schemas/TagsQuery"}, "direction": "request"}]
       }
     ]
   },
