@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, Final
 
 import httpx2
 
+from tests.data.python.client_allowreserved import reserved_paths
 from tests.data.python.client_auth_challenges import auth_challenges
 from tests.data.python.client_auth_errors import auth_errors
 from tests.data.python.client_auth_flows import auth_flows
@@ -748,6 +749,9 @@ BACKENDS: Final = (
 ALL_BUT_MSGSPEC: Final = BACKENDS[:-1]
 STRUCTURAL: Final = BACKENDS[2:]
 SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, list[str]], None]]]] = {
+    "allowreserved-path-30": ("allowreserved-path-30", BACKENDS, reserved_paths),
+    "allowreserved-path-31": ("allowreserved-path-31", BACKENDS, reserved_paths),
+    "allowreserved-path-32": ("allowreserved-path-32", BACKENDS, reserved_paths),
     "no-success": ("no-success", BACKENDS, no_success),
     "no-success-unpack": ("no-success-unpack", BACKENDS, no_success),
     "json-decode-errors-sse": ("streams", ("pydantic_v2.BaseModel",), json_decode_errors),

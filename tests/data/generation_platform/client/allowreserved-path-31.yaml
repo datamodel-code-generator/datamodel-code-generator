@@ -1,0 +1,1319 @@
+openapi: 3.1.1
+info:
+  title: Reserved paths
+  version: 1.0.0
+servers:
+- url: https://api.example.com
+paths:
+  /simple-scalar-false/{wire-name}:
+    get:
+      operationId: readSimpleScalarFalse
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: simple
+        explode: false
+        allowReserved: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /simple-scalar-false-false/{wire-name}:
+    get:
+      operationId: readSimpleScalarFalseFalse
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: simple
+        explode: false
+        allowReserved: false
+        schema:
+          type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /simple-scalar-false-absent/{wire-name}:
+    get:
+      operationId: readSimpleScalarFalseAbsent
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /simple-array-false/{wire-name}:
+    get:
+      operationId: readSimpleArrayFalse
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: simple
+        explode: false
+        allowReserved: true
+        schema:
+          type: array
+          items:
+            type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /simple-array-false-false/{wire-name}:
+    get:
+      operationId: readSimpleArrayFalseFalse
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: simple
+        explode: false
+        allowReserved: false
+        schema:
+          type: array
+          items:
+            type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /simple-array-false-absent/{wire-name}:
+    get:
+      operationId: readSimpleArrayFalseAbsent
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: array
+          items:
+            type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /simple-array-true/{wire-name}:
+    get:
+      operationId: readSimpleArrayTrue
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: simple
+        explode: true
+        allowReserved: true
+        schema:
+          type: array
+          items:
+            type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /simple-array-true-false/{wire-name}:
+    get:
+      operationId: readSimpleArrayTrueFalse
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: simple
+        explode: true
+        allowReserved: false
+        schema:
+          type: array
+          items:
+            type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /simple-array-true-absent/{wire-name}:
+    get:
+      operationId: readSimpleArrayTrueAbsent
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: simple
+        explode: true
+        schema:
+          type: array
+          items:
+            type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /simple-object-false/{wire-name}:
+    get:
+      operationId: readSimpleObjectFalse
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: simple
+        explode: false
+        allowReserved: true
+        schema:
+          type: object
+          properties:
+            left-key:
+              type: string
+            right:
+              type: string
+          required:
+          - left-key
+          - right
+      responses:
+        '204':
+          description: parameter accepted
+  /simple-object-false-false/{wire-name}:
+    get:
+      operationId: readSimpleObjectFalseFalse
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: simple
+        explode: false
+        allowReserved: false
+        schema:
+          type: object
+          properties:
+            left-key:
+              type: string
+            right:
+              type: string
+          required:
+          - left-key
+          - right
+      responses:
+        '204':
+          description: parameter accepted
+  /simple-object-false-absent/{wire-name}:
+    get:
+      operationId: readSimpleObjectFalseAbsent
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: object
+          properties:
+            left-key:
+              type: string
+            right:
+              type: string
+          required:
+          - left-key
+          - right
+      responses:
+        '204':
+          description: parameter accepted
+  /simple-object-true/{wire-name}:
+    get:
+      operationId: readSimpleObjectTrue
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: simple
+        explode: true
+        allowReserved: true
+        schema:
+          type: object
+          properties:
+            left-key:
+              type: string
+            right:
+              type: string
+          required:
+          - left-key
+          - right
+      responses:
+        '204':
+          description: parameter accepted
+  /simple-object-true-false/{wire-name}:
+    get:
+      operationId: readSimpleObjectTrueFalse
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: simple
+        explode: true
+        allowReserved: false
+        schema:
+          type: object
+          properties:
+            left-key:
+              type: string
+            right:
+              type: string
+          required:
+          - left-key
+          - right
+      responses:
+        '204':
+          description: parameter accepted
+  /simple-object-true-absent/{wire-name}:
+    get:
+      operationId: readSimpleObjectTrueAbsent
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: simple
+        explode: true
+        schema:
+          type: object
+          properties:
+            left-key:
+              type: string
+            right:
+              type: string
+          required:
+          - left-key
+          - right
+      responses:
+        '204':
+          description: parameter accepted
+  /label-scalar-false/{wire-name}:
+    get:
+      operationId: readLabelScalarFalse
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: label
+        explode: false
+        allowReserved: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /label-scalar-false-false/{wire-name}:
+    get:
+      operationId: readLabelScalarFalseFalse
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: label
+        explode: false
+        allowReserved: false
+        schema:
+          type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /label-scalar-false-absent/{wire-name}:
+    get:
+      operationId: readLabelScalarFalseAbsent
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: label
+        explode: false
+        schema:
+          type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /label-array-false/{wire-name}:
+    get:
+      operationId: readLabelArrayFalse
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: label
+        explode: false
+        allowReserved: true
+        schema:
+          type: array
+          items:
+            type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /label-array-false-false/{wire-name}:
+    get:
+      operationId: readLabelArrayFalseFalse
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: label
+        explode: false
+        allowReserved: false
+        schema:
+          type: array
+          items:
+            type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /label-array-false-absent/{wire-name}:
+    get:
+      operationId: readLabelArrayFalseAbsent
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: label
+        explode: false
+        schema:
+          type: array
+          items:
+            type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /label-array-true/{wire-name}:
+    get:
+      operationId: readLabelArrayTrue
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: label
+        explode: true
+        allowReserved: true
+        schema:
+          type: array
+          items:
+            type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /label-array-true-false/{wire-name}:
+    get:
+      operationId: readLabelArrayTrueFalse
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: label
+        explode: true
+        allowReserved: false
+        schema:
+          type: array
+          items:
+            type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /label-array-true-absent/{wire-name}:
+    get:
+      operationId: readLabelArrayTrueAbsent
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: label
+        explode: true
+        schema:
+          type: array
+          items:
+            type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /label-object-false/{wire-name}:
+    get:
+      operationId: readLabelObjectFalse
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: label
+        explode: false
+        allowReserved: true
+        schema:
+          type: object
+          properties:
+            left-key:
+              type: string
+            right:
+              type: string
+          required:
+          - left-key
+          - right
+      responses:
+        '204':
+          description: parameter accepted
+  /label-object-false-false/{wire-name}:
+    get:
+      operationId: readLabelObjectFalseFalse
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: label
+        explode: false
+        allowReserved: false
+        schema:
+          type: object
+          properties:
+            left-key:
+              type: string
+            right:
+              type: string
+          required:
+          - left-key
+          - right
+      responses:
+        '204':
+          description: parameter accepted
+  /label-object-false-absent/{wire-name}:
+    get:
+      operationId: readLabelObjectFalseAbsent
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: label
+        explode: false
+        schema:
+          type: object
+          properties:
+            left-key:
+              type: string
+            right:
+              type: string
+          required:
+          - left-key
+          - right
+      responses:
+        '204':
+          description: parameter accepted
+  /label-object-true/{wire-name}:
+    get:
+      operationId: readLabelObjectTrue
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: label
+        explode: true
+        allowReserved: true
+        schema:
+          type: object
+          properties:
+            left-key:
+              type: string
+            right:
+              type: string
+          required:
+          - left-key
+          - right
+      responses:
+        '204':
+          description: parameter accepted
+  /label-object-true-false/{wire-name}:
+    get:
+      operationId: readLabelObjectTrueFalse
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: label
+        explode: true
+        allowReserved: false
+        schema:
+          type: object
+          properties:
+            left-key:
+              type: string
+            right:
+              type: string
+          required:
+          - left-key
+          - right
+      responses:
+        '204':
+          description: parameter accepted
+  /label-object-true-absent/{wire-name}:
+    get:
+      operationId: readLabelObjectTrueAbsent
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: label
+        explode: true
+        schema:
+          type: object
+          properties:
+            left-key:
+              type: string
+            right:
+              type: string
+          required:
+          - left-key
+          - right
+      responses:
+        '204':
+          description: parameter accepted
+  /matrix-scalar-false/{wire-name}:
+    get:
+      operationId: readMatrixScalarFalse
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: matrix
+        explode: false
+        allowReserved: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /matrix-scalar-false-false/{wire-name}:
+    get:
+      operationId: readMatrixScalarFalseFalse
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: matrix
+        explode: false
+        allowReserved: false
+        schema:
+          type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /matrix-scalar-false-absent/{wire-name}:
+    get:
+      operationId: readMatrixScalarFalseAbsent
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: matrix
+        explode: false
+        schema:
+          type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /matrix-array-false/{wire-name}:
+    get:
+      operationId: readMatrixArrayFalse
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: matrix
+        explode: false
+        allowReserved: true
+        schema:
+          type: array
+          items:
+            type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /matrix-array-false-false/{wire-name}:
+    get:
+      operationId: readMatrixArrayFalseFalse
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: matrix
+        explode: false
+        allowReserved: false
+        schema:
+          type: array
+          items:
+            type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /matrix-array-false-absent/{wire-name}:
+    get:
+      operationId: readMatrixArrayFalseAbsent
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: matrix
+        explode: false
+        schema:
+          type: array
+          items:
+            type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /matrix-array-true/{wire-name}:
+    get:
+      operationId: readMatrixArrayTrue
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: matrix
+        explode: true
+        allowReserved: true
+        schema:
+          type: array
+          items:
+            type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /matrix-array-true-false/{wire-name}:
+    get:
+      operationId: readMatrixArrayTrueFalse
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: matrix
+        explode: true
+        allowReserved: false
+        schema:
+          type: array
+          items:
+            type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /matrix-array-true-absent/{wire-name}:
+    get:
+      operationId: readMatrixArrayTrueAbsent
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: matrix
+        explode: true
+        schema:
+          type: array
+          items:
+            type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /matrix-object-false/{wire-name}:
+    get:
+      operationId: readMatrixObjectFalse
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: matrix
+        explode: false
+        allowReserved: true
+        schema:
+          type: object
+          properties:
+            left-key:
+              type: string
+            right:
+              type: string
+          required:
+          - left-key
+          - right
+      responses:
+        '204':
+          description: parameter accepted
+  /matrix-object-false-false/{wire-name}:
+    get:
+      operationId: readMatrixObjectFalseFalse
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: matrix
+        explode: false
+        allowReserved: false
+        schema:
+          type: object
+          properties:
+            left-key:
+              type: string
+            right:
+              type: string
+          required:
+          - left-key
+          - right
+      responses:
+        '204':
+          description: parameter accepted
+  /matrix-object-false-absent/{wire-name}:
+    get:
+      operationId: readMatrixObjectFalseAbsent
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: matrix
+        explode: false
+        schema:
+          type: object
+          properties:
+            left-key:
+              type: string
+            right:
+              type: string
+          required:
+          - left-key
+          - right
+      responses:
+        '204':
+          description: parameter accepted
+  /matrix-object-true/{wire-name}:
+    get:
+      operationId: readMatrixObjectTrue
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: matrix
+        explode: true
+        allowReserved: true
+        schema:
+          type: object
+          properties:
+            left-key:
+              type: string
+            right:
+              type: string
+          required:
+          - left-key
+          - right
+      responses:
+        '204':
+          description: parameter accepted
+  /matrix-object-true-false/{wire-name}:
+    get:
+      operationId: readMatrixObjectTrueFalse
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: matrix
+        explode: true
+        allowReserved: false
+        schema:
+          type: object
+          properties:
+            left-key:
+              type: string
+            right:
+              type: string
+          required:
+          - left-key
+          - right
+      responses:
+        '204':
+          description: parameter accepted
+  /matrix-object-true-absent/{wire-name}:
+    get:
+      operationId: readMatrixObjectTrueAbsent
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: matrix
+        explode: true
+        schema:
+          type: object
+          properties:
+            left-key:
+              type: string
+            right:
+              type: string
+          required:
+          - left-key
+          - right
+      responses:
+        '204':
+          description: parameter accepted
+  /read-query-scalar-false-true:
+    get:
+      operationId: readQueryScalarFalseTrue
+      tags:
+      - wire
+      parameters:
+      - name: q
+        in: query
+        style: form
+        explode: false
+        schema: &id001
+          type: string
+        allowReserved: true
+      responses:
+        '204':
+          description: parameter accepted
+  /read-query-scalar-false-false:
+    get:
+      operationId: readQueryScalarFalseFalse
+      tags:
+      - wire
+      parameters:
+      - name: q
+        in: query
+        style: form
+        explode: false
+        schema: *id001
+        allowReserved: false
+      responses:
+        '204':
+          description: parameter accepted
+  /read-query-scalar-false-absent:
+    get:
+      operationId: readQueryScalarFalseAbsent
+      tags:
+      - wire
+      parameters:
+      - name: q
+        in: query
+        style: form
+        explode: false
+        schema: *id001
+      responses:
+        '204':
+          description: parameter accepted
+  /read-query-scalar-true-true:
+    get:
+      operationId: readQueryScalarTrueTrue
+      tags:
+      - wire
+      parameters:
+      - name: q
+        in: query
+        style: form
+        explode: true
+        schema: *id001
+        allowReserved: true
+      responses:
+        '204':
+          description: parameter accepted
+  /read-query-scalar-true-false:
+    get:
+      operationId: readQueryScalarTrueFalse
+      tags:
+      - wire
+      parameters:
+      - name: q
+        in: query
+        style: form
+        explode: true
+        schema: *id001
+        allowReserved: false
+      responses:
+        '204':
+          description: parameter accepted
+  /read-query-scalar-true-absent:
+    get:
+      operationId: readQueryScalarTrueAbsent
+      tags:
+      - wire
+      parameters:
+      - name: q
+        in: query
+        style: form
+        explode: true
+        schema: *id001
+      responses:
+        '204':
+          description: parameter accepted
+  /read-query-array-false-true:
+    get:
+      operationId: readQueryArrayFalseTrue
+      tags:
+      - wire
+      parameters:
+      - name: q
+        in: query
+        style: form
+        explode: false
+        schema: &id002
+          type: array
+          items:
+            type: string
+        allowReserved: true
+      responses:
+        '204':
+          description: parameter accepted
+  /read-query-array-false-false:
+    get:
+      operationId: readQueryArrayFalseFalse
+      tags:
+      - wire
+      parameters:
+      - name: q
+        in: query
+        style: form
+        explode: false
+        schema: *id002
+        allowReserved: false
+      responses:
+        '204':
+          description: parameter accepted
+  /read-query-array-false-absent:
+    get:
+      operationId: readQueryArrayFalseAbsent
+      tags:
+      - wire
+      parameters:
+      - name: q
+        in: query
+        style: form
+        explode: false
+        schema: *id002
+      responses:
+        '204':
+          description: parameter accepted
+  /read-query-array-true-true:
+    get:
+      operationId: readQueryArrayTrueTrue
+      tags:
+      - wire
+      parameters:
+      - name: q
+        in: query
+        style: form
+        explode: true
+        schema: *id002
+        allowReserved: true
+      responses:
+        '204':
+          description: parameter accepted
+  /read-query-array-true-false:
+    get:
+      operationId: readQueryArrayTrueFalse
+      tags:
+      - wire
+      parameters:
+      - name: q
+        in: query
+        style: form
+        explode: true
+        schema: *id002
+        allowReserved: false
+      responses:
+        '204':
+          description: parameter accepted
+  /read-query-array-true-absent:
+    get:
+      operationId: readQueryArrayTrueAbsent
+      tags:
+      - wire
+      parameters:
+      - name: q
+        in: query
+        style: form
+        explode: true
+        schema: *id002
+      responses:
+        '204':
+          description: parameter accepted
+  /read-query-object-false-true:
+    get:
+      operationId: readQueryObjectFalseTrue
+      tags:
+      - wire
+      parameters:
+      - name: filter
+        in: query
+        style: form
+        explode: false
+        schema: &id003
+          type: object
+          properties:
+            left-key:
+              type: string
+            right:
+              type: string
+          required:
+          - left-key
+          - right
+        allowReserved: true
+      responses:
+        '204':
+          description: parameter accepted
+  /read-query-object-false-false:
+    get:
+      operationId: readQueryObjectFalseFalse
+      tags:
+      - wire
+      parameters:
+      - name: filter
+        in: query
+        style: form
+        explode: false
+        schema: *id003
+        allowReserved: false
+      responses:
+        '204':
+          description: parameter accepted
+  /read-query-object-false-absent:
+    get:
+      operationId: readQueryObjectFalseAbsent
+      tags:
+      - wire
+      parameters:
+      - name: filter
+        in: query
+        style: form
+        explode: false
+        schema: *id003
+      responses:
+        '204':
+          description: parameter accepted
+  /read-query-object-true-true:
+    get:
+      operationId: readQueryObjectTrueTrue
+      tags:
+      - wire
+      parameters:
+      - name: filter
+        in: query
+        style: form
+        explode: true
+        schema: *id003
+        allowReserved: true
+      responses:
+        '204':
+          description: parameter accepted
+  /read-query-object-true-false:
+    get:
+      operationId: readQueryObjectTrueFalse
+      tags:
+      - wire
+      parameters:
+      - name: filter
+        in: query
+        style: form
+        explode: true
+        schema: *id003
+        allowReserved: false
+      responses:
+        '204':
+          description: parameter accepted
+  /read-query-object-true-absent:
+    get:
+      operationId: readQueryObjectTrueAbsent
+      tags:
+      - wire
+      parameters:
+      - name: filter
+        in: query
+        style: form
+        explode: true
+        schema: *id003
+      responses:
+        '204':
+          description: parameter accepted
+  /deep:
+    get:
+      operationId: readDeepObject
+      tags:
+      - wire
+      parameters:
+      - name: filter
+        in: query
+        style: deepObject
+        explode: true
+        allowReserved: true
+        schema:
+          type: object
+          properties:
+            k:
+              type: string
+          required:
+          - k
+      responses:
+        '204':
+          description: parameter accepted
+  /controls:
+    get:
+      operationId: readHeadersAndCookies
+      tags:
+      - wire
+      parameters:
+      - name: X-Wire
+        in: header
+        style: simple
+        schema:
+          type: string
+      - name: session
+        in: cookie
+        style: form
+        explode: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /text/{key}:
+    get:
+      operationId: readText
+      tags:
+      - wire
+      parameters:
+      - name: key
+        in: path
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /json/{key}:
+    get:
+      operationId: readJSON
+      tags:
+      - wire
+      parameters:
+      - name: key
+        in: path
+        required: true
+        content:
+          application/json:
+            schema:
+              type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /suffix/{wire-name}.json:
+    get:
+      operationId: readSuffix
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: simple
+        allowReserved: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: parameter accepted
+  /composite/prefix{wire-name}suffix:
+    get:
+      operationId: readComposite
+      tags:
+      - wire
+      parameters:
+      - name: wire-name
+        in: path
+        required: true
+        style: simple
+        allowReserved: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: parameter accepted
