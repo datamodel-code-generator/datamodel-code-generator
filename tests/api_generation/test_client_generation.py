@@ -12,6 +12,7 @@ from tests.data.python.client_generation import (
     client_documentation_report,
     client_helper_digest_report,
     client_input_report,
+    client_model_parity_report,
     client_render,
 )
 
@@ -108,6 +109,11 @@ def test_client_render(case: str, tmp_path: Path) -> None:
     assert_output(report, EXPECTED / f"{case}.txt")
     for backend, modules in rendered.items():
         assert_generated_modules_output(modules, EXPECTED / "packages" / case / backend)
+    if case in {"auth", "auth-context"}:
+        assert_output(
+            client_model_parity_report(case, tmp_path / "ordinary", rendered),
+            EXPECTED / "bindings" / "capture-parity.txt",
+        )
 
 
 @pytest.mark.parametrize(
