@@ -133,11 +133,6 @@ class ClientCredentialsGrant:
             *((("audience", self.audience),) if self.audience is not None else ()),
         )
 
-    @staticmethod
-    def initial(options: OAuthProviderOptions) -> None:
-        """Return no material: the first caller acquires it."""
-        del options
-
     def request(self) -> tuple[tuple[str, str], ...]:
         """Return the form of the next token request."""
         return self.form
@@ -214,7 +209,7 @@ class _Tokens:
     def __init__(self, options: OAuthProviderOptions, grant: Grant) -> None:
         self._options = options
         self._grant = grant
-        self._cache = grant.initial(options)
+        self._cache = grant.initial(options) if isinstance(grant, RefreshTokenGrant) else None
 
     def identity(self) -> tuple[str | None, tuple[str, ...]]:
         """Return the audience and the scopes the provider requests, which name no secret."""
@@ -278,9 +273,17 @@ class SyncTokens(_Tokens):
         self._lock = threading.Lock()
 
     def obtain(self, context: object, *, force: bool) -> BearerCredential:
-        """Return usable material, or send one token request for it while holding the lock."""
+        """Return usable material, or send one token request for it while holding the lock.
+
+        A caller with a deadline waits for the lock only until its deadline.
+        """
         checked, seen = self.seen(context)
-        with self._lock:
+        wait = -1.0 if (deadline := checked.deadline) is None else min(deadline.remaining(), threading.TIMEOUT_MAX)
+        if not self._lock.acquire(timeout=wait):
+            raise AuthTimeoutError(
+                effective_timeout=wait, timeout_kind="provider", delivery_state=DeliveryState.NOT_SENT
+            )
+        try:
             endpoint = self._endpoint
             if (material := self.current(closed=endpoint.closed, force=force, seen=seen)) is not None:
                 return material
@@ -290,11 +293,8 @@ class SyncTokens(_Tokens):
             if (notify := self._notify) is not None:
                 notify(tokens)
             return material
-
-    def invalidate(self, version: object) -> None:
-        """Forget the current material if it is the rejected version, never a token another caller just obtained."""
-        with self._lock:
-            super().invalidate(version)
+        finally:
+            self._lock.release()
 
     def close(self) -> None:
         """Close an owned token transport; later calls raise AuthProviderClosedError."""

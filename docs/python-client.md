@@ -4276,13 +4276,13 @@ client has no credentials of its own. The configured scopes become the token's s
 `AuthConfigurationError` before any request.
 
 The call that needs a token requests it inline, while holding the provider's lock: a `threading.Lock`, or an
-`asyncio.Lock` for the async provider. Concurrent callers wait for that lock and then use the token it obtained, so one
-token request serves them all; the provider starts no thread or task of its own. A token request ends within
-`refresh_timeout`, and at the calling request's deadline at the latest; cancelling an asyncio caller cancels its token
-request. A failed request leaves nothing behind, and the
-next call acquires again. A rejection, an unexpected status, or an unusable response raises `OAuthExchangeError`; a
-transport failure raises `OAuthExchangeError`, or `AuthTimeoutError` when a time limit ran out, with the
-`delivery_state` the request reached.
+`asyncio.Lock` for the async provider. Concurrent callers wait for that lock, a synchronous one no longer than its
+deadline, and then use the token it obtained, so one token request serves them all; the provider starts no thread or
+task of its own. A token request ends within `refresh_timeout`, and at the calling request's deadline at the latest;
+cancelling an asyncio caller cancels its token request. A failed request leaves nothing behind, and the next call
+acquires again. A rejection, an unexpected status, or an unusable response raises `OAuthExchangeError`; a transport
+failure raises `OAuthExchangeError`, or `AuthTimeoutError` when a time limit ran out, with the `delivery_state` the
+request reached.
 
 `get` returns the current token, acquiring one when none is usable; `refresh` acquires a new one, unless another caller
 replaced the token while this one waited for the lock; `invalidate(version)` forgets the held token only if it is that

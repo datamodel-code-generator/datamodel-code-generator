@@ -536,6 +536,9 @@ def _single_flight(auth: ModuleType, transports: ModuleType, responses: ModuleTy
         adapter.entered.wait(LIMIT)
         second = Caller(lambda: shared.get(_context(auth)), _outcome)
         second.start()
+        options = importlib.import_module(f"{auth.__name__.rpartition('.')[0]}.options")
+        bounded = _context(auth, deadline=options.Deadline.after(0.1))
+        lines.append(f"  caller whose deadline ends while waiting = {_outcome(lambda: shared.get(bounded))}")
         gate.set()
         for caller in (first, second):
             caller.join(LIMIT)
