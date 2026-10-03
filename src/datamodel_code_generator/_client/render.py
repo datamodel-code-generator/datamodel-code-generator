@@ -19,11 +19,11 @@ from datamodel_code_generator._client.polling import STATES, PollingSpec
 from datamodel_code_generator._client.uploads import UploadSpec
 from datamodel_code_generator._client.validation import allowed
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
-from datamodel_code_generator._generation_contract import UnionType
 from datamodel_code_generator._openapi_codec_render import render_model_bindings, render_model_codecs
 from datamodel_code_generator._python_layout import Doc, Group, layout
 from datamodel_code_generator._runtime.client.security import SecurityScheme
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
+from datamodel_code_generator._target_contract import UnionType
 from datamodel_code_generator._target_render import field_plan, items, parameter_plan, runtime_sources
 
 if TYPE_CHECKING:
@@ -45,16 +45,16 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator._client.sockets import SocketSpec
     from datamodel_code_generator._client.streams import StreamSpec
-    from datamodel_code_generator._generation_contract import (
+    from datamodel_code_generator._openapi_codec_plan import CodecPlan
+    from datamodel_code_generator._openapi_codec_render import RenderedBindings, UseAccessors
+    from datamodel_code_generator._openapi_wire_plan import WirePlan
+    from datamodel_code_generator._runtime.client.multipart import PartPlan
+    from datamodel_code_generator._target_contract import (
         FinalPythonType,
         GeneratedTypeContractBatch,
         TypeUseBinding,
         TypeUseId,
     )
-    from datamodel_code_generator._openapi_codec_plan import CodecPlan
-    from datamodel_code_generator._openapi_codec_render import RenderedBindings, UseAccessors
-    from datamodel_code_generator._openapi_wire_plan import WirePlan
-    from datamodel_code_generator._runtime.client.multipart import PartPlan
 
 WIDTH: Final = 88
 _RUNTIME: Final = "_runtime.client.operations"

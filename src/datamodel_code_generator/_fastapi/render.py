@@ -48,11 +48,11 @@ if TYPE_CHECKING:
         ServerPlan,
     )
     from datamodel_code_generator._fastapi.templates import TemplateSet
-    from datamodel_code_generator._generation_contract import FinalPythonType, GeneratedTypeContractBatch, TypeUseId
     from datamodel_code_generator._openapi_codec_plan import CodecPlan, PydanticBackend
     from datamodel_code_generator._openapi_codec_render import RenderedBindings, UseAccessors
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.bindings import UseBinding
+    from datamodel_code_generator._target_contract import FinalPythonType, GeneratedTypeContractBatch, TypeUseId
 
 WIDTH: Final = 88
 _MIN_CONTENT_STATUS: Final = 200

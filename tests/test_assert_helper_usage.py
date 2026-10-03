@@ -46,7 +46,7 @@ HELPER_ROOTS = (Path("data", "python"), Path("data", "generation_platform"))
 OUTPUT_ROOT = Path("data", "expected")
 PACKAGE = "datamodel_code_generator"
 PACKAGE_ROOT = Path(datamodel_code_generator.__file__).parent
-INTERNAL_MODULE_PREFIXES = ("parser.openapi_contract", "parser.openapi_scope", "model.binding")
+INTERNAL_MODULE_PREFIXES = ("parser.openapi_scope",)
 RUNTIME_SEGMENT = re.compile(r"(?:^|\.)_runtime(?:\.|$)")
 PACKAGE_PATH = re.compile(rf"^{PACKAGE}(?:\.|$)")
 ASSERTION_HELPER_NAME = re.compile(r"^_*(?:assert|check|compare|ensure|expect|validate|verify)_")
@@ -148,9 +148,8 @@ RULE_FAILURE_MESSAGES = {
         "datamodel_code_generator.generate, or datamodel_code_generator.fastapi, as the model tests reach model "
         "generation.\n"
         "They reach no private datamodel_code_generator module or name (an underscore segment at any depth) and no "
-        "binding or contract internals (parser.openapi_contract*, parser.openapi_scope, model.binding*): not by "
-        "import, attribute access, getattr, sys.modules, importlib.import_module, or __import__, and not through a "
-        "test helper that re-exports them.\n"
+        "API scope internals (parser.openapi_scope*): not by import, attribute access, getattr, sys.modules, "
+        "importlib.import_module, or __import__, and not through a test helper that re-exports them.\n"
         "Generated packages may be imported directly, including their _runtime, since that is the generated SDK's "
         "runtime. Patch a private function by its dotted name only to inject an abnormal path under "
         '@pytest.mark.abnormal_path("reason"). Justified exceptions are listed in JUSTIFIED_VIOLATIONS.'
@@ -1712,11 +1711,11 @@ import datamodel_code_generator._runtime.client
 import other._private
 from datamodel_code_generator import __version__, _run_generation, _source, generate, parser
 from datamodel_code_generator.arguments import arg_parser
-from datamodel_code_generator.model import binding
+from datamodel_code_generator.parser import openapi_scope as scope
 from datamodel_code_generator.model.base import DataModel
 from datamodel_code_generator.parser import openapi_scope
 from datamodel_code_generator.parser.openapi import OpenAPIParser
-from datamodel_code_generator.parser.openapi_contract_store import BindingLedger
+from datamodel_code_generator.parser.openapi_scope_frames import Frame
 from tests.data.python import reexport
 
 from . import sibling
@@ -1725,7 +1724,7 @@ from . import sibling
 def test_attributes():
     package._api_generation.render_target
     datamodel_code_generator._runtime.client
-    parser.openapi_contract.Recipe
+    parser.openapi_scope.SchemaRole
     _source.Source
     arg_parser._actions
     package.__name__
@@ -1734,7 +1733,7 @@ def test_attributes():
 
 
 def test_getattr(name):
-    getattr(parser, "openapi_contract")
+    getattr(parser, "openapi_scope")
     getattr(package, "_x")
     getattr(_source, "_private")
     getattr(package, name)
@@ -2024,14 +2023,14 @@ def test_collect_findings_reports_private_imports(tmp_path: Path) -> None:
         "private-import test_private.py:6 <module>: datamodel_code_generator._runtime.client",
         "private-import test_private.py:8 <module>: datamodel_code_generator._run_generation",
         "private-import test_private.py:8 <module>: datamodel_code_generator._source",
-        "private-import test_private.py:10 <module>: datamodel_code_generator.model.binding",
+        "private-import test_private.py:10 <module>: datamodel_code_generator.parser.openapi_scope",
         "private-import test_private.py:12 <module>: datamodel_code_generator.parser.openapi_scope",
-        "private-import test_private.py:14 <module>: datamodel_code_generator.parser.openapi_contract_store",
+        "private-import test_private.py:14 <module>: datamodel_code_generator.parser.openapi_scope_frames",
         "private-import test_private.py:21 test_attributes: datamodel_code_generator._api_generation",
         "private-import test_private.py:22 test_attributes: datamodel_code_generator._runtime",
-        "private-import test_private.py:23 test_attributes: datamodel_code_generator.parser.openapi_contract",
+        "private-import test_private.py:23 test_attributes: datamodel_code_generator.parser.openapi_scope",
         "private-import test_private.py:27 test_attributes: datamodel_code_generator._api_publication",
-        "private-import test_private.py:32 test_getattr: datamodel_code_generator.parser.openapi_contract",
+        "private-import test_private.py:32 test_getattr: datamodel_code_generator.parser.openapi_scope",
         "private-import test_private.py:33 test_getattr: datamodel_code_generator._x",
         "private-import test_private.py:41 test_dynamic: datamodel_code_generator._client",
         "private-import test_private.py:42 test_dynamic: datamodel_code_generator._runtime",
