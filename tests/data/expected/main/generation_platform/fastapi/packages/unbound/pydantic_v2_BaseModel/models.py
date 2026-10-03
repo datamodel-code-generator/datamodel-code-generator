@@ -20,3 +20,7 @@ class FieldValuesIdGetQueryAtParameter(RootModel[AwareDatetime]):
 
 class FieldValuesIdGetQueryTagsParameter(RootModel[list[str]]):
     root: list[str]
+
+
+class FieldValuesIdGetHeaderXLabelParameter(BaseModel):
+    pass

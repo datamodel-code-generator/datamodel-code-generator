@@ -347,6 +347,12 @@ ini_options.assert_helper_direct_assert_exempt_files = [
 [tool.coverage]
 run.omit = [
   "*/_types/*",
+  "*/datamodel_code_generator/_binding_imports.py",
+  "*/datamodel_code_generator/_binding_literals.py",
+  "*/datamodel_code_generator/_openapi_artifacts.py",
+  "*/datamodel_code_generator/_openapi_type_binding.py",
+  "*/datamodel_code_generator/model/binding*.py",
+  "*/datamodel_code_generator/parser/openapi_contract*.py",
   "tests/api_generation/test_client_typing.py",
   "tests/api_generation/test_fastapi_install.py",
   "tests/api_generation/test_fastapi_typing.py",

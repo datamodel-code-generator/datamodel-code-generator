@@ -7,6 +7,7 @@ refused diagnostic MC_ADAPTER_CONTRACT : The nowhere-exact adapter selects no pr
 refused diagnostic BND_MODEL_SCOPE_REQUIRED : The nowhere-schema adapter selects no processed use
 refused diagnostic MC_ADAPTER_CONTRACT /paths/~1things/post/responses/200: The stream adapter selector matches several uses; select a schema direction instead
 refused diagnostic MC_ADAPTER_CONTRACT /paths/~1things/post/responses/201: The conflict-a and conflict-b adapters both select this use
+refused diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED /paths/~1things/post/parameters/6: The use's final type has no expression a generated module can import
 refused diagnostic MC_ADAPTER_CONTRACT /paths/~1mixed/post/responses/200: The mixed adapter serves uses of different native types
 refused diagnostic MC_ADAPTER_CONTRACT /paths/~1owners/post/responses/201: The dataclass-only adapter does not cover this use's backend, native kind, media, or direction
 refused diagnostic MC_ADAPTER_CONTRACT /paths/~1things/post/requestBody: The xml-media adapter does not cover this use's backend, native kind, media, or direction

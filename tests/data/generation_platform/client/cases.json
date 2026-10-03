@@ -3926,6 +3926,16 @@
       ]
     }
   },
+  "protocols-unmodeled": {
+    "input": "unmodeled-messages.yaml",
+    "references": [
+      "protocols/unmodeled.yaml"
+    ],
+    "config": {
+      "protocols": "protocols/unmodeled.yaml"
+    },
+    "modules": false
+  },
   "sockets-schema": {
     "input": "sockets.yaml",
     "references": [

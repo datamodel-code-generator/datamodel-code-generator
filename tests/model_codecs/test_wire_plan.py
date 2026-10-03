@@ -20,7 +20,7 @@ def test_wire_plan_bundles_validate(name: str, tmp_path: Path) -> None:
     assert_generated_modules_output(modules, EXPECTED / name)
 
 
-@pytest.mark.parametrize("name", ["dialects", "dialects32", "directions"])
+@pytest.mark.parametrize("name", ["dialects", "dialects32", "directions", "querystring-version"])
 def test_wire_plan_rules(name: str, tmp_path: Path) -> None:
     """Refuse to generate a client while any schema or parameter rule needs an explicit adapter."""
     assert_output(wire_plan_report(name, tmp_path)[0], EXPECTED / f"{name}.txt")
