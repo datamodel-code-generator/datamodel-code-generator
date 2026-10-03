@@ -31,14 +31,6 @@
   context invalid origin ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('origin',), condition='invalid_type'] auth_configuration_error
   context invalid deadline ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('deadline',), condition='invalid_type'] auth_configuration_error
   context invalid cancel_token ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('cancel_token',), condition='invalid_type'] auth_configuration_error
-  persistence context fields=('provider', 'oauth-refresh-v1:key', 'session', 'store') deadline identity=True
-  persistence context frozen ! FrozenInstanceError: cannot assign to field 'purpose' []
-  persistence context requires keywords ! TypeError: TokenPersistenceContext.__init__() takes 1 positional argument but 6 were given []
-  persistence context invalid provider_id ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('provider_id',), condition='invalid_type'] auth_configuration_error
-  persistence context invalid cache_key ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('cache_key',), condition='invalid_type'] auth_configuration_error
-  persistence context invalid session_id ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('session_id',), condition='invalid_type'] auth_configuration_error
-  persistence context invalid deadline ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('deadline',), condition='invalid_type'] auth_configuration_error
-  persistence context invalid purpose ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('purpose',), condition='invalid_value'] auth_configuration_error
   capabilities invalid allowed_origins 'name' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('allowed_origins',), condition='invalid_type'] signing_configuration_error
   capabilities invalid allowed_origins [1] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('allowed_origins',), condition='invalid_type'] signing_configuration_error
   capabilities invalid managed_headers 'name' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('managed_headers',), condition='invalid_type'] signing_configuration_error
@@ -83,7 +75,7 @@
   accepted canonical scopes=('!', '#', '[', ']', '~')
   auth copied names=('first', 'same-provider', 'borrowed') origins=('https://example.com',) anonymous=('first',)
   provider identities=(True, True) signer identity=True callbacks=(0, 0, 0)
-  auth safe repr = ('AuthConfig(max_token_exchanges=2, send_on_anonymous=False)', 'OwnedCredentialProvider()')
+  auth safe repr = ('AuthConfig(send_on_anonymous=False)', 'OwnedCredentialProvider()')
   auth immutable mapping ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
   immutable AuthConfig.selection unchanged=True
   immutable OwnedCredentialProvider.provider unchanged=True
@@ -102,14 +94,9 @@
   auth invalid selection -1 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
   auth invalid selection 0.5 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
   auth invalid selection '1' ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
-  auth invalid max_token_exchanges None ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
-  auth invalid max_token_exchanges True ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
-  auth invalid max_token_exchanges -1 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
-  auth invalid max_token_exchanges 0.5 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
-  auth invalid max_token_exchanges '1' ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
   auth invalid anonymous bool ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'send_on_anonymous'), condition='invalid_type'] auth_configuration_error
   auth controls keyword only ! TypeError: AuthConfig.__init__() takes 2 positional arguments but 3 were given []
-  auth default selection=True budget=2 explicit=(0, 0, True)
+  auth default selection=True explicit=(0, True)
   ClientOptions auth omitted=True identity=True clear=True
   ClientOptions invalid auth ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth',), condition='invalid_type'] auth_configuration_error
   RequestOptions auth omitted=True identity=True clear=True
@@ -149,15 +136,13 @@
   async environment current=('first', 'first') grants=None expiry=None version=TokenVersion
   async environment current=('second', 'second') grants=None expiry=None version=TokenVersion
   async environment current=('', '') grants=None expiry=None version=TokenVersion
-  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncAuthorizationCodeFlow', 'AsyncClientCredentialsProvider', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncDeviceAuthorizationFlow', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshTokenProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AsyncTokenLoad', 'AsyncTokenStore', 'AuthConfig', 'AuthorizationCodeFlow', 'AuthorizationRequest', 'BasicCredential', 'BearerCredential', 'ClientCredentialsProvider', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'DeviceAuthorization', 'DeviceAuthorizationFlow', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshInfo', 'RefreshTokenProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenLoad', 'TokenPersistenceContext', 'TokenSet', 'TokenStore', 'TokenVersion']
+  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncClientCredentialsProvider', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshTokenProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'BasicCredential', 'BearerCredential', 'ClientCredentialsProvider', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshTokenProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenSet', 'TokenVersion']
   hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience')
   constructor AccessToken=(('value', 'POSITIONAL_OR_KEYWORD'), ('token_type', 'POSITIONAL_OR_KEYWORD'), ('expires_at', 'POSITIONAL_OR_KEYWORD'), ('scopes', 'POSITIONAL_OR_KEYWORD'), ('audience', 'POSITIONAL_OR_KEYWORD'))
   init hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience', 'return')
   hints ApiKeyCredential=('value',)
   constructor ApiKeyCredential=(('value', 'POSITIONAL_OR_KEYWORD'),)
   init hints ApiKeyCredential=('value', 'return')
-  hints AsyncAuthorizationCodeFlow=()
-  method AsyncAuthorizationCodeFlow.aclose async=True hints=('return',)
   hints AsyncClientCredentialsProvider=()
   constructor AsyncClientCredentialsProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
   init hints AsyncClientCredentialsProvider=('token_url', 'client_id', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
@@ -170,15 +155,13 @@
   method AsyncCloseableCredentialProvider.aclose async=True hints=('return',)
   hints AsyncCredentialProvider=()
   method AsyncCredentialProvider.get async=True hints=('context', 'return')
-  hints AsyncDeviceAuthorizationFlow=()
-  method AsyncDeviceAuthorizationFlow.aclose async=True hints=('return',)
   hints AsyncEnvironmentCredentialProvider=()
   constructor AsyncEnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
   init hints AsyncEnvironmentCredentialProvider=('variable_name', 'kind', 'return')
   method AsyncEnvironmentCredentialProvider.get async=True hints=('context', 'return')
   hints AsyncRefreshTokenProvider=()
-  constructor AsyncRefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('load', 'KEYWORD_ONLY'), ('store', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
-  init hints AsyncRefreshTokenProvider=('token_url', 'client_id', 'token_set', 'load', 'store', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
+  constructor AsyncRefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('on_token_refreshed', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
+  init hints AsyncRefreshTokenProvider=('token_url', 'client_id', 'token_set', 'on_token_refreshed', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
   method AsyncRefreshTokenProvider.get async=True hints=('context', 'return')
   method AsyncRefreshTokenProvider.invalidate async=True hints=('version', 'return')
   method AsyncRefreshTokenProvider.refresh async=True hints=('context', 'return')
@@ -197,14 +180,9 @@
   constructor AsyncStaticTokenProvider=(('token', 'POSITIONAL_OR_KEYWORD'),)
   init hints AsyncStaticTokenProvider=('token', 'return')
   method AsyncStaticTokenProvider.get async=True hints=('context', 'return')
-  hints AsyncTokenLoad=()
-  hints AsyncTokenStore=()
-  hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'max_token_exchanges', 'send_on_anonymous', 'anonymous_schemes', 'signers')
-  constructor AuthConfig=(('credentials', 'POSITIONAL_OR_KEYWORD'), ('selection', 'KEYWORD_ONLY'), ('allowed_origins', 'KEYWORD_ONLY'), ('max_token_exchanges', 'KEYWORD_ONLY'), ('send_on_anonymous', 'KEYWORD_ONLY'), ('anonymous_schemes', 'KEYWORD_ONLY'), ('signers', 'KEYWORD_ONLY'))
-  init hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'max_token_exchanges', 'send_on_anonymous', 'anonymous_schemes', 'signers', 'return')
-  hints AuthorizationCodeFlow=()
-  method AuthorizationCodeFlow.close async=False hints=('return',)
-  hints AuthorizationRequest=()
+  hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'send_on_anonymous', 'anonymous_schemes', 'signers')
+  constructor AuthConfig=(('credentials', 'POSITIONAL_OR_KEYWORD'), ('selection', 'KEYWORD_ONLY'), ('allowed_origins', 'KEYWORD_ONLY'), ('send_on_anonymous', 'KEYWORD_ONLY'), ('anonymous_schemes', 'KEYWORD_ONLY'), ('signers', 'KEYWORD_ONLY'))
+  init hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'send_on_anonymous', 'anonymous_schemes', 'signers', 'return')
   hints BasicCredential=('username', 'password')
   constructor BasicCredential=(('username', 'POSITIONAL_OR_KEYWORD'), ('password', 'POSITIONAL_OR_KEYWORD'))
   init hints BasicCredential=('username', 'password', 'return')
@@ -226,27 +204,19 @@
   init hints CredentialContext=('scheme', 'required_scopes', 'audience', 'origin', 'deadline', 'cancel_token', 'return')
   hints CredentialProvider=()
   method CredentialProvider.get async=False hints=('context', 'return')
-  hints DeviceAuthorization=('user_code', 'verification_uri', 'verification_uri_complete', 'expires_in', 'interval', 'deadline')
-  constructor DeviceAuthorization=(('user_code', 'KEYWORD_ONLY'), ('verification_uri', 'KEYWORD_ONLY'), ('verification_uri_complete', 'KEYWORD_ONLY'), ('expires_in', 'KEYWORD_ONLY'), ('interval', 'KEYWORD_ONLY'), ('deadline', 'KEYWORD_ONLY'))
-  init hints DeviceAuthorization=('user_code', 'verification_uri', 'verification_uri_complete', 'expires_in', 'interval', 'deadline', 'return')
-  hints DeviceAuthorizationFlow=()
-  method DeviceAuthorizationFlow.close async=False hints=('return',)
   hints EnvironmentCredentialProvider=()
   constructor EnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
   init hints EnvironmentCredentialProvider=('variable_name', 'kind', 'return')
   method EnvironmentCredentialProvider.get async=False hints=('context', 'return')
-  hints OAuthProviderOptions=('refresh_timeout', 'phase_timeout', 'max_concurrent_refreshes', 'max_pending_refreshes', 'max_waiters', 'allow_insecure_loopback', 'transport', 'clock')
-  constructor OAuthProviderOptions=(('refresh_timeout', 'KEYWORD_ONLY'), ('phase_timeout', 'KEYWORD_ONLY'), ('max_concurrent_refreshes', 'KEYWORD_ONLY'), ('max_pending_refreshes', 'KEYWORD_ONLY'), ('max_waiters', 'KEYWORD_ONLY'), ('allow_insecure_loopback', 'KEYWORD_ONLY'), ('transport', 'KEYWORD_ONLY'), ('clock', 'KEYWORD_ONLY'))
-  init hints OAuthProviderOptions=('refresh_timeout', 'phase_timeout', 'max_concurrent_refreshes', 'max_pending_refreshes', 'max_waiters', 'allow_insecure_loopback', 'transport', 'clock', 'return')
+  hints OAuthProviderOptions=('refresh_timeout', 'phase_timeout', 'allow_insecure_loopback', 'transport', 'clock')
+  constructor OAuthProviderOptions=(('refresh_timeout', 'KEYWORD_ONLY'), ('phase_timeout', 'KEYWORD_ONLY'), ('allow_insecure_loopback', 'KEYWORD_ONLY'), ('transport', 'KEYWORD_ONLY'), ('clock', 'KEYWORD_ONLY'))
+  init hints OAuthProviderOptions=('refresh_timeout', 'phase_timeout', 'allow_insecure_loopback', 'transport', 'clock', 'return')
   hints OwnedCredentialProvider=('provider',)
   constructor OwnedCredentialProvider=(('provider', 'POSITIONAL_OR_KEYWORD'),)
   init hints OwnedCredentialProvider=('provider', 'return')
-  hints RefreshInfo=('refresh_id', 'state', 'token_send_count', 'failure')
-  constructor RefreshInfo=(('refresh_id', 'POSITIONAL_OR_KEYWORD'), ('state', 'POSITIONAL_OR_KEYWORD'), ('token_send_count', 'POSITIONAL_OR_KEYWORD'), ('failure', 'POSITIONAL_OR_KEYWORD'))
-  init hints RefreshInfo=('refresh_id', 'state', 'token_send_count', 'failure', 'return')
   hints RefreshTokenProvider=()
-  constructor RefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('load', 'KEYWORD_ONLY'), ('store', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
-  init hints RefreshTokenProvider=('token_url', 'client_id', 'token_set', 'load', 'store', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
+  constructor RefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('on_token_refreshed', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
+  init hints RefreshTokenProvider=('token_url', 'client_id', 'token_set', 'on_token_refreshed', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
   method RefreshTokenProvider.get async=False hints=('context', 'return')
   method RefreshTokenProvider.invalidate async=False hints=('version', 'return')
   method RefreshTokenProvider.refresh async=False hints=('context', 'return')
@@ -274,14 +244,9 @@
   constructor StaticTokenProvider=(('token', 'POSITIONAL_OR_KEYWORD'),)
   init hints StaticTokenProvider=('token', 'return')
   method StaticTokenProvider.get async=False hints=('context', 'return')
-  hints TokenLoad=()
-  hints TokenPersistenceContext=('provider_id', 'cache_key', 'session_id', 'deadline', 'purpose')
-  constructor TokenPersistenceContext=(('provider_id', 'KEYWORD_ONLY'), ('cache_key', 'KEYWORD_ONLY'), ('session_id', 'KEYWORD_ONLY'), ('deadline', 'KEYWORD_ONLY'), ('purpose', 'KEYWORD_ONLY'))
-  init hints TokenPersistenceContext=('provider_id', 'cache_key', 'session_id', 'deadline', 'purpose', 'return')
-  hints TokenSet=('access_token', 'refresh_token', 'revision')
-  constructor TokenSet=(('access_token', 'POSITIONAL_OR_KEYWORD'), ('refresh_token', 'POSITIONAL_OR_KEYWORD'), ('revision', 'POSITIONAL_OR_KEYWORD'))
-  init hints TokenSet=('access_token', 'refresh_token', 'revision', 'return')
-  hints TokenStore=()
+  hints TokenSet=('access_token', 'refresh_token')
+  constructor TokenSet=(('access_token', 'POSITIONAL_OR_KEYWORD'), ('refresh_token', 'POSITIONAL_OR_KEYWORD'))
+  init hints TokenSet=('access_token', 'refresh_token', 'return')
   hints TokenVersion=()
   constructor TokenVersion=()
   init hints TokenVersion=('return',)
@@ -320,14 +285,6 @@
   context invalid origin ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('origin',), condition='invalid_type'] auth_configuration_error
   context invalid deadline ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('deadline',), condition='invalid_type'] auth_configuration_error
   context invalid cancel_token ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('cancel_token',), condition='invalid_type'] auth_configuration_error
-  persistence context fields=('provider', 'oauth-refresh-v1:key', 'session', 'store') deadline identity=True
-  persistence context frozen ! FrozenInstanceError: cannot assign to field 'purpose' []
-  persistence context requires keywords ! TypeError: TokenPersistenceContext.__init__() takes 1 positional argument but 6 were given []
-  persistence context invalid provider_id ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('provider_id',), condition='invalid_type'] auth_configuration_error
-  persistence context invalid cache_key ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('cache_key',), condition='invalid_type'] auth_configuration_error
-  persistence context invalid session_id ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('session_id',), condition='invalid_type'] auth_configuration_error
-  persistence context invalid deadline ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('deadline',), condition='invalid_type'] auth_configuration_error
-  persistence context invalid purpose ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('purpose',), condition='invalid_value'] auth_configuration_error
   capabilities invalid allowed_origins 'name' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('allowed_origins',), condition='invalid_type'] signing_configuration_error
   capabilities invalid allowed_origins [1] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('allowed_origins',), condition='invalid_type'] signing_configuration_error
   capabilities invalid managed_headers 'name' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('managed_headers',), condition='invalid_type'] signing_configuration_error
@@ -372,7 +329,7 @@
   accepted canonical scopes=('!', '#', '[', ']', '~')
   auth copied names=('first', 'same-provider', 'borrowed') origins=('https://example.com',) anonymous=('first',)
   provider identities=(True, True) signer identity=True callbacks=(0, 0, 0)
-  auth safe repr = ('AuthConfig(max_token_exchanges=2, send_on_anonymous=False)', 'OwnedCredentialProvider()')
+  auth safe repr = ('AuthConfig(send_on_anonymous=False)', 'OwnedCredentialProvider()')
   auth immutable mapping ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
   immutable AuthConfig.selection unchanged=True
   immutable OwnedCredentialProvider.provider unchanged=True
@@ -391,14 +348,9 @@
   auth invalid selection -1 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
   auth invalid selection 0.5 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
   auth invalid selection '1' ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
-  auth invalid max_token_exchanges None ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
-  auth invalid max_token_exchanges True ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
-  auth invalid max_token_exchanges -1 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
-  auth invalid max_token_exchanges 0.5 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
-  auth invalid max_token_exchanges '1' ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
   auth invalid anonymous bool ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'send_on_anonymous'), condition='invalid_type'] auth_configuration_error
   auth controls keyword only ! TypeError: AuthConfig.__init__() takes 2 positional arguments but 3 were given []
-  auth default selection=True budget=2 explicit=(0, 0, True)
+  auth default selection=True explicit=(0, True)
   ClientOptions auth omitted=True identity=True clear=True
   ClientOptions invalid auth ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth',), condition='invalid_type'] auth_configuration_error
   RequestOptions auth omitted=True identity=True clear=True
@@ -438,15 +390,13 @@
   async environment current=('first', 'first') grants=None expiry=None version=TokenVersion
   async environment current=('second', 'second') grants=None expiry=None version=TokenVersion
   async environment current=('', '') grants=None expiry=None version=TokenVersion
-  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncAuthorizationCodeFlow', 'AsyncClientCredentialsProvider', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncDeviceAuthorizationFlow', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshTokenProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AsyncTokenLoad', 'AsyncTokenStore', 'AuthConfig', 'AuthorizationCodeFlow', 'AuthorizationRequest', 'BasicCredential', 'BearerCredential', 'ClientCredentialsProvider', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'DeviceAuthorization', 'DeviceAuthorizationFlow', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshInfo', 'RefreshTokenProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenLoad', 'TokenPersistenceContext', 'TokenSet', 'TokenStore', 'TokenVersion']
+  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncClientCredentialsProvider', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshTokenProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'BasicCredential', 'BearerCredential', 'ClientCredentialsProvider', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshTokenProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenSet', 'TokenVersion']
   hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience')
   constructor AccessToken=(('value', 'POSITIONAL_OR_KEYWORD'), ('token_type', 'POSITIONAL_OR_KEYWORD'), ('expires_at', 'POSITIONAL_OR_KEYWORD'), ('scopes', 'POSITIONAL_OR_KEYWORD'), ('audience', 'POSITIONAL_OR_KEYWORD'))
   init hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience', 'return')
   hints ApiKeyCredential=('value',)
   constructor ApiKeyCredential=(('value', 'POSITIONAL_OR_KEYWORD'),)
   init hints ApiKeyCredential=('value', 'return')
-  hints AsyncAuthorizationCodeFlow=()
-  method AsyncAuthorizationCodeFlow.aclose async=True hints=('return',)
   hints AsyncClientCredentialsProvider=()
   constructor AsyncClientCredentialsProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
   init hints AsyncClientCredentialsProvider=('token_url', 'client_id', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
@@ -459,15 +409,13 @@
   method AsyncCloseableCredentialProvider.aclose async=True hints=('return',)
   hints AsyncCredentialProvider=()
   method AsyncCredentialProvider.get async=True hints=('context', 'return')
-  hints AsyncDeviceAuthorizationFlow=()
-  method AsyncDeviceAuthorizationFlow.aclose async=True hints=('return',)
   hints AsyncEnvironmentCredentialProvider=()
   constructor AsyncEnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
   init hints AsyncEnvironmentCredentialProvider=('variable_name', 'kind', 'return')
   method AsyncEnvironmentCredentialProvider.get async=True hints=('context', 'return')
   hints AsyncRefreshTokenProvider=()
-  constructor AsyncRefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('load', 'KEYWORD_ONLY'), ('store', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
-  init hints AsyncRefreshTokenProvider=('token_url', 'client_id', 'token_set', 'load', 'store', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
+  constructor AsyncRefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('on_token_refreshed', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
+  init hints AsyncRefreshTokenProvider=('token_url', 'client_id', 'token_set', 'on_token_refreshed', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
   method AsyncRefreshTokenProvider.get async=True hints=('context', 'return')
   method AsyncRefreshTokenProvider.invalidate async=True hints=('version', 'return')
   method AsyncRefreshTokenProvider.refresh async=True hints=('context', 'return')
@@ -486,14 +434,9 @@
   constructor AsyncStaticTokenProvider=(('token', 'POSITIONAL_OR_KEYWORD'),)
   init hints AsyncStaticTokenProvider=('token', 'return')
   method AsyncStaticTokenProvider.get async=True hints=('context', 'return')
-  hints AsyncTokenLoad=()
-  hints AsyncTokenStore=()
-  hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'max_token_exchanges', 'send_on_anonymous', 'anonymous_schemes', 'signers')
-  constructor AuthConfig=(('credentials', 'POSITIONAL_OR_KEYWORD'), ('selection', 'KEYWORD_ONLY'), ('allowed_origins', 'KEYWORD_ONLY'), ('max_token_exchanges', 'KEYWORD_ONLY'), ('send_on_anonymous', 'KEYWORD_ONLY'), ('anonymous_schemes', 'KEYWORD_ONLY'), ('signers', 'KEYWORD_ONLY'))
-  init hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'max_token_exchanges', 'send_on_anonymous', 'anonymous_schemes', 'signers', 'return')
-  hints AuthorizationCodeFlow=()
-  method AuthorizationCodeFlow.close async=False hints=('return',)
-  hints AuthorizationRequest=()
+  hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'send_on_anonymous', 'anonymous_schemes', 'signers')
+  constructor AuthConfig=(('credentials', 'POSITIONAL_OR_KEYWORD'), ('selection', 'KEYWORD_ONLY'), ('allowed_origins', 'KEYWORD_ONLY'), ('send_on_anonymous', 'KEYWORD_ONLY'), ('anonymous_schemes', 'KEYWORD_ONLY'), ('signers', 'KEYWORD_ONLY'))
+  init hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'send_on_anonymous', 'anonymous_schemes', 'signers', 'return')
   hints BasicCredential=('username', 'password')
   constructor BasicCredential=(('username', 'POSITIONAL_OR_KEYWORD'), ('password', 'POSITIONAL_OR_KEYWORD'))
   init hints BasicCredential=('username', 'password', 'return')
@@ -515,27 +458,19 @@
   init hints CredentialContext=('scheme', 'required_scopes', 'audience', 'origin', 'deadline', 'cancel_token', 'return')
   hints CredentialProvider=()
   method CredentialProvider.get async=False hints=('context', 'return')
-  hints DeviceAuthorization=('user_code', 'verification_uri', 'verification_uri_complete', 'expires_in', 'interval', 'deadline')
-  constructor DeviceAuthorization=(('user_code', 'KEYWORD_ONLY'), ('verification_uri', 'KEYWORD_ONLY'), ('verification_uri_complete', 'KEYWORD_ONLY'), ('expires_in', 'KEYWORD_ONLY'), ('interval', 'KEYWORD_ONLY'), ('deadline', 'KEYWORD_ONLY'))
-  init hints DeviceAuthorization=('user_code', 'verification_uri', 'verification_uri_complete', 'expires_in', 'interval', 'deadline', 'return')
-  hints DeviceAuthorizationFlow=()
-  method DeviceAuthorizationFlow.close async=False hints=('return',)
   hints EnvironmentCredentialProvider=()
   constructor EnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
   init hints EnvironmentCredentialProvider=('variable_name', 'kind', 'return')
   method EnvironmentCredentialProvider.get async=False hints=('context', 'return')
-  hints OAuthProviderOptions=('refresh_timeout', 'phase_timeout', 'max_concurrent_refreshes', 'max_pending_refreshes', 'max_waiters', 'allow_insecure_loopback', 'transport', 'clock')
-  constructor OAuthProviderOptions=(('refresh_timeout', 'KEYWORD_ONLY'), ('phase_timeout', 'KEYWORD_ONLY'), ('max_concurrent_refreshes', 'KEYWORD_ONLY'), ('max_pending_refreshes', 'KEYWORD_ONLY'), ('max_waiters', 'KEYWORD_ONLY'), ('allow_insecure_loopback', 'KEYWORD_ONLY'), ('transport', 'KEYWORD_ONLY'), ('clock', 'KEYWORD_ONLY'))
-  init hints OAuthProviderOptions=('refresh_timeout', 'phase_timeout', 'max_concurrent_refreshes', 'max_pending_refreshes', 'max_waiters', 'allow_insecure_loopback', 'transport', 'clock', 'return')
+  hints OAuthProviderOptions=('refresh_timeout', 'phase_timeout', 'allow_insecure_loopback', 'transport', 'clock')
+  constructor OAuthProviderOptions=(('refresh_timeout', 'KEYWORD_ONLY'), ('phase_timeout', 'KEYWORD_ONLY'), ('allow_insecure_loopback', 'KEYWORD_ONLY'), ('transport', 'KEYWORD_ONLY'), ('clock', 'KEYWORD_ONLY'))
+  init hints OAuthProviderOptions=('refresh_timeout', 'phase_timeout', 'allow_insecure_loopback', 'transport', 'clock', 'return')
   hints OwnedCredentialProvider=('provider',)
   constructor OwnedCredentialProvider=(('provider', 'POSITIONAL_OR_KEYWORD'),)
   init hints OwnedCredentialProvider=('provider', 'return')
-  hints RefreshInfo=('refresh_id', 'state', 'token_send_count', 'failure')
-  constructor RefreshInfo=(('refresh_id', 'POSITIONAL_OR_KEYWORD'), ('state', 'POSITIONAL_OR_KEYWORD'), ('token_send_count', 'POSITIONAL_OR_KEYWORD'), ('failure', 'POSITIONAL_OR_KEYWORD'))
-  init hints RefreshInfo=('refresh_id', 'state', 'token_send_count', 'failure', 'return')
   hints RefreshTokenProvider=()
-  constructor RefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('load', 'KEYWORD_ONLY'), ('store', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
-  init hints RefreshTokenProvider=('token_url', 'client_id', 'token_set', 'load', 'store', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
+  constructor RefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('on_token_refreshed', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
+  init hints RefreshTokenProvider=('token_url', 'client_id', 'token_set', 'on_token_refreshed', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
   method RefreshTokenProvider.get async=False hints=('context', 'return')
   method RefreshTokenProvider.invalidate async=False hints=('version', 'return')
   method RefreshTokenProvider.refresh async=False hints=('context', 'return')
@@ -563,14 +498,9 @@
   constructor StaticTokenProvider=(('token', 'POSITIONAL_OR_KEYWORD'),)
   init hints StaticTokenProvider=('token', 'return')
   method StaticTokenProvider.get async=False hints=('context', 'return')
-  hints TokenLoad=()
-  hints TokenPersistenceContext=('provider_id', 'cache_key', 'session_id', 'deadline', 'purpose')
-  constructor TokenPersistenceContext=(('provider_id', 'KEYWORD_ONLY'), ('cache_key', 'KEYWORD_ONLY'), ('session_id', 'KEYWORD_ONLY'), ('deadline', 'KEYWORD_ONLY'), ('purpose', 'KEYWORD_ONLY'))
-  init hints TokenPersistenceContext=('provider_id', 'cache_key', 'session_id', 'deadline', 'purpose', 'return')
-  hints TokenSet=('access_token', 'refresh_token', 'revision')
-  constructor TokenSet=(('access_token', 'POSITIONAL_OR_KEYWORD'), ('refresh_token', 'POSITIONAL_OR_KEYWORD'), ('revision', 'POSITIONAL_OR_KEYWORD'))
-  init hints TokenSet=('access_token', 'refresh_token', 'revision', 'return')
-  hints TokenStore=()
+  hints TokenSet=('access_token', 'refresh_token')
+  constructor TokenSet=(('access_token', 'POSITIONAL_OR_KEYWORD'), ('refresh_token', 'POSITIONAL_OR_KEYWORD'))
+  init hints TokenSet=('access_token', 'refresh_token', 'return')
   hints TokenVersion=()
   constructor TokenVersion=()
   init hints TokenVersion=('return',)
@@ -609,14 +539,6 @@
   context invalid origin ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('origin',), condition='invalid_type'] auth_configuration_error
   context invalid deadline ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('deadline',), condition='invalid_type'] auth_configuration_error
   context invalid cancel_token ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('cancel_token',), condition='invalid_type'] auth_configuration_error
-  persistence context fields=('provider', 'oauth-refresh-v1:key', 'session', 'store') deadline identity=True
-  persistence context frozen ! FrozenInstanceError: cannot assign to field 'purpose' []
-  persistence context requires keywords ! TypeError: TokenPersistenceContext.__init__() takes 1 positional argument but 6 were given []
-  persistence context invalid provider_id ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('provider_id',), condition='invalid_type'] auth_configuration_error
-  persistence context invalid cache_key ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('cache_key',), condition='invalid_type'] auth_configuration_error
-  persistence context invalid session_id ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('session_id',), condition='invalid_type'] auth_configuration_error
-  persistence context invalid deadline ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('deadline',), condition='invalid_type'] auth_configuration_error
-  persistence context invalid purpose ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('purpose',), condition='invalid_value'] auth_configuration_error
   capabilities invalid allowed_origins 'name' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('allowed_origins',), condition='invalid_type'] signing_configuration_error
   capabilities invalid allowed_origins [1] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('allowed_origins',), condition='invalid_type'] signing_configuration_error
   capabilities invalid managed_headers 'name' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('managed_headers',), condition='invalid_type'] signing_configuration_error
@@ -661,7 +583,7 @@
   accepted canonical scopes=('!', '#', '[', ']', '~')
   auth copied names=('first', 'same-provider', 'borrowed') origins=('https://example.com',) anonymous=('first',)
   provider identities=(True, True) signer identity=True callbacks=(0, 0, 0)
-  auth safe repr = ('AuthConfig(max_token_exchanges=2, send_on_anonymous=False)', 'OwnedCredentialProvider()')
+  auth safe repr = ('AuthConfig(send_on_anonymous=False)', 'OwnedCredentialProvider()')
   auth immutable mapping ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
   immutable AuthConfig.selection unchanged=True
   immutable OwnedCredentialProvider.provider unchanged=True
@@ -680,14 +602,9 @@
   auth invalid selection -1 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
   auth invalid selection 0.5 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
   auth invalid selection '1' ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
-  auth invalid max_token_exchanges None ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
-  auth invalid max_token_exchanges True ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
-  auth invalid max_token_exchanges -1 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
-  auth invalid max_token_exchanges 0.5 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
-  auth invalid max_token_exchanges '1' ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
   auth invalid anonymous bool ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'send_on_anonymous'), condition='invalid_type'] auth_configuration_error
   auth controls keyword only ! TypeError: AuthConfig.__init__() takes 2 positional arguments but 3 were given []
-  auth default selection=True budget=2 explicit=(0, 0, True)
+  auth default selection=True explicit=(0, True)
   ClientOptions auth omitted=True identity=True clear=True
   ClientOptions invalid auth ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth',), condition='invalid_type'] auth_configuration_error
   RequestOptions auth omitted=True identity=True clear=True
@@ -727,15 +644,13 @@
   async environment current=('first', 'first') grants=None expiry=None version=TokenVersion
   async environment current=('second', 'second') grants=None expiry=None version=TokenVersion
   async environment current=('', '') grants=None expiry=None version=TokenVersion
-  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncAuthorizationCodeFlow', 'AsyncClientCredentialsProvider', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncDeviceAuthorizationFlow', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshTokenProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AsyncTokenLoad', 'AsyncTokenStore', 'AuthConfig', 'AuthorizationCodeFlow', 'AuthorizationRequest', 'BasicCredential', 'BearerCredential', 'ClientCredentialsProvider', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'DeviceAuthorization', 'DeviceAuthorizationFlow', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshInfo', 'RefreshTokenProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenLoad', 'TokenPersistenceContext', 'TokenSet', 'TokenStore', 'TokenVersion']
+  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncClientCredentialsProvider', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshTokenProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'BasicCredential', 'BearerCredential', 'ClientCredentialsProvider', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshTokenProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenSet', 'TokenVersion']
   hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience')
   constructor AccessToken=(('value', 'POSITIONAL_OR_KEYWORD'), ('token_type', 'POSITIONAL_OR_KEYWORD'), ('expires_at', 'POSITIONAL_OR_KEYWORD'), ('scopes', 'POSITIONAL_OR_KEYWORD'), ('audience', 'POSITIONAL_OR_KEYWORD'))
   init hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience', 'return')
   hints ApiKeyCredential=('value',)
   constructor ApiKeyCredential=(('value', 'POSITIONAL_OR_KEYWORD'),)
   init hints ApiKeyCredential=('value', 'return')
-  hints AsyncAuthorizationCodeFlow=()
-  method AsyncAuthorizationCodeFlow.aclose async=True hints=('return',)
   hints AsyncClientCredentialsProvider=()
   constructor AsyncClientCredentialsProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
   init hints AsyncClientCredentialsProvider=('token_url', 'client_id', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
@@ -748,15 +663,13 @@
   method AsyncCloseableCredentialProvider.aclose async=True hints=('return',)
   hints AsyncCredentialProvider=()
   method AsyncCredentialProvider.get async=True hints=('context', 'return')
-  hints AsyncDeviceAuthorizationFlow=()
-  method AsyncDeviceAuthorizationFlow.aclose async=True hints=('return',)
   hints AsyncEnvironmentCredentialProvider=()
   constructor AsyncEnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
   init hints AsyncEnvironmentCredentialProvider=('variable_name', 'kind', 'return')
   method AsyncEnvironmentCredentialProvider.get async=True hints=('context', 'return')
   hints AsyncRefreshTokenProvider=()
-  constructor AsyncRefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('load', 'KEYWORD_ONLY'), ('store', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
-  init hints AsyncRefreshTokenProvider=('token_url', 'client_id', 'token_set', 'load', 'store', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
+  constructor AsyncRefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('on_token_refreshed', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
+  init hints AsyncRefreshTokenProvider=('token_url', 'client_id', 'token_set', 'on_token_refreshed', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
   method AsyncRefreshTokenProvider.get async=True hints=('context', 'return')
   method AsyncRefreshTokenProvider.invalidate async=True hints=('version', 'return')
   method AsyncRefreshTokenProvider.refresh async=True hints=('context', 'return')
@@ -775,14 +688,9 @@
   constructor AsyncStaticTokenProvider=(('token', 'POSITIONAL_OR_KEYWORD'),)
   init hints AsyncStaticTokenProvider=('token', 'return')
   method AsyncStaticTokenProvider.get async=True hints=('context', 'return')
-  hints AsyncTokenLoad=()
-  hints AsyncTokenStore=()
-  hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'max_token_exchanges', 'send_on_anonymous', 'anonymous_schemes', 'signers')
-  constructor AuthConfig=(('credentials', 'POSITIONAL_OR_KEYWORD'), ('selection', 'KEYWORD_ONLY'), ('allowed_origins', 'KEYWORD_ONLY'), ('max_token_exchanges', 'KEYWORD_ONLY'), ('send_on_anonymous', 'KEYWORD_ONLY'), ('anonymous_schemes', 'KEYWORD_ONLY'), ('signers', 'KEYWORD_ONLY'))
-  init hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'max_token_exchanges', 'send_on_anonymous', 'anonymous_schemes', 'signers', 'return')
-  hints AuthorizationCodeFlow=()
-  method AuthorizationCodeFlow.close async=False hints=('return',)
-  hints AuthorizationRequest=()
+  hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'send_on_anonymous', 'anonymous_schemes', 'signers')
+  constructor AuthConfig=(('credentials', 'POSITIONAL_OR_KEYWORD'), ('selection', 'KEYWORD_ONLY'), ('allowed_origins', 'KEYWORD_ONLY'), ('send_on_anonymous', 'KEYWORD_ONLY'), ('anonymous_schemes', 'KEYWORD_ONLY'), ('signers', 'KEYWORD_ONLY'))
+  init hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'send_on_anonymous', 'anonymous_schemes', 'signers', 'return')
   hints BasicCredential=('username', 'password')
   constructor BasicCredential=(('username', 'POSITIONAL_OR_KEYWORD'), ('password', 'POSITIONAL_OR_KEYWORD'))
   init hints BasicCredential=('username', 'password', 'return')
@@ -804,27 +712,19 @@
   init hints CredentialContext=('scheme', 'required_scopes', 'audience', 'origin', 'deadline', 'cancel_token', 'return')
   hints CredentialProvider=()
   method CredentialProvider.get async=False hints=('context', 'return')
-  hints DeviceAuthorization=('user_code', 'verification_uri', 'verification_uri_complete', 'expires_in', 'interval', 'deadline')
-  constructor DeviceAuthorization=(('user_code', 'KEYWORD_ONLY'), ('verification_uri', 'KEYWORD_ONLY'), ('verification_uri_complete', 'KEYWORD_ONLY'), ('expires_in', 'KEYWORD_ONLY'), ('interval', 'KEYWORD_ONLY'), ('deadline', 'KEYWORD_ONLY'))
-  init hints DeviceAuthorization=('user_code', 'verification_uri', 'verification_uri_complete', 'expires_in', 'interval', 'deadline', 'return')
-  hints DeviceAuthorizationFlow=()
-  method DeviceAuthorizationFlow.close async=False hints=('return',)
   hints EnvironmentCredentialProvider=()
   constructor EnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
   init hints EnvironmentCredentialProvider=('variable_name', 'kind', 'return')
   method EnvironmentCredentialProvider.get async=False hints=('context', 'return')
-  hints OAuthProviderOptions=('refresh_timeout', 'phase_timeout', 'max_concurrent_refreshes', 'max_pending_refreshes', 'max_waiters', 'allow_insecure_loopback', 'transport', 'clock')
-  constructor OAuthProviderOptions=(('refresh_timeout', 'KEYWORD_ONLY'), ('phase_timeout', 'KEYWORD_ONLY'), ('max_concurrent_refreshes', 'KEYWORD_ONLY'), ('max_pending_refreshes', 'KEYWORD_ONLY'), ('max_waiters', 'KEYWORD_ONLY'), ('allow_insecure_loopback', 'KEYWORD_ONLY'), ('transport', 'KEYWORD_ONLY'), ('clock', 'KEYWORD_ONLY'))
-  init hints OAuthProviderOptions=('refresh_timeout', 'phase_timeout', 'max_concurrent_refreshes', 'max_pending_refreshes', 'max_waiters', 'allow_insecure_loopback', 'transport', 'clock', 'return')
+  hints OAuthProviderOptions=('refresh_timeout', 'phase_timeout', 'allow_insecure_loopback', 'transport', 'clock')
+  constructor OAuthProviderOptions=(('refresh_timeout', 'KEYWORD_ONLY'), ('phase_timeout', 'KEYWORD_ONLY'), ('allow_insecure_loopback', 'KEYWORD_ONLY'), ('transport', 'KEYWORD_ONLY'), ('clock', 'KEYWORD_ONLY'))
+  init hints OAuthProviderOptions=('refresh_timeout', 'phase_timeout', 'allow_insecure_loopback', 'transport', 'clock', 'return')
   hints OwnedCredentialProvider=('provider',)
   constructor OwnedCredentialProvider=(('provider', 'POSITIONAL_OR_KEYWORD'),)
   init hints OwnedCredentialProvider=('provider', 'return')
-  hints RefreshInfo=('refresh_id', 'state', 'token_send_count', 'failure')
-  constructor RefreshInfo=(('refresh_id', 'POSITIONAL_OR_KEYWORD'), ('state', 'POSITIONAL_OR_KEYWORD'), ('token_send_count', 'POSITIONAL_OR_KEYWORD'), ('failure', 'POSITIONAL_OR_KEYWORD'))
-  init hints RefreshInfo=('refresh_id', 'state', 'token_send_count', 'failure', 'return')
   hints RefreshTokenProvider=()
-  constructor RefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('load', 'KEYWORD_ONLY'), ('store', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
-  init hints RefreshTokenProvider=('token_url', 'client_id', 'token_set', 'load', 'store', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
+  constructor RefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('on_token_refreshed', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
+  init hints RefreshTokenProvider=('token_url', 'client_id', 'token_set', 'on_token_refreshed', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
   method RefreshTokenProvider.get async=False hints=('context', 'return')
   method RefreshTokenProvider.invalidate async=False hints=('version', 'return')
   method RefreshTokenProvider.refresh async=False hints=('context', 'return')
@@ -852,14 +752,9 @@
   constructor StaticTokenProvider=(('token', 'POSITIONAL_OR_KEYWORD'),)
   init hints StaticTokenProvider=('token', 'return')
   method StaticTokenProvider.get async=False hints=('context', 'return')
-  hints TokenLoad=()
-  hints TokenPersistenceContext=('provider_id', 'cache_key', 'session_id', 'deadline', 'purpose')
-  constructor TokenPersistenceContext=(('provider_id', 'KEYWORD_ONLY'), ('cache_key', 'KEYWORD_ONLY'), ('session_id', 'KEYWORD_ONLY'), ('deadline', 'KEYWORD_ONLY'), ('purpose', 'KEYWORD_ONLY'))
-  init hints TokenPersistenceContext=('provider_id', 'cache_key', 'session_id', 'deadline', 'purpose', 'return')
-  hints TokenSet=('access_token', 'refresh_token', 'revision')
-  constructor TokenSet=(('access_token', 'POSITIONAL_OR_KEYWORD'), ('refresh_token', 'POSITIONAL_OR_KEYWORD'), ('revision', 'POSITIONAL_OR_KEYWORD'))
-  init hints TokenSet=('access_token', 'refresh_token', 'revision', 'return')
-  hints TokenStore=()
+  hints TokenSet=('access_token', 'refresh_token')
+  constructor TokenSet=(('access_token', 'POSITIONAL_OR_KEYWORD'), ('refresh_token', 'POSITIONAL_OR_KEYWORD'))
+  init hints TokenSet=('access_token', 'refresh_token', 'return')
   hints TokenVersion=()
   constructor TokenVersion=()
   init hints TokenVersion=('return',)
@@ -898,14 +793,6 @@
   context invalid origin ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('origin',), condition='invalid_type'] auth_configuration_error
   context invalid deadline ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('deadline',), condition='invalid_type'] auth_configuration_error
   context invalid cancel_token ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('cancel_token',), condition='invalid_type'] auth_configuration_error
-  persistence context fields=('provider', 'oauth-refresh-v1:key', 'session', 'store') deadline identity=True
-  persistence context frozen ! FrozenInstanceError: cannot assign to field 'purpose' []
-  persistence context requires keywords ! TypeError: TokenPersistenceContext.__init__() takes 1 positional argument but 6 were given []
-  persistence context invalid provider_id ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('provider_id',), condition='invalid_type'] auth_configuration_error
-  persistence context invalid cache_key ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('cache_key',), condition='invalid_type'] auth_configuration_error
-  persistence context invalid session_id ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('session_id',), condition='invalid_type'] auth_configuration_error
-  persistence context invalid deadline ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('deadline',), condition='invalid_type'] auth_configuration_error
-  persistence context invalid purpose ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('purpose',), condition='invalid_value'] auth_configuration_error
   capabilities invalid allowed_origins 'name' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('allowed_origins',), condition='invalid_type'] signing_configuration_error
   capabilities invalid allowed_origins [1] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('allowed_origins',), condition='invalid_type'] signing_configuration_error
   capabilities invalid managed_headers 'name' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('managed_headers',), condition='invalid_type'] signing_configuration_error
@@ -950,7 +837,7 @@
   accepted canonical scopes=('!', '#', '[', ']', '~')
   auth copied names=('first', 'same-provider', 'borrowed') origins=('https://example.com',) anonymous=('first',)
   provider identities=(True, True) signer identity=True callbacks=(0, 0, 0)
-  auth safe repr = ('AuthConfig(max_token_exchanges=2, send_on_anonymous=False)', 'OwnedCredentialProvider()')
+  auth safe repr = ('AuthConfig(send_on_anonymous=False)', 'OwnedCredentialProvider()')
   auth immutable mapping ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
   immutable AuthConfig.selection unchanged=True
   immutable OwnedCredentialProvider.provider unchanged=True
@@ -969,14 +856,9 @@
   auth invalid selection -1 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
   auth invalid selection 0.5 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
   auth invalid selection '1' ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
-  auth invalid max_token_exchanges None ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
-  auth invalid max_token_exchanges True ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
-  auth invalid max_token_exchanges -1 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
-  auth invalid max_token_exchanges 0.5 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
-  auth invalid max_token_exchanges '1' ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
   auth invalid anonymous bool ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'send_on_anonymous'), condition='invalid_type'] auth_configuration_error
   auth controls keyword only ! TypeError: AuthConfig.__init__() takes 2 positional arguments but 3 were given []
-  auth default selection=True budget=2 explicit=(0, 0, True)
+  auth default selection=True explicit=(0, True)
   ClientOptions auth omitted=True identity=True clear=True
   ClientOptions invalid auth ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth',), condition='invalid_type'] auth_configuration_error
   RequestOptions auth omitted=True identity=True clear=True
@@ -1016,15 +898,13 @@
   async environment current=('first', 'first') grants=None expiry=None version=TokenVersion
   async environment current=('second', 'second') grants=None expiry=None version=TokenVersion
   async environment current=('', '') grants=None expiry=None version=TokenVersion
-  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncAuthorizationCodeFlow', 'AsyncClientCredentialsProvider', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncDeviceAuthorizationFlow', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshTokenProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AsyncTokenLoad', 'AsyncTokenStore', 'AuthConfig', 'AuthorizationCodeFlow', 'AuthorizationRequest', 'BasicCredential', 'BearerCredential', 'ClientCredentialsProvider', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'DeviceAuthorization', 'DeviceAuthorizationFlow', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshInfo', 'RefreshTokenProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenLoad', 'TokenPersistenceContext', 'TokenSet', 'TokenStore', 'TokenVersion']
+  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncClientCredentialsProvider', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshTokenProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'BasicCredential', 'BearerCredential', 'ClientCredentialsProvider', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshTokenProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenSet', 'TokenVersion']
   hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience')
   constructor AccessToken=(('value', 'POSITIONAL_OR_KEYWORD'), ('token_type', 'POSITIONAL_OR_KEYWORD'), ('expires_at', 'POSITIONAL_OR_KEYWORD'), ('scopes', 'POSITIONAL_OR_KEYWORD'), ('audience', 'POSITIONAL_OR_KEYWORD'))
   init hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience', 'return')
   hints ApiKeyCredential=('value',)
   constructor ApiKeyCredential=(('value', 'POSITIONAL_OR_KEYWORD'),)
   init hints ApiKeyCredential=('value', 'return')
-  hints AsyncAuthorizationCodeFlow=()
-  method AsyncAuthorizationCodeFlow.aclose async=True hints=('return',)
   hints AsyncClientCredentialsProvider=()
   constructor AsyncClientCredentialsProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
   init hints AsyncClientCredentialsProvider=('token_url', 'client_id', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
@@ -1037,15 +917,13 @@
   method AsyncCloseableCredentialProvider.aclose async=True hints=('return',)
   hints AsyncCredentialProvider=()
   method AsyncCredentialProvider.get async=True hints=('context', 'return')
-  hints AsyncDeviceAuthorizationFlow=()
-  method AsyncDeviceAuthorizationFlow.aclose async=True hints=('return',)
   hints AsyncEnvironmentCredentialProvider=()
   constructor AsyncEnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
   init hints AsyncEnvironmentCredentialProvider=('variable_name', 'kind', 'return')
   method AsyncEnvironmentCredentialProvider.get async=True hints=('context', 'return')
   hints AsyncRefreshTokenProvider=()
-  constructor AsyncRefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('load', 'KEYWORD_ONLY'), ('store', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
-  init hints AsyncRefreshTokenProvider=('token_url', 'client_id', 'token_set', 'load', 'store', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
+  constructor AsyncRefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('on_token_refreshed', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
+  init hints AsyncRefreshTokenProvider=('token_url', 'client_id', 'token_set', 'on_token_refreshed', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
   method AsyncRefreshTokenProvider.get async=True hints=('context', 'return')
   method AsyncRefreshTokenProvider.invalidate async=True hints=('version', 'return')
   method AsyncRefreshTokenProvider.refresh async=True hints=('context', 'return')
@@ -1064,14 +942,9 @@
   constructor AsyncStaticTokenProvider=(('token', 'POSITIONAL_OR_KEYWORD'),)
   init hints AsyncStaticTokenProvider=('token', 'return')
   method AsyncStaticTokenProvider.get async=True hints=('context', 'return')
-  hints AsyncTokenLoad=()
-  hints AsyncTokenStore=()
-  hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'max_token_exchanges', 'send_on_anonymous', 'anonymous_schemes', 'signers')
-  constructor AuthConfig=(('credentials', 'POSITIONAL_OR_KEYWORD'), ('selection', 'KEYWORD_ONLY'), ('allowed_origins', 'KEYWORD_ONLY'), ('max_token_exchanges', 'KEYWORD_ONLY'), ('send_on_anonymous', 'KEYWORD_ONLY'), ('anonymous_schemes', 'KEYWORD_ONLY'), ('signers', 'KEYWORD_ONLY'))
-  init hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'max_token_exchanges', 'send_on_anonymous', 'anonymous_schemes', 'signers', 'return')
-  hints AuthorizationCodeFlow=()
-  method AuthorizationCodeFlow.close async=False hints=('return',)
-  hints AuthorizationRequest=()
+  hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'send_on_anonymous', 'anonymous_schemes', 'signers')
+  constructor AuthConfig=(('credentials', 'POSITIONAL_OR_KEYWORD'), ('selection', 'KEYWORD_ONLY'), ('allowed_origins', 'KEYWORD_ONLY'), ('send_on_anonymous', 'KEYWORD_ONLY'), ('anonymous_schemes', 'KEYWORD_ONLY'), ('signers', 'KEYWORD_ONLY'))
+  init hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'send_on_anonymous', 'anonymous_schemes', 'signers', 'return')
   hints BasicCredential=('username', 'password')
   constructor BasicCredential=(('username', 'POSITIONAL_OR_KEYWORD'), ('password', 'POSITIONAL_OR_KEYWORD'))
   init hints BasicCredential=('username', 'password', 'return')
@@ -1093,27 +966,19 @@
   init hints CredentialContext=('scheme', 'required_scopes', 'audience', 'origin', 'deadline', 'cancel_token', 'return')
   hints CredentialProvider=()
   method CredentialProvider.get async=False hints=('context', 'return')
-  hints DeviceAuthorization=('user_code', 'verification_uri', 'verification_uri_complete', 'expires_in', 'interval', 'deadline')
-  constructor DeviceAuthorization=(('user_code', 'KEYWORD_ONLY'), ('verification_uri', 'KEYWORD_ONLY'), ('verification_uri_complete', 'KEYWORD_ONLY'), ('expires_in', 'KEYWORD_ONLY'), ('interval', 'KEYWORD_ONLY'), ('deadline', 'KEYWORD_ONLY'))
-  init hints DeviceAuthorization=('user_code', 'verification_uri', 'verification_uri_complete', 'expires_in', 'interval', 'deadline', 'return')
-  hints DeviceAuthorizationFlow=()
-  method DeviceAuthorizationFlow.close async=False hints=('return',)
   hints EnvironmentCredentialProvider=()
   constructor EnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
   init hints EnvironmentCredentialProvider=('variable_name', 'kind', 'return')
   method EnvironmentCredentialProvider.get async=False hints=('context', 'return')
-  hints OAuthProviderOptions=('refresh_timeout', 'phase_timeout', 'max_concurrent_refreshes', 'max_pending_refreshes', 'max_waiters', 'allow_insecure_loopback', 'transport', 'clock')
-  constructor OAuthProviderOptions=(('refresh_timeout', 'KEYWORD_ONLY'), ('phase_timeout', 'KEYWORD_ONLY'), ('max_concurrent_refreshes', 'KEYWORD_ONLY'), ('max_pending_refreshes', 'KEYWORD_ONLY'), ('max_waiters', 'KEYWORD_ONLY'), ('allow_insecure_loopback', 'KEYWORD_ONLY'), ('transport', 'KEYWORD_ONLY'), ('clock', 'KEYWORD_ONLY'))
-  init hints OAuthProviderOptions=('refresh_timeout', 'phase_timeout', 'max_concurrent_refreshes', 'max_pending_refreshes', 'max_waiters', 'allow_insecure_loopback', 'transport', 'clock', 'return')
+  hints OAuthProviderOptions=('refresh_timeout', 'phase_timeout', 'allow_insecure_loopback', 'transport', 'clock')
+  constructor OAuthProviderOptions=(('refresh_timeout', 'KEYWORD_ONLY'), ('phase_timeout', 'KEYWORD_ONLY'), ('allow_insecure_loopback', 'KEYWORD_ONLY'), ('transport', 'KEYWORD_ONLY'), ('clock', 'KEYWORD_ONLY'))
+  init hints OAuthProviderOptions=('refresh_timeout', 'phase_timeout', 'allow_insecure_loopback', 'transport', 'clock', 'return')
   hints OwnedCredentialProvider=('provider',)
   constructor OwnedCredentialProvider=(('provider', 'POSITIONAL_OR_KEYWORD'),)
   init hints OwnedCredentialProvider=('provider', 'return')
-  hints RefreshInfo=('refresh_id', 'state', 'token_send_count', 'failure')
-  constructor RefreshInfo=(('refresh_id', 'POSITIONAL_OR_KEYWORD'), ('state', 'POSITIONAL_OR_KEYWORD'), ('token_send_count', 'POSITIONAL_OR_KEYWORD'), ('failure', 'POSITIONAL_OR_KEYWORD'))
-  init hints RefreshInfo=('refresh_id', 'state', 'token_send_count', 'failure', 'return')
   hints RefreshTokenProvider=()
-  constructor RefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('load', 'KEYWORD_ONLY'), ('store', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
-  init hints RefreshTokenProvider=('token_url', 'client_id', 'token_set', 'load', 'store', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
+  constructor RefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('on_token_refreshed', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
+  init hints RefreshTokenProvider=('token_url', 'client_id', 'token_set', 'on_token_refreshed', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
   method RefreshTokenProvider.get async=False hints=('context', 'return')
   method RefreshTokenProvider.invalidate async=False hints=('version', 'return')
   method RefreshTokenProvider.refresh async=False hints=('context', 'return')
@@ -1141,14 +1006,9 @@
   constructor StaticTokenProvider=(('token', 'POSITIONAL_OR_KEYWORD'),)
   init hints StaticTokenProvider=('token', 'return')
   method StaticTokenProvider.get async=False hints=('context', 'return')
-  hints TokenLoad=()
-  hints TokenPersistenceContext=('provider_id', 'cache_key', 'session_id', 'deadline', 'purpose')
-  constructor TokenPersistenceContext=(('provider_id', 'KEYWORD_ONLY'), ('cache_key', 'KEYWORD_ONLY'), ('session_id', 'KEYWORD_ONLY'), ('deadline', 'KEYWORD_ONLY'), ('purpose', 'KEYWORD_ONLY'))
-  init hints TokenPersistenceContext=('provider_id', 'cache_key', 'session_id', 'deadline', 'purpose', 'return')
-  hints TokenSet=('access_token', 'refresh_token', 'revision')
-  constructor TokenSet=(('access_token', 'POSITIONAL_OR_KEYWORD'), ('refresh_token', 'POSITIONAL_OR_KEYWORD'), ('revision', 'POSITIONAL_OR_KEYWORD'))
-  init hints TokenSet=('access_token', 'refresh_token', 'revision', 'return')
-  hints TokenStore=()
+  hints TokenSet=('access_token', 'refresh_token')
+  constructor TokenSet=(('access_token', 'POSITIONAL_OR_KEYWORD'), ('refresh_token', 'POSITIONAL_OR_KEYWORD'))
+  init hints TokenSet=('access_token', 'refresh_token', 'return')
   hints TokenVersion=()
   constructor TokenVersion=()
   init hints TokenVersion=('return',)
@@ -1187,14 +1047,6 @@
   context invalid origin ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('origin',), condition='invalid_type'] auth_configuration_error
   context invalid deadline ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('deadline',), condition='invalid_type'] auth_configuration_error
   context invalid cancel_token ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('cancel_token',), condition='invalid_type'] auth_configuration_error
-  persistence context fields=('provider', 'oauth-refresh-v1:key', 'session', 'store') deadline identity=True
-  persistence context frozen ! FrozenInstanceError: cannot assign to field 'purpose' []
-  persistence context requires keywords ! TypeError: TokenPersistenceContext.__init__() takes 1 positional argument but 6 were given []
-  persistence context invalid provider_id ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('provider_id',), condition='invalid_type'] auth_configuration_error
-  persistence context invalid cache_key ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('cache_key',), condition='invalid_type'] auth_configuration_error
-  persistence context invalid session_id ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('session_id',), condition='invalid_type'] auth_configuration_error
-  persistence context invalid deadline ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('deadline',), condition='invalid_type'] auth_configuration_error
-  persistence context invalid purpose ! AuthConfigurationError: AuthConfigurationError(condition='invalid_value') [field_path=('purpose',), condition='invalid_value'] auth_configuration_error
   capabilities invalid allowed_origins 'name' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('allowed_origins',), condition='invalid_type'] signing_configuration_error
   capabilities invalid allowed_origins [1] ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('allowed_origins',), condition='invalid_type'] signing_configuration_error
   capabilities invalid managed_headers 'name' ! SigningConfigurationError: SigningConfigurationError(condition='invalid_type') [field_path=('managed_headers',), condition='invalid_type'] signing_configuration_error
@@ -1239,7 +1091,7 @@
   accepted canonical scopes=('!', '#', '[', ']', '~')
   auth copied names=('first', 'same-provider', 'borrowed') origins=('https://example.com',) anonymous=('first',)
   provider identities=(True, True) signer identity=True callbacks=(0, 0, 0)
-  auth safe repr = ('AuthConfig(max_token_exchanges=2, send_on_anonymous=False)', 'OwnedCredentialProvider()')
+  auth safe repr = ('AuthConfig(send_on_anonymous=False)', 'OwnedCredentialProvider()')
   auth immutable mapping ! AttributeError: 'mappingproxy' object has no attribute '__setitem__' []
   immutable AuthConfig.selection unchanged=True
   immutable OwnedCredentialProvider.provider unchanged=True
@@ -1258,14 +1110,9 @@
   auth invalid selection -1 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
   auth invalid selection 0.5 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
   auth invalid selection '1' ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'selection'), condition='out_of_range'] auth_configuration_error
-  auth invalid max_token_exchanges None ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
-  auth invalid max_token_exchanges True ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
-  auth invalid max_token_exchanges -1 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
-  auth invalid max_token_exchanges 0.5 ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
-  auth invalid max_token_exchanges '1' ! AuthConfigurationError: AuthConfigurationError(condition='out_of_range') [field_path=('auth', 'max_token_exchanges'), condition='out_of_range'] auth_configuration_error
   auth invalid anonymous bool ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth', 'send_on_anonymous'), condition='invalid_type'] auth_configuration_error
   auth controls keyword only ! TypeError: AuthConfig.__init__() takes 2 positional arguments but 3 were given []
-  auth default selection=True budget=2 explicit=(0, 0, True)
+  auth default selection=True explicit=(0, True)
   ClientOptions auth omitted=True identity=True clear=True
   ClientOptions invalid auth ! AuthConfigurationError: AuthConfigurationError(condition='invalid_type') [field_path=('auth',), condition='invalid_type'] auth_configuration_error
   RequestOptions auth omitted=True identity=True clear=True
@@ -1305,15 +1152,13 @@
   async environment current=('first', 'first') grants=None expiry=None version=TokenVersion
   async environment current=('second', 'second') grants=None expiry=None version=TokenVersion
   async environment current=('', '') grants=None expiry=None version=TokenVersion
-  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncAuthorizationCodeFlow', 'AsyncClientCredentialsProvider', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncDeviceAuthorizationFlow', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshTokenProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AsyncTokenLoad', 'AsyncTokenStore', 'AuthConfig', 'AuthorizationCodeFlow', 'AuthorizationRequest', 'BasicCredential', 'BearerCredential', 'ClientCredentialsProvider', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'DeviceAuthorization', 'DeviceAuthorizationFlow', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshInfo', 'RefreshTokenProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenLoad', 'TokenPersistenceContext', 'TokenSet', 'TokenStore', 'TokenVersion']
+  auth exports=['AccessToken', 'ApiKeyCredential', 'AsyncClientCredentialsProvider', 'AsyncCloseableCredentialProvider', 'AsyncCredentialProvider', 'AsyncEnvironmentCredentialProvider', 'AsyncRefreshTokenProvider', 'AsyncRefreshableTokenProvider', 'AsyncRequestSigner', 'AsyncStaticCredentialProvider', 'AsyncStaticTokenProvider', 'AuthConfig', 'BasicCredential', 'BearerCredential', 'ClientCredentialsProvider', 'CloseableCredentialProvider', 'CredentialContext', 'CredentialMaterial', 'CredentialProvider', 'CredentialProviderInput', 'EnvironmentCredentialProvider', 'OAuthProviderOptions', 'OwnedCredentialProvider', 'RefreshTokenProvider', 'RefreshableTokenProvider', 'RequestSigner', 'SignatureFields', 'SignerCapabilities', 'SigningInput', 'StaticCredentialProvider', 'StaticTokenProvider', 'TokenSet', 'TokenVersion']
   hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience')
   constructor AccessToken=(('value', 'POSITIONAL_OR_KEYWORD'), ('token_type', 'POSITIONAL_OR_KEYWORD'), ('expires_at', 'POSITIONAL_OR_KEYWORD'), ('scopes', 'POSITIONAL_OR_KEYWORD'), ('audience', 'POSITIONAL_OR_KEYWORD'))
   init hints AccessToken=('value', 'token_type', 'expires_at', 'scopes', 'audience', 'return')
   hints ApiKeyCredential=('value',)
   constructor ApiKeyCredential=(('value', 'POSITIONAL_OR_KEYWORD'),)
   init hints ApiKeyCredential=('value', 'return')
-  hints AsyncAuthorizationCodeFlow=()
-  method AsyncAuthorizationCodeFlow.aclose async=True hints=('return',)
   hints AsyncClientCredentialsProvider=()
   constructor AsyncClientCredentialsProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
   init hints AsyncClientCredentialsProvider=('token_url', 'client_id', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
@@ -1326,15 +1171,13 @@
   method AsyncCloseableCredentialProvider.aclose async=True hints=('return',)
   hints AsyncCredentialProvider=()
   method AsyncCredentialProvider.get async=True hints=('context', 'return')
-  hints AsyncDeviceAuthorizationFlow=()
-  method AsyncDeviceAuthorizationFlow.aclose async=True hints=('return',)
   hints AsyncEnvironmentCredentialProvider=()
   constructor AsyncEnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
   init hints AsyncEnvironmentCredentialProvider=('variable_name', 'kind', 'return')
   method AsyncEnvironmentCredentialProvider.get async=True hints=('context', 'return')
   hints AsyncRefreshTokenProvider=()
-  constructor AsyncRefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('load', 'KEYWORD_ONLY'), ('store', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
-  init hints AsyncRefreshTokenProvider=('token_url', 'client_id', 'token_set', 'load', 'store', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
+  constructor AsyncRefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('on_token_refreshed', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
+  init hints AsyncRefreshTokenProvider=('token_url', 'client_id', 'token_set', 'on_token_refreshed', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
   method AsyncRefreshTokenProvider.get async=True hints=('context', 'return')
   method AsyncRefreshTokenProvider.invalidate async=True hints=('version', 'return')
   method AsyncRefreshTokenProvider.refresh async=True hints=('context', 'return')
@@ -1353,14 +1196,9 @@
   constructor AsyncStaticTokenProvider=(('token', 'POSITIONAL_OR_KEYWORD'),)
   init hints AsyncStaticTokenProvider=('token', 'return')
   method AsyncStaticTokenProvider.get async=True hints=('context', 'return')
-  hints AsyncTokenLoad=()
-  hints AsyncTokenStore=()
-  hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'max_token_exchanges', 'send_on_anonymous', 'anonymous_schemes', 'signers')
-  constructor AuthConfig=(('credentials', 'POSITIONAL_OR_KEYWORD'), ('selection', 'KEYWORD_ONLY'), ('allowed_origins', 'KEYWORD_ONLY'), ('max_token_exchanges', 'KEYWORD_ONLY'), ('send_on_anonymous', 'KEYWORD_ONLY'), ('anonymous_schemes', 'KEYWORD_ONLY'), ('signers', 'KEYWORD_ONLY'))
-  init hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'max_token_exchanges', 'send_on_anonymous', 'anonymous_schemes', 'signers', 'return')
-  hints AuthorizationCodeFlow=()
-  method AuthorizationCodeFlow.close async=False hints=('return',)
-  hints AuthorizationRequest=()
+  hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'send_on_anonymous', 'anonymous_schemes', 'signers')
+  constructor AuthConfig=(('credentials', 'POSITIONAL_OR_KEYWORD'), ('selection', 'KEYWORD_ONLY'), ('allowed_origins', 'KEYWORD_ONLY'), ('send_on_anonymous', 'KEYWORD_ONLY'), ('anonymous_schemes', 'KEYWORD_ONLY'), ('signers', 'KEYWORD_ONLY'))
+  init hints AuthConfig=('credentials', 'selection', 'allowed_origins', 'send_on_anonymous', 'anonymous_schemes', 'signers', 'return')
   hints BasicCredential=('username', 'password')
   constructor BasicCredential=(('username', 'POSITIONAL_OR_KEYWORD'), ('password', 'POSITIONAL_OR_KEYWORD'))
   init hints BasicCredential=('username', 'password', 'return')
@@ -1382,27 +1220,19 @@
   init hints CredentialContext=('scheme', 'required_scopes', 'audience', 'origin', 'deadline', 'cancel_token', 'return')
   hints CredentialProvider=()
   method CredentialProvider.get async=False hints=('context', 'return')
-  hints DeviceAuthorization=('user_code', 'verification_uri', 'verification_uri_complete', 'expires_in', 'interval', 'deadline')
-  constructor DeviceAuthorization=(('user_code', 'KEYWORD_ONLY'), ('verification_uri', 'KEYWORD_ONLY'), ('verification_uri_complete', 'KEYWORD_ONLY'), ('expires_in', 'KEYWORD_ONLY'), ('interval', 'KEYWORD_ONLY'), ('deadline', 'KEYWORD_ONLY'))
-  init hints DeviceAuthorization=('user_code', 'verification_uri', 'verification_uri_complete', 'expires_in', 'interval', 'deadline', 'return')
-  hints DeviceAuthorizationFlow=()
-  method DeviceAuthorizationFlow.close async=False hints=('return',)
   hints EnvironmentCredentialProvider=()
   constructor EnvironmentCredentialProvider=(('variable_name', 'POSITIONAL_OR_KEYWORD'), ('kind', 'KEYWORD_ONLY'))
   init hints EnvironmentCredentialProvider=('variable_name', 'kind', 'return')
   method EnvironmentCredentialProvider.get async=False hints=('context', 'return')
-  hints OAuthProviderOptions=('refresh_timeout', 'phase_timeout', 'max_concurrent_refreshes', 'max_pending_refreshes', 'max_waiters', 'allow_insecure_loopback', 'transport', 'clock')
-  constructor OAuthProviderOptions=(('refresh_timeout', 'KEYWORD_ONLY'), ('phase_timeout', 'KEYWORD_ONLY'), ('max_concurrent_refreshes', 'KEYWORD_ONLY'), ('max_pending_refreshes', 'KEYWORD_ONLY'), ('max_waiters', 'KEYWORD_ONLY'), ('allow_insecure_loopback', 'KEYWORD_ONLY'), ('transport', 'KEYWORD_ONLY'), ('clock', 'KEYWORD_ONLY'))
-  init hints OAuthProviderOptions=('refresh_timeout', 'phase_timeout', 'max_concurrent_refreshes', 'max_pending_refreshes', 'max_waiters', 'allow_insecure_loopback', 'transport', 'clock', 'return')
+  hints OAuthProviderOptions=('refresh_timeout', 'phase_timeout', 'allow_insecure_loopback', 'transport', 'clock')
+  constructor OAuthProviderOptions=(('refresh_timeout', 'KEYWORD_ONLY'), ('phase_timeout', 'KEYWORD_ONLY'), ('allow_insecure_loopback', 'KEYWORD_ONLY'), ('transport', 'KEYWORD_ONLY'), ('clock', 'KEYWORD_ONLY'))
+  init hints OAuthProviderOptions=('refresh_timeout', 'phase_timeout', 'allow_insecure_loopback', 'transport', 'clock', 'return')
   hints OwnedCredentialProvider=('provider',)
   constructor OwnedCredentialProvider=(('provider', 'POSITIONAL_OR_KEYWORD'),)
   init hints OwnedCredentialProvider=('provider', 'return')
-  hints RefreshInfo=('refresh_id', 'state', 'token_send_count', 'failure')
-  constructor RefreshInfo=(('refresh_id', 'POSITIONAL_OR_KEYWORD'), ('state', 'POSITIONAL_OR_KEYWORD'), ('token_send_count', 'POSITIONAL_OR_KEYWORD'), ('failure', 'POSITIONAL_OR_KEYWORD'))
-  init hints RefreshInfo=('refresh_id', 'state', 'token_send_count', 'failure', 'return')
   hints RefreshTokenProvider=()
-  constructor RefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('load', 'KEYWORD_ONLY'), ('store', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
-  init hints RefreshTokenProvider=('token_url', 'client_id', 'token_set', 'load', 'store', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
+  constructor RefreshTokenProvider=(('token_url', 'POSITIONAL_OR_KEYWORD'), ('client_id', 'KEYWORD_ONLY'), ('token_set', 'KEYWORD_ONLY'), ('on_token_refreshed', 'KEYWORD_ONLY'), ('client_secret', 'KEYWORD_ONLY'), ('client_auth_method', 'KEYWORD_ONLY'), ('scopes', 'KEYWORD_ONLY'), ('audience', 'KEYWORD_ONLY'), ('options', 'KEYWORD_ONLY'), ('token_transport', 'KEYWORD_ONLY'))
+  init hints RefreshTokenProvider=('token_url', 'client_id', 'token_set', 'on_token_refreshed', 'client_secret', 'client_auth_method', 'scopes', 'audience', 'options', 'token_transport', 'return')
   method RefreshTokenProvider.get async=False hints=('context', 'return')
   method RefreshTokenProvider.invalidate async=False hints=('version', 'return')
   method RefreshTokenProvider.refresh async=False hints=('context', 'return')
@@ -1430,14 +1260,9 @@
   constructor StaticTokenProvider=(('token', 'POSITIONAL_OR_KEYWORD'),)
   init hints StaticTokenProvider=('token', 'return')
   method StaticTokenProvider.get async=False hints=('context', 'return')
-  hints TokenLoad=()
-  hints TokenPersistenceContext=('provider_id', 'cache_key', 'session_id', 'deadline', 'purpose')
-  constructor TokenPersistenceContext=(('provider_id', 'KEYWORD_ONLY'), ('cache_key', 'KEYWORD_ONLY'), ('session_id', 'KEYWORD_ONLY'), ('deadline', 'KEYWORD_ONLY'), ('purpose', 'KEYWORD_ONLY'))
-  init hints TokenPersistenceContext=('provider_id', 'cache_key', 'session_id', 'deadline', 'purpose', 'return')
-  hints TokenSet=('access_token', 'refresh_token', 'revision')
-  constructor TokenSet=(('access_token', 'POSITIONAL_OR_KEYWORD'), ('refresh_token', 'POSITIONAL_OR_KEYWORD'), ('revision', 'POSITIONAL_OR_KEYWORD'))
-  init hints TokenSet=('access_token', 'refresh_token', 'revision', 'return')
-  hints TokenStore=()
+  hints TokenSet=('access_token', 'refresh_token')
+  constructor TokenSet=(('access_token', 'POSITIONAL_OR_KEYWORD'), ('refresh_token', 'POSITIONAL_OR_KEYWORD'))
+  init hints TokenSet=('access_token', 'refresh_token', 'return')
   hints TokenVersion=()
   constructor TokenVersion=()
   init hints TokenVersion=('return',)
