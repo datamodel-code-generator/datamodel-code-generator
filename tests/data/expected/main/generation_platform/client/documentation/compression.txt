@@ -444,7 +444,7 @@
   /selection/selected_operations/11 events.watch(query:cursor=cursor)
     exports client.types.events.WatchResponse client.types.events.WatchErrorData client.types.events.WatchHTTPError
     exports client.types.events.WatchRequestCodecs None
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
 
 # artifact client/_generated_docs/README.md
 # client
@@ -826,18 +826,17 @@ original request are stripped on an origin change. Invalid/multiple Location, lo
 `TransportOptions` belongs only to `ClientOptions`: verify=True, ssl_context=None, proxy=None, trust_env=True,
 http2=False, max_connections=100, max_keepalive_connections=20, keepalive_expiry=5, retry_owner="sdk".
 SDK-created HTTP clients honor proxy and CA environment settings with trust_env=True, preserving native system
-trust. With trust_env=False, default origin TLS and an explicit HTTPS proxy's independent default TLS use certifi's
-Mozilla public-root bundle without CA environment overrides. Plain HTTP proxies retain native behavior. Caller
-ssl_context or verify=False controls origin TLS; injected native clients retain their settings and ownership.
-For enterprise roots with trust_env=False, supply an SSLContext.
+trust. With trust_env=False, HTTPX2 environment configuration is disabled while native TLS trust behavior is
+preserved. Caller ssl_context or verify=False controls origin TLS; injected native clients retain their settings and
+ownership.
 Typed error handling and exception body prefixes use `max_error_body_bytes`, which defaults to 64 KiB.
 Buffered raw responses of every status use `max_response_bytes`, which defaults to `None` (no cap). Set it on client,
 view, or request options to bound them; `None` removes an inherited cap. For buffered raw responses, only
 `raise_for_status()` applies the error-prefix cap.
 An SSLContext supplies TLS settings and conflicts with any explicit verify override.
-HTTP/2 is explicit and requires
-its dependency. Injected native clients retain their pool/proxy/TLS construction; incompatible construction settings
-are rejected. Borrowed clients/adapters are not closed; `OwnedTransportAdapter` transfers adapter ownership.
+HTTP/2 is explicit and requires its dependency. Injected native clients retain their pool/proxy/TLS construction;
+incompatible construction settings are rejected. Borrowed clients/adapters are not closed; `OwnedTransportAdapter`
+transfers adapter ownership.
 `retry_owner="transport"` requires an explicitly injected adapter with the declared internal retry/deadline/body
 contract and disables SDK retries. The default SDK-owned native transport disables native internal retries.
 

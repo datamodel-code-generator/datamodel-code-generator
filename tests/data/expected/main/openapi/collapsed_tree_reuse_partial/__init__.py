@@ -2,7 +2,9 @@
 #   filename:  allof_partial_unconstrained_schemas.yaml
 
 from __future__ import annotations
+
 from pydantic import BaseModel, Field, RootModel, constr
+
 from . import shared
 from .shared import Item, ScalarValue
 
@@ -57,7 +59,9 @@ class Base(BaseModel):
     scalarMappingWeaker: dict[str, constr(min_length=2)]
     scalarDeepWeaker: list[list[constr(min_length=2)]]
     prefixItemsNeutral: tuple[PrefixItemsNeutralItem, int]
-    legacyItemsNeutral: list[LegacyItemsNeutralItem | int] = Field(..., max_length=2, min_length=2)
+    legacyItemsNeutral: list[LegacyItemsNeutralItem | int] = Field(
+        ..., max_length=2, min_length=2
+    )
     unevaluatedItemsNeutral: tuple[UnevaluatedItemsNeutralItem, int]
     inlineObjectNeutral: InlineObjectNeutral
     refObjectNeutral: shared.Item
@@ -81,7 +85,9 @@ class Child(Base):
     scalarMappingInferred: dict[str, constr(min_length=1)]
     scalarDeepInferred: list[list[constr(min_length=1)]]
     scalarArrayRootInferred: list[constr(min_length=2)] = Field(..., min_length=1)
-    scalarMappingRootInferred: dict[str, constr(min_length=2)] = Field(..., min_length=1)
+    scalarMappingRootInferred: dict[str, constr(min_length=2)] = Field(
+        ..., min_length=1
+    )
     arrayNeutralComposition: list[shared.Item]
     mappingNeutralComposition: dict[str, shared.Item]
     deepArrayNeutralComposition: list[list[shared.Item]]
@@ -89,7 +95,9 @@ class Child(Base):
     scalarMappingWeaker: dict[str, constr(min_length=1)]
     scalarDeepWeaker: list[list[constr(min_length=1)]]
     prefixItemsNeutral: tuple[PrefixItemsNeutralItem, int]
-    legacyItemsNeutral: list[LegacyItemsNeutralItem | int] = Field(..., max_length=2, min_length=2)
+    legacyItemsNeutral: list[LegacyItemsNeutralItem | int] = Field(
+        ..., max_length=2, min_length=2
+    )
     unevaluatedItemsNeutral: tuple[UnevaluatedItemsNeutralItem, int]
     inlineObjectNeutral: InlineObjectNeutral
     refObjectNeutral: shared.Item
