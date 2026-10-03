@@ -466,7 +466,7 @@
   "adapters": [
    {
     "kind": "model",
-    "name": "client-only",
+    "name": "pet-response",
     "import_ref": "app.codecs:pet_model",
     "capabilities": {
      "record": "CodecCapabilities",
@@ -475,9 +475,6 @@
      ],
      "native_kinds": [
       "model"
-     ],
-     "surfaces": [
-      "client"
      ]
     },
     "uses": [

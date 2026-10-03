@@ -36,7 +36,6 @@ from datamodel_code_generator._runtime.model_codecs.bindings import (
     UnionNode,
 )
 from datamodel_code_generator._runtime.model_codecs.capabilities import (
-    ClientMediaCodecCapabilities,
     CodecCapabilities,
     ParameterCodecCapabilities,
     SchemaCodecCapabilities,
@@ -456,9 +455,8 @@ def select_adapters(
             )
             continue
         names.add(registration.name)
-        if "client" in registration.capabilities.surfaces:
-            for use_selector in registration.uses:
-                selector.register(registration, use_selector)
+        for use_selector in registration.uses:
+            selector.register(registration, use_selector)
     return AdapterSelection(
         {key: registration for key, (_, registration) in selector.chosen.items()}, tuple(selector.diagnostics)
     )
@@ -661,22 +659,16 @@ class _AdapterPlanner:
 
     def covers(self, registration: CodecAdapterRegistration, use: TypeUseId) -> bool:
         if not (covered := self.covered(registration.capabilities, use)):
-            self.report(registration, use, "does not cover this use's backend, native kind, media, or direction")
+            self.report(registration, use, "does not cover this use's backend, native kind, or direction")
         return covered
 
     def covered(self, capabilities: RegistrationCapabilities, use: TypeUseId) -> bool:
-        match capabilities:
-            case CodecCapabilities():
-                return (
-                    (binding := self.bindings.get(use)) is not None
-                    and binding.backend in capabilities.backends
-                    and binding.native_kind in capabilities.native_kinds
-                    and use.direction in capabilities.directions
-                )
-            case ClientMediaCodecCapabilities():
-                return use.media in capabilities.media_types and use.direction in capabilities.directions
-            case _:
-                return True
+        return not isinstance(capabilities, CodecCapabilities) or (
+            (binding := self.bindings.get(use)) is not None
+            and binding.backend in capabilities.backends
+            and binding.native_kind in capabilities.native_kinds
+            and use.direction in capabilities.directions
+        )
 
     def plan(self, kind: str, use: TypeUseId, registration: CodecAdapterRegistration) -> AdapterPlan | None:
         if not self.covers(registration, use) or (view := self.view(use, kind)) is None:

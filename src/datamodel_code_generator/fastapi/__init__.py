@@ -15,7 +15,6 @@ from datamodel_code_generator._fastapi.context import HookReference
 from datamodel_code_generator.api_types import (
     APIGenerationError,
     ArtifactRecord,
-    ClientMediaCodecCapabilities,
     CodecAdapterRegistration,
     CodecCapabilities,
     Diagnostic,
@@ -57,7 +56,6 @@ def render_fastapi(input_: GenerationInput, *, model_config: GenerateConfig, con
 __all__ = [
     "APIGenerationError",
     "ArtifactRecord",
-    "ClientMediaCodecCapabilities",
     "CodecAdapterRegistration",
     "CodecCapabilities",
     "Diagnostic",

@@ -13,10 +13,6 @@ invalid adapters: presence must be 'native' or 'unavailable'
 invalid adapters: styles and explode_values must both be declared or both be empty
 invalid adapters: media_types must not be empty
 invalid adapters: schema adapter byte limits must be positive and within the common limits
-invalid adapters: a client media adapter registers the client surface and supports sync and async calls
-invalid adapters: a client media adapter registers the client surface and supports sync and async calls
-invalid adapters: incremental media processing has no adapter contract yet
-invalid adapters: accepted
 invalid uses: A parameter use requires exactly location, name
 invalid uses: A request_body use requires exactly media_type
 invalid uses: accepted
@@ -1320,7 +1316,6 @@ from ._runtime.model_codecs.adapters import (
 )
 from ._runtime.model_codecs.bindings import BackendId, ConverterStrategy, NativeKind
 from ._runtime.model_codecs.capabilities import (
-    ClientMediaCodecCapabilities,
     CodecCapabilities,
     ParameterCodecCapabilities,
     SchemaCodecCapabilities,
@@ -1389,7 +1384,6 @@ __all__ = [
     'AsyncByteReader',
     'BackendId',
     'ByteReader',
-    'ClientMediaCodecCapabilities',
     'CodecAdapterError',
     'CodecBindingError',
     'CodecBindingView',
