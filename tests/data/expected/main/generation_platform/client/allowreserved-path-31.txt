@@ -1,0 +1,239 @@
+# allowreserved-path-31
+render pydantic_v2.BaseModel
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/wire/__init__.py
+  write client/resources/wire/_sync.py
+  write client/resources/wire/_async.py
+  write client/types/__init__.py
+  write client/types/wire/__init__.py
+  write client/types/wire/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers [] bindings 70
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  /selection/selected_operations/0 wire.read_simple_scalar_false(path:wire-name=wire_name)
+    exports client.types.wire.ReadSimpleScalarFalseResponse client.types.wire.ReadSimpleScalarFalseErrorData client.types.wire.ReadSimpleScalarFalseHTTPError
+    exports client.types.wire.ReadSimpleScalarFalseRequestCodecs None
+  /selection/selected_operations/1 wire.read_simple_scalar_false_false(path:wire-name=wire_name)
+    exports client.types.wire.ReadSimpleScalarFalseFalseResponse client.types.wire.ReadSimpleScalarFalseFalseErrorData client.types.wire.ReadSimpleScalarFalseFalseHTTPError
+    exports client.types.wire.ReadSimpleScalarFalseFalseRequestCodecs None
+  /selection/selected_operations/2 wire.read_simple_scalar_false_absent(path:wire-name=wire_name)
+    exports client.types.wire.ReadSimpleScalarFalseAbsentResponse client.types.wire.ReadSimpleScalarFalseAbsentErrorData client.types.wire.ReadSimpleScalarFalseAbsentHTTPError
+    exports client.types.wire.ReadSimpleScalarFalseAbsentRequestCodecs None
+  /selection/selected_operations/3 wire.read_simple_array_false(path:wire-name=wire_name)
+    exports client.types.wire.ReadSimpleArrayFalseResponse client.types.wire.ReadSimpleArrayFalseErrorData client.types.wire.ReadSimpleArrayFalseHTTPError
+    exports client.types.wire.ReadSimpleArrayFalseRequestCodecs None
+  /selection/selected_operations/4 wire.read_simple_array_false_false(path:wire-name=wire_name)
+    exports client.types.wire.ReadSimpleArrayFalseFalseResponse client.types.wire.ReadSimpleArrayFalseFalseErrorData client.types.wire.ReadSimpleArrayFalseFalseHTTPError
+    exports client.types.wire.ReadSimpleArrayFalseFalseRequestCodecs None
+  /selection/selected_operations/5 wire.read_simple_array_false_absent(path:wire-name=wire_name)
+    exports client.types.wire.ReadSimpleArrayFalseAbsentResponse client.types.wire.ReadSimpleArrayFalseAbsentErrorData client.types.wire.ReadSimpleArrayFalseAbsentHTTPError
+    exports client.types.wire.ReadSimpleArrayFalseAbsentRequestCodecs None
+  /selection/selected_operations/6 wire.read_simple_array_true(path:wire-name=wire_name)
+    exports client.types.wire.ReadSimpleArrayTrueResponse client.types.wire.ReadSimpleArrayTrueErrorData client.types.wire.ReadSimpleArrayTrueHTTPError
+    exports client.types.wire.ReadSimpleArrayTrueRequestCodecs None
+  /selection/selected_operations/7 wire.read_simple_array_true_false(path:wire-name=wire_name)
+    exports client.types.wire.ReadSimpleArrayTrueFalseResponse client.types.wire.ReadSimpleArrayTrueFalseErrorData client.types.wire.ReadSimpleArrayTrueFalseHTTPError
+    exports client.types.wire.ReadSimpleArrayTrueFalseRequestCodecs None
+  /selection/selected_operations/8 wire.read_simple_array_true_absent(path:wire-name=wire_name)
+    exports client.types.wire.ReadSimpleArrayTrueAbsentResponse client.types.wire.ReadSimpleArrayTrueAbsentErrorData client.types.wire.ReadSimpleArrayTrueAbsentHTTPError
+    exports client.types.wire.ReadSimpleArrayTrueAbsentRequestCodecs None
+  /selection/selected_operations/9 wire.read_simple_object_false(path:wire-name=wire_name)
+    exports client.types.wire.ReadSimpleObjectFalseResponse client.types.wire.ReadSimpleObjectFalseErrorData client.types.wire.ReadSimpleObjectFalseHTTPError
+    exports client.types.wire.ReadSimpleObjectFalseRequestCodecs None
+  /selection/selected_operations/10 wire.read_simple_object_false_false(path:wire-name=wire_name)
+    exports client.types.wire.ReadSimpleObjectFalseFalseResponse client.types.wire.ReadSimpleObjectFalseFalseErrorData client.types.wire.ReadSimpleObjectFalseFalseHTTPError
+    exports client.types.wire.ReadSimpleObjectFalseFalseRequestCodecs None
+  /selection/selected_operations/11 wire.read_simple_object_false_absent(path:wire-name=wire_name)
+    exports client.types.wire.ReadSimpleObjectFalseAbsentResponse client.types.wire.ReadSimpleObjectFalseAbsentErrorData client.types.wire.ReadSimpleObjectFalseAbsentHTTPError
+    exports client.types.wire.ReadSimpleObjectFalseAbsentRequestCodecs None
+  /selection/selected_operations/12 wire.read_simple_object_true(path:wire-name=wire_name)
+    exports client.types.wire.ReadSimpleObjectTrueResponse client.types.wire.ReadSimpleObjectTrueErrorData client.types.wire.ReadSimpleObjectTrueHTTPError
+    exports client.types.wire.ReadSimpleObjectTrueRequestCodecs None
+  /selection/selected_operations/13 wire.read_simple_object_true_false(path:wire-name=wire_name)
+    exports client.types.wire.ReadSimpleObjectTrueFalseResponse client.types.wire.ReadSimpleObjectTrueFalseErrorData client.types.wire.ReadSimpleObjectTrueFalseHTTPError
+    exports client.types.wire.ReadSimpleObjectTrueFalseRequestCodecs None
+  /selection/selected_operations/14 wire.read_simple_object_true_absent(path:wire-name=wire_name)
+    exports client.types.wire.ReadSimpleObjectTrueAbsentResponse client.types.wire.ReadSimpleObjectTrueAbsentErrorData client.types.wire.ReadSimpleObjectTrueAbsentHTTPError
+    exports client.types.wire.ReadSimpleObjectTrueAbsentRequestCodecs None
+  /selection/selected_operations/15 wire.read_label_scalar_false(path:wire-name=wire_name)
+    exports client.types.wire.ReadLabelScalarFalseResponse client.types.wire.ReadLabelScalarFalseErrorData client.types.wire.ReadLabelScalarFalseHTTPError
+    exports client.types.wire.ReadLabelScalarFalseRequestCodecs None
+  /selection/selected_operations/16 wire.read_label_scalar_false_false(path:wire-name=wire_name)
+    exports client.types.wire.ReadLabelScalarFalseFalseResponse client.types.wire.ReadLabelScalarFalseFalseErrorData client.types.wire.ReadLabelScalarFalseFalseHTTPError
+    exports client.types.wire.ReadLabelScalarFalseFalseRequestCodecs None
+  /selection/selected_operations/17 wire.read_label_scalar_false_absent(path:wire-name=wire_name)
+    exports client.types.wire.ReadLabelScalarFalseAbsentResponse client.types.wire.ReadLabelScalarFalseAbsentErrorData client.types.wire.ReadLabelScalarFalseAbsentHTTPError
+    exports client.types.wire.ReadLabelScalarFalseAbsentRequestCodecs None
+  /selection/selected_operations/18 wire.read_label_array_false(path:wire-name=wire_name)
+    exports client.types.wire.ReadLabelArrayFalseResponse client.types.wire.ReadLabelArrayFalseErrorData client.types.wire.ReadLabelArrayFalseHTTPError
+    exports client.types.wire.ReadLabelArrayFalseRequestCodecs None
+  /selection/selected_operations/19 wire.read_label_array_false_false(path:wire-name=wire_name)
+    exports client.types.wire.ReadLabelArrayFalseFalseResponse client.types.wire.ReadLabelArrayFalseFalseErrorData client.types.wire.ReadLabelArrayFalseFalseHTTPError
+    exports client.types.wire.ReadLabelArrayFalseFalseRequestCodecs None
+  /selection/selected_operations/20 wire.read_label_array_false_absent(path:wire-name=wire_name)
+    exports client.types.wire.ReadLabelArrayFalseAbsentResponse client.types.wire.ReadLabelArrayFalseAbsentErrorData client.types.wire.ReadLabelArrayFalseAbsentHTTPError
+    exports client.types.wire.ReadLabelArrayFalseAbsentRequestCodecs None
+  /selection/selected_operations/21 wire.read_label_array_true(path:wire-name=wire_name)
+    exports client.types.wire.ReadLabelArrayTrueResponse client.types.wire.ReadLabelArrayTrueErrorData client.types.wire.ReadLabelArrayTrueHTTPError
+    exports client.types.wire.ReadLabelArrayTrueRequestCodecs None
+  /selection/selected_operations/22 wire.read_label_array_true_false(path:wire-name=wire_name)
+    exports client.types.wire.ReadLabelArrayTrueFalseResponse client.types.wire.ReadLabelArrayTrueFalseErrorData client.types.wire.ReadLabelArrayTrueFalseHTTPError
+    exports client.types.wire.ReadLabelArrayTrueFalseRequestCodecs None
+  /selection/selected_operations/23 wire.read_label_array_true_absent(path:wire-name=wire_name)
+    exports client.types.wire.ReadLabelArrayTrueAbsentResponse client.types.wire.ReadLabelArrayTrueAbsentErrorData client.types.wire.ReadLabelArrayTrueAbsentHTTPError
+    exports client.types.wire.ReadLabelArrayTrueAbsentRequestCodecs None
+  /selection/selected_operations/24 wire.read_label_object_false(path:wire-name=wire_name)
+    exports client.types.wire.ReadLabelObjectFalseResponse client.types.wire.ReadLabelObjectFalseErrorData client.types.wire.ReadLabelObjectFalseHTTPError
+    exports client.types.wire.ReadLabelObjectFalseRequestCodecs None
+  /selection/selected_operations/25 wire.read_label_object_false_false(path:wire-name=wire_name)
+    exports client.types.wire.ReadLabelObjectFalseFalseResponse client.types.wire.ReadLabelObjectFalseFalseErrorData client.types.wire.ReadLabelObjectFalseFalseHTTPError
+    exports client.types.wire.ReadLabelObjectFalseFalseRequestCodecs None
+  /selection/selected_operations/26 wire.read_label_object_false_absent(path:wire-name=wire_name)
+    exports client.types.wire.ReadLabelObjectFalseAbsentResponse client.types.wire.ReadLabelObjectFalseAbsentErrorData client.types.wire.ReadLabelObjectFalseAbsentHTTPError
+    exports client.types.wire.ReadLabelObjectFalseAbsentRequestCodecs None
+  /selection/selected_operations/27 wire.read_label_object_true(path:wire-name=wire_name)
+    exports client.types.wire.ReadLabelObjectTrueResponse client.types.wire.ReadLabelObjectTrueErrorData client.types.wire.ReadLabelObjectTrueHTTPError
+    exports client.types.wire.ReadLabelObjectTrueRequestCodecs None
+  /selection/selected_operations/28 wire.read_label_object_true_false(path:wire-name=wire_name)
+    exports client.types.wire.ReadLabelObjectTrueFalseResponse client.types.wire.ReadLabelObjectTrueFalseErrorData client.types.wire.ReadLabelObjectTrueFalseHTTPError
+    exports client.types.wire.ReadLabelObjectTrueFalseRequestCodecs None
+  /selection/selected_operations/29 wire.read_label_object_true_absent(path:wire-name=wire_name)
+    exports client.types.wire.ReadLabelObjectTrueAbsentResponse client.types.wire.ReadLabelObjectTrueAbsentErrorData client.types.wire.ReadLabelObjectTrueAbsentHTTPError
+    exports client.types.wire.ReadLabelObjectTrueAbsentRequestCodecs None
+  /selection/selected_operations/30 wire.read_matrix_scalar_false(path:wire-name=wire_name)
+    exports client.types.wire.ReadMatrixScalarFalseResponse client.types.wire.ReadMatrixScalarFalseErrorData client.types.wire.ReadMatrixScalarFalseHTTPError
+    exports client.types.wire.ReadMatrixScalarFalseRequestCodecs None
+  /selection/selected_operations/31 wire.read_matrix_scalar_false_false(path:wire-name=wire_name)
+    exports client.types.wire.ReadMatrixScalarFalseFalseResponse client.types.wire.ReadMatrixScalarFalseFalseErrorData client.types.wire.ReadMatrixScalarFalseFalseHTTPError
+    exports client.types.wire.ReadMatrixScalarFalseFalseRequestCodecs None
+  /selection/selected_operations/32 wire.read_matrix_scalar_false_absent(path:wire-name=wire_name)
+    exports client.types.wire.ReadMatrixScalarFalseAbsentResponse client.types.wire.ReadMatrixScalarFalseAbsentErrorData client.types.wire.ReadMatrixScalarFalseAbsentHTTPError
+    exports client.types.wire.ReadMatrixScalarFalseAbsentRequestCodecs None
+  /selection/selected_operations/33 wire.read_matrix_array_false(path:wire-name=wire_name)
+    exports client.types.wire.ReadMatrixArrayFalseResponse client.types.wire.ReadMatrixArrayFalseErrorData client.types.wire.ReadMatrixArrayFalseHTTPError
+    exports client.types.wire.ReadMatrixArrayFalseRequestCodecs None
+  /selection/selected_operations/34 wire.read_matrix_array_false_false(path:wire-name=wire_name)
+    exports client.types.wire.ReadMatrixArrayFalseFalseResponse client.types.wire.ReadMatrixArrayFalseFalseErrorData client.types.wire.ReadMatrixArrayFalseFalseHTTPError
+    exports client.types.wire.ReadMatrixArrayFalseFalseRequestCodecs None
+  /selection/selected_operations/35 wire.read_matrix_array_false_absent(path:wire-name=wire_name)
+    exports client.types.wire.ReadMatrixArrayFalseAbsentResponse client.types.wire.ReadMatrixArrayFalseAbsentErrorData client.types.wire.ReadMatrixArrayFalseAbsentHTTPError
+    exports client.types.wire.ReadMatrixArrayFalseAbsentRequestCodecs None
+  /selection/selected_operations/36 wire.read_matrix_array_true(path:wire-name=wire_name)
+    exports client.types.wire.ReadMatrixArrayTrueResponse client.types.wire.ReadMatrixArrayTrueErrorData client.types.wire.ReadMatrixArrayTrueHTTPError
+    exports client.types.wire.ReadMatrixArrayTrueRequestCodecs None
+  /selection/selected_operations/37 wire.read_matrix_array_true_false(path:wire-name=wire_name)
+    exports client.types.wire.ReadMatrixArrayTrueFalseResponse client.types.wire.ReadMatrixArrayTrueFalseErrorData client.types.wire.ReadMatrixArrayTrueFalseHTTPError
+    exports client.types.wire.ReadMatrixArrayTrueFalseRequestCodecs None
+  /selection/selected_operations/38 wire.read_matrix_array_true_absent(path:wire-name=wire_name)
+    exports client.types.wire.ReadMatrixArrayTrueAbsentResponse client.types.wire.ReadMatrixArrayTrueAbsentErrorData client.types.wire.ReadMatrixArrayTrueAbsentHTTPError
+    exports client.types.wire.ReadMatrixArrayTrueAbsentRequestCodecs None
+  /selection/selected_operations/39 wire.read_matrix_object_false(path:wire-name=wire_name)
+    exports client.types.wire.ReadMatrixObjectFalseResponse client.types.wire.ReadMatrixObjectFalseErrorData client.types.wire.ReadMatrixObjectFalseHTTPError
+    exports client.types.wire.ReadMatrixObjectFalseRequestCodecs None
+  /selection/selected_operations/40 wire.read_matrix_object_false_false(path:wire-name=wire_name)
+    exports client.types.wire.ReadMatrixObjectFalseFalseResponse client.types.wire.ReadMatrixObjectFalseFalseErrorData client.types.wire.ReadMatrixObjectFalseFalseHTTPError
+    exports client.types.wire.ReadMatrixObjectFalseFalseRequestCodecs None
+  /selection/selected_operations/41 wire.read_matrix_object_false_absent(path:wire-name=wire_name)
+    exports client.types.wire.ReadMatrixObjectFalseAbsentResponse client.types.wire.ReadMatrixObjectFalseAbsentErrorData client.types.wire.ReadMatrixObjectFalseAbsentHTTPError
+    exports client.types.wire.ReadMatrixObjectFalseAbsentRequestCodecs None
+  /selection/selected_operations/42 wire.read_matrix_object_true(path:wire-name=wire_name)
+    exports client.types.wire.ReadMatrixObjectTrueResponse client.types.wire.ReadMatrixObjectTrueErrorData client.types.wire.ReadMatrixObjectTrueHTTPError
+    exports client.types.wire.ReadMatrixObjectTrueRequestCodecs None
+  /selection/selected_operations/43 wire.read_matrix_object_true_false(path:wire-name=wire_name)
+    exports client.types.wire.ReadMatrixObjectTrueFalseResponse client.types.wire.ReadMatrixObjectTrueFalseErrorData client.types.wire.ReadMatrixObjectTrueFalseHTTPError
+    exports client.types.wire.ReadMatrixObjectTrueFalseRequestCodecs None
+  /selection/selected_operations/44 wire.read_matrix_object_true_absent(path:wire-name=wire_name)
+    exports client.types.wire.ReadMatrixObjectTrueAbsentResponse client.types.wire.ReadMatrixObjectTrueAbsentErrorData client.types.wire.ReadMatrixObjectTrueAbsentHTTPError
+    exports client.types.wire.ReadMatrixObjectTrueAbsentRequestCodecs None
+  /selection/selected_operations/45 wire.read_query_scalar_false_true(query:q=q)
+    exports client.types.wire.ReadQueryScalarFalseTrueResponse client.types.wire.ReadQueryScalarFalseTrueErrorData client.types.wire.ReadQueryScalarFalseTrueHTTPError
+    exports client.types.wire.ReadQueryScalarFalseTrueRequestCodecs None
+  /selection/selected_operations/46 wire.read_query_scalar_false_false(query:q=q)
+    exports client.types.wire.ReadQueryScalarFalseFalseResponse client.types.wire.ReadQueryScalarFalseFalseErrorData client.types.wire.ReadQueryScalarFalseFalseHTTPError
+    exports client.types.wire.ReadQueryScalarFalseFalseRequestCodecs None
+  /selection/selected_operations/47 wire.read_query_scalar_false_absent(query:q=q)
+    exports client.types.wire.ReadQueryScalarFalseAbsentResponse client.types.wire.ReadQueryScalarFalseAbsentErrorData client.types.wire.ReadQueryScalarFalseAbsentHTTPError
+    exports client.types.wire.ReadQueryScalarFalseAbsentRequestCodecs None
+  /selection/selected_operations/48 wire.read_query_scalar_true_true(query:q=q)
+    exports client.types.wire.ReadQueryScalarTrueTrueResponse client.types.wire.ReadQueryScalarTrueTrueErrorData client.types.wire.ReadQueryScalarTrueTrueHTTPError
+    exports client.types.wire.ReadQueryScalarTrueTrueRequestCodecs None
+  /selection/selected_operations/49 wire.read_query_scalar_true_false(query:q=q)
+    exports client.types.wire.ReadQueryScalarTrueFalseResponse client.types.wire.ReadQueryScalarTrueFalseErrorData client.types.wire.ReadQueryScalarTrueFalseHTTPError
+    exports client.types.wire.ReadQueryScalarTrueFalseRequestCodecs None
+  /selection/selected_operations/50 wire.read_query_scalar_true_absent(query:q=q)
+    exports client.types.wire.ReadQueryScalarTrueAbsentResponse client.types.wire.ReadQueryScalarTrueAbsentErrorData client.types.wire.ReadQueryScalarTrueAbsentHTTPError
+    exports client.types.wire.ReadQueryScalarTrueAbsentRequestCodecs None
+  /selection/selected_operations/51 wire.read_query_array_false_true(query:q=q)
+    exports client.types.wire.ReadQueryArrayFalseTrueResponse client.types.wire.ReadQueryArrayFalseTrueErrorData client.types.wire.ReadQueryArrayFalseTrueHTTPError
+    exports client.types.wire.ReadQueryArrayFalseTrueRequestCodecs None
+  /selection/selected_operations/52 wire.read_query_array_false_false(query:q=q)
+    exports client.types.wire.ReadQueryArrayFalseFalseResponse client.types.wire.ReadQueryArrayFalseFalseErrorData client.types.wire.ReadQueryArrayFalseFalseHTTPError
+    exports client.types.wire.ReadQueryArrayFalseFalseRequestCodecs None
+  /selection/selected_operations/53 wire.read_query_array_false_absent(query:q=q)
+    exports client.types.wire.ReadQueryArrayFalseAbsentResponse client.types.wire.ReadQueryArrayFalseAbsentErrorData client.types.wire.ReadQueryArrayFalseAbsentHTTPError
+    exports client.types.wire.ReadQueryArrayFalseAbsentRequestCodecs None
+  /selection/selected_operations/54 wire.read_query_array_true_true(query:q=q)
+    exports client.types.wire.ReadQueryArrayTrueTrueResponse client.types.wire.ReadQueryArrayTrueTrueErrorData client.types.wire.ReadQueryArrayTrueTrueHTTPError
+    exports client.types.wire.ReadQueryArrayTrueTrueRequestCodecs None
+  /selection/selected_operations/55 wire.read_query_array_true_false(query:q=q)
+    exports client.types.wire.ReadQueryArrayTrueFalseResponse client.types.wire.ReadQueryArrayTrueFalseErrorData client.types.wire.ReadQueryArrayTrueFalseHTTPError
+    exports client.types.wire.ReadQueryArrayTrueFalseRequestCodecs None
+  /selection/selected_operations/56 wire.read_query_array_true_absent(query:q=q)
+    exports client.types.wire.ReadQueryArrayTrueAbsentResponse client.types.wire.ReadQueryArrayTrueAbsentErrorData client.types.wire.ReadQueryArrayTrueAbsentHTTPError
+    exports client.types.wire.ReadQueryArrayTrueAbsentRequestCodecs None
+  /selection/selected_operations/57 wire.read_query_object_false_true(query:filter=filter)
+    exports client.types.wire.ReadQueryObjectFalseTrueResponse client.types.wire.ReadQueryObjectFalseTrueErrorData client.types.wire.ReadQueryObjectFalseTrueHTTPError
+    exports client.types.wire.ReadQueryObjectFalseTrueRequestCodecs None
+  /selection/selected_operations/58 wire.read_query_object_false_false(query:filter=filter)
+    exports client.types.wire.ReadQueryObjectFalseFalseResponse client.types.wire.ReadQueryObjectFalseFalseErrorData client.types.wire.ReadQueryObjectFalseFalseHTTPError
+    exports client.types.wire.ReadQueryObjectFalseFalseRequestCodecs None
+  /selection/selected_operations/59 wire.read_query_object_false_absent(query:filter=filter)
+    exports client.types.wire.ReadQueryObjectFalseAbsentResponse client.types.wire.ReadQueryObjectFalseAbsentErrorData client.types.wire.ReadQueryObjectFalseAbsentHTTPError
+    exports client.types.wire.ReadQueryObjectFalseAbsentRequestCodecs None
+  /selection/selected_operations/60 wire.read_query_object_true_true(query:filter=filter)
+    exports client.types.wire.ReadQueryObjectTrueTrueResponse client.types.wire.ReadQueryObjectTrueTrueErrorData client.types.wire.ReadQueryObjectTrueTrueHTTPError
+    exports client.types.wire.ReadQueryObjectTrueTrueRequestCodecs None
+  /selection/selected_operations/61 wire.read_query_object_true_false(query:filter=filter)
+    exports client.types.wire.ReadQueryObjectTrueFalseResponse client.types.wire.ReadQueryObjectTrueFalseErrorData client.types.wire.ReadQueryObjectTrueFalseHTTPError
+    exports client.types.wire.ReadQueryObjectTrueFalseRequestCodecs None
+  /selection/selected_operations/62 wire.read_query_object_true_absent(query:filter=filter)
+    exports client.types.wire.ReadQueryObjectTrueAbsentResponse client.types.wire.ReadQueryObjectTrueAbsentErrorData client.types.wire.ReadQueryObjectTrueAbsentHTTPError
+    exports client.types.wire.ReadQueryObjectTrueAbsentRequestCodecs None
+  /selection/selected_operations/63 wire.read_deep_object(query:filter=filter)
+    exports client.types.wire.ReadDeepObjectResponse client.types.wire.ReadDeepObjectErrorData client.types.wire.ReadDeepObjectHTTPError
+    exports client.types.wire.ReadDeepObjectRequestCodecs None
+  /selection/selected_operations/64 wire.read_headers_and_cookies(header:X-Wire=x_wire, cookie:session=session)
+    exports client.types.wire.ReadHeadersAndCookiesResponse client.types.wire.ReadHeadersAndCookiesErrorData client.types.wire.ReadHeadersAndCookiesHTTPError
+    exports client.types.wire.ReadHeadersAndCookiesRequestCodecs None
+  /selection/selected_operations/65 wire.read_text(path:key=key)
+    exports client.types.wire.ReadTextResponse client.types.wire.ReadTextErrorData client.types.wire.ReadTextHTTPError
+    exports client.types.wire.ReadTextRequestCodecs None
+  /selection/selected_operations/66 wire.read_json(path:key=key)
+    exports client.types.wire.ReadJsonResponse client.types.wire.ReadJsonErrorData client.types.wire.ReadJsonHTTPError
+    exports client.types.wire.ReadJsonRequestCodecs None
+  /selection/selected_operations/67 wire.read_suffix(path:wire-name=wire_name)
+    exports client.types.wire.ReadSuffixResponse client.types.wire.ReadSuffixErrorData client.types.wire.ReadSuffixHTTPError
+    exports client.types.wire.ReadSuffixRequestCodecs None
+  /selection/selected_operations/68 wire.read_composite(path:wire-name=wire_name)
+    exports client.types.wire.ReadCompositeResponse client.types.wire.ReadCompositeErrorData client.types.wire.ReadCompositeHTTPError
+    exports client.types.wire.ReadCompositeRequestCodecs None
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
