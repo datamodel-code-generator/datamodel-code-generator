@@ -16,15 +16,7 @@ from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
 
 from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._codec_declarations import OperationRef
-from datamodel_code_generator._generation_contract import (
-    BindingCaptureError,
-    GeneratedSymbolType,
-    GenericType,
-    NoneType,
-    SourceLocation,
-    SymbolId,
-    UnionType,
-)
+from datamodel_code_generator._generation_contract import BindingCaptureError
 from datamodel_code_generator._runtime.client.paths import dot_segment, path_segments
 from datamodel_code_generator._runtime.client.retry import body_replay_safe
 from datamodel_code_generator._runtime.client.security import secret_names
@@ -33,6 +25,14 @@ from datamodel_code_generator._runtime.model_codecs.errors import ParameterEncod
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
 from datamodel_code_generator._runtime.model_codecs.parameters import AdaptedParameterPlan, path_text
 from datamodel_code_generator._runtime.protocols.records import canonical_json
+from datamodel_code_generator._target_contract import (
+    GeneratedSymbolType,
+    GenericType,
+    NoneType,
+    SourceLocation,
+    SymbolId,
+    UnionType,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -43,11 +43,11 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
     from datamodel_code_generator._codec_declarations import SchemaRef
-    from datamodel_code_generator._generation_contract import FieldUseBinding, FinalPythonType, TypeUseBinding
     from datamodel_code_generator._openapi_codec_plan import CodecPlan
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.bindings import ModelBinding, TypeNode, UseBinding
     from datamodel_code_generator._runtime.model_codecs.wire import WireValue
+    from datamodel_code_generator._target_contract import FieldUseBinding, FinalPythonType, TypeUseBinding
 
 StepKind = Literal["attr", "key", "get", "root"]
 _INTEGER: Final = re.compile(r"-?[0-9]+")

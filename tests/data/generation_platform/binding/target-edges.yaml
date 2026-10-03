@@ -1,0 +1,25 @@
+openapi: 3.0.3
+info:
+  title: Target binding edges
+  version: '1'
+paths:
+  /edges:
+    get:
+      responses:
+        '200':
+          description: The edges.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Edges'
+components:
+  schemas:
+    Edges:
+      type: object
+      properties:
+        tags:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+          x-python-type: frozenset[str]

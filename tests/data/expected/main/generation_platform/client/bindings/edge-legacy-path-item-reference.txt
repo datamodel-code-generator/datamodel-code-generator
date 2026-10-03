@@ -1,6 +1,4 @@
 # edge-legacy-path-item-reference
 render pydantic_v2.BaseModel default
   diagnostic APIGenerationError
-  diagnostic BND_MODEL_SCOPE_REQUIRED binding /paths/~1pets~1{petId}/get/parameters/0: The use has no generated native type
-  diagnostic BND_MODEL_SCOPE_REQUIRED binding /paths/~1pets~1{petId}/put/parameters/0: The use has no generated native type
-  diagnostic BND_MODEL_SCOPE_REQUIRED binding /paths/~1food~1{food_id}/get/parameters/0: The use has no generated native type
+  diagnostic MC_SCHEMA_DIALECT binding /components/pathItems/Pets/get/responses/200/content/application~1json/schema/items: Array-form items requires an explicit schema adapter

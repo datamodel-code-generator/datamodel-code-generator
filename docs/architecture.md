@@ -113,14 +113,12 @@ circular module SCCs into `_internal.py` forwarder modules when imports would ot
 
 ```mermaid
 classDiagram
-    ApiOpenAPIParser <|-- ContractApiOpenAPIParser
     JsonSchemaParser <|-- AvroParser
     JsonSchemaParser <|-- OpenAPIParser
     JsonSchemaParser <|-- ProtobufParser
     JsonSchemaParser <|-- XMLSchemaParser
     OpenAPIParser <|-- ApiOpenAPIParser
     OpenAPIParser <|-- AsyncAPIParser
-    OpenAPIParser <|-- ContractOpenAPIParser
     Parser <|-- GraphQLParser
     Parser <|-- JsonSchemaParser
 ```

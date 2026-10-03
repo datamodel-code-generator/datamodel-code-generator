@@ -25,16 +25,11 @@ from datamodel_code_generator._client.naming import (
 )
 from datamodel_code_generator._client.security import SecurityPlanner
 from datamodel_code_generator._codec_declarations import OperationRef
-from datamodel_code_generator._generation_contract import (
-    LiteralScalar,
-    LiteralSequence,
-    SourceLocation,
-    TypeUseBinding,
-)
 from datamodel_code_generator._openapi_wire_plan import parameter_plans, property_members
 from datamodel_code_generator._runtime.client.media import most_specific
 from datamodel_code_generator._runtime.client.multipart import PartPlan
 from datamodel_code_generator._runtime.model_codecs.media import media_kind, normalize_media_type
+from datamodel_code_generator._target_contract import LiteralScalar, LiteralSequence, SourceLocation, TypeUseBinding
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
@@ -47,7 +42,13 @@ if TYPE_CHECKING:
         ClientOperationConfig,
         IdempotencyMetadata,
     )
-    from datamodel_code_generator._generation_contract import (
+    from datamodel_code_generator._openapi_wire_plan import WirePlan
+    from datamodel_code_generator._runtime.client.multipart import PartKind
+    from datamodel_code_generator._runtime.client.security import SecurityBinding, SecuritySchemeEntry
+    from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, MediaKind
+    from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
+    from datamodel_code_generator._runtime.model_codecs.wire import WireValue
+    from datamodel_code_generator._target_contract import (
         Direction,
         FinalPythonType,
         FrozenLiteral,
@@ -57,12 +58,6 @@ if TYPE_CHECKING:
         TypeUseId,
         WireDeclaration,
     )
-    from datamodel_code_generator._openapi_wire_plan import WirePlan
-    from datamodel_code_generator._runtime.client.multipart import PartKind
-    from datamodel_code_generator._runtime.client.security import SecurityBinding, SecuritySchemeEntry
-    from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, MediaKind
-    from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
-    from datamodel_code_generator._runtime.model_codecs.wire import WireValue
 
 Role: TypeAlias = Literal["success", "error"]
 

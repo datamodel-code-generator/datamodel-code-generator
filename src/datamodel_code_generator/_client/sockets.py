@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Final
 from datamodel_code_generator._client.pagination import _label, _problem  # pyright: ignore[reportPrivateUsage]
 from datamodel_code_generator._client.plan import schema_use
 from datamodel_code_generator._client.streams import _Streams  # pyright: ignore[reportPrivateUsage]
-from datamodel_code_generator._generation_contract import DeclarationId, TypeUseBinding, TypeUseId
+from datamodel_code_generator._target_contract import DeclarationId, TypeUseBinding, TypeUseId
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
@@ -25,9 +25,9 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
     from datamodel_code_generator._codec_declarations import SchemaRef
-    from datamodel_code_generator._generation_contract import SourceLocation
     from datamodel_code_generator._openapi_codec_plan import CodecPlan
     from datamodel_code_generator._openapi_wire_plan import WirePlan
+    from datamodel_code_generator._target_contract import SourceLocation
 
 __all__ = ("DEPENDENCY", "SocketSpec", "plan_sockets", "socket_uses")
 
