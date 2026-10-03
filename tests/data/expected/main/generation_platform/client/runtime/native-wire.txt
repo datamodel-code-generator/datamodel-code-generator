@@ -39,8 +39,8 @@
   origin arrivals=1 connects=0 proxy arrivals=0 connects=0
   sync environment ca-default-upper = 'Response status=200 attempts=1 sends=1 wire=1'
   origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  sync environment ca-opt-out = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
+  sync environment ca-opt-out = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
+  origin arrivals=0 connects=0 proxy arrivals=0 connects=0
   sync environment ca-context = 'Response status=200 attempts=1 sends=1 wire=1'
   origin arrivals=1 connects=0 proxy arrivals=0 connects=0
   sync environment injected = 'Response status=200 attempts=1 sends=1 wire=None'
@@ -351,8 +351,8 @@ sync size error-explicit/65537 raw=True: ResponseTooLargeError limit=8 bytes=0 t
   origin arrivals=1 connects=0 proxy arrivals=0 connects=0
   async environment ca-default-upper = 'Response status=200 attempts=1 sends=1 wire=1'
   origin arrivals=1 connects=0 proxy arrivals=0 connects=0
-  async environment ca-opt-out = 'Response status=200 attempts=1 sends=1 wire=1'
-  origin arrivals=1 connects=0 proxy arrivals=0 connects=0
+  async environment ca-opt-out = 'TransportError delivery=DeliveryState.NOT_SENT phase=connect stop=transport_not_retryable attempts=1 sends=1 wire=0 status=None body=None cause=ConnectError'
+  origin arrivals=0 connects=0 proxy arrivals=0 connects=0
   async environment ca-context = 'Response status=200 attempts=1 sends=1 wire=1'
   origin arrivals=1 connects=0 proxy arrivals=0 connects=0
   async environment injected = 'Response status=200 attempts=1 sends=1 wire=None'
