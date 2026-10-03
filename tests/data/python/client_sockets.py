@@ -29,7 +29,10 @@ if TYPE_CHECKING:
     from websockets.sync.server import ServerConnection
 
 _JOINED: Final = json.dumps({"kind": "joined", "user": "ann"})
-_UPGRADE: Final = b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {accept}\r\n\r\n"
+_UPGRADE: Final = (
+    b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+    b"Sec-WebSocket-Accept: {accept}\r\n\r\n"
+)
 _LARGE: Final = "x" * (32 * 1024 * 1024)
 _PROBLEM: Final = (("Content-Type", "application/json"),)
 _INVALID: Final = (("WWW-Authenticate", 'Bearer error="invalid_token"'),)
@@ -49,9 +52,10 @@ def _described(value: object) -> str:
 
 
 def record(lines: list[str], label: str, call: Callable[[], object]) -> object:
+    """Record a public call's result or failure with its portable description."""
     try:
         result = call()
-    except Exception as error:  # noqa: BLE001
+    except Exception as error:  # ruff: ignore[blind-except]
         lines.append(f"  {label} ! {_described(error)}")
         return None
     lines.append(f"  {label} = {_described(result)}")
@@ -59,9 +63,10 @@ def record(lines: list[str], label: str, call: Callable[[], object]) -> object:
 
 
 async def arecord(lines: list[str], label: str, call: Callable[[], Any]) -> object:
+    """Record an awaited public call's result or failure with its portable description."""
     try:
         result = await call()
-    except Exception as error:  # noqa: BLE001
+    except Exception as error:  # ruff: ignore[blind-except]
         lines.append(f"  {label} ! {_described(error)}")
         return None
     lines.append(f"  {label} = {_described(result)}")
@@ -429,7 +434,7 @@ def _clocked(harness: _Harness) -> None:
         ) as api:
             session = api.protocols.secure.chat.connect(ws_options=harness.ws(send_timeout=timeout))
             record(lines, label, lambda session=session: session.send(b"y" * 100000))
-            if timeout == 90.0:
+            if timeout > 60.0:
                 record(lines, "send after uncertain completion", lambda session=session: session.send(b"again"))
             session.close()
 
@@ -465,6 +470,9 @@ def _closing_sessions(harness: _Harness, api: Any) -> None:
     record(lines, "send once the server closed unread", lambda: session.send("late"))
     lines.append(f"    closed send progress {dict(session.progress)['messages_sent']}")
     record(lines, "send after the closed send", lambda: session.send("again"))
+    (play,) = server.play(Play(talk=_closing))
+    session = api.protocols.feed.text.connect()
+    harness.report(play)
     record(lines, "ping once the server closed unread", session.ping)
 
 
@@ -597,7 +605,8 @@ with package.Client(options=None) as client:
     client.protocols.rooms.chat
     print('library loaded before a connect=' + repr('websockets' in sys.modules))
     connector = plans.SOCKET_0.connectors[0]()
-    print('library loaded by the native connector=' + repr('websockets' in sys.modules) + ' ' + type(connector).__name__)
+    print('library loaded by the native connector=' + repr('websockets' in sys.modules)
+          + ' ' + type(connector).__name__)
 """
 
 
@@ -686,7 +695,10 @@ def _handshakes(harness: _Harness) -> None:
         finally:
             peer.stop()
         lines.append(f"    complete Upgrade arrived={peer.upgraded.is_set()} count={peer.upgrade_count}")
-    accept = b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {accept}\r\n"
+    accept = (
+        b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+        b"Sec-WebSocket-Accept: {accept}\r\n"
+    )
     for label, reply, arguments in (
         ("open timeout", None, {"ws_options": harness.ws(open_timeout=1.0)}),
         ("deadline during the open", None, {"options": options.RequestOptions(total_timeout=1.0)}),
@@ -699,7 +711,10 @@ def _handshakes(harness: _Harness) -> None:
         ),
         (
             "wrong accept",
-            b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: wrong\r\n\r\n",
+            (
+                b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+                b"Sec-WebSocket-Accept: wrong\r\n\r\n"
+            ),
             {},
         ),
         ("subprotocol not offered", accept + b"Sec-WebSocket-Protocol: other\r\n\r\n", {}),
@@ -796,8 +811,9 @@ def _polled_pings(harness: _Harness) -> None:
 
 
 def _concurrent_pings(harness: _Harness) -> None:
-    """Refuse a ping whose payload another ping waits for without failing the session, and give default pings unique
-    payloads; every ping still waiting ends when the peer hangs up.
+    """Refuse duplicate ping payloads while giving default pings unique payloads.
+
+    Every ping still waiting ends when the peer hangs up.
     """
     lines, peer = harness.lines, RawPeer(_UPGRADE)
     try:
@@ -901,8 +917,7 @@ async def _async_sockets(harness: _Harness) -> None:
         (play,) = server.play(Play(talk=_echo))
         session = await api.protocols.feed.text.connect()
         lines.append(f"  async bytes {_message(await session.receive())}")
-        receipt = await session.ping()
-        lines.append(f"    async ping {receipt.latency >= 0}")
+        lines.append(f"    async ping {(await session.ping()).latency >= 0}")
         await session.send("hello")
         lines.append(f"    {_message(await session.receive())}")
         await session.aclose()
