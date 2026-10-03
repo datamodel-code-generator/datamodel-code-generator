@@ -73,11 +73,11 @@ if TYPE_CHECKING:
     from datamodel_code_generator._client.streams import StreamSpec
     from datamodel_code_generator._client.uploads import UploadSpec
     from datamodel_code_generator._client.webhooks import WebhookSpec
-    from datamodel_code_generator._generation_contract import GeneratedTypeContractBatch, TypeUseBinding, TypeUseId
     from datamodel_code_generator._openapi_codec_plan import CodecBackend, CodecPlan
     from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, WirePlan
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterPlan
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
+    from datamodel_code_generator._target_contract import GeneratedTypeContractBatch, TypeUseBinding, TypeUseId
 
 DEPENDENCIES: Final = ("httpx2>=2.13.0", "typing-extensions>=4.16")
 VALIDATION: Final = ("jsonschema[format-nongpl]>=4.26", "referencing>=0.37")

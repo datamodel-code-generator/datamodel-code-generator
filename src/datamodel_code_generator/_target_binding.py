@@ -16,13 +16,17 @@ from math import isfinite
 from typing import TYPE_CHECKING, Final, Literal, Protocol, TypeAlias, cast
 from urllib.parse import unquote, urljoin
 
-from datamodel_code_generator._generation_contract import (
+from datamodel_code_generator._generation_contract import AttemptId
+from datamodel_code_generator._target_contract import (
     AnnotatedType,
-    AttemptId,
+    BackendFieldFacts,
+    BackendModelFacts,
+    BackendSetting,
     BoundType,
     BuiltinType,
     ConstructorType,
     DeclarationId,
+    EmittedFieldFacts,
     FieldSlot,
     FieldSourceOrigin,
     FieldUseBinding,
@@ -35,17 +39,21 @@ from datamodel_code_generator._generation_contract import (
     IgnoredDeclaration,
     ImportedExpression,
     ImportedType,
+    KnownBackendValue,
     LiteralMapping,
     LiteralScalar,
     LiteralSequence,
     LiteralType,
     MetadataCall,
+    MetaLayer,
     ModelArtifactAddress,
     ModelFieldFacts,
     NoneDefaultProvenance,
     NoneType,
+    OpaqueBackendValue,
     OperationContract,
     OperationId,
+    RuntimeBackendValue,
     SourceDocument,
     SourceDocumentId,
     SourceExpression,
@@ -62,16 +70,6 @@ from datamodel_code_generator.imports import IMPORT_ANY, Import
 from datamodel_code_generator.model import dataclass as dataclass_model
 from datamodel_code_generator.model import msgspec, pydantic_v2, typed_dict
 from datamodel_code_generator.model.base import UNDEFINED, DataModel
-from datamodel_code_generator.model.binding import (
-    BackendFieldFacts,
-    BackendModelFacts,
-    BackendSetting,
-    EmittedFieldFacts,
-    KnownBackendValue,
-    MetaLayer,
-    OpaqueBackendValue,
-    RuntimeBackendValue,
-)
 from datamodel_code_generator.model.dataclass import DataModelField as DataclassField
 from datamodel_code_generator.model.enum import Enum, IntEnum, StrEnum
 from datamodel_code_generator.model.msgspec import DataModelField as MsgspecField
@@ -2577,13 +2575,19 @@ if TYPE_CHECKING:
     from pathlib import Path
     from urllib.parse import ParseResult
 
-    from datamodel_code_generator._generation_contract import FinalPythonType, FrozenLiteral, TypeArgument, TypeUseRole
     from datamodel_code_generator._python_type_annotation import PythonTypeExpr
     from datamodel_code_generator._python_type_binding import BoundPythonType
     from datamodel_code_generator._source import YamlValue
+    from datamodel_code_generator._target_contract import (
+        BackendValue,
+        DefaultKind,
+        FinalPythonType,
+        FrozenLiteral,
+        TypeArgument,
+        TypeUseRole,
+    )
     from datamodel_code_generator.config import OpenAPIParserConfig
     from datamodel_code_generator.model.base import DataModelFieldBase
-    from datamodel_code_generator.model.binding import BackendValue, DefaultKind
     from datamodel_code_generator.parser.base import ForwarderMap, ModuleContext, ModulePath, ParseConfig, Result
 
     class _DeclarationLike(Protocol):

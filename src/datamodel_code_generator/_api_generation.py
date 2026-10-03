@@ -66,16 +66,16 @@ if TYPE_CHECKING:
         OperationSelector,
         TargetKind,
     )
-    from datamodel_code_generator._generation_contract import (
+    from datamodel_code_generator._openapi_generation import ModelGenerationProduct, SourceLease
+    from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
+    from datamodel_code_generator._target_config import TargetConfig
+    from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
+        ModelArtifact,
         OperationContract,
         OperationId,
         TypeUseId,
     )
-    from datamodel_code_generator._openapi_artifacts import ModelArtifact
-    from datamodel_code_generator._openapi_generation import ModelGenerationProduct, SourceLease
-    from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
-    from datamodel_code_generator._target_config import TargetConfig
     from datamodel_code_generator.config import GenerateConfig
     from datamodel_code_generator.enums import DataModelType
     from datamodel_code_generator.format import CodeFormatter
@@ -353,7 +353,7 @@ def _staging(stack: ExitStack, destination: Path, cwd: Path) -> Path:
 
 
 def _staged_models(staged: Path, output: Path, encoding: str) -> tuple[ModelArtifact, ...]:
-    from datamodel_code_generator._openapi_artifacts import ModelArtifact  # noqa: PLC0415
+    from datamodel_code_generator._target_contract import ModelArtifact  # noqa: PLC0415
 
     if staged.is_file():
         return (ModelArtifact((output.name,), staged.read_bytes(), encoding),)
@@ -432,7 +432,7 @@ def _dependencies(rendered: TargetRender, model_dependency: str | None) -> tuple
 
 
 def _tags(operation: OperationContract) -> tuple[str, ...]:
-    from datamodel_code_generator._generation_contract import LiteralScalar, LiteralSequence  # noqa: PLC0415
+    from datamodel_code_generator._target_contract import LiteralScalar, LiteralSequence  # noqa: PLC0415
 
     if not isinstance(tags := dict(operation.facts).get("tags"), LiteralSequence):
         return ()

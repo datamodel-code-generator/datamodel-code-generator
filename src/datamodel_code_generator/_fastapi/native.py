@@ -12,25 +12,28 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeGuard, get_args
 
-from datamodel_code_generator._generation_contract import (
+from datamodel_code_generator._runtime.model_codecs.schema import STANDARD_FORMATS
+from datamodel_code_generator._target_contract import (
     BuiltinType,
     ConstructorType,
     GeneratedSymbolType,
     GenericType,
     ImportedType,
+    KnownBackendValue,
     LiteralScalar,
     LiteralType,
     NoneType,
     SourceLocation,
     UnionType,
 )
-from datamodel_code_generator._runtime.model_codecs.schema import STANDARD_FORMATS
-from datamodel_code_generator.model.binding import KnownBackendValue
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from datamodel_code_generator._generation_contract import (
+    from datamodel_code_generator._openapi_wire_plan import WirePlan
+    from datamodel_code_generator._runtime.model_codecs.context import Direction
+    from datamodel_code_generator._runtime.model_codecs.wire import WireValue
+    from datamodel_code_generator._target_contract import (
         FieldUseBinding,
         FinalModelSymbol,
         FinalPythonType,
@@ -39,9 +42,6 @@ if TYPE_CHECKING:
         TypeArgument,
         TypeUseBinding,
     )
-    from datamodel_code_generator._openapi_wire_plan import WirePlan
-    from datamodel_code_generator._runtime.model_codecs.context import Direction
-    from datamodel_code_generator._runtime.model_codecs.wire import WireValue
 
 Reason: TypeAlias = Literal[
     "explicit_raw",

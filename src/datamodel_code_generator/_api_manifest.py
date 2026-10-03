@@ -23,17 +23,17 @@ from datamodel_code_generator._codec_declarations import OperationRef, SchemaRef
 
 if TYPE_CHECKING:
     from datamodel_code_generator._api_types import TargetKind
-    from datamodel_code_generator._generation_contract import (
+    from datamodel_code_generator._openapi_generation import SourceLease
+    from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
+    from datamodel_code_generator._source import YamlValue
+    from datamodel_code_generator._target_contract import (
         GeneratedTypeContractBatch,
+        ModelArtifact,
         OperationId,
         SourceDocumentId,
         SourceLocation,
         TypeUseId,
     )
-    from datamodel_code_generator._openapi_artifacts import ModelArtifact
-    from datamodel_code_generator._openapi_generation import SourceLease
-    from datamodel_code_generator._runtime.model_codecs.wire import JSONValue
-    from datamodel_code_generator._source import YamlValue
 
 MANIFEST_NAME: Final = ".dcg-target-manifest.json"
 INVENTORY_PATH: Final = PurePosixPath(".dcg-state", "model-artifacts.json")
@@ -202,7 +202,7 @@ def persistent_uri(identity: str, root: Path, option_path: str) -> str:
 
 def _digest(lease: SourceLease, document: SourceDocumentId, uri: str) -> str:
     """Digest a borrowed document, locating cyclic values in its persistent source URI."""
-    from datamodel_code_generator._generation_contract import SourceLocation  # noqa: PLC0415
+    from datamodel_code_generator._target_contract import SourceLocation  # noqa: PLC0415
 
     return sha256(
         canonical_bytes(json_projection(lease.borrow(SourceLocation(document, "", "schema")), source_uri=uri))
@@ -262,7 +262,7 @@ class DocumentTable:
 
     def use(self, use: TypeUseId) -> JSONObject:
         """Return the persistent identity of one type use."""
-        from datamodel_code_generator._generation_contract import OperationId  # noqa: PLC0415
+        from datamodel_code_generator._target_contract import OperationId  # noqa: PLC0415
 
         owner = use.owner
         return {
