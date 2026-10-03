@@ -10,6 +10,7 @@ reviews:
     - "tests/data/expected/**/*.py"
     # Include documentation
     - "docs/**/*.md"
+    - "plans/generation-platform/**/*.md"
     - "README.md"
     # Include project config
     - "pyproject.toml"
