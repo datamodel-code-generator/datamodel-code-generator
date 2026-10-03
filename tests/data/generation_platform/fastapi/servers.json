@@ -182,7 +182,10 @@
         "name": "part"
       }
     ],
-    "package_snapshots": []
+    "package_snapshots": [
+      "pydantic_v2.BaseModel",
+      "pydantic_v2.dataclass"
+    ]
   },
   "parameters": {
     "input": "server-parameters.yaml",
