@@ -6450,6 +6450,16 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         models = [model for ctx in contexts for model in ctx.models]
         positions = [(ctx_index, index) for ctx_index, ctx in enumerate(contexts) for index in range(len(ctx.models))]
         identities = {id(model): index for index, model in enumerate(models)}
+        for index, model in enumerate(models):
+            references = [base.reference for base in emitted_bases(model) if base.reference]
+            if len(references) > 1 or (references and identities.get(id(references[0].source), index) >= index):
+                break
+        else:
+            if struct:
+                for ctx in contexts:
+                    self.data_model_type.render_module_code(ctx.models)
+            return
+
         paths: dict[str, list[DataModel]] = defaultdict(list)
         for model in models:
             paths[model.path].append(model)
