@@ -87,7 +87,12 @@
         }
       ],
       "signature_style": "unpack"
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "media": {
     "input": "media.yaml",
@@ -111,7 +116,12 @@
         "request": "schema",
         "response": "schema"
       }
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "multipart-split": {
     "input": "multipart-split.yaml",
@@ -267,6 +277,11 @@
     "input": "evolution.yaml",
     "backends": [
       "msgspec.Struct"
+    ],
+    "modules": [
+      [
+        "models.py"
+      ]
     ]
   },
   "evolution-schema": {
@@ -292,7 +307,12 @@
     }
   },
   "querystring": {
-    "input": "querystring.yaml"
+    "input": "querystring.yaml",
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "paths": {
     "input": "paths.yaml"
