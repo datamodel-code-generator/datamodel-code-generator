@@ -274,7 +274,6 @@ _ERROR_NAMES: Final = (
     "WebhookVerificationError",
 )
 _PROTOCOL_ERROR_NAMES: Final = (
-    "CacheInvalidationError",
     "CacheProtocolError",
     "CacheStoreError",
     "CacheValidatorConflictError",
@@ -2442,12 +2441,6 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         module = Module(
             {
                 *(name.format(index) for index in range(len(self.helpers)) for name in names),
-                *(
-                    f"MUTATION_{index}_{position}"
-                    for index, spec in enumerate(self.helpers)
-                    if isinstance(spec, CacheSpec)
-                    for position in range(len(spec.mutations))
-                ),
                 *(f"STREAM_{index}" for index in range(len(streams))),
                 *(f"SOCKET_{index}" for index in range(len(sockets))),
             },
@@ -2483,7 +2476,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         )
 
     def cache(self, module: Module, index: int, spec: CacheSpec) -> list[str]:
-        """Return a cache helper's plan and the plans of its mutations, each naming only settings it declares."""
+        """Return a cache helper's plan, naming only settings it declares."""
         helper, operations = spec.helper, module.root("_operations")
         tree = helper.tree
         plan = module.local(_CACHE, "CachePlan")
@@ -2499,27 +2492,8 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             entries.append(("statuses=", _call("frozenset", (("", _tuple(map(repr, statuses))),))))
         if names := sorted({name.lower() for name in tree["vary_allowlist"]}):
             entries.append(("vary_allowlist=", _call("frozenset", (("", _tuple(map(repr, names))),))))
-        if spec.tags:
-            entries.append(("tags=", _tuple(map(repr, spec.tags))))
         head = f"PLAN_{index}: {module.name('typing', 'Final')}[{plan}[{self.response(module, spec.operation)}]] = "
-        sections = [head + layout(_call(plan, entries), 0, len(head), WIDTH)]
-        mutation = module.local(_CACHE, "CacheMutationPlan")
-        for position, item in enumerate(spec.mutations):
-            head = (
-                f"MUTATION_{index}_{position}: {module.name('typing', 'Final')}"
-                f"[{mutation}[{self.response(module, item.operation)}]] = "
-            )
-            value = _call(
-                mutation,
-                (
-                    ("helper_id=", repr(helper.name)),
-                    ("operation=", self.reference(module, item.operation)),
-                    ("call=", f"{operations}.OPERATION_{item.operation.index}"),
-                    ("tags=", _tuple(map(repr, item.tags))),
-                ),
-            )
-            sections.append(head + layout(value, 0, len(head), WIDTH))
-        return sections
+        return [head + layout(_call(plan, entries), 0, len(head), WIDTH)]
 
     def items(self, module: Module, index: int, spec: PaginationSpec) -> str:
         """Return a pagination helper's typed items accessor."""
@@ -2789,7 +2763,6 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             root,
             *(name for children in nodes.values() for name, _ in children.values()),
             *handles.values(),
-            *(f"{name}Mutations" for name, spec in leaves.items() if isinstance(spec, CacheSpec) and spec.mutations),
             *(name for operations, aliases in queued.values() for name in (operations, *aliases)),
         }
         module = Module(names, self.resources.symbols, level=2)
@@ -2853,11 +2826,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         handle: str | None,
         asynchronous: bool,
     ) -> list[str]:
-        """Return a helper's class, then a polling helper's own handle class or a cache helper's mutations class.
-
-        A polling helper has its own handle class when it cancels remotely, and a cache helper a mutations class when
-        it declares mutations.
-        """
+        """Return a helper's class and a polling helper's handle class when it cancels remotely."""
         route = f"{spec.operation.contract.method.upper()} {spec.operation.contract.path}"
         what = f"the {spec.helper.name} {_HELPER_KINDS[spec.helper.kind]} of {route}"
         if isinstance(spec, PollingSpec):
@@ -2878,24 +2847,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                 self.node(name, what, core, self.methods(module, index, spec, asynchronous=asynchronous), leaf=True)
             ]
         members = self.fetch(module, index, spec, asynchronous=asynchronous)
-        if not spec.mutations:
-            return [self.node(name, what, core, members, leaf=True)]
-        mutations = f"{name}Mutations"
-        members.append(
-            f"    @{module.name('functools', 'cached_property')}\n    def mutations(self) -> {mutations}:\n"
-            f'        """The mutations that invalidate entries of this helper."""\n'
-            f"        return {mutations}(self._core)"
-        )
-        return [
-            self.node(name, what, core, members, leaf=True),
-            self.node(
-                mutations,
-                f"the mutations of the {spec.helper.name} cache helper",
-                core,
-                self.mutations(module, index, spec, asynchronous=asynchronous),
-                leaf=True,
-            ),
-        ]
+        return [self.node(name, what, core, members, leaf=True)]
 
     @staticmethod
     def node(name: str, what: str, core: str, members: list[str], *, leaf: bool = False) -> str:
@@ -3029,7 +2981,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         ]
 
     def fetch(self, module: Module, index: int, spec: CacheSpec, *, asynchronous: bool) -> list[str]:
-        """Return a cache helper's fetch and invalidate methods."""
+        """Return a cache helper's fetch method."""
         operation = spec.operation
         arguments = [self.resources.parameter(module, parameter) for parameter in operation.parameters]
         options = [
@@ -3044,56 +2996,17 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
             *((f"{name}=", name) for name, _, _ in _CACHE_OPTIONS),
         ]
         result = f"{module.local('_runtime.protocols.caches', 'CacheResult')}[{self.response(module, operation)}]"
-        fetch, invalidate = (
-            module.local(_CACHE, name)
-            for name in (("afetch", "ainvalidate") if asynchronous else ("fetch", "invalidate"))
-        )
+        fetch = module.local(_CACHE, "afetch" if asynchronous else "fetch")
         route = f"{operation.contract.method.upper()} {operation.contract.path}"
         signature = tuple(argument.parameter(module) for argument in (*arguments, *options))
-        wait, coroutine = ("await ", "async ") if asynchronous else ("", "")
+        wait = "await " if asynchronous else ""
         return [
             "\n".join((
                 _signature("fetch", signature, result, asynchronous=asynchronous, stub=False),
                 f'        """Fetch {route} through the helper\'s cache, revalidating a stale entry."""',
                 f"        return {wait}{layout(_call(fetch, passed), 8, 7 + len(wait), WIDTH)}",
             )),
-            "\n".join((
-                f"    {coroutine}def invalidate(self, tags: tuple[str, ...]) -> int:",
-                '        """Remove the stored entries that carry any of the tags, returning how many."""',
-                f"        return {wait}{invalidate}(self._core, {plan}, tags)",
-            )),
         ]
-
-    def mutations(self, module: Module, index: int, spec: CacheSpec, *, asynchronous: bool) -> list[str]:
-        """Return a method per mutation of a cache helper, taking its operation's parameters, body, and options."""
-        resources = self.resources
-        methods: list[str] = []
-        call = module.local(_CACHE, "amutate" if asynchronous else "mutate")
-        wait = "await " if asynchronous else ""
-        for position, item in enumerate(spec.mutations):
-            operation = replace(item.operation, fields=())
-            arguments = [resources.parameter(module, parameter) for parameter in operation.parameters]
-            body = resources.requests(module, operation, asynchronous=asynchronous)[1]
-            options = _Argument("options", f"{module.namespace.name('..options', 'RequestOptions')} | None", "none")
-            passed = [
-                ("", "self._core"),
-                ("", f"{module.namespace.name('.', '_plans')}.MUTATION_{index}_{position}"),
-                ("", _tuple(parameter.python_name for parameter in operation.parameters)),
-                *((f"{argument.name}=", argument.name) for argument in body),
-                ("options=", "options"),
-            ]
-            route = f"{operation.contract.method.upper()} {operation.contract.path}"
-            signature = tuple(argument.parameter(module) for argument in (*arguments, *body, options))
-            methods.append(
-                "\n".join((
-                    _signature(
-                        item.name, signature, self.response(module, operation), asynchronous=asynchronous, stub=False
-                    ),
-                    f'        """Call {route}, then remove the cached entries its tags name once it succeeds."""',
-                    f"        return {wait}{layout(_call(call, passed), 8, 7 + len(wait), WIDTH)}",
-                ))
-            )
-        return methods
 
     def handle(self, module: Module, index: int, spec: PollingSpec, name: str, *, asynchronous: bool) -> str:
         """Return a polling helper's own handle class, which also cancels its operation remotely."""
@@ -3816,7 +3729,7 @@ holds. `close()` or `aclose()` stops only local uploading. See the runtime refer
         caching = (
             """
 A cache helper's `fetch` answers from a fresh entry of the store `ProtocolClientOptions.cache_stores` lends it, or
-sends the request, revalidating a stale entry; `invalidate` and its `mutations` remove tagged entries. See the runtime
+sends the request, revalidating a stale entry. See the runtime
 reference for their limits."""
             if "cache" in kinds
             else ""
@@ -4303,7 +4216,7 @@ another kind's options, fail construction. The session types are imported from:
 {self.count_runtime(kinds)}{self.follow_runtime(kinds)}{_RESUME_RUNTIME}"""
 
     def cache_runtime(self) -> str:
-        """Describe cache helpers' stores, keys, freshness, revalidation, and invalidation, or nothing without them."""
+        """Describe cache helpers' stores, keys, freshness, and revalidation, or nothing without them."""
         if not any(isinstance(spec, CacheSpec) for spec in self.helpers):
             return ""
         return f"""
@@ -4311,7 +4224,7 @@ another kind's options, fail construction. The session types are imported from:
 
 A cache helper keeps entries only in the store `ProtocolClientOptions.cache_stores` lends it under its name, a
 `MemoryCacheStore` or `AsyncMemoryCacheStore` or another implementation of `CacheStore` or `AsyncCacheStore` of the
-client's mode; a client without one refuses `fetch`, `invalidate`, and the mutations with
+client's mode; a client without one refuses `fetch` with
 `ProtocolConfigurationError` before sending. The client never creates or closes a store. The types are imported from
 `{self.config.package}.protocols`: `CacheOptions`, `CacheResult`, `CacheEntry`, the store protocols, and the memory
 stores.
@@ -4332,9 +4245,11 @@ cannot see, such as a client certificate, need a partition of their own. Freshne
 only, capped by `max_ttl`; a stale entry is revalidated with its validator, and a 304 without a usable entry raises
 `CacheProtocolError`. A response is stored only when its status is cacheable, it came without a redirect, Set-Cookie,
 `no-store`, or an unsupported Cache-Control directive, and its `Vary` names only allowlisted headers; otherwise it
-removes the entry it supersedes. Store failures raise `CacheStoreError` and never resend a request. A mutation removes
-the entries its tags name only after it succeeds; a store failure then raises `CacheInvalidationError`, whose
-`require_result()` returns the mutation's result.
+removes the entry it supersedes. Store failures raise `CacheStoreError` and never resend a request.
+The store keeps one representation per key. A Vary mismatch is a miss; a successful cacheable response replaces it.
+Vary stores plain ordered header values in private process memory, excluding credential headers and cookies.
+Memory stores are bounded by entry count (128 by default), with reads and writes marking a key recently used.
+Concurrent custom-store writes use last-completing replacement.
 """
 
     @staticmethod

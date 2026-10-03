@@ -7,7 +7,6 @@ normalized metadata. Selectors and request targets are the runtime records gener
 from __future__ import annotations
 
 import keyword
-import re
 from collections import deque
 from collections.abc import Mapping
 from dataclasses import dataclass, field, fields
@@ -38,7 +37,6 @@ __all__ = (
     "Binding",
     "BodyHmacSignature",
     "CacheHelper",
-    "CacheMutation",
     "Continuation",
     "Converter",
     "CountContinuation",
@@ -115,7 +113,7 @@ KINDS: Final = (
 _LATER: Final = frozenset({"batch"})
 _PUBLIC_KEY_SIGNATURES: Final = ("ed25519", "rsa-pss-sha256")
 _SOURCES: Final = ("input", "initial", "previous")
-_BRACKETED: Final = frozenset({"helpers", "mapping", "error_events", "mutations", "operations"})
+_BRACKETED: Final = frozenset({"helpers", "mapping", "error_events", "operations"})
 _KEYS: Final = {"from_": "from"}
 _ROOT: Final = "protocols"
 _MERGE: Final = "tag:yaml.org,2002:merge"
@@ -124,7 +122,6 @@ _STATE_SETS: Final = ("pending", "succeeded", "failed", "cancelled")
 _FRAMES: Final = {"json": None, "utf8": "text", "bytes": "binary"}
 _MAX_DEPTH: Final = 64
 _VALIDATOR_KINDS: Final = ("etag", "last_modified", "both")
-_TAG: Final = re.compile(r"(?:[^{}]|\{[^{}]+\})+")
 
 
 class _Mark(Enum):
@@ -478,19 +475,8 @@ class WebSocketHelper:
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class CacheMutation:
-    """An operation whose explicit wrapper invalidates the cache entries its tags name after it succeeds."""
-
-    operation: OperationSelector
-    invalidate_tags: tuple[str, ...]
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
 class CacheHelper:
-    """Fetch one operation's responses through a private cache that revalidates stale entries with their validator.
-
-    A tag is literal text whose braces each name a required path or query parameter of the operation it renders for.
-    """
+    """Fetch one operation's responses through a private cache that revalidates stale entries with their validator."""
 
     kind: ClassVar[Literal["cache"]] = "cache"
 
@@ -499,13 +485,7 @@ class CacheHelper:
     authenticated: bool
     statuses: tuple[int, ...] = (200,)
     vary_allowlist: tuple[str, ...] = ()
-    tags: tuple[str, ...] = ()
-    mutations: Mapping[str, CacheMutation] = field(default_factory=lambda: MappingProxyType({}))
     enabled: bool = True
-
-    def __post_init__(self) -> None:
-        """Keep a read-only copy of the mutations."""
-        object.__setattr__(self, "mutations", _frozen(self.mutations))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -675,7 +655,6 @@ _RECORDS: Final = frozenset({
     WebhookHelper,
     WebSocketMessage,
     WebSocketHelper,
-    CacheMutation,
     CacheHelper,
     UploadCreate,
     UploadProbe,
@@ -698,7 +677,6 @@ _ROLES: Final[Mapping[tuple[type, str], str]] = {
     (PollingHelper, "cancelled"): "json",
     (EventMapping, "mapping"): "mapping",
     (StreamHelper, "error_events"): "mapping",
-    (CacheHelper, "mutations"): "mapping",
     (QueueHelper, "operations"): "mapping",
     (ProtocolConfiguration, "helpers"): "mapping",
 }
@@ -1644,8 +1622,6 @@ class _Validator:  # noqa: PLR0904
                 "authenticated": (self.boolean, REQUIRED),
                 "statuses": (self.statuses, [200]),
                 "vary_allowlist": (self.vary_names, []),
-                "tags": (self.tags, []),
-                "mutations": (self.mutations, {}),
             },
             "a helper definition",
         )
@@ -1662,29 +1638,6 @@ class _Validator:  # noqa: PLR0904
 
     def vary_name(self, value: object, at: str) -> object:
         return self.value(at, f"{at} must name a header, not '*'") if value == "*" else self.header(value, at)
-
-    def tags(self, value: object, at: str, *, nonempty: bool = False) -> object:
-        return self.distinct(at, self.items(value, at, self.tag, nonempty=nonempty), "a tag")
-
-    def tag(self, value: object, at: str) -> object:
-        valid = isinstance(value, str) and _encodable(value) and _TAG.fullmatch(value) is not None
-        return value if valid else self.value(at, f"{at} must be nonempty text whose braces each name a parameter")
-
-    def mutations(self, value: object, at: str) -> object:
-        """Convert the mutations by their method names: public Python identifiers that are not keywords."""
-        if not isinstance(value, Mapping):
-            return self.value(at, f"{at} must be a mapping")
-        spec: Spec = {
-            "operation": (self.operation, REQUIRED),
-            "invalidate_tags": (partial(self.tags, nonempty=True), REQUIRED),
-        }
-        mutations: dict[str, object] = {}
-        for name, item in value.items():
-            if isinstance(name, str) and name.isidentifier() and not keyword.iskeyword(name) and name[0] != "_":
-                mutations[name] = self.record(item, f"{at}[{name!r}]", spec, "a mutation")
-            else:
-                mutations[""] = self.value(at, f"{at} has the key {name!r}, which is not a public method name")
-        return INVALID if any(item is INVALID for item in mutations.values()) else mutations
 
     def queue(self, value: object, at: str) -> Tree | _Invalid:
         spec: Spec = {
@@ -1785,7 +1738,7 @@ def _targets(bindings: list[Tree], at: str) -> tuple[tuple[str, Tree], ...]:
     return tuple((f"{at}[{index}].target", binding["target"]) for index, binding in enumerate(bindings))
 
 
-def _links(kind: str, tree: Tree, at: str) -> Iterator[Link]:  # noqa: PLR0912
+def _links(kind: str, tree: Tree, at: str) -> Iterator[Link]:
     """Yield the operations a valid helper sends, its entry operation first, with the targets each one takes."""
     match kind:
         case "pagination":
@@ -1802,8 +1755,6 @@ def _links(kind: str, tree: Tree, at: str) -> Iterator[Link]:  # noqa: PLR0912
             yield Link(at=f"{at}.operation", ref=tree["operation"])
         case "cache":
             yield Link(at=f"{at}.operation", ref=tree["operation"])
-            for name, mutation in tree["mutations"].items():
-                yield Link(at=f"{at}.mutations[{name!r}].operation", ref=mutation["operation"])
         case "resumable_upload":
             yield from _upload_links(tree, at)
         case "queue":

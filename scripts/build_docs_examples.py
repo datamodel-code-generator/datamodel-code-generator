@@ -603,8 +603,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
                 blocks(
                     CLIENT_PACKAGES / "caching" / "pydantic_v2_BaseModel" / "client" / "protocols" / "_helpers.py",
                     "    def fetch(",
-                    "    def invalidate(",
-                    limit=2,
+                    limit=1,
                 ),
             ),
         ),

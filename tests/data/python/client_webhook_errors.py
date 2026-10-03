@@ -82,7 +82,7 @@ def webhook_errors(package: ModuleType, lines: list[str]) -> None:
             lambda: errors.ProtocolConfigurationError(field_path=(), condition="invalid_value"),
         ),
         ("verification defaults", lambda: errors.WebhookVerificationError(condition="missing_key")),
-        ("store defaults", lambda: errors.ProtocolStoreError(action="lookup")),
+        ("store defaults", lambda: errors.ProtocolStoreError(action="get")),
     ):
         error = create()
         defaults = (
@@ -113,8 +113,7 @@ def webhook_errors(package: ModuleType, lines: list[str]) -> None:
         error = errors.WebhookVerificationError(condition=condition)
         lines.append(f"  verification condition: {error.condition}")
     for action in (
-        "lookup", "fingerprint_vary", "compare_exchange", "delete", "invalidate", "claim", "put", "get",
-        "open", "read", "close", "purge_terminal",
+        "get", "set", "delete", "compare_exchange", "claim", "put", "open", "read", "close", "purge_terminal",
     ):
         error = errors.ProtocolStoreError(action=action)
         lines.append(f"  store action: {error.action} entry={error.entry_id}")
