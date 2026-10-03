@@ -82,12 +82,10 @@ from .options import (
     DEFAULT_TRANSPORT,
     DEFAULT_VALIDATION,
     ClientOptions,
-    CompressionOrigin,
     HeaderPatch,
     IdempotencyKey,
     QueryPatch,
     RequestOptions,
-    ResolvedCompression,
     ServerSelection,
     Settings,
     TimeoutOptions,
@@ -236,12 +234,10 @@ def _layered(
     layer: ClientOptions | RequestOptions,
     modes: ValidationModes,
     operation_id: str | None = None,
-    origin: CompressionOrigin = "call",
 ) -> Settings:
     """Return the settings with one options layer applied: its set fields replace, UNSET ones inherit.
 
-    A validation mode the package does not allow is refused. A request coding the layer selects keeps the layer as
-    its origin: the client, a view, or the call.
+    A validation mode the package does not allow is refused.
     """
     base_url, server = settings.base_url, settings.server
     if not isinstance(layer.base_url, Unset):
@@ -290,13 +286,7 @@ def _layered(
             if isinstance(layer.stream_total_timeout, Unset)
             else layer.stream_total_timeout
         ),
-        compression=(
-            settings.compression
-            if isinstance(coding := layer.compression, Unset)
-            else None
-            if coding is None
-            else ResolvedCompression(coding, origin)
-        ),
+        compression=layer.compression if isinstance(layer, ClientOptions) else settings.compression,
         clock=settings.clock,
     )
 
@@ -361,7 +351,7 @@ def _client_settings(options: object, defaults: ClientDefaults) -> Settings:
         case ClientOptions():
             if not isinstance(clock := options.clock, Unset):
                 settings = replace(settings, clock=clock)
-            return _layered(settings, options, modes, origin="client")
+            return _layered(settings, options, modes)
         case _:
             pass
     raise ConfigurationError(field_path=("options",), condition="invalid_type")
@@ -870,25 +860,24 @@ _EMPTY_ORIGINS: Final[frozenset[Origin]] = frozenset()
 
 
 def _compressed(
-    coding: ResolvedCompression, call: _Call, request: PreparedRequest[EncodedAttempt], deferred: object
+    call: _Call, request: PreparedRequest[EncodedAttempt], deferred: object
 ) -> tuple[PreparedRequest[EncodedAttempt], bool]:
-    """Apply a selected coding to a request with a body whose operation accepts it, adding its Content-Encoding.
-
-    Elsewhere a coding the client or a view selected turns off, as one a helper's child call inherits does; one the
-    call selected is refused before sending. A Content-Encoding header the call already sends conflicts with it.
-    """
-    from .compression import applies, gzipped_attempt  # noqa: PLC0415 - Only a selected coding loads the encoder.
-
-    if not applies(coding, call.operation, body=request.body is not None or not isinstance(deferred, Unset)):
-        if coding.origin == "call" and not isinstance(call, _SessionCall):
-            raise ConfigurationError(field_path=("compression",), condition="not_applicable")
+    """Gzip a declared request body unless the client disabled it, replacing its entity framing."""
+    if (
+        call.settings.compression is None
+        or call.operation is None
+        or "gzip" not in call.operation.accepted_content_encodings
+        or (request.body is None and isinstance(deferred, Unset))
+    ):
         return request, False
     if request.headers.get_all("content-encoding"):
         raise ConfigurationError(field_path=("headers", "Content-Encoding"), condition="managed")
+    from .compression import gzipped_attempt  # noqa: PLC0415 - Only a declared body loads the encoder.
+
     body = None if request.body is None else gzipped_attempt(request.body, partial(call.check, "encode"))
     headers = HeadersView((
         *(pair for pair in request.headers if pair[0].lower() != "content-length"),
-        ("Content-Encoding", coding.token),
+        ("Content-Encoding", "gzip"),
     ))
     return PreparedRequest(method=request.method, url=request.url, headers=headers, body=body), True
 
@@ -1713,7 +1702,7 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         """Return a view with the options layered on these, sharing the transport and counting its calls here too."""
         if not isinstance(options, RequestOptions):
             raise ConfigurationError(field_path=("options",), condition="invalid_type")
-        settings = self._call_settings(options, None, "view")
+        settings = self._call_settings(options, None)
         view = type(self)(self._shared, settings, self._scope.view(), owned=False)
         if not isinstance(options.auth, Unset) and options.auth is not None:
             view._adopt_auth(options.auth)  # noqa: SLF001 - The new view admits ownership through its own scope.
@@ -1859,7 +1848,7 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
                 media_type = response_media_type or operation.response_media_type
         return decoder if media_type is None else decoder.narrowed(operation.operation_id, media_type)
 
-    def _call_settings(self, options: object, operation_id: str | None, origin: CompressionOrigin = "call") -> Settings:
+    def _call_settings(self, options: object, operation_id: str | None) -> Settings:
         """Return the settings a call runs with: this client's or view's, with the call's options layered on them."""
         if options is None:
             return self._settings
@@ -1871,7 +1860,7 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
             from .auth_policy import validate_auth_mode  # noqa: PLC0415
 
             validate_auth_mode(options.auth, asynchronous=self._asynchronous)
-        return _layered(self._settings, options, self._shared.modes, operation_id, origin)
+        return _layered(self._settings, options, self._shared.modes, operation_id)
 
     def _bound(
         self, operation: OperationPlan[object, object] | None, config: AuthConfig | None
@@ -3287,8 +3276,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             request = call.prepared(request)
             if call.auth is not None:
                 self._auth_prepared(request, call)
-            coding = call.settings.compression
-            request, compressing = (request, False) if coding is None else _compressed(coding, call, request, deferred)
+            request, compressing = _compressed(call, request, deferred)
             call.check("encode")
             if not isinstance(deferred, Unset):
                 source = bind_body(deferred, entry=entry)
@@ -4300,8 +4288,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             request = call.prepared(request)
             if call.auth is not None:
                 self._auth_prepared(request, call)
-            coding = call.settings.compression
-            request, compressing = (request, False) if coding is None else _compressed(coding, call, request, deferred)
+            request, compressing = _compressed(call, request, deferred)
             call.check("encode")
             if not isinstance(deferred, Unset):
                 source = await bind_async_body(deferred, entry=entry, cleanup=call.cleanup)

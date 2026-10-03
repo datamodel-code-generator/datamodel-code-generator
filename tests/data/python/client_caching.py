@@ -264,9 +264,6 @@ def _fresh(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) -> No
     fetched(lines, "fresh hit", lambda: helper.fetch(user_id=three))
     small = cache.options.RequestOptions(max_response_bytes=5)
     fetched(lines, "fresh hit over the response limit", lambda: helper.fetch(user_id=three, options=small))
-    coded = cache.options.RequestOptions(compression="gzip")
-    fetched(lines, "fresh hit with a coding", lambda: helper.fetch(user_id=three, options=coded))
-    fetched(lines, "miss with a coding", lambda: helper.fetch(user_id=cache.user_id(4), options=coded))
     for index, (label, headers, limits, stale) in enumerate((
         ("aged past max-age", {"cache-control": "max-age=60", "age": "100"}, None, True),
         ("aged past the cap", {"cache-control": "max-age=100000", "age": "400"}, None, True),
@@ -281,8 +278,12 @@ def _fresh(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) -> No
         argument = cache.user_id(30 + index)
         settings = None if limits is None else cache.protocols.CacheOptions(max_ttl=limits)
         exchange.respond(user(30 + index, etag='"e"', **headers), *((not_modified(etag='"e"'),) if stale else ()))
-        fetched(lines, f"{label} stored", lambda: helper.fetch(user_id=argument, cache_options=settings))
-        fetched(lines, f"{label} again", lambda: helper.fetch(user_id=argument, cache_options=settings))
+        fetched(
+            lines, f"{label} stored", lambda argument=argument: helper.fetch(user_id=argument, cache_options=settings)
+        )
+        fetched(
+            lines, f"{label} again", lambda argument=argument: helper.fetch(user_id=argument, cache_options=settings)
+        )
     listing = api.protocols.users.listing
     exchange.respond(json_response(200, {"data": [{"id": 1, "name": "a"}]}, **{"cache-control": "max-age=60"}))
     fetched(lines, "list miss", listing.fetch)
@@ -417,9 +418,9 @@ def _unstored(cache: Caching, api: Any, exchange: Exchange, lines: list[str]) ->
         settings = None if limits is None else cache.protocols.CacheOptions(max_entry_bytes=limits)
         exchange.respond(user(10, etag='"s"', **{"cache-control": "max-age=0"}), response)
         fetched(lines, f"{label} after stale", lambda: helper.fetch(user_id=argument))
-        fetched(lines, label, lambda: helper.fetch(user_id=argument, cache_options=settings))
+        fetched(lines, label, lambda argument=argument: helper.fetch(user_id=argument, cache_options=settings))
         exchange.respond(user(10))
-        fetched(lines, f"{label} next", lambda: helper.fetch(user_id=argument))
+        fetched(lines, f"{label} next", lambda argument=argument: helper.fetch(user_id=argument))
     eleven = cache.user_id(11)
     exchange.respond(
         user(11, **{"cache-control": "max-age=0"}, etag='"k"'),

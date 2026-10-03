@@ -1081,19 +1081,18 @@ async def _async_uploads(harness: _Uploads, server: _Server, lines: list[str]) -
 
 
 def upload_compression(package: ModuleType, lines: list[str]) -> None:
-    """Compress original upload ranges and recheck each new resume, refusing workflows without a declared body."""
+    """Compress declared upload ranges while undeclared operations stay plain."""
     harness, exchange, server = _Uploads(package), Exchange(lines), _Server()
-    coding = harness.options.RequestOptions(compression="gzip")
     source = harness.source()
     with exchange.client() as native, package.Client(http_client=native) as api:
         helper = api.protocols.files.upload
         exchange.respond(*(server for _ in range(12)))
-        handle = step(lines, "start gzip", lambda: helper.start(source, tus_resumable=harness.tus, options=coding))
+        handle = step(lines, "start gzip", lambda: helper.start(source, tus_resumable=harness.tus))
         if handle is not None:
             step(lines, "compressed range", handle.advance)
             state = handle.checkpoint()
             handle.close()
-            with helper.resume(source, state, options=coding) as resumed:
+            with helper.resume(source, state) as resumed:
                 step(lines, "compressed resume", resumed.run)
                 record(lines, "checkpoint the completed upload", resumed.checkpoint)
             lines.append(f"  {server.stored('u1')}")
@@ -1103,39 +1102,25 @@ def upload_compression(package: ModuleType, lines: list[str]) -> None:
         for _ in range(2):
             step(lines, "plain range", pending.advance)
         state = pending.checkpoint()
-        record(lines, "gzip resume before the completion", lambda: finish.resume(source, state, options=coding))
         with finish.resume(source, state) as complete:
             step(lines, "plain resume before the completion", complete.run)
-        record(
-            lines,
-            "empty gzip upload",
-            lambda: helper.start(harness.source(b""), tus_resumable=harness.tus, options=coding),
-        )
-        record(
-            lines,
-            "empty operation completion",
-            lambda: api.protocols.files.finish.start(harness.source(b""), tus_resumable=harness.tus, options=coding),
-        )
         lines.append(f"  creates={len(server.uploads)}")
     exchange.responders.clear()
     run(lambda: _async_upload_compression(harness, exchange, server, lines))
 
 
 async def _async_upload_compression(harness: _Uploads, exchange: Exchange, server: _Server, lines: list[str]) -> None:
-    """Apply the same compression admission to asyncio upload entries and completed resumes."""
-    coding = harness.options.RequestOptions(compression="gzip")
+    """Apply declared gzip to asyncio upload entries and completed resumes."""
     source = _CONTENT
     async with exchange.async_client() as native, harness.package.AsyncClient(http_client=native) as api:
         helper = api.protocols.files.upload
         exchange.respond(*(server for _ in range(12)))
-        handle = await astep(
-            lines, "async start gzip", lambda: helper.start(source, tus_resumable=harness.tus, options=coding)
-        )
+        handle = await astep(lines, "async start gzip", lambda: helper.start(source, tus_resumable=harness.tus))
         if handle is not None:
             await astep(lines, "async compressed range", handle.advance)
             state = handle.checkpoint()
             await handle.aclose()
-            async with await helper.resume(source, state, options=coding) as resumed:
+            async with await helper.resume(source, state) as resumed:
                 await astep(lines, "async compressed resume", resumed.run)
                 record(lines, "async checkpoint the completed upload", resumed.checkpoint)
         finish = api.protocols.files.finish
@@ -1144,18 +1129,8 @@ async def _async_upload_compression(harness: _Uploads, exchange: Exchange, serve
         for _ in range(2):
             await astep(lines, "async plain range", pending.advance)
         state = pending.checkpoint()
-        await arecord(
-            lines, "async gzip resume before the completion", lambda: finish.resume(source, state, options=coding)
-        )
         async with await finish.resume(source, state) as complete:
             await astep(lines, "async plain resume before the completion", complete.run)
-        empty = b""
-        await arecord(lines, "async empty gzip", lambda: helper.start(empty, tus_resumable=harness.tus, options=coding))
-        await arecord(
-            lines,
-            "async empty completion",
-            lambda: api.protocols.files.finish.start(empty, tus_resumable=harness.tus, options=coding),
-        )
         lines.append(f"  creates={len(server.uploads)}")
     exchange.responders.clear()
 

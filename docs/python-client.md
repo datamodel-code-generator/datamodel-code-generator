@@ -477,6 +477,10 @@ querystring, or its request body. An operation that owns a querystring takes no 
 | `resumable_upload` | `profile` (`offset`), `create` (`{operation, size?, expires_at?}`), `probe` (`{operation, remote_offset, bindings?}`), `append` (`{operation, offset, length?, checksum?, bindings?}`, a `checksum` being `{target, algorithm, encoding?, algorithm_prefix?}`), `max_chunk_bytes` (a positive integer), `partial_commit` (`allowed` or `forbidden`), `completion` | `abort` (`{operation, bindings?}`) and `create.session_url`, both refused as not supported yet |
 | `queue` | `operations`, a nonempty mapping of aliases to `{operation, side_effects}` (see [queue helpers](#queue-helpers)) | Per operation, `key_binding` and `dedupe_ttl`, given together and required with side effects |
 
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.cache.fields -->
+Cache helper fields: `operation`, `validator`, `authenticated`, `statuses`, `vary_allowlist`, `enabled`. See [cache helpers](#cache-helpers).
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.cache.fields -->
+
 A pagination `continuation` is one of these:
 
 | `kind` | Settings |
@@ -3635,9 +3639,6 @@ a normally safe method.
 
 ## Request compression
 
-A client can send request bodies gzip-compressed to operations whose API accepts them. Compression needs two things:
-the generation settings declare that an operation accepts the coding, and a client, view, or call selects it.
-
 ### Declare accepted codings
 
 `RuntimeOperationMetadata.accepted_content_encodings: tuple[str, ...] = ()` lists the request content codings an
@@ -3667,71 +3668,22 @@ The generated README lists the operations that accept a coding.
 
 ### Select a coding
 
-`compression: str | None` exists on `ClientOptions` and `RequestOptions`, for views and calls alike. `UNSET` inherits,
-`None` turns compression off at that layer, and a string is lowercased; any value other than `gzip` raises
-`ConfigurationError(field_path=('compression',), condition='invalid_value')`, and a value of another type one with
-`condition='invalid_type'`, when the options are constructed.
+`ClientOptions(compression="gzip")` is the default. The SDK gzips only bodies of operations that declare gzip;
+`ClientOptions(compression=None)` disables it. Views and calls inherit the client setting. Undeclared operations,
+bodyless requests, raw requests, and token requests stay uncompressed. A Content-Encoding header conflicts only
+when the SDK compresses the body. The gzip encoder uses level 6 and a zero modification time.
 
-```python
-from pkg import Client
-from pkg.options import ClientOptions, RequestOptions
+Bytes and encoded bodies are compressed once and every retry resends the same bytes. File, stream, factory, and
+multipart bodies are compressed as each attempt streams, without a Content-Length, and replay exactly as they would
+uncompressed; a one-shot body stays one-shot. A signer that needs a body digest digests the compressed bytes, so it
+accepts only bodies encoded once. A redirect that drops the body also drops Content-Encoding.
 
-client = Client(options=ClientOptions(compression="gzip"))
-plain = client.with_options(RequestOptions(compression=None))
-```
+Each protocol helper request follows its own operation's declaration and the client setting. Bodyless polls and
+followed URLs stay uncompressed. Token requests are never compressed.
 
-A selected coding applies to a call only when the call sends a body and its operation accepts the coding. A body is
-present when the call gives one, including empty bytes and a JSON `null`; an omitted optional body is absent. Where
-both hold, the body is compressed and the request carries `Content-Encoding: gzip`. Elsewhere:
-
-| Selected by | Without a body, for an operation that does not accept it, or for `request_raw` |
-|---|---|
-| `ClientOptions` or a `with_options` view | Compression turns off and the call is sent uncompressed |
-| The call's own `RequestOptions` | `ConfigurationError(field_path=('compression',), condition='not_applicable')` before anything is sent |
-
-`with_raw_response` and `with_streaming_response` follow the rules of their operation. A `Content-Encoding` header
-the call already sends conflicts with a coding that applies and raises
-`ConfigurationError(field_path=('headers', 'Content-Encoding'), condition='managed')`. Token requests of OAuth providers
-are never compressed.
-
-### Bodies, retries, and redirects
-
-The encoder uses gzip level 6 with no file name and a zero modification time, and feeds at most 64 KiB at a time. A
-body encoded once, such as bytes or a JSON model, is compressed once, and every retry sends the same compressed bytes.
-File, stream, factory, and multipart bodies are compressed as each attempt streams, without a `Content-Length`; they
-replay exactly as they would uncompressed, so a one-shot stream is never resent. A signer that needs a body digest
-digests the bytes sent: a body encoded once works, while a compressed file, stream, or factory body raises
-`BodyNotReplayableError(condition='digest_unavailable')` before sending. A redirect that drops the body, such as an
-allowed 303, also drops `Content-Encoding`; a redirect that keeps the body keeps the coding.
-
-### Protocol helpers
-
-A coding passed in a helper call's `options` is checked once, when the helper call is made and before anything is
-sent: at least one request the helper may send for that call must have a body whose operation accepts the coding, or
-the call raises `ConfigurationError(field_path=('options', 'compression'), condition='no_applicable_helper_child')`.
-Then each request the helper sends is compressed only when it has such a body:
-
-| Helper | Requests that can be compressed |
-|---|---|
-| Pagination `page` and `iterate` | The first request, and later ones that send the body again, or a body their bindings or cursor write, with the same operation; Next-URL and Link requests are `GET`s without a body unless `repeat_request_body` is set |
-| Pagination `next_page` and `resume` | Only the next request; a call after the last page, or with `max_items=0`, has none |
-| Polling `start` | The create request, and a poll or the result fetch whose bindings write into its body |
-| Polling `resume` | Only a poll or result fetch whose bindings write into its body: a resumed handle never creates the operation again |
-| SSE and NDJSON `open` | The stream's request |
-| WebSocket `connect` | None: a handshake sends no body |
-| Queue `enqueue` and `drain` | `enqueue` accepts only `queue_options`, so request `options` raise `TypeError`; `drain` claims at most `max_entries` once and admits matching saved bodies; otherwise it returns its leases and raises `no_applicable_helper_child` |
-
-A cache helper's `fetch` sends a bodyless GET, so a coding its call selects raises
-`ConfigurationError(field_path=('options', 'compression'), condition='no_applicable_helper_child')` before the cache is
-looked up, whether the entry is stored or not.
-
-Queue entries keep their wire body and entry policy, without call options or a content coding. To change a pending
-entry's delivery settings, use client, view, or request options at drain. Inherited codings apply only to queued
-operations that declare them and have a body. Explicit drain codings inspect only their first finite claim, send
-matching entries compressed and other entries plain, and never replenish that invocation with newly arrived entries.
-Refused admission returns owned leases without changing delivery counts or send intent.
-
-A coding the helper inherits from the client or a view is not checked and turns off where it does not apply.
+Queue `enqueue` accepts no request `options`; passing them raises `TypeError` without storing or sending. Entries keep
+their wire body and entry policy without a content coding; at drain, the client setting applies to queued operations
+that declare gzip and have a body.
 
 ## Body replay and resource ownership
 
