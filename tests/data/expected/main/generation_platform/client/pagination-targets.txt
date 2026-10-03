@@ -293,11 +293,11 @@ render pydantic_v2.BaseModel
   }
   /selection/selected_operations/0 users.list_users(query:cursor=cursor, query:limit=limit, query:code=code, query:tags=tags, header:X-Cursor=x_cursor, header:X-Snapshot=x_snapshot, cookie:page_token=page_token)
     exports client.types.users.ListUsersResponse client.types.users.ListUsersErrorData client.types.users.ListUsersHTTPError
-    exports client.types.users.ListUsersRequestCodecs client.types.users.decode_list_users_header digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.users.ListUsersRequestCodecs client.types.users.decode_list_users_header
   /selection/selected_operations/1 folders.list_folder(path:folder=folder)
     exports client.types.folders.ListFolderResponse client.types.folders.ListFolderErrorData client.types.folders.ListFolderHTTPError
-    exports client.types.folders.ListFolderRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.folders.ListFolderRequestCodecs None
   /selection/selected_operations/2 searches.search()
     exports client.types.searches.SearchResponse client.types.searches.SearchErrorData client.types.searches.SearchHTTPError
-    exports client.types.searches.SearchRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.searches.SearchRequestCodecs None
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

@@ -29,31 +29,31 @@
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   /selection/selected_operations/0 retry.get_safe()
     exports client.types.retry.GetSafeResponse client.types.retry.GetSafeErrorData client.types.retry.GetSafeHTTPError
-    exports client.types.retry.GetSafeRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.retry.GetSafeRequestCodecs None
   /selection/selected_operations/1 retry.post_unsafe()
     exports client.types.retry.PostUnsafeResponse client.types.retry.PostUnsafeErrorData client.types.retry.PostUnsafeHTTPError
-    exports client.types.retry.PostUnsafeRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.retry.PostUnsafeRequestCodecs None
   /selection/selected_operations/2 retry.post_idempotent()
     exports client.types.retry.PostIdempotentResponse client.types.retry.PostIdempotentErrorData client.types.retry.PostIdempotentHTTPError
-    exports client.types.retry.PostIdempotentRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.retry.PostIdempotentRequestCodecs None
   /selection/selected_operations/3 retry.post_keyed()
     exports client.types.retry.PostKeyedResponse client.types.retry.PostKeyedErrorData client.types.retry.PostKeyedHTTPError
-    exports client.types.retry.PostKeyedRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.retry.PostKeyedRequestCodecs None
   /selection/selected_operations/4 retry.post_key_only()
     exports client.types.retry.PostKeyOnlyResponse client.types.retry.PostKeyOnlyErrorData client.types.retry.PostKeyOnlyHTTPError
-    exports client.types.retry.PostKeyOnlyRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.retry.PostKeyOnlyRequestCodecs None
   /selection/selected_operations/5 retry.get_never()
     exports client.types.retry.GetNeverResponse client.types.retry.GetNeverErrorData client.types.retry.GetNeverHTTPError
-    exports client.types.retry.GetNeverRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.retry.GetNeverRequestCodecs None
   /selection/selected_operations/6 retry.post_never()
     exports client.types.retry.PostNeverResponse client.types.retry.PostNeverErrorData client.types.retry.PostNeverHTTPError
-    exports client.types.retry.PostNeverRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.retry.PostNeverRequestCodecs None
   /selection/selected_operations/7 retry.get_vendor()
     exports client.types.retry.GetVendorResponse client.types.retry.GetVendorErrorData client.types.retry.GetVendorHTTPError
-    exports client.types.retry.GetVendorRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.retry.GetVendorRequestCodecs None
   /selection/selected_operations/8 retry.get_keyed_safe()
     exports client.types.retry.GetKeyedSafeResponse client.types.retry.GetKeyedSafeErrorData client.types.retry.GetKeyedSafeHTTPError
-    exports client.types.retry.GetKeyedSafeRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.retry.GetKeyedSafeRequestCodecs None
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
 
 # artifact client/_generated_docs/README.md
@@ -235,7 +235,7 @@ sets and tuples replace the inherited collection. `retry=None` and `redirects=No
 | allowed redirect origins / HTTPS downgrade | empty tuple (initial origin only) / False |
 | network send slots | 1 + max_retries + (max_redirects if redirects) + (max_token_exchanges if SDK OAuth) |
 | stream idle / stream total / cleanup | 60 seconds / None / 5 seconds |
-| maximum response / error body / stream bytes | 16 MiB / 64 KiB / None |
+| maximum response / error prefix / stream bytes | None / 64 KiB / None |
 
 Zero retries permits only the initial resource attempt. A zero send budget refuses all sends. Reservations are not
 refunded. `Deadline.after(seconds)` shares an absolute monotonic expiry across calls; the earlier of that expiry and
@@ -296,11 +296,20 @@ deadline. The origin allowlist and HTTPS downgrade permission are separate; cred
 original request are stripped on an origin change. Invalid/multiple Location, loops, limits, and rejected hops raise
 `RedirectPolicyError` with `body_available=False` and delivery/response metadata when available.
 
-`TransportOptions` belongs only to `ClientOptions`: verify=True, ssl_context=None, proxy=None, trust_env=False,
+`TransportOptions` belongs only to `ClientOptions`: verify=True, ssl_context=None, proxy=None, trust_env=True,
 http2=False, max_connections=100, max_keepalive_connections=20, keepalive_expiry=5, retry_owner="sdk".
-An SSLContext supplies TLS settings and conflicts with any explicit verify override. HTTP/2 is explicit and requires
-its dependency. Injected native clients retain their pool/proxy/TLS construction; incompatible construction settings
-are rejected. Borrowed clients/adapters are not closed; `OwnedTransportAdapter` transfers adapter ownership.
+SDK-created HTTP clients honor proxy and CA environment settings with trust_env=True, preserving native system
+trust. With trust_env=False, HTTPX2 environment configuration is disabled while native TLS trust behavior is
+preserved. Caller ssl_context or verify=False controls origin TLS; injected native clients retain their settings and
+ownership.
+Typed error handling and exception body prefixes use `max_error_body_bytes`, which defaults to 64 KiB.
+Buffered raw responses of every status use `max_response_bytes`, which defaults to `None` (no cap). Set it on client,
+view, or request options to bound them; `None` removes an inherited cap. For buffered raw responses, only
+`raise_for_status()` applies the error-prefix cap.
+An SSLContext supplies TLS settings and conflicts with any explicit verify override.
+HTTP/2 is explicit and requires its dependency. Injected native clients retain their pool/proxy/TLS construction;
+incompatible construction settings are rejected. Borrowed clients/adapters are not closed; `OwnedTransportAdapter`
+transfers adapter ownership.
 `retry_owner="transport"` requires an explicitly injected adapter with the declared internal retry/deadline/body
 contract and disables SDK retries. The default SDK-owned native transport disables native internal retries.
 
@@ -328,7 +337,7 @@ or token HTTP. `EnvironmentCredentialProvider(variable_name, kind="api_key")` re
 its async counterpart has the same explicit selection. Imports and constructors do not discover environment secrets.
 
 Known scopes are canonical tuples: None means unknown and leaves authorization to the server; () is known empty.
-Insufficient known grants fail before sending with `InsufficientScopeError`; 403 never expands scope automatically.
+Token grants are metadata; the resource server authorizes scopes. A 403 never expands scope or triggers recovery.
 Provider contexts carry current origin/deadline/cancellation/requirements, and audience is currently None.
 Borrow providers by default; only `OwnedCredentialProvider` transfers a closeable provider to the root scope.
 Views share that ownership. Provider and signer callbacks consume the call deadline; synchronous callbacks are

@@ -3,15 +3,21 @@
 from __future__ import annotations
 
 import importlib
+import json
+import os
 import socket
 import sys
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING
 
 import httpx2
+import pytest
 
 if sys.version_info < (3, 11):
     from exceptiongroup import BaseExceptionGroup
 
+from tests.data.python.client_generation import SOURCE
 from tests.data.python.client_runtime import arecord, record, run
 from tests.data.python.fixture_native import NativeFixture
 
@@ -137,6 +143,157 @@ def _wire(package: ModuleType, options: ModuleType, lines: list[str], *, asynchr
             lines.append(f"  arrivals={len(server.requests)} connects={server.connects} alpn={server.protocols}")
         finally:
             server.stop()
+
+    defaults = json.loads((SOURCE / "defaults.json").read_text(encoding="utf-8"))
+    environment_cases = defaults["transport_environment"] + [
+        {"name": name, "proxy": None} for name in defaults["transport_direct"]
+    ]
+    for case in environment_cases:
+        name = case["name"]
+        server = NativeFixture(proxy="forward" if case["proxy"] in {"forward", "all"} else case["proxy"])
+        peer = NativeFixture(proxy="tunnel")
+        try:
+            with pytest.MonkeyPatch.context() as environment, TemporaryDirectory() as directory:
+                for key in tuple(os.environ):
+                    if key.casefold() == "no_proxy":
+                        environment.delenv(key)
+                environment.setenv("NO_PROXY", "*")
+                transport = options.TransportOptions(ssl_context=server.verify)
+                base_url = server.url
+                if variable := case.get("variable"):
+                    environment.setenv("NO_PROXY", "")
+                    environment.setenv(variable, server.proxy_url)
+                    base_url = ("https" if case["proxy"] == "tunnel" else "http") + "://origin.test"
+                elif name.startswith("no-proxy") or name == "opt-out":
+                    environment.setenv("HTTPS_PROXY", peer.proxy_url)
+                    if name.startswith("no-proxy"):
+                        environment.delenv("NO_PROXY")
+                        environment.setenv("NO_PROXY" if name.endswith("upper") else "no_proxy", "localhost")
+                    else:
+                        environment.setenv("NO_PROXY", "")
+                        transport = options.TransportOptions(ssl_context=server.verify, trust_env=False)
+                else:
+                    ca_file = Path(directory) / "ca.pem"
+                    ca_file.write_bytes(
+                        peer.ca_pem if name in {"ca-opt-out", "ca-context", "injected"} else server.ca_pem
+                    )
+                    environment.setenv("SSL_CERT_FILE", str(ca_file))
+                    if name.startswith("ca-default"):
+                        transport = options.UNSET
+                    elif name == "ca-opt-out":
+                        transport = options.TransportOptions(trust_env=False)
+                    elif name == "injected":
+                        environment.setenv("HTTPS_PROXY", peer.proxy_url)
+                        environment.setenv("NO_PROXY", "")
+                        transport = options.UNSET
+                settings = options.ClientOptions(
+                    base_url=base_url, transport=transport, retry=options.RetryOptions(max_retries=0)
+                )
+                if asynchronous:
+
+                    async def call() -> None:
+                        async with httpx2.AsyncClient(verify=server.verify, trust_env=False) as native:
+                            async with package.AsyncClient(
+                                options=settings, **({"http_client": native} if name == "injected" else {})
+                            ) as api:
+                                await arecord(
+                                    lines,
+                                    f"{mode} environment {name}",
+                                    lambda: _acalled(api.retry.with_response.get_safe),
+                                )
+                            if name == "injected":
+                                lines.append(f"  native closed={native.is_closed}")
+
+                    run(call)
+                else:
+                    with httpx2.Client(verify=server.verify, trust_env=False) as native:
+                        with package.Client(
+                            options=settings, **({"http_client": native} if name == "injected" else {})
+                        ) as api:
+                            record(
+                                lines, f"{mode} environment {name}", lambda: _called(api.retry.with_response.get_safe)
+                            )
+                        if name == "injected":
+                            lines.append(f"  native closed={native.is_closed}")
+                lines.append(
+                    f"  origin arrivals={len(server.requests)} connects={server.connects} "
+                    f"proxy arrivals={len(peer.requests)} connects={peer.connects}"
+                )
+        finally:
+            server.stop()
+            peer.stop()
+
+    sizes = defaults["response_limits"]
+    server = NativeFixture()
+    try:
+        for layer, size in (
+            ("default", sizes["large_bytes"]),
+            *(
+                (layer, size)
+                for layer in ("client", "view", "call")
+                for size in (sizes["explicit_cap"], sizes["explicit_cap"] + 1)
+            ),
+            ("error-default", sizes["error_bytes"]),
+            ("error-explicit", sizes["error_bytes"]),
+        ):
+            server.body = b"x" * size
+            server.status = 500 if layer.startswith("error") else 200
+            cap = options.RequestOptions(max_response_bytes=sizes["explicit_cap"])
+            settings = options.ClientOptions(
+                base_url=server.url,
+                transport=options.TransportOptions(ssl_context=server.verify),
+                retry=options.RetryOptions(max_retries=0),
+                max_response_bytes=sizes["explicit_cap"] if layer in {"client", "error-explicit"} else options.UNSET,
+            )
+            for raw in (False, True):
+                before = len(server.requests)
+                if asynchronous:
+
+                    async def call() -> None:
+                        async with package.AsyncClient(options=settings) as api:
+                            view = api.with_options(cap) if layer == "view" else api
+                            operation = (
+                                view.retry.with_raw_response.get_safe if raw else view.retry.with_response.get_safe
+                            )
+                            try:
+                                result = await operation(**({"options": cap} if layer == "call" else {}))
+                                lines.append(
+                                    f"{mode} size {layer}/{size} raw={raw}: status={result.info.status_code} "
+                                    f"bytes={len(result.body_bytes if raw else result.data.root)}"
+                                )
+                                if raw and layer.startswith("error"):
+                                    await result.raise_for_status()
+                            except Exception as error:
+                                lines.append(
+                                    f"{mode} size {layer}/{size} raw={raw}: {type(error).__name__} "
+                                    f"limit={getattr(error, 'limit', None)} "
+                                    f"bytes={len(getattr(error, 'body_bytes', b''))} "
+                                    f"truncated={getattr(error, 'truncated', None)}"
+                                )
+
+                    run(call)
+                else:
+                    with package.Client(options=settings) as api:
+                        view = api.with_options(cap) if layer == "view" else api
+                        operation = view.retry.with_raw_response.get_safe if raw else view.retry.with_response.get_safe
+                        try:
+                            result = operation(**({"options": cap} if layer == "call" else {}))
+                            lines.append(
+                                f"{mode} size {layer}/{size} raw={raw}: status={result.info.status_code} "
+                                f"bytes={len(result.body_bytes if raw else result.data.root)}"
+                            )
+                            if raw and layer.startswith("error"):
+                                result.raise_for_status()
+                        except Exception as error:
+                            lines.append(
+                                f"{mode} size {layer}/{size} raw={raw}: {type(error).__name__} "
+                                f"limit={getattr(error, 'limit', None)} "
+                                f"bytes={len(getattr(error, 'body_bytes', b''))} "
+                                f"truncated={getattr(error, 'truncated', None)}"
+                            )
+                lines.append(f"  arrivals={len(server.requests) - before}")
+    finally:
+        server.stop()
 
 
 def _refusal(package: ModuleType, options: ModuleType, lines: list[str], *, asynchronous: bool) -> None:

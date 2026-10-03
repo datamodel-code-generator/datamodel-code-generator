@@ -410,40 +410,40 @@
   }
   /selection/selected_operations/0 items.create_item()
     exports client.types.items.CreateItemResponse client.types.items.CreateItemErrorData client.types.items.CreateItemHTTPError
-    exports client.types.items.CreateItemRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.items.CreateItemRequestCodecs None
   /selection/selected_operations/1 items.list_items(query:cursor=cursor)
     exports client.types.items.ListItemsResponse client.types.items.ListItemsErrorData client.types.items.ListItemsHTTPError
-    exports client.types.items.ListItemsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.items.ListItemsRequestCodecs None
   /selection/selected_operations/2 items.create_note()
     exports client.types.items.CreateNoteResponse client.types.items.CreateNoteErrorData client.types.items.CreateNoteHTTPError
-    exports client.types.items.CreateNoteRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.items.CreateNoteRequestCodecs None
   /selection/selected_operations/3 items.put_blob(header:Content-Length=content_length)
     exports client.types.items.PutBlobResponse client.types.items.PutBlobErrorData client.types.items.PutBlobHTTPError
-    exports client.types.items.PutBlobRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.items.PutBlobRequestCodecs None
   /selection/selected_operations/4 items.search(query:cursor=cursor)
     exports client.types.items.SearchResponse client.types.items.SearchErrorData client.types.items.SearchHTTPError
-    exports client.types.items.SearchRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.items.SearchRequestCodecs None
   /selection/selected_operations/5 items.feed()
     exports client.types.items.FeedResponse client.types.items.FeedErrorData client.types.items.FeedHTTPError
-    exports client.types.items.FeedRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.items.FeedRequestCodecs None
   /selection/selected_operations/6 jobs.create_job()
     exports client.types.jobs.CreateJobResponse client.types.jobs.CreateJobErrorData client.types.jobs.CreateJobHTTPError
-    exports client.types.jobs.CreateJobRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.jobs.CreateJobRequestCodecs None
   /selection/selected_operations/7 jobs.get_job(path:jobId=job_id)
     exports client.types.jobs.GetJobResponse client.types.jobs.GetJobErrorData client.types.jobs.GetJobHTTPError
-    exports client.types.jobs.GetJobRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.jobs.GetJobRequestCodecs None
   /selection/selected_operations/8 checks.create_check()
     exports client.types.checks.CreateCheckResponse client.types.checks.CreateCheckErrorData client.types.checks.CreateCheckHTTPError
-    exports client.types.checks.CreateCheckRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.checks.CreateCheckRequestCodecs None
   /selection/selected_operations/9 checks.check_status()
     exports client.types.checks.CheckStatusResponse client.types.checks.CheckStatusErrorData client.types.checks.CheckStatusHTTPError
-    exports client.types.checks.CheckStatusRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.checks.CheckStatusRequestCodecs None
   /selection/selected_operations/10 events.reopen_events(query:cursor=cursor)
     exports client.types.events.ReopenEventsResponse client.types.events.ReopenEventsErrorData client.types.events.ReopenEventsHTTPError
-    exports client.types.events.ReopenEventsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.events.ReopenEventsRequestCodecs None
   /selection/selected_operations/11 events.watch(query:cursor=cursor)
     exports client.types.events.WatchResponse client.types.events.WatchErrorData client.types.events.WatchHTTPError
-    exports client.types.events.WatchRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.events.WatchRequestCodecs None
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
 
 # artifact client/_generated_docs/README.md
@@ -762,7 +762,7 @@ sets and tuples replace the inherited collection. `retry=None` and `redirects=No
 | allowed redirect origins / HTTPS downgrade | empty tuple (initial origin only) / False |
 | network send slots | 1 + max_retries + (max_redirects if redirects) + (max_token_exchanges if SDK OAuth) |
 | stream idle / stream total / cleanup | 60 seconds / None / 5 seconds |
-| maximum response / error body / stream bytes | 16 MiB / 64 KiB / None |
+| maximum response / error prefix / stream bytes | None / 64 KiB / None |
 
 Zero retries permits only the initial resource attempt. A zero send budget refuses all sends. Reservations are not
 refunded. `Deadline.after(seconds)` shares an absolute monotonic expiry across calls; the earlier of that expiry and
@@ -823,11 +823,20 @@ deadline. The origin allowlist and HTTPS downgrade permission are separate; cred
 original request are stripped on an origin change. Invalid/multiple Location, loops, limits, and rejected hops raise
 `RedirectPolicyError` with `body_available=False` and delivery/response metadata when available.
 
-`TransportOptions` belongs only to `ClientOptions`: verify=True, ssl_context=None, proxy=None, trust_env=False,
+`TransportOptions` belongs only to `ClientOptions`: verify=True, ssl_context=None, proxy=None, trust_env=True,
 http2=False, max_connections=100, max_keepalive_connections=20, keepalive_expiry=5, retry_owner="sdk".
-An SSLContext supplies TLS settings and conflicts with any explicit verify override. HTTP/2 is explicit and requires
-its dependency. Injected native clients retain their pool/proxy/TLS construction; incompatible construction settings
-are rejected. Borrowed clients/adapters are not closed; `OwnedTransportAdapter` transfers adapter ownership.
+SDK-created HTTP clients honor proxy and CA environment settings with trust_env=True, preserving native system
+trust. With trust_env=False, HTTPX2 environment configuration is disabled while native TLS trust behavior is
+preserved. Caller ssl_context or verify=False controls origin TLS; injected native clients retain their settings and
+ownership.
+Typed error handling and exception body prefixes use `max_error_body_bytes`, which defaults to 64 KiB.
+Buffered raw responses of every status use `max_response_bytes`, which defaults to `None` (no cap). Set it on client,
+view, or request options to bound them; `None` removes an inherited cap. For buffered raw responses, only
+`raise_for_status()` applies the error-prefix cap.
+An SSLContext supplies TLS settings and conflicts with any explicit verify override.
+HTTP/2 is explicit and requires its dependency. Injected native clients retain their pool/proxy/TLS construction;
+incompatible construction settings are rejected. Borrowed clients/adapters are not closed; `OwnedTransportAdapter`
+transfers adapter ownership.
 `retry_owner="transport"` requires an explicitly injected adapter with the declared internal retry/deadline/body
 contract and disables SDK retries. The default SDK-owned native transport disables native internal retries.
 
@@ -855,7 +864,7 @@ or token HTTP. `EnvironmentCredentialProvider(variable_name, kind="api_key")` re
 its async counterpart has the same explicit selection. Imports and constructors do not discover environment secrets.
 
 Known scopes are canonical tuples: None means unknown and leaves authorization to the server; () is known empty.
-Insufficient known grants fail before sending with `InsufficientScopeError`; 403 never expands scope automatically.
+Token grants are metadata; the resource server authorizes scopes. A 403 never expands scope or triggers recovery.
 Provider contexts carry current origin/deadline/cancellation/requirements, and audience is currently None.
 Borrow providers by default; only `OwnedCredentialProvider` transfers a closeable provider to the root scope.
 Views share that ownership. Provider and signer callbacks consume the call deadline; synchronous callbacks are
@@ -926,12 +935,12 @@ another kind's options, fail construction. The session types are imported from:
 
 | Limit | Effective default |
 |---|---|
-| pages per session | 1000; None removes it |
-| items per session | 100000; None removes it, and 0 ends a pager at once |
+| pages per session | None (no limit) |
+| items per session | None (no limit); 0 ends a pager at once |
 | decoded body per page | 8 MiB |
 | cursor size | 64 KiB |
-| session total timeout | 300 seconds; None removes it |
-| network sends per session | 3000; None removes it |
+| session total timeout | None (no limit) |
+| network sends per session | None (no limit) |
 
 A page's items must be a JSON array; an empty array does not end the traversal. A server's cursor, and each value a
 binding reads, is sent as it came, without its target's schema checks; a dot segment for a path parameter raises

@@ -1,0 +1,4 @@
+# publication-check
+generate
+  OSError: private staging directory is already closed
+tree

@@ -1,0 +1,64 @@
+{
+  "transport_environment": [
+    {
+      "name": "forward-upper",
+      "proxy": "forward",
+      "variable": "HTTP_PROXY"
+    },
+    {
+      "name": "forward-lower",
+      "proxy": "forward",
+      "variable": "http_proxy"
+    },
+    {
+      "name": "tunnel-upper",
+      "proxy": "tunnel",
+      "variable": "HTTPS_PROXY"
+    },
+    {
+      "name": "tunnel-lower",
+      "proxy": "tunnel",
+      "variable": "https_proxy"
+    },
+    {
+      "name": "all-upper",
+      "proxy": "all",
+      "variable": "ALL_PROXY"
+    },
+    {
+      "name": "all-lower",
+      "proxy": "all",
+      "variable": "all_proxy"
+    }
+  ],
+  "transport_direct": [
+    "no-proxy-upper",
+    "no-proxy-lower",
+    "opt-out",
+    "ca-default-upper",
+    "ca-opt-out",
+    "ca-context",
+    "injected"
+  ],
+  "response_limits": {
+    "former_cap": 16777216,
+    "large_bytes": 16777217,
+    "explicit_cap": 8,
+    "error_bytes": 65537,
+    "error_cap": 65536
+  },
+  "pagination_limits": {
+    "pages": 1001,
+    "items": 100001,
+    "retries_per_page": 2,
+    "explicit_pages": 2,
+    "explicit_items": 100000,
+    "explicit_sends": 3,
+    "total_timeout": 300,
+    "clock_step": 301
+  },
+  "upload_limits": {
+    "total_timeout": 600,
+    "clock_step": 601
+  }
+}
