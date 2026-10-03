@@ -13,11 +13,11 @@ from datamodel_code_generator._python_layout import Doc, Group
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
 
-    from datamodel_code_generator._openapi_artifacts import ModelArtifact
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.media import FieldPlan
     from datamodel_code_generator._runtime.model_codecs.parameters import ParameterPlan
     from datamodel_code_generator._runtime.model_codecs.wire import WireValue
+    from datamodel_code_generator._target_contract import ModelArtifact
 
 RUNTIME: Final = Path(__file__).parent / "_runtime"
 _RUNTIME_IMPORT: Final = re.compile(r"^[ \t]*from \.+_runtime\.(\w+)\.(\w+) import", re.MULTILINE)

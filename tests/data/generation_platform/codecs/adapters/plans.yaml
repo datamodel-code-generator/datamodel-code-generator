@@ -40,8 +40,7 @@ paths:
           in: query
           explode: false
           schema:
-            type: object
-            x-python-type: "collections.OrderedDict[str, str]"
+            $ref: "#/components/schemas/Section"
       requestBody:
         content:
           application/json:
@@ -156,6 +155,9 @@ paths:
                 $ref: "#/components/schemas/Owner"
 components:
   schemas:
+    Section:
+      type: object
+      x-python-import: {module: argparse, name: HelpFormatter._Section, qualname: HelpFormatter._Section}
     Tags:
       type: array
       items:

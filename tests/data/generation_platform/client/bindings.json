@@ -587,15 +587,13 @@
         "render": "msgspec.Struct default",
         "id": "unexpected-emission",
         "old": "    pass",
-        "new": "    type: str = 'started'",
-        "pins": "#4299: the package keeps its bindings and drops the capture's binding diagnostic"
+        "new": "    type: str = 'started'"
       },
       {
         "render": "msgspec.Struct default",
         "id": "missing-class",
         "old": "class StartedEvent",
-        "new": "class RenamedEvent",
-        "pins": "#4299: the package keeps its bindings and drops the capture's binding diagnostic"
+        "new": "class RenamedEvent"
       }
     ]
   },
@@ -1174,7 +1172,7 @@
     ]
   },
   "field-ownership-conflict": {
-    "pins": "#4300: the conflicting base order gives an unimportable model and an empty binding; #4299: its BND_FIELD_AMBIGUOUS diagnostic is dropped",
+    "pins": "#4300: the conflicting base order gives an unimportable model and an empty binding",
     "source": "generation_platform/binding/field-ownership-conflict.json",
     "backends": [
       "pydantic_v2.BaseModel",
@@ -1182,7 +1180,7 @@
     ]
   },
   "field-ownership-cycle": {
-    "pins": "#4300: cyclic allOf bases give unimportable models and empty bindings; #4299: their BND_FIELD_AMBIGUOUS diagnostic is dropped",
+    "pins": "#4300: cyclic allOf bases give unimportable models and empty bindings",
     "source": "generation_platform/binding/field-ownership-cycle.json",
     "backends": [
       "pydantic_v2.BaseModel"
@@ -1365,7 +1363,6 @@
     }
   },
   "legacy-ambiguous": {
-    "pins": "#4299: the two operations that share one YAML operation object ship without model codecs, and their BND_OPERATION_ORIGIN_UNRESOLVED diagnostics are dropped",
     "source": "generation_platform/binding/legacy-ambiguous.yaml",
     "verbatim": true,
     "model": {
@@ -5140,6 +5137,14 @@
         "isort"
       ]
     },
+    "verbatim": true
+  },
+  "target-edges": {
+    "source": "generation_platform/binding/target-edges.yaml",
+    "verbatim": true
+  },
+  "target-unsupported": {
+    "source": "generation_platform/binding/target-unsupported.yaml",
     "verbatim": true
   }
 }

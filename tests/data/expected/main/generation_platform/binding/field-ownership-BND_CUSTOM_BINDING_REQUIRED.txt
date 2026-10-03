@@ -1,3 +1,0 @@
-{
-  "reason": "BND_CUSTOM_BINDING_REQUIRED"
-}

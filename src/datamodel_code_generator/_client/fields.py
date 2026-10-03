@@ -9,18 +9,18 @@ from typing import TYPE_CHECKING, Final
 from datamodel_code_generator._api_types import Diagnostic
 from datamodel_code_generator._client.naming import RESERVED_ARGUMENTS, identifier, snake
 from datamodel_code_generator._client.plan import FieldArgument, FieldBranch
-from datamodel_code_generator._generation_contract import SourceLocation, SymbolId
 from datamodel_code_generator._runtime.model_codecs.bindings import ModelNode, UnionNode
 from datamodel_code_generator._runtime.model_codecs.media import normalize_media_type
+from datamodel_code_generator._target_contract import SourceLocation, SymbolId
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
     from datamodel_code_generator._client.plan import ClientPlan, MediaSpec, OperationSpec
-    from datamodel_code_generator._generation_contract import FieldUseBinding, GeneratedTypeContractBatch, TypeUseId
     from datamodel_code_generator._openapi_codec_plan import CodecPlan
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.bindings import ModelBinding, UseBinding
+    from datamodel_code_generator._target_contract import FieldUseBinding, GeneratedTypeContractBatch, TypeUseId
 
 _KINDS: Final = frozenset({"json", "form"})
 _MEMBERS: Final = ("allOf", "anyOf", "oneOf")
