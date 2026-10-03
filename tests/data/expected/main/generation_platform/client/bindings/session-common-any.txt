@@ -25,11 +25,11 @@ render pydantic_v2.BaseModel default
       root: Payload1
   model_bindings.py
   _model_0 symbol='models:Payload', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload', root=ModelNode(symbol='models:Payload1')
-  _model_1 symbol='models:Payload1', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/anyOf/0'
+  _model_1 symbol='models:Payload1', native_kind='model', schema_id=None
     FieldBinding(field_id='models:Payload1.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=False, read_only=False, write_only=False, omit_none=True, type=UnionNode(members=(ModelNode(symbol='models:Value'), ModelNode(symbol='models:Value1'))))
-  _model_2 symbol='models:Value', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/properties/value/anyOf/0'
+  _model_2 symbol='models:Value', native_kind='model', schema_id=None
     FieldBinding(field_id='models:Value.left', native_name='left', wire_name='left', validation_key='left', validation_keys=('left',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_3 symbol='models:Value1', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/anyOf/0/properties/value/anyOf/1'
+  _model_3 symbol='models:Value1', native_kind='model', schema_id=None
     FieldBinding(field_id='models:Value1.right', native_name='right', wire_name='right', validation_key='right', validation_keys=('right',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   codec_0 -> PydanticModelCodec[models.Payload]
   codec_1 -> PydanticModelCodec[models.Payload]
@@ -65,11 +65,11 @@ render pydantic_v2.dataclass default
   
   Payload = TypeAliasType("Payload", Payload1)
   model_bindings.py
-  _model_0 symbol='models:Payload1', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/anyOf/0'
+  _model_0 symbol='models:Payload1', native_kind='dataclass', schema_id=None
     FieldBinding(field_id='models:Payload1.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=False, read_only=False, write_only=False, omit_none=True, type=UnionNode(members=(ModelNode(symbol='models:Value'), ModelNode(symbol='models:Value1'))))
-  _model_1 symbol='models:Value', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/properties/value/anyOf/0'
+  _model_1 symbol='models:Value', native_kind='dataclass', schema_id=None
     FieldBinding(field_id='models:Value.left', native_name='left', wire_name='left', validation_key='left', validation_keys=('left',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_2 symbol='models:Value1', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/anyOf/0/properties/value/anyOf/1'
+  _model_2 symbol='models:Value1', native_kind='dataclass', schema_id=None
     FieldBinding(field_id='models:Value1.right', native_name='right', wire_name='right', validation_key='right', validation_keys=('right',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   codec_0 -> PydanticModelCodec[models.Payload]
   codec_1 -> PydanticModelCodec[models.Payload]
@@ -104,11 +104,11 @@ render dataclasses.dataclass default
   
   Payload: TypeAlias = Payload1
   model_bindings.py
-  _model_0 symbol='models:Payload1', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/anyOf/0'
+  _model_0 symbol='models:Payload1', native_kind='dataclass', schema_id=None
     FieldBinding(field_id='models:Payload1.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=False, read_only=False, write_only=False, omit_none=True, type=UnionNode(members=(ModelNode(symbol='models:Value'), ModelNode(symbol='models:Value1'))))
-  _model_1 symbol='models:Value', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/properties/value/anyOf/0'
+  _model_1 symbol='models:Value', native_kind='dataclass', schema_id=None
     FieldBinding(field_id='models:Value.left', native_name='left', wire_name='left', validation_key='left', validation_keys=('left',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_2 symbol='models:Value1', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/anyOf/0/properties/value/anyOf/1'
+  _model_2 symbol='models:Value1', native_kind='dataclass', schema_id=None
     FieldBinding(field_id='models:Value1.right', native_name='right', wire_name='right', validation_key='right', validation_keys=('right',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   codec_0 -> StructuralModelCodec[models.Payload]
   codec_1 -> StructuralModelCodec[models.Payload]
@@ -139,11 +139,11 @@ render typing.TypedDict default
   
   Payload: TypeAlias = Payload1
   model_bindings.py
-  _model_0 symbol='models:Payload1', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/anyOf/0'
+  _model_0 symbol='models:Payload1', native_kind='typed_dict', schema_id=None
     FieldBinding(field_id='models:Payload1.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:Value'), ModelNode(symbol='models:Value1'))))
-  _model_1 symbol='models:Value', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/properties/value/anyOf/0'
+  _model_1 symbol='models:Value', native_kind='typed_dict', schema_id=None
     FieldBinding(field_id='models:Value.left', native_name='left', wire_name='left', validation_key='left', validation_keys=('left',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_2 symbol='models:Value1', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/anyOf/0/properties/value/anyOf/1'
+  _model_2 symbol='models:Value1', native_kind='typed_dict', schema_id=None
     FieldBinding(field_id='models:Value1.right', native_name='right', wire_name='right', validation_key='right', validation_keys=('right',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   codec_0 -> StructuralModelCodec[models.Payload]
   codec_1 -> StructuralModelCodec[models.Payload]
@@ -175,11 +175,11 @@ render msgspec.Struct default
   
   Payload: TypeAlias = Payload1
   model_bindings.py
-  _model_0 symbol='models:Payload1', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/anyOf/0'
+  _model_0 symbol='models:Payload1', native_kind='struct', schema_id=None
     FieldBinding(field_id='models:Payload1.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=False, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(ModelNode(symbol='models:Value'), ModelNode(symbol='models:Value1'))))
-  _model_1 symbol='models:Value', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/properties/value/anyOf/0'
+  _model_1 symbol='models:Value', native_kind='struct', schema_id=None
     FieldBinding(field_id='models:Value.left', native_name='left', wire_name='left', validation_key='left', validation_keys=('left',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_2 symbol='models:Value1', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/anyOf/0/properties/value/anyOf/1'
+  _model_2 symbol='models:Value1', native_kind='struct', schema_id=None
     FieldBinding(field_id='models:Value1.right', native_name='right', wire_name='right', validation_key='right', validation_keys=('right',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   codec_0 -> StructuralModelCodec[models.Payload]
   codec_1 -> StructuralModelCodec[models.Payload]

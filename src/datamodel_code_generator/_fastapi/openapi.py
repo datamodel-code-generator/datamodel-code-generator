@@ -17,31 +17,27 @@ from datamodel_code_generator._api_manifest import canonical_bytes, sha256
 from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
 from datamodel_code_generator._fastapi.callbacks import CallbackNode, flattened
 from datamodel_code_generator._fastapi.naming import normalize
-from datamodel_code_generator._generation_contract import (
-    GeneratedSymbolType,
-    LiteralMapping,
-    LiteralScalar,
-    LiteralSequence,
-)
 from datamodel_code_generator._runtime.model_codecs.schema import (
     SCHEMA_ARRAY_KEYWORDS,
     SCHEMA_MAP_KEYWORDS,
     SCHEMA_VALUE_KEYWORDS,
 )
 from datamodel_code_generator._runtime.model_codecs.wire import escape_pointer_token, pointer_tokens
+from datamodel_code_generator._target_contract import (
+    GeneratedSymbolType,
+    LiteralMapping,
+    LiteralScalar,
+    LiteralSequence,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._fastapi.plan import OperationSpec, SecuritySpec, ServerPlan
-    from datamodel_code_generator._generation_contract import (
-        FrozenLiteral,
-        TypeUseId,
-        WireDeclaration,
-    )
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.wire import JSONValue, WireValue
+    from datamodel_code_generator._target_contract import FrozenLiteral, TypeUseId, WireDeclaration
 
 Version: TypeAlias = Literal["3.1.0", "3.2.1"]
 ComponentDirection: TypeAlias = Literal["request", "response", "framework"]

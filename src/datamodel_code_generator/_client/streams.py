@@ -23,13 +23,8 @@ from datamodel_code_generator._client.pagination import (  # pyright: ignore[rep
 )
 from datamodel_code_generator._client.plan import schema_use, schema_uses
 from datamodel_code_generator._client.polling import _Polls, _Source  # pyright: ignore[reportPrivateUsage]
-from datamodel_code_generator._generation_contract import (
-    BindingCaptureError,
-    DeclarationId,
-    SourceLocation,
-    TypeUseBinding,
-    TypeUseId,
-)
+from datamodel_code_generator._generation_contract import BindingCaptureError
+from datamodel_code_generator._target_contract import DeclarationId, SourceLocation, TypeUseBinding, TypeUseId
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping

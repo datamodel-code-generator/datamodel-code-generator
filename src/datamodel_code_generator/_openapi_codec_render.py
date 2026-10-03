@@ -11,26 +11,22 @@ from typing import TYPE_CHECKING, Final
 from typing_extensions import TypeIs
 
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
-from datamodel_code_generator._generation_contract import OperationId
 from datamodel_code_generator._python_layout import Doc, Group, layout
 from datamodel_code_generator._runtime.model_codecs.capabilities import AdapterManifest
 from datamodel_code_generator._runtime.model_codecs.context import CodecContext
 from datamodel_code_generator._runtime.model_codecs.views import SchemaResourceLimits
+from datamodel_code_generator._target_contract import OperationId
 
 if TYPE_CHECKING:
     from _typeshed import DataclassInstance
 
-    from datamodel_code_generator._generation_contract import (
-        FinalPythonType,
-        GeneratedTypeContractBatch,
-        TypeUseId,
-    )
     from datamodel_code_generator._openapi_codec_adapters import AdapterPlan, BindingViewPlan, SchemaAdapterPlan
     from datamodel_code_generator._openapi_codec_plan import CodecPlan
     from datamodel_code_generator._openapi_wire_plan import ParameterViewPlan, WirePlan
     from datamodel_code_generator._runtime.model_codecs.bindings import UseBinding
     from datamodel_code_generator._runtime.model_codecs.context import Direction, Surface
     from datamodel_code_generator._runtime.model_codecs.registry import SchemaSource
+    from datamodel_code_generator._target_contract import FinalPythonType, GeneratedTypeContractBatch, TypeUseId
 
 _RUNTIME: Final = "datamodel_code_generator._runtime.model_codecs."
 _WIDTH: Final = 120
