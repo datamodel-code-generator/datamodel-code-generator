@@ -16,17 +16,13 @@ SCRIPT = ROOT / "scripts" / "build_docs_examples.py"
 EXPECTED_DOCS_EXAMPLES_PATH = ROOT / "tests" / "data" / "expected" / "docs_examples"
 
 
-@pytest.mark.skipif(
-    sys.version_info < TARGET_PYTHON, reason="The server and client targets need Python 3.11 or later"
-)
+@pytest.mark.skipif(sys.version_info < TARGET_PYTHON, reason="The server and client targets need Python 3.11 or later")
 def test_build_docs_examples_check_is_up_to_date() -> None:
     """Generated docs examples are committed."""
     subprocess.run([sys.executable, str(SCRIPT), "--check"], check=True)
 
 
-@pytest.mark.skipif(
-    sys.version_info < TARGET_PYTHON, reason="The server and client targets need Python 3.11 or later"
-)
+@pytest.mark.skipif(sys.version_info < TARGET_PYTHON, reason="The server and client targets need Python 3.11 or later")
 def test_docs_examples_use_rendered_clients(capsys: pytest.CaptureFixture[str]) -> None:
     """All generated snippets match committed docs, including clients with model-only snapshots."""
     result = build_docs_examples.update_docs_examples(check=True)
