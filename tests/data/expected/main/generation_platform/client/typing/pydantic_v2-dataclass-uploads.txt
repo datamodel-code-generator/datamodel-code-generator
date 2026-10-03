@@ -1,43 +1,46 @@
 mypy pets and uploads.py: clean
 pyright pets and uploads.py: clean
 ty pets and uploads.py: clean
-uploads_negative.py 12 marked lines
-mypy uploads_negative.py: 12/12 marked lines with one error, 0 elsewhere, 0 in other files
-  16 assignment
-  17 arg-type
-  18 arg-type
-  19 call-arg
-  20 arg-type
-  21 call-arg
-  22 assignment
-  23 assignment
-  24 arg-type
-  25 call-arg
-  26 misc
-  27 arg-type
-pyright uploads_negative.py: 12/12 marked lines with one error, 0 elsewhere, 0 in other files
-  16 reportAssignmentType
-  17 reportArgumentType
-  18 reportArgumentType
-  19 reportCallIssue
-  20 reportArgumentType
-  21 reportCallIssue
-  22 reportAssignmentType
-  23 reportAssignmentType
-  24 reportArgumentType
-  25 reportCallIssue
-  26 reportAttributeAccessIssue
-  27 reportArgumentType
-ty uploads_negative.py: 12/12 marked lines with one error, 0 elsewhere, 0 in other files
-  16 invalid-assignment
-  17 invalid-argument-type
-  18 invalid-argument-type
-  19 missing-argument
-  20 invalid-argument-type
-  21 unknown-argument
-  22 invalid-assignment
-  23 invalid-assignment
-  24 invalid-argument-type
-  25 too-many-positional-arguments
-  26 invalid-assignment
-  27 invalid-argument-type
+uploads_negative.py 13 marked lines
+mypy uploads_negative.py: 13/13 marked lines with one error, 0 elsewhere, 0 in other files
+  20 assignment
+  21 arg-type
+  22 arg-type
+  23 arg-type
+  24 call-arg
+  25 arg-type
+  26 call-arg
+  27 assignment
+  28 assignment
+  29 arg-type
+  30 call-arg
+  31 misc
+  32 call-arg
+pyright uploads_negative.py: 13/13 marked lines with one error, 0 elsewhere, 0 in other files
+  20 reportAssignmentType
+  21 reportArgumentType
+  22 reportArgumentType
+  23 reportArgumentType
+  24 reportCallIssue
+  25 reportArgumentType
+  26 reportCallIssue
+  27 reportAssignmentType
+  28 reportAssignmentType
+  29 reportArgumentType
+  30 reportCallIssue
+  31 reportAttributeAccessIssue
+  32 reportCallIssue
+ty uploads_negative.py: 13/13 marked lines with one error, 0 elsewhere, 0 in other files
+  20 invalid-assignment
+  21 invalid-argument-type
+  22 invalid-argument-type
+  23 invalid-argument-type
+  24 missing-argument
+  25 invalid-argument-type
+  26 unknown-argument
+  27 invalid-assignment
+  28 invalid-assignment
+  29 invalid-argument-type
+  30 too-many-positional-arguments
+  31 invalid-assignment
+  32 unknown-argument

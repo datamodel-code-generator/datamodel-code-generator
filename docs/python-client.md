@@ -177,13 +177,9 @@ raise `ValueError`.
 
 ### Upload records and sources
 
-`UploadIdentity(*, size: int, sha256: bytes)` names upload content, or one checked range of it: a nonnegative size and
-a 32-byte SHA-256 digest, which the representation leaves out. `PartReceipt(*, index: int, receipt: str)` is a part
-a server confirmed, from index 1. `UploadProgress(*, confirmed_bytes: int, total_bytes: int, confirmed_parts:
-tuple[PartReceipt, ...] = (), complete: bool = False)` is how far an upload is; the confirmed bytes never exceed the
-total. `UploadSource` and `AsyncUploadSource` are the protocols a source implements, and `RangeReader` and
-`AsyncRangeReader` those of the readers it opens; see [upload helpers](#upload-helpers). The builtin sources and the
-handles are loaded only when first requested.
+`UploadProgress(*, confirmed_bytes: int, total_bytes: int, complete: bool = False)` is how far an upload is; the
+confirmed bytes never exceed the total. `UploadSource` is `bytes | bytearray | memoryview | BinaryIO`, the content an
+upload reads; see [upload helpers](#upload-helpers). The handles are loaded only when first requested.
 
 ### Resume state
 
@@ -245,7 +241,6 @@ booleans. Durations are finite numbers of seconds, excluding booleans; integers 
 | | `max_reconnect_wait` | `60` seconds | Positive duration or `None` |
 | `UploadOptions` | `chunk_bytes` | `8388608`, at most the helper's `max_chunk_bytes` | Positive integer |
 | | `max_parts` | `10000` | Positive integer or `None` |
-| | `parallelism` | `4` | Positive integer |
 | | `max_uncertain_probes` | `3` | Nonnegative integer |
 | `CacheOptions` | `max_entry_bytes` | `2097152` | Positive integer: the largest body a fetch stores |
 | | `max_ttl` | `300` seconds | Positive duration: the cap on any entry's freshness |
@@ -341,7 +336,7 @@ Invalid field values raise `ValueError`.
 | `CircuitOpenError` | `ProtocolError` | `key: CircuitKey`, `retry_at: float`, the nonnegative monotonic time of the circuit's next admission |
 | `NonResumableSourceError` | `ProtocolConfigurationError` | `source_kind: Literal['iterable', 'iterator', 'stream', 'reader']`; `field_path` is always `('source',)` and `condition` `wrong_capability` |
 | `UploadDeliveryUnknownError` | `DeliveryUnknownError` | `phase: Literal['append', 'part', 'complete']`, `part` being reserved for the parts profile, `progress: UploadProgress`; no `message_id` |
-| `UploadSourceChangedError` | `ProtocolDataError` | `expected: UploadIdentity`, `actual: UploadIdentity \| None`, `offset: int \| None = None`; `condition` is always `inconsistent` |
+| `UploadSourceChangedError` | `ProtocolDataError` | `expected_size: int`, the upload's size, and `actual_size: int`, the size the source has now; `condition` is always `inconsistent` |
 | `UploadOffsetError` | `ProtocolDataError` | `confirmed_offset: int`, `expected_offset: int`, `remote_offset: int`, `size: int`, `resume_state: ResumeState \| None = None`; `condition` is always `inconsistent` |
 | `UploadExpiredError` | `ResumeStateError` | `expires_at: datetime`, timezone-aware; `condition` is always `expired` |
 | `QueueStoreError` | `ProtocolStoreError` | `action`, `entry_id: str \| None = None` |
@@ -518,7 +513,7 @@ querystring, or its request body. An operation that owns a querystring takes no 
 | `websocket` | `operation` (a GET without a body), `send`, `receive` (each `{codec: json\|utf8\|bytes, frame?, schema?}`) | `subprotocols` (`[]`), `compression` (`false`) |
 | `webhook` | `event_schema`, `signature` (see [webhook verification helpers](#webhook-verification-helpers)) | `duplicates` (`report`, the default, or `reject`, which needs a signature) |
 | `cache` | `operation`, `validator` (`etag`, `last_modified`, or `both`), `authenticated` (a boolean) | `statuses` (`[200]`), `vary_allowlist` (`[]`), `tags` (`[]`), `mutations` (`{}`); see [cache helpers](#cache-helpers) |
-| `resumable_upload` | `profile` (`offset`), `create` (`{operation, size?, expires_at?}`), `probe` (`{operation, remote_offset, bindings?}`), `append` (`{operation, offset, length?, bindings?}`), `max_chunk_bytes` (a positive integer), `partial_commit` (`allowed` or `forbidden`), `completion` | `abort` (`{operation, bindings?}`) and `create.session_url`, both refused as not supported yet |
+| `resumable_upload` | `profile` (`offset`), `create` (`{operation, size?, expires_at?}`), `probe` (`{operation, remote_offset, bindings?}`), `append` (`{operation, offset, length?, checksum?, bindings?}`, a `checksum` being `{target, algorithm, encoding?, algorithm_prefix?}`), `max_chunk_bytes` (a positive integer), `partial_commit` (`allowed` or `forbidden`), `completion` | `abort` (`{operation, bindings?}`) and `create.session_url`, both refused as not supported yet |
 | `queue` | `operations`, a nonempty mapping of aliases to `{operation, side_effects}` (see [queue helpers](#queue-helpers)) | Per operation, `key_binding` and `dedupe_ttl`, given together and required with side effects |
 
 A pagination `continuation` is one of these:
@@ -577,8 +572,8 @@ or `"none"`, and `signed_parts` entries `"raw-body"`, `"timestamp"`, and `"deliv
 `AdapterSignature(timestamp=..., delivery_id=...)` takes `"required"` or `"none"` for each fact, and `NoSignature()`
 declares an unsigned webhook. An event mapping is an `EventMapping` with an `EventDiscriminator(from_="body",
 pointer=...)`, a cache mutation a `CacheMutation(operation=..., invalidate_tags=(...))`, and an upload takes
-`UploadCreate`, `UploadProbe`, `UploadAppend`, `LengthCompletion()` or `OperationCompletion`, and `UploadAbort`
-records. A queue is a `QueueHelper` whose `operations` map aliases to `QueuedOperation(operation=..., side_effects=...,
+`UploadCreate`, `UploadProbe`, `UploadAppend` with an optional `UploadChecksum`, `LengthCompletion()` or
+`OperationCompletion`, and `UploadAbort` records. A queue is a `QueueHelper` whose `operations` map aliases to `QueuedOperation(operation=..., side_effects=...,
 key_binding=..., dedupe_ttl=...)`. They are validated as the file is, with the same diagnostics, when the client configuration is constructed.
 The later kinds have no records yet.
 
@@ -1322,7 +1317,7 @@ keywords, never field arguments, without the parameter the helper writes the con
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
     ) -> UploadHandle[None]:
-        """Read the source, create the upload of POST /files, and return its handle."""
+        """Measure the source, create the upload of POST /files, and return its handle."""
         return start_upload(
             self._core,
             _plans.PLAN_0,
@@ -1342,7 +1337,7 @@ keywords, never field arguments, without the parameter the helper writes the con
         options: RequestOptions | None = None,
         session_options: SessionOptions | None = None,
     ) -> UploadHandle[None]:
-        """Check the source against a checkpoint and continue from the offset the server holds."""
+        """Check a checkpoint and the source size, then continue from the server offset."""
         return resume_upload(
             self._core,
             _plans.PLAN_0,
@@ -1358,11 +1353,9 @@ keywords, never field arguments, without the parameter the helper writes the con
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.uploads.helper -->
 
 ```python
-from pkg.protocols import FileUploadSource
-
-with Client() as client:
+with Client() as client, open("video.mp4", "rb") as video:
     upload = client.protocols.files.upload
-    handle = upload.start(FileUploadSource.from_path("video.mp4"), tus_resumable=version)
+    handle = upload.start(video, tus_resumable=version)
     progress = handle.advance()
     state = handle.checkpoint()
     handle.run()
@@ -1373,54 +1366,41 @@ upload completed by length and the completion operation's response type otherwis
 completes the upload once the server holds every byte, and returns an `UploadProgress`; `run()` appends every
 remaining chunk, completes the upload, and returns its result. Both are coroutines on `AsyncUploadHandle`. Once
 complete, `advance` returns the progress and `run` the kept result without sending. `checkpoint()` returns a
-`ResumeState` at any time, even while another thread or task steps the handle, and sends nothing.
+`ResumeState` at any time before the upload completes, even while another thread or task steps the handle, and sends
+nothing; a complete upload has nothing to resume, so its `checkpoint()` raises `ProtocolStateError` with
+`state='complete'`.
 
 ### Sources
 
-A source has an immutable `identity`, an `UploadIdentity(size, sha256)` of its whole content, a
-`max_parallel_ranges` of at least 1, and `open_range(offset, length)`, which returns a context manager, an async one
-for `AsyncUploadSource`, opening a reader of that range. A reader's `read(max_bytes)` returns 0 to `max_bytes` bytes,
-`b''` being its permanent end, and `close()` or `aclose()` releases it; each reader has its own position. The builtin
-sources open independent readers and allow 4 ranges at once:
+A source is `bytes`, a `bytearray`, a `memoryview`, or a seekable binary file, such as one `open(path, "rb")` returns
+or an `io.BytesIO`; `UploadSource` names that union. `Client` and `AsyncClient` take the same sources. A file's content
+runs from its position when `start` or `resume` is called to its end, and the call measures its size by seeking to
+the end, without reading it. A file that cannot seek, an iterable, an iterator, or an asyncio stream raises
+`NonResumableSourceError` with its `source_kind` before anything is sent; send it as an ordinary upload. A file whose
+`read`, `seek`, or `tell` gives anything but bytes and integers, such as a text file or an asyncio file, raises
+`ProtocolConfigurationError` with `condition='wrong_capability'`. Sources are borrowed and never closed by the client,
+and nothing is ever spooled to disk.
 
-| Source | Content |
-|---|---|
-| `BytesUploadSource.from_bytes(data)` | A copy of bytes, a bytearray, or a memoryview |
-| `FileUploadSource.from_path(path)` | A file, hashed once in 64 KiB reads; each range opens its own descriptor |
-| `AsyncBytesUploadSource.from_bytes(data)` | A copy of bytes, read by native asyncio readers |
-| `await AsyncFileUploadSource.from_path(path)` | A file, hashed once in one 64 KiB read per worker job, so a cancellation stops between reads; one worker thread of its own opens, reads, and closes it, and `aclose()` or leaving `async with` stops it once its readers close and waits for the work interrupted callers left |
-
-A path must name a regular file: a FIFO, a device, or a directory raises `NonResumableSourceError` with
-`source_kind='stream'` before it is opened. A path source hashes at most the size the file had when it was opened and
-records the file's device, inode, size, and modification time, and each range it opens later raises
-`UploadSourceChangedError` when any of them changed. It is not a snapshot: keep the file unchanged while it is uploaded.
-Sources a call is given are borrowed and never closed by the client; every reader the client opens is closed. A one-shot
-input has no identity to resume from: bytes, an iterable, an iterator, an asyncio stream, or a reader raise
-`NonResumableSourceError` with its `source_kind` before anything is read; send it as an ordinary upload. Nothing is ever
-spooled to disk.
-
-Before anything is sent, `start` and `resume` read the whole source once through one reader and record the SHA-256 of
-each chunk; content that does not match the identity, by its length or its digest, raises `UploadSourceChangedError`.
-Each append reads its chunk again into a buffer of its own, one byte longer than the chunk, hashing it as it reads, and
-sends it only when its length and digest match what the scan recorded; otherwise it raises `UploadSourceChangedError`
-with the chunk's offset, and the handle sends nothing more: every later step raises `ProtocolStateError` with
-`state='source_changed'`, though `checkpoint()` still works. The body is sent from that buffer in 64 KiB slices, so an
-upload holds one chunk at a time besides fixed read buffers. A reader returning more bytes than it was asked for, or
-anything but bytes, raises `ProtocolConfigurationError` with `condition='wrong_capability'`.
+Each append seeks to the confirmed offset and reads the rest of its chunk into one buffer, synchronously on both
+clients; the last chunk is read with one byte more. Content shorter or longer than the size measured at `start` raises
+`UploadSourceChangedError` with both sizes, and the handle sends nothing more: every later step raises
+`ProtocolStateError` with `state='source_changed'`, though `checkpoint()` still works. The content is not hashed, so a
+change that keeps its size is not found: keep it unchanged while it is uploaded. The body is sent from that buffer in
+64 KiB slices, so an upload holds one chunk at a time besides fixed read buffers.
 
 ### Chunks, offsets, and recovery
 
 A chunk is `UploadOptions.chunk_bytes`, 8 MiB by default, or the helper's smaller `max_chunk_bytes`. An upload of more
-chunks than `UploadOptions.max_parts`, 10000 by default, raises `ProtocolConfigurationError` before anything is read,
-and so does a digest list whose base64 would exceed 15 MiB, with `ProtocolSizeError(kind='part_manifest')`; the
-remaining 1 MiB of a checkpoint's 16 MiB is left for its state, fingerprints, and a completion's response, and a larger
-response can still make `export()` raise `ResumeStateTooLargeError`. The offset profile sends one chunk at a time,
-whatever `parallelism` says.
+chunks than `UploadOptions.max_parts`, 10000 by default, raises `ProtocolConfigurationError` before anything is sent.
+The offset profile sends one chunk at a time.
 
 `start` sends the create request once, resent only as shared retries allow, with the content's size in the declared
 `size` parameter, and reads every binding's `initial` value and the server's expiry from its response. The upload
-starts at offset 0. Each append writes the confirmed offset into `offset`, and the chunk's length into `length` when
-declared, and sends the rest of the chunk as the body; a success response confirms the chunk. An append is never sent
+starts at offset 0. Each append writes the confirmed offset into `offset`, the length of the bytes it sends into
+`length` when declared, and their checksum into `checksum.target` when declared, and sends the rest of the chunk as the
+body; a success response confirms the chunk. A checksum is the `md5`, `sha1`, `sha256`, or `sha512` digest of those
+bytes, computed from the chunk's buffer as each append is built, in `base64` (the default) or `hex`, after the
+algorithm's name and a space with `algorithm_prefix: true`, as the tus checksum extension spells it. An append is never sent
 again by shared retries once it may have reached the server, even for an operation that is otherwise safe to retry:
 
 | Append outcome | What follows |
@@ -1450,11 +1430,10 @@ stays, and every later step raises `ProtocolStateError` with `state='closed'`. C
 
 ### Checkpoints and resume
 
-`checkpoint()` saves the content's identity, the chunk size and each chunk's digest, the confirmed offset, the values
-the probe, the append, and the completion write, the completion's result once complete, and the server's expiry. It is
-bound to the helper and to the security the call runs under, as pagination checkpoints are, and exports only when the
-call cannot authenticate or the client has a credential partition. Model values are never saved; a saved result is
-decoded again.
+`checkpoint()` saves the content's size, the chunk size, the confirmed offset, the values the probe, the append, and
+the completion write, a completion of unknown outcome, and the server's expiry; it saves no content, digest, or
+result. It is bound to the helper and to the security the call runs under, as pagination checkpoints are, and exports
+only when the call cannot authenticate or the client has a credential partition.
 
 `resume(source, state)` starts a new session and never creates the upload again. It checks the call's options, then the
 checkpoint: not a `ResumeState` raises `ProtocolConfigurationError`; another helper's raises
@@ -1465,10 +1444,9 @@ server's expiry `UploadExpiredError`, and one whose state does not fit the helpe
 either raises `ProtocolConfigurationError` with the option's `field_path`. Then the saved values each call writes: a
 value that makes a path segment `.` or `..` raises `ProtocolDataError`, as if a server gave it, and one that cannot be
 sent `ResumeStateError(condition='malformed')`. Then the source: a one-shot input raises `NonResumableSourceError`, and
-an identity other than the checkpoint's raises `UploadSourceChangedError`, and the source is read once and compared with
-the saved digests. Then it probes the server's offset once, which must not be below the saved one, and returns the
-handle; nothing is read or sent for a complete checkpoint, and a completion of unknown outcome raises
-`UploadDeliveryUnknownError` again.
+a size other than the checkpoint's raises `UploadSourceChangedError`; the source is not read. A completion of unknown
+outcome raises `UploadDeliveryUnknownError` again without sending. Otherwise it probes the server's offset once, which
+must not be below the saved one, and returns the handle.
 
 A server's expiry is read once from the create response at `create.expires_at`, an RFC 3339 date-time with an offset or
 an HTTP date; a missing, null, or unparsable value raises `ProtocolDataError` from `start`. It bounds only checkpoints
@@ -1486,22 +1464,19 @@ bounds all of them. Each limit comes from the call's options, then the helper's 
 |---|---|---|
 | `UploadOptions.chunk_bytes` | 8 MiB, at most the helper's `max_chunk_bytes` | Not allowed |
 | `UploadOptions.max_parts` | 10000 chunks | Removes the limit |
-| `UploadOptions.parallelism` | 4, unused by the offset profile | Not allowed |
 | `UploadOptions.max_uncertain_probes` | 3 probes; 0 probes none | Not allowed |
 | `SessionOptions.total_timeout` | No limit | Removes the limit |
 | `SessionOptions.deadline` | None | No deadline |
 | `SessionOptions.max_network_sends` | 10000 sends | Removes the limit |
 
 By default, an upload session has no total lifetime limit. If a finite `total_timeout` is configured, it runs from
-`start` or `resume` for the whole life of the handle, including reading the source. A long upload stepped slowly may
-then need a larger timeout, `SessionOptions(total_timeout=None)`, or a `resume` from a checkpoint, which starts a new
-session. Both modes check a finite deadline before each source read. A synchronous `opened.read()` cannot be
-interrupted once it blocks; an asynchronous read is bounded by the remaining deadline. A call past a limit raises
-`SessionLimitError` with the kind `network_sends`, the progress so far, and `resume_state`, before sending; a create
-request the session has no slot for raises it without `resume_state`, since nothing was created. The options must not
-fix an idempotency key, from the client, a view, or the call, and must not patch a header or a query parameter the
-helper writes, the size included; `start` and `resume` raise `ProtocolConfigurationError` before reading or sending, as
-they do for options of another type.
+`start` or `resume` for the whole life of the handle. A long upload stepped slowly may then need a larger timeout,
+`SessionOptions(total_timeout=None)`, or a `resume` from a checkpoint, which starts a new session. A call past a limit
+raises `SessionLimitError` with the kind `network_sends`, the progress so far, and `resume_state`, before sending; a
+create request the session has no slot for raises it without `resume_state`, since nothing was created. The options
+must not fix an idempotency key, from the client, a view, or the call, and must not patch a header or a query parameter
+the helper writes, the size included; `start` and `resume` raise `ProtocolConfigurationError` before reading or
+sending, as they do for options of another type.
 
 ### Upload generation checks
 
@@ -1549,6 +1524,9 @@ E_CONFIG_VALUE config protocols.helpers['checks.append_places'].append.offset /p
 E_CONFIG_VALUE config protocols.helpers['checks.append_places'].append.length /paths/~1files~1{fileId}/patch: The chunk length of 'checks.append_places' writes 'body', where only a path, query, or header parameter takes it
 E_CONFIG_VALUE config protocols.helpers['checks.append_places'].append.bindings /paths/~1files~1{fileId}/patch: PATCH /files/{fileId} requires the header parameter 'Upload-Offset', which no binding of 'checks.append_places' writes
 E_CONFIG_VALUE config protocols.helpers['checks.append_types'].append.offset /paths/~1files~1{fileId}/patch: The chunk offset of 'checks.append_types' gives integer values, which the header parameter 'X-Note' of PATCH /files/{fileId} does not accept
+E_CONFIG_CONFLICT config protocols.helpers['checks.checksum_overlap'].append.checksum.target /paths/~1files~1{fileId}/patch: The chunk checksum of 'checks.checksum_overlap' writes the same target as its chunk offset
+E_CONFIG_VALUE config protocols.helpers['checks.checksum_place'].append.checksum.target /paths/~1files~1{fileId}/patch: The chunk checksum of 'checks.checksum_place' writes the cookie 'session', which carries credentials no helper writes
+E_CONFIG_VALUE config protocols.helpers['checks.checksum_type'].append.checksum.target /paths/~1files~1{fileId}/patch: The chunk checksum of 'checks.checksum_type' gives string values, which the header parameter 'X-Count' of PATCH /files/{fileId} does not accept
 E_CONFIG_VALUE config protocols.helpers['checks.append_body'].append.bindings[1].target /paths/~1files~1{fileId}/patch: The append binding 1 of 'checks.append_body' writes the request body, which is the chunk
 E_CONFIG_VALUE config protocols.helpers['checks.completion_media'].completion.operation /paths/~1files~1{fileId}~1finish/post: POST /files/{fileId}/finish must declare exactly one JSON success response for the completion of 'checks.completion_media'
 E_CONFIG_VALUE config protocols.helpers['checks.completion_missing'].completion.result_schema /paths/~1files~1{fileId}~1complete/post: The result schema '/components/schemas/Missing' of 'checks.completion_missing' does not exist in its document

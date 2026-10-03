@@ -37,6 +37,7 @@ __all__ = ("UploadSpec", "plan_uploads")
 
 _PARAMETERS: Final = frozenset({"path", "query", "header"})
 _INTEGER: Final = frozenset({"integer"})
+_STRING: Final = frozenset({"string"})
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -135,10 +136,16 @@ class _Uploads:
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{helper.at}.create.operation", message, create))
         return sources
 
-    def count(
-        self, helper: Helper, spec: OperationSpec, target: Mapping[str, Any], at: str, what: str
+    def count(  # noqa: PLR0913, PLR0917
+        self,
+        helper: Helper,
+        spec: OperationSpec,
+        target: Mapping[str, Any],
+        at: str,
+        what: str,
+        types: frozenset[str] = _INTEGER,
     ) -> Iterator[Diagnostic]:
-        """Check that a count goes to a path, query, or header parameter accepting integers, never to credentials."""
+        """Check that a count or checksum goes to a path, query, or header parameter of its types, never credentials."""
         name, pages = helper.name, self.pages
         if (place := credential_place(target, pages.secret_headers, pages.secret_queries, spec)) is not None:
             message = f"The {what} of {name!r} writes {place}, which carries credentials no helper writes"
@@ -150,7 +157,7 @@ class _Uploads:
             )
             yield _problem("E_CONFIG_VALUE", "config", at, message, spec)
         else:
-            yield from pages.fits(helper, spec, target, _INTEGER, at, what, null=False)
+            yield from pages.fits(helper, spec, target, types, at, what, null=False)
 
     def size(self, helper: Helper, create: OperationSpec, problems: list[Diagnostic]) -> ParameterSpec | None:
         """Check where the create operation writes the content's size, returning the parameter it fills."""
@@ -275,7 +282,7 @@ class _Uploads:
     def append(
         self, helper: Helper, append: OperationSpec, sources: Mapping[str, list[_Source]]
     ) -> Iterator[Diagnostic]:
-        """Check the append: one binary request media, its offset and length counts, and its bindings."""
+        """Check the append: one binary request media, its offset and length counts, its checksum, and bindings."""
         tree, at, name = helper.tree["append"], f"{helper.at}.append", helper.name
         body = append.body
         if body is None or len(body.media) != 1 or body.media[0].kind != "binary":
@@ -285,19 +292,25 @@ class _Uploads:
             message = f"{_label(append)} must declare a success response for the appends of {name!r}"
             yield _problem("E_CONFIG_VALUE", "config", f"{at}.operation", message, append)
         written = self.keys(tree["bindings"])
-        for what in ("offset", "length"):
-            if (target := tree.get(what)) is None:
+        owners = [f"its append binding {index}" for index in range(len(written))]
+        checksum = tree.get("checksum")
+        for what, target, where, types in (
+            ("offset", tree["offset"], f"{at}.offset", _INTEGER),
+            ("length", tree.get("length"), f"{at}.length", _INTEGER),
+            ("checksum", None if checksum is None else checksum["target"], f"{at}.checksum.target", _STRING),
+        ):
+            if target is None:
                 continue
-            key, where = _target_key(target), f"{at}.{what}"
+            key = _target_key(target)
             if (
                 clash := next((index for index, other in enumerate(written) if _overlaps(key, other)), None)
             ) is not None:
-                owner = f"its append binding {clash}" if clash < len(tree["bindings"]) else "its chunk offset"
-                message = f"The chunk {what} of {name!r} writes the same target as {owner}"
+                message = f"The chunk {what} of {name!r} writes the same target as {owners[clash]}"
                 yield _problem("E_CONFIG_CONFLICT", "config", where, message, append)
                 continue
             written.append(key)
-            yield from self.count(helper, append, target, where, f"chunk {what}")
+            owners.append(f"its chunk {what}")
+            yield from self.count(helper, append, target, where, f"chunk {what}", types)
         yield from self.bindings(helper, append, "append", sources)
         yield from self.required(helper, append, "append", written, body=False)
 

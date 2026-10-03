@@ -1,8 +1,8 @@
 """Resumable uploads of the offset profile: their creation, the handles that append chunks, checkpoints, and resume.
 
-A helper's `start` scans the source, creates the upload in one child call, and returns a handle. Each `advance`
-appends the chunk holding the confirmed offset, read again and checked against the digest the scan recorded, and an
-append whose outcome is unknown is settled by probing the server's offset instead of sending it again blindly.
+A helper's `start` measures the source, creates the upload in one child call, and returns a handle. Each `advance`
+reads the unconfirmed bytes of the chunk holding the confirmed offset from the source and appends them, and an append
+whose outcome is unknown is settled by probing the server's offset instead of sending it again blindly.
 """
 
 from __future__ import annotations
@@ -11,10 +11,10 @@ import threading
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from enum import Enum
-from functools import partial
 from hashlib import sha256
-from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Final, Generic, Literal, cast, final
+from io import SEEK_END
+from types import CoroutineType, MappingProxyType
+from typing import TYPE_CHECKING, Any, BinaryIO, Final, Generic, Literal, cast, final
 
 from typing_extensions import Self, TypeVar
 
@@ -24,8 +24,6 @@ from ..client.errors import (
     DeliveryState,
     HTTPStatusError,
     ProtocolConfigurationError,
-    ProtocolSizeError,
-    SDKError,
     TransportError,
     UnexpectedStatusError,
 )
@@ -47,7 +45,6 @@ from .errors import (
 from .options import UploadOptions, layered
 from .records import HeaderSelector, canonical_json
 from .resume import (
-    MAX_STATE_BYTES,
     MalformedStateError,
     ResumeState,
     ResumeStateError,
@@ -58,7 +55,7 @@ from .resume import (
     state_fields,
     state_text,
 )
-from .sources import UploadIdentity, UploadProgress
+from .sources import UploadProgress
 from .values import MISSING, RepeatedValueError, selected, server_expiry
 
 if TYPE_CHECKING:
@@ -67,7 +64,7 @@ if TYPE_CHECKING:
     from types import TracebackType
 
     from ..client.client import AsyncClientCore, ClientCore
-    from ..client.logical import LogicalCallContext, OperationSession
+    from ..client.logical import OperationSession
     from ..client.operations import OperationPlan
     from ..client.responses import ResponseInfo
     from ..client.timing import Deadline
@@ -76,7 +73,6 @@ if TYPE_CHECKING:
     from .pagination import PageBinding
     from .records import ParameterTarget, ProtocolProgress, Selector
     from .references import OperationRef
-    from .sources import AsyncRangeReader, AsyncUploadSource, RangeReader, UploadSource
     from .writes import Targeted
 
 __all__ = (
@@ -93,11 +89,8 @@ T = TypeVar("T")
 C = TypeVar("C")
 
 _READ: Final = 65536
-_DIGEST: Final = 32
 _UNKNOWN: Final = frozenset({DeliveryState.MAYBE_SENT, DeliveryState.RESPONSE_STARTED})
-_STATE: Final = frozenset({"size", "sha256", "chunk", "confirmed", "phase", "delivery", "bound", "result"})
-_MANIFEST_BYTES: Final = MAX_STATE_BYTES - 1024 * 1024
-_RESULT_FIELDS: Final = 2
+_STATE: Final = frozenset({"size", "chunk", "confirmed", "phase", "delivery", "bound"})
 _MIN_SUCCESS: Final = 200
 _MAX_SUCCESS: Final = 299
 _GATEWAY_STATUSES: Final = frozenset({502, 504})
@@ -135,9 +128,11 @@ class UploadPlan(Generic[T, C]):
 
     `create` starts the upload, writing the content's size into `size` when declared, and its response gives the
     `initial` values of every binding and the server's expiry at `expires_at`. `probe` reads the server's offset at
-    `remote_offset`; `append` sends one chunk as its binary body, writing its offset into `offset` and its length into
-    `length`. Chunks are at most `max_chunk_bytes`; `partial_commit` allows a server to keep part of one. A helper
-    without `completion` completes when the server holds every byte; one with it sends that operation once.
+    `remote_offset`; `append` sends one chunk as its binary body, writing its offset into `offset`, its length into
+    `length`, and into `checksum` the `checksum_algorithm` digest of the bytes it sends, in `checksum_encoding` and
+    after the algorithm's name and a space with `checksum_prefix`. Chunks are at most `max_chunk_bytes`;
+    `partial_commit` allows a server to keep part of one. A helper without `completion` completes when the server holds
+    every byte; one with it sends that operation once.
     """
 
     helper_id: str
@@ -157,6 +152,10 @@ class UploadPlan(Generic[T, C]):
     probe_bindings: tuple[PageBinding, ...] = ()
     append_bindings: tuple[PageBinding, ...] = ()
     length: ParameterTarget | None = None
+    checksum: ParameterTarget | None = None
+    checksum_algorithm: Literal["md5", "sha1", "sha256", "sha512"] = "sha256"
+    checksum_encoding: Literal["base64", "hex"] = "base64"
+    checksum_prefix: bool = False
     completion_operation: OperationRef | None = None
     completion: OperationPlan[T, object] | None = None
     completion_bindings: tuple[PageBinding, ...] = ()
@@ -168,13 +167,13 @@ class UploadPlan(Generic[T, C]):
     queries: frozenset[str] = field(init=False)
 
     def __post_init__(self) -> None:
-        """Derive the operations writing the bindings, the chunk's offset and length, and the size's position."""
+        """Derive the operations writing the bindings and each chunk's offset, length, and checksum, and the size."""
         from dataclasses import replace  # noqa: PLC0415
 
         from .writes import position, targeted_writes  # noqa: PLC0415 - Only a plan loads the operation runtime.
 
         probed = targeted_writes(self.probe, (binding.written for binding in self.probe_bindings))
-        extra = (self.offset,) if self.length is None else (self.offset, self.length)
+        extra = tuple(target for target in (self.offset, self.length, self.checksum) if target is not None)
         appended = targeted_writes(self.append, (binding.written for binding in self.append_bindings), extra)
         appended = replace(appended, call=_unreplayed(appended.call))
         completion = self.completion
@@ -204,7 +203,6 @@ class _Limits:
 
     chunk_bytes: int = 8 * 1024 * 1024
     max_parts: int | None = 10000
-    parallelism: int = 4
     max_uncertain_probes: int = 3
     total_timeout: float | None = None
     deadline: Deadline | None = None
@@ -261,7 +259,6 @@ def _limits(
     return _Limits(
         chunk_bytes=layered(kinds, "chunk_bytes", _DEFAULTS.chunk_bytes),
         max_parts=layered(kinds, "max_parts", _DEFAULTS.max_parts),
-        parallelism=layered(kinds, "parallelism", _DEFAULTS.parallelism),
         max_uncertain_probes=layered(kinds, "max_uncertain_probes", _DEFAULTS.max_uncertain_probes),
         total_timeout=layered(sessions, "total_timeout", _DEFAULTS.total_timeout),
         deadline=layered(sessions, "deadline", _DEFAULTS.deadline),
@@ -272,7 +269,7 @@ def _limits(
 
 
 def _source_kind(value: object) -> Literal["iterable", "iterator", "stream", "reader"] | None:
-    """Return the kind of a one-shot input that has no resumable identity, or None for anything else."""
+    """Return the kind of a one-shot input that cannot be read again, or None for anything else."""
     kind: Literal["iterable", "iterator", "stream", "reader"] | None = None
     if hasattr(value, "read"):
         kind = "reader"
@@ -285,59 +282,86 @@ def _source_kind(value: object) -> Literal["iterable", "iterator", "stream", "re
     return kind
 
 
-def _identity(plan: UploadPlan[T, C], source: object) -> UploadIdentity:
-    """Return a source's identity, refusing a one-shot input, another value, and an invalid range capability."""
-    if not all(hasattr(source, name) for name in ("identity", "max_parallel_ranges", "open_range")):
-        if (kind := _source_kind(source)) is None:
-            raise _invalid(plan, ("source",))
-        raise NonResumableSourceError(source_kind=kind, helper_id=plan.helper_id, operation=plan.operation)
-    source_any: Any = source
-    if not isinstance(identity := source_any.identity, UploadIdentity):
-        raise _invalid(plan, ("source", "identity"))
-    if type(ranges := source_any.max_parallel_ranges) is not int or ranges < 1:
-        raise _invalid(plan, ("source", "max_parallel_ranges"))
-    return identity
+def _discarded(*values: object) -> bool:
+    """Close the coroutines among values an asyncio file returned, and return whether there were any."""
+    found = False
+    for value in values:
+        if isinstance(value, CoroutineType):
+            value.close()
+            found = True
+    return found
+
+
+class _Content:
+    """The content of an upload source: bytes, or a seekable binary file from where it was positioned, and its size."""
+
+    __slots__ = ("base", "file", "size", "source")
+
+    def __init__(self, source: object, file: BinaryIO | None, base: int, size: int) -> None:
+        self.source = source
+        self.file = file
+        self.base = base
+        self.size = size
+
+    def measured(self) -> int:
+        """Return the size the content has now."""
+        if (file := self.file) is None:
+            with memoryview(cast("bytes", self.source)) as view:
+                return view.nbytes
+        return max(file.seek(0, SEEK_END) - self.base, 0)
+
+    def read(self, plan: UploadPlan[Any, Any], start: int, length: int) -> bytes:
+        """Return up to `length` bytes from an offset of the content, fewer only at its end."""
+        if (file := self.file) is None:
+            with memoryview(cast("bytes", self.source)) as view, view.cast("B") as flat:
+                return flat[start : start + length].tobytes()
+        file.seek(self.base + start)
+        parts: list[bytes] = []
+        left = length
+        while left:
+            data = cast("object", file.read(min(left, _READ)))
+            if not isinstance(data, bytes) or len(data) > left:
+                raise _invalid(plan, ("source",), "wrong_capability")
+            if not data:
+                break
+            parts.append(data)
+            left -= len(data)
+        return b"".join(parts)
+
+
+def _content(plan: UploadPlan[T, C], source: object) -> _Content:
+    """Return the content of a source, refusing a one-shot input, a file that cannot seek, and any other value.
+
+    A file must read bytes and seek synchronously; an empty read checks that before anything is sent.
+    """
+    if isinstance(source, (bytes, bytearray, memoryview)):
+        data = cast("bytes", source)
+        with memoryview(data) as view:
+            return _Content(data, None, 0, view.nbytes)
+    file = cast("BinaryIO", source)
+    if all(hasattr(file, name) for name in ("read", "seek", "tell")) and (
+        (seekable := getattr(file, "seekable", None)) is None or seekable()
+    ):
+        empty, base, end = cast("tuple[object, object, object]", (file.read(0), file.tell(), file.seek(0, SEEK_END)))
+        if _discarded(empty, base, end) or type(empty) is not bytes or type(base) is not int or type(end) is not int:
+            raise _invalid(plan, ("source",), "wrong_capability")
+        return _Content(source, file, base, max(end - base, 0))
+    if (kind := _source_kind(source)) is None:
+        raise _invalid(plan, ("source",))
+    raise NonResumableSourceError(source_kind=kind, helper_id=plan.helper_id, operation=plan.operation)
 
 
 def _layout(plan: UploadPlan[T, C], limits: _Limits, size: int, chunk: int) -> int:
-    """Return the chunk size of an upload, refusing one the options do not allow or a digest list too large to keep.
+    """Return the chunk size of an upload, refusing one the options do not allow.
 
     A resumed checkpoint keeps its chunk size, which must not exceed the call's `chunk_bytes`, since one chunk is what
-    an append holds in memory. The digests must leave room in a checkpoint for its other members.
+    an append holds in memory.
     """
     if chunk > limits.chunk_bytes:
         raise _invalid(plan, ("upload_options", "chunk_bytes"))
-    count = -(-size // chunk)
-    if (limit := limits.max_parts) is not None and count > limit:
+    if (limit := limits.max_parts) is not None and -(-size // chunk) > limit:
         raise _invalid(plan, ("upload_options", "max_parts"))
-    if (encoded := 4 * -(-_DIGEST * count // 3)) > _MANIFEST_BYTES:
-        raise ProtocolSizeError(
-            kind="part_manifest",
-            limit=_MANIFEST_BYTES,
-            observed=encoded,
-            unit="bytes",
-            helper_id=plan.helper_id,
-            operation=plan.operation,
-        )
     return chunk
-
-
-class _Chunk:
-    """One chunk read into a buffer of its own, hashed as it is read; one byte more shows content past its end."""
-
-    __slots__ = ("digest", "read", "view")
-
-    def __init__(self, size: int) -> None:
-        self.view = memoryview(bytearray(size + 1))
-        self.digest = sha256()
-        self.read = 0
-
-    def add(self, data: bytes) -> None:
-        """Copy bytes read after those before into the buffer and hash them."""
-        end = self.read + len(data)
-        self.view[self.read : end] = data
-        self.digest.update(data)
-        self.read = end
 
 
 class _Slices:
@@ -403,48 +427,11 @@ class _AsyncFactory:
         return _Slices(self._view)
 
 
-class _Scan:
-    """The digests of content read in order: of each chunk, and of the whole."""
-
-    __slots__ = ("chunk", "digests", "part", "read", "whole")
-
-    def __init__(self, chunk: int) -> None:
-        self.chunk = chunk
-        self.whole = sha256()
-        self.part = sha256()
-        self.digests = bytearray()
-        self.read = 0
-
-    def add(self, data: bytes) -> None:
-        """Hash bytes read after those before, closing each chunk at its end."""
-        view = memoryview(data)
-        while view:
-            room = self.chunk - self.read % self.chunk
-            piece, view = view[:room], view[room:]
-            self.part.update(piece)
-            self.whole.update(piece)
-            self.read += len(piece)
-            if not self.read % self.chunk:
-                self.digests += self.part.digest()
-                self.part = sha256()
-
-    def finish(self) -> tuple[UploadIdentity, bytes]:
-        """Return the identity of what was read and the digest of each chunk."""
-        if self.read % self.chunk:
-            self.digests += self.part.digest()
-        return UploadIdentity(size=self.read, sha256=self.whole.digest()), bytes(self.digests)
-
-
-def _wanted(size: int, read: int) -> int:
-    """Return how much to read next: up to a read buffer, and one byte past the end to find bytes beyond it."""
-    return min(_READ, size - read + 1)
-
-
 class _Upload(Generic[T]):
-    """What the synchronous and asyncio handles share: the plan, limits, session, source, and confirmed offset.
+    """What the synchronous and asyncio handles share: the plan, limits, session, content, and confirmed offset.
 
     Only a settled child call changes the confirmed offset. A failed append leaves it and makes the next step probe the
-    server first; a source that changed keeps its checkpoint but sends nothing more.
+    server first; a source whose size changed keeps its checkpoint but sends nothing more.
     """
 
     __slots__ = (
@@ -454,38 +441,31 @@ class _Upload(Generic[T]):
         "_closed",
         "_completion_delivery",
         "_confirmed",
+        "_content",
         "_delivery",
-        "_digests",
         "_expires_at",
         "_guard",
         "_high",
-        "_identity",
         "_limits",
         "_lock",
         "_phase",
         "_plan",
         "_result",
-        "_saved",
         "_session",
+        "_size",
         "_verify",
     )
 
-    def __init__(  # noqa: PLR0913, PLR0917
-        self,
-        plan: UploadPlan[T, Any],
-        limits: _Limits,
-        session: OperationSession,
-        identity: UploadIdentity,
-        chunk: int,
-        digests: bytes,
+    def __init__(
+        self, plan: UploadPlan[T, Any], limits: _Limits, session: OperationSession, content: _Content, chunk: int
     ) -> None:
-        """Keep the plan, limits, session, the content's identity, its chunk size, and each chunk's digest."""
+        """Keep the plan, limits, session, the borrowed source's content, and the chunk size."""
         self._plan = plan
         self._limits = limits
         self._session = session
-        self._identity = identity
+        self._content = content
+        self._size = content.size
         self._chunk = chunk
-        self._digests = digests
         self._lock = threading.Lock()
         self._guard = threading.Lock()
         self._phase = _Phase.UPLOADING
@@ -499,19 +479,18 @@ class _Upload(Generic[T]):
         self._bound: tuple[tuple[WireValue, ...], tuple[WireValue, ...], tuple[WireValue, ...]] = ((), (), ())
         self._expires_at: datetime | None = None
         self._result: T | None = None
-        self._saved: tuple[bytes, int, str | None] | None = None
 
     def __repr__(self) -> str:
         """Name the handle's phase and its confirmed and total bytes only, never its data."""
         return (
             f"{type(self).__name__}(phase={self._phase.value!r}, confirmed_bytes={self._confirmed}, "
-            f"total_bytes={self._identity.size})"
+            f"total_bytes={self._size})"
         )
 
     def _progress(self) -> UploadProgress:
         return UploadProgress(
             confirmed_bytes=self._confirmed,
-            total_bytes=self._identity.size,
+            total_bytes=self._size,
             complete=self._phase is _Phase.COMPLETE,
         )
 
@@ -595,7 +574,7 @@ class _Upload(Generic[T]):
         """Confirm the server holds every byte before an offset; one completing by length completes with the last."""
         with self._guard:
             self._confirmed, self._verify = confirmed, verify
-            if confirmed == self._identity.size and self._plan.completion is None:
+            if confirmed == self._size and self._plan.completion is None:
                 self._phase = _Phase.COMPLETE
 
     def _unknown(
@@ -633,7 +612,7 @@ class _Upload(Generic[T]):
             confirmed_offset=self._confirmed,
             expected_offset=expected,
             remote_offset=remote,
-            size=self._identity.size,
+            size=self._size,
             resume_state=self._checkpoint(),
             location=plan.remote_offset,
             helper_id=plan.helper_id,
@@ -717,7 +696,7 @@ class _Upload(Generic[T]):
         A server may hold part of a chunk only when the helper allows partial commits, and never more than this handle
         sent unless a checkpoint restored it.
         """
-        confirmed, size = self._confirmed, self._identity.size
+        confirmed, size = self._confirmed, self._size
         limit = size if (high := self._high) is None else min(high, size)
         partial = remote % self._chunk and remote != size
         if remote < confirmed or remote > limit or (partial and not self._plan.partial_commit):
@@ -741,33 +720,34 @@ class _Upload(Generic[T]):
             return False
         raise self._offset_error(end, remote, info)
 
-    def _chunked(self, chunk: _Chunk, index: int, size: int) -> memoryview:
-        """Return a chunk's bytes once they are those the scan read; any others stop every later send."""
-        expected = self._digests[index * _DIGEST : (index + 1) * _DIGEST]
-        if chunk.read == size and chunk.digest.digest() == expected:
-            return chunk.view[:size]
+    def _buffer(self) -> tuple[memoryview, int]:
+        """Read the unconfirmed bytes of the chunk holding the confirmed offset, and return them with the chunk's end.
+
+        The last chunk is read with one byte more, to find content past its end. Content whose size is not the upload's
+        stops every later send.
+        """
+        size, start = self._size, self._confirmed
+        end = min((start // self._chunk + 1) * self._chunk, size)
+        content = self._content
+        data = content.read(self._plan, start, end - start + (end == size))
+        if len(data) == end - start:
+            return memoryview(data), end
         with self._guard:
             self._changed = True
         plan = self._plan
         raise UploadSourceChangedError(
-            expected=UploadIdentity(size=size, sha256=expected),
-            actual=UploadIdentity(size=chunk.read, sha256=chunk.digest.digest()),
-            offset=index * self._chunk,
+            expected_size=size,
+            actual_size=content.measured(),
             helper_id=plan.helper_id,
             operation=plan.operation,
             parent_session_id=self._session.session_id,
         )
 
-    def _span(self) -> tuple[int, int, int]:
-        """Return the index of the chunk holding the confirmed offset, its start, and its end."""
-        index = self._confirmed // self._chunk
-        start = index * self._chunk
-        return index, start, min(start + self._chunk, self._identity.size)
-
-    def _append_request(self, payload: object, size: int) -> Callable[[], tuple[tuple[object, ...], object, None]]:
-        plan, offset = self._plan, self._confirmed
-        values = (offset,) if plan.length is None else (offset, size)
-        arguments = plan.appended.request((*self._bound[1], *values))[0]
+    def _append_request(
+        self, payload: object, data: memoryview
+    ) -> Callable[[], tuple[tuple[object, ...], object, None]]:
+        plan = self._plan
+        arguments = plan.appended.request((*self._bound[1], *_written(plan, self._confirmed, data)))[0]
         return lambda: (arguments, payload, None)
 
     def _probe_request(self) -> tuple[tuple[object, ...], object, None]:
@@ -779,12 +759,11 @@ class _Upload(Generic[T]):
         return (*completed.request(self._bound[2]), None)
 
     def _completed(
-        self, data: T, _wire: WireValue, content: bytes, info: ResponseInfo, _url: str, _managed: frozenset[str]
+        self, data: T, _wire: WireValue, _content: bytes, _info: ResponseInfo, _url: str, _managed: frozenset[str]
     ) -> T:
-        """Keep the completion's result and its body, which a checkpoint saves."""
+        """Keep the completion's result."""
         with self._guard:
             self._result, self._phase, self._delivery = data, _Phase.COMPLETE, None
-            self._saved = content, info.status_code, info.content_type
         return data
 
     def _completing(self) -> None:
@@ -813,16 +792,19 @@ class _Upload(Generic[T]):
         return self._unknown(phase="complete", delivery=delivery, error=error)
 
     def checkpoint(self) -> ResumeState:
-        """Return the state a later `resume` continues from, sending nothing; it works in every phase.
+        """Return the state a later `resume` continues from, sending nothing; a complete upload has none.
 
-        It keeps the upload's identity, chunk size and digests, the confirmed offset, the values later calls write, the
-        server's expiry, and a completion's result, bound to the helper and the security the call runs under.
+        It keeps the upload's size and chunk size, the confirmed offset, a completion of unknown outcome, the values
+        later calls write, and the server's expiry, bound to the helper and the security the call runs under.
         """
         with self._guard:
+            if (phase := self._phase) is _Phase.COMPLETE:
+                action = "checkpoint"
+                raise self._state_error(action, phase.value)
             return self._checkpoint()
 
     def _checkpoint(self) -> ResumeState:
-        plan, identity = self._plan, self._identity
+        plan = self._plan
         options = self._limits.options
         facts: list[WireValue] = []
         exportable = True
@@ -830,23 +812,20 @@ class _Upload(Generic[T]):
             fact, allowed = self._core_security(call, options)
             facts.append(fact)
             exportable = exportable and allowed
-        saved = self._saved
         delivery = self._delivery
         state: WireValue = {
-            "size": identity.size,
-            "sha256": identity.sha256.hex(),
+            "size": self._size,
             "chunk": self._chunk,
             "confirmed": self._confirmed,
             "phase": self._phase.value,
             "delivery": None if delivery is None else delivery.value,
             "bound": self._bound,
-            "result": None if saved is None else (saved[1], saved[2]),
         }
         return helper_state(
             helper_fingerprint=plan.fingerprint,
             security_fingerprint=sha256(canonical_json(tuple(facts))).hexdigest(),
             state=state,
-            payload=self._digests + (b"" if saved is None else saved[0]),
+            payload=b"",
             exportable=exportable,
             expires_at=self._expires_at,
         )
@@ -867,6 +846,30 @@ def _dotted(
         raise ProtocolDataError(
             condition="value", location=read, helper_id=plan.helper_id, operation=plan.operation, info=info
         )
+
+
+def _written(plan: UploadPlan[Any, Any], offset: int, data: memoryview | bytes) -> tuple[WireValue, ...]:
+    """Return what an append writes after its bindings: its offset, and the length and checksum of what it sends."""
+    values: list[WireValue] = [offset]
+    if plan.length is not None:
+        values.append(len(data))
+    if plan.checksum is not None:
+        values.append(_checksum(plan, data))
+    return tuple(values)
+
+
+def _checksum(plan: UploadPlan[Any, Any], data: memoryview | bytes) -> str:
+    """Return the declared checksum of bytes: their digest in its encoding, after the algorithm's name when declared."""
+    from hashlib import new  # noqa: PLC0415 - Only a declared checksum loads other digests.
+
+    digest = new(plan.checksum_algorithm, data, usedforsecurity=False).digest()
+    if plan.checksum_encoding == "hex":
+        text = digest.hex()
+    else:
+        from base64 import b64encode  # noqa: PLC0415 - Only a base64 checksum loads the encoder.
+
+        text = b64encode(digest).decode("ascii")
+    return f"{plan.checksum_algorithm} {text}" if plan.checksum_prefix else text
 
 
 def _refused(error: BaseException) -> bool:
@@ -902,53 +905,6 @@ def _session(limits: _Limits) -> OperationSession:
     )
 
 
-def _changed(
-    plan: UploadPlan[Any, Any], expected: UploadIdentity, actual: UploadIdentity | None, offset: int | None = None
-) -> UploadSourceChangedError:
-    return UploadSourceChangedError(
-        expected=expected, actual=actual, offset=offset, helper_id=plan.helper_id, operation=plan.operation
-    )
-
-
-def _opened(plan: UploadPlan[Any, Any], source: Any, start: int, length: int, method: str) -> Any:
-    """Open a range of a source, refusing one whose context is not of this client's kind.
-
-    A refused coroutine, such as an asyncio `open_range` a synchronous client called, is closed unawaited.
-    """
-    opened = source.open_range(start, length)
-    if not hasattr(opened, method):
-        if (close := getattr(opened, "close", None)) is not None:
-            close()
-        raise _invalid(plan, ("source",), "wrong_capability")
-    return opened
-
-
-def _bytes(plan: UploadPlan[Any, Any], data: object, limit: int) -> bytes:
-    """Return what a reader read, refusing anything but bytes and more bytes than it was asked for."""
-    if not isinstance(data, bytes) or len(data) > limit:
-        raise _invalid(plan, ("source",), "wrong_capability")
-    return data
-
-
-def _scanned(plan: UploadPlan[Any, Any], identity: UploadIdentity, scan: _Scan, digests: bytes | None) -> bytes:
-    """Return each chunk's digest once the scan read exactly the identity's content, and any saved digests too."""
-    read, found = scan.finish()
-    if read != identity:
-        raise _changed(plan, identity, read)
-    if digests is not None and found != digests:
-        index = next(
-            index
-            for index in range(len(found) // _DIGEST)
-            if found[index * _DIGEST : (index + 1) * _DIGEST] != digests[index * _DIGEST : (index + 1) * _DIGEST]
-        )
-        start = index * scan.chunk
-        size = min(scan.chunk, identity.size - start)
-        expected = UploadIdentity(size=size, sha256=digests[index * _DIGEST : (index + 1) * _DIGEST])
-        actual = UploadIdentity(size=size, sha256=found[index * _DIGEST : (index + 1) * _DIGEST])
-        raise _changed(plan, expected, actual, start)
-    return found
-
-
 @final
 class UploadHandle(_Upload[T]):
     """A resumable upload a helper created or resumed: `advance` appends one chunk, and `run` uploads the rest.
@@ -957,7 +913,7 @@ class UploadHandle(_Upload[T]):
     ProtocolStateError.
     """
 
-    __slots__ = ("_core", "_source")
+    __slots__ = ("_core",)
 
     def __init__(  # noqa: PLR0913, PLR0917
         self,
@@ -965,58 +921,17 @@ class UploadHandle(_Upload[T]):
         plan: UploadPlan[T, Any],
         limits: _Limits,
         session: OperationSession,
-        source: UploadSource,
-        identity: UploadIdentity,
+        content: _Content,
         chunk: int,
-        digests: bytes,
     ) -> None:
-        """Keep the client core the handle's child calls are sent through and the borrowed source."""
-        super().__init__(plan, limits, session, identity, chunk, digests)
+        """Keep the client core the handle's child calls are sent through."""
+        super().__init__(plan, limits, session, content, chunk)
         self._core = core
-        self._source = source
 
     def _core_security(
         self, call: OperationPlan[Any, object], options: RequestOptions | None
     ) -> tuple[WireValue, bool]:
         return self._core.checkpoint_security(call, options)
-
-    def _waiter(self) -> LogicalCallContext:
-        return self._core.waiting(self._limits.options, self._session, self._plan.append.operation_id)
-
-    def _read_all(self, start: int, size: int, add: Callable[[bytes], object]) -> None:
-        """Read a range through one reader, until its end or one byte past its size, checking the session first."""
-        plan = self._plan
-        waiter = self._waiter()
-        got = 0
-        try:
-            with _opened(plan, self._source, start, size, "__enter__") as reader:
-                opened: RangeReader = reader
-                while got <= size:
-                    waiter.check()
-                    wanted = _wanted(size, got)
-                    if not (data := _bytes(plan, opened.read(wanted), wanted)):
-                        break
-                    got += len(data)
-                    add(data)
-        finally:
-            waiter.finish()
-
-    def _scan(self, digests: bytes | None = None) -> bytes:
-        """Read the whole source once before any send, returning each chunk's digest; a change raises."""
-        scan = _Scan(self._chunk)
-        self._read_all(0, self._identity.size, scan.add)
-        return _scanned(self._plan, self._identity, scan, digests)
-
-    def _buffer(self, index: int, start: int, size: int) -> memoryview:
-        """Read one chunk into its own buffer and check it against the digest the scan recorded."""
-        chunk = _Chunk(size)
-        try:
-            self._read_all(start, size, chunk.add)
-        except UploadSourceChangedError:
-            with self._guard:
-                self._changed = True
-            raise
-        return self._chunked(chunk, index, size)
 
     def _create(self, arguments: tuple[object, ...], body: object, media_type: str | MediaSelector | None) -> None:
         """Send the create request as the session's first child call and keep what it gives."""
@@ -1053,8 +968,8 @@ class UploadHandle(_Upload[T]):
 
     def _append(self) -> None:
         """Append the chunk holding the confirmed offset until the server confirms all of it."""
-        index, start, end = self._span()
-        buffer = self._buffer(index, start, end - start)
+        start = self._confirmed
+        buffer, end = self._buffer()
         while self._confirmed < end:
             unconfirmed = buffer[self._confirmed - start :]
             payload = BodyFactory(_Factory(unconfirmed), content_length=len(unconfirmed))
@@ -1064,7 +979,7 @@ class UploadHandle(_Upload[T]):
                     self._core.execute_page(
                         self._plan,
                         self._plan.appended.call,
-                        self._append_request(payload, len(unconfirmed)),
+                        self._append_request(payload, unconfirmed),
                         _ignored,
                         body=payload,
                         media_type=None,
@@ -1129,7 +1044,7 @@ class UploadHandle(_Upload[T]):
             self._verified(*self._probe())
             if self._phase is _Phase.COMPLETE:
                 return
-        if self._confirmed < self._identity.size:
+        if self._confirmed < self._size:
             self._append()
         else:
             self._complete()
@@ -1181,7 +1096,7 @@ class AsyncUploadHandle(_Upload[T]):
     ProtocolStateError.
     """
 
-    __slots__ = ("_core", "_source")
+    __slots__ = ("_core",)
 
     def __init__(  # noqa: PLR0913, PLR0917
         self,
@@ -1189,58 +1104,17 @@ class AsyncUploadHandle(_Upload[T]):
         plan: UploadPlan[T, Any],
         limits: _Limits,
         session: OperationSession,
-        source: AsyncUploadSource,
-        identity: UploadIdentity,
+        content: _Content,
         chunk: int,
-        digests: bytes,
     ) -> None:
-        """Keep the asyncio client core the handle's child calls are sent through and the borrowed source."""
-        super().__init__(plan, limits, session, identity, chunk, digests)
+        """Keep the asyncio client core the handle's child calls are sent through."""
+        super().__init__(plan, limits, session, content, chunk)
         self._core = core
-        self._source = source
 
     def _core_security(
         self, call: OperationPlan[Any, object], options: RequestOptions | None
     ) -> tuple[WireValue, bool]:
         return self._core.checkpoint_security(call, options)
-
-    def _waiter(self) -> LogicalCallContext:
-        return self._core.waiting(self._limits.options, self._session, self._plan.append.operation_id)
-
-    async def _read_all(self, start: int, size: int, add: Callable[[bytes], object]) -> None:
-        """Read a range through one reader, each read bounded by the session's deadline and the client's close."""
-        plan = self._plan
-        waiter = self._waiter()
-        got = 0
-        try:
-            async with _opened(plan, self._source, start, size, "__aenter__") as reader:
-                opened: AsyncRangeReader = reader
-                while got <= size:
-                    wanted = _wanted(size, got)
-                    read = partial(opened.read, wanted)
-                    if not (data := _bytes(plan, await waiter.bounded(read, idle=False), wanted)):
-                        break
-                    got += len(data)
-                    add(data)
-        finally:
-            waiter.finish()
-
-    async def _scan(self, digests: bytes | None = None) -> bytes:
-        """Read the whole source once before any send, returning each chunk's digest; a change raises."""
-        scan = _Scan(self._chunk)
-        await self._read_all(0, self._identity.size, scan.add)
-        return _scanned(self._plan, self._identity, scan, digests)
-
-    async def _buffer(self, index: int, start: int, size: int) -> memoryview:
-        """Read one chunk into its own buffer and check it against the digest the scan recorded."""
-        chunk = _Chunk(size)
-        try:
-            await self._read_all(start, size, chunk.add)
-        except UploadSourceChangedError:
-            with self._guard:
-                self._changed = True
-            raise
-        return self._chunked(chunk, index, size)
 
     async def _create(
         self, arguments: tuple[object, ...], body: object, media_type: str | MediaSelector | None
@@ -1279,8 +1153,8 @@ class AsyncUploadHandle(_Upload[T]):
 
     async def _append(self) -> None:
         """Append the chunk holding the confirmed offset until the server confirms all of it."""
-        index, start, end = self._span()
-        buffer = await self._buffer(index, start, end - start)
+        start = self._confirmed
+        buffer, end = self._buffer()
         while self._confirmed < end:
             unconfirmed = buffer[self._confirmed - start :]
             payload = AsyncBodyFactory(_AsyncFactory(unconfirmed), content_length=len(unconfirmed))
@@ -1290,7 +1164,7 @@ class AsyncUploadHandle(_Upload[T]):
                     await self._core.execute_page(
                         self._plan,
                         self._plan.appended.call,
-                        self._append_request(payload, len(unconfirmed)),
+                        self._append_request(payload, unconfirmed),
                         _ignored,
                         body=payload,
                         media_type=None,
@@ -1355,7 +1229,7 @@ class AsyncUploadHandle(_Upload[T]):
             self._verified(*await self._probe())
             if self._phase is _Phase.COMPLETE:
                 return
-        if self._confirmed < self._identity.size:
+        if self._confirmed < self._size:
             await self._append()
         else:
             await self._complete()
@@ -1451,14 +1325,13 @@ def start_upload(  # noqa: PLR0913
     options: object = None,
     session_options: object = None,
 ) -> UploadHandle[T]:
-    """Scan the source, create the helper's upload in a session of its own, and return the handle that appends to it."""
+    """Measure the source, create the helper's upload in a session of its own, and return the handle appending to it."""
     limits = _limits(core, plan, upload_options, options, session_options)
-    identity = _identity(plan, source)
-    chunk = _layout(plan, limits, identity.size, min(limits.chunk_bytes, plan.max_chunk_bytes))
-    _coded(plan, limits, identity.size, body)
-    handle = UploadHandle(core, plan, limits, _session(limits), cast("UploadSource", source), identity, chunk, b"")
-    handle._digests = handle._scan()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    handle._create(_sized(core, plan, arguments, identity.size), body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    content = _content(plan, source)
+    chunk = _layout(plan, limits, content.size, min(limits.chunk_bytes, plan.max_chunk_bytes))
+    _coded(plan, limits, content.size, body)
+    handle = UploadHandle(core, plan, limits, _session(limits), content, chunk)
+    handle._create(_sized(core, plan, arguments, content.size), body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return handle
 
 
@@ -1474,16 +1347,13 @@ async def astart_upload(  # noqa: PLR0913
     options: object = None,
     session_options: object = None,
 ) -> AsyncUploadHandle[T]:
-    """Scan the source, create the helper's upload with asyncio in a session of its own, and return its handle."""
+    """Measure the source, create the helper's upload with asyncio in a session of its own, and return its handle."""
     limits = _limits(core, plan, upload_options, options, session_options)
-    identity = _identity(plan, source)
-    chunk = _layout(plan, limits, identity.size, min(limits.chunk_bytes, plan.max_chunk_bytes))
-    _coded(plan, limits, identity.size, body)
-    handle = AsyncUploadHandle(
-        core, plan, limits, _session(limits), cast("AsyncUploadSource", source), identity, chunk, b""
-    )
-    handle._digests = await handle._scan()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    await handle._create(_sized(core, plan, arguments, identity.size), body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    content = _content(plan, source)
+    chunk = _layout(plan, limits, content.size, min(limits.chunk_bytes, plan.max_chunk_bytes))
+    _coded(plan, limits, content.size, body)
+    handle = AsyncUploadHandle(core, plan, limits, _session(limits), content, chunk)
+    await handle._create(_sized(core, plan, arguments, content.size), body, media_type)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return handle
 
 
@@ -1491,14 +1361,12 @@ async def astart_upload(  # noqa: PLR0913
 class _Saved:
     """A checkpoint's decoded state, checked against the helper resuming it."""
 
-    identity: UploadIdentity
+    size: int
     chunk: int
     confirmed: int
     phase: _Phase
     delivery: DeliveryState | None
     bound: tuple[tuple[WireValue, ...], tuple[WireValue, ...], tuple[WireValue, ...]]
-    digests: bytes
-    result: tuple[bytes, int, str | None] | None
     expires_at: datetime | None
 
 
@@ -1524,52 +1392,34 @@ def _bound(plan: UploadPlan[Any, Any], saved: WireValue) -> tuple[tuple[WireValu
 
 
 def _decoded(plan: UploadPlan[Any, Any], state: WireValue, payload: bytes, expires_at: datetime | None) -> _Saved:
-    """Return a checkpoint's state, refusing one whose form does not fit the helper."""
+    """Return a checkpoint's state, refusing one whose form does not fit the helper.
+
+    Only an upload in progress or one whose completion's outcome is unknown is saved.
+    """
     from collections.abc import Mapping  # noqa: PLC0415
 
-    require_state(isinstance(state, Mapping) and frozenset(state) == _STATE)
+    require_state(isinstance(state, Mapping) and frozenset(state) == _STATE and not payload)
     fields = cast("Mapping[str, WireValue]", state)
     size, chunk, confirmed = (state_count(fields[name]) for name in ("size", "chunk", "confirmed"))
-    digest, phase, delivery = (state_text(fields[name]) for name in ("sha256", "phase", "delivery"))
-    require_state(
-        isinstance(digest, str)
-        and len(digest) == 2 * _DIGEST
-        and digest == digest.lower()
-        and all(character in "0123456789abcdef" for character in digest)
-        and 0 < chunk <= plan.max_chunk_bytes
-        and confirmed <= size
-        and phase in _PHASES
-    )
+    phase, delivery = (state_text(fields[name]) for name in ("phase", "delivery"))
+    require_state(0 < chunk <= plan.max_chunk_bytes and confirmed <= size and phase in _PHASES)
     resolved = _PHASES[cast("str", phase)]
     require_state(
-        (delivery is None) == (resolved is not _Phase.UNKNOWN)
+        resolved is not _Phase.COMPLETE
+        and (delivery is None) == (resolved is _Phase.UPLOADING)
         and (delivery is None or delivery in {state.value for state in _UNKNOWN})
-        and (resolved is _Phase.UPLOADING or confirmed == size)
-        and (resolved is not _Phase.UNKNOWN or plan.completion is not None)
+        and (resolved is _Phase.UPLOADING or (confirmed == size and plan.completion is not None))
     )
-    count = -(-size // chunk) * _DIGEST
-    require_state(len(payload) >= count)
-    saved_result = fields["result"]
-    result: tuple[bytes, int, str | None] | None = None
-    complete_by_operation = resolved is _Phase.COMPLETE and plan.completion is not None
-    if saved_result is None:
-        require_state(len(payload) == count and not complete_by_operation)
-    else:
-        parts = state_array(saved_result)
-        require_state(complete_by_operation and len(parts) == _RESULT_FIELDS)
-        result = payload[count:], state_count(parts[0]), state_text(parts[1])
     bound = cast(
         "tuple[tuple[WireValue, ...], tuple[WireValue, ...], tuple[WireValue, ...]]", _bound(plan, fields["bound"])
     )
     return _Saved(
-        identity=UploadIdentity(size=size, sha256=bytes.fromhex(cast("str", digest))),
+        size=size,
         chunk=chunk,
         confirmed=confirmed,
         phase=resolved,
         delivery=None if delivery is None else DeliveryState(delivery),
         bound=bound,
-        digests=payload[:count],
-        result=result,
         expires_at=expires_at,
     )
 
@@ -1603,7 +1453,7 @@ def _checked(
     from ..client.errors import RequestEncodingError  # noqa: PLC0415 - Only a resume checks saved values.
 
     probe, append, completion = saved.bound
-    offsets = (0,) if plan.length is None else (0, 0)
+    offsets = _written(plan, 0, b"")
     requests: list[tuple[Targeted[Any], tuple[WireValue, ...], tuple[WireValue, ...], object]] = [
         (plan.probed, probe, (), None),
         (plan.appended, append, offsets, b""),
@@ -1624,51 +1474,36 @@ def _fixed(arguments: tuple[object, ...], body: object) -> Callable[[], tuple[tu
     return lambda: (arguments, body, None)
 
 
-def _resumed(handle: _Upload[T], saved: _Saved, core: ClientCore | AsyncClientCore) -> None:
-    """Restore a handle to a checkpoint's phase, offset, values, expiry, and any completion's result."""
-    plan = handle._plan  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    handle._bound = saved.bound  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    handle._confirmed = saved.confirmed  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    handle._verify = True  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    handle._high = None  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    handle._expires_at = saved.expires_at  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    handle._phase, handle._delivery = saved.phase, saved.delivery  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    if (result := saved.result) is None:
-        return
-    completion = plan.completion
-    assert completion is not None
-    content, status, content_type = result
-    try:
-        data = core.saved_page(completion, content, status, content_type, handle._limits.options)[0]  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-    except SDKError:
-        raise _resume_error(plan, "malformed") from None
-    handle._result, handle._saved = data, result  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-
-
 def _resume_start(
     core: ClientCore | AsyncClientCore,
     plan: UploadPlan[T, C],
     source: object,
     state: object,
     limits: _Limits,
-) -> tuple[_Saved, UploadIdentity]:
-    """Check the checkpoint, its layout and saved values, then the source, before any read or send.
-
-    The source must be the checkpoint's content.
-    """
+) -> tuple[_Saved, _Content]:
+    """Check the checkpoint, its layout and saved values, then the source's size, before any read or send."""
     saved = _restored(core, plan, state, limits)
-    _layout(plan, limits, saved.identity.size, saved.chunk)
+    _layout(plan, limits, saved.size, saved.chunk)
     _checked(core, plan, limits.options, saved)
-    identity = _identity(plan, source)
-    if identity != saved.identity:
-        raise _changed(plan, saved.identity, identity)
-    _coded(
-        plan,
-        limits,
-        saved.identity.size - saved.confirmed,
-        saved=saved,
-    )
-    return saved, identity
+    content = _content(plan, source)
+    if content.size != saved.size:
+        raise UploadSourceChangedError(
+            expected_size=saved.size, actual_size=content.size, helper_id=plan.helper_id, operation=plan.operation
+        )
+    _coded(plan, limits, saved.size - saved.confirmed, saved=saved)
+    return saved, content
+
+
+def _resumed(handle: _Upload[T], saved: _Saved) -> _Upload[T]:
+    """Restore a handle to a checkpoint's phase, offset, values, and expiry; an unknown completion raises again."""
+    handle._bound = saved.bound  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    handle._confirmed = saved.confirmed  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    handle._verify = True  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    handle._high = None  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    handle._expires_at = saved.expires_at  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    handle._phase, handle._delivery = saved.phase, saved.delivery  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    handle._settled()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    return handle
 
 
 def resume_upload(  # noqa: PLR0913
@@ -1681,20 +1516,14 @@ def resume_upload(  # noqa: PLR0913
     options: object = None,
     session_options: object = None,
 ) -> UploadHandle[T]:
-    """Continue a checkpoint in a new session: check the source against it, then probe the server's offset once.
+    """Continue a checkpoint in a new session: check the source's size against it, then probe the server's offset once.
 
-    A complete upload resumes with its result and an unknown completion raises again, both without reading or sending.
+    A completion of unknown outcome raises again, without reading or sending.
     """
     limits = _limits(core, plan, upload_options, options, session_options)
-    saved, identity = _resume_start(core, plan, source, state, limits)
-    handle = UploadHandle(
-        core, plan, limits, _session(limits), cast("UploadSource", source), identity, saved.chunk, saved.digests
-    )
-    _resumed(handle, saved, core)
-    if handle._phase is not _Phase.UPLOADING:  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-        handle._settled()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-        return handle
-    handle._scan(saved.digests)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    saved, content = _resume_start(core, plan, source, state, limits)
+    handle = UploadHandle(core, plan, limits, _session(limits), content, saved.chunk)
+    _resumed(handle, saved)
     handle._verified(*handle._probe())  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return handle
 
@@ -1709,19 +1538,13 @@ async def aresume_upload(  # noqa: PLR0913
     options: object = None,
     session_options: object = None,
 ) -> AsyncUploadHandle[T]:
-    """Continue a checkpoint with asyncio in a new session: check the source against it, then probe once.
+    """Continue a checkpoint with asyncio in a new session: check the source's size against it, then probe once.
 
-    A complete upload resumes with its result and an unknown completion raises again, both without reading or sending.
+    A completion of unknown outcome raises again, without reading or sending.
     """
     limits = _limits(core, plan, upload_options, options, session_options)
-    saved, identity = _resume_start(core, plan, source, state, limits)
-    handle = AsyncUploadHandle(
-        core, plan, limits, _session(limits), cast("AsyncUploadSource", source), identity, saved.chunk, saved.digests
-    )
-    _resumed(handle, saved, core)
-    if handle._phase is not _Phase.UPLOADING:  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-        handle._settled()  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
-        return handle
-    await handle._scan(saved.digests)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+    saved, content = _resume_start(core, plan, source, state, limits)
+    handle = AsyncUploadHandle(core, plan, limits, _session(limits), content, saved.chunk)
+    _resumed(handle, saved)
     handle._verified(*await handle._probe())  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
     return handle

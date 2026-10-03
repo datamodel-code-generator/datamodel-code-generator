@@ -399,15 +399,7 @@ from .._runtime.protocols.records import (
 )
 from .._runtime.protocols.references import OperationRef
 from .._runtime.protocols.resume import ResumeState, import_state
-from .._runtime.protocols.sources import (
-    AsyncRangeReader,
-    AsyncUploadSource,
-    PartReceipt,
-    RangeReader,
-    UploadIdentity,
-    UploadProgress,
-    UploadSource,
-)
+from .._runtime.protocols.sources import UploadProgress, UploadSource
 from .._runtime.protocols.webhooks import (
     AsyncReplayStore,
     KeySet,
@@ -439,21 +431,13 @@ if TYPE_CHECKING:
     from .._runtime.protocols.queue_stores import AsyncMemoryQueueStore, MemoryQueueStore
     from .._runtime.protocols.replay import AsyncMemoryReplayStore, MemoryReplayStore
     from .._runtime.protocols.streams import AsyncEventStream, EventStream, StreamEvent, UnknownEvent
-    from .._runtime.protocols.upload_sources import (
-        AsyncBytesUploadSource,
-        AsyncFileUploadSource,
-        BytesUploadSource,
-        FileUploadSource,
-    )
     from .._runtime.protocols.uploads import AsyncUploadHandle, UploadHandle
     from .._runtime.protocols.websocket import AsyncWebSocketSession, WebSocketSession
 
 __all__ = [
-    "AsyncBytesUploadSource",
     "AsyncCacheStore",
     "AsyncCircuitStore",
     "AsyncEventStream",
-    "AsyncFileUploadSource",
     "AsyncLroHandle",
     "AsyncMemoryCacheStore",
     "AsyncMemoryCircuitStore",
@@ -461,17 +445,14 @@ __all__ = [
     "AsyncMemoryReplayStore",
     "AsyncPager",
     "AsyncQueueStore",
-    "AsyncRangeReader",
     "AsyncReplayStore",
     "AsyncUploadHandle",
-    "AsyncUploadSource",
     "AsyncWebSocketConnection",
     "AsyncWebSocketConnector",
     "AsyncWebSocketSession",
     "BlobRef",
     "BodySelector",
     "BodyTarget",
-    "BytesUploadSource",
     "CacheEntry",
     "CacheOptions",
     "CacheResult",
@@ -485,7 +466,6 @@ __all__ = [
     "Continuation",
     "DrainReport",
     "EventStream",
-    "FileUploadSource",
     "HeaderSelector",
     "KeySet",
     "LroHandle",
@@ -500,7 +480,6 @@ __all__ = [
     "Pager",
     "PaginationOptions",
     "ParameterTarget",
-    "PartReceipt",
     "PingReceipt",
     "PollOptions",
     "PollSnapshot",
@@ -515,7 +494,6 @@ __all__ = [
     "QueueOutcome",
     "QueueReceipt",
     "QueueStore",
-    "RangeReader",
     "ReplayStore",
     "RequestTarget",
     "ResolvedCircuitBreakerOptions",
@@ -530,7 +508,6 @@ __all__ = [
     "StreamOptions",
     "UnknownEvent",
     "UploadHandle",
-    "UploadIdentity",
     "UploadOptions",
     "UploadProgress",
     "UploadSource",
@@ -550,7 +527,7 @@ __all__ = [
 
 
 def __getattr__(name: str) -> object:
-    """Load a memory store, a builtin upload source, or a pagination, polling, stream, upload, or session type."""
+    """Load a memory store, or a pagination, polling, stream, upload, or session type."""
     if name in {"AsyncPager", "Page", "Pager"}:
         from .._runtime.protocols import pagination
 
@@ -575,10 +552,6 @@ def __getattr__(name: str) -> object:
         from .._runtime.protocols import uploads
 
         return getattr(uploads, name)
-    if name in {"AsyncBytesUploadSource", "AsyncFileUploadSource", "BytesUploadSource", "FileUploadSource"}:
-        from .._runtime.protocols import upload_sources
-
-        return getattr(upload_sources, name)
     if name in {"AsyncWebSocketSession", "WebSocketSession"}:
         from .._runtime.protocols import websocket
 
@@ -3375,6 +3348,13 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         )
         if (length := append.get("length")) is not None:
             entries.append(("length=", self.target(module, length)))
+        if (checksum := append.get("checksum")) is not None:
+            entries.extend((
+                ("checksum=", self.target(module, checksum["target"])),
+                ("checksum_algorithm=", repr(checksum["algorithm"])),
+                ("checksum_encoding=", repr(checksum["encoding"])),
+                ("checksum_prefix=", repr(checksum["algorithm_prefix"])),
+            ))
         if (completion := spec.completion) is not None:
             entries.extend((
                 ("completion_operation=", self.reference(module, completion)),
@@ -3404,7 +3384,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         ]
         prefix = "Async" if asynchronous else ""
         handle = f"{module.local(_UPLOADS, f'{prefix}UploadHandle')}[{self.upload_result(module, spec)}]"
-        source = f"source: {module.namespace.name('.', f'{prefix}UploadSource')}"
+        source = f"source: {module.namespace.name('.', 'UploadSource')}"
         state = f"state: {module.local('_runtime.protocols.resume', 'ResumeState')}"
         plan = ("", f"{module.namespace.name('.', '_plans')}.PLAN_{index}")
         forwarded = [(f"{name}=", name) for name, _, _ in _UPLOAD_OPTIONS]
@@ -3426,7 +3406,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
         return [
             "\n".join((
                 layout(Group(f"{head}start(", items(("self", source, "*", *keywords)), f") -> {handle}:"), 4, 0, WIDTH),
-                f'        """Read the source, create the upload of {route}, and return its handle."""',
+                f'        """Measure the source, create the upload of {route}, and return its handle."""',
                 f"        return {wait}{layout(_call(start, started), 8, 7 + len(wait), WIDTH)}",
             )),
             "\n".join((
@@ -3436,7 +3416,7 @@ class _Helpers:  # noqa: PLR0904 - It renders every helper kind of a package.
                     0,
                     WIDTH,
                 ),
-                '        """Check the source against a checkpoint and continue from the offset the server holds."""',
+                '        """Check a checkpoint and the source size, then continue from the server offset."""',
                 f"        return {wait}{layout(_call(resume, resumed), 8, 7 + len(wait), WIDTH)}",
             )),
         ]
@@ -4281,9 +4261,8 @@ call, every probe, append, and the completion are logical calls of their own, wi
 and idempotency key; the session bounds all of them. Each limit comes from the call's options, then
 `ProtocolClientOptions.defaults` for the helper, then the default below. The session types are imported from:
 
-- `{self.config.package}.protocols`: `UploadOptions`, `UploadSource`, `AsyncUploadSource`, `UploadIdentity`,
-  `UploadProgress`, `UploadHandle`, `AsyncUploadHandle`, and the builtin `BytesUploadSource`, `FileUploadSource`,
-  `AsyncBytesUploadSource`, and `AsyncFileUploadSource`
+- `{self.config.package}.protocols`: `UploadOptions`, `UploadSource`, `UploadProgress`, `UploadHandle`, and
+  `AsyncUploadHandle`
 - `{self.config.package}.options`: `SessionOptions`
 
 | Limit | Effective default |
@@ -4291,15 +4270,16 @@ and idempotency key; the session bounds all of them. Each limit comes from the c
 | chunk size | 8 MiB, or the helper's smaller `max_chunk_bytes` |
 | chunks per upload | 10000; None removes it |
 | probes after an append of unknown outcome | 3; 0 probes none |
-| session total timeout | None (no limit), including reading the source at `start` or `resume` |
+| session total timeout | None (no limit) |
 | network sends per session | 10000; None removes it |
 
-A source has an immutable identity, its size and SHA-256 digest, and opens an independent reader for each range. Before
-anything is sent, `start` and `resume` read the whole source once and record each chunk's digest; each append reads
-its chunk again into one buffer and sends it only when it matches, so a source whose content changed raises
-`UploadSourceChangedError` and the handle sends nothing more. A one-shot stream or iterator is no source and raises
-`NonResumableSourceError`; send it as an ordinary upload. Sources a call is given are borrowed and never closed, and
-every reader the client opens is closed.
+A source is bytes, a bytearray, a memoryview, or a seekable binary file, read from its position at `start` or `resume`
+to its end; sync and asyncio clients take the same sources and read one chunk at a time. `start` measures its size and
+creates the upload without reading it. Each append seeks to the confirmed offset and reads the rest of its chunk into
+one buffer; content shorter or longer than the upload's size raises `UploadSourceChangedError` and the handle sends
+nothing more. The content is not hashed: keep it unchanged while it is uploaded. A one-shot stream, iterator, or a
+reader that cannot seek raises `NonResumableSourceError`; send it as an ordinary upload. Sources are borrowed and never
+closed.
 
 `start` sends the create request once, resent only as shared retries allow. `advance` appends the chunk holding the
 confirmed offset, and `run` appends every remaining chunk and completes the upload: by length, returning None, or with
@@ -4309,11 +4289,12 @@ confirms it, and an offset inside it confirms its bytes only when partial commit
 passes the content, or commits part of a chunk that may not be raises `UploadOffsetError`, and probes that never answer
 raise `UploadDeliveryUnknownError`; so does a completion whose outcome is unknown, which is never sent again.
 
-`checkpoint()` saves the confirmed offset, the chunk layout and digests, and the values later calls write, sending
-nothing. `resume` checks it, then the source, then probes the server's offset once; it never creates the upload again.
-A checkpoint past the server's declared expiry raises `UploadExpiredError`. `advance` and `run` at once raise
-`ProtocolStateError`, and so does every step after `close()` or `aclose()`, which stops only local uploading. A call's
-options must not fix an idempotency key or patch a header or query parameter the helper writes.
+`checkpoint()` saves the content's size, the chunk size, the confirmed offset, the values later calls write, and a
+completion of unknown outcome, sending nothing; a complete upload has no checkpoint. `resume` checks it and the
+source's size, then probes the server's offset once; it never creates the upload again, and a completion of unknown
+outcome raises again. A checkpoint past the server's declared expiry raises `UploadExpiredError`. `advance` and `run`
+at once raise `ProtocolStateError`, and so does every step after `close()` or `aclose()`, which stops only local
+uploading. A call's options must not fix an idempotency key or patch a header or query parameter the helper writes.
 """
 
     def queue_runtime(self) -> str:
