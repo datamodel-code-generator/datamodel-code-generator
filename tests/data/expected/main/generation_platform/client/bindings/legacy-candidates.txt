@@ -6,11 +6,21 @@ render pydantic_v2.BaseModel default
   
   from __future__ import annotations
   from typing import Optional
-  from pydantic import BaseModel
+  from pydantic import BaseModel, RootModel
   
   
   class Pet(BaseModel):
       name: Optional[str] = None
+  
+  
+  class FieldChosenGetQueryLimitParameter(RootModel[int]):
+      root: int
+  
+  
+  class FieldChosenGetQueryCommonParameter(RootModel[str]):
+      root: str
   model_bindings.py
-  codec_0 -> PydanticModelCodec[int]
-  codec_1 -> PydanticModelCodec[str]
+  _model_0 symbol='models:FieldChosenGetQueryLimitParameter', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/paths/~1chosen/get/parameters/0/schema', root=LeafNode()
+  _model_1 symbol='models:FieldChosenGetQueryCommonParameter', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/paths/~1chosen/parameters/0/schema', root=LeafNode()
+  codec_0 -> PydanticModelCodec[models.FieldChosenGetQueryLimitParameter]
+  codec_1 -> PydanticModelCodec[models.FieldChosenGetQueryCommonParameter]

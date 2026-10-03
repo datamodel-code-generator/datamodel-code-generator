@@ -49,10 +49,10 @@ render pydantic_v2.BaseModel default
   _model_1 symbol='models:Holder', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Holder'
     FieldBinding(field_id='models:Holder.nested', native_name='nested', wire_name='nested', validation_key='nested', validation_keys=('nested',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Nested'))
     FieldBinding(field_id='models:Holder.mixed', native_name='mixed', wire_name='mixed', validation_key='mixed', validation_keys=('mixed',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Mixed'))
-  _model_2 symbol='models:Mixed', native_kind='root', schema_id=None, root=ModelNode(symbol='models:Mixed2')
+  _model_2 symbol='models:Mixed', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Holder/properties/mixed', root=ModelNode(symbol='models:Mixed2')
   _model_3 symbol='models:Mixed2', native_kind='model', schema_id=None
     FieldBinding(field_id='models:Mixed2.code', native_name='code', wire_name='code', validation_key='code', validation_keys=('code',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_4 symbol='models:Nested', native_kind='root', schema_id=None, root=ModelNode(symbol='models:Nested3')
+  _model_4 symbol='models:Nested', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Holder/properties/nested', root=ModelNode(symbol='models:Nested3')
   _model_5 symbol='models:Nested3', native_kind='model', schema_id=None
     FieldBinding(field_id='models:Nested3.label', native_name='label', wire_name='label', validation_key='label', validation_keys=('label',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   codec_0 -> PydanticModelCodec[models.Base]

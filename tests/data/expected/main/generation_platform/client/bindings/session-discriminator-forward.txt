@@ -174,11 +174,14 @@ render pydantic_v2.BaseModel values
       v2 = 'v2'
   model_bindings.py
   _model_0 symbol='models.grandchild:Grandchild', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Grandchild'
+    FieldBinding(field_id='models.grandchild:Grandchild.version', native_name='version', wire_name='version', validation_key='version', validation_keys=('version',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models.grandchild:Grandchild.request_id', native_name='request_id', wire_name='request_id', validation_key='request_id', validation_keys=('request_id',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   _model_1 symbol='models.request:Request', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Request', root=UnionNode(members=(ModelNode(symbol='models.request_v1:RequestV1'), ModelNode(symbol='models.request_v2:RequestV2')))
   _model_2 symbol='models.request_v1:RequestV1', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RequestV1'
+    FieldBinding(field_id='models.request_v1:RequestV1.version', native_name='version', wire_name='version', validation_key='version', validation_keys=('version',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models.request_v1:RequestV1.request_id', native_name='request_id', wire_name='request_id', validation_key='request_id', validation_keys=('request_id',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   _model_3 symbol='models.request_v2:RequestV2', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RequestV2'
+    FieldBinding(field_id='models.request_v2:RequestV2.version', native_name='version', wire_name='version', validation_key='version', validation_keys=('version',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   _model_4 symbol='models.request_base:RequestBase', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RequestBase'
     FieldBinding(field_id='models.request_base:RequestBase.version', native_name='version', wire_name='version', validation_key='version', validation_keys=('version',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   codec_0 -> PydanticModelCodec[models_grandchild.Grandchild]
@@ -390,8 +393,10 @@ render pydantic_v2.dataclass values
       v2 = 'v2'
   model_bindings.py
   _model_0 symbol='models.grandchild:Grandchild', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Grandchild'
+    FieldBinding(field_id='models.grandchild:Grandchild.version', native_name='version', wire_name='version', validation_key='version', validation_keys=('version',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models.grandchild:Grandchild.request_id', native_name='request_id', wire_name='request_id', validation_key='request_id', validation_keys=('request_id',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   _model_1 symbol='models.request_v1:RequestV1', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RequestV1'
+    FieldBinding(field_id='models.request_v1:RequestV1.version', native_name='version', wire_name='version', validation_key='version', validation_keys=('version',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models.request_v1:RequestV1.request_id', native_name='request_id', wire_name='request_id', validation_key='request_id', validation_keys=('request_id',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   _model_2 symbol='models.request_v2:RequestV2', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RequestV2'
     FieldBinding(field_id='models.request_v2:RequestV2.version', native_name='version', wire_name='version', validation_key='version', validation_keys=('version',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
@@ -601,10 +606,13 @@ render dataclasses.dataclass values
       v2 = 'v2'
   model_bindings.py
   _model_0 symbol='models.grandchild:Grandchild', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Grandchild'
+    FieldBinding(field_id='models.grandchild:Grandchild.version', native_name='version', wire_name='version', validation_key='version', validation_keys=('version',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models.grandchild:Grandchild.request_id', native_name='request_id', wire_name='request_id', validation_key='request_id', validation_keys=('request_id',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   _model_1 symbol='models.request_v1:RequestV1', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RequestV1'
+    FieldBinding(field_id='models.request_v1:RequestV1.version', native_name='version', wire_name='version', validation_key='version', validation_keys=('version',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models.request_v1:RequestV1.request_id', native_name='request_id', wire_name='request_id', validation_key='request_id', validation_keys=('request_id',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   _model_2 symbol='models.request_v2:RequestV2', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RequestV2'
+    FieldBinding(field_id='models.request_v2:RequestV2.version', native_name='version', wire_name='version', validation_key='version', validation_keys=('version',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   _model_3 symbol='models.request_base:RequestBase', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RequestBase'
     FieldBinding(field_id='models.request_base:RequestBase.version', native_name='version', wire_name='version', validation_key='version', validation_keys=('version',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   codec_0 -> StructuralModelCodec[models_grandchild.Grandchild]
@@ -995,10 +1003,13 @@ render msgspec.Struct values
       v2 = 'v2'
   model_bindings.py
   _model_0 symbol='models.grandchild:Grandchild', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Grandchild'
+    FieldBinding(field_id='models.grandchild:Grandchild.version', native_name='version', wire_name='version', validation_key='version', validation_keys=('version',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models.grandchild:Grandchild.request_id', native_name='request_id', wire_name='request_id', validation_key='request_id', validation_keys=('request_id',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   _model_1 symbol='models.request_v1:RequestV1', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RequestV1'
+    FieldBinding(field_id='models.request_v1:RequestV1.version', native_name='version', wire_name='version', validation_key='version', validation_keys=('version',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models.request_v1:RequestV1.request_id', native_name='request_id', wire_name='request_id', validation_key='request_id', validation_keys=('request_id',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   _model_2 symbol='models.request_v2:RequestV2', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RequestV2'
+    FieldBinding(field_id='models.request_v2:RequestV2.version', native_name='version', wire_name='version', validation_key='version', validation_keys=('version',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   _model_3 symbol='models.request_base:RequestBase', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/RequestBase'
     FieldBinding(field_id='models.request_base:RequestBase.version', native_name='version', wire_name='version', validation_key='version', validation_keys=('version',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   codec_0 -> StructuralModelCodec[models_grandchild.Grandchild]

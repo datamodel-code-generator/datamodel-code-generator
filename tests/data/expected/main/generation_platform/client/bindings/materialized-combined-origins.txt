@@ -34,14 +34,14 @@ render pydantic_v2.BaseModel default
       root: Union[Choice1, Choice2, Named]
   model_bindings.py
   _model_0 symbol='models:Choice', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Choice', root=UnionNode(members=(ModelNode(symbol='models:Choice1'), ModelNode(symbol='models:Choice2'), ModelNode(symbol='models:Named')))
-  _model_1 symbol='models:Choice1', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Choice/anyOf/2'
+  _model_1 symbol='models:Choice1', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Never'
     FieldBinding(field_id='models:Choice1.common_key', native_name='common_key', wire_name='common-key', validation_key='common-key', validation_keys=('common-key',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Choice1.ship_to', native_name='ship_to', wire_name='ship-to', validation_key='ship-to', validation_keys=('ship-to',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:ShipTo'))
-  _model_2 symbol='models:Choice2', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Choice/anyOf/3'
+  _model_2 symbol='models:Choice2', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Choice/anyOf/2'
     FieldBinding(field_id='models:Choice2.common_key', native_name='common_key', wire_name='common-key', validation_key='common-key', validation_keys=('common-key',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   _model_3 symbol='models:Named', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Named'
     FieldBinding(field_id='models:Named.external_name', native_name='external_name', wire_name='external-name', validation_key='external-name', validation_keys=('external-name',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_4 symbol='models:ShipTo', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Choice/anyOf/2/properties/ship-to'
+  _model_4 symbol='models:ShipTo', native_kind='model', schema_id=None
     FieldBinding(field_id='models:ShipTo.postal_code', native_name='postal_code', wire_name='postal-code', validation_key='postal-code', validation_keys=('postal-code',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   _model_5 symbol='models:Never', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Never', root=LeafNode()
   codec_0 -> PydanticModelCodec[models.Choice]
@@ -94,14 +94,14 @@ render pydantic_v2.dataclass default
   
   Choice = TypeAliasType("Choice", Union[Choice1, Choice2, Named])
   model_bindings.py
-  _model_0 symbol='models:Choice1', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Choice/anyOf/2'
+  _model_0 symbol='models:Choice1', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Never'
     FieldBinding(field_id='models:Choice1.common_key', native_name='common_key', wire_name='common-key', validation_key='common-key', validation_keys=('common-key',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Choice1.ship_to', native_name='ship_to', wire_name='ship-to', validation_key='ship-to', validation_keys=('ship-to',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:ShipTo'))
-  _model_1 symbol='models:Choice2', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Choice/anyOf/3'
+  _model_1 symbol='models:Choice2', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Choice/anyOf/2'
     FieldBinding(field_id='models:Choice2.common_key', native_name='common_key', wire_name='common-key', validation_key='common-key', validation_keys=('common-key',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   _model_2 symbol='models:Named', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Named'
     FieldBinding(field_id='models:Named.external_name', native_name='external_name', wire_name='external-name', validation_key='external-name', validation_keys=('external-name',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_3 symbol='models:ShipTo', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Choice/anyOf/2/properties/ship-to'
+  _model_3 symbol='models:ShipTo', native_kind='dataclass', schema_id=None
     FieldBinding(field_id='models:ShipTo.postal_code', native_name='postal_code', wire_name='postal-code', validation_key='postal-code', validation_keys=('postal-code',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   codec_0 -> PydanticModelCodec[models.Choice]
   codec_1 -> PydanticModelCodec[models.Choice]
@@ -151,14 +151,14 @@ render dataclasses.dataclass default
   
   Choice: TypeAlias = Union[Choice1, Choice2, Named]
   model_bindings.py
-  _model_0 symbol='models:Choice1', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Choice/anyOf/2'
+  _model_0 symbol='models:Choice1', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Never'
     FieldBinding(field_id='models:Choice1.common_key', native_name='common_key', wire_name='common-key', validation_key='common_key', validation_keys=('common_key',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Choice1.ship_to', native_name='ship_to', wire_name='ship-to', validation_key='ship_to', validation_keys=('ship_to',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:ShipTo'))
-  _model_1 symbol='models:Choice2', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Choice/anyOf/3'
+  _model_1 symbol='models:Choice2', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Choice/anyOf/2'
     FieldBinding(field_id='models:Choice2.common_key', native_name='common_key', wire_name='common-key', validation_key='common_key', validation_keys=('common_key',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   _model_2 symbol='models:Named', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Named'
     FieldBinding(field_id='models:Named.external_name', native_name='external_name', wire_name='external-name', validation_key='external_name', validation_keys=('external_name',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_3 symbol='models:ShipTo', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Choice/anyOf/2/properties/ship-to'
+  _model_3 symbol='models:ShipTo', native_kind='dataclass', schema_id=None
     FieldBinding(field_id='models:ShipTo.postal_code', native_name='postal_code', wire_name='postal-code', validation_key='postal_code', validation_keys=('postal_code',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   codec_0 -> StructuralModelCodec[models.Choice]
   codec_1 -> StructuralModelCodec[models.Choice]
@@ -211,14 +211,14 @@ render typing.TypedDict default
   
   Choice: TypeAlias = Union[Choice1, Choice2, Named]
   model_bindings.py
-  _model_0 symbol='models:Choice1', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Choice/anyOf/2'
+  _model_0 symbol='models:Choice1', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Never'
     FieldBinding(field_id='models:Choice1.common_key', native_name='common-key', wire_name='common-key', validation_key='common-key', validation_keys=('common-key',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:Choice1.ship_to', native_name='ship-to', wire_name='ship-to', validation_key='ship-to', validation_keys=('ship-to',), required=False, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:ShipTo'))
-  _model_1 symbol='models:Choice2', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Choice/anyOf/3'
+  _model_1 symbol='models:Choice2', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Choice/anyOf/2'
     FieldBinding(field_id='models:Choice2.common_key', native_name='common-key', wire_name='common-key', validation_key='common-key', validation_keys=('common-key',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   _model_2 symbol='models:Named', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Named'
     FieldBinding(field_id='models:Named.external_name', native_name='external-name', wire_name='external-name', validation_key='external-name', validation_keys=('external-name',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_3 symbol='models:ShipTo', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Choice/anyOf/2/properties/ship-to'
+  _model_3 symbol='models:ShipTo', native_kind='typed_dict', schema_id=None
     FieldBinding(field_id='models:ShipTo.postal_code', native_name='postal-code', wire_name='postal-code', validation_key='postal-code', validation_keys=('postal-code',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   codec_0 -> StructuralModelCodec[models.Choice]
   codec_1 -> StructuralModelCodec[models.Choice]
@@ -264,14 +264,14 @@ render msgspec.Struct default
   
   Choice: TypeAlias = Union[Choice1, Choice2, Named]
   model_bindings.py
-  _model_0 symbol='models:Choice1', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Choice/anyOf/2'
+  _model_0 symbol='models:Choice1', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Never'
     FieldBinding(field_id='models:Choice1.common_key', native_name='common_key', wire_name='common-key', validation_key='common_key', validation_keys=('common_key',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:Choice1.ship_to', native_name='ship_to', wire_name='ship-to', validation_key='ship_to', validation_keys=('ship_to',), required=False, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:ShipTo'))
-  _model_1 symbol='models:Choice2', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Choice/anyOf/3'
+  _model_1 symbol='models:Choice2', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Choice/anyOf/2'
     FieldBinding(field_id='models:Choice2.common_key', native_name='common_key', wire_name='common-key', validation_key='common_key', validation_keys=('common_key',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   _model_2 symbol='models:Named', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Named'
     FieldBinding(field_id='models:Named.external_name', native_name='external_name', wire_name='external-name', validation_key='external_name', validation_keys=('external_name',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_3 symbol='models:ShipTo', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Choice/anyOf/2/properties/ship-to'
+  _model_3 symbol='models:ShipTo', native_kind='struct', schema_id=None
     FieldBinding(field_id='models:ShipTo.postal_code', native_name='postal_code', wire_name='postal-code', validation_key='postal_code', validation_keys=('postal_code',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   codec_0 -> StructuralModelCodec[models.Choice]
   codec_1 -> StructuralModelCodec[models.Choice]

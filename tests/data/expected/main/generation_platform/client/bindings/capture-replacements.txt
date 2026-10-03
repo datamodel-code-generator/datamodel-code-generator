@@ -21,11 +21,11 @@ render pydantic_v2.BaseModel default
       wrapper: Optional[Record] = None
   model_bindings.py
   _model_0 symbol='models:Holder', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Holder'
-    FieldBinding(field_id='models:Holder.text', native_name='text', wire_name='text', validation_key='text', validation_keys=('text',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+    FieldBinding(field_id='models:Holder.text', native_name='text', wire_name='text', validation_key='text', validation_keys=('text',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Holder.list_', native_name='list_', wire_name='list', validation_key='list', validation_keys=('list',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=LeafNode()))
     FieldBinding(field_id='models:Holder.original', native_name='original', wire_name='original', validation_key='original', validation_keys=('original',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Record'))
-    FieldBinding(field_id='models:Holder.copy_', native_name='copy_', wire_name='copy', validation_key='copy', validation_keys=('copy',), required=False, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:Record'))
-    FieldBinding(field_id='models:Holder.wrapper', native_name='wrapper', wire_name='wrapper', validation_key='wrapper', validation_keys=('wrapper',), required=False, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:Record'))
+    FieldBinding(field_id='models:Holder.copy_', native_name='copy_', wire_name='copy', validation_key='copy', validation_keys=('copy',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Record'))
+    FieldBinding(field_id='models:Holder.wrapper', native_name='wrapper', wire_name='wrapper', validation_key='wrapper', validation_keys=('wrapper',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Record'))
   _model_1 symbol='models:Record', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Record'
     FieldBinding(field_id='models:Record.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   codec_0 -> PydanticModelCodec[models.Holder]
@@ -66,11 +66,11 @@ render pydantic_v2.dataclass default
       wrapper: Optional[Record] = None
   model_bindings.py
   _model_0 symbol='models:Holder', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Holder'
-    FieldBinding(field_id='models:Holder.text', native_name='text', wire_name='text', validation_key='text', validation_keys=('text',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+    FieldBinding(field_id='models:Holder.text', native_name='text', wire_name='text', validation_key='text', validation_keys=('text',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Holder.list', native_name='list', wire_name='list', validation_key='list', validation_keys=('list',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=LeafNode()))
     FieldBinding(field_id='models:Holder.original', native_name='original', wire_name='original', validation_key='original', validation_keys=('original',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Record'))
-    FieldBinding(field_id='models:Holder.copy', native_name='copy', wire_name='copy', validation_key='copy', validation_keys=('copy',), required=False, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:Record'))
-    FieldBinding(field_id='models:Holder.wrapper', native_name='wrapper', wire_name='wrapper', validation_key='wrapper', validation_keys=('wrapper',), required=False, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:Record'))
+    FieldBinding(field_id='models:Holder.copy', native_name='copy', wire_name='copy', validation_key='copy', validation_keys=('copy',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Record'))
+    FieldBinding(field_id='models:Holder.wrapper', native_name='wrapper', wire_name='wrapper', validation_key='wrapper', validation_keys=('wrapper',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Record'))
   _model_1 symbol='models:Record', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Record'
     FieldBinding(field_id='models:Record.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   codec_0 -> PydanticModelCodec[models.Holder]
@@ -111,11 +111,11 @@ render dataclasses.dataclass default
       wrapper: Optional[Record] = None
   model_bindings.py
   _model_0 symbol='models:Holder', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Holder'
-    FieldBinding(field_id='models:Holder.text', native_name='text', wire_name='text', validation_key='text', validation_keys=('text',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+    FieldBinding(field_id='models:Holder.text', native_name='text', wire_name='text', validation_key='text', validation_keys=('text',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Holder.list', native_name='list', wire_name='list', validation_key='list', validation_keys=('list',), required=False, read_only=False, write_only=False, omit_none=True, type=ArrayNode(item=LeafNode()))
     FieldBinding(field_id='models:Holder.original', native_name='original', wire_name='original', validation_key='original', validation_keys=('original',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Record'))
-    FieldBinding(field_id='models:Holder.copy', native_name='copy', wire_name='copy', validation_key='copy', validation_keys=('copy',), required=False, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:Record'))
-    FieldBinding(field_id='models:Holder.wrapper', native_name='wrapper', wire_name='wrapper', validation_key='wrapper', validation_keys=('wrapper',), required=False, read_only=False, write_only=False, omit_none=False, type=ModelNode(symbol='models:Record'))
+    FieldBinding(field_id='models:Holder.copy', native_name='copy', wire_name='copy', validation_key='copy', validation_keys=('copy',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Record'))
+    FieldBinding(field_id='models:Holder.wrapper', native_name='wrapper', wire_name='wrapper', validation_key='wrapper', validation_keys=('wrapper',), required=False, read_only=False, write_only=False, omit_none=True, type=ModelNode(symbol='models:Record'))
   _model_1 symbol='models:Record', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Record'
     FieldBinding(field_id='models:Record.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   codec_0 -> StructuralModelCodec[models.Holder]
