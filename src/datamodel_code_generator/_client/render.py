@@ -265,7 +265,6 @@ _ERROR_NAMES: Final = (
     "HTTPStatusError",
     "HookExecutionError",
     "IOPhase",
-    "InsufficientScopeError",
     "LimiterExecutionError",
     "OAuthExchangeError",
     "PhaseTimeoutError",
@@ -4091,7 +4090,7 @@ or token HTTP. `EnvironmentCredentialProvider(variable_name, kind="api_key")` re
 its async counterpart has the same explicit selection. Imports and constructors do not discover environment secrets.
 
 Known scopes are canonical tuples: None means unknown and leaves authorization to the server; () is known empty.
-Insufficient known grants fail before sending with `InsufficientScopeError`; 403 never expands scope automatically.
+Token grants are metadata; the resource server authorizes scopes. A 403 never expands scope or triggers recovery.
 Provider contexts carry current origin/deadline/cancellation/requirements, and audience is currently None.
 Borrow providers by default; only `OwnedCredentialProvider` transfers a closeable provider to the root scope.
 Views share that ownership. Provider and signer callbacks consume the call deadline; synchronous callbacks are

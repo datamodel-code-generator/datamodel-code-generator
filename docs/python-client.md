@@ -4077,11 +4077,10 @@ def authenticated_get(client: Client, token: str) -> bytes:
         return view.auth.bearer()
 ```
 
-`AccessToken.scopes=None` means that grants are unknown. It skips local containment checking and leaves the decision
-to the server; it does not claim unrestricted permission. `scopes=()` is known empty and rejects a nonempty requirement.
-Known grants and required scopes are deduplicated and ASCII-sorted. An insufficient known grant raises
-`InsufficientScopeError` with readonly required, granted, and missing tuples before sending. The SDK never broadens
-scopes automatically after a 403. Expired material raises `TokenExpiredError` and cannot justify an endless refresh.
+`AccessToken.scopes` records token metadata: `None` means unknown grants and `()` means known empty grants.
+Known grants and requested scopes are deduplicated and ASCII-sorted. The client sends empty, narrow, hierarchical,
+and unknown grants to the permitted resource origin and leaves authorization to the server. A 403 is terminal: the
+SDK never broadens scopes or refreshes a token to recover from it. Expired material raises `TokenExpiredError` and cannot justify an endless refresh.
 `BearerCredential` pairs a token with an opaque `TokenVersion()` whose identity belongs to that provider's publication.
 
 Async clients require async providers. Matching static and environment variants are available; a custom provider's
@@ -4468,8 +4467,8 @@ set needs the Bearer type, and a timezone-aware `expires_at` when its access tok
 
 Each refresh replaces the token set with one of the next revision. The response's refresh token rotates the family, and
 a response without one keeps the refresh token sent; a response without `scope` keeps the grants of the access token it
-replaces, known or unknown. A caller requiring a scope that known grants lack fails with `InsufficientScopeError` before
-any request, since a refresh never widens them, and a caller whose refresh narrowed them fails the same way. A refresh
+replaces, known or unknown. Narrower refreshed grants remain token metadata: subsequent resource calls reach the
+server, and its 403 remains terminal. Acquisition and refresh retain the configured requested scopes. A refresh
 token the family rotated away from, or sent in a request that may have been delivered without a usable answer, is spent:
 the family never sends it again, and a response returning a spent one is unusable.
 
@@ -4523,8 +4522,10 @@ stops for reauthorization when the newer token set can never serve. It returns t
 family stopped, and its own failures are raised to its caller alone, leaving the family as it was.
 
 A provider with a `store` needs a `load` too. A refresh that receives a token set stores it once before it becomes
-current, expecting the stored revision the last load or store confirmed, or None while none did, so callers are served,
-and their scopes checked, only once it is stored. A store that fails, conflicts, outlives the refresh's session, or is
+current, expecting the stored revision the last load or store confirmed, or None while none did, so callers are served
+only once storage succeeds. Credentials are still selected for the request's origin, audience, and partition; requested
+OAuth scopes and token grant metadata do not authorize a request. Scope authorization is the resource server's
+responsibility. A store that fails, conflicts, outlives the refresh's session, or is
 interrupted keeps the token set pending in the `PERSIST_PENDING` state: the refresh raises `AuthTokenStoreError`, or
 `AuthTokenStoreConflictError` with the revision the store observed, and later calls raise a new instance of the latest
 store failure without a request, while callers arriving during a store wait for it. `retry_store()` stores the same
