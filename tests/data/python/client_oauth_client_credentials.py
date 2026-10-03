@@ -525,6 +525,16 @@ def _expiry(
         renewed = shared.get(_context(auth))
         lines.append(f"    failed renewal keeps the token = {_material(renewed)} sends={adapter.sends}")
         lines.append(f"    forced refresh failure = {_outcome(lambda: shared.refresh(_context(auth)))} sends={adapter.sends}")
+    closing = _Closing(auth)
+    adapter = Adapter(transports, _reply(responses, {**_ISSUED, "access_token": "kept", "expires_in": 100}))
+    with auth.ClientCredentialsProvider(
+        _TOKEN, client_id="c", client_secret=closing, options=timed, token_transport=adapter
+    ) as shared:
+        start = now
+        shared.get(_context(auth))
+        closing.close = shared.close
+        now = start + 95
+        lines.append(f"  closed during an early renewal = {_outcome(lambda: shared.get(_context(auth)))}")
 
 
 def _single_flight(auth: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]) -> None:

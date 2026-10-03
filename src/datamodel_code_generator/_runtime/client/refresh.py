@@ -243,7 +243,7 @@ class _Tokens:
     def unexpired(self, *, force: bool) -> BearerCredential | None:
         """Return the material an unforced caller keeps using after a failed early renewal, until it expires.
 
-        The caller holds the lock.
+        A provider closed meanwhile keeps nothing. The caller holds the lock.
         """
         if force or (cache := self._cache) is None:
             return None
@@ -307,7 +307,7 @@ class SyncTokens(_Tokens):
                 endpoint.prepare()
                 material, tokens = self.adopt(endpoint.exchange(form, self.session(checked)))
             except Exception:
-                if (kept := self.unexpired(force=force)) is None:
+                if (kept := self.unexpired(force=force or endpoint.closed)) is None:
                     raise
                 return kept
             if (notify := self._notify) is not None:
@@ -354,7 +354,7 @@ class AsyncTokens(_Tokens):
                 endpoint.prepare()
                 material, tokens = self.adopt(await endpoint.exchange(form, self.session(checked)))
             except Exception:
-                if (kept := self.unexpired(force=force)) is None:
+                if (kept := self.unexpired(force=force or endpoint.closed)) is None:
                     raise
                 return kept
             if (notify := self._notify) is not None:
