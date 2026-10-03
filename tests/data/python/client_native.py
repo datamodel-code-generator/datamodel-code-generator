@@ -174,7 +174,9 @@ def _wire(package: ModuleType, options: ModuleType, lines: list[str], *, asynchr
                         transport = options.TransportOptions(ssl_context=server.verify, trust_env=False)
                 else:
                     ca_file = Path(directory) / "ca.pem"
-                    ca_file.write_bytes(peer.ca_pem if name in {"ca-context", "injected"} else server.ca_pem)
+                    ca_file.write_bytes(
+                        peer.ca_pem if name in {"ca-opt-out", "ca-context", "injected"} else server.ca_pem
+                    )
                     environment.setenv("SSL_CERT_FILE", str(ca_file))
                     if name.startswith("ca-default"):
                         transport = options.UNSET
