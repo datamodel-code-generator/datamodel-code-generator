@@ -7,6 +7,7 @@ from dataclasses import replace
 from functools import reduce
 from typing import TYPE_CHECKING
 
+from datamodel_code_generator._api_types import OperationRef, SchemaRef
 from datamodel_code_generator._client.protocols import (
     AdapterSignature,
     AsciiBytes,
@@ -45,7 +46,6 @@ from datamodel_code_generator._client.protocols import (
     TimestampHeader,
     WebhookHelper,
 )
-from datamodel_code_generator._codec_declarations import OperationRef, SchemaRef
 from datamodel_code_generator._runtime.protocols.records import (
     BodySelector,
     BodyTarget,

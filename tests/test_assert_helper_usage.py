@@ -1753,7 +1753,7 @@ def test_dynamic(package_name, name):
     import_module(name + "._publication")
     import_module(f"{name}" + "._publication")
     import_module("datamodel_code_generator" + name)
-    __import__("datamodel_code_generator._codec_declarations")
+    __import__("datamodel_code_generator._codec_type_source")
     importlib.import_module(f"{package_name}._runtime.client")
     importlib.import_module(name)
     importlib.import_module("datamodel_code_generator.parser.openapi")
@@ -2039,7 +2039,7 @@ def test_collect_findings_reports_private_imports(tmp_path: Path) -> None:
         "private-import test_private.py:45 test_dynamic: datamodel_code_generator._target_config",
         "private-import test_private.py:46 test_dynamic: datamodel_code_generator._api_publication",
         "private-import test_private.py:48 test_dynamic: datamodel_code_generator._publication",
-        "private-import test_private.py:52 test_dynamic: datamodel_code_generator._codec_declarations",
+        "private-import test_private.py:52 test_dynamic: datamodel_code_generator._codec_type_source",
         "private-import test_private.py:57 test_dynamic: datamodel_code_generator._openapi_generation",
     ]
 

@@ -30,10 +30,10 @@ if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
 
     from datamodel_code_generator._api_generation import TargetRequest
+    from datamodel_code_generator._api_types import SchemaRef
     from datamodel_code_generator._client.plan import ClientPlan, OperationSpec, ResponseSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._codec_declarations import SchemaRef
     from datamodel_code_generator._openapi_codec_plan import CodecPlan
     from datamodel_code_generator._openapi_wire_plan import WirePlan
 
@@ -291,7 +291,7 @@ def plan_streams(  # noqa: PLR0913, PLR0917
         found = problems[helper.name]
         for (where, _), use in zip(_references(helper), spec.uses, strict=True):
             binding = bindings[use.id]
-            if binding.projection_mode != "native" or binding.converter_strategy == "registered_adapter":
+            if binding.projection_mode != "native":
                 message = (
                     f"The {_LABELS[helper.kind]} helper {helper.name!r} decodes an envelope-projected event, which is "
                     "not supported yet"

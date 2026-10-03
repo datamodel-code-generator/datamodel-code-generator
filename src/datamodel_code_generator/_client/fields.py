@@ -85,7 +85,6 @@ class _Fields:
         self.wire = wire
         self.bindings: Mapping[TypeUseId, UseBinding] = dict(codecs.bindings)
         self.symbols = {name: symbol for symbol, name in codecs.imports}
-        self.adapted = {item.use for item in codecs.adapters}
         self.members: dict[SymbolId, list[FieldUseBinding]] = {}
         for member in batch.fields:
             self.members.setdefault(member.consumer, []).append(member)
@@ -97,7 +96,7 @@ class _Fields:
         Any other body is None, as is one whose schema requires a name that only extra properties could hold.
         """
         use = media.use
-        if media.kind not in _KINDS or media.members is not None or use is None or use.id in self.adapted:
+        if media.kind not in _KINDS or media.members is not None or use is None:
             return None
         binding = self.bindings.get(use.id)
         model = None if binding is None else _model(binding)

@@ -1,5 +1,0 @@
-use /paths/~1cats/post request_body: codec_0 outbound_0 None dataclass_structural native
-use /paths/~1pairs/post request_body: codec_1 outbound_1 None dataclass_structural native
-cat-outbound: model Cat(kind='cat') wire={"kind": "cat"}
-cat-snapshot: model Cat(kind='cat') wire={"kind": "cat"}
-loaded []

@@ -2871,9 +2871,8 @@ body_field_names = [{ media_type = "application/json", name = "tag", python_name
 A JSON or form body takes fields when its schema is one object whose model its backend constructs from them, an
 object that may be null included: Pydantic models and dataclasses, stdlib dataclasses, TypedDicts, and msgspec
 Structs alike. Other bodies keep only `body`: unions of objects, arrays and scalars, bodies without a schema, binary
-bodies and form-data sent as parts, bodies a registered codec adapter reads, bodies whose model cannot hold a request,
-such as one with a required read-only member, and objects whose schema requires a key only their extra properties can
-hold. Extra keys, a null body, and an empty object also need `body`, and a nested object is given as its own model.
+bodies and form-data sent as parts, bodies whose model cannot hold a request, such as one with a required read-only
+member, and objects whose schema requires a key only their extra properties can hold. Extra keys, a null body, and an empty object also need `body`, and a nested object is given as its own model.
 
 Each field argument is named by the snake case of its wire property, and a read-only member has none.
 `body_field_names` names one field of one media type instead, without changing the model or the wire property. Fields
@@ -3207,7 +3206,7 @@ configuration trusts it. A value Pydantic refuses raises `RequestEncodingError` 
 
 A package that allows Pydantic argument validation depends on `pydantic>=2.13.5` even when its default is `none`,
 and imports Pydantic only when a call first selects it. It is not available for msgspec Structs, which Pydantic
-cannot validate, or for an argument a registered codec adapter reads.
+cannot validate.
 
 ### When a mode is not available
 
@@ -3218,42 +3217,18 @@ use and the mode to select instead:
   stdlib dataclasses and TypedDicts do not. A form-data part's headers need none.
 - `response = "native"` is refused for a union whose members only their schemas tell apart, such as two object models
   read by a stdlib dataclass or TypedDict converter, unless the union's use returns `DecodedValue`.
-- A use that a registered codec adapter reads or writes allows only `schema` in its direction.
-- `arguments = "pydantic"` is refused for an argument holding msgspec Structs or read by a registered codec adapter.
+- `arguments = "pydantic"` is refused for an argument holding msgspec Structs.
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.validation.diagnostics -->
 <!-- fmt: off -->
 
 ```text
 E_CONFIG_VALUE binding validation.response /paths/~1orders~1{orderId}/get/responses/200: The 'native' response validation cannot take the response body 200 application/json of GET /orders/{orderId}, which tells its union members apart only by their schemas; select 'schema'
-E_CONFIG_VALUE binding validation.request /paths/~1pets/get/parameters/0: The 'none' request validation cannot take the query parameter limit of GET /pets, which goes through a registered adapter that validates it against its schema; select 'schema'
-E_CONFIG_VALUE binding validation.argument_overrides[0] /paths/~1pets/get/parameters/0: The 'pydantic' arguments validation cannot take the query parameter limit of GET /pets, which goes through a registered adapter that gives Pydantic no schema; select 'none'
-E_CONFIG_VALUE binding validation.response /paths/~1pets/post/responses/201: The 'native' response validation cannot take the response body 201 application/json of POST /pets, which goes through a registered adapter that validates it against its schema; select 'schema'
+E_CONFIG_VALUE binding validation.argument_overrides[0] /paths/~1pets/post/requestBody: The 'pydantic' arguments validation cannot take the request body application/json of POST /pets, which holds msgspec Structs that Pydantic cannot validate; select 'none'
 ```
 
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.validation.diagnostics -->
-
-### Parameter adapters
-
-A parameter that a registered parameter adapter selects (`codec_adapters`, a `CodecAdapterRegistration` of kind
-`parameter`) is validated against its schema and then encoded by the adapter instead of the builtin OpenAPI style, so
-it can also carry declarations no builtin style can, such as a `form` cookie array with `explode: false`. The client
-checks what the adapter returns before anything is sent:
-
-- A contribution outside its location's syntax or ownership raises `CodecAdapterError`: a header value that is not
-  visible ASCII with only spaces or tabs inside it, a query name other than the parameter's own (or `name[member]` for
-  a `deepObject`) or one another parameter owns, and a cookie of another name.
-- A path segment the adapter's text makes `.` or `..` fails with `RequestEncodingError`, as a builtin path argument's
-  does.
-- An empty array or object the adapter's capabilities exclude, and a `ParameterEncodingError` the adapter raises,
-  raise `RequestEncodingError` with that `ParameterEncodingError` as its cause.
-- The first call that sends the parameter builds the adapter: capabilities that differ from the registration raise
-  `CodecAdapterError`, and an exception the factory raises propagates unchanged.
-
-Pagination helpers that write a page position or a binding into an adapted parameter encode it through the same
-adapter, and judge a read value's path segment by the adapter's text. Generation does not judge a literal bound to
-an adapted path parameter, since it does not run the adapter; the request refuses a dot segment the adapter makes.
 
 ### Cost
 

@@ -10,7 +10,6 @@ from contextlib import asynccontextmanager
 from dataclasses import asdict, replace
 from datetime import datetime, timedelta
 from functools import partial
-from importlib import import_module
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Any
@@ -447,7 +446,7 @@ def queue_recovery(package: ModuleType, lines: list[str]) -> None:
 
 
 async def _restoration(package: ModuleType, lines: list[str], asynchronous: bool) -> None:
-    from tests.data.python import queue_recovery_adapter
+    from tests.data.python import queue_recovery_model
 
     queue = _Queues(package, lines)
     lines.append("async restoration" if asynchronous else "sync restoration")
@@ -459,11 +458,11 @@ async def _restoration(package: ModuleType, lines: list[str], asynchronous: bool
             outbox = instance.protocols.orders.outbox
             receipt = await _value(partial(outbox.operations.create_order.enqueue, body=queue.order))
             store.tamper(receipt.entry_id, send_intent=prior, delivery_count=int(prior))
-            queue_recovery_adapter.restoring = partial(queue.time.advance, 299)
+            queue_recovery_model.restoring = partial(queue.time.advance, 299)
             try:
                 report = await _value(outbox.drain)
             finally:
-                queue_recovery_adapter.restoring = None
+                queue_recovery_model.restoring = None
             entry = await _value(partial(outbox.inspect, receipt.entry_id))
             lines.append(
                 f"  remaining restoration prior={prior}: {dict(report.counts)} "
@@ -483,11 +482,11 @@ async def _restoration(package: ModuleType, lines: list[str], asynchronous: bool
                 )
             )
             store.tamper(receipt.entry_id, send_intent=prior, delivery_count=int(prior))
-            queue_recovery_adapter.restoring = partial(queue.time.advance, 4)
+            queue_recovery_model.restoring = partial(queue.time.advance, 4)
             try:
                 report = await _value(outbox.drain)
             finally:
-                queue_recovery_adapter.restoring = None
+                queue_recovery_model.restoring = None
             entry = await _value(partial(outbox.inspect, receipt.entry_id))
             lines.extend((
                 (
@@ -497,56 +496,22 @@ async def _restoration(package: ModuleType, lines: list[str], asynchronous: bool
                 f"  sends: {len(queue.server.log)}",
             ))
             await _value(instance.aclose if asynchronous else instance.close)
-        store = _Store(queue.protocols)
-        instance = client(http_client=native, options=queue.settings(_AsyncStore(store) if asynchronous else store))
-        outbox = instance.protocols.orders.outbox
-        trace = queue.argument("CreateOrder", "header", "X-Trace", "original")
-        receipt = await _value(partial(outbox.operations.create_order.enqueue, body=queue.order, x_trace=trace))
-        calls = 0
-
-        def altered() -> None:
-            nonlocal calls
-            calls += 1
-            if calls == 2:
-                queue_recovery_adapter.changed_trace = True
-
-        queue_recovery_adapter.encoding = altered
-        try:
-            try:
-                await _value(outbox.drain)
-            except Exception as error:  # ruff: ignore[blind-except]
-                lines.append(f"  actual preparation changed: {type(error).__name__}")
-        finally:
-            queue_recovery_adapter.encoding = None
-            queue_recovery_adapter.changed_trace = False
-        entry = await _value(partial(outbox.inspect, receipt.entry_id))
-        lines.extend((
-            f"  preparation retained: {entry.state} count={entry.delivery_count}",
-            f"  sends: {len(queue.server.log)}",
-        ))
-        await _value(instance.aclose if asynchronous else instance.close)
-
-        public = import_module(package.__name__ + ".model_codecs")
         for prior in (False, True):
             store = _Store(queue.protocols)
             instance = client(http_client=native, options=queue.settings(_AsyncStore(store) if asynchronous else store))
             outbox = instance.protocols.orders.outbox
-            receipt = await _value(partial(outbox.operations.create_order.enqueue, body=queue.order, x_trace=trace))
+            receipt = await _value(partial(outbox.operations.create_order.enqueue, body=queue.order))
             store.tamper(receipt.entry_id, send_intent=prior, delivery_count=int(prior))
-            calls = 0
 
             def refused() -> None:
-                nonlocal calls
-                calls += 1
-                if calls == 2:
-                    message = "Controlled public adapter refusal"
-                    raise public.ParameterEncodingError(message)
+                message = "Controlled restoration refusal"
+                raise ValueError(message)
 
-            queue_recovery_adapter.encoding = refused
+            queue_recovery_model.restoring = refused
             try:
                 report = await _value(outbox.drain)
             finally:
-                queue_recovery_adapter.encoding = None
+                queue_recovery_model.restoring = None
             entry = await _value(partial(outbox.inspect, receipt.entry_id))
             lines.extend((
                 f"  prior={prior} preparation refused: {dict(report.counts)} {entry.state} {entry.result.category}",
@@ -591,7 +556,7 @@ async def _restoration(package: ModuleType, lines: list[str], asynchronous: bool
 
 
 def queue_restoration(package: ModuleType, lines: list[str]) -> None:
-    """Consume the entry deadline in a registered restoration adapter before any resource/provider admission."""
+    """Consume the entry deadline in a Pydantic validator while restoring, before any resource/provider admission."""
     run(lambda: _restoration(package, lines, False))
     run(lambda: _restoration(package, lines, True))
 

@@ -1,4 +1,3 @@
-cookie tags form scalar/string {"headers":[["cookie","tags=a"]]}: CodecConfigurationError The cookie parameter 'tags' goes through its registered adapter, not a builtin form
 path color simple scalar/integer {"path":"42"}: 42
 path color simple scalar/integer {"path":"042"}: WireValidationError parameter.lexical
 path color simple scalar/integer {"path":"4.0"}: WireValidationError parameter.lexical

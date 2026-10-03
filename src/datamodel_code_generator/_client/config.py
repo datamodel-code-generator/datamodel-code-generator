@@ -10,8 +10,8 @@ from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, Type
 
 from typing_extensions import TypeIs
 
+from datamodel_code_generator._api_types import OperationRef
 from datamodel_code_generator._client.naming import identifier, namespace_problem, token
-from datamodel_code_generator._codec_declarations import CodecAdapterRegistration, OperationRef
 from datamodel_code_generator._runtime.client.options import (
     ArgumentValidation,
     RequestValidation,
@@ -165,7 +165,6 @@ class ClientGenerationConfig(TargetConfig):
     validation: ClientValidationConfig = field(default_factory=ClientValidationConfig)
     default_base_url: str | None = None
     server_base_url: str | None = None
-    codec_adapters: tuple[CodecAdapterRegistration, ...] = ()
     protocols: Path | ProtocolConfiguration | None = None
 
     toml_converters: ClassVar[Mapping[str, Converter]]
@@ -191,8 +190,6 @@ class ClientGenerationConfig(TargetConfig):
                     name,
                     f"{name} must be an absolute http or https URL without userinfo, query, or fragment",
                 )
-        if not _tuple_of(self.codec_adapters, CodecAdapterRegistration):
-            yield _diagnostic("E_CONFIG_VALUE", "codec_adapters", "codec_adapters must be a tuple of registrations")
         if self.protocols is not None and not isinstance(self.protocols, Path):
             yield from _protocol_problems(self.protocols)
 

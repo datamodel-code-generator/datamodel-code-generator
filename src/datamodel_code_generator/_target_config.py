@@ -12,8 +12,7 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Literal, TypeAlias, TypeVar
 
 from datamodel_code_generator._api_manifest import document_identity
-from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationSelection
-from datamodel_code_generator._codec_declarations import OperationRef
+from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef, OperationSelection
 from datamodel_code_generator._format_types import Formatter
 
 if TYPE_CHECKING:

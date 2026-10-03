@@ -288,7 +288,6 @@ class BuiltinModelCodec(ABC, Generic[T]):
         self,
         binding: UseBinding,
         bundle: Callable[[], SchemaBundle],
-        validator: WireValidator | None,
         *,
         selects: bool,
         converter: str,
@@ -307,7 +306,7 @@ class BuiltinModelCodec(ABC, Generic[T]):
             model.symbol: {member.wire_name: member for member in model.fields} for model in binding.models
         }
         self._members: dict[str, WireSchemaValidator] = {}
-        self._validator = validator
+        self._validator: WireValidator | None = None
         self._convertible = not needs_schema(binding)
 
     @property

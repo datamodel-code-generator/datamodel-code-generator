@@ -47,9 +47,7 @@ from datamodel_code_generator._client.webhooks import (
     webhook_files,
     webhook_uses,
 )
-from datamodel_code_generator._codec_declarations import CodecDeclarations
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
-from datamodel_code_generator._openapi_codec_adapters import select_adapters
 from datamodel_code_generator._openapi_codec_plan import plan_model_codecs
 from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
 from datamodel_code_generator._runtime.model_codecs.wire import checked_scalar
@@ -104,18 +102,15 @@ class ClientTarget:
     backends: frozenset[DataModelType] = frozenset(_BACKENDS)
     unsupported_backend: str = "E_CONFIG_VALUE"
 
-    def render(self, request: TargetRequest) -> TargetRender:  # ruff: ignore[no-self-use, too-many-locals, too-many-statements]
+    def render(self, request: TargetRequest) -> TargetRender:  # ruff: ignore[no-self-use, too-many-locals]
         """Plan the selected operations, bind their codecs, and render the package."""
         config = request.config
         assert isinstance(config, ClientGenerationConfig)
         backend = _BACKENDS[request.model_config.output_model_type]
         protocols = plan_protocols(request, config.protocols)
         wire = _wire(request, request.batch)
-        declarations = CodecDeclarations(adapters=config.codec_adapters)
-        selection = select_adapters(request.batch, wire, declarations) if config.codec_adapters else None
-        adapted = frozenset() if selection is None else selection.uses("parameter")
         try:
-            plan = Planner(request, config, wire, adapted).plan()
+            plan = Planner(request, config, wire).plan()
         except PlanError as error:
             raise APIGenerationError(
                 tuple(replace(item, target_id=request.target_id) for item in error.diagnostics)
@@ -130,14 +125,10 @@ class ClientTarget:
             batch = replace(batch, type_uses=(*batch.type_uses, *parts))
         if parts or events:
             wire = _wire(request, batch, parts, received)
-            selection = None
         codecs = plan_model_codecs(
             batch,
             replace(wire, schema_ids=tuple(item for item in wire.schema_ids if item[0] in uses)),
             backend,
-            declarations=declarations,
-            lease=request.lease,
-            selection=selection,
         )
         selected = {spec.contract.id for spec in plan.operations}
         if problems := [item for item in codecs.diagnostics if item.operation in {None, *selected}]:
@@ -270,7 +261,7 @@ def _bindings(codecs: CodecPlan, backend: str) -> tuple[TargetBinding, ...]:
         TargetBinding(
             use=use,
             backend=backend,
-            strategy="adapter" if binding.converter_strategy == "registered_adapter" else binding.projection_mode,
+            strategy=binding.projection_mode,
             converter_strategy=binding.converter_strategy,
         )
         for use, binding in codecs.bindings
@@ -295,16 +286,6 @@ class _TargetData:
         self.codecs = codecs
         self.wire = wire
         self.bindings = dict(codecs.bindings)
-        self.adapters = {
-            item.use: (
-                item.registration.name,
-                item.registration.import_ref,
-                item.registration.capabilities,
-                item.parameter,
-            )
-            for item in codecs.adapters
-            if item.parameter is not None
-        }
         self.selected = {operation.id: index for index, operation in enumerate(request.operations)}
         self.spelling = TypeSource(Namespace(()), dict(codecs.imports), lambda module, name: f"{module}.{name}")
 
@@ -598,12 +579,8 @@ class _TargetData:
         return None if use is None or use.type is None else self.spelling.static(use.type)
 
     def parameter(self, parameter: ParameterSpec) -> tuple[object, ...]:
-        """Return a schema-bearing parameter's plan and contract, including its registered adapter, if any."""
-        use = cast("TypeUseBinding", parameter.use)
-        contract = (parameter.plan, self.contract(use))
-        if (adapter := self.adapters.get(use.id)) is None:
-            return contract
-        return (*contract, adapter)
+        """Return a schema-bearing parameter's plan and contract."""
+        return (parameter.plan, self.contract(parameter.use))
 
     def contract(self, use: TypeUseBinding | None) -> tuple[object, ...]:
         """Return a schema-bearing helper use's codec binding and normalized schema."""

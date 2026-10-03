@@ -2,22 +2,6 @@
   "cases": [
     {
       "plan": {
-        "location": "cookie",
-        "name": "tags",
-        "style": "form",
-        "adapted": true
-      },
-      "raw": {
-        "headers": [
-          [
-            "cookie",
-            "tags=a"
-          ]
-        ]
-      }
-    },
-    {
-      "plan": {
         "location": "path",
         "name": "color",
         "style": "simple",

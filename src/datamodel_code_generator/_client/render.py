@@ -2250,11 +2250,8 @@ class _Registry(_Typing):
     def parameter(self, module: Module, parameter: ParameterSpec) -> Group:
         """Return the ParameterSpec constructor of one parameter."""
         entries: list[tuple[str, Doc]] = [("plan=", parameter_plan(module.local, parameter.plan))]
-        if (use := parameter.use) is not None and (accessor := self.accessors.get(use.id)) is not None:
+        if (use := parameter.use) is not None and use.id in self.accessors:
             entries.append(("encoder=", self.encoder(module, use)))
-            if accessor.parameter is not None:
-                bindings = module.local("_generated", "model_bindings")
-                entries.append(("adapter=", f"({bindings}.{accessor.parameter}, {bindings}.{accessor.context})"))
         return _call(module.local(_RUNTIME, "ParameterSpec"), entries)
 
     def media(self, module: Module, media: MediaSpec) -> Group:

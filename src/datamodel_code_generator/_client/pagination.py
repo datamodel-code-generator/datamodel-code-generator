@@ -14,8 +14,7 @@ from decimal import Decimal
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
 
-from datamodel_code_generator._api_types import Diagnostic
-from datamodel_code_generator._codec_declarations import OperationRef
+from datamodel_code_generator._api_types import Diagnostic, OperationRef
 from datamodel_code_generator._generation_contract import BindingCaptureError
 from datamodel_code_generator._runtime.client.paths import dot_segment, path_segments
 from datamodel_code_generator._runtime.client.retry import body_replay_safe
@@ -23,7 +22,7 @@ from datamodel_code_generator._runtime.client.security import secret_names
 from datamodel_code_generator._runtime.model_codecs.bindings import ArrayNode, MapNode, ModelNode, UnionNode
 from datamodel_code_generator._runtime.model_codecs.errors import ParameterEncodingError
 from datamodel_code_generator._runtime.model_codecs.media import media_kind
-from datamodel_code_generator._runtime.model_codecs.parameters import AdaptedParameterPlan, path_text
+from datamodel_code_generator._runtime.model_codecs.parameters import path_text
 from datamodel_code_generator._runtime.protocols.records import canonical_json
 from datamodel_code_generator._target_contract import (
     GeneratedSymbolType,
@@ -38,11 +37,10 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from datamodel_code_generator._api_generation import TargetRequest
-    from datamodel_code_generator._api_types import DiagnosticStage
+    from datamodel_code_generator._api_types import DiagnosticStage, SchemaRef
     from datamodel_code_generator._client.plan import ClientPlan, HeaderSpec, OperationSpec, ResponseSpec
     from datamodel_code_generator._client.protocol_plan import Protocols
     from datamodel_code_generator._client.protocols import Helper
-    from datamodel_code_generator._codec_declarations import SchemaRef
     from datamodel_code_generator._openapi_codec_plan import CodecPlan
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.bindings import ModelBinding, TypeNode, UseBinding
@@ -121,8 +119,7 @@ def _dot_literals(spec: OperationSpec, bindings: list[Mapping[str, Any]]) -> fro
     """Return the first literal binding of each path segment the literal bindings make `.` or `..`, by index.
 
     Only a segment whose every parameter a literal writes is judged, each literal encoded in its parameter's style; a
-    literal its parameter cannot encode is left to the type check. A segment with a parameter a registered adapter
-    carries is left to the runtime, which checks the path the adapter's text makes.
+    literal its parameter cannot encode is left to the type check.
     """
     literals: dict[str, tuple[int, WireValue]] = {}
     for index, item in enumerate(bindings):
@@ -133,9 +130,7 @@ def _dot_literals(spec: OperationSpec, bindings: list[Mapping[str, Any]]) -> fro
     plans = {item.wire_name: item.plan for item in spec.parameters if item.location == "path"}
     dotted: set[int] = set()
     for segment, names in path_segments(spec.contract.path):
-        if not all(name in literals for name in names) or any(
-            isinstance(plans[name], AdaptedParameterPlan) for name in names
-        ):
+        if not all(name in literals for name in names):
             continue
         try:
             texts = {name: path_text(plans[name], literals[name][1]) for name in names}
@@ -375,7 +370,7 @@ class _Pages:
             message = f"{label} must declare exactly one JSON success response for the pagination helper {name!r}"
             problems.append(_problem("E_CONFIG_VALUE", "config", f"{at}.operation", message, spec))
             return None, problems
-        if binding.projection_mode != "native" or binding.converter_strategy == "registered_adapter":
+        if binding.projection_mode != "native":
             message = f"The pagination helper {name!r} reads an envelope-projected response, which is not supported yet"
             problems.append(_problem("E_CLIENT_UNSUPPORTED", "target", at, message, spec))
             return None, problems

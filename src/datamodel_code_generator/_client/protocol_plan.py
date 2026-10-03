@@ -7,10 +7,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
 from datamodel_code_generator._api_manifest import canonical_bytes, document_identity, portable, sha256
-from datamodel_code_generator._api_types import APIGenerationError, Diagnostic
+from datamodel_code_generator._api_types import APIGenerationError, Diagnostic, OperationRef, SchemaRef
 from datamodel_code_generator._client.naming import HELPER_ARGUMENTS, helper_classes
 from datamodel_code_generator._client.plan import fact
-from datamodel_code_generator._codec_declarations import OperationRef, SchemaRef
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping

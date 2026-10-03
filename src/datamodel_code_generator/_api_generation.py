@@ -48,9 +48,10 @@ from datamodel_code_generator._api_types import (
     Diagnostic,
     GeneratedArtifact,
     GeneratedProject,
+    OperationRef,
+    SchemaRef,
     attach_diagnostic,
 )
-from datamodel_code_generator._codec_declarations import OperationRef, SchemaRef
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
@@ -81,14 +82,13 @@ if TYPE_CHECKING:
     from datamodel_code_generator.format import CodeFormatter
     from datamodel_code_generator.remote_lock import RemoteReferenceLock
 
-Strategy: TypeAlias = Literal["native", "envelope", "adapter"]
+Strategy: TypeAlias = Literal["native", "envelope"]
 ConverterStrategy: TypeAlias = Literal[
     "pydantic_type_adapter",
     "dataclass_structural",
     "typeddict_structural",
     "msgspec_convert",
     "msgspec_structural",
-    "registered_adapter",
 ]
 Exclusion: TypeAlias = "tuple[OperationContract, str]"
 

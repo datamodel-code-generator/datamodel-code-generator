@@ -46,5 +46,5 @@ render pydantic_v2.BaseModel mapped-base
   codec_1 -> PydanticModelCodec[models.Bad]
 render pydantic_v2.BaseModel decorated
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1good/post/requestBody: The Good model needs a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bad/post/requestBody: The Bad model needs a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1good/post/requestBody: The Good model has no codec binding
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bad/post/requestBody: The Bad model has no codec binding

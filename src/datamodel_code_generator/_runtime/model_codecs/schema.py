@@ -33,7 +33,6 @@ from .wire import (
     checked_scalar,
     enter,
     escape_pointer_token,
-    freeze_wire,
     thaw_wire,
 )
 
@@ -196,13 +195,11 @@ class _ResourceCopy:
         index: dict[int, _Location],
         plans: dict[str, PatternPlan],
         schemas: dict[tuple[str, str], dict[str, object]],
-        adapted: frozenset[str],
     ) -> None:
         self.uri = uri
         self.index = index
         self.plans = plans
         self.schemas = schemas
-        self.adapted = adapted
         self.references: list[tuple[int, str, str]] = []
         self.active: set[int] = set()
 
@@ -264,7 +261,7 @@ class _ResourceCopy:
         self.index[id(copied)] = _Location(self.uri, pointer, base)
         self.schemas[self.uri, pointer] = copied
         if "$dynamicRef" in copied:
-            msg = f"A dynamic schema reference at {self.uri} requires an explicit schema adapter"
+            msg = f"A dynamic schema reference at {self.uri} is not supported"
             raise CodecConfigurationError(msg)
         if "$ref" in copied:
             if not isinstance(reference := copied["$ref"], str):
@@ -287,8 +284,6 @@ class _ResourceCopy:
         try:
             planned = plan_pattern(source)
         except (PatternDialectError, PatternResourceError) as error:
-            if source in self.adapted:
-                return
             msg = f"A bundled schema pattern at {self.uri} is outside the builtin grammar"
             raise CodecConfigurationError(msg) from error
         compile_pattern(planned.re2_source)
@@ -363,10 +358,7 @@ def is_multiple(value: float | Decimal, divisor: float | Decimal) -> bool:
 
 def _matches(source: str, subject: str) -> bool:
     state = _CALL.get()
-    if (plan := state.plans.get(source)) is None:
-        msg = "A pattern that only a schema adapter evaluates reached the builtin validator"
-        raise CodecConfigurationError(msg)
-    return search(plan, subject, state.budget)
+    return search(state.plans[source], subject, state.budget)
 
 
 def _error(*, path: tuple[str, ...] = ()) -> ValidationError:
@@ -757,10 +749,7 @@ class WireSchemaValidator:
         budget: MatchBudget | None = None,
         context: CodecContext | None = None,  # noqa: ARG002
     ) -> tuple[WireIssue, ...]:
-        """Return value-free issues in schema-evaluation order; an empty tuple means valid.
-
-        The builtin validator needs no call context; schema adapters receive it.
-        """
+        """Return value-free issues in schema-evaluation order; an empty tuple means valid."""
         token = _CALL.set(replace(self._state, budget=budget or MatchBudget()))
         try:
             instance = _instance_copy(wire, set())
@@ -774,19 +763,14 @@ class WireSchemaValidator:
 class SchemaBundle:
     """Own offline normalized resources, their pattern plans, and per-use validators."""
 
-    __slots__ = ("_direction", "_flagged", "_index", "_plans", "_registry", "_targets", "_uris", "_validators")
+    __slots__ = ("_direction", "_flagged", "_index", "_plans", "_registry", "_targets", "_validators")
 
     def __init__(
         self,
         resources: Iterable[SchemaResource],
         view: DirectionalView | None = None,
-        *,
-        adapted_patterns: frozenset[str] = frozenset(),
     ) -> None:
-        """Copy resources, apply a directional view, check every reference and pattern, and build a registry.
-
-        Patterns that only schema-adapter closures use may stay outside the builtin grammar.
-        """
+        """Copy resources, apply a directional view, check every reference and pattern, and build a registry."""
         from referencing.exceptions import Unresolvable  # noqa: PLC0415
         from referencing.jsonschema import DRAFT202012, EMPTY_REGISTRY  # noqa: PLC0415
 
@@ -802,7 +786,7 @@ class SchemaBundle:
             if resource.uri in copies:
                 msg = f"A schema resource is bundled twice: {resource.uri}"
                 raise CodecConfigurationError(msg)
-            copier = _ResourceCopy(resource.uri, self._index, self._plans, schemas, adapted_patterns)
+            copier = _ResourceCopy(resource.uri, self._index, self._plans, schemas)
             root = (
                 copier.copy(resource.contents, "", resource.uri, schema=True)
                 if "" in resource.roots
@@ -818,7 +802,6 @@ class SchemaBundle:
                 msg = f"A directional view patches no bundled {patch.keyword} keyword in {patch.uri}"
                 raise CodecConfigurationError(msg)
             patched[patch.keyword] = thaw_wire(patch.value)
-        self._uris = tuple(copies)
         self._registry = EMPTY_REGISTRY.with_resources(
             (uri, DRAFT202012.create_resource(contents)) for uri, contents in copies.items()
         ).crawl()
@@ -838,14 +821,6 @@ class SchemaBundle:
     def direction(self) -> Direction | None:
         """Return the direction whose view this bundle validates, or None for the neutral view."""
         return self._direction
-
-    def documents(self) -> dict[str, WireValue]:
-        """Return independent snapshots of every bundled document as this direction validates it."""
-        return {uri: freeze_wire(self._registry.contents(uri)) for uri in self._uris}
-
-    def normalized(self, schema_id: str) -> WireValue:
-        """Return a snapshot of one bundled schema as this direction validates it."""
-        return freeze_wire(self._lookup(schema_id)[0])
 
     def validator(self, schema_id: str) -> WireSchemaValidator:
         """Return the cached validator for one bundled schema identifier."""

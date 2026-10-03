@@ -13,8 +13,7 @@ from typing import TYPE_CHECKING, Final, Literal, TypeAlias, TypeVar
 
 from typing_extensions import TypeIs
 
-from datamodel_code_generator._api_types import Diagnostic
-from datamodel_code_generator._codec_declarations import OperationRef
+from datamodel_code_generator._api_types import Diagnostic, OperationRef
 from datamodel_code_generator._fastapi.naming import normalize
 from datamodel_code_generator._fastapi.native import (
     ANNOTATIONS,

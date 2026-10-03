@@ -8,9 +8,6 @@ sync restoration
   sends: 0
   prior=True: {'succeeded': 0, 'rescheduled': 0, 'dead': 1, 'unknown': 0, 'deferred': 0, 'cancelled': 0} dead unknown/expired count=1
   sends: 0
-  actual preparation changed: ProtocolConfigurationError
-  preparation retained: pending count=0
-  sends: 0
   prior=False preparation refused: {'succeeded': 0, 'rescheduled': 0, 'dead': 1, 'unknown': 0, 'deferred': 0, 'cancelled': 0} dead permanent
   sends: 0
   prior=True preparation refused: {'succeeded': 0, 'rescheduled': 0, 'dead': 1, 'unknown': 0, 'deferred': 0, 'cancelled': 0} dead unknown
@@ -28,9 +25,6 @@ async restoration
   prior=False: {'succeeded': 0, 'rescheduled': 0, 'dead': 1, 'unknown': 0, 'deferred': 0, 'cancelled': 0} dead permanent/expired count=0
   sends: 0
   prior=True: {'succeeded': 0, 'rescheduled': 0, 'dead': 1, 'unknown': 0, 'deferred': 0, 'cancelled': 0} dead unknown/expired count=1
-  sends: 0
-  actual preparation changed: ProtocolConfigurationError
-  preparation retained: pending count=0
   sends: 0
   prior=False preparation refused: {'succeeded': 0, 'rescheduled': 0, 'dead': 1, 'unknown': 0, 'deferred': 0, 'cancelled': 0} dead permanent
   sends: 0

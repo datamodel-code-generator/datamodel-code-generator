@@ -89,13 +89,13 @@ render pydantic_v2.dataclass plain
   codec_0 -> PydanticModelCodec[models.Model]
 render dataclasses.dataclass plain
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/bound: The int | None type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/mixed: The int type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/bound: The int | None type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/mixed: The int type has no structural conversion
 render typing.TypedDict plain
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/bound: The int | None type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/mixed: The int type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/bound: The int | None type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/mixed: The int type has no structural conversion
 render msgspec.Struct plain
   diagnostic APIGenerationError
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/bound: The int | None type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/mixed: The int type has no structural conversion; register a model adapter
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/bound: The int | None type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Model/properties/mixed: The int type has no structural conversion

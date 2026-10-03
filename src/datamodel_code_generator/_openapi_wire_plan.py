@@ -17,7 +17,6 @@ from datamodel_code_generator._runtime.model_codecs.media import (
     normalize_media_type,
 )
 from datamodel_code_generator._runtime.model_codecs.parameters import (
-    AdaptedParameterPlan,
     ParameterLocation,
     ParameterPlan,
     ValueShape,
@@ -62,7 +61,6 @@ if TYPE_CHECKING:
 CodecReason: TypeAlias = (
     BindingReason
     | Literal[
-        "MC_ADAPTER_CONTRACT",
         "MC_ADAPTER_REQUIRED",
         "MC_ALIAS_COLLISION",
         "MC_BINDING_MISSING",
@@ -116,7 +114,7 @@ _LEXICAL_KINDS: Final[dict[str, LexicalKind]] = {
 
 @dataclass(frozen=True, slots=True)
 class CodecDiagnostic:
-    """Report one generation-time wire rule that requires an explicit adapter or a source fix."""
+    """Report one generation-time wire rule that requires a source fix."""
 
     code: CodecReason
     source: SourceLocation
@@ -335,13 +333,13 @@ class _WirePlanner:
             self.report(
                 "MC_SCHEMA_DIALECT",
                 _at(location, "$id"),
-                "Embedded schema resources require an explicit schema adapter",
+                "Embedded schema resources are not supported",
             )
         if "$anchor" in value and location.document in self.containers:
             self.report(
                 "MC_SCHEMA_DIALECT",
                 _at(location, "$anchor"),
-                "Schema anchors in OpenAPI documents require an explicit schema adapter",
+                "Schema anchors in OpenAPI documents are not supported",
             )
         if isinstance(dialect := value.get("$schema"), str) and not _supported_dialect(dialect):
             self.report("MC_SCHEMA_DIALECT", _at(location, "$schema"), "The schema dialect is not builtin")
@@ -354,9 +352,9 @@ class _WirePlanner:
             case "$id" | "$anchor" | "$schema", _:
                 pass
             case _, _ if key in _UNSUPPORTED_KEYWORDS:
-                self.report("MC_SCHEMA_DIALECT", at, f"Keyword {key} requires an explicit schema adapter")
+                self.report("MC_SCHEMA_DIALECT", at, f"Keyword {key} is not supported")
             case "items", list():
-                self.report("MC_SCHEMA_DIALECT", at, "Array-form items requires an explicit schema adapter")
+                self.report("MC_SCHEMA_DIALECT", at, "Array-form items is not supported")
             case "nullable", _ if self.legacy:
                 pass
             case "exclusiveMinimum" | "exclusiveMaximum", bool():
@@ -695,7 +693,7 @@ def plan_wire(  # noqa: PLR0913
     """Build normalized offline schemas and parameter plans for the requested uses and operations.
 
     The document pointers of the target manifest, such as `/inputs/documents/<index>`, name the bundled resources,
-    so adapter source references match the manifest. The uses of URL-encoded bodies named in `forms`
+    so schema references match the manifest. The uses of URL-encoded bodies named in `forms`
     get their member plans, and each member their encoding names the plan of a query parameter; the form-data uses
     named in `styles` get the query parameter plan of each member their encodings give a style.
     """
@@ -834,7 +832,7 @@ def _encoding(planner: _WirePlanner, members: Mapping[str, SourceLocation], enco
                 raise _PlanError(
                     code="MC_PARAMETER_ENCODING",
                     source=source,
-                    message="The member content requires an explicit parameter adapter",
+                    message="The member content has no builtin encoding",
                 )
             return ParameterPlan(location="query", name=name, content_media_type=media)
         shape, kind, fields, additional = _shape(planner, member, form=False)
@@ -855,91 +853,9 @@ def _encoding(planner: _WirePlanner, members: Mapping[str, SourceLocation], enco
         raise _PlanError(code="MC_PARAMETER_ENCODING", source=source, message=str(error)) from None
 
 
-@dataclass(frozen=True, slots=True)
-class ParameterViewPlan:
-    """The effective serialization facts of one parameter declaration, as a parameter adapter sees them."""
-
-    location: ParameterLocation
-    name: str
-    oas_version: str
-    style: str | None
-    explode: bool | None
-    required: bool
-    allow_reserved: bool
-    allow_empty_value: bool
-    content_media_type: str | None
-    reserved_names: tuple[str, ...]
-
-
-def parameter_view(
-    version: str,
-    operation: OperationContract,
-    declaration: WireDeclaration,
-    plans: Iterable[ParameterPlan],
-    auth: Iterable[tuple[object, str]],
-) -> ParameterViewPlan:
-    """Return one declaration's effective style, explode, and content facts and the names others own.
-
-    The names others own are the operation's other declared names, its apiKey names, and the members the effective
-    `plans` of its other parameters expand to, so an adapted neighbor reserves its own name only.
-    """
-    plan = _declared(declaration)
-    location, name = plan.location, plan.name
-    names = [
-        *((_fact(item, "in"), item.name or "") for item in operation.parameters),
-        *auth,
-        *((other.location, field.name) for other in plans if _spread(other) for field in other.fields),
-    ]
-    return ParameterViewPlan(
-        location=location,
-        name=name,
-        oas_version=version,
-        style=plan.style,
-        explode=None if plan.style is None else plan.explode,
-        required=plan.required,
-        allow_reserved=plan.allow_reserved,
-        allow_empty_value=_fact(declaration, "allowEmptyValue") is True,
-        content_media_type=plan.content_media_type,
-        reserved_names=tuple(sorted({other for kind, other in names if kind == location and other != name})),
-    )
-
-
-def _declared(declaration: WireDeclaration) -> AdaptedParameterPlan:
-    """Return a parameter's plan as declared: its style or content media, explode, requiredness, and allowReserved."""
-    location = _LOCATIONS[_fact(declaration, "in")]
-    content = normalize_media_type(declaration.children[0].name or "") if declaration.children else None
-    style = None if content is not None else str(_fact(declaration, "style") or _DEFAULT_STYLES.get(location, "form"))
-    explode = _fact(declaration, "explode")
-    return AdaptedParameterPlan(
-        location=location,
-        name=declaration.name or "",
-        style=style,
-        explode=style is not None and (explode if isinstance(explode, bool) else style in {"form", "cookie"}),
-        required=_fact(declaration, "required") is True,
-        allow_reserved=_fact(declaration, "allowReserved") is True,
-        content_media_type=content,
-    )
-
-
-def parameter_plans(
-    wire: WirePlan, operations: Iterable[OperationContract] = (), adapted: frozenset[TypeUseId] = frozenset()
-) -> dict[OperationId, dict[tuple[ParameterLocation, str], ParameterPlan]]:
-    """Index each operation's parameter plans by location and name.
-
-    A parameter whose use a registered parameter adapter selects gets its plan as declared instead, whether or not a
-    builtin form carries it, since its adapter encodes and decodes the value.
-    """
-    plans = {
-        operation: {(plan.location, plan.name): plan for plan in planned} for operation, planned in wire.parameters
-    }
-    if not adapted:
-        return plans
-    for operation in operations:
-        for declaration in operation.parameters:
-            if not adapted.isdisjoint(_uses(declaration)):
-                plan = _declared(declaration)
-                plans.setdefault(operation.id, {})[plan.location, plan.name] = plan
-    return plans
+def parameter_plans(wire: WirePlan) -> dict[OperationId, dict[tuple[ParameterLocation, str], ParameterPlan]]:
+    """Index each operation's parameter plans by location and name."""
+    return {operation: {(plan.location, plan.name): plan for plan in planned} for operation, planned in wire.parameters}
 
 
 def _planned(
@@ -1054,10 +970,7 @@ def _parameters(planner: _WirePlanner, operation: OperationContract) -> tuple[Pa
 def parameter_collisions(
     operation: OperationContract, plans: Sequence[ParameterPlan], auth: Sequence[tuple[object, str]]
 ) -> tuple[CodecDiagnostic, ...]:
-    """Report each location whose expanded parameter names or the `auth` apiKey names collide.
-
-    A parameter a registered adapter carries claims its own name only, however its declaration would expand.
-    """
+    """Report each location whose expanded parameter names or the `auth` apiKey names collide."""
     found: list[CodecDiagnostic] = []
     for location in ("query", "header", "cookie"):
         claimed = [
@@ -1125,7 +1038,7 @@ def _content_parameter(
         raise _PlanError(
             code="MC_PARAMETER_ENCODING",
             source=source,
-            message="The parameter content requires an explicit parameter adapter",
+            message="The parameter content has no builtin encoding",
         )
     fields: tuple[FieldPlan, ...] = ()
     additional: FieldPlan | None = None
@@ -1226,7 +1139,7 @@ def _shape(
         raise _PlanError(
             code="MC_PARAMETER_ENCODING",
             source=location,
-            message="Pattern properties need an explicit parameter adapter",
+            message="Pattern properties have no builtin parameter encoding",
         )
     properties = value.get("properties")
     fields = tuple(

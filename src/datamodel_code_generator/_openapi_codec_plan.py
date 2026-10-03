@@ -6,16 +6,7 @@ from dataclasses import dataclass, replace
 from functools import cached_property
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 
-from datamodel_code_generator._codec_declarations import CodecDeclarations
 from datamodel_code_generator._codec_type_source import type_reason
-from datamodel_code_generator._openapi_codec_adapters import (
-    AdapterPlan,
-    AdapterSelection,
-    plan_adapters,
-    select_adapters,
-    suppressed,
-    type_nodes,
-)
 from datamodel_code_generator._openapi_wire_plan import CodecDiagnostic, CodecReason, WirePlan
 from datamodel_code_generator._python_type_annotation import render_python_type_expr
 from datamodel_code_generator._runtime.model_codecs.bindings import (
@@ -63,8 +54,6 @@ from datamodel_code_generator._target_contract import (
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
-
-    from datamodel_code_generator._openapi_generation import SourceLease
 
 PydanticBackend: TypeAlias = Literal["pydantic_v2.BaseModel", "pydantic_v2.dataclass"]
 CodecBackend: TypeAlias = Literal[
@@ -134,16 +123,14 @@ _ARRAY_KINDS: Final[dict[str, ArrayKind]] = {"set": "set", "frozenset": "frozens
 _OPTIONAL_FALLBACK: Final = ("none", "synthesized_optional_fallback", "optional_fallback")
 _EXTRA_POLICIES: Final[dict[object, ExtraPolicy]] = {"ignore": "ignore", "allow": "allow", "forbid": "forbid"}
 _TYPED_EXTRAS: Final = "__pydantic_extra__"
-_NO_DECLARATIONS: Final = CodecDeclarations()
 
 
 @dataclass(frozen=True, slots=True)
 class CodecPlan:
-    """Keep every planned directional use binding, the selected adapters, and every blocking diagnostic."""
+    """Keep every planned directional use binding and every blocking diagnostic."""
 
     bindings: tuple[tuple[TypeUseId, UseBinding], ...]
     diagnostics: tuple[CodecDiagnostic, ...]
-    adapters: tuple[AdapterPlan, ...] = ()
     imports: tuple[tuple[int, str], ...] = ()
 
 
@@ -170,6 +157,24 @@ def _is_decimal(value: FinalPythonType) -> bool:
 
 def _array_kind(base: FinalPythonType) -> ArrayKind:
     return _ARRAY_KINDS.get(base.name, "list") if isinstance(base, BuiltinType) else "list"
+
+
+def type_nodes(node: TypeNode) -> Iterator[TypeNode]:
+    """Yield a type graph node and every node beneath it, stopping at model references."""
+    yield node
+    match node:
+        case ArrayNode():
+            yield from type_nodes(node.item)
+        case MapNode():
+            yield from type_nodes(node.value)
+        case TupleNode():
+            for item in node.items:
+                yield from type_nodes(item)
+        case UnionNode():
+            for item in node.members:
+                yield from type_nodes(item)
+        case _:
+            return
 
 
 def _models(node: TypeNode) -> Iterator[str]:
@@ -271,15 +276,12 @@ class _CodecPlanner:
         batch: GeneratedTypeContractBatch,
         wire: WirePlan,
         backend: CodecBackend,
-        adapted: frozenset[TypeUseId],
     ) -> None:
         self.batch = batch
         self.wire = wire
         self.backend: CodecBackend = backend
         self.structural = _STRATEGIES[backend] != "pydantic_type_adapter"
         self.gaps: set[str] = set()
-        self.adapted = adapted
-        self.quiet = False
         self.imports = {symbol.id: _symbol_key(symbol) for symbol in batch.symbols if symbol.artifact is not None}
         self.symbols = {symbol.id: symbol for symbol in batch.symbols}
         self.schema_ids = dict(wire.schema_ids)
@@ -303,8 +305,8 @@ class _CodecPlanner:
         self.members: dict[int, list[FieldUseBinding]] = {}
         for member in batch.fields:
             self.members.setdefault(member.consumer, []).append(member)
-        self.caches: dict[bool, dict[str, ModelBinding]] = {False: {}, True: {}}
-        self.building: set[tuple[bool, str]] = set()
+        self.models: dict[str, ModelBinding] = {}
+        self.building: set[str] = set()
         self.aliases: set[int] = set()
         self.diagnostics: list[CodecDiagnostic] = []
         self.msgspec = _MsgspecTypes(self)
@@ -314,17 +316,9 @@ class _CodecPlanner:
             self.diagnostics.append(diagnostic)
 
     def spelled(self, use: TypeUseBinding, value: FinalPythonType) -> bool:
-        types = [value]
-        if use.id in self.adapted and isinstance(value, GeneratedSymbolType):
-            types.extend(facts.type for member in self.members.get(value.symbol, []) if (facts := member.model_facts))
-        reasons: list[CodecReason] = [
-            reason for item in types if (reason := type_reason(item, self.imports)) is not None
-        ]
-        if reasons:
-            self.report(
-                reasons[0], use.id.use_site, "The use's final type has no expression a generated module can import"
-            )
-        return not reasons
+        if (reason := type_reason(value, self.imports)) is not None:
+            self.report(reason, use.id.use_site, "The use's final type has no expression a generated module can import")
+        return reason is None
 
     def child(self, schema: SourceLocation | None, *tokens: str | int) -> SourceLocation | None:
         return None if schema is None else _at(self.wire.schema(schema)[0], *tokens)
@@ -362,20 +356,12 @@ class _CodecPlanner:
             case GenericType(base=base, arguments=(item,)):
                 return ArrayNode(self.node(item, self.child(schema, "items"), source), _array_kind(base))
             case GenericType(arguments=(key, item)):
-                if self.structural and not self.quiet and (name := self.unstructured(key, _STRUCTURAL_KEYS)):
-                    self.report(
-                        "MC_ADAPTER_REQUIRED",
-                        source,
-                        f"The {name} key type has no structural conversion; register a model adapter",
-                    )
+                if self.structural and (name := self.unstructured(key, _STRUCTURAL_KEYS)):
+                    self.report("MC_ADAPTER_REQUIRED", source, f"The {name} key type has no structural conversion")
                 return MapNode(self.node(item, self.child(schema, "additionalProperties"), source))
             case _:
-                if self.structural and not self.quiet and (name := self.unstructured(value, _STRUCTURAL_LEAVES)):
-                    self.report(
-                        "MC_ADAPTER_REQUIRED",
-                        source,
-                        f"The {name} type has no structural conversion; register a model adapter",
-                    )
+                if self.structural and (name := self.unstructured(value, _STRUCTURAL_LEAVES)):
+                    self.report("MC_ADAPTER_REQUIRED", source, f"The {name} type has no structural conversion")
                 return LeafNode(self.representation(value, schema))
 
     def unstructured(self, value: FinalPythonType, supported: frozenset[str]) -> str | None:
@@ -402,11 +388,7 @@ class _CodecPlanner:
 
     def symbol_node(self, symbol: FinalModelSymbol, source: SourceLocation) -> TypeNode:
         match symbol.kind:
-            case "model" | "root" | "custom" if self.quiet or (
-                symbol.kind != "custom"
-                and symbol.backend == _SYMBOL_BACKENDS[self.backend]
-                and symbol.facts is not None
-            ):
+            case "model" | "root" if symbol.backend == _SYMBOL_BACKENDS[self.backend] and symbol.facts is not None:
                 self.model(symbol, source)
                 return ModelNode(_symbol_key(symbol))
             case "alias" if symbol.id not in self.aliases:
@@ -421,27 +403,21 @@ class _CodecPlanner:
                 )
                 self.aliases.discard(symbol.id)
                 return node
-            case "alias" if self.structural and not self.quiet:
+            case "alias" if self.structural:
                 self.report(
-                    "MC_ADAPTER_REQUIRED",
-                    source,
-                    f"The recursive {symbol.name} alias has no structural conversion; register a model adapter",
+                    "MC_ADAPTER_REQUIRED", source, f"The recursive {symbol.name} alias has no structural conversion"
                 )
                 return LeafNode()
             case "enum" | "alias":
                 return LeafNode()
             case _:
-                self.report("MC_ADAPTER_REQUIRED", source, f"The {symbol.name} model needs a model adapter")
+                self.report("MC_ADAPTER_REQUIRED", source, f"The {symbol.name} model has no codec binding")
                 return LeafNode()
 
-    @property
-    def models(self) -> dict[str, ModelBinding]:
-        return self.caches[self.quiet]
-
     def model(self, symbol: FinalModelSymbol, source: SourceLocation) -> None:
-        if (key := _symbol_key(symbol)) in self.models or (self.quiet, key) in self.building:
+        if (key := _symbol_key(symbol)) in self.models or key in self.building:
             return
-        self.building.add((self.quiet, key))
+        self.building.add(key)
         members = self.members.get(symbol.id, [])
         schema_id = self.symbol_schemas.get(symbol.id)
         if symbol.kind == "root":
@@ -580,10 +556,8 @@ class _CodecPlanner:
             return None
         if not self.spelled(use, use.type):
             return None
-        self.quiet = use.id in self.adapted
         node = self.node(use.type, use.schema, source)
         models = self.reachable(node)
-        self.quiet = False
         excluded = "read_only" if direction == "request" else "write_only"
         envelope = any(
             (field.required and (getattr(field, excluded) or field.field_id in self.gaps))
@@ -603,7 +577,7 @@ class _CodecPlanner:
             if isinstance(use.type, GeneratedSymbolType)
             else None,
             projection_mode="envelope" if envelope else "native",
-            converter_strategy="registered_adapter" if use.id in self.adapted else self.strategy(use.type),
+            converter_strategy=self.strategy(use.type),
             type=node,
             models=models,
         )
@@ -766,32 +740,8 @@ class _MsgspecTypes:
         return self.enums.get(symbol, frozenset())
 
 
-def plan_model_codecs(  # noqa: PLR0913
-    batch: GeneratedTypeContractBatch,
-    wire: WirePlan,
-    backend: CodecBackend,
-    *,
-    declarations: CodecDeclarations = _NO_DECLARATIONS,
-    lease: SourceLease | None = None,
-    selection: AdapterSelection | None = None,
-) -> CodecPlan:
-    """Bind every directional use to its native type graph, projection mode, and any registered adapter.
-
-    A target that already selected the adapters of the same batch passes its `selection`.
-    """
-    if selection is None:
-        selection = select_adapters(batch, wire, declarations)
-    planner = _CodecPlanner(batch, wire, backend, selection.uses("model"))
+def plan_model_codecs(batch: GeneratedTypeContractBatch, wire: WirePlan, backend: CodecBackend) -> CodecPlan:
+    """Bind every directional use to its native type graph and projection mode."""
+    planner = _CodecPlanner(batch, wire, backend)
     bindings = tuple((use.id, binding) for use in batch.type_uses if (binding := planner.use(use)) is not None)
-    adapters, adapter_diagnostics = plan_adapters(selection, batch, wire, dict(bindings), lease)
-    return CodecPlan(
-        bindings,
-        (
-            *suppressed(wire.diagnostics, wire, adapters, batch),
-            *selection.diagnostics,
-            *planner.diagnostics,
-            *adapter_diagnostics,
-        ),
-        adapters,
-        tuple(planner.imports.items()),
-    )
+    return CodecPlan(bindings, (*wire.diagnostics, *planner.diagnostics), tuple(planner.imports.items()))

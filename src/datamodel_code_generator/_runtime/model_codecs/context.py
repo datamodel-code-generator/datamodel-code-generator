@@ -1,4 +1,4 @@
-"""The per-call codec context shared by generated surfaces, codec adapters, and bound factories."""
+"""The per-call codec context shared by generated surfaces and bound codecs."""
 
 from __future__ import annotations
 

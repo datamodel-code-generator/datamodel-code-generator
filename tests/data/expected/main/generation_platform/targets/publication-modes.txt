@@ -22,7 +22,7 @@ generate
   written target server/py.typed (target)
   written model_inventory server/.dcg-state/model-artifacts.json (target)
   written target_manifest server/.dcg-target-manifest.json (target)
-  26 runtime modules ['written']
+  23 runtime modules ['written']
 mode models.py: 0640
 mode server/__init__.py: 0640
 mode server/.dcg-target-manifest.json: 0640
@@ -47,7 +47,7 @@ generate
   unchanged target server/errors.py (target)
   unchanged target server/auth_types.py (target)
   unchanged target server/py.typed (target)
-  26 runtime modules ['unchanged']
+  23 runtime modules ['unchanged']
   deleted target server/routers/pets.py (target)
   deleted target server/routers/store.py (target)
 mode models.py: 0604

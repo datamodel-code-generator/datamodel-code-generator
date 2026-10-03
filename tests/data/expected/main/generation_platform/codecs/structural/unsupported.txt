@@ -1,5 +1,5 @@
 APIGenerationError
-diagnostic MC_ADAPTER_REQUIRED /components/schemas/File/properties/data: The bytes type has no structural conversion; register a model adapter
-diagnostic MC_ADAPTER_REQUIRED /components/schemas/File/properties/queue: The deque[int] type has no structural conversion; register a model adapter
-diagnostic MC_ADAPTER_REQUIRED /components/schemas/File/properties/by_id: The uuid.UUID key type has no structural conversion; register a model adapter
-diagnostic MC_ADAPTER_REQUIRED /paths/~1trees/post/requestBody: The recursive Tree alias has no structural conversion; register a model adapter
+diagnostic MC_ADAPTER_REQUIRED /components/schemas/File/properties/data: The bytes type has no structural conversion
+diagnostic MC_ADAPTER_REQUIRED /components/schemas/File/properties/queue: The deque[int] type has no structural conversion
+diagnostic MC_ADAPTER_REQUIRED /components/schemas/File/properties/by_id: The uuid.UUID key type has no structural conversion
+diagnostic MC_ADAPTER_REQUIRED /paths/~1trees/post/requestBody: The recursive Tree alias has no structural conversion

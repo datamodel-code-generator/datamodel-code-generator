@@ -6,7 +6,7 @@
               "field_extra_keys": ["init", "kw_only"]},
   "startup": [
     {"name": "matching", "use": "/paths/~1tickets/post request_body"},
-    {"name": "converter", "use": "/paths/~1tickets/post request_body", "binding": {"converter_strategy": "registered_adapter"}},
+    {"name": "converter", "use": "/paths/~1tickets/post request_body", "binding": {"converter_strategy": "pydantic_type_adapter"}},
     {"name": "backend", "use": "/paths/~1tickets/post request_body", "binding": {"backend": "typing.TypedDict"}},
     {"name": "bundle-direction", "use": "/paths/~1tickets/post request_body", "bundle": "response", "decode": {}},
     {"name": "missing-model", "use": "/paths/~1tickets/post request_body", "models": {"models:Ticket": ""}},

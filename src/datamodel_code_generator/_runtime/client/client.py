@@ -568,12 +568,8 @@ def _coded(operation: OperationPlan[object, object], spec: ParameterSpec, code: 
 
 
 def _parameter(spec: ParameterSpec, value: object, mode: RequestValidation) -> object:
-    """Return the contribution of one argument to its request, encoded as a call encodes it, adapter included."""
-    wire = spec.encode(value, mode)
-    if (adapter := spec.adapter) is None:
-        return encode_parameter(spec.plan, wire)
-    get, context = adapter
-    return get().encode(wire, context)
+    """Return the contribution of one argument to its request, encoded as a call encodes it."""
+    return encode_parameter(spec.plan, spec.encode(value, mode))
 
 
 def _unsaved(plan: _PagePlan, path: tuple[str, ...]) -> ProtocolConfigurationError:
@@ -608,11 +604,8 @@ def _parameters(
             if plan.required:
                 raise _encoding_error(operation, (plan.location, plan.name))
             continue
-        bound = None if (adapter := spec.adapter) is None else (adapter[0](), adapter[1])
         try:
-            wire = spec.encode(value, mode)
-            contribution = encode_parameter(plan, wire) if bound is None else bound[0].encode(wire, bound[1])
-            request.add(contribution, plan.name)
+            request.add(encode_parameter(plan, spec.encode(value, mode)), plan.name)
         except (*DATA_ERRORS, ValueError, TypeError) as error:
             raise _encoding_error(operation, (plan.location, plan.name), error) from None
     return request
@@ -2956,7 +2949,6 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         response_media_type: str | MediaSelector | None = None,
         session: OperationSession | None = None,
         deadline: Deadline | None = None,
-        replay_identity: WireValue = None,
         admission: Callable[[], object] | None = None,
     ) -> Response[T]:
         """Execute one encoded logical call through its retry and redirect policy.
@@ -2979,7 +2971,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             nonlocal decoder
             decoder = self._decoder(operation, response_media_type)
             call.decoder = decoder
-            request, deferred = self._prepare(
+            return self._prepare(
                 operation,
                 arguments,
                 call.settings,
@@ -2989,11 +2981,6 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
                 accept=decoder.accept,
                 narrowed=response_media_type is not None,
             )
-            if replay_identity is not None and (
-                not isinstance(deferred, Unset) or self.queue_identity(operation, request, options) != replay_identity
-            ):
-                raise ProtocolConfigurationError(field_path=("payload",), condition="binding_mismatch")
-            return request, deferred
 
         def receive(response: TransportResponse, info: ResponseInfo) -> Response[T]:
             received = self._read(response, info, decoder, call)
@@ -3968,7 +3955,6 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
         response_media_type: str | MediaSelector | None = None,
         session: OperationSession | None = None,
         deadline: Deadline | None = None,
-        replay_identity: WireValue = None,
         admission: Callable[[], object] | None = None,
     ) -> Response[T]:
         """Execute one encoded logical call through its retry and redirect policy.
@@ -3992,7 +3978,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             nonlocal decoder
             decoder = self._decoder(operation, response_media_type)
             call.decoder = decoder
-            request, deferred = self._prepare(
+            return self._prepare(
                 operation,
                 arguments,
                 call.settings,
@@ -4002,11 +3988,6 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
                 accept=decoder.accept,
                 narrowed=response_media_type is not None,
             )
-            if replay_identity is not None and (
-                not isinstance(deferred, Unset) or self.queue_identity(operation, request, options) != replay_identity
-            ):
-                raise ProtocolConfigurationError(field_path=("payload",), condition="binding_mismatch")
-            return request, deferred
 
         async def receive(response: AsyncTransportResponse, info: ResponseInfo) -> Response[T]:
             received = await self._read(response, info, decoder, call)

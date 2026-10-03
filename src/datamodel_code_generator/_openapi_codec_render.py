@@ -5,68 +5,41 @@ from __future__ import annotations
 import dataclasses
 from collections.abc import Mapping
 from dataclasses import dataclass
-from itertools import starmap
 from typing import TYPE_CHECKING, Final
 
 from typing_extensions import TypeIs
 
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._python_layout import Doc, Group, layout
-from datamodel_code_generator._runtime.model_codecs.capabilities import AdapterManifest
 from datamodel_code_generator._runtime.model_codecs.context import CodecContext
-from datamodel_code_generator._runtime.model_codecs.views import SchemaResourceLimits
 from datamodel_code_generator._target_contract import OperationId
 
 if TYPE_CHECKING:
     from _typeshed import DataclassInstance
 
-    from datamodel_code_generator._openapi_codec_adapters import AdapterPlan, BindingViewPlan, SchemaAdapterPlan
     from datamodel_code_generator._openapi_codec_plan import CodecPlan
-    from datamodel_code_generator._openapi_wire_plan import ParameterViewPlan, WirePlan
+    from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.bindings import UseBinding
     from datamodel_code_generator._runtime.model_codecs.context import Direction, Surface
-    from datamodel_code_generator._runtime.model_codecs.registry import SchemaSource
     from datamodel_code_generator._target_contract import FinalPythonType, GeneratedTypeContractBatch, TypeUseId
 
 _RUNTIME: Final = "datamodel_code_generator._runtime.model_codecs."
 _WIDTH: Final = 120
 _RUNTIME_NAMES: Final = (
-    "AdapterManifest",
-    "AdapterModelCodec",
-    "AdapterParameterCodec",
     "ArrayNode",
-    "BundleSchemaRegistry",
-    "ClientMediaCodecCapabilities",
-    "CodecBindingView",
-    "CodecCapabilities",
     "CodecContext",
-    "CodecFieldView",
-    "CodecSourceRef",
-    "CodecUseView",
     "DirectionalView",
     "EnvelopeOutboundCodec",
     "FieldBinding",
     "LeafNode",
     "MapNode",
     "ModelBinding",
-    "ModelCodecAdapterV1",
-    "ModelExportView",
     "ModelNode",
     "NativeOutboundCodec",
-    "ParameterCodecAdapterV1",
-    "ParameterCodecCapabilities",
-    "ParameterPlanView",
     "PydanticModelCodec",
-    "RuntimeModelBindingView",
-    "SchemaAdapterValidator",
     "SchemaBundle",
-    "SchemaCodecAdapterV1",
-    "SchemaCodecCapabilities",
     "SchemaPatch",
-    "SchemaPlanView",
     "SchemaResource",
-    "SchemaResourceLimits",
-    "SchemaSource",
     "StructuralModelCodec",
     "TupleNode",
     "UnionNode",
@@ -81,27 +54,13 @@ _CODECS: Final = {
     "msgspec.Struct": ("structural", "StructuralModelCodec"),
 }
 _OWN_NAMES: Final = ("Final", "Mapping", "annotations", "cache", "_resources", "_request_view", "_response_view")
-_USE_PREFIXES: Final = ("codec", "CONTEXT", "outbound", "parameter", "validator")
-_FACTORY_PROTOCOLS: Final = {"parameter": "ParameterCodecAdapterV1", "schema": "SchemaCodecAdapterV1"}
+_USE_PREFIXES: Final = ("codec", "CONTEXT", "outbound")
 _PUBLIC: Final[tuple[tuple[str, tuple[str, ...]], ...]] = (
-    (
-        "adapters",
-        (
-            "AsyncByteReader",
-            "ByteReader",
-            "CompiledSchemaValidatorV1",
-            "ModelCodecAdapterV1",
-            "ParameterCodecAdapterV1",
-            "SchemaCodecAdapterV1",
-        ),
-    ),
     ("bindings", ("BackendId", "ConverterStrategy", "NativeKind")),
-    ("capabilities", ("CodecCapabilities", "ParameterCodecCapabilities", "SchemaCodecCapabilities", "WireKind")),
     ("context", ("CodecContext",)),
     (
         "errors",
         (
-            "CodecAdapterError",
             "CodecBindingError",
             "CodecConfigurationError",
             "CodecError",
@@ -129,30 +88,10 @@ _PUBLIC: Final[tuple[tuple[str, tuple[str, ...]], ...]] = (
     ),
     ("unset", ("UNSET", "Unset")),
     ("values", ("DecodedValue", "ModelInput", "ModelValue", "ProjectionIssue")),
-    (
-        "views",
-        (
-            "CodecBindingView",
-            "CodecFieldView",
-            "CodecSourceRef",
-            "CodecUseView",
-            "ModelExportView",
-            "OfflineSchemaRegistry",
-            "ParameterPlanView",
-            "RuntimeModelBindingView",
-            "SchemaPlanView",
-            "SchemaResourceLimits",
-            "SchemaView",
-        ),
-    ),
     ("wire", ("JSONValue", "PresenceTree", "WireValue", "freeze_wire", "presence_of", "thaw_wire")),
 )
 _SURFACE_PUBLIC: Final[dict[Surface, tuple[tuple[str, str], ...]]] = {
-    "client": (
-        ("capabilities", "ClientMediaCodecCapabilities"),
-        ("selectors", "RequestMedia"),
-        ("selectors", "ResponseMedia"),
-    ),
+    "client": (("selectors", "RequestMedia"), ("selectors", "ResponseMedia")),
     "server": (),
 }
 
@@ -252,7 +191,6 @@ class UseAccessors:
     codec: str
     context: str
     outbound: str | None = None
-    parameter: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -271,27 +209,11 @@ class _Renderer:
         self.types: dict[TypeUseId, FinalPythonType] = {
             use.id: use.type for use in batch.type_uses if use.type is not None
         }
-        imports = dict(plan.imports)
-        self.field_types = {
-            f"{imports[member.consumer]}.{member.slot.name}": facts.type
-            for member in batch.fields
-            if (facts := member.model_facts) is not None and member.slot is not None and member.consumer in imports
-        }
-        self.models = {adapter.use: adapter for adapter in plan.adapters if adapter.registration.kind == "model"}
-        self.parameters: dict[TypeUseId, tuple[AdapterPlan, ParameterViewPlan]] = {
-            adapter.use: (adapter, adapter.parameter) for adapter in plan.adapters if adapter.parameter is not None
-        }
-        self.schemas: dict[TypeUseId, tuple[AdapterPlan, SchemaAdapterPlan]] = {
-            adapter.use: (adapter, adapter.schema) for adapter in plan.adapters if adapter.schema is not None
-        }
-        self.factories: dict[str, tuple[int, AdapterPlan]] = {}
-        for adapter in (adapter for adapter in plan.adapters if adapter.registration.kind != "media"):
-            self.factories.setdefault(adapter.registration.name, (len(self.factories), adapter))
         self.model_bindings = {model.symbol: model for _, binding in plan.bindings for model in binding.models}
         self.model_index = {symbol: index for index, symbol in enumerate(self.model_bindings)}
         self.typed_models: dict[tuple[str, ...], int] = {}
-        for use, binding in plan.bindings:
-            if use not in self.models and sum(model.native_kind == "typed_dict" for model in binding.models) > 1:
+        for _, binding in plan.bindings:
+            if sum(model.native_kind == "typed_dict" for model in binding.models) > 1:
                 self.typed_models.setdefault(tuple(model.symbol for model in binding.models), len(self.typed_models))
         count = len(plan.bindings)
         self.namespace = Namespace((
@@ -300,13 +222,11 @@ class _Renderer:
             *(f"{prefix}_{index}" for prefix in _USE_PREFIXES for index in range(count)),
             *(f"_model_{index}" for index in range(len(self.model_bindings))),
             *(f"_types_{index}" for index in range(len(self.typed_models))),
-            *(f"_factory_{index}" for index in range(len(self.factories))),
-            *(f"{direction}_{kind}" for direction in ("request", "response") for kind in ("bundle", "registry")),
+            *(f"{direction}_bundle" for direction in ("request", "response")),
         ))
-        self.source = TypeSource(self.namespace, imports)
+        self.source = TypeSource(self.namespace, dict(plan.imports))
         self.records = _Records()
         self.directions: set[Direction] = set()
-        self.registries: dict[str, dict[str, SchemaSource]] = {}
 
     def render(self) -> RenderedBindings:
         sections: list[str] = []
@@ -317,9 +237,7 @@ class _Renderer:
             *((self.resources(),) if self.directions else ()),
             *self.views(),
             *self.bundles(),
-            *self.registry_functions(),
             *self.model_functions(),
-            *starmap(self.factory, self.factories.values()),
         ]
         return RenderedBindings(self.module([*head, *sections]), accessors)
 
@@ -335,8 +253,7 @@ class _Renderer:
             media_type=binding.media_type,
         )
         sections.append(f"CONTEXT_{index}: Final = {layout(self.records.doc(context), 0, 18, _WIDTH)}\n")
-        validator = self.validator(index, use, sections)
-        codec, body = self.codec(use, binding, runtime, validator)
+        codec, body = self.codec(binding, runtime)
         sections.append(_function(f"codec_{index}", f"{codec}[{static}]", body, _description(use)))
         outbound = None
         if not context.inbound:
@@ -346,97 +263,22 @@ class _Renderer:
             )
             body = Group(f"{facade}(", (("", f"codec_{index}()"), ("", f"CONTEXT_{index}")), ")")
             sections.append(_function(outbound, f"{facade}[{static}]", body))
-        parameter = None
-        if (planned := self.parameters.get(use)) is not None:
-            parameter = f"parameter_{index}"
-            sections.append(
-                _function(parameter, self.records.name("adapters", "AdapterParameterCodec"), self.parameter(*planned))
-            )
-        return UseAccessors(use, f"codec_{index}", f"CONTEXT_{index}", outbound, parameter)
+        return UseAccessors(use, f"codec_{index}", f"CONTEXT_{index}", outbound)
 
-    def codec(self, use: TypeUseId, binding: UseBinding, runtime: str, validator: str | None) -> tuple[str, Group]:
-        if (adapter := self.models.get(use)) is None:
-            codec = self.records.name(*_CODECS[binding.backend])
-            symbols = tuple(model.symbol for model in binding.models)
-            index = self.typed_models.get(symbols)
-            return codec, Group(
-                f"{codec}(",
-                (
-                    ("", self.use_binding(binding)),
-                    ("", runtime),
-                    ("", self.model_types(symbols) if index is None else f"_types_{index}()"),
-                    ("", f"{binding.direction}_bundle"),
-                    *((("validator=", validator),) if validator else ()),
-                ),
-                ")",
-            )
-        codec = self.records.name("adapters", "AdapterModelCodec")
+    def codec(self, binding: UseBinding, runtime: str) -> tuple[str, Group]:
+        codec = self.records.name(*_CODECS[binding.backend])
+        symbols = tuple(model.symbol for model in binding.models)
+        index = self.typed_models.get(symbols)
         return codec, Group(
             f"{codec}(",
             (
-                ("manifest=", self.manifest(adapter)),
-                ("view=", self.runtime_view(adapter, runtime)),
-                ("adapter=", f"_factory_{self.factories[adapter.registration.name][0]}()"),
-                ("validator=", validator or f"{binding.direction}_bundle().validator({binding.schema_id!r})"),
+                ("", self.use_binding(binding)),
+                ("", runtime),
+                ("", self.model_types(symbols) if index is None else f"_types_{index}()"),
+                ("", f"{binding.direction}_bundle"),
             ),
             ")",
         )
-
-    def parameter(self, adapter: AdapterPlan, facts: ParameterViewPlan) -> Doc:
-        plan = self.records.call(
-            "views",
-            "ParameterPlanView",
-            (
-                ("binding=", self.binding_view(adapter.binding)),
-                *(
-                    (f"{field.name}=", self.records.doc(getattr(facts, field.name)))
-                    for field in dataclasses.fields(facts)
-                ),
-            ),
-        )
-        return self.records.call(
-            "adapters",
-            "AdapterParameterCodec",
-            (
-                ("manifest=", self.manifest(adapter)),
-                ("plan=", plan),
-                ("adapter=", f"_factory_{self.factories[adapter.registration.name][0]}()"),
-            ),
-        )
-
-    def validator(self, index: int, use: TypeUseId, sections: list[str]) -> str | None:
-        if (planned := self.schemas.get(use)) is None:
-            return None
-        adapter, schema = planned
-        direction = schema.direction
-        self.registries.setdefault(direction, {})[schema.source.schema_id] = schema.source
-        excluded = frozenset(schema.excluded)
-        plan = self.records.call(
-            "views",
-            "SchemaPlanView",
-            (
-                ("root=", f"{direction}_registry().get({schema.source.schema_id!r})"),
-                ("direction=", repr(direction)),
-                ("required_vocabularies=", self.records.doc(schema.required_vocabularies)),
-                ("required_keywords=", self.records.doc(schema.required_keywords)),
-                ("pattern_dialects=", self.records.doc(schema.pattern_dialects)),
-                ("limits=", self.records.record(SchemaResourceLimits())),
-            ),
-        )
-        validator = self.records.name("adapters", "SchemaAdapterValidator")
-        body = Group(
-            f"{validator}(",
-            (
-                ("manifest=", self.manifest(adapter)),
-                ("plan=", plan),
-                ("adapter=", f"_factory_{self.factories[adapter.registration.name][0]}()"),
-                ("registry=", f"{direction}_registry()"),
-                *((("excluded=", self.records.doc(excluded)),) if excluded else ()),
-            ),
-            ")",
-        )
-        sections.append(_function(f"validator_{index}", validator, body))
-        return f"validator_{index}()"
 
     def model_types(self, symbols: tuple[str, ...]) -> Group:
         return Group("{", tuple((f"{symbol!r}: ", self.symbol(symbol)) for symbol in symbols), "}")
@@ -448,61 +290,6 @@ class _Renderer:
     def use_binding(self, binding: UseBinding) -> Doc:
         models = tuple(("", f"_model_{self.model_index[model.symbol]}()") for model in binding.models)
         return self.records.record(binding, models=Group("(", models, ")", ","))
-
-    def manifest(self, adapter: AdapterPlan) -> Doc:
-        registration = adapter.registration
-        return self.records.record(
-            AdapterManifest(
-                name=registration.name, import_ref=registration.import_ref, capabilities=registration.capabilities
-            )
-        )
-
-    def binding_view(self, view: BindingViewPlan) -> Doc:
-        direction = view.use.direction
-        self.registries.setdefault(direction, {})[view.source.schema_id] = view.source
-        return self.records.call(
-            "views",
-            "CodecBindingView",
-            (
-                ("binding_id=", repr(view.binding_id)),
-                ("use=", self.records.doc(view.use)),
-                ("schema=", f"{direction}_registry().get({view.source.schema_id!r})"),
-                ("backend=", repr(view.backend)),
-                ("native_kind=", repr(view.native_kind)),
-                ("native_export=", self.records.doc(view.native_export)),
-                ("fields=", self.records.doc(view.fields)),
-                ("projection_mode=", repr(view.projection_mode)),
-                ("converter_strategy=", repr(view.converter_strategy)),
-            ),
-        )
-
-    def runtime_view(self, adapter: AdapterPlan, runtime: str) -> Doc:
-        fields = tuple(
-            (f"{field.field_id!r}: ", self.source.runtime(self.field_types[field.field_id]))
-            for field in adapter.binding.fields
-        )
-        proxy = f"{self.namespace.module('types')}.MappingProxyType({{"
-        return self.records.call(
-            "views",
-            "RuntimeModelBindingView",
-            (
-                ("binding=", self.binding_view(adapter.binding)),
-                ("native_type=", runtime),
-                ("native_field_types=", Group(proxy, fields, "})")),
-            ),
-        )
-
-    def factory(self, index: int, adapter: AdapterPlan) -> str:
-        module, _, symbol = adapter.registration.import_ref.partition(":")
-        return _function(f"_factory_{index}", self.protocol(adapter), f"{self.namespace.module(module)}.{symbol}()")
-
-    def protocol(self, adapter: AdapterPlan) -> str:
-        match adapter.registration.kind:
-            case "model":
-                native = self.source.static(self.types[adapter.use])
-                return f"{self.records.name('adapters', 'ModelCodecAdapterV1')}[{native}]"
-            case kind:
-                return self.records.name("adapters", _FACTORY_PROTOCOLS[kind])
 
     def resources(self) -> str:
         returns = f"tuple[{self.records.name('schema', 'SchemaResource')}, ...]"
@@ -518,34 +305,10 @@ class _Renderer:
     def bundles(self) -> list[str]:
         functions: list[str] = []
         for direction in sorted(self.directions):
-            patterns = frozenset(
-                pattern
-                for _, schema in self.schemas.values()
-                if schema.direction == direction
-                for pattern in schema.patterns
-            )
-            items: tuple[tuple[str, Doc], ...] = (
-                ("", "_resources()"),
-                ("", f"_{direction}_view()"),
-                *((("adapted_patterns=", self.records.doc(patterns)),) if patterns else ()),
-            )
+            items: tuple[tuple[str, Doc], ...] = (("", "_resources()"), ("", f"_{direction}_view()"))
             bundle = self.records.name("schema", "SchemaBundle")
             functions.append(_function(f"{direction}_bundle", bundle, Group(f"{bundle}(", items, ")")))
         return functions
-
-    def registry_functions(self) -> list[str]:
-        return [
-            _function(
-                f"{direction}_registry",
-                self.records.name("registry", "BundleSchemaRegistry"),
-                self.records.call(
-                    "registry",
-                    "BundleSchemaRegistry",
-                    (("", f"{direction}_bundle()"), ("", self.records.doc(tuple(sources.values())))),
-                ),
-            )
-            for direction, sources in sorted(self.registries.items())
-        ]
 
     def model_functions(self) -> list[str]:
         """Return each model's binding, then each mapping of several TypedDict classes typed as a mapping of types.
@@ -596,7 +359,7 @@ def render_model_codecs(surface: Surface) -> str:
     for module, name in _SURFACE_PUBLIC[surface]:
         names.setdefault(module, []).append(name)
     lines = [
-        '"""Public model codec values, errors, views, and adapter protocols of this generated package."""',
+        '"""Public model codec values, errors, and records of this generated package."""',
         "",
         *(_import(f"._runtime.model_codecs.{module}", sorted(items)) for module, items in sorted(names.items())),
         "",

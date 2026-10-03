@@ -19,7 +19,7 @@ render
   write target server/py.typed (target)
   write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  25 runtime modules ['write']
+  22 runtime modules ['write']
   S_OPERATION_EXCLUDED info selection /paths/~1users/get: GET /users is matched by no include rule: Items only
 {
   "bindings": [
@@ -334,7 +334,7 @@ render
   write target server/py.typed (target)
   write model_inventory server/.dcg-state/model-artifacts.json (target)
   write target_manifest server/.dcg-target-manifest.json (target)
-  25 runtime modules ['write']
+  22 runtime modules ['write']
 render
   APIGenerationError
   E_OPERATION_REF error selection selection.include_operations[0] /paths/~1items/get: The operation reference names a document other than the root input

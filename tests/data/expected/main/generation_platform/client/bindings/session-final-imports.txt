@@ -1,97 +1,97 @@
 # session-final-imports
 render pydantic_v2.BaseModel plain
   diagnostic APIGenerationError
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items requires an explicit schema adapter
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems requires an explicit schema adapter
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items is not supported
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems is not supported
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/requestBody: The use's final type has no expression a generated module can import
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/responses/200: The use's final type has no expression a generated module can import
 render pydantic_v2.BaseModel annotated
   diagnostic APIGenerationError
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items requires an explicit schema adapter
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems requires an explicit schema adapter
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items is not supported
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems is not supported
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/requestBody: The use's final type has no expression a generated module can import
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/responses/200: The use's final type has no expression a generated module can import
 render pydantic_v2.dataclass plain
   diagnostic APIGenerationError
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items requires an explicit schema adapter
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems requires an explicit schema adapter
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items is not supported
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems is not supported
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/requestBody: The use's final type has no expression a generated module can import
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/responses/200: The use's final type has no expression a generated module can import
 render pydantic_v2.dataclass annotated
   diagnostic APIGenerationError
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items requires an explicit schema adapter
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems requires an explicit schema adapter
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items is not supported
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems is not supported
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/requestBody: The use's final type has no expression a generated module can import
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/responses/200: The use's final type has no expression a generated module can import
 render dataclasses.dataclass plain
   diagnostic APIGenerationError
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items requires an explicit schema adapter
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems requires an explicit schema adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/native: The custom_uuid.UUID type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/bound_native: The custom_runtime.argparse.HelpFormatter._Section type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/handler: The Callable[[Bar, Bar, Literal['foo.Bar']], Qux] type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/record: The NamedTuple type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~12/post/requestBody: The custom_uuid.UUID type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~12/post/responses/200: The custom_uuid.UUID type has no structural conversion; register a model adapter
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items is not supported
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems is not supported
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/native: The custom_uuid.UUID type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/bound_native: The custom_runtime.argparse.HelpFormatter._Section type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/handler: The Callable[[Bar, Bar, Literal['foo.Bar']], Qux] type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/record: The NamedTuple type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~12/post/requestBody: The custom_uuid.UUID type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~12/post/responses/200: The custom_uuid.UUID type has no structural conversion
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/requestBody: The use's final type has no expression a generated module can import
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/responses/200: The use's final type has no expression a generated module can import
 render dataclasses.dataclass annotated
   diagnostic APIGenerationError
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items requires an explicit schema adapter
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems requires an explicit schema adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/native: The custom_uuid.UUID type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/bound_native: The custom_runtime.argparse.HelpFormatter._Section type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/handler: The Callable[[Bar, Bar, Literal['foo.Bar']], Qux] type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/record: The NamedTuple type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~12/post/requestBody: The custom_uuid.UUID type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~12/post/responses/200: The custom_uuid.UUID type has no structural conversion; register a model adapter
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items is not supported
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems is not supported
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/native: The custom_uuid.UUID type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/bound_native: The custom_runtime.argparse.HelpFormatter._Section type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/handler: The Callable[[Bar, Bar, Literal['foo.Bar']], Qux] type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/record: The NamedTuple type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~12/post/requestBody: The custom_uuid.UUID type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~12/post/responses/200: The custom_uuid.UUID type has no structural conversion
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/requestBody: The use's final type has no expression a generated module can import
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/responses/200: The use's final type has no expression a generated module can import
 render typing.TypedDict plain
   diagnostic APIGenerationError
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items requires an explicit schema adapter
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems requires an explicit schema adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/native: The custom_uuid.UUID type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/bound_native: The custom_runtime.argparse.HelpFormatter._Section type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/handler: The Callable[[Bar, Bar, Literal['foo.Bar']], Qux] type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/record: The NamedTuple type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~12/post/requestBody: The custom_uuid.UUID type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~12/post/responses/200: The custom_uuid.UUID type has no structural conversion; register a model adapter
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items is not supported
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems is not supported
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/native: The custom_uuid.UUID type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/bound_native: The custom_runtime.argparse.HelpFormatter._Section type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/handler: The Callable[[Bar, Bar, Literal['foo.Bar']], Qux] type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/record: The NamedTuple type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~12/post/requestBody: The custom_uuid.UUID type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~12/post/responses/200: The custom_uuid.UUID type has no structural conversion
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/requestBody: The use's final type has no expression a generated module can import
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/responses/200: The use's final type has no expression a generated module can import
 render typing.TypedDict annotated
   diagnostic APIGenerationError
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items requires an explicit schema adapter
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems requires an explicit schema adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/native: The custom_uuid.UUID type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/bound_native: The custom_runtime.argparse.HelpFormatter._Section type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/handler: The Callable[[Bar, Bar, Literal['foo.Bar']], Qux] type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/record: The NamedTuple type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~12/post/requestBody: The custom_uuid.UUID type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~12/post/responses/200: The custom_uuid.UUID type has no structural conversion; register a model adapter
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items is not supported
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems is not supported
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/native: The custom_uuid.UUID type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/bound_native: The custom_runtime.argparse.HelpFormatter._Section type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/handler: The Callable[[Bar, Bar, Literal['foo.Bar']], Qux] type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/record: The NamedTuple type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~12/post/requestBody: The custom_uuid.UUID type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~12/post/responses/200: The custom_uuid.UUID type has no structural conversion
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/requestBody: The use's final type has no expression a generated module can import
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/responses/200: The use's final type has no expression a generated module can import
 render msgspec.Struct plain
   diagnostic APIGenerationError
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items requires an explicit schema adapter
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems requires an explicit schema adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/native: The custom_uuid.UUID type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/bound_native: The custom_runtime.argparse.HelpFormatter._Section type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/handler: The Callable[[Bar, Bar, Literal['foo.Bar']], Qux] type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/record: The NamedTuple type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~12/post/requestBody: The custom_uuid.UUID type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~12/post/responses/200: The custom_uuid.UUID type has no structural conversion; register a model adapter
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items is not supported
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems is not supported
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/native: The custom_uuid.UUID type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/bound_native: The custom_runtime.argparse.HelpFormatter._Section type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/handler: The Callable[[Bar, Bar, Literal['foo.Bar']], Qux] type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/record: The NamedTuple type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~12/post/requestBody: The custom_uuid.UUID type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~12/post/responses/200: The custom_uuid.UUID type has no structural conversion
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/requestBody: The use's final type has no expression a generated module can import
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/responses/200: The use's final type has no expression a generated module can import
 render msgspec.Struct annotated
   diagnostic APIGenerationError
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items requires an explicit schema adapter
-  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems requires an explicit schema adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/native: The custom_uuid.UUID type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/bound_native: The custom_runtime.argparse.HelpFormatter._Section type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/handler: The Callable[[Bar, Bar, Literal['foo.Bar']], Qux] type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/record: The NamedTuple type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~12/post/requestBody: The custom_uuid.UUID type has no structural conversion; register a model adapter
-  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~12/post/responses/200: The custom_uuid.UUID type has no structural conversion; register a model adapter
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/items: Array-form items is not supported
+  diagnostic MC_SCHEMA_DIALECT binding /components/schemas/Types/properties/position/additionalItems: Keyword additionalItems is not supported
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/native: The custom_uuid.UUID type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/bound_native: The custom_runtime.argparse.HelpFormatter._Section type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/handler: The Callable[[Bar, Bar, Literal['foo.Bar']], Qux] type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /components/schemas/Types/properties/record: The NamedTuple type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~12/post/requestBody: The custom_uuid.UUID type has no structural conversion
+  diagnostic MC_ADAPTER_REQUIRED binding /paths/~1bindings~12/post/responses/200: The custom_uuid.UUID type has no structural conversion
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/requestBody: The use's final type has no expression a generated module can import
   diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~13/post/responses/200: The use's final type has no expression a generated module can import
