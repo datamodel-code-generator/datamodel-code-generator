@@ -5,13 +5,11 @@ from __future__ import annotations
 import subprocess
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
+
+import pytest
 
 from scripts import build_docs_examples
-from tests.conftest import assert_output
-
-if TYPE_CHECKING:
-    import pytest
+from tests.conftest import TARGET_PYTHON, assert_output
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "build_docs_examples.py"
@@ -34,6 +32,7 @@ def test_docs_examples_use_rendered_clients(capsys: pytest.CaptureFixture[str]) 
     )
 
 
+@pytest.mark.skipif(sys.version_info < TARGET_PYTHON, reason="The server and client targets need Python 3.11 or later")
 def test_pagination_docs_example(tmp_path: Path) -> None:
     """Pagination renders its tested client recipe with the exact committed documentation text."""
     example = next(
