@@ -23,6 +23,17 @@ def test_build_docs_examples_check_is_up_to_date() -> None:
     subprocess.run([sys.executable, str(SCRIPT), "--check"], check=True)
 
 
+def test_docs_examples_use_rendered_clients(capsys: pytest.CaptureFixture[str]) -> None:
+    """All generated snippets match committed docs, including clients with model-only snapshots."""
+    result = build_docs_examples.update_docs_examples(check=True)
+    captured = capsys.readouterr()
+
+    assert_output(
+        f"return={result}\nstdout:\n{captured.out}stderr:\n{captured.err}",
+        EXPECTED_DOCS_EXAMPLES_PATH / "main_check_up_to_date.txt",
+    )
+
+
 def test_docs_examples_registry() -> None:
     """Docs example registry exposes stable generated section IDs."""
     output = "".join(f"{example.example_id}: {example.path.name}\n" for example in build_docs_examples.docs_examples())
