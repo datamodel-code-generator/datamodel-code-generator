@@ -12,7 +12,6 @@ import httpx2
 from typing_extensions import Self
 
 from ._runtime.client.client import ClientCore, ClientDefaults
-from ._runtime.client.options import ValidationModes
 from ._runtime.model_codecs.unset import UNSET, Unset
 from .bodies import BodyInput
 from .model_codecs import WireValue
@@ -28,7 +27,6 @@ if TYPE_CHECKING:
 
 _DEFAULTS = ClientDefaults(
     user_agent=None,
-    validation=ValidationModes(response=('native', 'schema')),
     helpers=(
         ('events.messages', 'sse'),
         ('events.typed', 'sse'),

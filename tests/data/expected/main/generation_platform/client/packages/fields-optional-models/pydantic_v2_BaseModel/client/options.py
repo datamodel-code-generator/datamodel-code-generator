@@ -20,7 +20,6 @@ from ._runtime.client.options import (
     SessionOptions,
     TimeoutOptions,
     TransportOptions,
-    ValidationOptions,
 )
 from ._runtime.model_codecs.unset import UNSET, Unset
 
@@ -45,7 +44,6 @@ __all__ = [
     "TimeoutOptions",
     "TransportOptions",
     "Unset",
-    "ValidationOptions",
 ]
 
 

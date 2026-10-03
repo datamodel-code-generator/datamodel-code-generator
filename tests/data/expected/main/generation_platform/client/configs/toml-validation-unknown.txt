@@ -1,2 +1,0 @@
-APIGenerationError
-  E_CONFIG_UNKNOWN config validation.strict: validation has no key 'strict'

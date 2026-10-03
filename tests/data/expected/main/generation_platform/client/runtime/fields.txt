@@ -98,21 +98,11 @@
   > POST https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 28] b'{"name":"Mimi","kind":"cat"}'
   create streamed = b'{"id":1,"name":"Mimi"}'
-  create a name too long, request none ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=NativeValidationError('The native type rejected the value (native.string_too_long) at /name')] request_encoding_error
-  create a numeric name, request none ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=NativeValidationError('The native type rejected the value (native.string_type) at /name')] request_encoding_error
+  create a name too long ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=NativeValidationError('The native type rejected the value (native.string_too_long) at /name')] request_encoding_error
+  create a numeric name ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=NativeValidationError('The native type rejected the value (native.string_type) at /name')] request_encoding_error
   > POST https://api.example.com/pets/1/visits
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 2] b'{}'
-  log a visit giving nothing, request none = None
-  create a name too long, request native ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=NativeValidationError('The native type rejected the value (native.string_too_long) at /name')] request_encoding_error
-  create a numeric name, request native ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=NativeValidationError('The native type rejected the value (native.string_type) at /name')] request_encoding_error
-  > POST https://api.example.com/pets/1/visits
-    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 2] b'{}'
-  log a visit giving nothing, request native = None
-  create a name too long, request schema ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=NativeValidationError('The native type rejected the value (native.string_too_long) at /name')] request_encoding_error
-  create a numeric name, request schema ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=NativeValidationError('The native type rejected the value (native.string_type) at /name')] request_encoding_error
-  > POST https://api.example.com/pets/1/visits
-    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 2] b'{}'
-  log a visit giving nothing, request schema = None
+  log a visit giving nothing = None
   > POST https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 28] b'{"name":"Mimi","kind":"cat"}'
   async create from fields = Pet(id=1, name='Mimi', tag=None)
@@ -225,21 +215,11 @@
   > POST https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 28] b'{"name":"Mimi","kind":"cat"}'
   create streamed = b'{"id":1,"name":"Mimi"}'
-  create a name too long, request none ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=NativeValidationError('The native type rejected the value (native.string_too_long) at /name')] request_encoding_error
-  create a numeric name, request none ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=NativeValidationError('The native type rejected the value (native.string_type) at /name')] request_encoding_error
+  create a name too long ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=NativeValidationError('The native type rejected the value (native.string_too_long) at /name')] request_encoding_error
+  create a numeric name ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=NativeValidationError('The native type rejected the value (native.string_type) at /name')] request_encoding_error
   > POST https://api.example.com/pets/1/visits
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 2] b'{}'
-  log a visit giving nothing, request none = None
-  create a name too long, request native ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=NativeValidationError('The native type rejected the value (native.string_too_long) at /name')] request_encoding_error
-  create a numeric name, request native ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=NativeValidationError('The native type rejected the value (native.string_type) at /name')] request_encoding_error
-  > POST https://api.example.com/pets/1/visits
-    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 2] b'{}'
-  log a visit giving nothing, request native = None
-  create a name too long, request schema ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=NativeValidationError('The native type rejected the value (native.string_too_long) at /name')] request_encoding_error
-  create a numeric name, request schema ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=NativeValidationError('The native type rejected the value (native.string_type) at /name')] request_encoding_error
-  > POST https://api.example.com/pets/1/visits
-    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 2] b'{}'
-  log a visit giving nothing, request schema = None
+  log a visit giving nothing = None
   > POST https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 28] b'{"name":"Mimi","kind":"cat"}'
   async create from fields = Pet(id=1, name='Mimi', tag=None)
@@ -354,25 +334,13 @@
   create streamed = b'{"id":1,"name":"Mimi"}'
   > POST https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 36] b'{"name":"far too long","kind":"cat"}'
-  create a name too long, request none = Pet(id=1, name='Mimi', tag=UNSET)
+  create a name too long = Pet(id=1, name='Mimi', tag=UNSET)
   > POST https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 23] b'{"name":5,"kind":"cat"}'
-  create a numeric name, request none = Pet(id=1, name='Mimi', tag=UNSET)
+  create a numeric name = Pet(id=1, name='Mimi', tag=UNSET)
   > POST https://api.example.com/pets/1/visits
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 2] b'{}'
-  log a visit giving nothing, request none = None
-  > POST https://api.example.com/pets
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 36] b'{"name":"far too long","kind":"cat"}'
-  create a name too long, request native = Pet(id=1, name='Mimi', tag=UNSET)
-  create a numeric name, request native ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=NativeValidationError('The native type rejected the value (native.validation_error) at /name')] request_encoding_error
-  > POST https://api.example.com/pets/1/visits
-    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 2] b'{}'
-  log a visit giving nothing, request native = None
-  create a name too long, request schema ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=WireValidationError('The value does not satisfy maxLength at /name')] request_encoding_error
-  create a numeric name, request schema ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=WireValidationError('The value does not have an allowed type at /name')] request_encoding_error
-  > POST https://api.example.com/pets/1/visits
-    [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 2] b'{}'
-  log a visit giving nothing, request schema = None
+  log a visit giving nothing = None
   > POST https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 28] b'{"name":"Mimi","kind":"cat"}'
   async create from fields = Pet(id=1, name='Mimi', tag=UNSET)

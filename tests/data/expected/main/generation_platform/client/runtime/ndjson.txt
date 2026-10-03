@@ -43,11 +43,11 @@
     ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamRecords', condition='malformed', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] stream_decode_error
     raw prefix b'{"text": "a"}\r{"text": "b"}' cause WireValidationError context WireValidationError
   > GET https://api.example.com/records accept=application/x-ndjson
-  record refused by its schema
+  record refused by its type
     1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='value', sequence=2, truncated=False) [operation_id='streamRecords', condition='value', truncated=False, cause=WireValidationError('The value does not have an allowed type at /text')] stream_decode_error
-    raw prefix b'{"text": 5}' cause WireValidationError context WireValidationError
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='value', sequence=2, truncated=False) [operation_id='streamRecords', condition='value', truncated=False, cause=NativeValidationError('The native type rejected the value (native.string_type) at /text')] stream_decode_error
+    raw prefix b'{"text": 5}' cause NativeValidationError context NativeValidationError
   > GET https://api.example.com/records accept=application/x-ndjson
   final line without a line end
     1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'
@@ -124,9 +124,9 @@
   < closed
     ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='missing', sequence=1, truncated=False) [operation_id='streamRecords', condition='missing', location=BodySelector(pointer='/type'), truncated=False] stream_decode_error
   > GET https://api.example.com/records accept=application/x-ndjson
-  mapped record failing its schema
+  mapped record failing its type
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamRecords', condition='value', truncated=False, cause=WireValidationError('The value does not have an allowed type at /id')] stream_decode_error
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamRecords', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamRecords', condition='value', truncated=False, cause=NativeValidationError('The native type rejected the value (native.string_type) at /id')] stream_decode_error
   > GET https://api.example.com/records accept=application/x-ndjson
   line over the limit in one chunk
     1  id=None retry=None data=Record{'text': 'a'} raw='{"text": "a"}'

@@ -98,17 +98,11 @@
   > POST https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 28] b'{"name":"Mimi","kind":"cat"}'
   create streamed = b'{"id":1,"name":"Mimi"}'
-  create a name too long, request none ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=NativeValidationError('The native type rejected the value (native.string_too_long) at /name')] request_encoding_error
-  create a numeric name, request none ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=NativeValidationError('The native type rejected the value (native.string_type) at /name')] request_encoding_error
+  create a name too long ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=NativeValidationError('The native type rejected the value (native.string_too_long) at /name')] request_encoding_error
+  create a numeric name ! RequestEncodingError: RequestEncodingError(operation_id='createPet', call_id='<call>', location='body') [operation_id='createPet', location=('body',), cause=NativeValidationError('The native type rejected the value (native.string_type) at /name')] request_encoding_error
   > POST https://api.example.com/pets/1/visits
     [host: api.example.com, accept-encoding: gzip, deflate, content-type: application/json, content-length: 2] b'{}'
-  log a visit giving nothing, request none = None
-  create a name too long, request native ! ConfigurationError: ConfigurationError(operation_id='createPet', field_path='validation.request', condition='not_allowed') [operation_id='createPet', field_path=('validation', 'request'), condition='not_allowed'] configuration_error
-  create a numeric name, request native ! ConfigurationError: ConfigurationError(operation_id='createPet', field_path='validation.request', condition='not_allowed') [operation_id='createPet', field_path=('validation', 'request'), condition='not_allowed'] configuration_error
-  log a visit giving nothing, request native ! ConfigurationError: ConfigurationError(operation_id='logVisit', field_path='validation.request', condition='not_allowed') [operation_id='logVisit', field_path=('validation', 'request'), condition='not_allowed'] configuration_error
-  create a name too long, request schema ! ConfigurationError: ConfigurationError(operation_id='createPet', field_path='validation.request', condition='not_allowed') [operation_id='createPet', field_path=('validation', 'request'), condition='not_allowed'] configuration_error
-  create a numeric name, request schema ! ConfigurationError: ConfigurationError(operation_id='createPet', field_path='validation.request', condition='not_allowed') [operation_id='createPet', field_path=('validation', 'request'), condition='not_allowed'] configuration_error
-  log a visit giving nothing, request schema ! ConfigurationError: ConfigurationError(operation_id='logVisit', field_path='validation.request', condition='not_allowed') [operation_id='logVisit', field_path=('validation', 'request'), condition='not_allowed'] configuration_error
+  log a visit giving nothing = None
   > POST https://api.example.com/pets
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 28] b'{"name":"Mimi","kind":"cat"}'
   async create from fields = Pet(id=1, name='Mimi', tag=None)

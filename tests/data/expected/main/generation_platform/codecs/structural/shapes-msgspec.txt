@@ -1,9 +1,5 @@
-refused APIGenerationError
-refused diagnostic E_CONFIG_VALUE /paths/~1animals/post/responses/200: The 'native' response validation cannot take the response body 200 application/json of POST /animals, which tells its union members apart only by their schemas; select 'schema'
-refused diagnostic E_CONFIG_VALUE /paths/~1kin/get/responses/200: The 'native' response validation cannot take the response body 200 application/json of GET /kin, which tells its union members apart only by their schemas; select 'schema'
-use /paths/~1animals/post request_body: envelope alias models:FieldAnimalsPostRequest msgspec_structural models=[('models:Cat', 'struct', 'ignore', False), ('models:Dog', 'struct', 'ignore', True)]
-use /paths/~1animals/post response_body 200: native alias models:FieldAnimalsPostResponse msgspec_structural models=[('models:Cat', 'struct', 'ignore', False), ('models:Dog', 'struct', 'ignore', True)]
-use /paths/~1kin/get response_body 200: native alias models:FieldKinGetResponse msgspec_structural models=[('models:Animal', 'struct', 'ignore', True), ('models:Cat', 'struct', 'ignore', False)]
+use /paths/~1animals~1any/put request_body: envelope alias models:FieldAnimalsAnyPutRequest msgspec_structural models=[('models:Cat', 'struct', 'ignore', False), ('models:Dog', 'struct', 'ignore', True)]
+use /paths/~1kin/put request_body: envelope alias models:FieldKinPutRequest msgspec_structural models=[('models:Animal', 'struct', 'ignore', True), ('models:Cat', 'struct', 'ignore', False)]
 use /paths/~1tree/put request_body: native struct models:Node msgspec_convert models=[('models:Node', 'struct', 'ignore', True)]
 use /paths/~1tree/put response_body 200: native struct models:Node msgspec_convert models=[('models:Node', 'struct', 'ignore', True)]
 use /paths/~1mixed/post request_body: native alias models:Mixed msgspec_convert models=[('models:Large', 'struct', 'ignore', True), ('models:Small', 'struct', 'ignore', True)]
@@ -11,11 +7,11 @@ use /paths/~1values/post request_body: native struct models:Values msgspec_conve
 use /paths/~1values/post response_body 200: native struct models:Values msgspec_convert models=[('models:Values', 'struct', 'ignore', True)]
 animal-client-cat: input issues=DIRECTIONAL_REQUIRED@/id:models:Cat.id wire={"meow":true} extras={}
 animal-server-dog: input issues=DIRECTIONAL_REQUIRED@/id:models:Dog.id wire={"bark":1,"name":"Rex"} extras={}
-animal-client-decode-cat: model Cat(id=1, name=UNSET, nick_name='Tom', meow=True) wire={"id":1,"meow":true,"nick-name":"Tom"} presence=['', '/id', '/meow', '/nick-name'] extras={}
-animal-client-decode-dog: model Dog(id=2, name=UNSET, nick_name=UNSET, bark=3) wire={"id":2,"bark":3,"x":1} presence=['', '/id', '/bark', '/x'] extras={"/x":1}
-animal-server-encode-cat: wire={"id":1,"nick-name":"Tom","meow":true}
-kin-server-encode-cat: wire={"id":1,"meow":true}
-kin-server-encode-dog: wire={"id":2}
+animal-any-decode-cat: input issues=DIRECTIONAL_REQUIRED@/id:models:Cat.id wire={"meow":true,"nick-name":"Tom"} extras={}
+animal-any-decode-dog: input issues=DIRECTIONAL_REQUIRED@/id:models:Dog.id wire={"bark":3,"x":1} extras={"/x":1}
+animal-any-encode-cat: wire={"nick-name":"Tom","meow":true}
+kin-client-encode-cat: wire={"meow":true}
+kin-client-encode-dog: wire={}
 tree-client-decode: model Node(value=1, children=[Node(value=2, children=UNSET, pair=UNSET, contact=UNSET, index=UNSET)], pair=(1, 'a@example.com'), contact=UNSET, index={'a': Node(value=3, children=UNSET, pair=UNSET, contact=UNSET, index=UNSET)}) wire={"value":1,"children":[{"value":2,"extra":1}],"index":{"a":{"value":3,"deep":true}},"pair":[1,"a@example.com"]} presence=['', '/value', '/children', '/children/0', '/children/0/value', '/children/0/extra', '/index', '/index/a', '/index/a/value', '/index/a/deep', '/pair', '/pair/0', '/pair/1'] extras={"/children/0/extra":1,"/index/a/deep":true}
 tree-server-encode: wire={"value":1,"children":[{"value":2}],"pair":[1,"a@example.com"],"index":{"a":{"value":3}}}
 tree-client-decode-bad-child: WireValidationError schema.minItems@/index/a/children/0/pair,schema.format@/index/a/pair/1
@@ -23,4 +19,4 @@ mixed-server-decode: model Small(contact=UNSET) wire={"size":"small","zz":1} pre
 mixed-server-decode-large: model Large() wire={"size":"large"} presence=['', '/size'] extras={}
 values-server-decode: model Values(amount=Decimal('1.10'), day=UNSET, clock=UNSET, span=datetime.timedelta(days=1, seconds=3600), uid=UNSET, secret=UNSET, blob=UNSET, level=<Level.integer_2: 2>, link=UNSET, any={'k': [1]}, list=UNSET, codes=UNSET, un=5, mark=(1, 'a')) wire={"amount":1.10,"span":"P1DT1H","level":2,"any":{"k":[1]},"un":5,"mark":[1,"a"],"x-y":"z"} presence=['', '/amount', '/span', '/level', '/any', '/any/k', '/any/k/0', '/un', '/mark', '/mark/0', '/mark/1', '/x-y'] extras={"/x-y":"z"}
 values-server-response: wire={"amount":1.10,"span":"P1DT1H","level":2,"any":{"k":[1]},"un":5,"mark":[1,"a"]}
-animals-client-convert: CodecConfigurationError The use chooses a union member by its schema, so only its schema can convert it
+animals-any-convert: CodecConfigurationError The use chooses a union member by its schema, so only its schema can convert it

@@ -51,6 +51,7 @@ EXPECTED = DATA / "expected/main/generation_platform/codecs/pydantic"
         ("containers", "containers-noalias"),
         ("types", "types-constrained"),
         ("types", "types-annotated"),
+        ("legacy", "legacy"),
     ],
 )
 def test_pydantic_codecs(source: str, cases: str, tmp_path: PathType) -> None:

@@ -1,0 +1,8 @@
+{
+  "backend": "pydantic_v2.BaseModel",
+  "package": "codec_legacy",
+  "cases": [
+    {"name": "inline-server-circle", "use": "/paths/~1inline/put request_body", "op": "decode", "value": {"b": 1, "shape": {"radius": 1}}},
+    {"name": "inline-server-square", "use": "/paths/~1inline/put request_body", "op": "decode", "value": {"b": 1, "shape": {"side": 2}}}
+  ]
+}

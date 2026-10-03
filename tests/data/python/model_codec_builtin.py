@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 MANIFEST = ".dcg-target-manifest.json"
-CLIENT = {"default_base_url": "https://codecs.invalid", "validation": {"response": "schema"}}
+CLIENT = {"default_base_url": "https://codecs.invalid"}
 
 
 class _Unset:
@@ -269,10 +269,11 @@ class _Runner:
                 case "echo":
                     native = codec.decode(value, context).require_model()
                     result = codec.encode(native, dataclasses.replace(context, surface="server"))
+                case "resend":
+                    native = codec.decode(value, context).require_model()
+                    result = codec.serialize(native, dataclasses.replace(context, surface="client"))
                 case "serialize":
                     result = codec.serialize(value, context)
-                case "check":
-                    result = codec.serialize(value, context, validate=True)
                 case "assemble":
                     result = codec.assemble(self.native(case["fields"]), context)
                 case "convert":

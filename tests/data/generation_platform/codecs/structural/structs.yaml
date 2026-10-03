@@ -11,12 +11,8 @@ paths:
             schema:
               $ref: "#/components/schemas/Holder"
       responses:
-        "200":
-          description: The stored holder.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Holder"
+        "204":
+          description: Stored.
   /limits:
     post:
       requestBody:
@@ -113,12 +109,8 @@ paths:
             schema:
               $ref: "#/components/schemas/Wallet"
       responses:
-        "200":
-          description: The stored wallet.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Wallet"
+        "204":
+          description: Stored.
 components:
   schemas:
     Small:

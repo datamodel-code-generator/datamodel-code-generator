@@ -6,6 +6,6 @@
   "cases": [
     {"name": "sealed-server-decode", "use": "/paths/~1sealed/post request_body", "op": "decode", "value": {"a": "x"}},
     {"name": "counts-server-decode", "use": "/paths/~1counts/post request_body", "op": "decode", "value": {"x": 2}},
-    {"name": "pets-server-encode-cat", "use": "/paths/~1pets/post response_body 200", "op": "encode", "value": {"meow": true}}
+    {"name": "pets-client-encode-cat", "use": "/paths/~1pets/post request_body", "surface": "client", "op": "encode", "value": {"meow": true}}
   ]
 }

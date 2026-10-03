@@ -830,36 +830,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
             ),
         ),
         DocsExample(
-            example_id="python-client.validation.toml",
-            path=DOCS / "python-client.md",
-            render=lambda: fenced(
-                "toml", json.loads(read_text(CLIENT_DATA / "configs.json"))["toml-validation"]["toml"]
-            ),
-        ),
-        DocsExample(
-            example_id="python-client.validation.defaults",
-            path=DOCS / "python-client.md",
-            render=lambda: fenced(
-                "python",
-                blocks(CLIENT_PACKAGES / "media" / "pydantic_v2_BaseModel" / "client" / "_client.py", "_DEFAULTS = "),
-            ),
-        ),
-        DocsExample(
-            example_id="python-client.validation.options",
-            path=DOCS / "python-client.md",
-            render=lambda: fenced(
-                "text",
-                report_lines(
-                    EXPECTED_CLIENT / "runtime" / "validation-structural.txt",
-                    "view selecting",
-                    "call selecting",
-                    "request mode None",
-                    "response mode none",
-                ),
-            ),
-        ),
-        DocsExample(
-            example_id="python-client.validation.diagnostics",
+            example_id="python-client.model-codecs.diagnostics",
             path=DOCS / "python-client.md",
             render=lambda: fenced(
                 "text",

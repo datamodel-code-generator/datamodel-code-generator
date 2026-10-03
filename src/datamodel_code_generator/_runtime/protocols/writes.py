@@ -22,7 +22,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping, Sequence
 
     from ..client.operations import OperationPlan
-    from ..client.options import RequestValidation
     from ..model_codecs.wire import WireValue
     from .records import RequestTarget, Selector
 
@@ -53,20 +52,20 @@ ReadPaths: TypeAlias = "tuple[tuple[str, tuple[PathPart, ...]], ...]"
 class PatchedParameter(ParameterSpec):
     """A parameter whose argument is always a Patch of the caller's argument, such as a querystring's properties."""
 
-    def encode(self, value: object, mode: RequestValidation) -> WireValue:
+    def encode(self, value: object) -> WireValue:
         """Return the wire value of the caller's argument with the patch's writes."""
         assert isinstance(value, Patch)
-        return value.applied(lambda given: ParameterSpec.encode(self, given, mode))
+        return value.applied(lambda given: ParameterSpec.encode(self, given))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class PatchedMedia(BodyMedia):
     """A JSON request media whose body is always a Patch of the caller's body."""
 
-    def wire(self, value: object, mode: RequestValidation) -> WireValue:
+    def wire(self, value: object) -> WireValue:
         """Return the wire value of the caller's body with the patch's writes."""
         assert isinstance(value, Patch)
-        return value.applied(lambda given: BodyMedia.wire(self, given, mode))
+        return value.applied(lambda given: BodyMedia.wire(self, given))
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -75,9 +74,9 @@ class ReadParameter(ParameterSpec):
 
     read: Callable[[WireValue], None]
 
-    def encode(self, value: object, mode: RequestValidation) -> WireValue:
+    def encode(self, value: object) -> WireValue:
         """Return the wire value of the caller's argument once the helper has read it."""
-        wire = ParameterSpec.encode(self, value, mode)
+        wire = ParameterSpec.encode(self, value)
         self.read(wire)
         return wire
 
@@ -88,9 +87,9 @@ class ReadMedia(BodyMedia):
 
     read: Callable[[WireValue], None]
 
-    def wire(self, value: object, mode: RequestValidation) -> WireValue:
+    def wire(self, value: object) -> WireValue:
         """Return the wire value of the caller's body once the helper has read it."""
-        wire = BodyMedia.wire(self, value, mode)
+        wire = BodyMedia.wire(self, value)
         self.read(wire)
         return wire
 
@@ -116,8 +115,8 @@ def targeted(
 
     A write is a parameter's argument position without a pointer, a querystring's position with a pointer into its
     value, or no position with a pointer into the JSON body, every media of which is JSON. The header and query names
-    written follow, which a call's options must not patch. The operation skips the schema checks, since the server
-    chose the values.
+    written follow, which a call's options must not patch. The values written skip their codecs, since the server
+    chose them.
     """
     parameters = list(call.parameters)
     writes: list[tuple[int | None, str | None]] = []

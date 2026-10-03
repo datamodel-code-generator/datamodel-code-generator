@@ -143,12 +143,6 @@
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   broken coding [] ! ProtocolDataError: ProtocolDataError(operation_id='listUsers', call_id='<call>', condition='malformed') [operation_id='listUsers', condition='malformed', cause=error('Error -3 while decompressing data: unknown compression method')] protocol_data_error
-  > GET https://api.example.com/loose
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  schema validation [] ! ResponseValidationError: ResponseValidationError(status_code=200, operation_id='listLoose', call_id='<call>') [operation_id='listLoose', body_bytes=b'{"data":[{"id":1}]}', truncated=False, cause=WireValidationError('The value does not have an allowed type at /data/0/id')] response_validation_error
-  > GET https://api.example.com/users
-    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
-  schema validation valid ['1']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?cursor=a

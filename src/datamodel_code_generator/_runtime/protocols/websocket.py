@@ -71,7 +71,6 @@ if TYPE_CHECKING:
     from ..client.codecs import NativeValue
     from ..client.logical import LogicalCallContext, OperationSession
     from ..client.operations import Encoder, OperationPlan
-    from ..client.options import RequestValidation
     from ..client.raw import AsyncRawResponse, RawResponse
     from ..client.responses import ResponseInfo
     from ..client.transports import AsyncTransportResponse, AttemptIOContext, PreparedRequest, TransportResponse
@@ -339,12 +338,12 @@ def _checked_headers(headers: HeadersView) -> None:
             raise ConfigurationError(field_path=("headers", name), condition="managed")
 
 
-def _encoded(plan: ChannelPlan[SendT, RecvT], value: object, mode: RequestValidation) -> bytes:
+def _encoded(plan: ChannelPlan[SendT, RecvT], value: object) -> bytes:
     """Return a value encoded as the plan's sent message: JSON by its schema, UTF-8 text, or the bytes themselves."""
     match plan.send_codec:
         case "json":
             assert plan.encoder is not None
-            return encode_json(plan.encoder.encode(value, mode))
+            return encode_json(plan.encoder.encode(value))
         case "utf8" if isinstance(value, str):
             return value.encode("utf-8")
         case "bytes" if isinstance(value, (bytes, bytearray)):
@@ -603,7 +602,6 @@ class _Sockets(Generic[SendT, RecvT]):
         "_closed",
         "_info",
         "_lock",
-        "_native",
         "_opened",
         "_plan",
         "_prefix",
@@ -623,8 +621,6 @@ class _Sockets(Generic[SendT, RecvT]):
         info: ResponseInfo,
         call: LogicalCallContext,
         opened: _Upgraded | _AsyncUpgraded,
-        *,
-        native: bool,
     ) -> None:
         """Start an open session on the connection a 101 handed over."""
         self._plan = plan
@@ -633,7 +629,6 @@ class _Sockets(Generic[SendT, RecvT]):
         self._info = info
         self._call = call
         self._opened = opened
-        self._native = native
         self._prefix = min(limits.socket.max_message_bytes, MAX_RAW_PREFIX)
         self._lock = threading.Lock()
         self._receiving = threading.Lock()
@@ -746,7 +741,7 @@ class _Sockets(Generic[SendT, RecvT]):
         """Return a value's message bytes and whether they go as text, refusing a value the codec cannot carry."""
         plan = self._plan
         try:
-            data = _encoded(plan, value, self._call.settings.validation.request)
+            data = _encoded(plan, value)
         except (*_DATA_ERRORS, ValueError, TypeError) as error:
             raise self._stamped(RequestEncodingError(location=("message",), cause=error)) from None
         return data, plan.send_frame == "text"
@@ -768,7 +763,7 @@ class _Sockets(Generic[SendT, RecvT]):
                 except _DATA_ERRORS as error:
                     raise self._decode_error(data, "malformed", error) from None
                 try:
-                    value = plan.decoder.convert(wire) if self._native else plan.decoder(wire)
+                    value = plan.decoder.convert(wire)
                 except _DATA_ERRORS as error:
                     raise self._decode_error(data, "value", error) from None
             case "utf8":
@@ -963,11 +958,9 @@ class WebSocketSession(_Sockets[SendT, RecvT]):
         response: RawResponse,
         call: LogicalCallContext,
         opened: _Upgraded,
-        *,
-        native: bool,
     ) -> None:
         """Take the handed-over handshake and its connection."""
-        super().__init__(plan, limits, session, response.info, call, opened, native=native)
+        super().__init__(plan, limits, session, response.info, call, opened)
         self._response = response
         self._connection = opened.connection
         self._queue = _Queue()
@@ -1136,13 +1129,11 @@ class AsyncWebSocketSession(_Sockets[SendT, RecvT]):
         response: AsyncRawResponse,
         call: LogicalCallContext,
         opened: _AsyncUpgraded,
-        *,
-        native: bool,
     ) -> None:
         """Take the handed-over handshake and its connection."""
         import asyncio  # noqa: PLC0415
 
-        super().__init__(plan, limits, session, response.info, call, opened, native=native)
+        super().__init__(plan, limits, session, response.info, call, opened)
         self._response = response
         self._connection = opened.connection
         self._queue = asyncio.Lock()
@@ -1314,7 +1305,6 @@ def connect_socket(  # noqa: PLR0913
     """Open a helper's WebSocket in a session of its own, returning once its handshake got a valid 101."""
     limits = _limits(core, plan, ws_options, options, session_options)
     _coded(limits)
-    native = core.native_responses(limits.options, plan.call.operation_id)
     session = _session(plan, limits)
     injected = _connector(core)
     connector = cast("WebSocketConnector", core.owned_connector(plan.connectors[0]) if injected is None else injected)
@@ -1334,7 +1324,7 @@ def connect_socket(  # noqa: PLR0913
             raise
         raise _refused(plan, session, error) from None
     assert adapter.opened is not None
-    return WebSocketSession(plan, limits, session, response, call, adapter.opened, native=native)
+    return WebSocketSession(plan, limits, session, response, call, adapter.opened)
 
 
 async def aconnect_socket(  # noqa: PLR0913
@@ -1349,7 +1339,6 @@ async def aconnect_socket(  # noqa: PLR0913
     """Open a helper's WebSocket with asyncio, returning once its handshake got a valid 101."""
     limits = _limits(core, plan, ws_options, options, session_options)
     _coded(limits)
-    native = core.native_responses(limits.options, plan.call.operation_id)
     session = _session(plan, limits)
     injected = _connector(core)
     connector = cast(
@@ -1371,4 +1360,4 @@ async def aconnect_socket(  # noqa: PLR0913
             raise
         raise _refused(plan, session, error) from None
     assert adapter.opened is not None
-    return AsyncWebSocketSession(plan, limits, session, response, call, adapter.opened, native=native)
+    return AsyncWebSocketSession(plan, limits, session, response, call, adapter.opened)

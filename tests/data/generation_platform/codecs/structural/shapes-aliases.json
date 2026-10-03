@@ -2,12 +2,13 @@
   "backend": "dataclasses.dataclass",
   "package": "codec_shapes_stdlib_aliases",
   "options": {"use_type_alias": true, "use_type_alias_type": true},
+  "config": {"selection": {"exclude_operations": ["/paths/~1animals/post", "/paths/~1kin/get"], "reason": "The client cannot convert its unions whose members only their schemas tell apart."}},
   "cases": [
-    {"name": "animal-server-dog", "use": "/paths/~1animals/post request_body", "op": "decode", "value": {"bark": 1}},
-    {"name": "animal-client-decode-cat", "use": "/paths/~1animals/post response_body 200", "surface": "client", "op": "decode",
+    {"name": "animal-server-dog", "use": "/paths/~1animals~1any/put request_body", "op": "decode", "value": {"bark": 1}},
+    {"name": "animal-any-decode-cat", "use": "/paths/~1animals~1any/put request_body", "op": "decode",
      "value": {"id": 1, "meow": true}},
     {"name": "mixed-server-decode", "use": "/paths/~1mixed/post request_body", "op": "decode", "value": {"size": "large"}},
-    {"name": "kin-server-encode-cat", "use": "/paths/~1kin/get response_body 200", "op": "encode",
+    {"name": "kin-client-encode-cat", "use": "/paths/~1kin/put request_body", "surface": "client", "op": "encode",
      "value": {"call": "Cat", "args": {"id": 1, "meow": true}}}
   ]
 }

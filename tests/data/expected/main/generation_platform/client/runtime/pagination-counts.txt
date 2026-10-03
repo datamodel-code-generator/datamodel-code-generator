@@ -74,8 +74,7 @@
   > GET https://api.example.com/users?page=4
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   page number start ended by an empty page ['1', '2']
-  unchecked text body start [] ! ProtocolDataError: ProtocolDataError(operation_id='search', call_id='<call>', condition='type') [operation_id='search', condition='type', location=BodyTarget(pointer='/window/start')] protocol_data_error
-  checked text body start [] ! RequestEncodingError: RequestEncodingError(operation_id='search', call_id='<call>', location='body') [operation_id='search', location=('body',), cause=WireValidationError('The value does not have an allowed type at /window/start')] request_encoding_error
+  text body start [] ! ProtocolDataError: ProtocolDataError(operation_id='search', call_id='<call>', condition='type') [operation_id='search', condition='type', location=BodyTarget(pointer='/window/start')] protocol_data_error
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users?offset=3

@@ -58,13 +58,10 @@ __all__ = (
     "TimeoutOptions",
     "TransportOptions",
     "Unset",
-    "ValidationOptions",
 )
 
 HeaderPatch: TypeAlias = tuple[tuple[str, str | None], ...]
 QueryPatch: TypeAlias = tuple[tuple[str, str | None], ...]
-RequestValidation: TypeAlias = Literal["none", "native", "schema"]
-ResponseValidation: TypeAlias = Literal["native", "schema"]
 
 MAX_ERROR_BODY_LIMIT: Final = 1024 * 1024
 MAX_CONTEXT_BYTES: Final = 8 * 1024
@@ -78,10 +75,6 @@ _RESERVED: Final = frozenset({"host", "content-length", "transfer-encoding"})
 _CODINGS: Final = frozenset({"identity", "gzip", "x-gzip", "deflate"})
 _WEIGHT: Final = re.compile(r"[qQ]=(?:0(?:\.[0-9]{0,3})?|1(?:\.0{0,3})?)")
 _PAIR: Final = 2
-_MODES: Final = (
-    ("request", frozenset({"none", "native", "schema"})),
-    ("response", frozenset({"native", "schema"})),
-)
 _JITTER: Final = frozenset({"full", "none"})
 _RETRY_OWNERS: Final = frozenset({"sdk", "transport"})
 _RETRY_STATUS_MIN: Final = 400
@@ -254,59 +247,6 @@ class ServerSelection:
         object.__setattr__(self, "variables", MappingProxyType(variables))
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
-class ValidationOptions:
-    """How calls validate what they send and what they receive; UNSET inherits the lower layer's.
-
-    `request` is `none` to send native values as they serialize, `native` to pass them through their model backend's
-    validation first, and `schema` to validate the serialized value against its schema. `response` is `native` to
-    construct the declared type through its backend's converter and `schema` to validate the received value first.
-    A package allows the modes it was generated with; selecting another raises ConfigurationError.
-    """
-
-    request: RequestValidation | Unset = UNSET
-    response: ResponseValidation | Unset = UNSET
-
-    def __post_init__(self) -> None:
-        """Refuse None and any mode that no package defines."""
-        for name, modes in _MODES:
-            if not isinstance(value := getattr(self, name), Unset) and not (type(value) is str and value in modes):
-                raise ConfigurationError(field_path=("validation", name), condition="invalid_value")
-
-
-@dataclass(frozen=True, slots=True)
-class Validation:
-    """The validation modes a call runs with."""
-
-    request: RequestValidation
-    response: ResponseValidation
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class ValidationModes:
-    """The modes a package allows on each axis, its generated default first."""
-
-    request: tuple[RequestValidation, ...] = ("none",)
-    response: tuple[ResponseValidation, ...] = ("native",)
-
-    def default(self) -> Validation:
-        """Return the generated default of every axis."""
-        return Validation(self.request[0], self.response[0])
-
-    def layered(self, current: Validation, layer: ValidationOptions, operation_id: str | None = None) -> Validation:
-        """Return the modes with a layer's set fields applied, refusing a mode the package does not allow."""
-        for name, allowed in (("request", self.request), ("response", self.response)):
-            if not isinstance(value := getattr(layer, name), Unset) and value not in allowed:
-                raise ConfigurationError(
-                    field_path=("validation", name), condition="not_allowed", operation_id=operation_id
-                )
-        return Validation(
-            current.request if isinstance(layer.request, Unset) else layer.request,
-            current.response if isinstance(layer.response, Unset) else layer.response,
-        )
-
-
-DEFAULT_VALIDATION: Final = ValidationModes()
 DEFAULT_TIMEOUT: Final = ResolvedTimeoutOptions(connect=5.0, read=30.0, write=30.0, pool=5.0)
 
 
@@ -676,7 +616,6 @@ class _Options:
     max_stream_bytes: int | Unset | None = UNSET
     hooks: tuple[Hook | AsyncHook, ...] | Unset = UNSET
     context: Mapping[str, JSONScalar] | Unset = UNSET
-    validation: ValidationOptions | Unset = UNSET
     timeout: TimeoutOptions | Unset | None = UNSET
     total_timeout: float | Unset | None = UNSET
     deadline: Deadline | Unset | None = UNSET
@@ -706,7 +645,6 @@ class _Options:
     def __post_init__(self) -> None:
         self._check_timing()
         _auth_type(self.auth)
-        checked_instance(self.validation, (ValidationOptions, Unset), ("validation",))
         checked_instance(self.retry, (RetryOptions, Unset), ("retry",))
         checked_instance(self.redirects, (RedirectOptions, Unset), ("redirects",))
         checked_instance(self.idempotency_key, (IdempotencyKey, Unset, type(None)), ("idempotency_key",))
@@ -742,8 +680,8 @@ class ClientOptions(_Options):
     """Settings of one client; every field left UNSET takes the generated default.
 
     Its headers and query patch the generated ones: each name it gives replaces their values of that name, and None
-    removes them. Its hooks observe every call's events, with its context. Its validation replaces the generated mode
-    of each axis it sets. Its clock times every call, and no view or call changes it.
+    removes them. Its hooks observe every call's events, with its context. Its clock times every call, and no view or
+    call changes it.
     """
 
     transport: TransportOptions | Unset = UNSET
@@ -765,7 +703,7 @@ class RequestOptions(_Options):
 
     Its headers and query patch the lower layers' last: the client's, a view's, and those the call's parameters give.
     Its hooks replace the lower layers' rather than adding to them, and its context replaces their values of the names
-    it gives. Its validation replaces their mode of each axis it sets.
+    it gives.
     """
 
 
@@ -784,7 +722,6 @@ class Settings:
     hooks: tuple[Hook | AsyncHook, ...] = ()
     context: Mapping[str, JSONScalar] = field(default_factory=lambda: NO_CONTEXT)
     async_hooks: bool = False
-    validation: Validation = field(default_factory=DEFAULT_VALIDATION.default)
     timeout: ResolvedTimeoutOptions = DEFAULT_TIMEOUT
     stream_read_timeout: float | None = None
     total_timeout: float | None = 60.0

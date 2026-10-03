@@ -129,43 +129,6 @@
   "toml-unknown-keys": {
     "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n\n[[resource_names]]\ntag = \"pets\"\nnamespace = \"pets\"\nextra = 1\n\n[[operations]]\nref = \"/paths/~1pets/get\"\nruntime = { security = [] }\n"
   },
-  "validation-values": {
-    "validation": {
-      "request": "native",
-      "response": "schema",
-      "request_overrides": [
-        "none",
-        "schema",
-        "native"
-      ],
-      "response_overrides": [
-        "native"
-      ]
-    }
-  },
-  "validation-invalid": {
-    "validation": {
-      "request": "strict",
-      "response": "none",
-      "request_overrides": [
-        "schema",
-        "schema"
-      ],
-      "response_overrides": "native"
-    }
-  },
-  "validation-shape": {
-    "validation": 5
-  },
-  "toml-validation": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n\n[validation]\nrequest = \"none\"\nresponse = \"native\"\nrequest_overrides = [\"schema\"]\nresponse_overrides = [\"schema\"]\n"
-  },
-  "toml-validation-unknown": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n\n[validation]\nrequest = \"none\"\nstrict = true\n"
-  },
-  "toml-validation-types": {
-    "toml": "schema_version = 1\noutput = \"client\"\npackage = \"client\"\nmodel_package = \"models\"\n\n[validation]\nrequest_overrides = \"schema\"\n"
-  },
   "body-fields": {
     "body_arguments": "both",
     "operations": [

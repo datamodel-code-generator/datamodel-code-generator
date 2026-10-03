@@ -39,7 +39,6 @@ from datamodel_code_generator._client.sockets import DEPENDENCY as WEBSOCKETS
 from datamodel_code_generator._client.sockets import plan_sockets, socket_uses
 from datamodel_code_generator._client.streams import plan_streams, stream_uses
 from datamodel_code_generator._client.uploads import plan_uploads
-from datamodel_code_generator._client.validation import admission_problems
 from datamodel_code_generator._client.webhooks import (
     key_class,
     plan_webhooks,
@@ -50,11 +49,15 @@ from datamodel_code_generator._client.webhooks import (
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._openapi_codec_plan import plan_model_codecs
 from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
+from datamodel_code_generator._runtime.model_codecs.codec import needs_schema
 from datamodel_code_generator._runtime.model_codecs.wire import checked_scalar
+from datamodel_code_generator._target_contract import OperationId
 from datamodel_code_generator._target_render import PATTERNS, model_dependencies, patterned
 from datamodel_code_generator.enums import DataModelType
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from datamodel_code_generator._api_generation import TargetRequest
     from datamodel_code_generator._api_manifest import JSONObject
     from datamodel_code_generator._api_types import TargetKind
@@ -86,6 +89,7 @@ BACKEND_DEPENDENCIES: Final[dict[str, tuple[str, ...]]] = {
     "pydantic_v2.dataclass": (PYDANTIC,),
     "msgspec.Struct": ("msgspec>=0.18",),
 }
+_RESPONSE_ROLES: Final = {"response_body": "response body", "response_encoding_header": "part header"}
 _BACKENDS: Final[dict[DataModelType, CodecBackend]] = {
     DataModelType.PydanticV2BaseModel: "pydantic_v2.BaseModel",
     DataModelType.PydanticV2Dataclass: "pydantic_v2.dataclass",
@@ -143,11 +147,11 @@ class ClientTarget:
         helpers = tuple(sorted((*pages, *polls, *caches, *uploads, *queues), key=lambda spec: order[spec.helper.name]))
         streams = plan_streams(streamed, protocols, plan, codecs, wire, request, stream_problems)
         sockets = plan_sockets(opened, codecs, socket_problems)
-        webhooks = plan_webhooks(events, codecs, config, hooked)
+        webhooks = plan_webhooks(events, codecs, hooked)
         ordinary = replace(codecs, bindings=tuple(item for item in codecs.bindings if item[0] not in received))
         if refused := (
             *named,
-            *admission_problems(config.validation, ordinary),
+            *_inseparable(ordinary),
             *helper_problems(
                 protocols,
                 plan,
@@ -234,6 +238,35 @@ def _wire(
         forms=dict(form_uses(request)),
         styles=dict(style_uses(request)),
     )
+
+
+def _label(use: TypeUseId) -> str:
+    """Return how a message names a response use: its role, name, status, media, and operation's method and path."""
+    owner = use.owner
+    assert isinstance(owner, OperationId)
+    *_, path, method = (token.replace("~1", "/").replace("~0", "~") for token in owner.use_site.pointer.split("/"))
+    part = "part" if use.name is not None and use.role.endswith("_body") else None
+    described = (_RESPONSE_ROLES[use.role], part, use.name, use.status, use.media)
+    return f"{' '.join(word for word in described if word)} of {method.upper()} {path}"
+
+
+def _inseparable(codecs: CodecPlan) -> Iterator[Diagnostic]:
+    """Yield a diagnostic for each received use whose union members only their schemas tell apart.
+
+    Responses are converted natively, which cannot choose among such members; an envelope keeps its schema decoding.
+    """
+    for use, binding in codecs.bindings:
+        if use.role in _RESPONSE_ROLES and binding.projection_mode == "native" and needs_schema(binding):
+            yield Diagnostic(
+                code="E_CONFIG_VALUE",
+                severity="error",
+                stage="binding",
+                message=(
+                    f"The client cannot convert the {_label(use)}, which tells its union members apart only by their "
+                    "schemas"
+                ),
+                source_pointer=use.use_site.pointer,
+            )
 
 
 def _diagnostic(item: CodecDiagnostic, request: TargetRequest) -> Diagnostic:
