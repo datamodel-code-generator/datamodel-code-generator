@@ -40,6 +40,8 @@ EXPECTED = DATA / "expected/main/generation_platform/codecs/adapters"
         ("enums", "isolated"),
         ("enums", "structural-msgspec"),
         ("dynamic", "dynamic"),
+        ("dynamic", "header-names"),
+        ("dynamic", "header-broken"),
         ("unplanned", "unplanned"),
         ("unplanned", "unplanned-client"),
         ("unplanned", "unplanned-server"),

@@ -165,6 +165,7 @@ def test_client_render(case: str, tmp_path: Path) -> None:
         "protocols-socket-checks",
         "protocols-socket-errors",
         "protocols-socket-scope",
+        "protocols-unmodeled",
         "protocols-cache-errors",
         "protocols-cache-checks",
     ],

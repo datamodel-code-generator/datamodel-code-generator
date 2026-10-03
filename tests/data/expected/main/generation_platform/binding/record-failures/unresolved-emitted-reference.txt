@@ -1,6 +1,0 @@
-{
-  "diagnostics": [],
-  "demands": [
-    "BND_UNRESOLVED_REFERENCE"
-  ]
-}

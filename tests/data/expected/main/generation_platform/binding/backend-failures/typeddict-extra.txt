@@ -1,3 +1,0 @@
-{
-  "error": "TypedDict extra_items does not match its captured final type"
-}

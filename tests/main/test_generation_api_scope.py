@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from datamodel_code_generator import Error, GenerateConfig, InputFileType, OpenAPIScope, generate
-from datamodel_code_generator._openapi_generation import OpenAPIGenerationSession
+from datamodel_code_generator._openapi_generation import TargetGenerationSession
 from tests.conftest import assert_output
 from tests.data.python.generation_session_inputs import observe_api_session
 
@@ -57,7 +57,7 @@ def test_api_scope_does_not_allow_empty_jsonschema() -> None:
 
 def test_api_empty_factory_requires_capability(monkeypatch: pytest.MonkeyPatch) -> None:
     """Reject the empty result if the actual capture factory loses its capability."""
-    monkeypatch.setattr(OpenAPIGenerationSession, "_supports_api_scope", False)
+    monkeypatch.setattr(TargetGenerationSession, "_supports_api_scope", False)
     with pytest.raises(Error, match="Models not found in the input data"):
         observe_api_session(
             SOURCE / "contentless.json",

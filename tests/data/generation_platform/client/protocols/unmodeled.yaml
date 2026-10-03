@@ -1,0 +1,9 @@
+schema_version: 1
+helpers:
+  unmodeled.socket:
+    kind: websocket
+    operation: /paths/~1chat/get
+    send: {codec: json, schema: {pointer: /x-messages/Note}}
+    receive: {codec: utf8}
+  unmodeled.stream:
+    {kind: sse, operation: /paths/~1events/get, media: text/event-stream, event_schema: {pointer: /x-messages/Event}, completion: {kind: eof}}
