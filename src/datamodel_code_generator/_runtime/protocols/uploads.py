@@ -332,11 +332,14 @@ class _Content:
 def _content(plan: UploadPlan[T, C], source: object) -> _Content:
     """Return the content of a source, refusing a one-shot input, a file that cannot seek, and any other value.
 
-    A file must read bytes and seek synchronously; an empty read checks that before anything is sent.
+    Bytes-like content must be contiguous, and a file must read bytes and seek synchronously; an empty read checks
+    that before anything is sent.
     """
     if isinstance(source, (bytes, bytearray, memoryview)):
         data = cast("bytes", source)
         with memoryview(data) as view:
+            if not view.c_contiguous:
+                raise _invalid(plan, ("source",), "wrong_capability")
             return _Content(data, None, 0, view.nbytes)
     file = cast("BinaryIO", source)
     if all(hasattr(file, name) for name in ("read", "seek", "tell")) and (

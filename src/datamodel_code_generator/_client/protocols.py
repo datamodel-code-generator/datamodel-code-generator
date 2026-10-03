@@ -1993,6 +1993,8 @@ def _upload_links(tree: Tree, at: str) -> Iterator[Link]:
     )
     append = tree["append"]
     written = tuple((f"{at}.append.{name}", append[name]) for name in ("offset", "length") if name in append)
+    if (checksum := append.get("checksum")) is not None:
+        written = (*written, (f"{at}.append.checksum.target", checksum["target"]))
     yield Link(
         at=f"{at}.append.operation",
         ref=append["operation"],
