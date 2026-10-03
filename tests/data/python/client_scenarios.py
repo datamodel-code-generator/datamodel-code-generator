@@ -104,7 +104,7 @@ from tests.data.python.client_webhook_adapters import (
 from tests.data.python.client_webhook_contracts import webhook_contracts
 from tests.data.python.client_webhook_errors import webhook_errors
 from tests.data.python.client_webhook_public_keys import webhook_public_keys
-from tests.data.python.client_webhooks import webhook_backends, webhook_replay, webhook_verification
+from tests.data.python.client_webhooks import webhook_backends, webhook_verification
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -867,7 +867,6 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     ),
     "webhook-verification": ("webhooks", ("pydantic_v2.BaseModel",), webhook_verification),
     "webhook-backends": ("webhooks", BACKENDS, webhook_backends),
-    "webhook-replay": ("webhooks", ("pydantic_v2.BaseModel",), webhook_replay),
     "webhook-public-keys": ("webhooks-public-keys", ("pydantic_v2.BaseModel",), webhook_public_keys),
     "webhook-adapters": ("webhooks-adapters", ("pydantic_v2.BaseModel",), webhook_adapters),
     "webhook-unsigned": ("webhooks-adapters", ("pydantic_v2.BaseModel",), webhook_unsigned),

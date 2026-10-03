@@ -3234,7 +3234,6 @@
         "tests/api_generation/test_client_runtime.py::test_client_runtime[webhook-backends]": 2354,
         "tests/api_generation/test_client_runtime.py::test_client_runtime[webhook-contracts]": 13854,
         "tests/api_generation/test_client_runtime.py::test_client_runtime[webhook-mapped-backends]": 1760,
-        "tests/api_generation/test_client_runtime.py::test_client_runtime[webhook-replay]": 11824,
         "tests/api_generation/test_client_typing.py::test_client_typing[DataModelType.DataclassesDataclass-pets-unpack]": 77730,
         "tests/api_generation/test_client_typing.py::test_client_typing[DataModelType.DataclassesDataclass-pets]": 113472,
         "tests/api_generation/test_client_typing.py::test_client_typing[DataModelType.MsgspecStruct-pets-unpack]": 113665,

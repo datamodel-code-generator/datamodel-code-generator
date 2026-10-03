@@ -677,7 +677,9 @@ def docs_examples() -> tuple[DocsExample, ...]:
             path=DOCS / "python-client.md",
             render=lambda: fenced(
                 "yaml",
-                yaml_helpers(CLIENT_DATA / "protocols" / "webhook-public-keys.yaml", "standard.ed25519", "keyed.rsa"),
+                yaml_helpers(
+                    CLIENT_DATA / "protocols" / "webhook-public-keys.yaml", "rfc8032.ed25519", "wycheproof.rsa"
+                ),
             ),
         ),
         DocsExample(
@@ -710,7 +712,7 @@ def docs_examples() -> tuple[DocsExample, ...]:
                 "\n".join(
                     line.strip()
                     for line in read_text(EXPECTED_CLIENT / "protocols" / "protocols-webhook-errors.txt").splitlines()
-                    if line.lstrip().startswith("E_CONFIG_CONFLICT") and ".signature" in line
+                    if line.lstrip().startswith("E_CONFIG_VALUE") and ".signature" in line
                 ),
             ),
         ),
