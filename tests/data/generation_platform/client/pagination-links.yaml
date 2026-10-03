@@ -16,6 +16,10 @@ paths:
         - name: X-Trace
           in: header
           schema: {type: string}
+        - name: X-Context
+          in: header
+          content:
+            application/json: {}
         - name: session
           in: cookie
           schema: {type: string}

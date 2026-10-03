@@ -48,13 +48,13 @@ render pydantic_v2.BaseModel
   write client/.dcg-state/model-artifacts.json
   namespace client helpers ['users.follow', 'users.nullable', 'users.loose', 'users.headed', 'users.linked', 'users.snapshot', 'users.related', 'searches.repeated', 'searches.fetched', 'secure.users', 'keyed.users'] bindings 12
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
-  helper users.follow pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.follow dc6284f120e5775606361aa75a5763b4668aa50fe4092cdce06e171cb0eb5552
-  helper users.nullable pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.nullable 523499b59bb255a6a706adba296761627730a2dad9aba31efe6d3e5c50f49b7e
-  helper users.loose pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.loose 8fa495850c1f71ed4f201878dcf869d79f24b8858241027fc4d73a67528d2582
-  helper users.headed pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.headed 2e1263ad24409903b85a869183b1fdb0a6fcdefea3568f4ff932f2cde497bd39
-  helper users.linked pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.linked ba39208b8482e21765bc41829bc697af516481d89f6120327bda768382ef8af5
-  helper users.snapshot pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.snapshot e7d41f1411236b916466f1a2e825d2f0b46fce9624688d837d0ec66ff255a437
-  helper users.related pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.related 1090ab0af1d407494855678abac8cfc791a4dc781aa62f02502a34751a21a829
+  helper users.follow pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.follow ac7d1b1f9ced702b7b4af7ec810ca88218325a6d3d1158bd112c2c8de4f73cd7
+  helper users.nullable pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.nullable 9b462a1d049e9cee0e058bac9c83be8edaf2d0cc2b22b6594cebd1ee58060440
+  helper users.loose pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.loose 1421d445bb2e91f52d44ec20dda049b87433c0a7a7f846e7978f5e5efc363a07
+  helper users.headed pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.headed eaebe03e0f98f3471564f74390d6cc4c422d73e73c208baec547752bff218901
+  helper users.linked pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.linked c8135fd1d69c5d1842ca1f397aa236b47033e1bded81688225caa770ceaa8ed9
+  helper users.snapshot pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.snapshot 9a761fc495025348eec14eb81923257b3f205521a26914583eeeda9187262818
+  helper users.related pagination enabled True /inputs/target_config/protocol_metadata/helpers/users.related beb6c2eb77f86756c604739e542e8528aba3f5390b888fd71d78b7a6cd45f8e8
   helper searches.repeated pagination enabled True /inputs/target_config/protocol_metadata/helpers/searches.repeated 55ba3a87c9134eaa7b0332f296c728c1c303c3a8b4f807c20f0a899a958c42f6
   helper searches.fetched pagination enabled True /inputs/target_config/protocol_metadata/helpers/searches.fetched 66e31afc80065e11e20ee9d03bc5a9b2fb024f41f5c061ac136cf64508fe8a4a
   helper secure.users pagination enabled True /inputs/target_config/protocol_metadata/helpers/secure.users 7c7c9854a463010de7459996c33129ec339bb1f57b3986e06f234c54ebdc65b9
@@ -396,7 +396,7 @@ render pydantic_v2.BaseModel
     },
     "schema_version": 1
   }
-  /selection/selected_operations/0 users.list_users(query:limit=limit, header:X-Trace=x_trace, cookie:session=session)
+  /selection/selected_operations/0 users.list_users(query:limit=limit, header:X-Trace=x_trace, header:X-Context=x_context, cookie:session=session)
     exports client.types.users.ListUsersResponse client.types.users.ListUsersErrorData client.types.users.ListUsersHTTPError
     exports client.types.users.ListUsersRequestCodecs client.types.users.decode_list_users_header
   /selection/selected_operations/1 searches.search()
@@ -408,4 +408,4 @@ render pydantic_v2.BaseModel
   /selection/selected_operations/3 keyed.list_keyed_users()
     exports client.types.keyed.ListKeyedUsersResponse client.types.keyed.ListKeyedUsersErrorData client.types.keyed.ListKeyedUsersHTTPError
     exports client.types.keyed.ListKeyedUsersRequestCodecs None
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
