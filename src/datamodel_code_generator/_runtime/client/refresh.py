@@ -158,13 +158,13 @@ class RefreshTokenGrant:
     __slots__ = ("audience", "scopes", "token_set")
 
     def __init__(self, token_set: object, scopes: object, audience: object) -> None:
-        """Validate the fixed audience, the requested scopes, and the token set the family starts from."""
+        """Validate the fixed audience, the requested scopes, and the token set the provider starts from."""
         self.audience = checked_audience(audience)
         self.scopes = checked_scopes(scopes, "scopes")
         self.token_set = checked_token_set(token_set, self.audience)
 
     def initial(self, options: OAuthProviderOptions) -> Published:
-        """Return the material of the token set the family starts from, renewed once due like a refreshed one."""
+        """Return the material of the token set the provider starts from, renewed once due like a refreshed one."""
         tokens = self.token_set
         received, at = receipt(options.clock)
         return published(tokens.access_token, received, at, renewable=tokens.refresh_token is not None)

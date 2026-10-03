@@ -437,7 +437,7 @@ def _answered(status: int, headers: HeadersView, body: bytes | None, received: d
     if code is None or (status == _UNAUTHORIZED and code != "invalid_client"):
         return Exchanged(defect, delivery, status)
     known = code if _is_oauth_error(code) else None
-    return Exchanged("rejected", delivery, status, oauth_error=known, receipt=receipt)
+    return Exchanged("rejected", delivery, status, oauth_error=known)
 
 
 def _head(status: object, headers: object) -> tuple[int, HeadersView]:
