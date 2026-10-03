@@ -11,14 +11,12 @@ from functools import partial
 from time import monotonic
 from typing import TYPE_CHECKING, Generic, Literal, Protocol, TypeAlias, TypeVar
 
-from .admission import TokenAcquirer
 from .errors import CleanupError, ClientClosedError, add_secondary
 from .tasks import TaskInterruptionError, task_failure, task_result
 
 if TYPE_CHECKING:
     import asyncio
     from collections.abc import Callable
-    from concurrent.futures import Future
 
     from .auth import AsyncCloseableCredentialProvider, CloseableCredentialProvider
 
@@ -75,48 +73,20 @@ class _Providers(Generic[ProviderT]):
 class OwnedProviders(_Providers["CloseableCredentialProvider | AsyncCloseableCredentialProvider"]):
     """The root's transferred synchronous providers, independent of native-client ownership."""
 
-    __slots__ = ("closed", "lock", "releasing")
+    __slots__ = ("closed",)
 
     def __init__(self) -> None:
         super().__init__()
         self.closed = False
-        self.lock = threading.Lock()
-        self.releasing: list[Future[None]] = []
 
-    def close(self, deadline: float) -> tuple[tuple[BaseException, ...], int]:
-        """Give every adopted provider one close opportunity, then wait for the SDK's own until the deadline.
-
-        An OAuth provider of the SDK releases in the background once its running acquisition returns, so its release
-        starts before the blocking close of any other provider. Return, in adoption order, the failures no concurrent
-        or earlier closer reported, and how many providers are still releasing, which a later close waits for again.
-        """
-        from concurrent.futures import wait  # noqa: PLC0415
-
-        with self.lock:
-            requested, self.closed = not self.closed, True
-            if requested:
-                self.releasing = [
-                    provider.request_close()
-                    for provider in self.providers.values()
-                    if isinstance(provider, TokenAcquirer)
-                ]
-            releasing = self.releasing
-        failures = (
-            [
-                failure
-                for provider in self.providers.values()
-                if not isinstance(provider, TokenAcquirer) and (failure := _close_failure(provider)) is not None
-            ]
-            if requested
-            else []
+    def close(self) -> tuple[BaseException, ...]:
+        """Give every adopted provider one close opportunity before publishing any interruption."""
+        if self.closed:
+            return ()
+        self.closed = True
+        return tuple(
+            failure for provider in self.providers.values() if (failure := _close_failure(provider)) is not None
         )
-        wait(releasing, min(max(0.0, deadline - monotonic()), threading.TIMEOUT_MAX))
-        with self.lock:
-            done = [release for release in self.releasing if release.done()]
-            self.releasing = [release for release in self.releasing if release not in done]
-            pending = len(self.releasing)
-        failures.extend(failure for release in done if (failure := release.exception()) is not None)
-        return tuple(failures), pending
 
 
 def _close_failure(provider: CloseableCredentialProvider | AsyncCloseableCredentialProvider) -> BaseException | None:
