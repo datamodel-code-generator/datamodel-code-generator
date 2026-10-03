@@ -13,7 +13,6 @@ from typing_extensions import Self
 
 from ._generated import security
 from ._runtime.client.client import AsyncClientCore, ClientDefaults
-from ._runtime.client.options import ValidationModes
 from ._runtime.model_codecs.unset import UNSET, Unset
 from .bodies import AsyncBodyInput
 from .model_codecs import WireValue
@@ -34,7 +33,6 @@ if TYPE_CHECKING:
 _DEFAULTS = ClientDefaults(
     user_agent=None,
     security_schemes=security.ROOT_SCHEMES,
-    validation=ValidationModes(response=('native', 'schema')),
     helpers=(
         ('users.all', 'pagination'),
         ('users.by_header', 'pagination'),

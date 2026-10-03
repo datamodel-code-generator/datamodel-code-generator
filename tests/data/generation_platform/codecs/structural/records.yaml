@@ -55,14 +55,8 @@ paths:
                 - $ref: "#/components/schemas/Cat"
                 - $ref: "#/components/schemas/Dog"
       responses:
-        "200":
-          description: The stored pet.
-          content:
-            application/json:
-              schema:
-                anyOf:
-                  - $ref: "#/components/schemas/Cat"
-                  - $ref: "#/components/schemas/Dog"
+        "204":
+          description: Stored.
   /kittens:
     post:
       requestBody:

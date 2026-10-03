@@ -17,7 +17,7 @@ from typing_extensions import TypeAliasType, TypeIs
 
 from ..model_codecs.errors import CodecError, ParameterEncodingError
 from ..model_codecs.media import decode_json, encode_json, issue, media_kind, normalize_media_type, typed
-from ..model_codecs.parameters import ParameterFragment, ParameterPlan, RawParameter, decode_parameter, part_pairs
+from ..model_codecs.parameters import ParameterPlan, part_pairs
 from ..model_codecs.unset import Unset
 from ..model_codecs.wire import checked_wire, freeze_wire, thaw_wire
 from .bodies import AsyncBodyFactory, AsyncFileBody, AsyncStreamBody, BodyFactory, FileBody, StreamBody
@@ -31,20 +31,12 @@ if TYPE_CHECKING:
 
     from ..model_codecs.wire import JSONValue, WireValue
     from .bodies import AsyncBinaryBody, AsyncBodyAttempt, BodyAttempt, SyncBinaryBody
-    from .options import RequestValidation
 
     class PartEncoder(Protocol):
         """The encoder of a member's values, as the generated operation registry binds it."""
 
-        def encode(self, value: object, mode: RequestValidation) -> WireValue:
-            """Return a value's wire value, validated as the call's request mode selects."""
-            ...
-
-    class HeaderCodec(Protocol):
-        """The outbound codec facade that validates the wire value of a part header."""
-
-        def from_wire(self, value: WireValue) -> object:
-            """Validate a wire value against the header's schema."""
+        def encode(self, value: object) -> WireValue:
+            """Return a value's wire value."""
             ...
 
 
@@ -59,11 +51,7 @@ ContentT_co = TypeVar("ContentT_co", bound="SyncBinaryBody | AsyncBinaryBody", c
 if TYPE_CHECKING:
 
     class ValueDecoder(Protocol[T_co]):
-        """The decoder of a received member's values: by its schema when called, or through its converter alone."""
-
-        def __call__(self, wire: WireValue) -> T_co:
-            """Validate a wire value against its schema and construct its value."""
-            ...
+        """The decoder of a received member's values, through its converter alone."""
 
         def convert(self, wire: WireValue) -> T_co:
             """Construct the value of a wire value through its converter alone."""
@@ -84,7 +72,6 @@ _MISSING: Final = "A form-data body lacks a required member"
 _EMPTY: Final = "An empty array cannot be represented by repeated parts"
 _MEDIA: Final = "A part's media type must fall within its member's encoding"
 _TEXT: Final = "A text part carries a scalar"
-_HEADER: Final = "A part lacks a header its member's encoding requires"
 _CLAIMED: Final = "Two form-data members write parts of the same name"
 _SYNC: Final[tuple[type[SyncBinaryBody], ...]] = (bytes, FileBody, StreamBody, BodyFactory)
 _ASYNC: Final[tuple[type[AsyncBinaryBody], ...]] = (bytes, AsyncFileBody, AsyncStreamBody, AsyncBodyFactory)
@@ -225,7 +212,7 @@ else:
 class PartPlan:
     """How one form-data member is sent or read: its kind, repeats, files, requiredness, encoder, and media types.
 
-    A received part is read in its lexical kind, or as JSON. A sent value is validated by the encoder, when the member
+    A received part is read in its lexical kind, or as JSON. A sent value is encoded by the encoder, when the member
     has one, and each item of a repeated member becomes its own part; a file member repeats as FileParts. The media
     types of the member's encoding bound the media type a part names, and the first concrete one is its default. A
     member whose encoding gives a query style writes a part for each name and value that style gives its value. A
@@ -237,7 +224,6 @@ class PartPlan:
         "encoder",
         "excluded",
         "file",
-        "headers",
         "kind",
         "name",
         "repeated",
@@ -256,10 +242,9 @@ class PartPlan:
         excluded: bool = False,
         encoder: PartEncoder | None = None,
         content_types: tuple[str, ...] = (),
-        headers: tuple[PartHeader, ...] = (),
         style: ParameterPlan | None = None,
     ) -> None:
-        """Keep the member's name, kind, repeats, files, requiredness, exclusion, encoder, media, headers, and style."""
+        """Keep the member's name, kind, repeats, files, requiredness, exclusion, encoder, media, and style."""
         self.name = name
         self.kind: PartKind = kind
         self.repeated = repeated
@@ -268,7 +253,6 @@ class PartPlan:
         self.excluded = excluded
         self.encoder = encoder
         self.content_types = content_types
-        self.headers = headers
         self.style = style
 
     def media(self, named: str | None) -> str | None:
@@ -284,53 +268,6 @@ class PartPlan:
 
 
 _ANY: Final = PartPlan("")
-
-
-class PartHeader:
-    """A header an encoding declares for a member's parts, with the plan that reads it and the codec of its schema."""
-
-    __slots__ = ("codec", "plan")
-
-    def __init__(self, plan: ParameterPlan, codec: Callable[[], HeaderCodec]) -> None:
-        """Keep the header's plan and the accessor of the codec that validates its value."""
-        self.plan = plan
-        self.codec = codec
-
-    def check(self, fragments: tuple[ParameterFragment, ...], *, schema: bool) -> None:
-        """Refuse a part's headers that lack this one when it is required or that do not read it as its type.
-
-        With schema, a value its schema refuses is refused too.
-        """
-        if isinstance(wire := decode_parameter(self.plan, RawParameter(location="header", fragments=fragments)), Unset):
-            if self.plan.required:
-                raise ParameterEncodingError(_HEADER)
-        elif schema:
-            self.codec().from_wire(wire)
-
-
-def _checked(
-    part: FieldPart[object] | FilePart[SyncBinaryBody | AsyncBinaryBody],
-    plan: PartPlan,
-    name: str,
-    filename: str | None,
-    mode: RequestValidation,
-) -> None:
-    """Check the headers a part carries, its Content-Disposition of the name it is sent under among them.
-
-    A part sends its headers as the call gives them, so a call validating no request leaves them unchecked, and only
-    schema validation checks their values against their schemas.
-    """
-    if mode == "none":
-        return
-    fragments = (
-        ParameterFragment(b"Content-Disposition", _disposition(name, filename).encode()),
-        *(ParameterFragment(key.encode(), value.encode()) for key, value in part.headers),
-    )
-    try:
-        for header in plan.headers:
-            header.check(fragments, schema=mode == "schema")
-    except CodecError as error:
-        raise _malformed(part.name, error) from None
 
 
 class _Names:
@@ -484,9 +421,7 @@ def _refused(part: object) -> NoReturn:
     raise _malformed(getattr(part, "name", None), TypeError(_PART))
 
 
-def _field(
-    part: FieldPart[object], boundary: str, plan: PartPlan, mode: RequestValidation, names: _Names | None = None
-) -> bytes | None:
+def _field(part: FieldPart[object], boundary: str, plan: PartPlan, names: _Names | None = None) -> bytes | None:
     """Return a field part's bytes with their heads and tails, one part for each item of a repeated member.
 
     UNSET leaves an optional member out and is refused for a required one. A styled member writes a part for each
@@ -497,13 +432,11 @@ def _field(
             raise _malformed(part.name, ValueError(_MISSING))
         return None
     try:
-        wire = checked_wire(value) if plan.encoder is None else plan.encoder.encode(value, mode)
+        wire = checked_wire(value) if plan.encoder is None else plan.encoder.encode(value)
         if plan.style is not None and names is not None:
-            return _styled(part, boundary, plan, part_pairs(plan.style, wire), names, mode=mode)
+            return _styled(part, boundary, part_pairs(plan.style, wire), names)
         if names is not None and names.owners is not None:
             names.claim(part.name, (part.name,))
-        if plan.headers:
-            _checked(part, plan, part.name, None, mode)
         if not plan.repeated or not isinstance(wire, tuple):
             return _member(part, boundary, wire, plan)
         if not wire:
@@ -513,23 +446,12 @@ def _field(
         raise _malformed(part.name, error) from None
 
 
-def _styled(  # noqa: PLR0913
-    part: FieldPart[object],
-    boundary: str,
-    plan: PartPlan,
-    pairs: tuple[tuple[str, str], ...],
-    names: _Names,
-    *,
-    mode: RequestValidation,
-) -> bytes:
-    """Return the parts a styled member writes, each name claimed for it and its headers checked under that name.
+def _styled(part: FieldPart[object], boundary: str, pairs: tuple[tuple[str, str], ...], names: _Names) -> bytes:
+    """Return the parts a styled member writes, each name claimed for it.
 
     Each value is text in the charset of the media type its part names, UTF-8 without one.
     """
     names.claim(part.name, [key for key, _ in pairs])
-    if plan.headers:
-        for key, _ in pairs:
-            _checked(part, plan, key, None, mode)
     media_type = part.content_type
     return b"".join([
         multipart_head(boundary, key, None, media_type, part.headers)
@@ -700,7 +622,7 @@ def _is_async(value: object) -> TypeIs[AsyncMultipartBody[object]]:
 
 
 def _layout(
-    parts: tuple[object, ...], boundary: str, names: _Names | None, mode: RequestValidation
+    parts: tuple[object, ...], boundary: str, names: _Names | None
 ) -> list[bytes | FilePart[SyncBinaryBody | AsyncBinaryBody]]:
     """Return a body's pieces in order: the encoded fields and heads between the file parts, whose inputs are sent.
 
@@ -711,15 +633,13 @@ def _layout(
     for part in parts:
         if _is_field(part):
             plan = _ANY if names is None else names.plan(part.name, file=False, omitted=isinstance(part.value, Unset))
-            if (field := _field(part, boundary, plan, mode, names)) is not None:
+            if (field := _field(part, boundary, plan, names)) is not None:
                 encoded.append(field)
         elif is_file_part(part):
             file = _ANY if names is None else names.plan(part.name, file=True)
             if names is not None and names.owners is not None:
                 names.claim(part.name, (part.name,))
             encoded.append(_file_head(part, boundary, file))
-            if file.headers:
-                _checked(part, file, part.name, part.filename, mode)
             pieces.extend((b"".join(encoded), part))
             encoded = [b"\r\n"]
         else:
@@ -759,18 +679,13 @@ class MultipartSource:
         boundary: str,
         plans: tuple[PartPlan, ...] | None = None,
         additional: PartPlan | None = None,
-        *,
-        mode: RequestValidation = "schema",
     ) -> None:
-        """Encode the body's fields and file heads for every attempt, refusing a body that is no multipart body.
-
-        The member plans' encoders validate the fields as the call's request mode selects.
-        """
+        """Encode the body's fields and file heads for every attempt, refusing a body that is no multipart body."""
         if not is_multipart(body):
             raise RequestEncodingError(location=("body",), cause=TypeError(_MULTIPART))
         self.body = body
         self.boundary = boundary
-        self._pieces = _layout(body.parts, boundary, None if plans is None else _Names(plans, additional), mode)
+        self._pieces = _layout(body.parts, boundary, None if plans is None else _Names(plans, additional))
 
     def inputs(self) -> Iterator[SyncBinaryBody]:
         """Yield the once-encoded layout and synchronous file inputs for call-level binding."""
@@ -987,9 +902,9 @@ class PartDecoder(Generic[T_co]):
     A file part keeps its bytes; any other part is read in its member's kind, or as JSON, then decoded by its codec.
     """
 
-    __slots__ = ("_convert", "_read", "excluded", "name", "repeated", "required")
+    __slots__ = ("_read", "excluded", "name", "repeated", "required")
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         name: str,
         read: Callable[[DecodedPart[bytes]], T_co],
@@ -997,25 +912,20 @@ class PartDecoder(Generic[T_co]):
         repeated: bool = False,
         required: bool = False,
         excluded: bool = False,
-        convert: Callable[[DecodedPart[bytes]], T_co] | None = None,
     ) -> None:
-        """Keep the member's name, how a part becomes its value, natively too, and whether it repeats or is required.
+        """Keep the member's name, how a part becomes its value, and whether it repeats or is required.
 
         A member the direction excludes, write-only in a response, has no part to read.
         """
         self.name = name
         self._read = read
-        self._convert = read if convert is None else convert
         self.repeated = repeated
         self.required = required
         self.excluded = excluded
 
-    def read(self, part: DecodedPart[bytes], *, native: bool = False) -> T_co:
-        """Return the value of one part, raising PartSyntaxError when it is not text of its kind.
-
-        Native reads the value through its converter alone.
-        """
-        return (self._convert if native else self._read)(part)
+    def read(self, part: DecodedPart[bytes]) -> T_co:
+        """Return the value of one part, raising PartSyntaxError when it is not text of its kind."""
+        return self._read(part)
 
 
 def _content(part: DecodedPart[bytes]) -> bytes:
@@ -1045,12 +955,11 @@ def value_part(  # noqa: PLR0913
     required: bool = False,
     excluded: bool = False,
 ) -> PartDecoder[T]:
-    """Return how a member's parts are read: in its kind, or as JSON, then decoded by its codec."""
+    """Return how a member's parts are read: in its kind, or as JSON, then converted by its codec."""
     return PartDecoder(
         name,
-        lambda part: decode(_wire_part(part, kind)),
+        lambda part: decode.convert(_wire_part(part, kind)),
         repeated=repeated,
         required=required,
         excluded=excluded,
-        convert=lambda part: decode.convert(_wire_part(part, kind)),
     )

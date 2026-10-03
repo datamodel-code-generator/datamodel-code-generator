@@ -1,28 +1,28 @@
 numbers-text [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: model wire={"numbers":["abc"]} extras={}
-numbers-text-echo [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"numbers":["abc"]}
+numbers-text-resend [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"numbers":["abc"]}
 numbers-single [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: model wire={"numbers":"abc"} extras={}
-numbers-single-echo [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"numbers":"abc"}
+numbers-single-resend [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"numbers":"abc"}
 numbers-integer [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: model wire={"numbers":[1]} extras={}
-numbers-integer-echo [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"numbers":[1]}
+numbers-integer-resend [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"numbers":[1]}
 tables-text [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: model wire={"tables":{"a":"x"}} extras={}
-tables-text-echo [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"tables":{"a":"x"}}
+tables-text-resend [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"tables":{"a":"x"}}
 tables-integer [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: model wire={"tables":{"a":1}} extras={}
-tables-integer-echo [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"tables":{"a":1}}
+tables-integer-resend [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"tables":{"a":1}}
 pets-dog [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: model wire={"pets":[{"dog-age":1}]} extras={}
-pets-dog-echo [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"pets":[{"dog-age":1}]}
+pets-dog-resend [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"pets":[{"dog-age":1}]}
 pets-cat [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: model wire={"pets":[{"cat-name":"m"}]} extras={}
-pets-cat-echo [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"pets":[{"cat-name":"m"}]}
+pets-cat-resend [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"pets":[{"cat-name":"m"}]}
 kennels-dog [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: model wire={"kennels":{"k":{"dog-age":1}}} extras={}
-kennels-dog-echo [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"kennels":{"k":{"dog-age":1}}}
+kennels-dog-resend [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"kennels":{"k":{"dog-age":1}}}
 pairs-dogs [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: model wire={"pairs":[{"dog-age":1}]} extras={}
-pairs-dogs-echo [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"pairs":[{"dog-age":1}]}
+pairs-dogs-resend [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"pairs":[{"dog-age":1}]}
 pairs-cats [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: model wire={"pairs":[{"cat-name":"a"},{"cat-name":"b"}]} extras={}
-pairs-cats-echo [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"pairs":[{"cat-name":"a"},{"cat-name":"b"}]}
+pairs-cats-resend [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"pairs":[{"cat-name":"a"},{"cat-name":"b"}]}
 maybe-null [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: model wire={"maybe":[null]} extras={}
-maybe-null-echo [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"maybe":[null]}
+maybe-null-resend [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"maybe":[null]}
 maybe-dog [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: model wire={"maybe":[{"dog-age":1}]} extras={}
-maybe-dog-echo [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"maybe":[{"dog-age":1}]}
+maybe-dog-resend [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"maybe":[{"dog-age":1}]}
 words-text [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: model wire={"words":["w"]} extras={}
-words-text-echo [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"words":["w"]}
+words-text-resend [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"words":["w"]}
 words-cat [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: model wire={"words":[{"cat-name":"m"}]} extras={}
-words-cat-echo [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"words":[{"cat-name":"m"}]}
+words-cat-resend [pydantic_v2.BaseModel, pydantic_v2.dataclass, dataclasses.dataclass, typing.TypedDict, msgspec.Struct]: wire={"words":[{"cat-name":"m"}]}

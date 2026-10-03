@@ -37,7 +37,7 @@ render pydantic_v2.BaseModel
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers [] bindings 47
+  namespace client helpers [] bindings 42
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   /selection/selected_operations/0 forms.submit_form()
     exports client.types.forms.SubmitFormResponse client.types.forms.SubmitFormErrorData client.types.forms.SubmitFormHTTPError
@@ -150,7 +150,7 @@ render typing.TypedDict
   write client/_generated_docs/runtime.md
   write client/py.typed
   write client/.dcg-state/model-artifacts.json
-  namespace client helpers [] bindings 47
+  namespace client helpers [] bindings 42
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   /selection/selected_operations/0 forms.submit_form()
     exports client.types.forms.SubmitFormResponse client.types.forms.SubmitFormErrorData client.types.forms.SubmitFormHTTPError

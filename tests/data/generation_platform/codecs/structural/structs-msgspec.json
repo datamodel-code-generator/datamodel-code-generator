@@ -7,10 +7,7 @@
   "cases": [
     {"name": "holder-server-decode", "use": "/paths/~1holders/post request_body", "op": "decode",
      "value": {"pet": {"size": "small", "contact": "c"}, "address": "10.0.0.1", "zz": 1}},
-    {"name": "holder-server-response", "use": "/paths/~1holders/post response_body 200", "op": "encode",
-     "value": {"result": "holder-server-decode", "attr": "value"}},
     {"name": "holder-server-decode-large", "use": "/paths/~1holders/post request_body", "op": "decode", "value": {"pet": {"size": "large"}}},
-    {"name": "holder-server-response-defaults", "use": "/paths/~1holders/post response_body 200", "op": "encode", "value": {"call": "Holder", "args": {}}},
     {"name": "limits-server-decode", "use": "/paths/~1limits/post request_body", "op": "decode", "value": {"low": 2, "name": "abc"}},
     {"name": "limits-client-decode", "use": "/paths/~1limits/post response_body 200", "surface": "client", "op": "decode",
      "value": {"id": 1, "low": 2, "name": "abc"}},
@@ -34,8 +31,11 @@
     {"name": "worded-server-decode-other", "use": "/paths/~1worded/post request_body", "op": "decode", "value": {"word": "x", "level": 5}},
     {"name": "wallet-server-decode", "use": "/paths/~1wallets/post request_body", "op": "decode",
      "value": {"coin": {"value": 10}, "address": "10.0.0.1"}},
-    {"name": "wallet-server-response", "use": "/paths/~1wallets/post response_body 200", "op": "encode",
-     "value": {"result": "wallet-server-decode", "attr": "value"}},
-    {"name": "wallet-server-decode-float-tag", "use": "/paths/~1wallets/post request_body", "op": "decode", "value": {"coin": {"value": 10.0}}}
+    {"name": "wallet-server-decode-float-tag", "use": "/paths/~1wallets/post request_body", "op": "decode", "value": {"coin": {"value": 10.0}}},
+    {"name": "holder-client-encode", "use": "/paths/~1holders/post request_body", "surface": "client", "op": "encode",
+     "value": {"result": "holder-server-decode", "attr": "value"}},
+    {"name": "holder-client-encode-defaults", "use": "/paths/~1holders/post request_body", "surface": "client", "op": "encode", "value": {"call": "Holder", "args": {}}},
+    {"name": "wallet-client-encode", "use": "/paths/~1wallets/post request_body", "surface": "client", "op": "encode",
+     "value": {"result": "wallet-server-decode", "attr": "value"}}
   ]
 }

@@ -1,4 +1,3 @@
-refused nothing
 use /paths/~1pets/get parameter query limit: native root models:FieldPetsGetQueryLimitParameter models=[('models:FieldPetsGetQueryLimitParameter', 'root', 'ignore', True)]
 use /paths/~1pets/get parameter query tags: native root models:FieldPetsGetQueryTagsParameter models=[('models:FieldPetsGetQueryTagsParameter', 'root', 'ignore', True)]
 use /paths/~1pets/get parameter query filter: native root models:FieldPetsGetQueryFilterParameter models=[('models:FieldPetsGetQueryFilterParameter', 'root', 'ignore', True)]
@@ -62,9 +61,7 @@ limit-server-decode: model FieldPetsGetQueryLimitParameter(root=5) set=['root'] 
 limit-server-decode-type: WireValidationError schema.type@
 create-client-serialize: wire={"name":"Mimi","status":"new","password":"pw"}
 created-server-serialize-snapshot: wire={"id":1,"name":"Mimi","status":"new","nick-name":null,"kind":"cat","born":"2020-01-01T09:00:00+09:00","price":"1.50","weight":0.1000000000000000055511151231257827,"owner":{"name":"Ann","note":1},"hint":"x"}
-create-client-check: wire={"name":"Mimi","status":"new","password":"pw"}
 created-client-convert: converted Pet(id=1, name='Mimi', status='new', tag=None, nick_name=None, password=None, kind=<Kind.cat: 'cat'>, owner=None, co_owner=None, born=None, price=None, cost=None, weight=None, labels=None, scores=None, visits=0)
 created-client-convert-long: NativeValidationError native.string_too_long@/name['name']
 created-client-convert-type: NativeValidationError native.int_parsing@/id['id']
-create-client-check-dict: wire={"name":"Mimi","status":"new","labels":["a"]}
-create-client-check-invalid: NativeValidationError native.string_type@/labels/1['labels', 1]
+created-client-convert-write-only: NativeValidationError native.write_only@/password['password']

@@ -1,5 +1,4 @@
 use /paths/~1bags/post request_body: native model models:Bag models=[('models:Bag', 'model', 'ignore', True), ('models:Cat', 'model', 'forbid', False), ('models:Dog', 'model', 'forbid', False)]
-use /paths/~1bags/post response_body 200: native model models:Bag models=[('models:Bag', 'model', 'ignore', True), ('models:Cat', 'model', 'forbid', False), ('models:Dog', 'model', 'forbid', False)]
 pets-dog-server-decode: model Bag(numbers=None, tables=None, pets=[Dog(dog_age=1)], kennels=None, pairs=None, maybe=None, words=None) set=['pets'] wire={"pets":[{"dog-age":1}]} presence=['', '/pets', '/pets/0', '/pets/0/dog-age'] extras={}
 pets-cat-server-decode: model Bag(numbers=None, tables=None, pets=[Cat(cat_name='m')], kennels=None, pairs=None, maybe=None, words=None) set=['pets'] wire={"pets":[{"cat-name":"m"}]} presence=['', '/pets', '/pets/0', '/pets/0/cat-name'] extras={}
 kennels-dog-server-decode: model Bag(numbers=None, tables=None, pets=None, kennels={'k': Dog(dog_age=1)}, pairs=None, maybe=None, words=None) set=['kennels'] wire={"kennels":{"k":{"dog-age":1}}} presence=['', '/kennels', '/kennels/k', '/kennels/k/dog-age'] extras={}

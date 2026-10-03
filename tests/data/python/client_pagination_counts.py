@@ -79,8 +79,6 @@ def _starts(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
     ):
         exchange.respond(user_page("1", has_more=True), user_page("2", has_more=False))
         drained(lines, label, api.protocols.finds.all.iterate(**arguments))
-    options = harness.options
-    checked = options.RequestOptions(validation=options.ValidationOptions(request="schema"))
     drained(lines, "text start", listing.offsets.iterate(offset="forty"))
     exchange.respond(user_page("1", has_more=True), user_page("2", has_more=False))
     integral = harness.argument("users", "ListUsers", "query", "position", 40.0)
@@ -92,8 +90,7 @@ def _starts(harness: Harness, api: Any, exchange: Exchange, lines: list[str]) ->
     drained(lines, "page number start ended by an empty page", listing.pages.iterate(page=page))
     model = _search(harness, {"query": "a", "window": {"start": 1}}).value
     texted = model.model_copy(update={"window": type(model.window).model_construct(start="x")})
-    for label, settings in (("unchecked text body start", None), ("checked text body start", checked)):
-        drained(lines, label, api.protocols.searches.all.iterate(body=texted, options=settings))
+    drained(lines, "text body start", api.protocols.searches.all.iterate(body=texted))
 
 
 def _items(api: Any, exchange: Exchange, lines: list[str]) -> None:

@@ -1,4 +1,4 @@
 # validation-ambiguous
 render dataclasses.dataclass
   APIGenerationError
-  E_CONFIG_VALUE binding validation.response /paths/~1orders~1{orderId}/get/responses/200: The 'native' response validation cannot take the response body 200 application/json of GET /orders/{orderId}, which tells its union members apart only by their schemas; select 'schema'
+  E_CONFIG_VALUE binding /paths/~1orders~1{orderId}/get/responses/200: The client cannot convert the response body 200 application/json of GET /orders/{orderId}, which tells its union members apart only by their schemas

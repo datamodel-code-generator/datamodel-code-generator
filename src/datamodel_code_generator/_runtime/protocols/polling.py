@@ -947,7 +947,7 @@ class _Operation(Generic[T, P]):
     def _restore(self, state: WireValue, payload: bytes, expires_at: datetime | None) -> None:  # noqa: PLR0914
         """Restore the handle from a checkpoint's decoded state and payload, refusing what does not fit the helper.
 
-        A settled handle decodes its saved bodies again under the call's response validation; a pending one, or one
+        A settled handle decodes its saved bodies again as the call decodes them; a pending one, or one
         whose result fetch is due, prepares the requests it sends next without sending.
         """
         plan = self._plan

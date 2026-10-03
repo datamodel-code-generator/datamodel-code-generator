@@ -23,7 +23,6 @@ from datamodel_code_generator._client.config import (
     BodyFieldName,
     ClientGenerationConfig,
     ClientOperationConfig,
-    ClientValidationConfig,
     IdempotencyMetadata,
     ParameterName,
     ResourceName,
@@ -117,10 +116,6 @@ def client_config(values: dict[str, Any], root: Path) -> ClientGenerationConfig:
                 converted[key] = tuple(value)
             case "protocols":
                 converted[key] = _protocols(value, root)
-            case "validation" if isinstance(value, dict):
-                converted[key] = ClientValidationConfig(**{
-                    name: tuple(item) if isinstance(item, list) else item for name, item in value.items()
-                })
             case _:
                 converted[key] = value
     return ClientGenerationConfig(**converted)

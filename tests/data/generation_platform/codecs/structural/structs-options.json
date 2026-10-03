@@ -16,8 +16,6 @@
     {"name": "limits-client-decode-unknown", "use": "/paths/~1limits/post response_body 200", "surface": "client", "op": "decode",
      "value": {"id": 1, "zz": 1}},
     {"name": "holder-server-decode-unknown", "use": "/paths/~1holders/post request_body", "op": "decode", "value": {"count": 0, "zz": 1}},
-    {"name": "holder-server-response-defaults", "use": "/paths/~1holders/post response_body 200", "op": "encode",
-     "value": {"call": "Holder", "args": {}}},
     {"name": "batch-server-decode", "use": "/paths/~1batches/post request_body", "op": "decode",
      "value": {"entries": [{"amount": "1.5"}], "a.b": "3"}},
     {"name": "batch-client-encode", "use": "/paths/~1batches/post request_body", "surface": "client", "op": "encode",
@@ -33,6 +31,8 @@
      "value": {"result": "worded-server-decode", "attr": "value"}},
     {"name": "rated-server-decode", "use": "/paths/~1rated/post request_body", "op": "decode", "value": {"ratio": 1.5}},
     {"name": "rated-client-encode", "use": "/paths/~1rated/post request_body", "surface": "client", "op": "encode",
-     "value": {"result": "rated-server-decode", "attr": "value"}}
+     "value": {"result": "rated-server-decode", "attr": "value"}},
+    {"name": "holder-client-encode-defaults", "use": "/paths/~1holders/post request_body", "surface": "client", "op": "encode",
+     "value": {"call": "Holder", "args": {}}}
   ]
 }

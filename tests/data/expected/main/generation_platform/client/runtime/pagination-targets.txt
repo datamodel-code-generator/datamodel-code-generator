@@ -76,8 +76,7 @@
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 13] b'{"query":"a"}'
   > POST https://api.example.com/searches
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, content-type: application/json, content-length: 112] b'{"query":"a","after":"1","size":10,"filter":{"states":["open"]},"range":{"from":"a"},"page":{"cursor":"longer"}}'
-  schema validation of a long server cursor ['1', '2']
-  schema validation of a long body cursor [] ! RequestEncodingError: RequestEncodingError(operation_id='search', call_id='<call>', location='body') [operation_id='search', location=('body',), cause=WireValidationError('The value does not satisfy maxLength at /page/cursor')] request_encoding_error
+  a long server cursor ['1', '2']
   > GET https://api.example.com/users
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
   > GET https://api.example.com/users

@@ -1,4 +1,3 @@
-refused nothing
 use /paths/~1pets/get parameter query limit: native alias models:FieldPetsGetQueryLimitParameter models=[]
 use /paths/~1pets/get parameter query tags: native alias models:FieldPetsGetQueryTagsParameter models=[]
 use /paths/~1pets/get parameter query filter: native alias models:FieldPetsGetQueryFilterParameter models=[]
@@ -39,11 +38,8 @@ patch-client-snapshot-delete: CodecBindingError The presence tree does not selec
 limit-server-decode: model 5 wire=5 presence=[''] extras={}
 create-client-serialize: wire={"name":"Mimi","status":"new","password":"pw","visits":0}
 created-server-serialize-snapshot: wire={"id":1,"name":"Mimi","status":"new","kind":"cat","owner":{"name":"Ann","e-mail":"ann@example.com","note":1},"nick_name":null,"hint":"x","born":"2020-01-01T00:00:00Z","price":"1.10","cost":null,"weight":2,"labels":["b","a"],"scores":{"x":1},"visits":0}
-create-client-check: wire={"name":"Mimi","status":"new","password":"pw","visits":0}
 created-client-convert: converted Pet(id=1, name='Mimi', status='new', tag=UNSET, nick_name=UNSET, password=UNSET, kind=<Kind.cat: 'cat'>, owner=UNSET, co_owner=UNSET, born=UNSET, price=UNSET, cost=UNSET, weight=UNSET, labels=UNSET, scores=UNSET, visits=0)
 created-client-convert-long: converted Pet(id=1, name='far too long a name', status='new', tag=UNSET, nick_name=UNSET, password=UNSET, kind=<Kind.cat: 'cat'>, owner=UNSET, co_owner=UNSET, born=UNSET, price=UNSET, cost=UNSET, weight=UNSET, labels=UNSET, scores=UNSET, visits=0)
 created-client-convert-type: NativeValidationError native.validation_error@/id['id']
 create-client-serialize-long: wire={"name":"far too long a name","status":"new","visits":0}
 create-client-encode-long: WireValidationError schema.maxLength@/name
-create-client-check-dict: wire={"name":"Mimi","status":"new","labels":["a"],"visits":0}
-create-client-check-invalid: NativeValidationError native.validation_error@/labels/1['labels', 1]

@@ -22,7 +22,31 @@ paths:
                   - $ref: "#/components/schemas/Cat"
                   - $ref: "#/components/schemas/Dog"
                   - type: "null"
+  /animals/any:
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              anyOf:
+                - $ref: "#/components/schemas/Cat"
+                - $ref: "#/components/schemas/Dog"
+                - type: "null"
+      responses:
+        "204":
+          description: Stored.
   /kin:
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              anyOf:
+                - $ref: "#/components/schemas/Animal"
+                - $ref: "#/components/schemas/Cat"
+      responses:
+        "204":
+          description: Stored.
     get:
       responses:
         "200":

@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 DATA = Path(__file__).parents[1]
 CASES = DATA / "generation_platform" / "client" / "bindings.json"
 FORMATTER = "tests.data.python.custom_formatters.replace_text"
-CLIENT = {"default_base_url": "https://bindings.invalid", "validation": {"response": "schema"}}
+CLIENT = {"default_base_url": "https://bindings.invalid"}
 MODEL = {
     "formatters": [],
     "use_union_operator": False,

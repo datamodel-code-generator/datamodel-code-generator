@@ -26,27 +26,14 @@ _MEMBERS: Final = (
 _SPLIT: Final = ({"radius": 1}, {"side": 2}, {"radius": 1, "id": 4}, {"side": 2, "secret": "s"})
 
 
-def _decode(package: ModuleType, lines: list[str], modes: tuple[str, ...]) -> None:
-    """Read every member of each selected operation's union under each response validation mode."""
-    options = importlib.import_module(f"{package.__name__}.options")
+def unions(package: ModuleType, lines: list[str]) -> None:
+    """Read every member of each selected operation's union natively, as the backend's converter tells them apart."""
     exchange = Exchange(lines)
     with package.Client(http_client=exchange.client(), http_client_ownership="owned") as api:
-        for mode in modes:
-            call = options.RequestOptions(validation=options.ValidationOptions(response=mode))
-            for operation, label, payload in _MEMBERS:
-                if (method := getattr(api.default, operation, None)) is not None:
-                    exchange.respond(json_response(200, payload))
-                    record(lines, f"{label} {mode}", lambda method=method, call=call: method(options=call))
-
-
-def unions(package: ModuleType, lines: list[str]) -> None:
-    """Read each member natively, as the backend's converter tells them apart, and then by their schemas."""
-    _decode(package, lines, ("native", "schema"))
-
-
-def schema_unions(package: ModuleType, lines: list[str]) -> None:
-    """Read each member by matching it against the schemas of the union's members."""
-    _decode(package, lines, ("schema",))
+        for operation, label, payload in _MEMBERS:
+            if (method := getattr(api.default, operation, None)) is not None:
+                exchange.respond(json_response(200, payload))
+                record(lines, label, method)
 
 
 def _split(exchange: Exchange, api: Any, codecs: Any, payload: dict[str, object]) -> Callable[[], Any]:

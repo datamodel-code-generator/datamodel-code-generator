@@ -1,13 +1,13 @@
 {
   "backend": "dataclasses.dataclass",
   "package": "codec_loose_dataclass",
-  "refusal": {"validation": {"response": "native"}},
+  "config": {"selection": {"exclude_operations": ["/paths/~1loose/post"], "reason": "The client cannot convert its unions whose members only their schemas tell apart."}},
   "cases": [
-    {"name": "holder-client-decode-tag", "use": "/paths/~1loose/post response_body 200", "surface": "client", "op": "decode",
+    {"name": "holder-server-decode-tag", "use": "/paths/~1loose/put request_body", "op": "decode",
      "value": {"value": {"label": "x"}}},
-    {"name": "holder-client-decode-other", "use": "/paths/~1loose/post response_body 200", "surface": "client", "op": "decode",
+    {"name": "holder-server-decode-other", "use": "/paths/~1loose/put request_body", "op": "decode",
      "value": {"value": {"other": 1}}},
-    {"name": "holder-client-convert-other", "use": "/paths/~1loose/post response_body 200", "surface": "client", "op": "convert",
+    {"name": "holder-server-convert-other", "use": "/paths/~1loose/put request_body", "op": "convert",
      "value": {"value": {"other": 1}}}
   ]
 }

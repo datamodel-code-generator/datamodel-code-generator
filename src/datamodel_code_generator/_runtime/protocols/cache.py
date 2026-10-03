@@ -35,7 +35,6 @@ if TYPE_CHECKING:
     from ..client.bodies import EncodedAttempt
     from ..client.client import AsyncClientCore, ClientCore
     from ..client.operations import OperationPlan
-    from ..client.options import Settings
     from ..model_codecs.selectors import MediaSelector
     from ..model_codecs.wire import WireValue
     from .caches import AsyncCacheStore, CacheStore
@@ -448,7 +447,7 @@ class _Fetch(Generic[T]):
             "stored_at": _instant(now),
             "freshness_seconds": freshness,
             "initial_age_seconds": initial,
-            "tags": _tags(plan.call, plan.tags, arguments, self.settings),
+            "tags": _tags(plan.call, plan.tags, arguments),
             "schema_fingerprint": plan.fingerprint,
         }
 
@@ -500,16 +499,14 @@ def _validator(plan: CachePlan[T], headers: HeadersView) -> tuple[str, str] | No
 
 
 def _tags(
-    call: OperationPlan[object, object], templates: tuple[Tag, ...], arguments: tuple[object, ...], settings: Settings
+    call: OperationPlan[object, object], templates: tuple[Tag, ...], arguments: tuple[object, ...]
 ) -> tuple[str, ...]:
     """Return each tag with every argument position filled in by that argument's wire value as text."""
     if not templates:
         return ()
-    mode = settings.validation.request
     return tuple(
         "".join(
-            part if isinstance(part, str) else _text(call.parameters[part].encode(arguments[part], mode))
-            for part in template
+            part if isinstance(part, str) else _text(call.parameters[part].encode(arguments[part])) for part in template
         )
         for template in templates
     )
@@ -774,7 +771,7 @@ def mutate(  # noqa: PLR0913
     never sent again.
     """
     store: CacheStore = _store(core, plan)
-    tags = _tags(plan.call, plan.tags, arguments, core.call_settings(options, plan.call))
+    tags = _tags(plan.call, plan.tags, arguments)
     result = core.execute(plan.call, arguments, body=body, media_type=media_type, options=options).data
     try:
         count = store.invalidate(tags)
@@ -795,7 +792,7 @@ async def amutate(  # noqa: PLR0913
 ) -> T:
     """Call the mutation as `mutate` does, awaiting the asyncio call and the asynchronous store."""
     store: AsyncCacheStore = _store(core, plan)
-    tags = _tags(plan.call, plan.tags, arguments, core.call_settings(options, plan.call))
+    tags = _tags(plan.call, plan.tags, arguments)
     result = (await core.execute(plan.call, arguments, body=body, media_type=media_type, options=options)).data
     try:
         count = await store.invalidate(tags)

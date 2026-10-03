@@ -100,17 +100,17 @@
   < closed
     ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', location=BodySelector(pointer='/type'), truncated=False] stream_decode_error
   > GET https://api.example.com/events accept=text/event-stream
-  mapped event failing its schema
+  mapped event failing its type
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', truncated=False, cause=WireValidationError('A required property is missing at /id')] stream_decode_error
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', truncated=False, cause=NativeValidationError('The native type rejected the value (native.missing) at /id')] stream_decode_error
   > GET https://api.example.com/events accept=text/event-stream
   not JSON
   < closed
     ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='malformed', sequence=1, truncated=False) [operation_id='streamEvents', condition='malformed', truncated=False, cause=WireValidationError('The body is not valid JSON at /')] stream_decode_error
   > GET https://api.example.com/events accept=text/event-stream
-  refused by its schema
+  refused by its type
   < closed
-    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', truncated=False, cause=WireValidationError('The value does not have an allowed type at /text')] stream_decode_error
+    ! StreamDecodeError: StreamDecodeError(operation_id='streamEvents', call_id='<call>', condition='value', sequence=1, truncated=False) [operation_id='streamEvents', condition='value', truncated=False, cause=NativeValidationError('The native type rejected the value (native.string_type) at /text')] stream_decode_error
   > GET https://api.example.com/events accept=text/event-stream
   refused natively
   < closed
@@ -120,7 +120,7 @@
   large event raw prefix 65536 truncated=True
   > GET https://api.example.com/events accept=text/event-stream
   < closed
-  invalid mapped event cause WireValidationError prefix b'{"type": "created"}'
+  invalid mapped event cause NativeValidationError prefix b'{"type": "created"}'
   > GET https://api.example.com/events accept=text/event-stream
   line over the limit
   < closed

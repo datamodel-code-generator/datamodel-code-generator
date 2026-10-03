@@ -42,7 +42,7 @@ __all__ = ["verify", "verify_async"]
 
 _PLAN: Final[WebhookPlan[_dcg_type_0, HmacKey]] = WebhookPlan(
     helper_id='standard.message',
-    fingerprint='197ae2bcab18203b20bd1c926e759357f88ed6aac18148ec339776bd978fe686',
+    fingerprint='c503090b917f44a9542091e0b5cdea7e7f14703e165e10e7e7e0f8cf704bb938',
     signature=SignatureProfile(
         algorithm=HMAC_SHA256,
         header='webhook-signature',
@@ -64,7 +64,11 @@ _PLAN: Final[WebhookPlan[_dcg_type_0, HmacKey]] = WebhookPlan(
         ),
         parts=(DELIVERY_ID, b'.', TIMESTAMP, b'.', RAW_BODY),
     ),
-    event=EventDecoder(model_bindings.codec_3, model_bindings.CONTEXT_3, validate=True),
+    event=EventDecoder(
+        model_bindings.codec_3,
+        model_bindings.CONTEXT_3,
+        validate=False,
+    ),
     duplicates='report',
 )
 
