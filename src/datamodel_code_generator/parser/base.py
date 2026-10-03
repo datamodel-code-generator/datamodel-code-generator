@@ -18,7 +18,7 @@ from collections import Counter, OrderedDict, defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import cache, partial
-from itertools import chain, groupby
+from itertools import chain, groupby, pairwise
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -91,6 +91,7 @@ from datamodel_code_generator.model.base import (
     _find_base_classes,
     _refresh_custom_template_paths,
     _set_nested_model_default_factory_order,
+    c3_merge,
     get_inherited_fields,
     get_resolve_reference_action_capabilities,
     linearize_data_models,
@@ -6410,6 +6411,178 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     _remap_imports(ctx.imports, overrides)
         return
 
+    def _check_model_inheritance(self, contexts: Sequence[ModuleContext]) -> None:  # noqa: PLR0912, PLR0914, PLR0915
+        """Reject invalid builtin class dependencies before rendering any module."""
+        if (
+            self.custom_template_dir is not None
+            or not self._configured_generation_types_are_builtin
+            or any((
+                self.custom_formatter,
+                self.class_decorators,
+                self.config.additional_imports,
+                self._import_overrides,
+                self.generate_schema_validators,
+            ))
+        ):
+            return
+
+        backend = self.data_model_type.__module__
+        ordinary_backends = {
+            "datamodel_code_generator.model.pydantic_v2.base_model",
+            "datamodel_code_generator.model.pydantic_v2.dataclass",
+            "datamodel_code_generator.model.dataclass",
+        }
+        typed_dict = backend == "datamodel_code_generator.model.typed_dict"
+        struct = backend == "datamodel_code_generator.model.msgspec"
+        if backend not in ordinary_backends and not typed_dict and not struct:
+            return
+
+        def emitted_bases(model: DataModel) -> list[BaseClassDataType]:
+            if type(model) is not self.data_model_type or (
+                typed_dict and getattr(model, "is_functional_syntax", False)
+            ):
+                return []
+            return model.base_classes
+
+        if not any(base.reference for ctx in contexts for model in ctx.models for base in emitted_bases(model)):
+            return
+
+        models = [model for ctx in contexts for model in ctx.models]
+        positions = {
+            id(model): (ctx_index, index)
+            for ctx_index, ctx in enumerate(contexts)
+            for index, model in enumerate(ctx.models)
+        }
+        identities = {id(model): index for index, model in enumerate(models)}
+        paths: dict[str, list[DataModel]] = defaultdict(list)
+        for model in models:
+            paths[model.path].append(model)
+        parents: list[list[int]] = [[] for _ in models]
+        closed = [type(model) is self.data_model_type and backend in ordinary_backends for model in models]
+        for index, model in enumerate(models):
+            ctx_index, _ = positions[id(model)]
+            ctx = contexts[ctx_index]
+            for base in emitted_bases(model):
+                reference = base.reference
+                if reference is None:
+                    terminal = base.import_
+                    closed[index] = closed[index] and (
+                        backend == "datamodel_code_generator.model.pydantic_v2.base_model"
+                        and terminal is not None
+                        and terminal.from_ == "pydantic"
+                        and terminal.import_ == "BaseModel"
+                        and base.type_hint == (terminal.alias or terminal.import_)
+                    )
+                    continue
+                candidates = paths.get(reference.path, [])
+                if len(candidates) != 1 or reference.source is not candidates[0]:
+                    closed[index] = False
+                    continue
+                parent = candidates[0]
+                parent_ctx_index, _ = positions[id(parent)]
+                imported = ctx.imports.reference_paths.get(reference.path)
+                binding = (
+                    parent.class_name
+                    if ctx_index == parent_ctx_index
+                    else (imported.alias or imported.import_)
+                    if imported is not None
+                    else None
+                )
+                if base.type_hint != binding:
+                    closed[index] = False
+                    continue
+                parents[index].append(identities[id(parent)])
+
+        if struct:
+            for ctx in contexts:
+                self.data_model_type.render_module_code(ctx.models)
+
+        def label(index: int) -> str:
+            model = models[index]
+            return f"{model.class_name} ({model.path})"
+
+        completed: set[int] = set()
+        postorder: list[int] = []
+        for start in range(len(models)):
+            if start in completed:
+                continue
+            active = {start: 0}
+            stack = [(start, iter(parents[start]))]
+            while stack:
+                index, remaining = stack[-1]
+                if (parent := next(remaining, None)) is None:
+                    stack.pop()
+                    active.pop(index)
+                    completed.add(index)
+                    postorder.append(index)
+                elif parent in active:
+                    cycle = [item for item, _ in stack[active[parent] :]]
+                    cycle.append(parent)
+                    msg = "Generated model inheritance cycle: " + " -> ".join(map(label, cycle))
+                    raise Error(msg)
+                elif parent not in completed:
+                    active[parent] = len(stack)
+                    stack.append((parent, iter(parents[parent])))
+
+        for index, direct in enumerate(parents):
+            ctx_index, position = positions[id(models[index])]
+            for parent in direct:
+                parent_ctx_index, parent_position = positions[id(models[parent])]
+                if ctx_index == parent_ctx_index and parent_position >= position:
+                    msg = f"Generated model {label(index)} requires local base {label(parent)} before its definition."
+                    raise Error(msg)
+
+        for index in postorder:
+            closed[index] = closed[index] and all(closed[parent] for parent in parents[index])
+        joins = [index for index in postorder if closed[index] and len(parents[index]) > 1]
+        if not joins:
+            return
+        join_set = set(joins)
+        uses: Counter[int] = Counter()
+        for index in joins:
+            for direct_parent in parents[index]:
+                parent = direct_parent
+                while parent not in join_set and parents[parent]:
+                    parent = parents[parent][0]
+                if parent in join_set:
+                    uses[parent] += 1
+        linearizations: dict[int, list[int]] = {}
+        for index in joins:
+            sequences: list[list[int]] = []
+            consumed: list[int] = []
+            for direct_parent in parents[index]:
+                parent = direct_parent
+                sequence: list[int] = []
+                while parent not in join_set:
+                    sequence.append(parent)
+                    if not parents[parent]:
+                        break
+                    parent = parents[parent][0]
+                if parent in join_set:
+                    sequence.extend(linearizations[parent])
+                    consumed.append(parent)
+                sequences.append(sequence)
+            sequences.append(parents[index])
+            merged = c3_merge([sequence.copy() for sequence in sequences], key=str)
+            order = {item: position for position, item in enumerate(merged)}
+            if any(
+                len(sequence) != len(set(sequence))
+                or any(order[left] >= order[right] for left, right in pairwise(sequence))
+                for sequence in sequences
+            ):
+                msg = (
+                    f"Generated model {label(index)} has inconsistent method resolution order for generated bases "
+                    + ", ".join(map(label, parents[index]))
+                    + "."
+                )
+                raise Error(msg)
+            if uses[index]:
+                linearizations[index] = [index, *merged]
+            for parent in consumed:
+                uses[parent] -= 1
+                if not uses[parent]:
+                    del linearizations[parent]
+
     def _set_nested_model_default_factory_metadata(
         self,
         contexts: list[ModuleContext],
@@ -6838,6 +7011,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             model_path_to_module_name=model_path_to_module_name,
         )
         self._finalize_modules(contexts, unused_models, model_to_module_models, module_to_import)
+        self._check_model_inheritance(contexts)
         self.__warn_about_decimal_defaults()
         if self.use_default_factory_for_optional_nested_models:
             self._set_nested_model_default_factory_metadata(contexts, require_update_action_models)
