@@ -66,11 +66,11 @@
   positional SigningExecutionError TypeError secondary []
   family AuthRefreshError bases=('SDKError',) code=auth_refresh_error
   signature AuthRefreshError keyword-only=True required=()
-  hints AuthRefreshError ('provider_id', 'refresh_id', 'state', 'delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
-  defaults AuthRefreshError fields=(('provider_id', None), ('refresh_id', None), ('state', 'UNKNOWN'), ('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown')) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
+  hints AuthRefreshError ('delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
+  defaults AuthRefreshError fields=(('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown')) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
   metadata AuthRefreshError call=('auth_operation', 'auth-call', 'auth-parent') info=True headers=True cause=True secondary=True counters=(1, 2, 3, 4, 5, 6, ('refresh-one',), 7, 8)
-  supplied AuthRefreshError (('provider_id', 'private-secret-provider'), ('refresh_id', 'private-secret-refresh'), ('state', 'READY'), ('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'))
-  safe AuthRefreshError True text="AuthRefreshError(operation_id='auth_operation', call_id='auth-call', state='READY', delivery_state='NOT_SENT', phase='validate')"
+  supplied AuthRefreshError (('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'))
+  safe AuthRefreshError True text="AuthRefreshError(operation_id='auth_operation', call_id='auth-call', delivery_state='NOT_SENT', phase='validate')"
   readonly AuthRefreshError.resource_attempt_count AttributeError secondary [] unchanged=True
   readonly AuthRefreshError.redirect_count AttributeError secondary [] unchanged=True
   readonly AuthRefreshError.auth_exchange_count AttributeError secondary [] unchanged=True
@@ -80,14 +80,8 @@
   readonly AuthRefreshError.auth_refresh_ids AttributeError secondary [] unchanged=True
   readonly AuthRefreshError.auth_refresh_pending AttributeError secondary [] unchanged=True
   readonly AuthRefreshError.wire_send_count AttributeError secondary [] unchanged=True
-  readonly AuthRefreshError.provider_id AttributeError secondary [] unchanged=True
-  readonly AuthRefreshError.refresh_id AttributeError secondary [] unchanged=True
-  readonly AuthRefreshError.state AttributeError secondary [] unchanged=True
   readonly AuthRefreshError.delivery_state AttributeError secondary [] unchanged=True
   readonly AuthRefreshError.phase AttributeError secondary [] unchanged=True
-  property hints AuthRefreshError.provider_id ('return',)
-  property hints AuthRefreshError.refresh_id ('return',)
-  property hints AuthRefreshError.state ('return',)
   property hints AuthRefreshError.delivery_state ('return',)
   property hints AuthRefreshError.phase ('return',)
   undeclared AuthRefreshError.message TypeError secondary []
@@ -97,11 +91,11 @@
   positional AuthRefreshError TypeError secondary []
   family AuthProviderExecutionError bases=('AuthRefreshError',) code=auth_provider_execution_error
   signature AuthProviderExecutionError keyword-only=True required=('callback',)
-  hints AuthProviderExecutionError ('callback', 'provider_id', 'refresh_id', 'state', 'delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
-  defaults AuthProviderExecutionError fields=(('provider_id', None), ('refresh_id', None), ('state', 'UNKNOWN'), ('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('callback', 'get')) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
+  hints AuthProviderExecutionError ('callback', 'delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
+  defaults AuthProviderExecutionError fields=(('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('callback', 'get')) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
   metadata AuthProviderExecutionError call=('auth_operation', 'auth-call', 'auth-parent') info=True headers=True cause=True secondary=True counters=(1, 2, 3, 4, 5, 6, ('refresh-one',), 7, 8)
-  supplied AuthProviderExecutionError (('provider_id', 'private-secret-provider'), ('refresh_id', 'private-secret-refresh'), ('state', 'READY'), ('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('callback', 'get'))
-  safe AuthProviderExecutionError True text="AuthProviderExecutionError(operation_id='auth_operation', call_id='auth-call', state='READY', delivery_state='NOT_SENT', phase='validate')"
+  supplied AuthProviderExecutionError (('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('callback', 'get'))
+  safe AuthProviderExecutionError True text="AuthProviderExecutionError(operation_id='auth_operation', call_id='auth-call', delivery_state='NOT_SENT', phase='validate')"
   readonly AuthProviderExecutionError.resource_attempt_count AttributeError secondary [] unchanged=True
   readonly AuthProviderExecutionError.redirect_count AttributeError secondary [] unchanged=True
   readonly AuthProviderExecutionError.auth_exchange_count AttributeError secondary [] unchanged=True
@@ -111,15 +105,9 @@
   readonly AuthProviderExecutionError.auth_refresh_ids AttributeError secondary [] unchanged=True
   readonly AuthProviderExecutionError.auth_refresh_pending AttributeError secondary [] unchanged=True
   readonly AuthProviderExecutionError.wire_send_count AttributeError secondary [] unchanged=True
-  readonly AuthProviderExecutionError.provider_id AttributeError secondary [] unchanged=True
-  readonly AuthProviderExecutionError.refresh_id AttributeError secondary [] unchanged=True
-  readonly AuthProviderExecutionError.state AttributeError secondary [] unchanged=True
   readonly AuthProviderExecutionError.delivery_state AttributeError secondary [] unchanged=True
   readonly AuthProviderExecutionError.phase AttributeError secondary [] unchanged=True
   readonly AuthProviderExecutionError.callback AttributeError secondary [] unchanged=True
-  property hints AuthProviderExecutionError.provider_id ('return',)
-  property hints AuthProviderExecutionError.refresh_id ('return',)
-  property hints AuthProviderExecutionError.state ('return',)
   property hints AuthProviderExecutionError.delivery_state ('return',)
   property hints AuthProviderExecutionError.phase ('return',)
   property hints AuthProviderExecutionError.callback ('return',)
@@ -130,11 +118,11 @@
   positional AuthProviderExecutionError TypeError secondary []
   family TokenExpiredError bases=('AuthRefreshError',) code=token_expired_error
   signature TokenExpiredError keyword-only=True required=('condition',)
-  hints TokenExpiredError ('condition', 'expires_at', 'provider_id', 'refresh_id', 'state', 'delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
-  defaults TokenExpiredError fields=(('provider_id', None), ('refresh_id', None), ('state', 'UNKNOWN'), ('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('condition', 'expired'), ('expires_at', None)) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
+  hints TokenExpiredError ('condition', 'expires_at', 'delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
+  defaults TokenExpiredError fields=(('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('condition', 'expired'), ('expires_at', None)) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
   metadata TokenExpiredError call=('auth_operation', 'auth-call', 'auth-parent') info=True headers=True cause=True secondary=True counters=(1, 2, 3, 4, 5, 6, ('refresh-one',), 7, 8)
-  supplied TokenExpiredError (('provider_id', 'private-secret-provider'), ('refresh_id', 'private-secret-refresh'), ('state', 'READY'), ('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('condition', 'expired'), ('expires_at', None))
-  safe TokenExpiredError True text="TokenExpiredError(operation_id='auth_operation', call_id='auth-call', state='READY', delivery_state='NOT_SENT', phase='validate', condition='expired')"
+  supplied TokenExpiredError (('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('condition', 'expired'), ('expires_at', None))
+  safe TokenExpiredError True text="TokenExpiredError(operation_id='auth_operation', call_id='auth-call', delivery_state='NOT_SENT', phase='validate', condition='expired')"
   readonly TokenExpiredError.resource_attempt_count AttributeError secondary [] unchanged=True
   readonly TokenExpiredError.redirect_count AttributeError secondary [] unchanged=True
   readonly TokenExpiredError.auth_exchange_count AttributeError secondary [] unchanged=True
@@ -144,16 +132,10 @@
   readonly TokenExpiredError.auth_refresh_ids AttributeError secondary [] unchanged=True
   readonly TokenExpiredError.auth_refresh_pending AttributeError secondary [] unchanged=True
   readonly TokenExpiredError.wire_send_count AttributeError secondary [] unchanged=True
-  readonly TokenExpiredError.provider_id AttributeError secondary [] unchanged=True
-  readonly TokenExpiredError.refresh_id AttributeError secondary [] unchanged=True
-  readonly TokenExpiredError.state AttributeError secondary [] unchanged=True
   readonly TokenExpiredError.delivery_state AttributeError secondary [] unchanged=True
   readonly TokenExpiredError.phase AttributeError secondary [] unchanged=True
   readonly TokenExpiredError.condition AttributeError secondary [] unchanged=True
   readonly TokenExpiredError.expires_at AttributeError secondary [] unchanged=True
-  property hints TokenExpiredError.provider_id ('return',)
-  property hints TokenExpiredError.refresh_id ('return',)
-  property hints TokenExpiredError.state ('return',)
   property hints TokenExpiredError.delivery_state ('return',)
   property hints TokenExpiredError.phase ('return',)
   property hints TokenExpiredError.condition ('return',)
@@ -165,11 +147,11 @@
   positional TokenExpiredError TypeError secondary []
   family AuthProviderClosedError bases=('AuthRefreshError',) code=auth_provider_closed_error
   signature AuthProviderClosedError keyword-only=True required=()
-  hints AuthProviderClosedError ('provider_id', 'refresh_id', 'state', 'delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
-  defaults AuthProviderClosedError fields=(('provider_id', None), ('refresh_id', None), ('state', 'CLOSED'), ('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown')) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
+  hints AuthProviderClosedError ('delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
+  defaults AuthProviderClosedError fields=(('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown')) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
   metadata AuthProviderClosedError call=('auth_operation', 'auth-call', 'auth-parent') info=True headers=True cause=True secondary=True counters=(1, 2, 3, 4, 5, 6, ('refresh-one',), 7, 8)
-  supplied AuthProviderClosedError (('provider_id', 'private-secret-provider'), ('refresh_id', 'private-secret-refresh'), ('state', 'CLOSING'), ('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'))
-  safe AuthProviderClosedError True text="AuthProviderClosedError(operation_id='auth_operation', call_id='auth-call', state='CLOSING', delivery_state='NOT_SENT', phase='validate')"
+  supplied AuthProviderClosedError (('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'))
+  safe AuthProviderClosedError True text="AuthProviderClosedError(operation_id='auth_operation', call_id='auth-call', delivery_state='NOT_SENT', phase='validate')"
   readonly AuthProviderClosedError.resource_attempt_count AttributeError secondary [] unchanged=True
   readonly AuthProviderClosedError.redirect_count AttributeError secondary [] unchanged=True
   readonly AuthProviderClosedError.auth_exchange_count AttributeError secondary [] unchanged=True
@@ -179,14 +161,8 @@
   readonly AuthProviderClosedError.auth_refresh_ids AttributeError secondary [] unchanged=True
   readonly AuthProviderClosedError.auth_refresh_pending AttributeError secondary [] unchanged=True
   readonly AuthProviderClosedError.wire_send_count AttributeError secondary [] unchanged=True
-  readonly AuthProviderClosedError.provider_id AttributeError secondary [] unchanged=True
-  readonly AuthProviderClosedError.refresh_id AttributeError secondary [] unchanged=True
-  readonly AuthProviderClosedError.state AttributeError secondary [] unchanged=True
   readonly AuthProviderClosedError.delivery_state AttributeError secondary [] unchanged=True
   readonly AuthProviderClosedError.phase AttributeError secondary [] unchanged=True
-  property hints AuthProviderClosedError.provider_id ('return',)
-  property hints AuthProviderClosedError.refresh_id ('return',)
-  property hints AuthProviderClosedError.state ('return',)
   property hints AuthProviderClosedError.delivery_state ('return',)
   property hints AuthProviderClosedError.phase ('return',)
   undeclared AuthProviderClosedError.message TypeError secondary []
@@ -196,11 +172,11 @@
   positional AuthProviderClosedError TypeError secondary []
   family OAuthExchangeError bases=('AuthRefreshError',) code=oauth_exchange_error
   signature OAuthExchangeError keyword-only=True required=()
-  hints OAuthExchangeError ('status_code', 'oauth_error', 'provider_id', 'refresh_id', 'state', 'delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
-  defaults OAuthExchangeError fields=(('provider_id', None), ('refresh_id', None), ('state', 'UNKNOWN'), ('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('status_code', None), ('oauth_error', None)) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
+  hints OAuthExchangeError ('status_code', 'oauth_error', 'delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
+  defaults OAuthExchangeError fields=(('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('status_code', None), ('oauth_error', None)) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
   metadata OAuthExchangeError call=('auth_operation', 'auth-call', 'auth-parent') info=True headers=True cause=True secondary=True counters=(1, 2, 3, 4, 5, 6, ('refresh-one',), 7, 8)
-  supplied OAuthExchangeError (('provider_id', 'private-secret-provider'), ('refresh_id', 'private-secret-refresh'), ('state', 'READY'), ('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('status_code', None), ('oauth_error', None))
-  safe OAuthExchangeError True text="OAuthExchangeError(operation_id='auth_operation', call_id='auth-call', state='READY', delivery_state='NOT_SENT', phase='validate')"
+  supplied OAuthExchangeError (('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('status_code', None), ('oauth_error', None))
+  safe OAuthExchangeError True text="OAuthExchangeError(operation_id='auth_operation', call_id='auth-call', delivery_state='NOT_SENT', phase='validate')"
   readonly OAuthExchangeError.resource_attempt_count AttributeError secondary [] unchanged=True
   readonly OAuthExchangeError.redirect_count AttributeError secondary [] unchanged=True
   readonly OAuthExchangeError.auth_exchange_count AttributeError secondary [] unchanged=True
@@ -210,16 +186,10 @@
   readonly OAuthExchangeError.auth_refresh_ids AttributeError secondary [] unchanged=True
   readonly OAuthExchangeError.auth_refresh_pending AttributeError secondary [] unchanged=True
   readonly OAuthExchangeError.wire_send_count AttributeError secondary [] unchanged=True
-  readonly OAuthExchangeError.provider_id AttributeError secondary [] unchanged=True
-  readonly OAuthExchangeError.refresh_id AttributeError secondary [] unchanged=True
-  readonly OAuthExchangeError.state AttributeError secondary [] unchanged=True
   readonly OAuthExchangeError.delivery_state AttributeError secondary [] unchanged=True
   readonly OAuthExchangeError.phase AttributeError secondary [] unchanged=True
   readonly OAuthExchangeError.status_code AttributeError secondary [] unchanged=True
   readonly OAuthExchangeError.oauth_error AttributeError secondary [] unchanged=True
-  property hints OAuthExchangeError.provider_id ('return',)
-  property hints OAuthExchangeError.refresh_id ('return',)
-  property hints OAuthExchangeError.state ('return',)
   property hints OAuthExchangeError.delivery_state ('return',)
   property hints OAuthExchangeError.phase ('return',)
   property hints OAuthExchangeError.status_code ('return',)
@@ -231,11 +201,11 @@
   positional OAuthExchangeError TypeError secondary []
   family AuthTimeoutError bases=('AuthRefreshError',) code=auth_timeout_error
   signature AuthTimeoutError keyword-only=True required=('effective_timeout', 'timeout_kind')
-  hints AuthTimeoutError ('effective_timeout', 'timeout_kind', 'provider_id', 'refresh_id', 'state', 'delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
-  defaults AuthTimeoutError fields=(('provider_id', None), ('refresh_id', None), ('state', 'UNKNOWN'), ('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('effective_timeout', 5.0), ('timeout_kind', 'phase')) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
+  hints AuthTimeoutError ('effective_timeout', 'timeout_kind', 'delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
+  defaults AuthTimeoutError fields=(('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('effective_timeout', 5.0), ('timeout_kind', 'phase')) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
   metadata AuthTimeoutError call=('auth_operation', 'auth-call', 'auth-parent') info=True headers=True cause=True secondary=True counters=(1, 2, 3, 4, 5, 6, ('refresh-one',), 7, 8)
-  supplied AuthTimeoutError (('provider_id', 'private-secret-provider'), ('refresh_id', 'private-secret-refresh'), ('state', 'READY'), ('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('effective_timeout', 5.0), ('timeout_kind', 'phase'))
-  safe AuthTimeoutError True text="AuthTimeoutError(operation_id='auth_operation', call_id='auth-call', state='READY', delivery_state='NOT_SENT', phase='validate', timeout_kind='phase')"
+  supplied AuthTimeoutError (('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('effective_timeout', 5.0), ('timeout_kind', 'phase'))
+  safe AuthTimeoutError True text="AuthTimeoutError(operation_id='auth_operation', call_id='auth-call', delivery_state='NOT_SENT', phase='validate', timeout_kind='phase')"
   readonly AuthTimeoutError.resource_attempt_count AttributeError secondary [] unchanged=True
   readonly AuthTimeoutError.redirect_count AttributeError secondary [] unchanged=True
   readonly AuthTimeoutError.auth_exchange_count AttributeError secondary [] unchanged=True
@@ -245,16 +215,10 @@
   readonly AuthTimeoutError.auth_refresh_ids AttributeError secondary [] unchanged=True
   readonly AuthTimeoutError.auth_refresh_pending AttributeError secondary [] unchanged=True
   readonly AuthTimeoutError.wire_send_count AttributeError secondary [] unchanged=True
-  readonly AuthTimeoutError.provider_id AttributeError secondary [] unchanged=True
-  readonly AuthTimeoutError.refresh_id AttributeError secondary [] unchanged=True
-  readonly AuthTimeoutError.state AttributeError secondary [] unchanged=True
   readonly AuthTimeoutError.delivery_state AttributeError secondary [] unchanged=True
   readonly AuthTimeoutError.phase AttributeError secondary [] unchanged=True
   readonly AuthTimeoutError.effective_timeout AttributeError secondary [] unchanged=True
   readonly AuthTimeoutError.timeout_kind AttributeError secondary [] unchanged=True
-  property hints AuthTimeoutError.provider_id ('return',)
-  property hints AuthTimeoutError.refresh_id ('return',)
-  property hints AuthTimeoutError.state ('return',)
   property hints AuthTimeoutError.delivery_state ('return',)
   property hints AuthTimeoutError.phase ('return',)
   property hints AuthTimeoutError.effective_timeout ('return',)
@@ -264,48 +228,13 @@
   undeclared AuthTimeoutError.oauth_error TypeError secondary []
   undeclared AuthTimeoutError.retry_stop_reason TypeError secondary []
   positional AuthTimeoutError TypeError secondary []
-  family AuthStateUncertainError bases=('AuthRefreshError',) code=auth_state_uncertain_error
-  signature AuthStateUncertainError keyword-only=True required=('failure_kind',)
-  hints AuthStateUncertainError ('failure_kind', 'status_code', 'provider_id', 'refresh_id', 'state', 'delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
-  defaults AuthStateUncertainError fields=(('provider_id', None), ('refresh_id', None), ('state', 'UNKNOWN'), ('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('failure_kind', 'transport'), ('status_code', None)) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
-  metadata AuthStateUncertainError call=('auth_operation', 'auth-call', 'auth-parent') info=True headers=True cause=True secondary=True counters=(1, 2, 3, 4, 5, 6, ('refresh-one',), 7, 8)
-  supplied AuthStateUncertainError (('provider_id', 'private-secret-provider'), ('refresh_id', 'private-secret-refresh'), ('state', 'READY'), ('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('failure_kind', 'transport'), ('status_code', None))
-  safe AuthStateUncertainError True text="AuthStateUncertainError(operation_id='auth_operation', call_id='auth-call', state='READY', delivery_state='NOT_SENT', phase='validate', failure_kind='transport')"
-  readonly AuthStateUncertainError.resource_attempt_count AttributeError secondary [] unchanged=True
-  readonly AuthStateUncertainError.redirect_count AttributeError secondary [] unchanged=True
-  readonly AuthStateUncertainError.auth_exchange_count AttributeError secondary [] unchanged=True
-  readonly AuthStateUncertainError.network_send_count AttributeError secondary [] unchanged=True
-  readonly AuthStateUncertainError.network_send_budget_used AttributeError secondary [] unchanged=True
-  readonly AuthStateUncertainError.auth_exchange_budget_used AttributeError secondary [] unchanged=True
-  readonly AuthStateUncertainError.auth_refresh_ids AttributeError secondary [] unchanged=True
-  readonly AuthStateUncertainError.auth_refresh_pending AttributeError secondary [] unchanged=True
-  readonly AuthStateUncertainError.wire_send_count AttributeError secondary [] unchanged=True
-  readonly AuthStateUncertainError.provider_id AttributeError secondary [] unchanged=True
-  readonly AuthStateUncertainError.refresh_id AttributeError secondary [] unchanged=True
-  readonly AuthStateUncertainError.state AttributeError secondary [] unchanged=True
-  readonly AuthStateUncertainError.delivery_state AttributeError secondary [] unchanged=True
-  readonly AuthStateUncertainError.phase AttributeError secondary [] unchanged=True
-  readonly AuthStateUncertainError.failure_kind AttributeError secondary [] unchanged=True
-  readonly AuthStateUncertainError.status_code AttributeError secondary [] unchanged=True
-  property hints AuthStateUncertainError.provider_id ('return',)
-  property hints AuthStateUncertainError.refresh_id ('return',)
-  property hints AuthStateUncertainError.state ('return',)
-  property hints AuthStateUncertainError.delivery_state ('return',)
-  property hints AuthStateUncertainError.phase ('return',)
-  property hints AuthStateUncertainError.failure_kind ('return',)
-  property hints AuthStateUncertainError.status_code ('return',)
-  undeclared AuthStateUncertainError.message TypeError secondary []
-  undeclared AuthStateUncertainError.status_code ValueError secondary []
-  undeclared AuthStateUncertainError.oauth_error TypeError secondary []
-  undeclared AuthStateUncertainError.retry_stop_reason TypeError secondary []
-  positional AuthStateUncertainError TypeError secondary []
   family AuthReauthorizationRequiredError bases=('AuthRefreshError',) code=auth_reauthorization_required_error
   signature AuthReauthorizationRequiredError keyword-only=True required=('condition',)
-  hints AuthReauthorizationRequiredError ('condition', 'provider_id', 'refresh_id', 'state', 'delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
-  defaults AuthReauthorizationRequiredError fields=(('provider_id', None), ('refresh_id', None), ('state', 'UNKNOWN'), ('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('condition', 'invalid_grant')) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
+  hints AuthReauthorizationRequiredError ('condition', 'delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
+  defaults AuthReauthorizationRequiredError fields=(('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('condition', 'invalid_grant')) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
   metadata AuthReauthorizationRequiredError call=('auth_operation', 'auth-call', 'auth-parent') info=True headers=True cause=True secondary=True counters=(1, 2, 3, 4, 5, 6, ('refresh-one',), 7, 8)
-  supplied AuthReauthorizationRequiredError (('provider_id', 'private-secret-provider'), ('refresh_id', 'private-secret-refresh'), ('state', 'READY'), ('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('condition', 'invalid_grant'))
-  safe AuthReauthorizationRequiredError True text="AuthReauthorizationRequiredError(operation_id='auth_operation', call_id='auth-call', state='READY', delivery_state='NOT_SENT', phase='validate', condition='invalid_grant')"
+  supplied AuthReauthorizationRequiredError (('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('condition', 'invalid_grant'))
+  safe AuthReauthorizationRequiredError True text="AuthReauthorizationRequiredError(operation_id='auth_operation', call_id='auth-call', delivery_state='NOT_SENT', phase='validate', condition='invalid_grant')"
   readonly AuthReauthorizationRequiredError.resource_attempt_count AttributeError secondary [] unchanged=True
   readonly AuthReauthorizationRequiredError.redirect_count AttributeError secondary [] unchanged=True
   readonly AuthReauthorizationRequiredError.auth_exchange_count AttributeError secondary [] unchanged=True
@@ -315,15 +244,9 @@
   readonly AuthReauthorizationRequiredError.auth_refresh_ids AttributeError secondary [] unchanged=True
   readonly AuthReauthorizationRequiredError.auth_refresh_pending AttributeError secondary [] unchanged=True
   readonly AuthReauthorizationRequiredError.wire_send_count AttributeError secondary [] unchanged=True
-  readonly AuthReauthorizationRequiredError.provider_id AttributeError secondary [] unchanged=True
-  readonly AuthReauthorizationRequiredError.refresh_id AttributeError secondary [] unchanged=True
-  readonly AuthReauthorizationRequiredError.state AttributeError secondary [] unchanged=True
   readonly AuthReauthorizationRequiredError.delivery_state AttributeError secondary [] unchanged=True
   readonly AuthReauthorizationRequiredError.phase AttributeError secondary [] unchanged=True
   readonly AuthReauthorizationRequiredError.condition AttributeError secondary [] unchanged=True
-  property hints AuthReauthorizationRequiredError.provider_id ('return',)
-  property hints AuthReauthorizationRequiredError.refresh_id ('return',)
-  property hints AuthReauthorizationRequiredError.state ('return',)
   property hints AuthReauthorizationRequiredError.delivery_state ('return',)
   property hints AuthReauthorizationRequiredError.phase ('return',)
   property hints AuthReauthorizationRequiredError.condition ('return',)
@@ -332,301 +255,31 @@
   undeclared AuthReauthorizationRequiredError.oauth_error TypeError secondary []
   undeclared AuthReauthorizationRequiredError.retry_stop_reason TypeError secondary []
   positional AuthReauthorizationRequiredError TypeError secondary []
-  family AuthStateConflictError bases=('AuthRefreshError',) code=auth_state_conflict_error
-  signature AuthStateConflictError keyword-only=True required=('action',)
-  hints AuthStateConflictError ('action', 'provider_id', 'refresh_id', 'state', 'delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
-  defaults AuthStateConflictError fields=(('provider_id', None), ('refresh_id', None), ('state', 'UNKNOWN'), ('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('action', 'exchange_code')) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
-  metadata AuthStateConflictError call=('auth_operation', 'auth-call', 'auth-parent') info=True headers=True cause=True secondary=True counters=(1, 2, 3, 4, 5, 6, ('refresh-one',), 7, 8)
-  supplied AuthStateConflictError (('provider_id', 'private-secret-provider'), ('refresh_id', 'private-secret-refresh'), ('state', 'READY'), ('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('action', 'exchange_code'))
-  safe AuthStateConflictError True text="AuthStateConflictError(operation_id='auth_operation', call_id='auth-call', state='READY', delivery_state='NOT_SENT', phase='validate', action='exchange_code')"
-  readonly AuthStateConflictError.resource_attempt_count AttributeError secondary [] unchanged=True
-  readonly AuthStateConflictError.redirect_count AttributeError secondary [] unchanged=True
-  readonly AuthStateConflictError.auth_exchange_count AttributeError secondary [] unchanged=True
-  readonly AuthStateConflictError.network_send_count AttributeError secondary [] unchanged=True
-  readonly AuthStateConflictError.network_send_budget_used AttributeError secondary [] unchanged=True
-  readonly AuthStateConflictError.auth_exchange_budget_used AttributeError secondary [] unchanged=True
-  readonly AuthStateConflictError.auth_refresh_ids AttributeError secondary [] unchanged=True
-  readonly AuthStateConflictError.auth_refresh_pending AttributeError secondary [] unchanged=True
-  readonly AuthStateConflictError.wire_send_count AttributeError secondary [] unchanged=True
-  readonly AuthStateConflictError.provider_id AttributeError secondary [] unchanged=True
-  readonly AuthStateConflictError.refresh_id AttributeError secondary [] unchanged=True
-  readonly AuthStateConflictError.state AttributeError secondary [] unchanged=True
-  readonly AuthStateConflictError.delivery_state AttributeError secondary [] unchanged=True
-  readonly AuthStateConflictError.phase AttributeError secondary [] unchanged=True
-  readonly AuthStateConflictError.action AttributeError secondary [] unchanged=True
-  property hints AuthStateConflictError.provider_id ('return',)
-  property hints AuthStateConflictError.refresh_id ('return',)
-  property hints AuthStateConflictError.state ('return',)
-  property hints AuthStateConflictError.delivery_state ('return',)
-  property hints AuthStateConflictError.phase ('return',)
-  property hints AuthStateConflictError.action ('return',)
-  undeclared AuthStateConflictError.message TypeError secondary []
-  undeclared AuthStateConflictError.status_code TypeError secondary []
-  undeclared AuthStateConflictError.oauth_error TypeError secondary []
-  undeclared AuthStateConflictError.retry_stop_reason TypeError secondary []
-  positional AuthStateConflictError TypeError secondary []
-  family AuthConcurrencyLimitError bases=('AuthRefreshError',) code=auth_concurrency_limit_error
-  signature AuthConcurrencyLimitError keyword-only=True required=('limit_kind', 'limit')
-  hints AuthConcurrencyLimitError ('limit_kind', 'limit', 'provider_id', 'refresh_id', 'state', 'delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
-  defaults AuthConcurrencyLimitError fields=(('provider_id', None), ('refresh_id', None), ('state', 'UNKNOWN'), ('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('limit_kind', 'waiters'), ('limit', 3)) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
-  metadata AuthConcurrencyLimitError call=('auth_operation', 'auth-call', 'auth-parent') info=True headers=True cause=True secondary=True counters=(1, 2, 3, 4, 5, 6, ('refresh-one',), 7, 8)
-  supplied AuthConcurrencyLimitError (('provider_id', 'private-secret-provider'), ('refresh_id', 'private-secret-refresh'), ('state', 'READY'), ('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('limit_kind', 'waiters'), ('limit', 3))
-  safe AuthConcurrencyLimitError True text="AuthConcurrencyLimitError(operation_id='auth_operation', call_id='auth-call', state='READY', delivery_state='NOT_SENT', phase='validate', limit_kind='waiters', limit=3)"
-  readonly AuthConcurrencyLimitError.resource_attempt_count AttributeError secondary [] unchanged=True
-  readonly AuthConcurrencyLimitError.redirect_count AttributeError secondary [] unchanged=True
-  readonly AuthConcurrencyLimitError.auth_exchange_count AttributeError secondary [] unchanged=True
-  readonly AuthConcurrencyLimitError.network_send_count AttributeError secondary [] unchanged=True
-  readonly AuthConcurrencyLimitError.network_send_budget_used AttributeError secondary [] unchanged=True
-  readonly AuthConcurrencyLimitError.auth_exchange_budget_used AttributeError secondary [] unchanged=True
-  readonly AuthConcurrencyLimitError.auth_refresh_ids AttributeError secondary [] unchanged=True
-  readonly AuthConcurrencyLimitError.auth_refresh_pending AttributeError secondary [] unchanged=True
-  readonly AuthConcurrencyLimitError.wire_send_count AttributeError secondary [] unchanged=True
-  readonly AuthConcurrencyLimitError.provider_id AttributeError secondary [] unchanged=True
-  readonly AuthConcurrencyLimitError.refresh_id AttributeError secondary [] unchanged=True
-  readonly AuthConcurrencyLimitError.state AttributeError secondary [] unchanged=True
-  readonly AuthConcurrencyLimitError.delivery_state AttributeError secondary [] unchanged=True
-  readonly AuthConcurrencyLimitError.phase AttributeError secondary [] unchanged=True
-  readonly AuthConcurrencyLimitError.limit_kind AttributeError secondary [] unchanged=True
-  readonly AuthConcurrencyLimitError.limit AttributeError secondary [] unchanged=True
-  property hints AuthConcurrencyLimitError.provider_id ('return',)
-  property hints AuthConcurrencyLimitError.refresh_id ('return',)
-  property hints AuthConcurrencyLimitError.state ('return',)
-  property hints AuthConcurrencyLimitError.delivery_state ('return',)
-  property hints AuthConcurrencyLimitError.phase ('return',)
-  property hints AuthConcurrencyLimitError.limit_kind ('return',)
-  property hints AuthConcurrencyLimitError.limit ('return',)
-  undeclared AuthConcurrencyLimitError.message TypeError secondary []
-  undeclared AuthConcurrencyLimitError.status_code TypeError secondary []
-  undeclared AuthConcurrencyLimitError.oauth_error TypeError secondary []
-  undeclared AuthConcurrencyLimitError.retry_stop_reason TypeError secondary []
-  positional AuthConcurrencyLimitError TypeError secondary []
-  family AuthBudgetExceededError bases=('AuthRefreshError',) code=auth_budget_exceeded_error
-  signature AuthBudgetExceededError keyword-only=True required=('budget_kind', 'limit', 'used')
-  hints AuthBudgetExceededError ('budget_kind', 'limit', 'used', 'provider_id', 'refresh_id', 'state', 'delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
-  defaults AuthBudgetExceededError fields=(('provider_id', None), ('refresh_id', None), ('state', 'UNKNOWN'), ('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('budget_kind', 'auth_exchange'), ('limit', 2), ('used', 2)) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
-  metadata AuthBudgetExceededError call=('auth_operation', 'auth-call', 'auth-parent') info=True headers=True cause=True secondary=True counters=(1, 2, 3, 4, 5, 6, ('refresh-one',), 7, 8)
-  supplied AuthBudgetExceededError (('provider_id', 'private-secret-provider'), ('refresh_id', 'private-secret-refresh'), ('state', 'READY'), ('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('budget_kind', 'auth_exchange'), ('limit', 2), ('used', 2))
-  safe AuthBudgetExceededError True text="AuthBudgetExceededError(operation_id='auth_operation', call_id='auth-call', state='READY', delivery_state='NOT_SENT', phase='validate', budget_kind='auth_exchange', limit=2, used=2)"
-  readonly AuthBudgetExceededError.resource_attempt_count AttributeError secondary [] unchanged=True
-  readonly AuthBudgetExceededError.redirect_count AttributeError secondary [] unchanged=True
-  readonly AuthBudgetExceededError.auth_exchange_count AttributeError secondary [] unchanged=True
-  readonly AuthBudgetExceededError.network_send_count AttributeError secondary [] unchanged=True
-  readonly AuthBudgetExceededError.network_send_budget_used AttributeError secondary [] unchanged=True
-  readonly AuthBudgetExceededError.auth_exchange_budget_used AttributeError secondary [] unchanged=True
-  readonly AuthBudgetExceededError.auth_refresh_ids AttributeError secondary [] unchanged=True
-  readonly AuthBudgetExceededError.auth_refresh_pending AttributeError secondary [] unchanged=True
-  readonly AuthBudgetExceededError.wire_send_count AttributeError secondary [] unchanged=True
-  readonly AuthBudgetExceededError.provider_id AttributeError secondary [] unchanged=True
-  readonly AuthBudgetExceededError.refresh_id AttributeError secondary [] unchanged=True
-  readonly AuthBudgetExceededError.state AttributeError secondary [] unchanged=True
-  readonly AuthBudgetExceededError.delivery_state AttributeError secondary [] unchanged=True
-  readonly AuthBudgetExceededError.phase AttributeError secondary [] unchanged=True
-  readonly AuthBudgetExceededError.budget_kind AttributeError secondary [] unchanged=True
-  readonly AuthBudgetExceededError.limit AttributeError secondary [] unchanged=True
-  readonly AuthBudgetExceededError.used AttributeError secondary [] unchanged=True
-  property hints AuthBudgetExceededError.provider_id ('return',)
-  property hints AuthBudgetExceededError.refresh_id ('return',)
-  property hints AuthBudgetExceededError.state ('return',)
-  property hints AuthBudgetExceededError.delivery_state ('return',)
-  property hints AuthBudgetExceededError.phase ('return',)
-  property hints AuthBudgetExceededError.budget_kind ('return',)
-  property hints AuthBudgetExceededError.limit ('return',)
-  property hints AuthBudgetExceededError.used ('return',)
-  undeclared AuthBudgetExceededError.message TypeError secondary []
-  undeclared AuthBudgetExceededError.status_code TypeError secondary []
-  undeclared AuthBudgetExceededError.oauth_error TypeError secondary []
-  undeclared AuthBudgetExceededError.retry_stop_reason TypeError secondary []
-  positional AuthBudgetExceededError TypeError secondary []
-  family AuthTokenLoadError bases=('AuthRefreshError',) code=auth_token_load_error
-  signature AuthTokenLoadError keyword-only=True required=('purpose',)
-  hints AuthTokenLoadError ('purpose', 'provider_id', 'refresh_id', 'state', 'delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
-  defaults AuthTokenLoadError fields=(('provider_id', None), ('refresh_id', None), ('state', 'UNKNOWN'), ('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('purpose', 'initial_load')) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
-  metadata AuthTokenLoadError call=('auth_operation', 'auth-call', 'auth-parent') info=True headers=True cause=True secondary=True counters=(1, 2, 3, 4, 5, 6, ('refresh-one',), 7, 8)
-  supplied AuthTokenLoadError (('provider_id', 'private-secret-provider'), ('refresh_id', 'private-secret-refresh'), ('state', 'READY'), ('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('purpose', 'initial_load'))
-  safe AuthTokenLoadError True text="AuthTokenLoadError(operation_id='auth_operation', call_id='auth-call', state='READY', delivery_state='NOT_SENT', phase='validate', purpose='initial_load')"
-  readonly AuthTokenLoadError.resource_attempt_count AttributeError secondary [] unchanged=True
-  readonly AuthTokenLoadError.redirect_count AttributeError secondary [] unchanged=True
-  readonly AuthTokenLoadError.auth_exchange_count AttributeError secondary [] unchanged=True
-  readonly AuthTokenLoadError.network_send_count AttributeError secondary [] unchanged=True
-  readonly AuthTokenLoadError.network_send_budget_used AttributeError secondary [] unchanged=True
-  readonly AuthTokenLoadError.auth_exchange_budget_used AttributeError secondary [] unchanged=True
-  readonly AuthTokenLoadError.auth_refresh_ids AttributeError secondary [] unchanged=True
-  readonly AuthTokenLoadError.auth_refresh_pending AttributeError secondary [] unchanged=True
-  readonly AuthTokenLoadError.wire_send_count AttributeError secondary [] unchanged=True
-  readonly AuthTokenLoadError.provider_id AttributeError secondary [] unchanged=True
-  readonly AuthTokenLoadError.refresh_id AttributeError secondary [] unchanged=True
-  readonly AuthTokenLoadError.state AttributeError secondary [] unchanged=True
-  readonly AuthTokenLoadError.delivery_state AttributeError secondary [] unchanged=True
-  readonly AuthTokenLoadError.phase AttributeError secondary [] unchanged=True
-  readonly AuthTokenLoadError.purpose AttributeError secondary [] unchanged=True
-  property hints AuthTokenLoadError.provider_id ('return',)
-  property hints AuthTokenLoadError.refresh_id ('return',)
-  property hints AuthTokenLoadError.state ('return',)
-  property hints AuthTokenLoadError.delivery_state ('return',)
-  property hints AuthTokenLoadError.phase ('return',)
-  property hints AuthTokenLoadError.purpose ('return',)
-  undeclared AuthTokenLoadError.message TypeError secondary []
-  undeclared AuthTokenLoadError.status_code TypeError secondary []
-  undeclared AuthTokenLoadError.oauth_error TypeError secondary []
-  undeclared AuthTokenLoadError.retry_stop_reason TypeError secondary []
-  positional AuthTokenLoadError TypeError secondary []
-  family AuthTokenStoreError bases=('AuthRefreshError',) code=auth_token_store_error
-  signature AuthTokenStoreError keyword-only=True required=()
-  hints AuthTokenStoreError ('action', 'expected_revision', 'pending_revision', 'provider_id', 'refresh_id', 'state', 'delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
-  defaults AuthTokenStoreError fields=(('provider_id', None), ('refresh_id', None), ('state', 'UNKNOWN'), ('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('action', 'store'), ('expected_revision', None), ('pending_revision', None)) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
-  metadata AuthTokenStoreError call=('auth_operation', 'auth-call', 'auth-parent') info=True headers=True cause=True secondary=True counters=(1, 2, 3, 4, 5, 6, ('refresh-one',), 7, 8)
-  supplied AuthTokenStoreError (('provider_id', 'private-secret-provider'), ('refresh_id', 'private-secret-refresh'), ('state', 'READY'), ('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('action', 'store'), ('expected_revision', None), ('pending_revision', None))
-  safe AuthTokenStoreError True text="AuthTokenStoreError(operation_id='auth_operation', call_id='auth-call', state='READY', delivery_state='NOT_SENT', phase='validate', action='store')"
-  readonly AuthTokenStoreError.resource_attempt_count AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreError.redirect_count AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreError.auth_exchange_count AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreError.network_send_count AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreError.network_send_budget_used AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreError.auth_exchange_budget_used AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreError.auth_refresh_ids AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreError.auth_refresh_pending AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreError.wire_send_count AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreError.provider_id AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreError.refresh_id AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreError.state AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreError.delivery_state AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreError.phase AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreError.action AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreError.expected_revision AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreError.pending_revision AttributeError secondary [] unchanged=True
-  property hints AuthTokenStoreError.provider_id ('return',)
-  property hints AuthTokenStoreError.refresh_id ('return',)
-  property hints AuthTokenStoreError.state ('return',)
-  property hints AuthTokenStoreError.delivery_state ('return',)
-  property hints AuthTokenStoreError.phase ('return',)
-  property hints AuthTokenStoreError.action ('return',)
-  property hints AuthTokenStoreError.expected_revision ('return',)
-  property hints AuthTokenStoreError.pending_revision ('return',)
-  undeclared AuthTokenStoreError.message TypeError secondary []
-  undeclared AuthTokenStoreError.status_code TypeError secondary []
-  undeclared AuthTokenStoreError.oauth_error TypeError secondary []
-  undeclared AuthTokenStoreError.retry_stop_reason TypeError secondary []
-  positional AuthTokenStoreError TypeError secondary []
-  family AuthTokenStoreConflictError bases=('AuthTokenStoreError',) code=auth_token_store_conflict_error
-  signature AuthTokenStoreConflictError keyword-only=True required=()
-  hints AuthTokenStoreConflictError ('observed_revision', 'action', 'expected_revision', 'pending_revision', 'provider_id', 'refresh_id', 'state', 'delivery_state', 'phase', 'operation_id', 'call_id', 'parent_session_id', 'info', 'cause', 'secondary_errors', 'resource_attempt_count', 'redirect_count', 'auth_exchange_count', 'network_send_count', 'network_send_budget_used', 'auth_exchange_budget_used', 'auth_refresh_ids', 'auth_refresh_pending', 'wire_send_count', 'return')
-  defaults AuthTokenStoreConflictError fields=(('provider_id', None), ('refresh_id', None), ('state', 'UNKNOWN'), ('delivery_state', <DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>), ('phase', 'unknown'), ('action', 'store'), ('expected_revision', None), ('pending_revision', None), ('observed_revision', None)) counters=(0, 0, 0, 0, 0, 0, (), 0, None) common=(None, None, None, None, None, ())
-  metadata AuthTokenStoreConflictError call=('auth_operation', 'auth-call', 'auth-parent') info=True headers=True cause=True secondary=True counters=(1, 2, 3, 4, 5, 6, ('refresh-one',), 7, 8)
-  supplied AuthTokenStoreConflictError (('provider_id', 'private-secret-provider'), ('refresh_id', 'private-secret-refresh'), ('state', 'READY'), ('delivery_state', <DeliveryState.NOT_SENT: 'NOT_SENT'>), ('phase', 'validate'), ('action', 'store'), ('expected_revision', None), ('pending_revision', None), ('observed_revision', None))
-  safe AuthTokenStoreConflictError True text="AuthTokenStoreConflictError(operation_id='auth_operation', call_id='auth-call', state='READY', delivery_state='NOT_SENT', phase='validate', action='store')"
-  readonly AuthTokenStoreConflictError.resource_attempt_count AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreConflictError.redirect_count AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreConflictError.auth_exchange_count AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreConflictError.network_send_count AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreConflictError.network_send_budget_used AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreConflictError.auth_exchange_budget_used AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreConflictError.auth_refresh_ids AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreConflictError.auth_refresh_pending AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreConflictError.wire_send_count AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreConflictError.provider_id AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreConflictError.refresh_id AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreConflictError.state AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreConflictError.delivery_state AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreConflictError.phase AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreConflictError.action AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreConflictError.expected_revision AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreConflictError.pending_revision AttributeError secondary [] unchanged=True
-  readonly AuthTokenStoreConflictError.observed_revision AttributeError secondary [] unchanged=True
-  property hints AuthTokenStoreConflictError.provider_id ('return',)
-  property hints AuthTokenStoreConflictError.refresh_id ('return',)
-  property hints AuthTokenStoreConflictError.state ('return',)
-  property hints AuthTokenStoreConflictError.delivery_state ('return',)
-  property hints AuthTokenStoreConflictError.phase ('return',)
-  property hints AuthTokenStoreConflictError.action ('return',)
-  property hints AuthTokenStoreConflictError.expected_revision ('return',)
-  property hints AuthTokenStoreConflictError.pending_revision ('return',)
-  property hints AuthTokenStoreConflictError.observed_revision ('return',)
-  undeclared AuthTokenStoreConflictError.message TypeError secondary []
-  undeclared AuthTokenStoreConflictError.status_code TypeError secondary []
-  undeclared AuthTokenStoreConflictError.oauth_error TypeError secondary []
-  undeclared AuthTokenStoreConflictError.retry_stop_reason TypeError secondary []
-  positional AuthTokenStoreConflictError TypeError secondary []
-  closed inherited state default='CLOSED'
-  closed state omitted = AuthProviderClosedError: AuthProviderClosedError(state='CLOSED', delivery_state='MAYBE_SENT', phase='unknown') [delivery_state=<DeliveryState.MAYBE_SENT: 'MAYBE_SENT'>, phase='unknown'] auth_provider_closed_error
   missing required AuthProviderExecutionError TypeError secondary []
   missing required TokenExpiredError TypeError secondary []
   missing required AuthTimeoutError TypeError secondary []
-  missing required AuthStateUncertainError TypeError secondary []
   missing required AuthReauthorizationRequiredError TypeError secondary []
-  missing required AuthStateConflictError TypeError secondary []
-  missing required AuthConcurrencyLimitError TypeError secondary []
-  missing required AuthBudgetExceededError TypeError secondary []
-  missing required AuthTokenLoadError TypeError secondary []
-  oauth values OAuthExchangeError {'status_code': 400, 'oauth_error': 'invalid_client'} returned "OAuthExchangeError(state='UNKNOWN', delivery_state='MAYBE_SENT', phase='unknown', status_code=400, oauth_error='invalid_client')"
+  oauth values OAuthExchangeError {'status_code': 400, 'oauth_error': 'invalid_client'} returned "OAuthExchangeError(delivery_state='MAYBE_SENT', phase='unknown', status_code=400, oauth_error='invalid_client')"
   oauth values OAuthExchangeError {'status_code': 600} ValueError secondary []
   oauth values OAuthExchangeError {'status_code': True} ValueError secondary []
   oauth values OAuthExchangeError {'oauth_error': 'slow_down'} ValueError secondary []
   oauth values AuthTimeoutError {'effective_timeout': -1.0, 'timeout_kind': 'phase'} ValueError secondary []
   oauth values AuthTimeoutError {'effective_timeout': 1.0, 'timeout_kind': 'total'} ValueError secondary []
-  oauth values AuthStateUncertainError {'failure_kind': 'unknown'} ValueError secondary []
+  oauth values AuthReauthorizationRequiredError {'condition': 'no_refresh_token'} returned "AuthReauthorizationRequiredError(delivery_state='MAYBE_SENT', phase='unknown', condition='no_refresh_token')"
   oauth values AuthReauthorizationRequiredError {'condition': 'expired'} ValueError secondary []
-  oauth values AuthStateConflictError {'action': 'delete'} ValueError secondary []
-  oauth values AuthConcurrencyLimitError {'limit_kind': 'threads', 'limit': 1} ValueError secondary []
-  oauth values AuthConcurrencyLimitError {'limit_kind': 'pending_refreshes', 'limit': -1} ValueError secondary []
-  oauth values AuthBudgetExceededError {'budget_kind': 'tokens', 'limit': 1, 'used': 1} ValueError secondary []
-  oauth values AuthBudgetExceededError {'budget_kind': 'parent_network', 'limit': 1, 'used': True} ValueError secondary []
-  oauth values AuthTokenLoadError {'purpose': 'retry_store'} ValueError secondary []
-  oauth values AuthTokenStoreError {'action': 'retry_store', 'expected_revision': 2, 'pending_revision': 3} returned "AuthTokenStoreError(state='UNKNOWN', delivery_state='MAYBE_SENT', phase='unknown', action='retry_store', expected_revision=2, pending_revision=3)"
-  oauth values AuthTokenStoreError {'action': 'reload'} ValueError secondary []
-  oauth values AuthTokenStoreError {'expected_revision': -1} ValueError secondary []
-  oauth values AuthTokenStoreError {'pending_revision': True} ValueError secondary []
-  oauth values AuthTokenStoreConflictError {'action': 'load', 'expected_revision': 1, 'observed_revision': 1} returned "AuthTokenStoreConflictError(state='UNKNOWN', delivery_state='MAYBE_SENT', phase='unknown', action='load', expected_revision=1, observed_revision=1)"
-  oauth values AuthTokenStoreConflictError {'observed_revision': 1.0} ValueError secondary []
-  auth state UNKNOWN = 'UNKNOWN'
-  closed rejects UNKNOWN ! ValueError: state must be one of its declared values []
-  auth state UNINITIALIZED = 'UNINITIALIZED'
-  closed rejects UNINITIALIZED ! ValueError: state must be one of its declared values []
-  auth state LOAD_FAILED = 'LOAD_FAILED'
-  closed rejects LOAD_FAILED ! ValueError: state must be one of its declared values []
-  auth state READY = 'READY'
-  closed rejects READY ! ValueError: state must be one of its declared values []
-  auth state PERSIST_PENDING = 'PERSIST_PENDING'
-  closed rejects PERSIST_PENDING ! ValueError: state must be one of its declared values []
-  auth state EXCHANGE_REJECTED = 'EXCHANGE_REJECTED'
-  closed rejects EXCHANGE_REJECTED ! ValueError: state must be one of its declared values []
-  auth state UNCERTAIN = 'UNCERTAIN'
-  closed rejects UNCERTAIN ! ValueError: state must be one of its declared values []
-  auth state REAUTH_REQUIRED = 'REAUTH_REQUIRED'
-  closed rejects REAUTH_REQUIRED ! ValueError: state must be one of its declared values []
-  auth state CLOSING = 'CLOSING'
-  closed state CLOSING = 'CLOSING'
-  auth state CLOSED = 'CLOSED'
-  closed state CLOSED = 'CLOSED'
-  auth state CREATED = 'CREATED'
-  closed rejects CREATED ! ValueError: state must be one of its declared values []
-  auth state EXCHANGING = 'EXCHANGING'
-  closed rejects EXCHANGING ! ValueError: state must be one of its declared values []
-  auth state SUCCEEDED = 'SUCCEEDED'
-  closed rejects SUCCEEDED ! ValueError: state must be one of its declared values []
-  auth state FAILED_NOT_SENT = 'FAILED_NOT_SENT'
-  closed rejects FAILED_NOT_SENT ! ValueError: state must be one of its declared values []
-  auth phase admission = 'admission'
-  auth phase load = 'load'
   auth phase connect = 'connect'
   auth phase read = 'read'
   auth phase write = 'write'
   auth phase pool = 'pool'
   auth phase validate = 'validate'
-  auth phase store = 'store'
-  auth phase wait = 'wait'
   auth phase unknown = 'unknown'
+  auth phase store ! ValueError: phase must be one of its declared values []
   auth delivery NOT_SENT = 'NOT_SENT'
   auth delivery MAYBE_SENT = 'MAYBE_SENT'
   auth delivery RESPONSE_STARTED = 'RESPONSE_STARTED'
   provider callback get = 'get'
   provider callback invalidate = 'invalidate'
   provider callback refresh = 'refresh'
-  omitted auth state = 'UNKNOWN'
-  omitted closed provider state = 'CLOSED'
-  invalid auth state unknown ! ValueError: state must be one of its declared values []
-  invalid auth state none ! ValueError: state must be one of its declared values []
-  invalid auth state bool ! ValueError: state must be one of its declared values []
-  invalid auth state list ! ValueError: state must be one of its declared values []
   invalid auth phase unknown ! ValueError: phase must be one of its declared values []
   invalid auth phase none ! ValueError: phase must be one of its declared values []
   invalid auth phase bool ! ValueError: phase must be one of its declared values []
@@ -635,14 +288,6 @@
   invalid auth delivery_state none ! ValueError: delivery_state must be a DeliveryState []
   invalid auth delivery_state bool ! ValueError: delivery_state must be a DeliveryState []
   invalid auth delivery_state list ! ValueError: delivery_state must be a DeliveryState []
-  empty auth provider_id = ''
-  invalid auth provider_id number ! ValueError: provider_id must be a string or None []
-  invalid auth provider_id bool ! ValueError: provider_id must be a string or None []
-  invalid auth provider_id list ! ValueError: provider_id must be a string or None []
-  empty auth refresh_id = ''
-  invalid auth refresh_id number ! ValueError: refresh_id must be a string or None []
-  invalid auth refresh_id bool ! ValueError: refresh_id must be a string or None []
-  invalid auth refresh_id list ! ValueError: refresh_id must be a string or None []
   signer index None = None
   signer index 0 = 0
   signer index 3 = 3
