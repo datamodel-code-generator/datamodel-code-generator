@@ -24,7 +24,7 @@ _COUNTERS = (
     "auth_refresh_pending",
     "wire_send_count",
 )
-_AUTH_FIELDS = ("provider_id", "refresh_id", "state", "delivery_state", "phase")
+_AUTH_FIELDS = ("delivery_state", "phase")
 _FAMILIES = (
     ("AuthConfigurationError", {}, ("field_path", "condition", "source_uri", "source_pointer")),
     ("SigningConfigurationError", {}, ("field_path", "condition", "source_uri", "source_pointer")),
@@ -32,25 +32,10 @@ _FAMILIES = (
     ("AuthRefreshError", {}, ()),
     ("AuthProviderExecutionError", {"callback": "get"}, ("callback",)),
     ("TokenExpiredError", {"condition": "expired"}, ("condition", "expires_at")),
-    ("AuthProviderClosedError", {"state": "CLOSED"}, ()),
+    ("AuthProviderClosedError", {}, ()),
     ("OAuthExchangeError", {}, ("status_code", "oauth_error")),
     ("AuthTimeoutError", {"effective_timeout": 5.0, "timeout_kind": "phase"}, ("effective_timeout", "timeout_kind")),
-    ("AuthStateUncertainError", {"failure_kind": "transport"}, ("failure_kind", "status_code")),
     ("AuthReauthorizationRequiredError", {"condition": "invalid_grant"}, ("condition",)),
-    ("AuthStateConflictError", {"action": "get"}, ("action",)),
-    ("AuthConcurrencyLimitError", {"limit_kind": "waiters", "limit": 3}, ("limit_kind", "limit")),
-    (
-        "AuthBudgetExceededError",
-        {"budget_kind": "auth_exchange", "limit": 2, "used": 2},
-        ("budget_kind", "limit", "used"),
-    ),
-    ("AuthTokenLoadError", {"purpose": "initial_load"}, ("purpose",)),
-    ("AuthTokenStoreError", {}, ("action", "expected_revision", "pending_revision")),
-    (
-        "AuthTokenStoreConflictError",
-        {},
-        ("action", "expected_revision", "pending_revision", "observed_revision"),
-    ),
 )
 
 
@@ -93,9 +78,6 @@ def _constructors(errors: ModuleType, responses: ModuleType, lines: list[str]) -
             )
         if auth_fields:
             values.update(
-                provider_id="private-secret-provider",
-                refresh_id="private-secret-refresh",
-                state="CLOSING" if name == "AuthProviderClosedError" else "READY",
                 phase="validate",
                 delivery_state=errors.DeliveryState.NOT_SENT,
             )
@@ -132,19 +114,11 @@ def _constructors(errors: ModuleType, responses: ModuleType, lines: list[str]) -
                 f"  undeclared {name}.{keyword} {outcome(lambda constructor=constructor, required=required, keyword=keyword: constructor(**required, **{keyword: 'private-secret'}))}"
             )
         lines.append(f"  positional {name} {outcome(lambda constructor=constructor: constructor('private-secret'))}")
-    parameters = signature(errors.AuthProviderClosedError).parameters
-    lines.append(f"  closed inherited state default={parameters['state'].default!r}")
-    record(lines, "closed state omitted", errors.AuthProviderClosedError)
     for name in (
         "AuthProviderExecutionError",
         "TokenExpiredError",
         "AuthTimeoutError",
-        "AuthStateUncertainError",
         "AuthReauthorizationRequiredError",
-        "AuthStateConflictError",
-        "AuthConcurrencyLimitError",
-        "AuthBudgetExceededError",
-        "AuthTokenLoadError",
     ):
         lines.append(f"  missing required {name} {outcome(getattr(errors, name))}")
     for name, values in (
@@ -154,20 +128,8 @@ def _constructors(errors: ModuleType, responses: ModuleType, lines: list[str]) -
         ("OAuthExchangeError", {"oauth_error": "slow_down"}),
         ("AuthTimeoutError", {"effective_timeout": -1.0, "timeout_kind": "phase"}),
         ("AuthTimeoutError", {"effective_timeout": 1.0, "timeout_kind": "total"}),
-        ("AuthStateUncertainError", {"failure_kind": "unknown"}),
+        ("AuthReauthorizationRequiredError", {"condition": "no_refresh_token"}),
         ("AuthReauthorizationRequiredError", {"condition": "expired"}),
-        ("AuthStateConflictError", {"action": "delete"}),
-        ("AuthConcurrencyLimitError", {"limit_kind": "threads", "limit": 1}),
-        ("AuthConcurrencyLimitError", {"limit_kind": "pending_refreshes", "limit": -1}),
-        ("AuthBudgetExceededError", {"budget_kind": "tokens", "limit": 1, "used": 1}),
-        ("AuthBudgetExceededError", {"budget_kind": "parent_network", "limit": 1, "used": True}),
-        ("AuthTokenLoadError", {"purpose": "retry_store"}),
-        ("AuthTokenStoreError", {"action": "retry_store", "expected_revision": 2, "pending_revision": 3}),
-        ("AuthTokenStoreError", {"action": "reload"}),
-        ("AuthTokenStoreError", {"expected_revision": -1}),
-        ("AuthTokenStoreError", {"pending_revision": True}),
-        ("AuthTokenStoreConflictError", {"action": "load", "expected_revision": 1, "observed_revision": 1}),
-        ("AuthTokenStoreConflictError", {"observed_revision": 1.0}),
     ):
         lines.append(
             f"  oauth values {name} {values} {outcome(lambda name=name, values=values: str(getattr(errors, name)(**values)))}"
@@ -175,30 +137,7 @@ def _constructors(errors: ModuleType, responses: ModuleType, lines: list[str]) -
 
 
 def _validation(errors: ModuleType, lines: list[str]) -> None:
-    for state in (
-        "UNKNOWN",
-        "UNINITIALIZED",
-        "LOAD_FAILED",
-        "READY",
-        "PERSIST_PENDING",
-        "EXCHANGE_REJECTED",
-        "UNCERTAIN",
-        "REAUTH_REQUIRED",
-        "CLOSING",
-        "CLOSED",
-        "CREATED",
-        "EXCHANGING",
-        "SUCCEEDED",
-        "FAILED_NOT_SENT",
-    ):
-        record(lines, f"auth state {state}", lambda state=state: errors.AuthRefreshError(state=state).state)
-        if state in {"CLOSING", "CLOSED"}:
-            record(
-                lines, f"closed state {state}", lambda state=state: errors.AuthProviderClosedError(state=state).state
-            )
-        else:
-            record(lines, f"closed rejects {state}", lambda state=state: errors.AuthProviderClosedError(state=state))
-    for phase in ("admission", "load", "connect", "read", "write", "pool", "validate", "store", "wait", "unknown"):
+    for phase in ("connect", "read", "write", "pool", "validate", "unknown", "store"):
         record(lines, f"auth phase {phase}", lambda phase=phase: errors.AuthRefreshError(phase=phase).phase)
     for state in errors.DeliveryState:
         record(
@@ -212,18 +151,8 @@ def _validation(errors: ModuleType, lines: list[str]) -> None:
             f"provider callback {callback}",
             lambda callback=callback: errors.AuthProviderExecutionError(callback=callback).callback,
         )
-    record(lines, "omitted auth state", lambda: errors.AuthRefreshError().state)
-    record(lines, "omitted closed provider state", lambda: errors.AuthProviderClosedError().state)
-    for field in ("state", "phase", "delivery_state"):
+    for field in ("phase", "delivery_state"):
         for label, value in (("unknown", "private-secret"), ("none", None), ("bool", True), ("list", [])):
-            record(
-                lines,
-                f"invalid auth {field} {label}",
-                lambda field=field, value=value: errors.AuthRefreshError(**{field: value}),
-            )
-    for field in ("provider_id", "refresh_id"):
-        record(lines, f"empty auth {field}", lambda field=field: getattr(errors.AuthRefreshError(**{field: ""}), field))
-        for label, value in (("number", 1), ("bool", True), ("list", [])):
             record(
                 lines,
                 f"invalid auth {field} {label}",

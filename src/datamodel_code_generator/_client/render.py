@@ -184,8 +184,6 @@ _AUTH_NAMES: Final = (
     "AsyncRequestSigner",
     "AsyncStaticCredentialProvider",
     "AsyncStaticTokenProvider",
-    "AsyncTokenLoad",
-    "AsyncTokenStore",
     "AuthConfig",
     "BasicCredential",
     "BearerCredential",
@@ -196,7 +194,6 @@ _AUTH_NAMES: Final = (
     "CredentialProviderInput",
     "EnvironmentCredentialProvider",
     "OwnedCredentialProvider",
-    "RefreshInfo",
     "RefreshableTokenProvider",
     "RequestSigner",
     "SignatureFields",
@@ -204,9 +201,6 @@ _AUTH_NAMES: Final = (
     "SigningInput",
     "StaticCredentialProvider",
     "StaticTokenProvider",
-    "TokenLoad",
-    "TokenPersistenceContext",
-    "TokenStore",
     "TokenVersion",
 )
 _OAUTH_NAMES: Final = (
@@ -230,19 +224,12 @@ _AUTH: Final = (
 _ERROR_NAMES: Final = (
     "AdapterContractError",
     "AdapterExecutionError",
-    "AuthBudgetExceededError",
-    "AuthConcurrencyLimitError",
     "AuthConfigurationError",
     "AuthProviderClosedError",
     "AuthProviderExecutionError",
     "AuthReauthorizationRequiredError",
     "AuthRefreshError",
-    "AuthStateConflictError",
-    "AuthStateUncertainError",
     "AuthTimeoutError",
-    "AuthTokenLoadError",
-    "AuthTokenStoreConflictError",
-    "AuthTokenStoreError",
     "BodyChangedError",
     "BodyFactoryError",
     "BodyNotReplayableError",
@@ -3980,7 +3967,7 @@ sets and tuples replace the inherited collection. `retry=None` and `redirects=No
 | respect Retry-After / retry pool timeout | True / False |
 | redirects / maximum redirects / 303 conversion | False / 5 / False |
 | allowed redirect origins / HTTPS downgrade | empty tuple (initial origin only) / False |
-| network send slots | 1 + max_retries + (max_redirects if redirects) + (max_token_exchanges if SDK OAuth) |
+| network send slots | 1 + max_retries + (max_redirects when redirects are enabled) |
 | stream idle / stream total / cleanup | 60 seconds / None / 5 seconds |
 | maximum response / error prefix / stream bytes | None / 64 KiB / None |
 

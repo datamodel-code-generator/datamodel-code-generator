@@ -3,24 +3,31 @@
 from __future__ import annotations
 
 import asyncio
-import contextvars
 import importlib
 import json
+import ssl
+import sys
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Final
 from unittest.mock import patch
 
+import httpx2
+
 from tests.data.python.client_oauth import (
+    LIMIT,
     Adapter,
     AsyncAdapter,
     AsyncResponse,
     AsyncSecret,
+    Caller,
+    Late,
+    Reported,
     Response,
     Secret,
     closed_port,
+    delayed,
     failure_line,
     json_reply,
     stop,
@@ -29,22 +36,21 @@ from tests.data.python.client_runtime import Exchange, describe, raw_response, r
 from tests.data.python.fixture_server import _contexts
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import AsyncIterator, Callable
     from types import ModuleType
 
 _TOKEN: Final = "https://auth.example.com/token"
 _ISSUED: Final = {"access_token": "access-1", "token_type": "Bearer", "expires_in": 3600}
 _REJECTED: Final = {"WWW-Authenticate": 'Bearer error="invalid_token"'}
-_CALLER: Final = contextvars.ContextVar("caller", default="unset")
 
 
-def _context(auth: ModuleType, *, audience: str | None = None) -> Any:
+def _context(auth: ModuleType, *, audience: str | None = None, deadline: object = None) -> Any:
     return auth.CredentialContext(
         scheme="oauth",
         required_scopes=(),
         audience=audience,
         origin="https://api.example.com",
-        deadline=None,
+        deadline=deadline,
         cancel_token=None,
     )
 
@@ -75,20 +81,12 @@ async def _aoutcome(call: Callable[[], Any]) -> str:
     return _material(result) if hasattr(result, "token") else repr(result)
 
 
-def _failure(call: Callable[[], object]) -> Any:
-    try:
-        call()
-    except Exception as error:  # noqa: BLE001
-        return error
-    return None
-
-
-def _workers() -> int:
-    return sum(thread.name.startswith("oauth-refresh") for thread in threading.enumerate())
-
-
 def _reply(responses: ModuleType, payload: object) -> Response:
     return Response(responses, 200, json.dumps(payload).encode())
+
+
+def _areply(responses: ModuleType, payload: object) -> AsyncResponse:
+    return AsyncResponse(responses, 200, json.dumps(payload).encode())
 
 
 class _Once(Secret):
@@ -101,34 +99,48 @@ class _Once(Secret):
             self.failure, self.delay = None, 0
 
 
-class _Seen(AsyncSecret):
-    """An asyncio client secret provider recording the caller context variable its lookups see."""
+class _Pending:
+    """A synchronous secret provider returning a coroutine instead of material."""
 
-    def __init__(self, material: object) -> None:
-        super().__init__(material)
-        self.seen: list[str] = []
+    def get(self, context: object) -> object:
+        del context
 
-    async def get(self, context: object) -> object:
-        self.seen.append(_CALLER.get())
-        return await super().get(context)
+        async def material() -> None:
+            pass
+
+        return material()
 
 
-class _Stubborn(AsyncSecret):
-    """An asyncio client secret provider whose first lookup ignores its cancellation and ends only once released."""
+class _Closing:
+    """A client secret provider during whose lookup the provider is closed."""
 
-    def __init__(self, material: object) -> None:
-        super().__init__(material)
-        self.release = asyncio.Event()
-        self.lookups = 0
+    def __init__(self, auth: ModuleType) -> None:
+        self.material = auth.ApiKeyCredential("s")
+        self.close: Callable[[], object] = lambda: None
 
-    async def get(self, context: object) -> object:
-        self.lookups += 1
-        if self.lookups == 1:
-            try:
-                await asyncio.sleep(30)
-            except asyncio.CancelledError:
-                await self.release.wait()
-        return await super().get(context)
+    def get(self, context: object) -> object:
+        del context
+        self.close()
+        return self.material
+
+
+class _AsyncClosing(_Closing):
+    async def get(self, context: object) -> object:  # ty: ignore[invalid-method-override]
+        del context
+        await self.close()
+        return self.material
+
+
+class _Uncapable:
+    """A transport that declares no capabilities."""
+
+    def send(self, request: object, context: object) -> object:
+        del request, context
+        msg = "a transport without capabilities is rejected before it sends"
+        raise RuntimeError(msg)
+
+    def close(self) -> None:
+        pass
 
 
 class _ClosingFailure(Adapter):
@@ -137,50 +149,74 @@ class _ClosingFailure(Adapter):
         raise RuntimeError
 
 
-class _GatedClose(Adapter):
-    """An owned transport whose close waits until released."""
-
-    def __init__(self, transports: ModuleType) -> None:
-        super().__init__(transports)
-        self.closing = threading.Event()
-        self.release = threading.Event()
-
-    def close(self) -> None:
-        self.closing.set()
-        self.release.wait(10)
-        super().close()
-
-
 class _AsyncClosingFailure(AsyncAdapter):
     async def aclose(self) -> None:
         await super().aclose()
         raise RuntimeError
 
 
-def _foreign(errors: ModuleType) -> BaseException:
-    class ForeignTimeoutError(errors.AuthTimeoutError):
-        def __init__(self, state: str) -> None:
-            super().__init__(effective_timeout=1.0, timeout_kind="provider", state=state)
+class _Blocking(AsyncResponse):
+    """An asyncio token response whose pauses block the event loop, so only the endpoint's own checks see them end."""
 
-    return ForeignTimeoutError("UNCERTAIN")
+    async def iter_raw_bytes(self) -> AsyncIterator[bytes]:  # ty: ignore[invalid-method-override]
+        half = len(self.body) // 2
+        yield self.body[:half]
+        time.sleep(self.pause)
+        yield self.body[half:]
+        time.sleep(self.tail)
 
 
-def _configuration(auth: ModuleType, transports: ModuleType, lines: list[str]) -> None:
-    """Refuse invalid endpoints, client authentication, scopes, audiences, and options without threads or I/O."""
+def _insecure_context(*, keep_certificates: bool = False) -> ssl.SSLContext:
+    context = ssl.create_default_context()
+    context.check_hostname = False
+    if not keep_certificates:
+        context.verify_mode = ssl.CERT_NONE
+    return context
+
+
+def _without_h2(call: Callable[[], object]) -> object:
+    with patch.dict(sys.modules, {"h2": None}):
+        return call()
+
+
+def _configuration(auth: ModuleType, options: ModuleType, transports: ModuleType, lines: list[str]) -> None:
+    """Refuse invalid endpoints, client authentication, scopes, audiences, options, and transports without I/O."""
     provider, async_provider = auth.ClientCredentialsProvider, auth.AsyncClientCredentialsProvider
     secret = auth.StaticCredentialProvider(auth.ApiKeyCredential("secret"))
     async_secret = auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("secret"))
+
+    def with_transport(**transport: Any) -> object:
+        return provider(
+            _TOKEN,
+            client_id="c",
+            client_secret=secret,
+            options=auth.OAuthProviderOptions(transport=options.TransportOptions(**transport)),
+        )
+
     cases: tuple[tuple[str, Callable[[], object]], ...] = (
         ("token url type", lambda: provider(None, client_id="c", client_secret=secret)),
+        ("token url scheme", lambda: provider("ftp://auth.example.com", client_id="c", client_secret=secret)),
+        ("token url user", lambda: provider("https://u@auth.example.com", client_id="c", client_secret=secret)),
+        ("token url fragment", lambda: provider(f"{_TOKEN}#f", client_id="c", client_secret=secret)),
+        ("token url syntax", lambda: provider("https://[a", client_id="c", client_secret=secret)),
+        ("token url newline", lambda: provider(f"{_TOKEN}\n", client_id="c", client_secret=secret)),
+        ("token url port", lambda: provider("https://t.example.com:99999/token", client_id="c", client_secret=secret)),
         ("insecure token url", lambda: provider("http://auth.example.com/token", client_id="c", client_secret=secret)),
+        (
+            "insecure loopback without permission",
+            lambda: provider("http://127.0.0.1/token", client_id="c", client_secret=secret),
+        ),
         ("public client", lambda: provider(_TOKEN, client_id="c", client_secret=secret, client_auth_method="none")),
         (
             "unknown client authentication",
             lambda: provider(_TOKEN, client_id="c", client_secret=secret, client_auth_method="private_key_jwt"),
         ),
         ("client id type", lambda: provider(_TOKEN, client_id=1, client_secret=secret)),
+        ("empty client id", lambda: provider(_TOKEN, client_id="", client_secret=secret)),
+        ("client id control character", lambda: provider(_TOKEN, client_id="c\n", client_secret=secret)),
         ("missing secret", lambda: provider(_TOKEN, client_id="c", client_secret=None)),
         ("async secret", lambda: provider(_TOKEN, client_id="c", client_secret=AsyncSecret())),
+        ("secret without get", lambda: provider(_TOKEN, client_id="c", client_secret=object())),
         ("sync secret of an async provider", lambda: async_provider(_TOKEN, client_id="c", client_secret=secret)),
         (
             "sync transport of an async provider",
@@ -188,27 +224,75 @@ def _configuration(auth: ModuleType, transports: ModuleType, lines: list[str]) -
                 _TOKEN, client_id="c", client_secret=async_secret, token_transport=Adapter(transports)
             ),
         ),
+        (
+            "async transport",
+            lambda: provider(_TOKEN, client_id="c", client_secret=secret, token_transport=AsyncAdapter(transports)),
+        ),
+        (
+            "transport without capabilities",
+            lambda: provider(_TOKEN, client_id="c", client_secret=secret, token_transport=_Uncapable()),
+        ),
+        (
+            "transport retrying internally",
+            lambda: provider(
+                _TOKEN, client_id="c", client_secret=secret, token_transport=Adapter(transports, retries=None)
+            ),
+        ),
+        (
+            "settings beside injected transport",
+            lambda: provider(
+                _TOKEN,
+                client_id="c",
+                client_secret=secret,
+                options=auth.OAuthProviderOptions(transport=options.TransportOptions(http2=True)),
+                token_transport=Adapter(transports),
+            ),
+        ),
+        ("unverified tls", lambda: with_transport(verify=False)),
+        ("unverified tls context", lambda: with_transport(ssl_context=_insecure_context())),
+        (
+            "tls context without hostname check",
+            lambda: with_transport(ssl_context=_insecure_context(keep_certificates=True)),
+        ),
+        ("http2 without its extra", lambda: _without_h2(lambda: with_transport(http2=True))),
+        ("transport retries", lambda: with_transport(retry_owner="transport")),
         ("lone scope string", lambda: provider(_TOKEN, client_id="c", client_secret=secret, scopes="read")),
         ("scope with a space", lambda: provider(_TOKEN, client_id="c", client_secret=secret, scopes=("a b",))),
         ("empty audience", lambda: provider(_TOKEN, client_id="c", client_secret=secret, audience="")),
         ("audience type", lambda: provider(_TOKEN, client_id="c", client_secret=secret, audience=1)),
         ("options type", lambda: provider(_TOKEN, client_id="c", client_secret=secret, options=1)),
+        ("zero refresh timeout", lambda: auth.OAuthProviderOptions(refresh_timeout=0)),
+        ("boolean refresh timeout", lambda: auth.OAuthProviderOptions(refresh_timeout=True)),
+        ("infinite refresh timeout", lambda: auth.OAuthProviderOptions(refresh_timeout=float("inf"))),
+        ("overflowing refresh timeout", lambda: auth.OAuthProviderOptions(refresh_timeout=10**400)),
+        ("phase timeout type", lambda: auth.OAuthProviderOptions(phase_timeout={"read": 1})),
+        ("disabled phase", lambda: auth.OAuthProviderOptions(phase_timeout=options.TimeoutOptions(read=None))),
+        ("loopback flag type", lambda: auth.OAuthProviderOptions(allow_insecure_loopback=1)),
+        ("transport type", lambda: auth.OAuthProviderOptions(transport={})),
+        ("clock type", lambda: auth.OAuthProviderOptions(clock=object())),
+        ("token set type", lambda: auth.TokenSet("access", None)),
+        ("empty refresh token", lambda: auth.TokenSet(auth.AccessToken("a"), "")),
     )
     for label, call in cases:
         lines.append(f"  {label} = {_outcome(call)}")
-    before = _workers()
+    lines.append(
+        f"  resolved phases = {auth.OAuthProviderOptions(phase_timeout=options.TimeoutOptions(read=2)).phase_timeout}"
+    )
+    loopback = provider(
+        "http://[::1]:8080/token",
+        client_id="c",
+        client_secret=secret,
+        options=auth.OAuthProviderOptions(allow_insecure_loopback=True),
+    )
+    lines.append(f"  permitted loopback = {type(loopback).__name__}")
     with provider(_TOKEN, client_id="c", client_secret=secret, token_transport=Adapter(transports)) as idle:
-        lines.append(f"  workers after construction = {_workers() - before}")
         for label, call in (
             ("context type", lambda: idle.get(None)),
             ("audience of another resource", lambda: idle.get(_context(auth, audience="api"))),
             ("invalidate with another type", lambda: idle.invalidate("version")),
             ("invalidate an unknown version", lambda: idle.invalidate(auth.TokenVersion())),
-            ("snapshot of an unknown id", lambda: idle.refresh_snapshot("unknown")),
-            ("snapshot of a non-string id", lambda: idle.refresh_snapshot(None)),
         ):
             lines.append(f"  {label} = {_outcome(call)}")
-    lines.append(f"  workers after close = {_workers() - before}")
     for label, call in (
         ("get after close", lambda: idle.get(_context(auth))),
         ("refresh after close", lambda: idle.refresh(_context(auth))),
@@ -218,8 +302,61 @@ def _configuration(auth: ModuleType, transports: ModuleType, lines: list[str]) -
         lines.append(f"  {label} = {_outcome(call)}")
 
 
+_ANSWERS: Final[tuple[tuple[str, Callable[[httpx2.Request], httpx2.Response]], ...]] = (
+    ("missing access token", json_reply(200, {"token_type": "Bearer"})),
+    ("empty access token", json_reply(200, {"access_token": "", "token_type": "Bearer"})),
+    ("unsupported token type", json_reply(200, {"access_token": "a", "token_type": "mac"})),
+    ("missing token type", json_reply(200, {"access_token": "a"})),
+    ("zero lifetime", json_reply(200, {**_ISSUED, "expires_in": 0})),
+    ("string expiry", json_reply(200, {**_ISSUED, "expires_in": "3600"})),
+    ("boolean expiry", json_reply(200, {**_ISSUED, "expires_in": True})),
+    ("overflowing expiry", json_reply(200, {**_ISSUED, "expires_in": 1e20})),
+    ("infinite expiry", json_reply(200, b'{"access_token":"a","token_type":"Bearer","expires_in":1e400}')),
+    ("null expiry", json_reply(200, {**_ISSUED, "expires_in": None})),
+    (
+        "huge integer expiry",
+        json_reply(200, b'{"access_token":"a","token_type":"Bearer","expires_in":1' + b"0" * 400 + b"}"),
+    ),
+    ("null scope", json_reply(200, {**_ISSUED, "scope": None})),
+    ("empty scope", json_reply(200, {**_ISSUED, "scope": ""})),
+    ("double-spaced scope", json_reply(200, {**_ISSUED, "scope": "read  write"})),
+    ("empty refresh token", json_reply(200, {**_ISSUED, "refresh_token": ""})),
+    ("success with an error member", json_reply(200, {**_ISSUED, "error": "invalid_request"})),
+    ("success without JSON", json_reply(200, b"not json")),
+    ("success array", json_reply(200, [])),
+    ("deeply nested success", json_reply(200, b"[" * 60000)),
+    ("repeated member", json_reply(200, b'{"access_token":"a","access_token":"b","token_type":"Bearer"}')),
+    ("NaN member", json_reply(200, b'{"access_token":"a","token_type":"Bearer","expires_in":NaN}')),
+    ("undecodable body", json_reply(200, b'{"access_token":"\xff"}')),
+    ("text media", json_reply(200, _ISSUED, "text/plain")),
+    ("latin-1 charset", json_reply(200, _ISSUED, "application/json; charset=latin-1")),
+    ("gzip coding", json_reply(200, _ISSUED, **{"Content-Encoding": "gzip"})),
+    ("oversized body", json_reply(200, {**_ISSUED, "padding": "x" * 70000})),
+    ("invalid request", json_reply(400, {"error": "invalid_request", "error_description": "missing field"})),
+    ("rejected scope", json_reply(400, {"error": "invalid_scope", "error_uri": "https://e.example.com/doc"})),
+    ("unknown error code", json_reply(400, {"error": "try_later"})),
+    ("error description quote", json_reply(400, {"error": "invalid_request", "error_description": 'a"b'})),
+    ("error uri space", json_reply(400, {"error": "invalid_request", "error_uri": "https://e.example.com/a b"})),
+    ("error uri host syntax", json_reply(400, {"error": "invalid_request", "error_uri": "https://[e/doc"})),
+    ("error uri port", json_reply(400, {"error": "invalid_request", "error_uri": "https://e.example.com:x/"})),
+    ("error uri colon segment", json_reply(400, {"error": "invalid_request", "error_uri": "1a:doc"})),
+    ("error uri second fragment", json_reply(400, {"error": "invalid_request", "error_uri": "/doc#a#b"})),
+    ("error uri bracket", json_reply(400, {"error": "invalid_request", "error_uri": "/doc[1]"})),
+    ("relative error uri", json_reply(400, {"error": "invalid_request", "error_uri": "/doc?topic=scope#top"})),
+    ("error beside a token", json_reply(400, {"error": "invalid_request", "access_token": "a"})),
+    ("error without JSON", json_reply(400, b"{")),
+    ("oversized error", json_reply(400, {"error": "invalid_request", "error_description": "x" * 70000})),
+    ("rejected client", json_reply(401, {"error": "invalid_client"})),
+    ("unauthorized without invalid_client", json_reply(401, {"error": "invalid_grant"})),
+    ("unauthorized without JSON", json_reply(401, b"no")),
+    ("forbidden", json_reply(403, {"error": "invalid_request"})),
+    ("unavailable", json_reply(503, b"")),
+    ("redirect", lambda _: httpx2.Response(302, headers={"location": "https://other.example.com/token"})),
+)
+
+
 def _wire(package: ModuleType, auth: ModuleType, options: ModuleType, lines: list[str]) -> int:
-    """Acquire over TLS with each client authentication, then serve, renew, invalidate, and recover the token."""
+    """Acquire over TLS with each client authentication, classify every answer, then serve and renew the token."""
     exchange = Exchange(lines)
     port = exchange.port()
     token_url = f"https://localhost:{port}/token"
@@ -259,33 +396,23 @@ def _wire(package: ModuleType, auth: ModuleType, options: ModuleType, lines: lis
         first = lasting.get(_context(auth))
         lines.append(f"  post = {_material(first)}")
         lines.append(f"    cached without expiry = {lasting.get(_context(auth)) is first}")
-    failures: tuple[tuple[str, Callable[..., Any]], ...] = (
-        ("rejected scope", json_reply(400, {"error": "invalid_scope"})),
-        ("unknown error code", json_reply(400, {"error": "try_later"})),
-        ("rejected client", json_reply(401, {"error": "invalid_client"})),
-        ("unauthorized without invalid_client", json_reply(401, {"error": "invalid_grant"})),
-        ("unavailable", json_reply(503, b"")),
-        ("error without JSON", json_reply(400, b"{")),
-        ("success without JSON", json_reply(200, b"<html>")),
-        ("missing access token", json_reply(200, {"token_type": "Bearer"})),
-        ("zero lifetime", json_reply(200, {**_ISSUED, "expires_in": 0})),
-        ("empty scope", json_reply(200, {**_ISSUED, "scope": ""})),
-        ("error beside success", json_reply(200, {**_ISSUED, "error": "invalid_request"})),
-    )
-    for label, reply in failures:
+    exchange.respond(json_reply(200, _ISSUED, 'application/json; charset="UTF-8"'))
+    with provider() as charset:
+        lines.append(f"  charset parameter = {_outcome(lambda: charset.get(_context(auth)))}")
+    for label, reply in _ANSWERS:
         exchange.respond(reply, json_reply(200, _ISSUED))
-        with provider(scopes=("read",)) as failing:
-            error = _failure(lambda failing=failing: failing.get(_context(auth)))
-            lines.append(f"  {label} = {failure_line(error)}")
-            lines.append(f"    snapshot = {failing.refresh_snapshot(error.refresh_id)}")
-            lines.append(f"    later get = {_outcome(lambda failing=failing: failing.get(_context(auth)))}")
+        with provider(scopes=("read",)) as answered:
+            lines.append(f"  {label} = {_outcome(lambda answered=answered: answered.get(_context(auth)))}")
+            lines.append(f"    later get = {_outcome(lambda answered=answered: answered.get(_context(auth)))}")
+    slow = auth.OAuthProviderOptions(refresh_timeout=1.0, transport=options.TransportOptions(ssl_context=_contexts()[1]))
+    exchange.respond(delayed(1.5, json_reply(200, _ISSUED)))
+    with auth.ClientCredentialsProvider(token_url, client_id="c", client_secret=secret, options=slow) as expiring:
+        lines.append(f"  session expires while reading = {_outcome(lambda: expiring.get(_context(auth)))}")
     refused = auth.ClientCredentialsProvider(
         f"https://localhost:{closed_port()}/token", client_id="c", client_secret=secret, options=oauth
     )
     with refused:
-        error = _failure(lambda: refused.get(_context(auth)))
-        lines.append(f"  refused = {failure_line(error)}")
-    lines.append(f"    snapshot after close = {refused.refresh_snapshot(error.refresh_id)}")
+        lines.append(f"  refused = {_outcome(lambda: refused.get(_context(auth)))}")
     _generated(package, auth, options, exchange, provider, lines)
     stop(exchange)
     return port
@@ -352,19 +479,10 @@ def _generated(
     lines.append(f"  owned provider once the client closed = {_outcome(lambda: owned.get(_context(auth)))}")
 
 
-def _renewed(shared: Any, auth: ModuleType, first: Any) -> Any:
-    """Return the token a background renewal published in place of the first one, once it did."""
-    for _ in range(1000):
-        if (current := shared.get(_context(auth))) is not first:
-            return current
-        time.sleep(0.01)
-    return current
-
-
 def _expiry(
     package: ModuleType, auth: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
 ) -> None:
-    """Renew a token a tenth of its lifetime, at most thirty seconds, before it expires, and age out old snapshots."""
+    """Renew a token inline a tenth of its lifetime, at most thirty seconds, before it expires."""
     now = time.monotonic()
     secret = auth.StaticCredentialProvider(auth.ApiKeyCredential("s"))
     clock = importlib.import_module(f"{package.__name__}.options").Clock(monotonic=lambda: now)
@@ -383,54 +501,52 @@ def _expiry(
             now = start + ttl - margin - 0.001
             cached = shared.get(_context(auth)) is first
             now = start + ttl - margin
-            served = _outcome(lambda shared=shared: shared.get(_context(auth)))
             lines.append(
-                f"  lifetime {ttl}s kept for {ttl - margin:g}s = {cached}, then served {served} while renewed to"
-                f" {_material(_renewed(shared, auth, first))}"
+                f"  lifetime {ttl}s kept for {ttl - margin:g}s = {cached}, then renewed to"
+                f" {_outcome(lambda shared=shared: shared.get(_context(auth)))} sends={adapter.sends}"
             )
-    unavailable = Response(responses, 503, b"")
-    gate = threading.Event()
-    gate.set()
     adapter = Adapter(
         transports,
         _reply(responses, {**_ISSUED, "access_token": "kept", "expires_in": 100}),
-        *(unavailable,) * 8,
-        gate=gate,
+        Response(responses, 503, b""),
+        _reply(responses, {**_ISSUED, "access_token": "renewed", "expires_in": 100}),
     )
     with auth.ClientCredentialsProvider(
         _TOKEN, client_id="c", client_secret=secret, options=timed, token_transport=adapter
     ) as shared:
         start = now
-        first = shared.get(_context(auth))
-        now = start + 90
-        gate.clear()
-        adapter.entered.clear()
-        served = _outcome(lambda shared=shared: shared.get(_context(auth)))
-        adapter.entered.wait(10)
-        lines.append(
-            f"  renewal held before the token expires = {served} beside it={shared.get(_context(auth)) is first}"
-        )
-        gate.set()
-        lines.append(f"    forced refresh = {_outcome(lambda shared=shared: shared.refresh(_context(auth)))}")
-        now = start + 100
-        lines.append(f"    once the token expired = {_outcome(lambda shared=shared: shared.get(_context(auth)))}")
-    adapter = Adapter(transports, RuntimeError("adapter"), RuntimeError("adapter"))
+        shared.get(_context(auth))
+        now = start + 95
+        lines.append(f"  failed renewal before the token expires = {_outcome(lambda: shared.get(_context(auth)))}")
+        lines.append(f"    next call renews = {_outcome(lambda: shared.get(_context(auth)))} sends={adapter.sends}")
+
+
+def _single_flight(auth: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]) -> None:
+    """Let a caller arriving during an acquisition wait for the lock and use the token it obtained."""
+    gate = threading.Event()
+    adapter = Adapter(transports, _reply(responses, _ISSUED), gate=gate)
     with auth.ClientCredentialsProvider(
-        _TOKEN, client_id="c", client_secret=secret, options=timed, token_transport=adapter
+        _TOKEN,
+        client_id="c",
+        client_secret=auth.StaticCredentialProvider(auth.ApiKeyCredential("s")),
+        token_transport=adapter,
     ) as shared:
-        old = _failure(lambda: shared.get(_context(auth))).refresh_id
-        now += 200
-        recent = _failure(lambda: shared.get(_context(auth))).refresh_id
-        now += 101
-        lines.append(
-            f"  snapshots after five minutes = {shared.refresh_snapshot(old)}, recent kept = {shared.refresh_snapshot(recent) is not None}"
-        )
+        first = Caller(lambda: shared.get(_context(auth)), _outcome)
+        first.start()
+        adapter.entered.wait(LIMIT)
+        second = Caller(lambda: shared.get(_context(auth)), _outcome)
+        second.start()
+        gate.set()
+        for caller in (first, second):
+            caller.join(LIMIT)
+        lines.append(f"  concurrent callers = {[caller.line for caller in (first, second)]} sends={adapter.sends}")
 
 
 def _faults(
     auth: ModuleType, transports: ModuleType, responses: ModuleType, errors: ModuleType, lines: list[str]
 ) -> None:
-    """Classify transport, secret, and worker failures by what they sent, leaving nothing behind for later calls."""
+    """Classify transport and secret failures by what they sent, leaving nothing behind for later calls."""
+    granted = json.dumps(_ISSUED).encode()
     connect = errors.PhaseTimeoutError(
         effective_timeout=5.0, delivery_state=errors.DeliveryState.NOT_SENT, phase="connect"
     )
@@ -438,6 +554,12 @@ def _faults(
         effective_timeout=15.0, delivery_state=errors.DeliveryState.MAYBE_SENT, phase="read"
     )
     unsent = errors.TransportError(delivery_state=errors.DeliveryState.NOT_SENT, phase="connect")
+    read_failure = errors.TransportError(delivery_state=errors.DeliveryState.RESPONSE_STARTED, phase="read")
+    unknown_phase = errors.TransportError(delivery_state=errors.DeliveryState.MAYBE_SENT)
+    unknown_timeout = errors.TransportError(
+        delivery_state=errors.DeliveryState.MAYBE_SENT, cause=httpx2.ReadTimeout("unclassified")
+    )
+    headers = responses.HeadersView((("content-type", "application/json"),))
     secret = auth.StaticCredentialProvider(auth.ApiKeyCredential("s"))
 
     def provider(*replies: object, client_secret: object = secret, total: float = 30.0, evidence: bool = False) -> Any:
@@ -451,52 +573,54 @@ def _faults(
 
     for label, shared in (
         ("phase timeout before sending", provider(connect, evidence=True)),
+        ("unsent timeout within a short session", provider(connect, evidence=True, total=1.0)),
         ("phase timeout after sending", provider(read)),
         ("connect failure proven unsent", provider(unsent, evidence=True)),
+        ("unsent claim without delivery evidence", provider(unsent)),
+        ("failure in an unknown phase", provider(unknown_phase)),
+        ("timeout in an unknown phase", provider(unknown_timeout)),
+        ("timeout in an unknown phase after the session", provider(Late(1.0, unknown_timeout), total=0.5)),
+        ("failure after the response started", provider(Reported(RuntimeError("adapter"), headers))),
         ("adapter failure", provider(RuntimeError("adapter"))),
+        ("invalid response status", provider(Response(responses, "200", granted))),
+        ("body failure", provider(Response(responses, 200, b"{", failure=read_failure))),
+        ("reported body failure", provider(Response(responses, 200, b"{", failure=RuntimeError(), reported=True))),
+        ("body arriving after the session", provider(Response(responses, 200, granted, pause=1.0), total=0.5)),
+        ("body ending after the session", provider(Response(responses, 200, granted, tail=1.0), total=0.5)),
         (
-            "body slower than the session",
-            provider(Response(responses, 200, json.dumps(_ISSUED).encode(), pause=1.0), total=0.5),
+            "close failure after a complete answer",
+            provider(Response(responses, 200, granted, close_failure=RuntimeError())),
         ),
-        ("interrupted send", provider(KeyboardInterrupt())),
         ("secret failure", provider(client_secret=_Once(auth.ApiKeyCredential("s"), failure=RuntimeError("secret")))),
         (
-            "secret auth failure naming its own refresh",
+            "secret auth failure",
             provider(
                 client_secret=_Once(
-                    auth.ApiKeyCredential("s"),
-                    failure=errors.AuthTimeoutError(
-                        effective_timeout=1.0, timeout_kind="provider", state="UNCERTAIN", refresh_id="vault-refresh"
-                    ),
+                    auth.ApiKeyCredential("s"), failure=errors.AuthConfigurationError(condition="missing_value")
                 )
             ),
-        ),
-        (
-            "secret failure of a foreign error class",
-            provider(client_secret=_Once(auth.ApiKeyCredential("s"), failure=_foreign(errors))),
         ),
         (
             "secret slower than the session",
             provider(client_secret=_Once(auth.ApiKeyCredential("s"), delay=1.0), total=0.5),
         ),
         ("secret material type", provider(client_secret=Secret(auth.BasicCredential("u", "p")))),
+        ("secret outside visible ASCII", provider(client_secret=Secret(auth.ApiKeyCredential("sé")))),
+        ("secret coroutine", provider(client_secret=_Pending())),
     ):
         with shared:
             lines.append(f"  {label} = {_outcome(lambda shared=shared: shared.get(_context(auth)))}")
             lines.append(f"    later get = {_outcome(lambda shared=shared: shared.get(_context(auth)))}")
-    adapter = Adapter(transports, _reply(responses, _ISSUED))
-    with auth.ClientCredentialsProvider(_TOKEN, client_id="c", client_secret=secret, token_transport=adapter) as shared:
-        with patch.object(threading.Thread, "start", side_effect=RuntimeError("can't start new thread")):
-            lines.append(f"  worker thread refusing to start = {_outcome(lambda: shared.get(_context(auth)))}")
-        lines.append(f"    later get = {_outcome(lambda: shared.get(_context(auth)))} sends={adapter.sends}")
-    adapter = Adapter(transports, _reply(responses, _ISSUED))
-    with auth.ClientCredentialsProvider(_TOKEN, client_id="c", client_secret=secret, token_transport=adapter) as shared:
+    with provider(KeyboardInterrupt()) as shared:
         try:
-            with patch.object(ThreadPoolExecutor, "submit", side_effect=KeyboardInterrupt):
-                shared.get(_context(auth))
+            shared.get(_context(auth))
         except KeyboardInterrupt:
-            lines.append("  interrupted while starting the job = KeyboardInterrupt")
-        lines.append(f"    later get = {_outcome(lambda: shared.get(_context(auth)))} sends={adapter.sends}")
+            lines.append("  interrupted send = KeyboardInterrupt")
+        lines.append(f"    later get = {_outcome(lambda: shared.get(_context(auth)))}")
+    options = importlib.import_module(f"{auth.__name__.rpartition('.')[0]}.options")
+    with provider() as shared:
+        passed = _context(auth, deadline=options.Deadline.after(0))
+        lines.append(f"  caller deadline already passed = {_outcome(lambda: shared.get(passed))}")
     owned = Adapter(transports, _reply(responses, _ISSUED))
     shared = auth.ClientCredentialsProvider(
         _TOKEN, client_id="c", client_secret=secret, token_transport=transports.OwnedTransportAdapter(owned)
@@ -511,30 +635,19 @@ def _faults(
     )
     lines.append(f"  owned transport close failure = {_outcome(shared.close)}")
     lines.append(f"    close again = {_outcome(shared.close)} closes={failing.closes}")
-    gated = _GatedClose(transports)
-    shared = auth.ClientCredentialsProvider(
-        _TOKEN, client_id="c", client_secret=secret, token_transport=transports.OwnedTransportAdapter(gated)
-    )
-    first = threading.Thread(target=shared.close)
-    first.start()
-    gated.closing.wait(10)
-    second = threading.Thread(target=shared.close)
-    second.start()
-    second.join(0.2)
-    lines.append(f"  close while another close releases the transport waits = {second.is_alive()}")
-    lines.append(f"    get meanwhile = {_outcome(lambda: shared.get(_context(auth)))}")
-    gated.release.set()
-    first.join(10)
-    second.join(10)
-    lines.append(f"    both returned = {not (first.is_alive() or second.is_alive())} closes={gated.closes}")
+    closing = _Closing(auth)
+    racing = Adapter(transports, _reply(responses, _ISSUED))
+    shared = auth.ClientCredentialsProvider(_TOKEN, client_id="c", client_secret=closing, token_transport=racing)
+    closing.close = shared.close
+    lines.append(f"  closed while the secret is fetched = {_outcome(lambda: shared.get(_context(auth)))}")
+    lines.append(f"    nothing sent = {racing.sends == 0}")
 
 
 async def _async_wire(package: ModuleType, auth: ModuleType, options: ModuleType, lines: list[str]) -> int:
-    """Acquire with asyncio over TLS and through a generated client, outside the callers' context."""
+    """Acquire with asyncio over TLS and through a generated client."""
     exchange = Exchange(lines)
     port = exchange.port()
     oauth = auth.OAuthProviderOptions(transport=options.TransportOptions(ssl_context=_contexts()[1]))
-    secret = _Seen(auth.ApiKeyCredential("async secret"))
     ok = raw_response(200, b"ok", "application/octet-stream")
     exchange.respond(
         json_reply(200, _ISSUED),
@@ -547,12 +660,11 @@ async def _async_wire(package: ModuleType, auth: ModuleType, options: ModuleType
     async with auth.AsyncClientCredentialsProvider(
         f"https://localhost:{port}/token",
         client_id="c",
-        client_secret=secret,
+        client_secret=auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("async secret")),
         client_auth_method="client_secret_post",
         scopes=("read",),
         options=oauth,
     ) as shared:
-        _CALLER.set("caller")
         first = await shared.get(_context(auth))
         lines.append(f"  async post = {_material(first)}")
         lines.append(f"    cached = {await shared.get(_context(auth)) is first}")
@@ -560,7 +672,6 @@ async def _async_wire(package: ModuleType, auth: ModuleType, options: ModuleType
         lines.append(f"    refresh = {_material(refreshed)}")
         await shared.invalidate(refreshed.version)
         lines.append(f"    get after invalidation = {await _aoutcome(lambda: shared.get(_context(auth)))}")
-        lines.append(f"    lookups outside the caller's context = {secret.seen}")
         async with (
             exchange.async_client() as native,
             package.AsyncClient(
@@ -576,83 +687,118 @@ async def _async_wire(package: ModuleType, auth: ModuleType, options: ModuleType
     return port
 
 
-async def _async_renewal(auth: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]) -> None:
-    """Serve an asyncio token past its renewal time while the renewal runs in the background."""
-    package = auth.__name__.rpartition(".")[0]
-    now = time.monotonic()
-    issued = (
-        AsyncResponse(
-            responses, 200, json.dumps({**_ISSUED, "access_token": f"async-{index}", "expires_in": 100}).encode()
-        )
-        for index in (1, 2)
+async def _async_faults(
+    auth: ModuleType, transports: ModuleType, responses: ModuleType, errors: ModuleType, lines: list[str]
+) -> None:
+    """Classify asyncio token requests by their answers, failures, and the session deadline."""
+    granted = json.dumps(_ISSUED).encode()
+    read_timeout = errors.PhaseTimeoutError(
+        effective_timeout=15.0, delivery_state=errors.DeliveryState.MAYBE_SENT, phase="read"
     )
+    for label, replies, provider, total in (
+        ("async injected answer", (AsyncResponse(responses, 200, granted),), None, 30.0),
+        ("async body failure", (AsyncResponse(responses, 200, b"{", failure=read_timeout),), None, 30.0),
+        ("async oversized body", (AsyncResponse(responses, 200, b"x" * 70000),), None, 30.0),
+        ("async close failure", (AsyncResponse(responses, 200, granted, close_failure=RuntimeError()),), None, 30.0),
+        ("async send failure", (read_timeout,), None, 30.0),
+        ("async secret failure", (), AsyncSecret(failure=RuntimeError("secret")), 30.0),
+        ("async secret outlives the session", (), AsyncSecret(auth.ApiKeyCredential("s"), delay=5), 0.1),
+        ("async body slower than the session", (AsyncResponse(responses, 200, granted, pause=1.0),), None, 0.5),
+        ("async body arriving after the session", (_Blocking(responses, 200, granted, pause=1.0),), None, 0.5),
+        ("async body ending after the session", (_Blocking(responses, 200, granted, tail=1.0),), None, 0.5),
+    ):
+        async with auth.AsyncClientCredentialsProvider(
+            _TOKEN,
+            client_id="c",
+            client_secret=provider or auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("s")),
+            options=auth.OAuthProviderOptions(refresh_timeout=total),
+            token_transport=AsyncAdapter(transports, *replies),
+        ) as shared:
+            lines.append(f"  {label} = {await _aoutcome(lambda shared=shared: shared.get(_context(auth)))}")
+    options = importlib.import_module(f"{auth.__name__.rpartition('.')[0]}.options")
     async with auth.AsyncClientCredentialsProvider(
         _TOKEN,
         client_id="c",
-        client_secret=AsyncSecret(auth.ApiKeyCredential("s")),
-        options=auth.OAuthProviderOptions(
-            clock=importlib.import_module(f"{package}.options").Clock(monotonic=lambda: now)
-        ),
-        token_transport=AsyncAdapter(transports, *issued),
-    ) as shared:
-        first = await shared.get(_context(auth))
-        now += 95
-        served = await shared.get(_context(auth))
-        for _ in range(1000):
-            if (renewed := await shared.get(_context(auth))) is not first:
-                break
-            await asyncio.sleep(0.01)
-        lines.append(f"  async renewal in the background = served {_material(served)} then {_material(renewed)}")
-
-
-async def _async_faults(auth: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]) -> None:
-    """Fail an asyncio acquisition from its secret, then outlive a session by ignoring cancellation."""
-    granted = AsyncResponse(responses, 200, json.dumps(_ISSUED).encode())
-    async with auth.AsyncClientCredentialsProvider(
-        _TOKEN,
-        client_id="c",
-        client_secret=AsyncSecret(failure=RuntimeError("secret")),
+        client_secret=auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("s")),
         token_transport=AsyncAdapter(transports),
     ) as shared:
-        lines.append(f"  async secret failure = {await _aoutcome(lambda: shared.get(_context(auth)))}")
-    stubborn = _Stubborn(auth.ApiKeyCredential("s"))
+        passed = _context(auth, deadline=options.Deadline.after(0))
+        lines.append(f"  async caller deadline already passed = {await _aoutcome(lambda: shared.get(passed))}")
+    slow = AsyncAdapter(transports, AsyncResponse(responses, 200, granted), hold=asyncio.Event())
     async with auth.AsyncClientCredentialsProvider(
         _TOKEN,
         client_id="c",
-        client_secret=stubborn,
-        options=auth.OAuthProviderOptions(refresh_timeout=0.5),
-        token_transport=AsyncAdapter(transports, granted),
+        client_secret=auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("s")),
+        options=auth.OAuthProviderOptions(refresh_timeout=0.1),
+        token_transport=slow,
     ) as shared:
-        lines.append(
-            f"  async secret ignoring its cancellation = {await _aoutcome(lambda: shared.get(_context(auth)))}"
-        )
-        stubborn.release.set()
-        lines.append(f"    later get = {await _aoutcome(lambda: shared.get(_context(auth)))}")
-
-
-def oauth_client_credentials(package: ModuleType, lines: list[str]) -> None:
-    """Exercise client credentials acquisition, caching, renewal, and failures in both execution modes."""
-    auth, options, transports, responses, errors = (
-        importlib.import_module(f"{package.__name__}.{name}")
-        for name in ("auth", "options", "transports", "responses", "errors")
-    )
-    _configuration(auth, transports, lines)
-    ports = [_wire(package, auth, options, lines)]
-    _expiry(package, auth, transports, responses, lines)
-    _faults(auth, transports, responses, errors, lines)
-
-    async def flows() -> None:
-        ports.append(await _async_wire(package, auth, options, lines))
-        await _async_faults(auth, transports, responses, lines)
-        await _async_renewal(auth, transports, responses, lines)
-
-    run(flows)
+        lines.append(f"  async session expires while sending = {await _aoutcome(lambda: shared.get(_context(auth)))}")
+    closing = _AsyncClosing(auth)
+    racing = AsyncAdapter(transports, AsyncResponse(responses, 200, granted))
+    shared = auth.AsyncClientCredentialsProvider(_TOKEN, client_id="c", client_secret=closing, token_transport=racing)
+    closing.close = shared.aclose
+    lines.append(f"  async closed while the secret is fetched = {await _aoutcome(lambda: shared.get(_context(auth)))}")
+    lines.append(f"    nothing sent = {racing.sends == 0}")
+    failing = _AsyncClosingFailure(transports)
     shared = auth.AsyncClientCredentialsProvider(
         _TOKEN,
         client_id="c",
         client_secret=auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("s")),
-        token_transport=AsyncAdapter(transports, AsyncResponse(responses, 200, json.dumps(_ISSUED).encode())),
+        token_transport=transports.OwnedTransportAdapter(failing),
     )
+    lines.append(f"  async owned transport close failure = {await _aoutcome(shared.aclose)}")
+    lines.append(f"    close again = {await _aoutcome(shared.aclose)} closes={failing.closes}")
+
+
+async def _async_single_flight(
+    auth: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]
+) -> None:
+    """Let tasks arriving during an acquisition, forced or not, use the token it obtained; a cancelled one leaves."""
+    hold = asyncio.Event()
+    adapter = AsyncAdapter(
+        transports, _areply(responses, _ISSUED), _areply(responses, {**_ISSUED, "access_token": "access-2"}), hold=hold
+    )
+    async with auth.AsyncClientCredentialsProvider(
+        _TOKEN,
+        client_id="c",
+        client_secret=auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("s")),
+        token_transport=adapter,
+    ) as shared:
+        first = asyncio.create_task(_aoutcome(lambda: shared.get(_context(auth))))
+        await asyncio.to_thread(adapter.entered.wait, LIMIT)
+        joiners = [
+            asyncio.create_task(_aoutcome(lambda: shared.get(_context(auth)))),
+            asyncio.create_task(_aoutcome(lambda: shared.refresh(_context(auth)))),
+        ]
+        leaving = asyncio.create_task(shared.get(_context(auth)))
+        await asyncio.sleep(0)
+        leaving.cancel()
+        try:
+            await leaving
+        except asyncio.CancelledError:
+            lines.append("  async waiter cancelled = CancelledError")
+        hold.set()
+        lines.append(f"  async concurrent tasks = {[await task for task in (first, *joiners)]} sends={adapter.sends}")
+        lines.append(f"    forced refresh afterwards = {await _aoutcome(lambda: shared.refresh(_context(auth)))}")
+
+
+def _loops(auth: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]) -> None:
+    """Bind an asyncio provider to its first event loop, and refuse callers outside asyncio."""
+
+    def provider() -> Any:
+        return auth.AsyncClientCredentialsProvider(
+            _TOKEN,
+            client_id="c",
+            client_secret=auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("s")),
+            token_transport=AsyncAdapter(transports, _areply(responses, _ISSUED)),
+        )
+
+    shared = provider()
+    unscheduled = shared.get(_context(auth))
+    try:
+        unscheduled.send(None)
+    except Exception as error:  # noqa: BLE001
+        lines.append(f"  without a running asyncio loop = {failure_line(error)}")
 
     async def get() -> str:
         return await _aoutcome(lambda: shared.get(_context(auth)))
@@ -663,6 +809,38 @@ def oauth_client_credentials(package: ModuleType, lines: list[str]) -> None:
     lines.append(f"  first loop = {asyncio.run(get())}")
     lines.append(f"  another loop = {asyncio.run(get())}")
     lines.append(f"  close from another loop = {asyncio.run(close())}")
+    pinned: list[Any] = []
+
+    async def construct() -> None:
+        pinned.append(provider())
+
+    asyncio.run(construct())
+
+    async def constructed() -> str:
+        return await _aoutcome(lambda: pinned[0].get(_context(auth)))
+
+    lines.append(f"  loop other than the constructing one = {asyncio.run(constructed())}")
+
+
+def oauth_client_credentials(package: ModuleType, lines: list[str]) -> None:
+    """Exercise client credentials acquisition, caching, renewal, and failures in both execution modes."""
+    auth, options, transports, responses, errors = (
+        importlib.import_module(f"{package.__name__}.{name}")
+        for name in ("auth", "options", "transports", "responses", "errors")
+    )
+    _configuration(auth, options, transports, lines)
+    ports = [_wire(package, auth, options, lines)]
+    _expiry(package, auth, transports, responses, lines)
+    _single_flight(auth, transports, responses, lines)
+    _faults(auth, transports, responses, errors, lines)
+
+    async def flows() -> None:
+        ports.append(await _async_wire(package, auth, options, lines))
+        await _async_faults(auth, transports, responses, errors, lines)
+        await _async_single_flight(auth, transports, responses, lines)
+
+    run(flows)
+    _loops(auth, transports, responses, lines)
     for index, line in enumerate(lines):
         for port in ports:
             line = line.replace(f":{port}", ":<port>")

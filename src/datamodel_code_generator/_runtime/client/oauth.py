@@ -28,13 +28,9 @@ from .errors import (
     AuthConfigurationError,
     AuthProviderClosedError,
     AuthProviderExecutionError,
-    AuthReauthorizationRequiredError,
     AuthRefreshError,
-    AuthStateUncertainError,
-    AuthTimeoutError,
     DeliveryState,
     OAuthErrorCode,
-    OAuthExchangeError,
     PhaseTimeoutError,
     TokenExpiredError,
     TransportError,
@@ -65,7 +61,6 @@ if TYPE_CHECKING:
 
 ClientAuthMethod = Literal["none", "client_secret_basic", "client_secret_post"]
 Outcome = Literal["success", "rejected", "http_status", "malformed_response", "unsent", "lost"]
-ConsumableState = Literal["REAUTH_REQUIRED", "EXCHANGE_REJECTED", "FAILED_NOT_SENT", "UNCERTAIN"]
 SecretT = TypeVar("SecretT")
 AdapterT = TypeVar("AdapterT", bound="TransportAdapter | AsyncTransportAdapter")
 T = TypeVar("T")
@@ -233,11 +228,11 @@ def _secret_value(value: object) -> str:
     raise AuthConfigurationError(field_path=("client_secret",), condition="invalid_material")
 
 
-def _provider_failure(error: Exception, state: str) -> Exception:
+def _provider_failure(error: Exception) -> Exception:
     """Keep classified auth failures of the secret provider and wrap any other exception it raised."""
     if isinstance(error, (AuthConfigurationError, AuthRefreshError)):
         return error
-    return AuthProviderExecutionError(callback="get", state=state, delivery_state=DeliveryState.NOT_SENT, cause=error)
+    return AuthProviderExecutionError(callback="get", delivery_state=DeliveryState.NOT_SENT, cause=error)
 
 
 def token_request(
@@ -286,7 +281,6 @@ class Session:
     total: float
     phases: tuple[float, float, float, float]
     clock: Clock
-    limited: bool = False
 
     @classmethod
     def start(
@@ -301,7 +295,7 @@ class Session:
         )
         now = clock.monotonic()
         if limit is not None and (limit := on_clock(limit, clock)).at < now + refresh_timeout:
-            return cls(limit, refresh_timeout, phases, clock, limited=True)
+            return cls(limit, refresh_timeout, phases, clock)
         return cls(absolute_deadline(now + refresh_timeout, clock=clock), refresh_timeout, phases, clock)
 
     def context(self, trace: AttemptTrace) -> tuple[AttemptIOContext, tuple[bool, ...]]:
@@ -316,21 +310,10 @@ class Session:
 
 @dataclass(slots=True)
 class Progress:
-    """How far an exchange got, kept by its caller so an interruption is classified by what was sent.
-
-    A guard, when given, marks the request sent itself, and refuses once the exchange's job already ended.
-    """
+    """How far an asyncio exchange got, so the session deadline cutting it short is classified by what was sent."""
 
     sent: bool = False
     answered: bool = False
-    guard: Callable[[], bool] | None = None
-
-    def start(self) -> bool:
-        """Mark the request sent right before it is, unless the guard refuses."""
-        if (guard := self.guard) is not None:
-            return guard()
-        self.sent = True
-        return True
 
     @property
     def delivery(self) -> DeliveryState:
@@ -594,7 +577,7 @@ class TokenEndpoint:
 
     def _open(self) -> None:
         if self.closed:
-            raise AuthProviderClosedError(state="CLOSED", delivery_state=DeliveryState.NOT_SENT)
+            raise AuthProviderClosedError(delivery_state=DeliveryState.NOT_SENT)
 
     def prepare(self) -> None:
         """Create the SDK-owned transport once, before any exchange consumes its credential, unless already closed."""
@@ -611,13 +594,10 @@ class TokenEndpoint:
         self,
         fields: tuple[tuple[str, str], ...],
         session: Session,
-        progress: Progress,
-        state: str,
     ) -> Exchanged:
         """Acquire the client secret, then send the form once, without redirects or retries, reading a bounded body.
 
-        The form is never sent once the session ended. A secret provider's failure propagates; `state` names the state
-        it leaves the caller in.
+        The form is never sent once the session ended, and a secret provider's failure propagates.
         """
         target = self.endpoint
         authentication = self.authentication
@@ -626,13 +606,13 @@ class TokenEndpoint:
             try:
                 secret = _secret_value(provider.get(_secret_context(target.origin, session.deadline)))
             except Exception as error:  # noqa: BLE001 - Classified by the secret provider's failure contract.
-                raise _provider_failure(error, state) from None
+                raise _provider_failure(error) from None
         request = token_request(target.url, authentication.client_id, authentication.method, fields, secret)
         trace = AttemptTrace(clock=session.clock)
         context, caps = session.context(trace)
         with self._lock:
             self._open()
-            if session.deadline.remaining() <= 0 or not progress.start():
+            if session.deadline.remaining() <= 0:
                 return expired(session, DeliveryState.NOT_SENT)
             adapter = self._adapter
         assert adapter is not None
@@ -640,7 +620,6 @@ class TokenEndpoint:
             response = adapter.send(request, context)
         except Exception as error:  # noqa: BLE001 - Every adapter failure is classified by its evidence.
             return _failed(error, _claimed(error, trace, trusted=adapter.capabilities.delivery_evidence), caps, session)
-        progress.answered = True
         status = None
         try:
             status, headers = _head(response.status_code, response.headers)
@@ -691,7 +670,7 @@ class AsyncTokenEndpoint:
 
     def _open(self) -> None:
         if self.closed:
-            raise AuthProviderClosedError(state="CLOSED", delivery_state=DeliveryState.NOT_SENT)
+            raise AuthProviderClosedError(delivery_state=DeliveryState.NOT_SENT)
 
     def bind(self) -> None:
         """Refuse a caller outside asyncio or on another event loop than the one the endpoint belongs to."""
@@ -721,18 +700,15 @@ class AsyncTokenEndpoint:
         self,
         fields: tuple[tuple[str, str], ...],
         session: Session,
-        progress: Progress,
-        state: str,
     ) -> Exchanged:
         """Acquire the client secret and send the form once, both within the session deadline."""
+        progress = Progress()
         try:
-            return await within(self._exchange(fields, session, progress, state), session.deadline.remaining())
+            return await within(self._exchange(fields, session, progress), session.deadline.remaining())
         except TimeoutError as error:
             return expired(session, progress.delivery, cause=error)
 
-    async def _exchange(
-        self, fields: tuple[tuple[str, str], ...], session: Session, progress: Progress, state: str
-    ) -> Exchanged:
+    async def _exchange(self, fields: tuple[tuple[str, str], ...], session: Session, progress: Progress) -> Exchanged:
         target = self.endpoint
         authentication = self.authentication
         secret = None
@@ -740,13 +716,14 @@ class AsyncTokenEndpoint:
             try:
                 secret = _secret_value(await provider.get(_secret_context(target.origin, session.deadline)))
             except Exception as error:  # noqa: BLE001 - Classified by the secret provider's failure contract.
-                raise _provider_failure(error, state) from None
+                raise _provider_failure(error) from None
         request = token_request(target.url, authentication.client_id, authentication.method, fields, secret)
         trace = AttemptTrace(clock=session.clock)
         context, caps = session.context(trace)
         self._open()
-        if session.deadline.remaining() <= 0 or not progress.start():
+        if session.deadline.remaining() <= 0:
             return expired(session, DeliveryState.NOT_SENT)
+        progress.sent = True
         adapter = self._adapter
         assert adapter is not None
         try:
@@ -814,8 +791,8 @@ def _expiry(value: object, received: datetime) -> datetime:
 
 def token_material(
     fields: Mapping[str, object], received: datetime, snapshot: tuple[str, ...] | None
-) -> tuple[AccessToken, str | None, bool]:
-    """Build the access token, the refresh token, and whether the response carried one, from a 2xx response.
+) -> tuple[AccessToken, str | None]:
+    """Build the access token and the refresh token from a 2xx response.
 
     An omitted scope member inherits the grant's snapshot; a present one, even null, must be valid on its own.
     """
@@ -839,99 +816,4 @@ def token_material(
     return (
         AccessToken(access, token_type="Bearer", expires_at=expires_at, scopes=scopes),  # noqa: S106
         refresh if isinstance(refresh, str) else None,
-        "refresh_token" in fields,
     )
-
-
-def failure_kind(error: BaseException) -> Literal["malformed_response", "invalid_token_response"]:
-    """Separate a successful response's member defects, expiry included, from its format defects."""
-    if isinstance(error, (InvalidTokenResponseError, TokenExpiredError)):
-        return "invalid_token_response"
-    return "malformed_response"
-
-
-def unusable_success(
-    exchanged: Exchanged, cause: Exception, *, provider_id: str | None = None, refresh_id: str | None = None
-) -> AuthStateUncertainError:
-    """Return the error of a successful answer whose members form no token set: the credential it used is spent."""
-    return AuthStateUncertainError(
-        failure_kind=failure_kind(cause),
-        status_code=exchanged.status_code,
-        state="UNCERTAIN",
-        delivery_state=exchanged.delivery,
-        phase="validate",
-        cause=cause,
-        provider_id=provider_id,
-        refresh_id=refresh_id,
-    )
-
-
-def consumable_failure(
-    exchanged: Exchanged, *, provider_id: str | None = None, refresh_id: str | None = None
-) -> tuple[ConsumableState, AuthRefreshError]:
-    """Classify an exchange of a single-use credential, a code or a refresh token, that did not succeed.
-
-    Return the state it leaves the credential in with the error to raise: invalid_grant requires reauthorization,
-    another known error code rejects it, an unsent request consumed nothing, and any other answer or a request that
-    may have been sent leaves its fate unknown.
-    """
-    delivery = exchanged.delivery
-    if exchanged.outcome == "rejected" and exchanged.oauth_error == "invalid_grant":
-        return "REAUTH_REQUIRED", AuthReauthorizationRequiredError(
-            condition="invalid_grant",
-            state="REAUTH_REQUIRED",
-            delivery_state=delivery,
-            provider_id=provider_id,
-            refresh_id=refresh_id,
-        )
-    if exchanged.outcome == "rejected" and exchanged.oauth_error is not None:
-        return "EXCHANGE_REJECTED", OAuthExchangeError(
-            status_code=exchanged.status_code,
-            oauth_error=exchanged.oauth_error,
-            state="EXCHANGE_REJECTED",
-            delivery_state=delivery,
-            provider_id=provider_id,
-            refresh_id=refresh_id,
-        )
-    if exchanged.outcome == "unsent":
-        if exchanged.timeout_kind is None:
-            return "FAILED_NOT_SENT", OAuthExchangeError(
-                state="FAILED_NOT_SENT",
-                delivery_state=delivery,
-                phase=exchanged.phase,
-                cause=exchanged.cause,
-                provider_id=provider_id,
-                refresh_id=refresh_id,
-            )
-        assert exchanged.timeout is not None
-        return "FAILED_NOT_SENT", AuthTimeoutError(
-            effective_timeout=exchanged.timeout,
-            timeout_kind=exchanged.timeout_kind,
-            state="FAILED_NOT_SENT",
-            delivery_state=delivery,
-            phase=exchanged.phase,
-            cause=exchanged.cause,
-            provider_id=provider_id,
-            refresh_id=refresh_id,
-        )
-    return "UNCERTAIN", AuthStateUncertainError(
-        failure_kind=_uncertain_kind(exchanged),
-        status_code=exchanged.status_code,
-        state="UNCERTAIN",
-        delivery_state=delivery,
-        phase="validate" if exchanged.outcome in {"malformed_response", "rejected"} else exchanged.phase,
-        cause=exchanged.cause,
-        provider_id=provider_id,
-        refresh_id=refresh_id,
-    )
-
-
-def _uncertain_kind(exchanged: Exchanged) -> Literal["transport", "deadline", "http_status", "malformed_response"]:
-    """Name what left an exchange's outcome unknown: the session deadline, the transport, or the answer."""
-    if exchanged.timeout_kind == "provider":
-        return "deadline"
-    if exchanged.outcome == "lost":
-        return "transport"
-    if exchanged.outcome == "http_status":
-        return "http_status"
-    return "malformed_response"
