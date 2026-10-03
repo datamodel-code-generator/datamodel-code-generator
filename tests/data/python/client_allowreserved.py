@@ -10,6 +10,7 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+import datamodel_code_generator
 from tests.data.python.client_generation import SOURCE, Modules, generate_client, render_client
 from tests.data.python.client_runtime import _CALL_ID, Exchange, arecord, raw_response, record, run
 from tests.data.python.generated_packages import forget_generated, import_generated
@@ -74,11 +75,14 @@ def reserved_adapted_report(version: str, root: Path) -> str:
     try:
         api = import_generated(package)
         models = importlib.import_module(f"{package}_models")
-        runtime = importlib.import_module(f"{package}._runtime")
+        runtime = Path(importlib.import_module(f"{package}._runtime").__file__).resolve().parent
         lines.extend((
             f"  generated model origin {models.__file__ == str(destination / f'{package}_models.py')}",
             f"  generated client origin {Path(api.__file__).is_relative_to(destination)}",
-            f"  current worktree runtime origin {Path(runtime.__file__).is_relative_to(SOURCE.parents[3] / 'src')}",
+            (
+                f"  active distribution runtime origin "
+                f"{runtime == Path(datamodel_code_generator.__file__).resolve().parent / '_runtime'}"
+            ),
         ))
         data = json.loads((SOURCE / "allowreserved-path-vectors.json").read_text(encoding="utf-8"))
         data["vectors"] = [vector for vector in data["vectors"] if vector["label"] in recipe["labels"]]
