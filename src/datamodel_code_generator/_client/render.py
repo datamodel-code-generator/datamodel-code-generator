@@ -4318,7 +4318,7 @@ and idempotency key; the session bounds all of them. Each limit comes from the c
 | chunk size | 8 MiB, or the helper's smaller `max_chunk_bytes` |
 | chunks per upload | 10000; None removes it |
 | probes after an append of unknown outcome | 3; 0 probes none |
-| session total timeout | 600 seconds from `start` or `resume`, the reading of the source included; None removes it |
+| session total timeout | None (no limit), including reading the source at `start` or `resume` |
 | network sends per session | 10000; None removes it |
 
 A source has an immutable identity, its size and SHA-256 digest, and opens an independent reader for each range. Before
@@ -4456,11 +4456,11 @@ another kind's options, fail construction. The session types are imported from:
 
 | Limit | Effective default |
 |---|---|
-| pages per session | 1000; None removes it |
-| items per session | 100000; None removes it, and 0 ends a pager at once |
+| pages per session | None (no limit) |
+| items per session | None (no limit); 0 ends a pager at once |
 | decoded body per page | 8 MiB |
-{size}| session total timeout | 300 seconds; None removes it |
-| network sends per session | 3000; None removes it |
+{size}| session total timeout | None (no limit) |
+| network sends per session | None (no limit) |
 
 {rules}
 {self.count_runtime(kinds)}{self.follow_runtime(kinds)}{_RESUME_RUNTIME}"""

@@ -230,8 +230,8 @@ booleans. Durations are finite numbers of seconds, excluding booleans; integers 
 
 | Type | Field | Effective default | Valid values |
 |---|---|---|---|
-| `PaginationOptions` | `max_pages` | `1000` | Positive integer or `None` |
-| | `max_items` | `100000` | Nonnegative integer or `None`; `0` ends without sending |
+| `PaginationOptions` | `max_pages` | `None` (no limit) | Positive integer or `None` |
+| | `max_items` | `None` (no limit) | Nonnegative integer or `None`; `0` ends without sending |
 | | `max_page_bytes` | `8388608` | Positive integer |
 | | `max_cursor_bytes` | `65536` | Positive integer |
 | `PollOptions` | `max_polls` | `1000` | Positive integer or `None` |
@@ -794,13 +794,13 @@ call's options, then the helper's `ProtocolDefaults` in `ProtocolClientOptions.d
 
 | Limit | Default | None |
 |---|---|---|
-| `PaginationOptions.max_pages` | 1000 pages | Removes the limit |
-| `PaginationOptions.max_items` | 100000 items; 0 ends a pager at once without sending | Removes the limit |
+| `PaginationOptions.max_pages` | No limit | Removes the limit |
+| `PaginationOptions.max_items` | No limit; 0 ends a pager at once without sending | Removes the limit |
 | `PaginationOptions.max_page_bytes` | 8 MiB of decoded body per page | Not allowed |
 | `PaginationOptions.max_cursor_bytes` | 64 KiB, UTF-8 for a string and canonical JSON otherwise; also a next URL's bytes, within 8 KiB, and a page's Link values | Not allowed |
-| `SessionOptions.total_timeout` | 300 seconds from the first fetch | Removes the limit |
+| `SessionOptions.total_timeout` | No limit | Removes the limit |
 | `SessionOptions.deadline` | None | No deadline |
-| `SessionOptions.max_network_sends` | 3000 sends | Removes the limit |
+| `SessionOptions.max_network_sends` | No limit | Removes the limit |
 
 A limit reached while pages remain raises `SessionLimitError` with the progress so far; the last page ends normally
 even exactly at a limit. An item limit is exact for items, while `iter_pages` checks it before each fetch, so a page
@@ -1487,13 +1487,15 @@ bounds all of them. Each limit comes from the call's options, then the helper's 
 | `UploadOptions.max_parts` | 10000 chunks | Removes the limit |
 | `UploadOptions.parallelism` | 4, unused by the offset profile | Not allowed |
 | `UploadOptions.max_uncertain_probes` | 3 probes; 0 probes none | Not allowed |
-| `SessionOptions.total_timeout` | 600 seconds | Removes the limit |
+| `SessionOptions.total_timeout` | No limit | Removes the limit |
 | `SessionOptions.deadline` | None | No deadline |
 | `SessionOptions.max_network_sends` | 10000 sends | Removes the limit |
 
-The session's `total_timeout` runs from `start` or `resume` for the whole life of the handle, reading the source
-included, so a long upload stepped slowly needs `SessionOptions(total_timeout=None)`, a larger value, or a `resume` from
-a checkpoint, which starts a new session. The deadline also bounds reading the source. A call past a limit raises
+By default, an upload session has no total lifetime limit. If a finite `total_timeout` is configured, it runs from
+`start` or `resume` for the whole life of the handle, including reading the source. A long upload stepped slowly may
+then need a larger timeout, `SessionOptions(total_timeout=None)`, or a `resume` from a checkpoint, which starts a new
+session. Both modes check a finite deadline before each source read. A synchronous `opened.read()` cannot be
+interrupted once it blocks; an asynchronous read is bounded by the remaining deadline. A call past a limit raises
 `SessionLimitError` with the kind `network_sends`, the progress so far, and `resume_state`, before sending; a create
 request the session has no slot for raises it without `resume_state`, since nothing was created. The options must not
 fix an idempotency key, from the client, a view, or the call, and must not patch a header or a query parameter the
