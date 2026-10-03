@@ -1080,11 +1080,13 @@ sending, as it does for options of another type.
 
 `handle.checkpoint()` returns a `ResumeState` without sending, on `LroHandle` and `AsyncLroHandle` alike, also after
 `close`. While another thread or task runs `status` or `wait`, it saves the handle as the last poll that settled left
-it, never waiting for a step and never refusing. An operation that completed at once with its result has nothing to
-poll: its `checkpoint()` raises `ProtocolStateError` with `state="succeeded"`. The helper's
-`resume(state, *, poll_options=None, options=None, session_options=None)` is not awaited, even on `AsyncClient`, and
-returns the handle type `start` returns, pending, in a session of its own, without sending: it never creates the
-operation again, and `status` or `wait` sends its first poll at once. A checkpoint does not keep a server's delay,
+it, never waiting for a step. A settled operation, one that failed, was cancelled, or holds its result, including
+one that completed at once, has nothing left to continue: its `checkpoint()` raises `ProtocolStateError` with the
+phase as `state`. The helper's `resume(state, *, poll_options=None, options=None, session_options=None)` is not
+awaited, even on `AsyncClient`, and returns the handle type `start` returns, in a session of its own, without sending:
+it never creates the operation again. A pending handle's `status` or `wait` sends its first poll at once; a handle
+whose result fetch is due fetches it once in `wait`, and its `status` raises `ProtocolStateError`, since it holds no
+poll. A checkpoint does not keep a server's delay,
 so a caller resuming after `PollWaitLimitError` waits out its `required_wait` itself before polling.
 
 ```python
@@ -1108,12 +1110,12 @@ with Client() as client:
 
 | Saved | Never saved |
 |---|---|
-| The values the next poll and a remote cancel write, read from the create response or the last pending poll | The create request, its body, and its idempotency key, since resume never sends it |
-| The values the create response gave the result fetch's `initial` bindings | Polls, results, their bodies, model objects, and the phase |
+| Whether the operation is pending or its result fetch is due | The create request, its body, and its idempotency key, since resume never sends it |
+| While pending, the values the next poll and a remote cancel write, read from the create response or the last pending poll, and those the create response gave the result fetch's `initial` bindings; while the fetch is due, the values it writes | Polls, results, their bodies, and model objects |
 | The server's expiry an `expires_at` helper read | The session, its deadline, its send counters, the call's `options`, and anything its auth adds |
 
-A resumed handle polls with the saved values, so a settled operation settles again: `wait` fetches its result once,
-or raises `OperationFailedError` or `OperationCancelledError` again. Polls count afresh against the resumed call's
+A resumed pending handle polls with the saved values, and one whose fetch is due fetches the result with them. Polls
+count afresh against the resumed call's
 `max_polls`, and the session's timeout, deadline, and sends start afresh. A literal binding sends the plan's value,
 never a saved one.
 
@@ -1123,7 +1125,7 @@ never a saved one.
 |---|---|
 | Not a `ResumeState` | `ProtocolConfigurationError(field_path=("state",), condition="invalid_value")` |
 | Another helper's, or one generated differently | `ResumeStateError(condition="fingerprint")` |
-| A state that does not fit the helper: an unknown or missing member, values of another count than the bindings, an expiry `datetime.isoformat()` would spell differently, or a saved value that cannot be encoded into the next poll, result fetch, or remote cancel, such as one with CR, LF, or NUL in a header | `ResumeStateError(condition="malformed")` |
+| A state that does not fit the helper: an unknown or missing member, an unknown phase, a due fetch of a helper without one, values of another count than the bindings, an expiry `datetime.isoformat()` would spell differently, or a saved value that cannot be encoded into the next poll, result fetch, or remote cancel, such as one with CR, LF, or NUL in a header | `ResumeStateError(condition="malformed")` |
 | An expiry that has passed | `ResumeStateError(condition="expired")` |
 | A dot segment (`.` or `..`) a saved value would write to a path parameter | `ProtocolDataError`, as for a server's value |
 

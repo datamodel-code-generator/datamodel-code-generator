@@ -1010,12 +1010,13 @@ succeeded with its result fetch still due, which a later `wait` retries alone. `
 `ProtocolStateError`, and so does every step after `close()` or `aclose()`, which stops only local polling. A call's
 options must not fix an idempotency key or patch a header or query parameter the helper writes.
 
-`checkpoint()` returns a `ResumeState` without sending, also after closing and while another thread or task polls: the
-values the next poll and a remote cancel write, the values the create response gave the result fetch, and the server's
-expiry, never polls, results, model objects, the session, or the call's options; an operation that completed at once
-has nothing to poll, and its `checkpoint()` raises `ProtocolStateError`. The helper's `resume` is never awaited and
-returns a pending handle in a session of its own that sends nothing until `status` or `wait`, which poll again at once,
-so a settled operation settles again; polls, the session's timeout, deadline, and sends start afresh. Before returning,
+`checkpoint()` returns a `ResumeState` without sending, also after closing and while another thread or task polls: a
+pending handle's values the next poll and a remote cancel write and those the create response gave the result fetch,
+or the values a due result fetch writes, and the server's expiry, never polls, results, model objects, the session, or
+the call's options; a settled operation has nothing left to continue, and its `checkpoint()` raises
+`ProtocolStateError`. The helper's `resume` is never awaited and returns a handle in a session of its own that sends
+nothing until `status` or `wait`: a pending one polls again at once, and one whose fetch is due fetches the result;
+polls, the session's timeout, deadline, and sends start afresh. Before returning,
 it refuses another helper's state, an expired one, and one that does not fit the helper with `ResumeStateError`, and a
 saved dot segment for a path parameter with `ProtocolDataError`; a saved value the result fetch writes into its
 querystring or body is checked when the fetch request is built. `PollWaitLimitError` and a `SessionLimitError` of a
