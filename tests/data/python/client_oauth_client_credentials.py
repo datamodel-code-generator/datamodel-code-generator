@@ -510,6 +510,8 @@ def _expiry(
         _reply(responses, {**_ISSUED, "access_token": "kept", "expires_in": 100}),
         Response(responses, 503, b""),
         _reply(responses, {**_ISSUED, "access_token": "renewed", "expires_in": 100}),
+        Response(responses, 503, b""),
+        Response(responses, 503, b""),
     )
     with auth.ClientCredentialsProvider(
         _TOKEN, client_id="c", client_secret=secret, options=timed, token_transport=adapter
@@ -519,6 +521,10 @@ def _expiry(
         now = start + 95
         lines.append(f"  failed renewal before the token expires = {_outcome(lambda: shared.get(_context(auth)))}")
         lines.append(f"    next call renews = {_outcome(lambda: shared.get(_context(auth)))} sends={adapter.sends}")
+        now = start + 190
+        renewed = shared.get(_context(auth))
+        lines.append(f"    failed renewal keeps the token = {_material(renewed)} sends={adapter.sends}")
+        lines.append(f"    forced refresh failure = {_outcome(lambda: shared.refresh(_context(auth)))} sends={adapter.sends}")
 
 
 def _single_flight(auth: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]) -> None:
@@ -537,7 +543,8 @@ def _single_flight(auth: ModuleType, transports: ModuleType, responses: ModuleTy
         second = Caller(lambda: shared.get(_context(auth)), _outcome)
         second.start()
         options = importlib.import_module(f"{auth.__name__.rpartition('.')[0]}.options")
-        bounded = _context(auth, deadline=options.Deadline.after(0.1))
+        frozen = options.Clock(monotonic=lambda: 1000.0)
+        bounded = _context(auth, deadline=options.Deadline.after(0, clock=frozen))
         lines.append(f"  caller whose deadline ends while waiting = {_outcome(lambda: shared.get(bounded))}")
         gate.set()
         for caller in (first, second):
@@ -783,6 +790,50 @@ async def _async_single_flight(
         hold.set()
         lines.append(f"  async concurrent tasks = {[await task for task in (first, *joiners)]} sends={adapter.sends}")
         lines.append(f"    forced refresh afterwards = {await _aoutcome(lambda: shared.refresh(_context(auth)))}")
+    hold = asyncio.Event()
+    adapter = AsyncAdapter(
+        transports, _areply(responses, _ISSUED), _areply(responses, {**_ISSUED, "access_token": "access-2"}), hold=hold
+    )
+    async with auth.AsyncClientCredentialsProvider(
+        _TOKEN,
+        client_id="c",
+        client_secret=auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("s")),
+        token_transport=adapter,
+    ) as shared:
+        cancelled = asyncio.create_task(shared.get(_context(auth)))
+        await asyncio.to_thread(adapter.entered.wait, LIMIT)
+        cancelled.cancel()
+        try:
+            await cancelled
+        except asyncio.CancelledError:
+            lines.append("  async caller cancelled during its token request = CancelledError")
+        hold.set()
+        lines.append(f"    next caller = {await _aoutcome(lambda: shared.get(_context(auth)))} sends={adapter.sends}")
+
+
+async def _async_renewal(package: str, auth: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]) -> None:
+    """Keep an asyncio token whose early renewal failed until it expires."""
+    now = time.monotonic()
+    clock = importlib.import_module(f"{package}.options").Clock(monotonic=lambda: now)
+    adapter = AsyncAdapter(
+        transports,
+        _areply(responses, {**_ISSUED, "access_token": "kept", "expires_in": 100}),
+        AsyncResponse(responses, 503, b""),
+        AsyncResponse(responses, 503, b""),
+    )
+    async with auth.AsyncClientCredentialsProvider(
+        _TOKEN,
+        client_id="c",
+        client_secret=auth.AsyncStaticCredentialProvider(auth.ApiKeyCredential("s")),
+        options=auth.OAuthProviderOptions(clock=clock),
+        token_transport=adapter,
+    ) as shared:
+        start = now
+        await shared.get(_context(auth))
+        now = start + 95
+        lines.append(f"  async failed renewal before the token expires = {await _aoutcome(lambda: shared.get(_context(auth)))}")
+        now = start + 101
+        lines.append(f"    once the token expired = {await _aoutcome(lambda: shared.get(_context(auth)))} sends={adapter.sends}")
 
 
 def _loops(auth: ModuleType, transports: ModuleType, responses: ModuleType, lines: list[str]) -> None:
@@ -841,6 +892,7 @@ def oauth_client_credentials(package: ModuleType, lines: list[str]) -> None:
         ports.append(await _async_wire(package, auth, options, lines))
         await _async_faults(auth, transports, responses, errors, lines)
         await _async_single_flight(auth, transports, responses, lines)
+        await _async_renewal(package.__name__, auth, transports, responses, lines)
 
     run(flows)
     _loops(auth, transports, responses, lines)

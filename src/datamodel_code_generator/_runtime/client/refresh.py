@@ -1,6 +1,7 @@
 """Inline OAuth token acquisition: a provider's current token, renewed under its lock by the caller that needs it.
 
 One caller at a time sends a token request; callers arriving meanwhile wait for the lock and use the token it obtained.
+A failed early renewal leaves the unexpired token in use.
 Nothing runs in the background and nothing is persisted: a refresh token provider hands each refreshed token set to its
 `on_token_refreshed` callback once it is current.
 """
@@ -39,10 +40,14 @@ def refresh_margin(ttl: float) -> float:
 
 @dataclass(frozen=True, slots=True)
 class Published:
-    """Material a provider serves, and the monotonic time from which a caller renews it, or None to keep it."""
+    """Material a provider serves, and the monotonic times from which a caller renews it and at which it expires.
+
+    None keeps material that declares no expiry until a resource rejects it.
+    """
 
     material: BearerCredential
     refresh_at: float | None
+    expires_at: float | None = None
 
 
 def published(access: AccessToken, received: datetime, at: float, *, renewable: bool = True) -> Published:
@@ -55,7 +60,7 @@ def published(access: AccessToken, received: datetime, at: float, *, renewable: 
     if (expires_at := access.expires_at) is None:
         return Published(material, None)
     ttl = (expires_at - received).total_seconds()
-    return Published(material, at + ttl - (refresh_margin(ttl) if renewable else 0.0))
+    return Published(material, at + ttl - (refresh_margin(ttl) if renewable else 0.0), at + ttl)
 
 
 def checked_audience(audience: object) -> str | None:
@@ -235,6 +240,16 @@ class _Tokens:
             return cache.material
         return None
 
+    def unexpired(self, *, force: bool) -> BearerCredential | None:
+        """Return the material an unforced caller keeps using after a failed early renewal, until it expires.
+
+        The caller holds the lock.
+        """
+        if force or (cache := self._cache) is None:
+            return None
+        expires_at = cache.expires_at
+        return cache.material if expires_at is not None and self._options.clock.monotonic() < expires_at else None
+
     def session(self, context: CredentialContext) -> Session:
         """Start a token request's session, ending by the caller's deadline at the latest."""
         options = self._options
@@ -287,9 +302,14 @@ class SyncTokens(_Tokens):
             endpoint = self._endpoint
             if (material := self.current(closed=endpoint.closed, force=force, seen=seen)) is not None:
                 return material
-            form = self._grant.request()
-            endpoint.prepare()
-            material, tokens = self.adopt(endpoint.exchange(form, self.session(checked)))
+            try:
+                form = self._grant.request()
+                endpoint.prepare()
+                material, tokens = self.adopt(endpoint.exchange(form, self.session(checked)))
+            except Exception:
+                if (kept := self.unexpired(force=force)) is None:
+                    raise
+                return kept
             if (notify := self._notify) is not None:
                 notify(tokens)
             return material
@@ -329,9 +349,14 @@ class AsyncTokens(_Tokens):
         async with self._lock:
             if (material := self.current(closed=endpoint.closed, force=force, seen=seen)) is not None:
                 return material
-            form = self._grant.request()
-            endpoint.prepare()
-            material, tokens = self.adopt(await endpoint.exchange(form, self.session(checked)))
+            try:
+                form = self._grant.request()
+                endpoint.prepare()
+                material, tokens = self.adopt(await endpoint.exchange(form, self.session(checked)))
+            except Exception:
+                if (kept := self.unexpired(force=force)) is None:
+                    raise
+                return kept
             if (notify := self._notify) is not None:
                 await notify(tokens)
             return material

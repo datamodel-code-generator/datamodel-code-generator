@@ -134,6 +134,12 @@ async def _saved_function(tokens: Any) -> None:
     del tokens
 
 
+async def _failing_save(tokens: Any) -> None:
+    del tokens
+    msg = "storage"
+    raise RuntimeError(msg)
+
+
 def _async_saved(saved: list[str]) -> Callable[[Any], Any]:
     async def save(tokens: Any) -> None:
         saved.append(_set_line(tokens))
@@ -478,6 +484,16 @@ async def _async(auth: ModuleType, transports: ModuleType, responses: ModuleType
         lines.append(f"    invalid grant = {await _aoutcome(lambda: family.refresh(_context(auth)))}")
         lines.append(f"    callback calls = {saved} sends={adapter.sends}")
     lines.append(f"    get after close = {await _aoutcome(lambda: family.get(_context(auth)))}")
+    async with auth.AsyncRefreshTokenProvider(
+        _TOKEN,
+        client_id="c",
+        token_set=_tokens(auth, minutes=-1),
+        client_auth_method="none",
+        on_token_refreshed=_failing_save,
+        token_transport=AsyncAdapter(transports, AsyncResponse(responses, 200, json.dumps(_ROTATED).encode())),
+    ) as failing:
+        lines.append(f"  async callback failure = {await _aoutcome(lambda: failing.get(_context(auth)))}")
+        lines.append(f"    refreshed token stays current = {await _aoutcome(lambda: failing.get(_context(auth)))}")
 
 
 def oauth_refresh(package: ModuleType, lines: list[str]) -> None:

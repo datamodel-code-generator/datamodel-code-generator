@@ -4573,7 +4573,7 @@ imported from:
 | ping interval and pong timeout | 20 seconds each; None removes them |
 | close timeout | 5 seconds |
 | session total timeout | None |
-| network sends per session | 16, for handshakes and token requests; None removes it |
+| network sends per session | 16, for handshakes; None removes it |
 
 The connection and the handshake's limiter permit belong to the session until it closes or fails, and closing the
 client closes it. One `receive` waits at a time, and a second one raises `ConcurrentReceiveError`; sends go one at a

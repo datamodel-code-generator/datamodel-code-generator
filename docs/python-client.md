@@ -789,8 +789,9 @@ call's `options` must not patch a header or a query parameter the helper writes:
 
 A pager, and each `page` or `next_page` call, is one session. Every page is its own call, with its own retries, total
 timeout, and idempotency key, and the session bounds all of them: a page's deadline is the earlier of its own and the
-session's, and each of its sends, token requests included, takes a slot of the session too. Each limit comes from the
-call's options, then the helper's `ProtocolDefaults` in `ProtocolClientOptions.defaults`, then the default below:
+session's, and each of its sends takes a slot of the session too; an OAuth token request takes none. Each limit comes
+from the call's options, then the helper's `ProtocolDefaults` in `ProtocolClientOptions.defaults`, then the default
+below:
 
 | Limit | Default | None |
 |---|---|---|
@@ -802,14 +803,14 @@ call's options, then the helper's `ProtocolDefaults` in `ProtocolClientOptions.d
 | `SessionOptions.deadline` | None | No deadline |
 | `SessionOptions.max_network_sends` | No limit | Removes the limit |
 
-A limit reached while pages remain raises `SessionLimitError` with the progress so far; the last page ends normally
-even exactly at a limit. An item limit is exact for items, while `iter_pages` checks it before each fetch, so a page
-that crosses it is delivered whole, and `page` or `next_page` with `max_items=0` raises
-`SessionLimitError(kind="items", limit=0)` without sending. A retry the session has no slot for is not made, and the
-page's error keeps `retry_stop_reason="parent_budget_exhausted"`; so does a rejected token's recovery when the session lacks slots for
-the new token request and the resend. Defaults naming a helper the package lacks, or giving it another kind's options,
-fail the client's construction with `ProtocolConfigurationError`, and so do options of another type, and an idempotency
-key fixed by the client's options, `with_options`, or the call, when a helper is called.
+A limit reached while pages remain raises `SessionLimitError` with the progress so far; the last page ends normally even
+exactly at a limit. An item limit is exact for items, while `iter_pages` checks it before each fetch, so a page that
+crosses it is delivered whole, and `page` or `next_page` with `max_items=0` raises `SessionLimitError(kind="items",
+limit=0)` without sending. A retry the session has no slot for is not made, and the page's error keeps
+`retry_stop_reason="parent_budget_exhausted"`, as does a rejected token's recovery when the session has no slot for the
+resend. Defaults naming a helper the package lacks, or giving it another kind's options, fail the client's construction
+with `ProtocolConfigurationError`, and so do options of another type, and an idempotency key fixed by the client's
+options, `with_options`, or the call, when a helper is called.
 
 A pager is used by one consumer at a time and in one mode: stepping it while it fetches, closing it then, and
 mixing items with pages raise `ProtocolStateError`. After a failure, cancellation included, and after `close()`,
@@ -2080,7 +2081,7 @@ ends once that clock reaches its end, or once as much real time passed as the cl
 | `WSOptions.ping_interval`, `pong_timeout` | 20 seconds each | No keepalive pings |
 | `WSOptions.close_timeout` | 5 seconds | Not allowed |
 | `SessionOptions.total_timeout`, `deadline` | None | No session deadline |
-| `SessionOptions.max_network_sends` | 16 sends, for handshakes and token requests | Removes the limit |
+| `SessionOptions.max_network_sends` | 16 handshake sends | Removes the limit |
 
 A message over `max_message_bytes` raises `ProtocolSizeError` with the kind `message` after the connection closed with
 1009. A receive that waits longer than the idle timeout raises `PhaseTimeoutError` with the phase `read` and closes with
@@ -4280,9 +4281,10 @@ The call that needs a token requests it inline, while holding the provider's loc
 deadline, and then use the token it obtained, so one token request serves them all; the provider starts no thread or
 task of its own. A token request ends within `refresh_timeout`, and at the calling request's deadline at the latest;
 cancelling an asyncio caller cancels its token request. A failed request leaves nothing behind, and the next call
-acquires again. A rejection, an unexpected status, or an unusable response raises `OAuthExchangeError`; a transport
-failure raises `OAuthExchangeError`, or `AuthTimeoutError` when a time limit ran out, with the `delivery_state` the
-request reached.
+acquires again. When an early renewal fails, the call keeps using the current token until it expires; a failure raises
+once the token expired, or when a resource's rejection forced the request. A rejection, an unexpected status, or an
+unusable response raises `OAuthExchangeError`; a transport failure raises `OAuthExchangeError`, or `AuthTimeoutError`
+when a time limit ran out, with the `delivery_state` the request reached.
 
 `get` returns the current token, acquiring one when none is usable; `refresh` acquires a new one, unless another caller
 replaced the token while this one waited for the lock; `invalidate(version)` forgets the held token only if it is that
@@ -4345,8 +4347,9 @@ response without one keeps it; a response without `scope` keeps the grants of th
 unknown. Narrower refreshed grants remain token metadata: subsequent resource calls reach the server, and its 403
 remains terminal. The provider then passes the new token set to `on_token_refreshed`, a coroutine function for the async
 provider, while still holding its lock, so an application can persist each token set in order; the SDK itself
-persists nothing. An exception the callback raises reaches the caller, and the refreshed token set stays current. The
-callback must not call its own provider, which holds its lock until the callback returns.
+persists nothing. An exception the callback raises reaches the caller, and the refreshed token set stays current, as it
+does when an asyncio caller is cancelled while the callback runs, which may then not finish. The callback must not call
+its own provider, which holds its lock until the callback returns.
 
 `invalid_grant` raises `AuthReauthorizationRequiredError`, and the application starts a new authorization. Any other
 failure raises as for client credentials and leaves the token set as it was, so the next call sends the same refresh

@@ -138,3 +138,5 @@
     invalid grant = AuthReauthorizationRequiredError delivery_state=RESPONSE_STARTED phase=unknown condition=invalid_grant
     callback calls = ['TokenSet() access=access-2 refresh=refresh-2'] sends=2
     get after close = AuthProviderClosedError delivery_state=NOT_SENT phase=unknown
+  async callback failure = RuntimeError
+    refreshed token stays current = access-2 scopes=None expires_in_minutes=60
