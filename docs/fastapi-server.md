@@ -35,7 +35,6 @@ Generate the models and the server:
 datamodel-codegen \
   --input openapi.yaml \
   --input-file-type openapi \
-  --openapi-scopes schemas api \
   --output-model-type pydantic_v2.BaseModel \
   --preset standard-py312-20260909 \
   --output models.py \
