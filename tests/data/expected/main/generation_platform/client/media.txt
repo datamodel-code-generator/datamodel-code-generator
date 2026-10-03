@@ -111,7 +111,7 @@ render pydantic_v2.BaseModel
   /selection/selected_operations/23 documents.replace_note()
     exports client.types.documents.ReplaceNoteResponse client.types.documents.ReplaceNoteErrorData client.types.documents.ReplaceNoteHTTPError
     exports client.types.documents.ReplaceNoteRequestCodecs None
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5', 'google-re2>=1.1.20251105']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5', 'google-re2>=1.1.20251105']
 render typing.TypedDict
   write models.py
   write client/__init__.py
@@ -224,4 +224,4 @@ render typing.TypedDict
   /selection/selected_operations/23 documents.replace_note()
     exports client.types.documents.ReplaceNoteResponse client.types.documents.ReplaceNoteErrorData client.types.documents.ReplaceNoteHTTPError
     exports client.types.documents.ReplaceNoteRequestCodecs None
-  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'certifi>=2026.1.4', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'google-re2>=1.1.20251105']
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'google-re2>=1.1.20251105']
