@@ -74,11 +74,12 @@ using the authenticated `delivery_id` when a signature scheme supplies one.
 
 Webhook exceptions have keyword-only constructors and the following additional fields:
 
+<!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.error-fields -->
 | Exception | Direct base | Fields |
 |---|---|---|
 | `ProtocolConfigurationError` | `ConfigurationError` | `field_path: tuple[str, ...]`, `condition: Literal['unknown_field', 'invalid_value', 'missing_metadata', 'missing_adapter', 'wrong_capability', 'security_partition', 'binding_mismatch']` |
 | `WebhookVerificationError` | `ProtocolError` | `condition: Literal['malformed_signature', 'invalid_signature', 'missing_key', 'timestamp_window']` |
-| `ProtocolStoreError` | `ProtocolError` | `action: Literal['lookup', 'fingerprint_vary', 'compare_exchange', 'delete', 'invalidate', 'put', 'get', 'open', 'read', 'close', 'purge_terminal', 'admit', 'record', 'reset', 'snapshot']`, `entry_id: str \| None = None` |
+<!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.error-fields -->
 
 All fields without a displayed default are required. They also accept the shared context fields
 `helper_id: str | None = None`, `operation: OperationRef | None = None`, `info: ResponseInfo | None = None`,

@@ -8,9 +8,9 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey, RSAPublicNumbers
 from pets.protocols import KeySet, VerifiedWebhook
 from pets.webhooks.github import push
-from pets.webhooks.wycheproof import rsa
 from pets.webhooks.keys import Ed25519Key, HmacKey, RSAPSSKey
 from pets.webhooks.rfc8032 import ed25519
+from pets.webhooks.wycheproof import rsa
 from pets.webhooks.wycheproof import rsa as wycheproof
 from pets_models import Count, Push
 from typing_extensions import assert_type

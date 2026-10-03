@@ -199,6 +199,26 @@ def _file_example(
     )
 
 
+def render_webhook_error_fields() -> str:
+    """Render the kept webhook exception fields from their constructor annotations."""
+    from typing import get_type_hints  # noqa: PLC0415
+
+    from datamodel_code_generator._runtime.client.errors import (  # noqa: PLC0415, PLC2701 - Generate runtime field docs.
+        ProtocolConfigurationError,
+        WebhookVerificationError,
+    )
+
+    rows = ["", "| Exception | Direct base | Fields |", "|---|---|---|"]
+    for error, field_names in (
+        (ProtocolConfigurationError, ("field_path", "condition")),
+        (WebhookVerificationError, ("condition",)),
+    ):
+        hints = get_type_hints(error.__init__)
+        annotations = ", ".join(f"`{name}: {str(hints[name]).removeprefix('typing.')}`" for name in field_names)
+        rows.append(f"| `{error.__name__}` | `{error.__bases__[0].__name__}` | {annotations} |")
+    return "\n".join(rows) + "\n"
+
+
 def docs_examples() -> tuple[DocsExample, ...]:
     """Return all generated docs example sections."""
     return (
@@ -631,6 +651,11 @@ def docs_examples() -> tuple[DocsExample, ...]:
                     if line.lstrip().startswith("E_")
                 ),
             ),
+        ),
+        DocsExample(
+            example_id="python-client.webhooks.error-fields",
+            path=DOCS / "python-client.md",
+            render=render_webhook_error_fields,
         ),
         DocsExample(
             example_id="python-client.webhooks.usage",

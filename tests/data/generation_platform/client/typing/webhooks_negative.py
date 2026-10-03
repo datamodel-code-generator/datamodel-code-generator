@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from pets.errors import ProtocolConfigurationError, WebhookVerificationError
 from pets.protocols import (
     KeySet,
@@ -13,9 +11,6 @@ from pets.protocols import (
     Verifier,
     WebhookOptions,
 )
-
-if TYPE_CHECKING:
-    from datetime import datetime
 
 
 def wrong_keys(keys: KeySet[str], verifier: Verifier[str]) -> None:
