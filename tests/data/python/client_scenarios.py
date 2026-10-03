@@ -88,7 +88,7 @@ from tests.data.python.client_runtime import (
 )
 from tests.data.python.client_selectors import selectors
 from tests.data.python.client_signatures import keywords, signatures
-from tests.data.python.client_socket_connectors import socket_connectors
+from tests.data.python.client_socket_connectors import socket_connector_outcomes, socket_connectors
 from tests.data.python.client_sockets import sockets
 from tests.data.python.client_stream_lifetimes import stream_lifetimes
 from tests.data.python.client_stream_resume import stream_resume
@@ -843,6 +843,7 @@ SCENARIOS: Final[dict[str, tuple[str, tuple[str, ...], Callable[[ModuleType, lis
     "ndjson-split": ("ndjson-split", STRUCTURAL, ndjson_split),
     "sockets": ("sockets", ("pydantic_v2.BaseModel",), sockets),
     "socket-connectors": ("sockets", ("pydantic_v2.BaseModel",), socket_connectors),
+    "socket-connector-outcomes": ("sockets", ("pydantic_v2.BaseModel",), socket_connector_outcomes),
     "protocol-errors": ("pets", ("pydantic_v2.BaseModel",), protocol_errors),
     "cache": ("caching", ("pydantic_v2.BaseModel",), caching),
     "cache-stores": ("caching", ("pydantic_v2.BaseModel",), cache_stores),
