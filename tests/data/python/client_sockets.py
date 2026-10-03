@@ -17,6 +17,7 @@ from dataclasses import asdict, is_dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
+from tests.data.python.client_limiters import _AsyncSemaphoreLimiter, _SemaphoreLimiter
 from tests.data.python.client_regressions import json_error_body, retained_body
 from tests.data.python.client_runtime import describe, run
 from tests.data.python.fixture_websocket import Play, RawPeer, SocketServer, TunnelProxy, client_context
@@ -461,6 +462,9 @@ def _closing_sessions(harness: _Harness, api: Any) -> None:
     (play,) = server.play(Play(talk=_closing))
     session = api.protocols.feed.text.connect()
     harness.report(play)
+    record(lines, "send once the server closed unread", lambda: session.send("late"))
+    lines.append(f"    closed send progress {dict(session.progress)['messages_sent']}")
+    record(lines, "send after the closed send", lambda: session.send("again"))
     record(lines, "ping once the server closed unread", session.ping)
 
 
@@ -725,6 +729,20 @@ def _handshakes(harness: _Harness) -> None:
                         options=options.RequestOptions(retry=options.RetryOptions(max_retries=retry))
                     ),
                 )
+        limiter = _SemaphoreLimiter(release_failure=RuntimeError("Permit close failed"))
+        for label, settings, arguments in (
+            (
+                "refused retry exhausts session budget",
+                {},
+                {"session_options": options.SessionOptions(max_network_sends=1)},
+            ),
+            ("refused retry with failed permit release", {"limiter": limiter}, {}),
+        ):
+            with harness.package.Client(
+                options=harness.client(f"https://127.0.0.1:{probe.getsockname()[1]}", **settings)
+            ) as api:
+                record(lines, label, lambda arguments=arguments: api.protocols.feed.text.connect(**arguments))
+        lines.append(f"    refused permit cleanup {limiter.usage.report}")
     with harness.package.Client(options=harness.client(transport=harness.protocols.WebSocketTransportOptions())) as api:
         record(lines, "untrusted certificate", lambda: api.protocols.feed.text.connect(options=once))
 
@@ -738,6 +756,10 @@ def _peers(harness: _Harness) -> None:
         with harness.package.Client(options=harness.client(hangup.url)) as api:
             session = api.protocols.feed.text.connect(ws_options=harness.ws(close_timeout=0.1))
             record(lines, "peer hanging up during a ping", session.ping)
+            session = api.protocols.feed.text.connect(ws_options=harness.ws(close_timeout=0.1))
+            record(lines, "peer hanging up during a whole send", lambda: session.send(_LARGE))
+            lines.append(f"    interrupted send progress {dict(session.progress)['messages_sent']}")
+            record(lines, "send after the interrupted whole send", lambda: session.send("again"))
         with harness.package.Client(options=harness.client(peer.url)) as api:
             feed = api.protocols.feed.text
             session = feed.connect(ws_options=harness.ws(pong_timeout=0.1, ping_interval=None, close_timeout=0.1))
@@ -935,6 +957,9 @@ async def _async_sockets(harness: _Harness) -> None:
             await asyncio.to_thread(play.done.wait, 10)
             harness.report(play)
             await arecord(lines, label, lambda step=step, session=session: step(session))
+            if "send" in label:
+                lines.append(f"    async closed send progress {dict(session.progress)['messages_sent']}")
+                await arecord(lines, "async send after the closed send", lambda session=session: session.send("again"))
         token = options.CancelToken()
         (play,) = server.play(Play())
         session = await chat.connect(room=harness.room(), options=options.RequestOptions(cancel_token=token))
@@ -1059,6 +1084,20 @@ async def _async_handshakes(harness: _Harness) -> None:
                         options=options.RequestOptions(retry=options.RetryOptions(max_retries=retry))
                     ),
                 )
+        limiter = _AsyncSemaphoreLimiter(release_failure=RuntimeError("Permit close failed"))
+        for label, settings, arguments in (
+            (
+                "async refused retry exhausts session budget",
+                {},
+                {"session_options": options.SessionOptions(max_network_sends=1)},
+            ),
+            ("async refused retry with failed permit release", {"limiter": limiter}, {}),
+        ):
+            async with harness.package.AsyncClient(
+                options=harness.client(f"https://127.0.0.1:{probe.getsockname()[1]}", **settings)
+            ) as api:
+                await arecord(lines, label, lambda arguments=arguments: api.protocols.feed.text.connect(**arguments))
+        lines.append(f"    async refused permit cleanup {limiter.usage.report}")
     for retry in (1, 0):
         tokens = _AsyncTokens(harness.auth)
         upgrades_before = server.upgrade_count
