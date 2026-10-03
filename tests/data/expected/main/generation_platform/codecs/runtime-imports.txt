@@ -1,10 +1,9 @@
 __init__.py: -
 client/__init__.py: -
-client/admission.py: .auth, .errors, __future__, abc, concurrent.futures, typing
 client/arguments.py: __future__, collections.abc, typing
 client/auth.py: ..model_codecs.unset, .errors, .responses, .scopes, .timing, __future__, collections.abc, dataclasses, datetime, os, types, typing, typing_extensions
 client/auth_challenges.py: .responses, __future__, re, typing
-client/auth_policy.py: ..model_codecs.unset, .admission, .auth, .auth_challenges, .bodies, .errors, .options, .responses, .security, .timing, .transports, .urls, __future__, base64, collections.abc, dataclasses, functools, inspect, re, typing, typing_extensions, urllib.parse
+client/auth_policy.py: ..model_codecs.unset, .auth, .auth_challenges, .bodies, .errors, .options, .responses, .security, .timing, .transports, .urls, __future__, base64, collections.abc, dataclasses, functools, inspect, re, typing, typing_extensions, urllib.parse
 client/bodies.py: .coding, .disk, .errors, __future__, asyncio, collections.abc, io, os, pathlib, threading, typing
 client/body_sources.py: .bodies, .coding, .errors, .multipart, __future__, asyncio, collections.abc, hashlib, typing
 client/checks.py: ..model_codecs.unset, ..model_codecs.values, .errors, __future__, collections.abc, pydantic, pydantic.warnings, typing, warnings
@@ -16,10 +15,10 @@ client/disk.py: .errors, .tasks, __future__, asyncio, collections.abc, concurren
 client/errors.py: ..model_codecs.unset, ..protocols.references, .responses, __future__, datetime, enum, re, typing, typing_extensions
 client/events.py: ..model_codecs.unset, ..model_codecs.wire, .errors, .hooks, .logical, .options, .responses, __future__, asyncio, collections.abc, dataclasses, inspect, types, typing, urllib.parse
 client/evidence.py: __future__, dataclasses, errno, socket, ssl, sys, typing, typing_extensions
-client/grants.py: ..model_codecs.unset, .admission, .auth, .auth_policy, .errors, .oauth, .options, .refresh, .rotation, .timing, .transports, __future__, asyncio, base64, concurrent.futures, contextlib, dataclasses, hashlib, hmac, secrets, threading, typing, typing_extensions, weakref
+client/grants.py: ..model_codecs.unset, .auth, .auth_policy, .errors, .oauth, .options, .refresh, .transports, __future__, collections.abc, inspect, typing, typing_extensions
 client/hooks.py: ..model_codecs.wire, .errors, .timing, __future__, collections.abc, dataclasses, types, typing
-client/lifecycle.py: .admission, .auth, .auth_policy, .errors, .tasks, __future__, asyncio, collections.abc, concurrent.futures, functools, threading, time, typing
-client/logical.py: .admission, .errors, .lifecycle, .options, .tasks, .timing, .transports, __future__, _thread, asyncio, collections.abc, dataclasses, functools, sys, typing, uuid
+client/lifecycle.py: .auth, .auth_policy, .errors, .tasks, __future__, asyncio, collections.abc, functools, threading, time, typing
+client/logical.py: .errors, .lifecycle, .options, .tasks, .timing, .transports, __future__, _thread, asyncio, collections.abc, dataclasses, functools, sys, typing, uuid
 client/media.py: ..model_codecs.errors, ..model_codecs.media, __future__, codecs, collections.abc, typing
 client/multipart.py: ..model_codecs.errors, ..model_codecs.media, ..model_codecs.parameters, ..model_codecs.unset, ..model_codecs.wire, .bodies, .errors, .media, .options, .responses, __future__, collections.abc, os, re, typing, typing_extensions
 client/native.py: .bodies, .errors, .evidence, .hooks, .options, .responses, .transports, __future__, collections.abc, httpcore2, httpx2, typing, typing_extensions
@@ -29,10 +28,9 @@ client/options.py: ..model_codecs.media, ..model_codecs.unset, ..model_codecs.wi
 client/paths.py: __future__, collections.abc, re, typing
 client/raw.py: ..model_codecs.errors, ..model_codecs.media, ..model_codecs.wire, .coding, .disk, .errors, .events, .lifecycle, .logical, .media, .operations, .options, .responses, __future__, asyncio, collections.abc, concurrent.futures, contextlib, errno, functools, os, pathlib, threading, types, typing, typing_extensions
 client/redirects.py: .errors, .options, .responses, .retry, .urls, __future__, dataclasses, typing
-client/refresh.py: .admission, .auth, .errors, .oauth, .options, .timing, __future__, abc, asyncio, collections, collections.abc, concurrent.futures, contextlib, contextvars, dataclasses, functools, inspect, threading, typing, uuid
+client/refresh.py: .auth, .errors, .oauth, .options, __future__, asyncio, collections.abc, dataclasses, datetime, threading, typing
 client/responses.py: __future__, collections.abc, dataclasses, typing, typing_extensions
 client/retry.py: ..model_codecs.unset, .errors, .hooks, .options, .responses, __future__, collections.abc, dataclasses, datetime, math, re, typing
-client/rotation.py: ..model_codecs.unset, .admission, .auth, .errors, .oauth, .options, .refresh, .timing, __future__, asyncio, collections.abc, dataclasses, datetime, hashlib, json, typing, urllib.parse
 client/scopes.py: __future__, re, typing
 client/security.py: __future__, dataclasses, functools, typing
 client/tasks.py: __future__, asyncio, contextvars, typing
