@@ -286,10 +286,13 @@ def _isolation(package: ModuleType, auth: ModuleType, options: ModuleType, lines
             signers = tuple((_AsyncSigner if asynchronous else _Signer)(auth, server.url, events, index) for index in (1, 2))
             seen: list[tuple[object, ...]] = []
 
-            def native_request(request: httpx2.Request) -> None:
+            def native_request(request: httpx2.Request, authority: str = authority) -> None:
                 seen.append((
                     str(request.url).replace(server.url, "<origin>"),
-                    tuple((name.lower(), value.replace(authority, "<authority>")) for name, value in request.headers.multi_items()),
+                    tuple(
+                        (name.lower(), value.replace(authority, "<authority>"))
+                        for name, value in request.headers.multi_items()
+                    ),
                 ))
 
             settings = options.ClientOptions(
