@@ -340,6 +340,12 @@
   > GET https://api.example.com/users/20
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json, cache-control: no-store] b''
   async request no-store = network 20:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
+  > GET https://api.example.com/users/21
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async no validator or freshness = network 21:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
+  > GET https://api.example.com/users/21
+    [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''
+  async uncacheable fetched again = network 21:cat status=200 network=200 sends=1 attempts=1 type=application/json request_id=None headers=[('content-length', '22'), ('content-type', 'application/json')]
 freshness on the client clock
   > GET https://api.example.com/users/50
     [host: api.example.com, accept-encoding: gzip, deflate, accept: application/json] b''

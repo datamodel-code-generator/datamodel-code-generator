@@ -526,6 +526,10 @@ async def _async_caching(cache: Caching, lines: list[str]) -> None:
         no_store = cache.headers(Cache_Control="no-store")
         exchange.respond(user(20))
         await afetched(lines, "async request no-store", lambda: helper.fetch(user_id=twenty, options=no_store))
+        exchange.respond(user(21), user(21))
+        twenty_one = cache.user_id(21)
+        await afetched(lines, "async no validator or freshness", lambda: helper.fetch(user_id=twenty_one))
+        await afetched(lines, "async uncacheable fetched again", lambda: helper.fetch(user_id=twenty_one))
 
 
 class Events:
