@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 
 def reserved_version_report(case: str, version: str, backends: Sequence[str], root: Path) -> tuple[Modules, str]:
-    """Render and execute the existing path fixture with a shorthand numeric YAML root version."""
+    """Render and execute the existing path fixture with a shorthand or unknown YAML root version."""
     source = root / f"{case}.yaml"
     document = (SOURCE / source.name).read_text(encoding="utf-8")
     document = document.replace(document.partition("\n")[0], f"openapi: {version}", 1)

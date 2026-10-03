@@ -907,7 +907,7 @@ def parameter_view(
 def _allow_reserved(version: str, location: ParameterLocation, declaration: WireDeclaration) -> bool:
     """Return the effective allowReserved flag for the root OpenAPI version and parameter location."""
     return _fact(declaration, "allowReserved") is True and not (
-        location == "path" and version.startswith(("3.0", "3.1"))
+        location == "path" and (version in ("3.0", "3.1") or version.startswith(("3.0.", "3.1.")))  # noqa: PLR6201
     )
 
 
