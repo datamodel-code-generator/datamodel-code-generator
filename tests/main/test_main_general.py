@@ -5125,6 +5125,11 @@ def test_future_import_insertion_point_handles_runtime_tokenizer_syntax_error(
     assert _find_future_import_insertion_point("(") == 0
     assert syntax_error_injected
 
+    tokens = tokenize.generate_tokens(StringIO("(").readline)
+    assert next(tokens)[:2] == (tokenize.OP, "(")
+    with pytest.raises(tokenize.TokenError, match="EOF in multi-line statement"):
+        list(tokens)
+
 
 def test_custom_file_header_prepend_preserves_future_import_text(output_file: Path) -> None:
     """Preserve future-import text inside generated schema descriptions."""
