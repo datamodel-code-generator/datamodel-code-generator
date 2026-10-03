@@ -174,7 +174,7 @@ class _SendEpisode:
             connection.released.set()
             self.mark("cleanup-wait")
             await self.terminal(tuple(self.tasks.values()), self.body_stops, "body")
-            if self.primary is None:
+            if self.primary is None:  # pragma: no branch
                 if self.body_stops:
                     raise self.body_stops[0]
                 for name, task in self.tasks.items():
@@ -828,7 +828,7 @@ async def _connector_outcomes(harness: _Harness, vectors: list[dict[str, Any]]) 
                             connection.released.set()
                             parent.cancel(action["message"])
                             connection.blocked.set()
-                        case "release_watchdog":
+                        case "release_watchdog":  # pragma: no branch
                             await episode.terminal((episode.tasks["release"],), [], "driver")
                 await episode.terminal((parent,), [], "driver")
             except Exception as error:  # noqa: BLE001
