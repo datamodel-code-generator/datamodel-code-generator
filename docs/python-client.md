@@ -11,6 +11,11 @@ version; a target below 3.11, including the default 3.10, is refused with `E_CON
 Settings of the generated client that change how its methods are declared or checked do not change the models: the
 same OpenAPI document and model settings produce the same model files whichever client settings you choose.
 
+The client adds `api` to the model's `openapi_scopes`, keeping the scopes you give, so that the models cover the
+parameters, bodies, and responses of the operations. Custom templates and custom formatters must keep the class and
+field names of the models: the client binds each operation to the names in the generated model graph and does not read
+the rendered model source.
+
 ## Webhook contracts and replay stores
 
 Generated packages expose webhook contracts from `pkg.protocols` and their exceptions from `pkg.errors`, where `pkg` is
@@ -1812,10 +1817,9 @@ writes or fix an idempotency key.
 
 The helper's `media` must be `text/event-stream`, compared without case and with any parameters allowed, and a success
 response of its operation must declare an event stream media type, which the helper then requests as declared. Each
-event and error schema must exist and decode natively, without an envelope; a schema outside the selected model scopes
-fails with `BND_MODEL_SCOPE_REQUIRED`. A body discriminator must name a declared property of each mapped and error schema
-whose values can be strings, and an `event_type` completion cannot be a key of the event type mapping or the error
-events:
+event and error schema must exist and decode natively, without an envelope. A body discriminator must name a declared
+property of each mapped and error schema whose values can be strings, and an `event_type` completion cannot be a key of
+the event type mapping or the error events:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.streams.diagnostics -->
 <!-- fmt: off -->
@@ -2111,8 +2115,7 @@ not supported.
 ### WebSocket generation checks
 
 The operation must be a GET without a request body, and each JSON message's schema must exist and code natively,
-without an envelope; a schema outside the selected model scopes fails with `BND_MODEL_SCOPE_REQUIRED`. Message
-definitions, frames, and subprotocol tokens are checked as the helper file is read:
+without an envelope. Message definitions, frames, and subprotocol tokens are checked as the helper file is read:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.websocket.diagnostics -->
 <!-- fmt: off -->
