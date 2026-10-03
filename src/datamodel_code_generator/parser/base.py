@@ -3961,6 +3961,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
                     # Use root-type as model_field type
                     root_type_model = reference.source
+                    if not root_type_model.fields:
+                        continue
                     root_type_field = root_type_model.fields[0]
 
                     if root_type_model.path in circular_root_model_paths:
