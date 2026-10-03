@@ -1,0 +1,4711 @@
+{
+  "origin": "https://api.example.com",
+  "vectors": [
+    {
+      "label": "readSimpleScalarFalse 0",
+      "operation": "readSimpleScalarFalse",
+      "method": "read_simple_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a:b@c!"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalse 1",
+      "operation": "readSimpleScalarFalse",
+      "method": "read_simple_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a,b;c=d/e?f#g"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalse 2",
+      "operation": "readSimpleScalarFalse",
+      "method": "read_simple_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalse 3",
+      "operation": "readSimpleScalarFalse",
+      "method": "read_simple_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "naïve%ZZ%252F"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalse 4",
+      "operation": "readSimpleScalarFalse",
+      "method": "read_simple_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "."
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalse 5",
+      "operation": "readSimpleScalarFalse",
+      "method": "read_simple_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": ".."
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalse 6",
+      "operation": "readSimpleScalarFalse",
+      "method": "read_simple_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2e"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalse 7",
+      "operation": "readSimpleScalarFalse",
+      "method": "read_simple_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2E%2E"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalse 8",
+      "operation": "readSimpleScalarFalse",
+      "method": "read_simple_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a%2Fb"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalse 9",
+      "operation": "readSimpleScalarFalse",
+      "method": "read_simple_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "//foreign.example"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalse 10",
+      "operation": "readSimpleScalarFalse",
+      "method": "read_simple_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "https://foreign.example/x?y#z"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalse 11",
+      "operation": "readSimpleScalarFalse",
+      "method": "read_simple_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2F%2Fforeign.example"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalse 12",
+      "operation": "readSimpleScalarFalse",
+      "method": "read_simple_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "https:%2F%2Fforeign.example%2Fx%3Fy%23z"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalse 13",
+      "operation": "readSimpleScalarFalse",
+      "method": "read_simple_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalse 14",
+      "operation": "readSimpleScalarFalse",
+      "method": "read_simple_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalse 15",
+      "operation": "readSimpleScalarFalse",
+      "method": "read_simple_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%ff"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseFalse 0",
+      "operation": "readSimpleScalarFalseFalse",
+      "method": "read_simple_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a:b@c!"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseFalse 1",
+      "operation": "readSimpleScalarFalseFalse",
+      "method": "read_simple_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a,b;c=d/e?f#g"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseFalse 2",
+      "operation": "readSimpleScalarFalseFalse",
+      "method": "read_simple_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseFalse 3",
+      "operation": "readSimpleScalarFalseFalse",
+      "method": "read_simple_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "naïve%ZZ%252F"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseFalse 4",
+      "operation": "readSimpleScalarFalseFalse",
+      "method": "read_simple_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "."
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseFalse 5",
+      "operation": "readSimpleScalarFalseFalse",
+      "method": "read_simple_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": ".."
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseFalse 6",
+      "operation": "readSimpleScalarFalseFalse",
+      "method": "read_simple_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2e"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseFalse 7",
+      "operation": "readSimpleScalarFalseFalse",
+      "method": "read_simple_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2E%2E"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseFalse 8",
+      "operation": "readSimpleScalarFalseFalse",
+      "method": "read_simple_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a%2Fb"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseFalse 9",
+      "operation": "readSimpleScalarFalseFalse",
+      "method": "read_simple_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "//foreign.example"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseFalse 10",
+      "operation": "readSimpleScalarFalseFalse",
+      "method": "read_simple_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "https://foreign.example/x?y#z"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseFalse 11",
+      "operation": "readSimpleScalarFalseFalse",
+      "method": "read_simple_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2F%2Fforeign.example"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseFalse 12",
+      "operation": "readSimpleScalarFalseFalse",
+      "method": "read_simple_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "https:%2F%2Fforeign.example%2Fx%3Fy%23z"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseFalse 13",
+      "operation": "readSimpleScalarFalseFalse",
+      "method": "read_simple_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseFalse 14",
+      "operation": "readSimpleScalarFalseFalse",
+      "method": "read_simple_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseFalse 15",
+      "operation": "readSimpleScalarFalseFalse",
+      "method": "read_simple_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%ff"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseAbsent 0",
+      "operation": "readSimpleScalarFalseAbsent",
+      "method": "read_simple_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a:b@c!"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseAbsent 1",
+      "operation": "readSimpleScalarFalseAbsent",
+      "method": "read_simple_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a,b;c=d/e?f#g"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseAbsent 2",
+      "operation": "readSimpleScalarFalseAbsent",
+      "method": "read_simple_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseAbsent 3",
+      "operation": "readSimpleScalarFalseAbsent",
+      "method": "read_simple_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "naïve%ZZ%252F"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseAbsent 4",
+      "operation": "readSimpleScalarFalseAbsent",
+      "method": "read_simple_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "."
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseAbsent 5",
+      "operation": "readSimpleScalarFalseAbsent",
+      "method": "read_simple_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": ".."
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseAbsent 6",
+      "operation": "readSimpleScalarFalseAbsent",
+      "method": "read_simple_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2e"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseAbsent 7",
+      "operation": "readSimpleScalarFalseAbsent",
+      "method": "read_simple_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2E%2E"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseAbsent 8",
+      "operation": "readSimpleScalarFalseAbsent",
+      "method": "read_simple_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a%2Fb"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseAbsent 9",
+      "operation": "readSimpleScalarFalseAbsent",
+      "method": "read_simple_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "//foreign.example"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseAbsent 10",
+      "operation": "readSimpleScalarFalseAbsent",
+      "method": "read_simple_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "https://foreign.example/x?y#z"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseAbsent 11",
+      "operation": "readSimpleScalarFalseAbsent",
+      "method": "read_simple_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2F%2Fforeign.example"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseAbsent 12",
+      "operation": "readSimpleScalarFalseAbsent",
+      "method": "read_simple_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "https:%2F%2Fforeign.example%2Fx%3Fy%23z"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseAbsent 13",
+      "operation": "readSimpleScalarFalseAbsent",
+      "method": "read_simple_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseAbsent 14",
+      "operation": "readSimpleScalarFalseAbsent",
+      "method": "read_simple_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleScalarFalseAbsent 15",
+      "operation": "readSimpleScalarFalseAbsent",
+      "method": "read_simple_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%ff"
+        }
+      ]
+    },
+    {
+      "label": "readSimpleArrayFalse 0",
+      "operation": "readSimpleArrayFalse",
+      "method": "read_simple_array_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a:b@c!",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readSimpleArrayFalse 1",
+      "operation": "readSimpleArrayFalse",
+      "method": "read_simple_array_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a,b;c=d/e?f#g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readSimpleArrayFalse 2",
+      "operation": "readSimpleArrayFalse",
+      "method": "read_simple_array_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readSimpleArrayFalse 3",
+      "operation": "readSimpleArrayFalse",
+      "method": "read_simple_array_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "naïve%ZZ%252F",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readSimpleArrayFalseFalse 0",
+      "operation": "readSimpleArrayFalseFalse",
+      "method": "read_simple_array_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a:b@c!",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readSimpleArrayFalseFalse 1",
+      "operation": "readSimpleArrayFalseFalse",
+      "method": "read_simple_array_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a,b;c=d/e?f#g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readSimpleArrayFalseFalse 2",
+      "operation": "readSimpleArrayFalseFalse",
+      "method": "read_simple_array_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readSimpleArrayFalseFalse 3",
+      "operation": "readSimpleArrayFalseFalse",
+      "method": "read_simple_array_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "naïve%ZZ%252F",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readSimpleArrayFalseAbsent 0",
+      "operation": "readSimpleArrayFalseAbsent",
+      "method": "read_simple_array_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a:b@c!",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readSimpleArrayFalseAbsent 1",
+      "operation": "readSimpleArrayFalseAbsent",
+      "method": "read_simple_array_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a,b;c=d/e?f#g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readSimpleArrayFalseAbsent 2",
+      "operation": "readSimpleArrayFalseAbsent",
+      "method": "read_simple_array_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readSimpleArrayFalseAbsent 3",
+      "operation": "readSimpleArrayFalseAbsent",
+      "method": "read_simple_array_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "naïve%ZZ%252F",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readSimpleArrayTrue 0",
+      "operation": "readSimpleArrayTrue",
+      "method": "read_simple_array_true",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a:b@c!",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readSimpleArrayTrue 1",
+      "operation": "readSimpleArrayTrue",
+      "method": "read_simple_array_true",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a,b;c=d/e?f#g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readSimpleArrayTrue 2",
+      "operation": "readSimpleArrayTrue",
+      "method": "read_simple_array_true",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readSimpleArrayTrue 3",
+      "operation": "readSimpleArrayTrue",
+      "method": "read_simple_array_true",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "naïve%ZZ%252F",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readSimpleArrayTrueFalse 0",
+      "operation": "readSimpleArrayTrueFalse",
+      "method": "read_simple_array_true_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a:b@c!",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readSimpleArrayTrueFalse 1",
+      "operation": "readSimpleArrayTrueFalse",
+      "method": "read_simple_array_true_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a,b;c=d/e?f#g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readSimpleArrayTrueFalse 2",
+      "operation": "readSimpleArrayTrueFalse",
+      "method": "read_simple_array_true_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readSimpleArrayTrueFalse 3",
+      "operation": "readSimpleArrayTrueFalse",
+      "method": "read_simple_array_true_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "naïve%ZZ%252F",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readSimpleArrayTrueAbsent 0",
+      "operation": "readSimpleArrayTrueAbsent",
+      "method": "read_simple_array_true_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a:b@c!",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readSimpleArrayTrueAbsent 1",
+      "operation": "readSimpleArrayTrueAbsent",
+      "method": "read_simple_array_true_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a,b;c=d/e?f#g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readSimpleArrayTrueAbsent 2",
+      "operation": "readSimpleArrayTrueAbsent",
+      "method": "read_simple_array_true_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readSimpleArrayTrueAbsent 3",
+      "operation": "readSimpleArrayTrueAbsent",
+      "method": "read_simple_array_true_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "naïve%ZZ%252F",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readSimpleObjectFalse 0",
+      "operation": "readSimpleObjectFalse",
+      "method": "read_simple_object_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a:b@c!",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readSimpleObjectFalse 1",
+      "operation": "readSimpleObjectFalse",
+      "method": "read_simple_object_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a,b;c=d/e?f#g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readSimpleObjectFalse 2",
+      "operation": "readSimpleObjectFalse",
+      "method": "read_simple_object_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readSimpleObjectFalse 3",
+      "operation": "readSimpleObjectFalse",
+      "method": "read_simple_object_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "naïve%ZZ%252F",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readSimpleObjectFalseFalse 0",
+      "operation": "readSimpleObjectFalseFalse",
+      "method": "read_simple_object_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a:b@c!",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readSimpleObjectFalseFalse 1",
+      "operation": "readSimpleObjectFalseFalse",
+      "method": "read_simple_object_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a,b;c=d/e?f#g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readSimpleObjectFalseFalse 2",
+      "operation": "readSimpleObjectFalseFalse",
+      "method": "read_simple_object_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readSimpleObjectFalseFalse 3",
+      "operation": "readSimpleObjectFalseFalse",
+      "method": "read_simple_object_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "naïve%ZZ%252F",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readSimpleObjectFalseAbsent 0",
+      "operation": "readSimpleObjectFalseAbsent",
+      "method": "read_simple_object_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a:b@c!",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readSimpleObjectFalseAbsent 1",
+      "operation": "readSimpleObjectFalseAbsent",
+      "method": "read_simple_object_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a,b;c=d/e?f#g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readSimpleObjectFalseAbsent 2",
+      "operation": "readSimpleObjectFalseAbsent",
+      "method": "read_simple_object_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readSimpleObjectFalseAbsent 3",
+      "operation": "readSimpleObjectFalseAbsent",
+      "method": "read_simple_object_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "naïve%ZZ%252F",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readSimpleObjectTrue 0",
+      "operation": "readSimpleObjectTrue",
+      "method": "read_simple_object_true",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a:b@c!",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readSimpleObjectTrue 1",
+      "operation": "readSimpleObjectTrue",
+      "method": "read_simple_object_true",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a,b;c=d/e?f#g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readSimpleObjectTrue 2",
+      "operation": "readSimpleObjectTrue",
+      "method": "read_simple_object_true",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readSimpleObjectTrue 3",
+      "operation": "readSimpleObjectTrue",
+      "method": "read_simple_object_true",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "naïve%ZZ%252F",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readSimpleObjectTrueFalse 0",
+      "operation": "readSimpleObjectTrueFalse",
+      "method": "read_simple_object_true_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a:b@c!",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readSimpleObjectTrueFalse 1",
+      "operation": "readSimpleObjectTrueFalse",
+      "method": "read_simple_object_true_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a,b;c=d/e?f#g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readSimpleObjectTrueFalse 2",
+      "operation": "readSimpleObjectTrueFalse",
+      "method": "read_simple_object_true_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readSimpleObjectTrueFalse 3",
+      "operation": "readSimpleObjectTrueFalse",
+      "method": "read_simple_object_true_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "naïve%ZZ%252F",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readSimpleObjectTrueAbsent 0",
+      "operation": "readSimpleObjectTrueAbsent",
+      "method": "read_simple_object_true_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a:b@c!",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readSimpleObjectTrueAbsent 1",
+      "operation": "readSimpleObjectTrueAbsent",
+      "method": "read_simple_object_true_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a,b;c=d/e?f#g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readSimpleObjectTrueAbsent 2",
+      "operation": "readSimpleObjectTrueAbsent",
+      "method": "read_simple_object_true_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readSimpleObjectTrueAbsent 3",
+      "operation": "readSimpleObjectTrueAbsent",
+      "method": "read_simple_object_true_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "naïve%ZZ%252F",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalse 0",
+      "operation": "readLabelScalarFalse",
+      "method": "read_label_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a:b@c!"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalse 1",
+      "operation": "readLabelScalarFalse",
+      "method": "read_label_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a,b;c=d/e?f#g"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalse 2",
+      "operation": "readLabelScalarFalse",
+      "method": "read_label_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalse 3",
+      "operation": "readLabelScalarFalse",
+      "method": "read_label_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "naïve%ZZ%252F"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalse 4",
+      "operation": "readLabelScalarFalse",
+      "method": "read_label_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "."
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalse 5",
+      "operation": "readLabelScalarFalse",
+      "method": "read_label_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": ".."
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalse 6",
+      "operation": "readLabelScalarFalse",
+      "method": "read_label_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2e"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalse 7",
+      "operation": "readLabelScalarFalse",
+      "method": "read_label_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2E%2E"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalse 8",
+      "operation": "readLabelScalarFalse",
+      "method": "read_label_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a%2Fb"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalse 9",
+      "operation": "readLabelScalarFalse",
+      "method": "read_label_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "//foreign.example"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalse 10",
+      "operation": "readLabelScalarFalse",
+      "method": "read_label_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "https://foreign.example/x?y#z"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalse 11",
+      "operation": "readLabelScalarFalse",
+      "method": "read_label_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2F%2Fforeign.example"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalse 12",
+      "operation": "readLabelScalarFalse",
+      "method": "read_label_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "https:%2F%2Fforeign.example%2Fx%3Fy%23z"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalse 13",
+      "operation": "readLabelScalarFalse",
+      "method": "read_label_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalse 14",
+      "operation": "readLabelScalarFalse",
+      "method": "read_label_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalse 15",
+      "operation": "readLabelScalarFalse",
+      "method": "read_label_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%ff"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseFalse 0",
+      "operation": "readLabelScalarFalseFalse",
+      "method": "read_label_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a:b@c!"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseFalse 1",
+      "operation": "readLabelScalarFalseFalse",
+      "method": "read_label_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a,b;c=d/e?f#g"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseFalse 2",
+      "operation": "readLabelScalarFalseFalse",
+      "method": "read_label_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseFalse 3",
+      "operation": "readLabelScalarFalseFalse",
+      "method": "read_label_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "naïve%ZZ%252F"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseFalse 4",
+      "operation": "readLabelScalarFalseFalse",
+      "method": "read_label_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "."
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseFalse 5",
+      "operation": "readLabelScalarFalseFalse",
+      "method": "read_label_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": ".."
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseFalse 6",
+      "operation": "readLabelScalarFalseFalse",
+      "method": "read_label_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2e"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseFalse 7",
+      "operation": "readLabelScalarFalseFalse",
+      "method": "read_label_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2E%2E"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseFalse 8",
+      "operation": "readLabelScalarFalseFalse",
+      "method": "read_label_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a%2Fb"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseFalse 9",
+      "operation": "readLabelScalarFalseFalse",
+      "method": "read_label_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "//foreign.example"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseFalse 10",
+      "operation": "readLabelScalarFalseFalse",
+      "method": "read_label_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "https://foreign.example/x?y#z"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseFalse 11",
+      "operation": "readLabelScalarFalseFalse",
+      "method": "read_label_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2F%2Fforeign.example"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseFalse 12",
+      "operation": "readLabelScalarFalseFalse",
+      "method": "read_label_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "https:%2F%2Fforeign.example%2Fx%3Fy%23z"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseFalse 13",
+      "operation": "readLabelScalarFalseFalse",
+      "method": "read_label_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseFalse 14",
+      "operation": "readLabelScalarFalseFalse",
+      "method": "read_label_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseFalse 15",
+      "operation": "readLabelScalarFalseFalse",
+      "method": "read_label_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%ff"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseAbsent 0",
+      "operation": "readLabelScalarFalseAbsent",
+      "method": "read_label_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a:b@c!"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseAbsent 1",
+      "operation": "readLabelScalarFalseAbsent",
+      "method": "read_label_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a,b;c=d/e?f#g"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseAbsent 2",
+      "operation": "readLabelScalarFalseAbsent",
+      "method": "read_label_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseAbsent 3",
+      "operation": "readLabelScalarFalseAbsent",
+      "method": "read_label_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "naïve%ZZ%252F"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseAbsent 4",
+      "operation": "readLabelScalarFalseAbsent",
+      "method": "read_label_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "."
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseAbsent 5",
+      "operation": "readLabelScalarFalseAbsent",
+      "method": "read_label_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": ".."
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseAbsent 6",
+      "operation": "readLabelScalarFalseAbsent",
+      "method": "read_label_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2e"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseAbsent 7",
+      "operation": "readLabelScalarFalseAbsent",
+      "method": "read_label_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2E%2E"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseAbsent 8",
+      "operation": "readLabelScalarFalseAbsent",
+      "method": "read_label_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a%2Fb"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseAbsent 9",
+      "operation": "readLabelScalarFalseAbsent",
+      "method": "read_label_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "//foreign.example"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseAbsent 10",
+      "operation": "readLabelScalarFalseAbsent",
+      "method": "read_label_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "https://foreign.example/x?y#z"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseAbsent 11",
+      "operation": "readLabelScalarFalseAbsent",
+      "method": "read_label_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2F%2Fforeign.example"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseAbsent 12",
+      "operation": "readLabelScalarFalseAbsent",
+      "method": "read_label_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "https:%2F%2Fforeign.example%2Fx%3Fy%23z"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseAbsent 13",
+      "operation": "readLabelScalarFalseAbsent",
+      "method": "read_label_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseAbsent 14",
+      "operation": "readLabelScalarFalseAbsent",
+      "method": "read_label_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2"
+        }
+      ]
+    },
+    {
+      "label": "readLabelScalarFalseAbsent 15",
+      "operation": "readLabelScalarFalseAbsent",
+      "method": "read_label_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%ff"
+        }
+      ]
+    },
+    {
+      "label": "readLabelArrayFalse 0",
+      "operation": "readLabelArrayFalse",
+      "method": "read_label_array_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a:b@c!",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readLabelArrayFalse 1",
+      "operation": "readLabelArrayFalse",
+      "method": "read_label_array_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a,b;c=d/e?f#g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readLabelArrayFalse 2",
+      "operation": "readLabelArrayFalse",
+      "method": "read_label_array_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readLabelArrayFalse 3",
+      "operation": "readLabelArrayFalse",
+      "method": "read_label_array_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "naïve%ZZ%252F",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readLabelArrayFalseFalse 0",
+      "operation": "readLabelArrayFalseFalse",
+      "method": "read_label_array_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a:b@c!",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readLabelArrayFalseFalse 1",
+      "operation": "readLabelArrayFalseFalse",
+      "method": "read_label_array_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a,b;c=d/e?f#g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readLabelArrayFalseFalse 2",
+      "operation": "readLabelArrayFalseFalse",
+      "method": "read_label_array_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readLabelArrayFalseFalse 3",
+      "operation": "readLabelArrayFalseFalse",
+      "method": "read_label_array_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "naïve%ZZ%252F",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readLabelArrayFalseAbsent 0",
+      "operation": "readLabelArrayFalseAbsent",
+      "method": "read_label_array_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a:b@c!",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readLabelArrayFalseAbsent 1",
+      "operation": "readLabelArrayFalseAbsent",
+      "method": "read_label_array_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a,b;c=d/e?f#g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readLabelArrayFalseAbsent 2",
+      "operation": "readLabelArrayFalseAbsent",
+      "method": "read_label_array_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readLabelArrayFalseAbsent 3",
+      "operation": "readLabelArrayFalseAbsent",
+      "method": "read_label_array_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "naïve%ZZ%252F",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readLabelArrayTrue 0",
+      "operation": "readLabelArrayTrue",
+      "method": "read_label_array_true",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a:b@c!",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readLabelArrayTrue 1",
+      "operation": "readLabelArrayTrue",
+      "method": "read_label_array_true",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a,b;c=d/e?f#g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readLabelArrayTrue 2",
+      "operation": "readLabelArrayTrue",
+      "method": "read_label_array_true",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readLabelArrayTrue 3",
+      "operation": "readLabelArrayTrue",
+      "method": "read_label_array_true",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "naïve%ZZ%252F",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readLabelArrayTrue 4",
+      "operation": "readLabelArrayTrue",
+      "method": "read_label_array_true",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a.b",
+            "x"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readLabelArrayTrueFalse 0",
+      "operation": "readLabelArrayTrueFalse",
+      "method": "read_label_array_true_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a:b@c!",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readLabelArrayTrueFalse 1",
+      "operation": "readLabelArrayTrueFalse",
+      "method": "read_label_array_true_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a,b;c=d/e?f#g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readLabelArrayTrueFalse 2",
+      "operation": "readLabelArrayTrueFalse",
+      "method": "read_label_array_true_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readLabelArrayTrueFalse 3",
+      "operation": "readLabelArrayTrueFalse",
+      "method": "read_label_array_true_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "naïve%ZZ%252F",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readLabelArrayTrueFalse 4",
+      "operation": "readLabelArrayTrueFalse",
+      "method": "read_label_array_true_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a.b",
+            "x"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readLabelArrayTrueAbsent 0",
+      "operation": "readLabelArrayTrueAbsent",
+      "method": "read_label_array_true_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a:b@c!",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readLabelArrayTrueAbsent 1",
+      "operation": "readLabelArrayTrueAbsent",
+      "method": "read_label_array_true_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a,b;c=d/e?f#g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readLabelArrayTrueAbsent 2",
+      "operation": "readLabelArrayTrueAbsent",
+      "method": "read_label_array_true_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readLabelArrayTrueAbsent 3",
+      "operation": "readLabelArrayTrueAbsent",
+      "method": "read_label_array_true_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "naïve%ZZ%252F",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readLabelArrayTrueAbsent 4",
+      "operation": "readLabelArrayTrueAbsent",
+      "method": "read_label_array_true_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a.b",
+            "x"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readLabelObjectFalse 0",
+      "operation": "readLabelObjectFalse",
+      "method": "read_label_object_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a:b@c!",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readLabelObjectFalse 1",
+      "operation": "readLabelObjectFalse",
+      "method": "read_label_object_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a,b;c=d/e?f#g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readLabelObjectFalse 2",
+      "operation": "readLabelObjectFalse",
+      "method": "read_label_object_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readLabelObjectFalse 3",
+      "operation": "readLabelObjectFalse",
+      "method": "read_label_object_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "naïve%ZZ%252F",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readLabelObjectFalseFalse 0",
+      "operation": "readLabelObjectFalseFalse",
+      "method": "read_label_object_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a:b@c!",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readLabelObjectFalseFalse 1",
+      "operation": "readLabelObjectFalseFalse",
+      "method": "read_label_object_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a,b;c=d/e?f#g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readLabelObjectFalseFalse 2",
+      "operation": "readLabelObjectFalseFalse",
+      "method": "read_label_object_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readLabelObjectFalseFalse 3",
+      "operation": "readLabelObjectFalseFalse",
+      "method": "read_label_object_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "naïve%ZZ%252F",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readLabelObjectFalseAbsent 0",
+      "operation": "readLabelObjectFalseAbsent",
+      "method": "read_label_object_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a:b@c!",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readLabelObjectFalseAbsent 1",
+      "operation": "readLabelObjectFalseAbsent",
+      "method": "read_label_object_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a,b;c=d/e?f#g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readLabelObjectFalseAbsent 2",
+      "operation": "readLabelObjectFalseAbsent",
+      "method": "read_label_object_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readLabelObjectFalseAbsent 3",
+      "operation": "readLabelObjectFalseAbsent",
+      "method": "read_label_object_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "naïve%ZZ%252F",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readLabelObjectTrue 0",
+      "operation": "readLabelObjectTrue",
+      "method": "read_label_object_true",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a:b@c!",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readLabelObjectTrue 1",
+      "operation": "readLabelObjectTrue",
+      "method": "read_label_object_true",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a,b;c=d/e?f#g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readLabelObjectTrue 2",
+      "operation": "readLabelObjectTrue",
+      "method": "read_label_object_true",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readLabelObjectTrue 3",
+      "operation": "readLabelObjectTrue",
+      "method": "read_label_object_true",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "naïve%ZZ%252F",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readLabelObjectTrue 4",
+      "operation": "readLabelObjectTrue",
+      "method": "read_label_object_true",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a.b",
+            "right": "x"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readLabelObjectTrueFalse 0",
+      "operation": "readLabelObjectTrueFalse",
+      "method": "read_label_object_true_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a:b@c!",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readLabelObjectTrueFalse 1",
+      "operation": "readLabelObjectTrueFalse",
+      "method": "read_label_object_true_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a,b;c=d/e?f#g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readLabelObjectTrueFalse 2",
+      "operation": "readLabelObjectTrueFalse",
+      "method": "read_label_object_true_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readLabelObjectTrueFalse 3",
+      "operation": "readLabelObjectTrueFalse",
+      "method": "read_label_object_true_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "naïve%ZZ%252F",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readLabelObjectTrueFalse 4",
+      "operation": "readLabelObjectTrueFalse",
+      "method": "read_label_object_true_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a.b",
+            "right": "x"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readLabelObjectTrueAbsent 0",
+      "operation": "readLabelObjectTrueAbsent",
+      "method": "read_label_object_true_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a:b@c!",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readLabelObjectTrueAbsent 1",
+      "operation": "readLabelObjectTrueAbsent",
+      "method": "read_label_object_true_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a,b;c=d/e?f#g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readLabelObjectTrueAbsent 2",
+      "operation": "readLabelObjectTrueAbsent",
+      "method": "read_label_object_true_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readLabelObjectTrueAbsent 3",
+      "operation": "readLabelObjectTrueAbsent",
+      "method": "read_label_object_true_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "naïve%ZZ%252F",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readLabelObjectTrueAbsent 4",
+      "operation": "readLabelObjectTrueAbsent",
+      "method": "read_label_object_true_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a.b",
+            "right": "x"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalse 0",
+      "operation": "readMatrixScalarFalse",
+      "method": "read_matrix_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a:b@c!"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalse 1",
+      "operation": "readMatrixScalarFalse",
+      "method": "read_matrix_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a,b;c=d/e?f#g"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalse 2",
+      "operation": "readMatrixScalarFalse",
+      "method": "read_matrix_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalse 3",
+      "operation": "readMatrixScalarFalse",
+      "method": "read_matrix_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "naïve%ZZ%252F"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalse 4",
+      "operation": "readMatrixScalarFalse",
+      "method": "read_matrix_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "."
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalse 5",
+      "operation": "readMatrixScalarFalse",
+      "method": "read_matrix_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": ".."
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalse 6",
+      "operation": "readMatrixScalarFalse",
+      "method": "read_matrix_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2e"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalse 7",
+      "operation": "readMatrixScalarFalse",
+      "method": "read_matrix_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2E%2E"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalse 8",
+      "operation": "readMatrixScalarFalse",
+      "method": "read_matrix_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a%2Fb"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalse 9",
+      "operation": "readMatrixScalarFalse",
+      "method": "read_matrix_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "//foreign.example"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalse 10",
+      "operation": "readMatrixScalarFalse",
+      "method": "read_matrix_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "https://foreign.example/x?y#z"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalse 11",
+      "operation": "readMatrixScalarFalse",
+      "method": "read_matrix_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2F%2Fforeign.example"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalse 12",
+      "operation": "readMatrixScalarFalse",
+      "method": "read_matrix_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "https:%2F%2Fforeign.example%2Fx%3Fy%23z"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalse 13",
+      "operation": "readMatrixScalarFalse",
+      "method": "read_matrix_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalse 14",
+      "operation": "readMatrixScalarFalse",
+      "method": "read_matrix_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalse 15",
+      "operation": "readMatrixScalarFalse",
+      "method": "read_matrix_scalar_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%ff"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseFalse 0",
+      "operation": "readMatrixScalarFalseFalse",
+      "method": "read_matrix_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a:b@c!"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseFalse 1",
+      "operation": "readMatrixScalarFalseFalse",
+      "method": "read_matrix_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a,b;c=d/e?f#g"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseFalse 2",
+      "operation": "readMatrixScalarFalseFalse",
+      "method": "read_matrix_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseFalse 3",
+      "operation": "readMatrixScalarFalseFalse",
+      "method": "read_matrix_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "naïve%ZZ%252F"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseFalse 4",
+      "operation": "readMatrixScalarFalseFalse",
+      "method": "read_matrix_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "."
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseFalse 5",
+      "operation": "readMatrixScalarFalseFalse",
+      "method": "read_matrix_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": ".."
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseFalse 6",
+      "operation": "readMatrixScalarFalseFalse",
+      "method": "read_matrix_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2e"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseFalse 7",
+      "operation": "readMatrixScalarFalseFalse",
+      "method": "read_matrix_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2E%2E"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseFalse 8",
+      "operation": "readMatrixScalarFalseFalse",
+      "method": "read_matrix_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a%2Fb"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseFalse 9",
+      "operation": "readMatrixScalarFalseFalse",
+      "method": "read_matrix_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "//foreign.example"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseFalse 10",
+      "operation": "readMatrixScalarFalseFalse",
+      "method": "read_matrix_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "https://foreign.example/x?y#z"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseFalse 11",
+      "operation": "readMatrixScalarFalseFalse",
+      "method": "read_matrix_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2F%2Fforeign.example"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseFalse 12",
+      "operation": "readMatrixScalarFalseFalse",
+      "method": "read_matrix_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "https:%2F%2Fforeign.example%2Fx%3Fy%23z"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseFalse 13",
+      "operation": "readMatrixScalarFalseFalse",
+      "method": "read_matrix_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseFalse 14",
+      "operation": "readMatrixScalarFalseFalse",
+      "method": "read_matrix_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseFalse 15",
+      "operation": "readMatrixScalarFalseFalse",
+      "method": "read_matrix_scalar_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%ff"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseAbsent 0",
+      "operation": "readMatrixScalarFalseAbsent",
+      "method": "read_matrix_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a:b@c!"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseAbsent 1",
+      "operation": "readMatrixScalarFalseAbsent",
+      "method": "read_matrix_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a,b;c=d/e?f#g"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseAbsent 2",
+      "operation": "readMatrixScalarFalseAbsent",
+      "method": "read_matrix_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseAbsent 3",
+      "operation": "readMatrixScalarFalseAbsent",
+      "method": "read_matrix_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "naïve%ZZ%252F"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseAbsent 4",
+      "operation": "readMatrixScalarFalseAbsent",
+      "method": "read_matrix_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "."
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseAbsent 5",
+      "operation": "readMatrixScalarFalseAbsent",
+      "method": "read_matrix_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": ".."
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseAbsent 6",
+      "operation": "readMatrixScalarFalseAbsent",
+      "method": "read_matrix_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2e"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseAbsent 7",
+      "operation": "readMatrixScalarFalseAbsent",
+      "method": "read_matrix_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2E%2E"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseAbsent 8",
+      "operation": "readMatrixScalarFalseAbsent",
+      "method": "read_matrix_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "a%2Fb"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseAbsent 9",
+      "operation": "readMatrixScalarFalseAbsent",
+      "method": "read_matrix_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "//foreign.example"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseAbsent 10",
+      "operation": "readMatrixScalarFalseAbsent",
+      "method": "read_matrix_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "https://foreign.example/x?y#z"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseAbsent 11",
+      "operation": "readMatrixScalarFalseAbsent",
+      "method": "read_matrix_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2F%2Fforeign.example"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseAbsent 12",
+      "operation": "readMatrixScalarFalseAbsent",
+      "method": "read_matrix_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "https:%2F%2Fforeign.example%2Fx%3Fy%23z"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseAbsent 13",
+      "operation": "readMatrixScalarFalseAbsent",
+      "method": "read_matrix_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseAbsent 14",
+      "operation": "readMatrixScalarFalseAbsent",
+      "method": "read_matrix_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixScalarFalseAbsent 15",
+      "operation": "readMatrixScalarFalseAbsent",
+      "method": "read_matrix_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%ff"
+        }
+      ]
+    },
+    {
+      "label": "readMatrixArrayFalse 0",
+      "operation": "readMatrixArrayFalse",
+      "method": "read_matrix_array_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a:b@c!",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readMatrixArrayFalse 1",
+      "operation": "readMatrixArrayFalse",
+      "method": "read_matrix_array_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a,b;c=d/e?f#g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readMatrixArrayFalse 2",
+      "operation": "readMatrixArrayFalse",
+      "method": "read_matrix_array_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readMatrixArrayFalse 3",
+      "operation": "readMatrixArrayFalse",
+      "method": "read_matrix_array_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "naïve%ZZ%252F",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readMatrixArrayFalseFalse 0",
+      "operation": "readMatrixArrayFalseFalse",
+      "method": "read_matrix_array_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a:b@c!",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readMatrixArrayFalseFalse 1",
+      "operation": "readMatrixArrayFalseFalse",
+      "method": "read_matrix_array_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a,b;c=d/e?f#g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readMatrixArrayFalseFalse 2",
+      "operation": "readMatrixArrayFalseFalse",
+      "method": "read_matrix_array_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readMatrixArrayFalseFalse 3",
+      "operation": "readMatrixArrayFalseFalse",
+      "method": "read_matrix_array_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "naïve%ZZ%252F",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readMatrixArrayFalseAbsent 0",
+      "operation": "readMatrixArrayFalseAbsent",
+      "method": "read_matrix_array_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a:b@c!",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readMatrixArrayFalseAbsent 1",
+      "operation": "readMatrixArrayFalseAbsent",
+      "method": "read_matrix_array_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a,b;c=d/e?f#g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readMatrixArrayFalseAbsent 2",
+      "operation": "readMatrixArrayFalseAbsent",
+      "method": "read_matrix_array_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readMatrixArrayFalseAbsent 3",
+      "operation": "readMatrixArrayFalseAbsent",
+      "method": "read_matrix_array_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "naïve%ZZ%252F",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readMatrixArrayTrue 0",
+      "operation": "readMatrixArrayTrue",
+      "method": "read_matrix_array_true",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a:b@c!",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readMatrixArrayTrue 1",
+      "operation": "readMatrixArrayTrue",
+      "method": "read_matrix_array_true",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a,b;c=d/e?f#g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readMatrixArrayTrue 2",
+      "operation": "readMatrixArrayTrue",
+      "method": "read_matrix_array_true",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readMatrixArrayTrue 3",
+      "operation": "readMatrixArrayTrue",
+      "method": "read_matrix_array_true",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "naïve%ZZ%252F",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readMatrixArrayTrueFalse 0",
+      "operation": "readMatrixArrayTrueFalse",
+      "method": "read_matrix_array_true_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a:b@c!",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readMatrixArrayTrueFalse 1",
+      "operation": "readMatrixArrayTrueFalse",
+      "method": "read_matrix_array_true_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a,b;c=d/e?f#g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readMatrixArrayTrueFalse 2",
+      "operation": "readMatrixArrayTrueFalse",
+      "method": "read_matrix_array_true_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readMatrixArrayTrueFalse 3",
+      "operation": "readMatrixArrayTrueFalse",
+      "method": "read_matrix_array_true_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "naïve%ZZ%252F",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readMatrixArrayTrueAbsent 0",
+      "operation": "readMatrixArrayTrueAbsent",
+      "method": "read_matrix_array_true_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a:b@c!",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readMatrixArrayTrueAbsent 1",
+      "operation": "readMatrixArrayTrueAbsent",
+      "method": "read_matrix_array_true_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a,b;c=d/e?f#g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readMatrixArrayTrueAbsent 2",
+      "operation": "readMatrixArrayTrueAbsent",
+      "method": "read_matrix_array_true_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readMatrixArrayTrueAbsent 3",
+      "operation": "readMatrixArrayTrueAbsent",
+      "method": "read_matrix_array_true_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": [
+            "naïve%ZZ%252F",
+            "x;y=z"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readMatrixObjectFalse 0",
+      "operation": "readMatrixObjectFalse",
+      "method": "read_matrix_object_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a:b@c!",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readMatrixObjectFalse 1",
+      "operation": "readMatrixObjectFalse",
+      "method": "read_matrix_object_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a,b;c=d/e?f#g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readMatrixObjectFalse 2",
+      "operation": "readMatrixObjectFalse",
+      "method": "read_matrix_object_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readMatrixObjectFalse 3",
+      "operation": "readMatrixObjectFalse",
+      "method": "read_matrix_object_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "naïve%ZZ%252F",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readMatrixObjectFalseFalse 0",
+      "operation": "readMatrixObjectFalseFalse",
+      "method": "read_matrix_object_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a:b@c!",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readMatrixObjectFalseFalse 1",
+      "operation": "readMatrixObjectFalseFalse",
+      "method": "read_matrix_object_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a,b;c=d/e?f#g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readMatrixObjectFalseFalse 2",
+      "operation": "readMatrixObjectFalseFalse",
+      "method": "read_matrix_object_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readMatrixObjectFalseFalse 3",
+      "operation": "readMatrixObjectFalseFalse",
+      "method": "read_matrix_object_false_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "naïve%ZZ%252F",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readMatrixObjectFalseAbsent 0",
+      "operation": "readMatrixObjectFalseAbsent",
+      "method": "read_matrix_object_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a:b@c!",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readMatrixObjectFalseAbsent 1",
+      "operation": "readMatrixObjectFalseAbsent",
+      "method": "read_matrix_object_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a,b;c=d/e?f#g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readMatrixObjectFalseAbsent 2",
+      "operation": "readMatrixObjectFalseAbsent",
+      "method": "read_matrix_object_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readMatrixObjectFalseAbsent 3",
+      "operation": "readMatrixObjectFalseAbsent",
+      "method": "read_matrix_object_false_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "naïve%ZZ%252F",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readMatrixObjectTrue 0",
+      "operation": "readMatrixObjectTrue",
+      "method": "read_matrix_object_true",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a:b@c!",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readMatrixObjectTrue 1",
+      "operation": "readMatrixObjectTrue",
+      "method": "read_matrix_object_true",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a,b;c=d/e?f#g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readMatrixObjectTrue 2",
+      "operation": "readMatrixObjectTrue",
+      "method": "read_matrix_object_true",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readMatrixObjectTrue 3",
+      "operation": "readMatrixObjectTrue",
+      "method": "read_matrix_object_true",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "naïve%ZZ%252F",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readMatrixObjectTrueFalse 0",
+      "operation": "readMatrixObjectTrueFalse",
+      "method": "read_matrix_object_true_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a:b@c!",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readMatrixObjectTrueFalse 1",
+      "operation": "readMatrixObjectTrueFalse",
+      "method": "read_matrix_object_true_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a,b;c=d/e?f#g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readMatrixObjectTrueFalse 2",
+      "operation": "readMatrixObjectTrueFalse",
+      "method": "read_matrix_object_true_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readMatrixObjectTrueFalse 3",
+      "operation": "readMatrixObjectTrueFalse",
+      "method": "read_matrix_object_true_false",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "naïve%ZZ%252F",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readMatrixObjectTrueAbsent 0",
+      "operation": "readMatrixObjectTrueAbsent",
+      "method": "read_matrix_object_true_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a:b@c!",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readMatrixObjectTrueAbsent 1",
+      "operation": "readMatrixObjectTrueAbsent",
+      "method": "read_matrix_object_true_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a,b;c=d/e?f#g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readMatrixObjectTrueAbsent 2",
+      "operation": "readMatrixObjectTrueAbsent",
+      "method": "read_matrix_object_true_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "a%2Cb%3Bc%3Dd%2Fe%3Ff%23g",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readMatrixObjectTrueAbsent 3",
+      "operation": "readMatrixObjectTrueAbsent",
+      "method": "read_matrix_object_true_absent",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": {
+            "left-key": "naïve%ZZ%252F",
+            "right": "x;y=z"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readQueryScalarFalseTrue reserved",
+      "operation": "readQueryScalarFalseTrue",
+      "method": "read_query_scalar_false_true",
+      "parameters": [
+        {
+          "location": "query",
+          "name": "q",
+          "argument": "q",
+          "value": "a/b:c,;="
+        }
+      ]
+    },
+    {
+      "label": "readQueryScalarFalseFalse reserved",
+      "operation": "readQueryScalarFalseFalse",
+      "method": "read_query_scalar_false_false",
+      "parameters": [
+        {
+          "location": "query",
+          "name": "q",
+          "argument": "q",
+          "value": "a/b:c,;="
+        }
+      ]
+    },
+    {
+      "label": "readQueryScalarFalseAbsent reserved",
+      "operation": "readQueryScalarFalseAbsent",
+      "method": "read_query_scalar_false_absent",
+      "parameters": [
+        {
+          "location": "query",
+          "name": "q",
+          "argument": "q",
+          "value": "a/b:c,;="
+        }
+      ]
+    },
+    {
+      "label": "readQueryScalarTrueTrue reserved",
+      "operation": "readQueryScalarTrueTrue",
+      "method": "read_query_scalar_true_true",
+      "parameters": [
+        {
+          "location": "query",
+          "name": "q",
+          "argument": "q",
+          "value": "a/b:c,;="
+        }
+      ]
+    },
+    {
+      "label": "readQueryScalarTrueFalse reserved",
+      "operation": "readQueryScalarTrueFalse",
+      "method": "read_query_scalar_true_false",
+      "parameters": [
+        {
+          "location": "query",
+          "name": "q",
+          "argument": "q",
+          "value": "a/b:c,;="
+        }
+      ]
+    },
+    {
+      "label": "readQueryScalarTrueAbsent reserved",
+      "operation": "readQueryScalarTrueAbsent",
+      "method": "read_query_scalar_true_absent",
+      "parameters": [
+        {
+          "location": "query",
+          "name": "q",
+          "argument": "q",
+          "value": "a/b:c,;="
+        }
+      ]
+    },
+    {
+      "label": "readQueryArrayFalseTrue reserved",
+      "operation": "readQueryArrayFalseTrue",
+      "method": "read_query_array_false_true",
+      "parameters": [
+        {
+          "location": "query",
+          "name": "q",
+          "argument": "q",
+          "value": [
+            "a/b:c",
+            "x,y"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readQueryArrayFalseFalse reserved",
+      "operation": "readQueryArrayFalseFalse",
+      "method": "read_query_array_false_false",
+      "parameters": [
+        {
+          "location": "query",
+          "name": "q",
+          "argument": "q",
+          "value": [
+            "a/b:c",
+            "x,y"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readQueryArrayFalseAbsent reserved",
+      "operation": "readQueryArrayFalseAbsent",
+      "method": "read_query_array_false_absent",
+      "parameters": [
+        {
+          "location": "query",
+          "name": "q",
+          "argument": "q",
+          "value": [
+            "a/b:c",
+            "x,y"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readQueryArrayTrueTrue reserved",
+      "operation": "readQueryArrayTrueTrue",
+      "method": "read_query_array_true_true",
+      "parameters": [
+        {
+          "location": "query",
+          "name": "q",
+          "argument": "q",
+          "value": [
+            "a/b:c",
+            "x,y"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readQueryArrayTrueFalse reserved",
+      "operation": "readQueryArrayTrueFalse",
+      "method": "read_query_array_true_false",
+      "parameters": [
+        {
+          "location": "query",
+          "name": "q",
+          "argument": "q",
+          "value": [
+            "a/b:c",
+            "x,y"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readQueryArrayTrueAbsent reserved",
+      "operation": "readQueryArrayTrueAbsent",
+      "method": "read_query_array_true_absent",
+      "parameters": [
+        {
+          "location": "query",
+          "name": "q",
+          "argument": "q",
+          "value": [
+            "a/b:c",
+            "x,y"
+          ]
+        }
+      ]
+    },
+    {
+      "label": "readQueryObjectFalseTrue reserved",
+      "operation": "readQueryObjectFalseTrue",
+      "method": "read_query_object_false_true",
+      "parameters": [
+        {
+          "location": "query",
+          "name": "filter",
+          "argument": "filter",
+          "value": {
+            "left-key": "a/b:c",
+            "right": "x,y"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readQueryObjectFalseFalse reserved",
+      "operation": "readQueryObjectFalseFalse",
+      "method": "read_query_object_false_false",
+      "parameters": [
+        {
+          "location": "query",
+          "name": "filter",
+          "argument": "filter",
+          "value": {
+            "left-key": "a/b:c",
+            "right": "x,y"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readQueryObjectFalseAbsent reserved",
+      "operation": "readQueryObjectFalseAbsent",
+      "method": "read_query_object_false_absent",
+      "parameters": [
+        {
+          "location": "query",
+          "name": "filter",
+          "argument": "filter",
+          "value": {
+            "left-key": "a/b:c",
+            "right": "x,y"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readQueryObjectTrueTrue reserved",
+      "operation": "readQueryObjectTrueTrue",
+      "method": "read_query_object_true_true",
+      "parameters": [
+        {
+          "location": "query",
+          "name": "filter",
+          "argument": "filter",
+          "value": {
+            "left-key": "a/b:c",
+            "right": "x,y"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readQueryObjectTrueFalse reserved",
+      "operation": "readQueryObjectTrueFalse",
+      "method": "read_query_object_true_false",
+      "parameters": [
+        {
+          "location": "query",
+          "name": "filter",
+          "argument": "filter",
+          "value": {
+            "left-key": "a/b:c",
+            "right": "x,y"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readQueryObjectTrueAbsent reserved",
+      "operation": "readQueryObjectTrueAbsent",
+      "method": "read_query_object_true_absent",
+      "parameters": [
+        {
+          "location": "query",
+          "name": "filter",
+          "argument": "filter",
+          "value": {
+            "left-key": "a/b:c",
+            "right": "x,y"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readDeepObject reserved",
+      "operation": "readDeepObject",
+      "method": "read_deep_object",
+      "parameters": [
+        {
+          "location": "query",
+          "name": "filter",
+          "argument": "filter",
+          "value": {
+            "k": "a/b"
+          }
+        }
+      ]
+    },
+    {
+      "label": "readHeadersAndCookies reserved",
+      "operation": "readHeadersAndCookies",
+      "method": "read_headers_and_cookies",
+      "parameters": [
+        {
+          "location": "header",
+          "name": "X-Wire",
+          "argument": "x_wire",
+          "value": "a:b"
+        },
+        {
+          "location": "cookie",
+          "name": "session",
+          "argument": "session",
+          "value": "a/b:c"
+        }
+      ]
+    },
+    {
+      "label": "readText reserved",
+      "operation": "readText",
+      "method": "read_text",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "key",
+          "argument": "key",
+          "value": "a:b"
+        }
+      ]
+    },
+    {
+      "label": "readJSON reserved",
+      "operation": "readJSON",
+      "method": "read_json",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "key",
+          "argument": "key",
+          "value": "a:b"
+        }
+      ]
+    },
+    {
+      "label": "readSuffix .",
+      "operation": "readSuffix",
+      "method": "read_suffix",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "."
+        }
+      ]
+    },
+    {
+      "label": "readSuffix ..",
+      "operation": "readSuffix",
+      "method": "read_suffix",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": ".."
+        }
+      ]
+    },
+    {
+      "label": "readSuffix %2e",
+      "operation": "readSuffix",
+      "method": "read_suffix",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2e"
+        }
+      ]
+    },
+    {
+      "label": "readSuffix %2E%2E",
+      "operation": "readSuffix",
+      "method": "read_suffix",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2E%2E"
+        }
+      ]
+    },
+    {
+      "label": "readComposite .",
+      "operation": "readComposite",
+      "method": "read_composite",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "."
+        }
+      ]
+    },
+    {
+      "label": "readComposite ..",
+      "operation": "readComposite",
+      "method": "read_composite",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": ".."
+        }
+      ]
+    },
+    {
+      "label": "readComposite %2e",
+      "operation": "readComposite",
+      "method": "read_composite",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2e"
+        }
+      ]
+    },
+    {
+      "label": "readComposite %2E%2E",
+      "operation": "readComposite",
+      "method": "read_composite",
+      "parameters": [
+        {
+          "location": "path",
+          "name": "wire-name",
+          "argument": "wire_name",
+          "value": "%2E%2E"
+        }
+      ]
+    }
+  ]
+}
