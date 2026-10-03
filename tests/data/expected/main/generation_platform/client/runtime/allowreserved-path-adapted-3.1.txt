@@ -6,7 +6,7 @@
   rendered and generated models equal True
   generated model origin True
   generated client origin True
-  current worktree runtime origin True
+  active distribution runtime origin True
   configured origin https://api.example.com
   > GET https://api.example.com/simple-scalar-false/a%3Ab%40c%21
     [host: api.example.com, accept-encoding: gzip, deflate] b''
