@@ -1,4 +1,4 @@
-"""Shared pieces of the OAuth flow scenarios: outcome lines, token responses, and injected transports and secrets."""
+"""Shared pieces of the OAuth provider scenarios: outcome lines, token responses, and injected transports and secrets."""
 
 from __future__ import annotations
 
@@ -8,7 +8,6 @@ import socket
 import threading
 import time
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Final
 
 from tests.data.python.client_runtime import raw_response
@@ -22,29 +21,20 @@ if TYPE_CHECKING:
     from tests.data.python.client_runtime import Exchange
 
 _FIELDS: Final = (
-    "state",
     "delivery_state",
     "phase",
     "status_code",
     "oauth_error",
-    "failure_kind",
     "condition",
     "timeout_kind",
-    "action",
-    "purpose",
-    "expected_revision",
-    "pending_revision",
-    "observed_revision",
     "callback",
     "field_path",
     "loop_mismatch",
     "budget_kind",
-    "limit_kind",
     "limit",
     "used",
     "source",
     "event_name",
-    "refresh_id",
 )
 
 
@@ -63,35 +53,6 @@ def failure_line(error: BaseException) -> str:
     return " ".join(parts)
 
 
-def token_line(result: Any) -> str:
-    token = result.access_token
-    minutes = (
-        None
-        if token.expires_at is None
-        else round((token.expires_at - datetime.now(timezone.utc)).total_seconds() / 60)
-    )
-    return (
-        f"{result!r} value={token.value} type={token.token_type} scopes={token.scopes}"
-        f" expires_in_minutes={minutes} refresh={result.refresh_token}"
-    )
-
-
-def token_outcome(call: Callable[[], object]) -> str:
-    try:
-        result = call()
-    except Exception as error:  # noqa: BLE001
-        return failure_line(error)
-    return token_line(result)
-
-
-async def atoken_outcome(call: Callable[[], Any]) -> str:
-    try:
-        result = await call()
-    except Exception as error:  # noqa: BLE001
-        return failure_line(error)
-    return token_line(result)
-
-
 def json_reply(
     status: int, payload: object, content_type: str = "application/json", **headers: str
 ) -> Callable[[httpx2.Request], httpx2.Response]:
@@ -107,35 +68,7 @@ def delayed(delay: float, reply: Callable[[httpx2.Request], httpx2.Response]) ->
     return answer
 
 
-GRANTED: Final = {"access_token": "access-1", "token_type": "Bearer", "expires_in": 3600, "refresh_token": "refresh-1"}
 LIMIT: Final = 10.0
-
-
-def credential_context(auth: ModuleType, *, deadline: object = None, cancel_token: object = None) -> Any:
-    return auth.CredentialContext(
-        scheme="oauth",
-        required_scopes=(),
-        audience=None,
-        origin="https://api.example.com",
-        deadline=deadline,
-        cancel_token=cancel_token,
-    )
-
-
-def watched(options: ModuleType) -> Any:
-    """Return a cancel token telling when a waiting caller first checks it, which it does once it joined a job."""
-
-    class Watched(options.CancelToken):
-        def __init__(self) -> None:
-            super().__init__()
-            self.checked = threading.Event()
-
-        @property
-        def cancelled(self) -> bool:
-            self.checked.set()
-            return super().cancelled
-
-    return Watched()
 
 
 class Caller(threading.Thread):
@@ -149,14 +82,6 @@ class Caller(threading.Thread):
 
     def run(self) -> None:
         self.line = self.report(self.call)
-
-
-def started(call: Callable[[], object], signal: threading.Event, report: Callable[[Callable[[], object]], str]) -> Caller:
-    """Start a caller and return it once the signal says it reached the point the scenario waits for."""
-    caller = Caller(call, report)
-    caller.start()
-    signal.wait(LIMIT)
-    return caller
 
 
 class Response:
