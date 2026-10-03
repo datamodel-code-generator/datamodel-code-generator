@@ -808,15 +808,11 @@ class Settings:
     compression: ResolvedCompression | None = None
 
 
-def network_send_limit(settings: Settings, *, exchanges: int = 0) -> int | None:
-    """Derive only an omitted send cap, after all retry and redirect fields have been merged.
-
-    `exchanges` adds room for the token requests of the SDK's own OAuth providers.
-    """
+def network_send_limit(settings: Settings) -> int | None:
+    """Derive only an omitted send cap, after all retry and redirect fields have been merged."""
     if not isinstance(settings.max_network_sends, Unset):
         return settings.max_network_sends
-    redirects = settings.redirects.max_redirects if settings.redirects.enabled else 0
-    return 1 + settings.retry.max_retries + redirects + exchanges
+    return 1 + settings.retry.max_retries + (settings.redirects.max_redirects if settings.redirects.enabled else 0)
 
 
 _PHASE_DEFAULTS: Final = {"connect": 5.0, "read": 15.0, "write": 15.0, "pool": 5.0}
@@ -828,24 +824,16 @@ def _oauth_seconds(value: object, path: tuple[str, ...]) -> float:
     return number
 
 
-def _oauth_count(value: object, path: tuple[str, ...]) -> None:
-    if type(value) is not int or value <= 0:
-        raise AuthConfigurationError(field_path=path, condition="invalid_value")
-
-
 @final
 @dataclass(frozen=True, slots=True, kw_only=True)
 class OAuthProviderOptions:
-    """Fixed session limits, token transport settings, and clock of an OAuth provider or flow.
+    """Fixed session limits, token transport settings, and clock of an OAuth provider.
 
     Every value is finite and explicit: omitted phase timeouts take the OAuth defaults, and None is never accepted.
     """
 
     refresh_timeout: float = 30.0
     phase_timeout: TimeoutOptions = field(default_factory=lambda: TimeoutOptions(**_PHASE_DEFAULTS))
-    max_concurrent_refreshes: int = 1
-    max_pending_refreshes: int = 32
-    max_waiters: int = 1024
     allow_insecure_loopback: bool = False
     transport: TransportOptions = field(default_factory=TransportOptions)
     clock: Clock = SYSTEM_CLOCK
@@ -862,8 +850,6 @@ class OAuthProviderOptions:
             for name, default in _PHASE_DEFAULTS.items()
         }
         object.__setattr__(self, "phase_timeout", TimeoutOptions(**phases))
-        for name in ("max_concurrent_refreshes", "max_pending_refreshes", "max_waiters"):
-            _oauth_count(getattr(self, name), (name,))
         checked_type(self.allow_insecure_loopback, (bool,), ("allow_insecure_loopback",))
         checked_type(self.transport, (TransportOptions,), ("transport",))
         checked_type(self.clock, (Clock,), ("clock",))

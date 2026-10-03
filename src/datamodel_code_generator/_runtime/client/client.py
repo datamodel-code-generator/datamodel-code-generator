@@ -97,7 +97,6 @@ from .options import (
     context,
     layered_redirects,
     layered_retry,
-    network_send_limit,
     new_key,
     resolve_transport_options,
 )
@@ -1038,14 +1037,6 @@ class _Authentication:
                     return True
         return False
 
-    def exchange_needed(self) -> bool:
-        """Return whether recovering from the rejected version needs a new acquisition by a provider of the SDK."""
-        return (
-            (rejected := self.rejected) is not None
-            and (acquirer := self.bound.credentials[rejected[0]].acquirer) is not None
-            and acquirer.exchange_needed(rejected[1])
-        )
-
 
 def _parameter_names(operation: OperationPlan[object, object], location: str) -> Iterator[str]:
     for parameter in operation.parameters:
@@ -1057,23 +1048,14 @@ def _parameter_names(operation: OperationPlan[object, object], location: str) ->
                 yield plan.name
 
 
-def _auth_event(call: _Call, name: Literal["auth_start", "auth_wait"]) -> None:
-    if (events := call.events) is not None:
-        events.emit(events.event(name, sent=events.sent))
-
-
-async def _aauth_event(call: _Call, name: Literal["auth_start", "auth_wait"]) -> None:
-    if (events := call.events) is not None:
-        await events.aemit(events.event(name, sent=events.sent))
-
-
 @contextmanager
 def _auth_work(call: _Call) -> Generator[None, None, None]:
     call.check("auth")
     events = call.events
     started = call.monotonic() if events is not None else 0.0
     try:
-        _auth_event(call, "auth_start")
+        if events is not None:
+            events.emit(events.event("auth_start", sent=events.sent))
         yield
         call.check("auth")
     except BaseException as error:  # noqa: BLE001
@@ -1091,7 +1073,8 @@ async def _aauth_work(call: _Call) -> AsyncGenerator[None, None]:
     events = call.events
     started = call.monotonic() if events is not None else 0.0
     try:
-        await _aauth_event(call, "auth_start")
+        if events is not None:
+            await events.aemit(events.event("auth_start", sent=events.sent))
         yield
         call.check("auth")
     except BaseException as error:  # noqa: BLE001
@@ -1271,18 +1254,6 @@ class _Call(LogicalCallContext):
             body=request.body,
         )
 
-    def observe(self) -> None:
-        """Raise the call's own error once its client closes, its deadline passes, or it is cancelled."""
-        self.check("auth")
-
-    def waiting(self) -> None:
-        """Report that the call waits for a token acquisition another caller started."""
-        _auth_event(self, "auth_wait")
-
-    async def awaiting(self) -> None:
-        """Report that the asyncio call waits for a token acquisition another caller started."""
-        await _aauth_event(self, "auth_wait")
-
     def received(self, info: ResponseInfo) -> None:
         """Save retry timing at header receipt before user hooks can consume the wait."""
         self.last_info = info
@@ -1326,11 +1297,9 @@ class _Call(LogicalCallContext):
                 challenge_less=self.operation is not None and self.operation.auth_challenge_less_401,
             )
         )
-        exchange = False
         if auth_candidate:
             assert auth is not None
             reason = "auth_invalid_token" if auth.rejected is not None else None
-            exchange = auth.exchange_needed()
         self.trace.connect_failure = None
         now = self.monotonic()
         self.stop_reason = retry_stop(
@@ -1344,10 +1313,9 @@ class _Call(LogicalCallContext):
                 delivery_state=self.delivery_state,
                 resource_attempt_count=self.resource_attempt_count,
                 body_replayable=replayable,
-                network_available=self.send_limit is None or self.network_send_budget_used + exchange < self.send_limit,
+                network_available=self.send_limit is None or self.network_send_budget_used < self.send_limit,
                 server_hint=hint,
                 proven_not_sent=self.trace.proven_not_sent,
-                exchange_available=not exchange or self.exchange_room(),
             ),
             retry,
             retry_owner=retry_owner,
@@ -1569,16 +1537,11 @@ class _SessionCall(_Call):
         replayable: bool,
         retry_owner: Literal["sdk", "transport"],
     ) -> RetryDelay | None:
-        """Plan a retry as an ordinary call does, refusing it when the session cannot pay for its sends.
-
-        A recovery that needs a new token acquisition needs a slot for the token request too.
-        """
+        """Plan a retry as an ordinary call does, refusing it when the session cannot pay for its sends."""
         planned = super().retry(info, error, replayable=replayable, retry_owner=retry_owner)
         if planned is None:
             return None
-        auth = self.auth
-        exchange = planned.reason == "auth_invalid_token" and auth is not None and auth.exchange_needed()
-        if not self.parent.room(exchange=exchange):
+        if not self.parent.room():
             self.stop_reason = "parent_budget_exhausted"
             return None
         return planned
@@ -2008,8 +1971,6 @@ class _Core(Generic[AdapterT, HandleT]):  # noqa: PLR0904 - It serves every call
         from .auth_policy import validate_ownership, validate_patches  # noqa: PLC0415
 
         call.auth = _Authentication(bound)
-        if any(binding.acquirer is not None for binding in bound.credentials):
-            call.send_limit = network_send_limit(call.settings, exchanges=config.max_token_exchanges)
         for headers in call.settings.headers:
             validate_patches(bound, headers, ())
         for query in call.settings.query:
@@ -2711,17 +2672,14 @@ async def _aclose_scope(
         raise TaskInterruptionError(interrupted) from None
 
 
-def _cleanup(
-    pending: int, remaining: int, timeout: float, failures: list[Exception], *, providers: int = 0
-) -> CleanupError | None:
+def _cleanup(pending: int, remaining: int, timeout: float, failures: list[Exception]) -> CleanupError | None:
     """Return the error of a close that left calls or handles past its cleanup time or failed to release something."""
-    if not (pending or remaining or providers or failures):
+    if not (pending or remaining or failures):
         return None
     return CleanupError(
         pending_calls=pending,
         pending_leases=remaining,
-        pending_providers=providers,
-        timeout=timeout if pending or remaining or providers else None,
+        timeout=timeout if pending or remaining else None,
         cause=failures[0] if failures else None,
         secondary_errors=tuple(failures[1:]),
     )
@@ -3664,7 +3622,7 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             for index, binding in enumerate(bound.credentials):
                 call.check("auth")
                 context = _credential_context(binding, call)
-                value = get_credential(binding, context, delivery, call)
+                value = get_credential(binding, context, delivery)
                 call.check("auth")
                 if (
                     (pending := auth.pending) is not None
@@ -3908,7 +3866,6 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
         if not scope.begin_close():
             return
         timeout = self._settings.cleanup_timeout
-        deadline = monotonic() + timeout
         remaining = scope.drain(timeout)
         failures = [failure for handle in remaining if (failure := quiet_close(handle.close)) is not None]
         shared = self._shared
@@ -3916,14 +3873,11 @@ class ClientCore(_Core["TransportAdapter", "RawResponse"]):
             shared.adapter_closed = True
             if (failure := quiet_close(shared.adapter.close)) is not None:
                 failures.append(failure)
-        providers = 0
         if scope.owner is None and isinstance(shared.providers, OwnedProviders):
-            closed, providers = shared.providers.close(deadline)
-            failures.extend(closed)
+            failures.extend(shared.providers.close())
         pending, _ = scope.pending()
-        cleanup = _cleanup(pending, len(remaining), timeout, _finished_closes(failures), providers=providers)
-        if cleanup is not None:
-            raise cleanup
+        if (error := _cleanup(pending, len(remaining), timeout, _finished_closes(failures))) is not None:
+            raise error
         scope.finish()
 
 
@@ -4687,7 +4641,7 @@ class AsyncClientCore(_Core["AsyncTransportAdapter", "AsyncRawResponse"]):
             for index, binding in enumerate(bound.credentials):
                 call.check("auth")
                 context = _credential_context(binding, call)
-                value = await aget_credential(binding, context, delivery, call)
+                value = await aget_credential(binding, context, delivery)
                 call.check("auth")
                 if (
                     (pending := auth.pending) is not None

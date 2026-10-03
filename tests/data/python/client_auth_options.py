@@ -95,7 +95,6 @@ def _layered(
         selection=1,
         signers=(signer,),
         allowed_origins=(server.url,),
-        max_token_exchanges=0,
     )
     view_config = auth.AuthConfig(
         {

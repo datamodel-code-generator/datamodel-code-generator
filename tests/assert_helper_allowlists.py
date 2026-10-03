@@ -125,7 +125,6 @@ FROZEN_VIOLATIONS: dict[str, tuple[str, ...]] = {
         "private-import:tests/parser/test_openapi_scope.py::datamodel_code_generator.parser.openapi_scope",
     ),
     "spies": (
-        "normal-path-mock:tests/data/python/client_oauth_refresh.py::_faults",
         "normal-path-mock:tests/data/python/client_retry_ownership.py::_async",
         "normal-path-mock:tests/data/python/client_retry_ownership.py::retry_ownership",
         "normal-path-mock:tests/main/test_generation_observation.py::test_generation_observation",

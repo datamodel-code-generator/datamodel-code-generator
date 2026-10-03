@@ -32,8 +32,7 @@ if TYPE_CHECKING:
     from _thread import LockType
     from collections.abc import Awaitable, Callable
 
-    from .admission import RefreshRecord
-    from .errors import AuthBudgetKind, DeadlinePhase, IOPhase
+    from .errors import DeadlinePhase, IOPhase
     from .lifecycle import CleanupOwner
     from .options import Settings
     from .timing import Clock, Deadline
@@ -221,12 +220,12 @@ class OperationSession:
         self.network_send_budget_used = 0
         self.network_send_count = 0
 
-    def room(self, *, exchange: bool = False) -> bool:
-        """Return whether the session can still admit a send, and a token request before it for an exchange."""
-        return (limit := self.send_limit) is None or self.network_send_budget_used + exchange < limit
+    def room(self) -> bool:
+        """Return whether the session can still admit a send."""
+        return (limit := self.send_limit) is None or self.network_send_budget_used < limit
 
 
-class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of one call.
+class LogicalCallContext:
     """Keep all state belonging to a call, through stream handoff and the release of its owned work.
 
     A child call of a helper session also reserves its sends in that session's budget.
@@ -240,12 +239,12 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
         "_io_context",
         "_left",
         "_phase",
-        "_refreshes",
         "_scope",
         "_task",
         "auth_exchange_budget_used",
         "auth_exchange_count",
         "auth_refresh_ids",
+        "auth_refresh_pending",
         "call_id",
         "deadline",
         "delivery_state",
@@ -292,7 +291,7 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
         self.retry_blocked = False
         self.auth_exchange_budget_used = 0
         self.auth_refresh_ids: tuple[str, ...] = ()
-        self._refreshes: tuple[RefreshRecord, ...] = ()
+        self.auth_refresh_pending = 0
         self.wire_send_count: int | None = None
         self.delivery_state = DeliveryState.NOT_SENT
         self.finished = False
@@ -306,62 +305,9 @@ class LogicalCallContext:  # noqa: PLR0904 - It owns every counter and budget of
         self._task: asyncio.Task[object] | None = None
 
     @property
-    def auth_refresh_pending(self) -> int:
-        """Return how many acquisitions the call started or waited for are still queued or running."""
-        return sum(refresh.outstanding for refresh in refreshes) if (refreshes := self._refreshes) else 0
-
-    @property
     def parent_session_id(self) -> str | None:
         """Return the identifier of the helper session the call belongs to, or None for an ordinary call."""
         return None if (session := self.session) is None else session.session_id
-
-    def shortfall(self) -> tuple[AuthBudgetKind, int, int] | None:
-        """Return the budget without room for a new acquisition, or None.
-
-        An acquisition needs a token exchange and two network sends, from the call and from its session: its token
-        request and the request it serves.
-        """
-        config = self.settings.auth
-        assert config is not None
-        with self._scope.lock:
-            if (used := self.auth_exchange_budget_used) >= (limit := config.max_token_exchanges):
-                return "auth_exchange", limit, used
-            if (sends := self.send_limit) is not None and (used := self.network_send_budget_used) + 1 >= sends:
-                return "network", sends, used
-            if (
-                (session := self.session) is not None
-                and (sends := session.send_limit) is not None
-                and (used := session.network_send_budget_used) + 1 >= sends
-            ):
-                return "parent_network", sends, used
-        return None
-
-    def exchange_room(self) -> bool:
-        """Return whether the call may still pay for a new token acquisition."""
-        config = self.settings.auth
-        assert config is not None
-        return self.auth_exchange_budget_used < config.max_token_exchanges
-
-    def charge(self) -> None:
-        """Consume the token exchange and the network send of an acquisition admitted for the call and its session."""
-        with self._scope.lock:
-            self.auth_exchange_budget_used += 1
-            self.network_send_budget_used += 1
-            if (session := self.session) is not None:
-                session.network_send_budget_used += 1
-
-    def joined(self, refresh: RefreshRecord) -> None:
-        """Record an acquisition the call started or waits for."""
-        self._refreshes = (*self._refreshes, refresh)
-        self.auth_refresh_ids = (*self.auth_refresh_ids, refresh.refresh_id)
-
-    def exchanged(self) -> None:
-        """Count the token request that an acquisition charged to the call sent, in its session too."""
-        with self._scope.lock:
-            self.auth_exchange_count += 1
-            self.network_send_count += 1
-            if (session := self.session) is not None:
-                session.network_send_count += 1
 
     def remaining(self) -> float | None:
         """Return the current call or stream deadline's remaining seconds, never negative."""
