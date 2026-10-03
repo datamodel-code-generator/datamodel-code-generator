@@ -661,6 +661,7 @@ def _sources(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
         ("a number", 5),
         ("a text file", io.StringIO(_CONTENT.decode())),
         ("an asyncio file", _AsyncFile()),
+        ("a strided memoryview", memoryview(_CONTENT)[::2]),
     ):
         record(lines, f"start with {label}", lambda source=source: helper.start(source, tus_resumable=harness.tus))
     run(stream_source.aclose)

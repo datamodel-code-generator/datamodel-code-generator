@@ -377,6 +377,7 @@ sources that cannot resume or are invalid
   start with a number ! ProtocolConfigurationError: ProtocolConfigurationError(condition='invalid_value') [field_path=('source',), condition='invalid_value'] protocol_configuration_error
   start with a text file ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('source',), condition='wrong_capability'] protocol_configuration_error
   start with an asyncio file ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('source',), condition='wrong_capability'] protocol_configuration_error
+  start with a strided memoryview ! ProtocolConfigurationError: ProtocolConfigurationError(condition='wrong_capability') [field_path=('source',), condition='wrong_capability'] protocol_configuration_error
 content that shrank after the start
   > POST https://api.example.com/files
     [host: api.example.com, content-length: 0, accept-encoding: gzip, deflate, accept: application/json, upload-length: 10, tus-resumable: 1.0.0] b''
