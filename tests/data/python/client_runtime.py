@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import gzip
+import importlib
 import json
+import os
 import re
 import shutil
 import sys
@@ -78,9 +80,7 @@ class Exchange:
         """Queue the responders of the next requests."""
         self.responders.extend(responders)
 
-    def client(
-        self, connections: int = 10, kind: type[httpx2.Client] = httpx2.Client, **options: Any
-    ) -> httpx2.Client:
+    def client(self, connections: int = 10, kind: type[httpx2.Client] = httpx2.Client, **options: Any) -> httpx2.Client:
         """Return an HTTPX2 client of a kind that sends through this exchange's server over at most `connections`."""
         self.transports += 1
         return kind(transport=LocalTransport(self, connections), **options)
@@ -203,7 +203,9 @@ def _streamed(status: int, content: bytes, headers: dict[str, str]) -> Callable[
 def json_response(status: int, payload: object, **headers: str) -> Callable[[httpx2.Request], httpx2.Response]:
     """Return a responder of a JSON body, encoded as HTTPX2 encodes one."""
     content = json.dumps(payload, ensure_ascii=False, separators=(",", ":"), allow_nan=False).encode()
-    return _streamed(status, content, {**headers, "content-length": str(len(content)), "content-type": "application/json"})
+    return _streamed(
+        status, content, {**headers, "content-length": str(len(content)), "content-type": "application/json"}
+    )
 
 
 def raw_response(
@@ -286,7 +288,8 @@ def generated(case_name: str, backend: str, root: Path, scenario: Callable[[Modu
     sys.path[:0] = paths
     lines = [f"# {case_name} {backend}"]
     try:
-        scenario(import_generated(package), lines)
+        copied = os.environ.get("DATAMODEL_CODE_GENERATOR_CLIENT_COPIED_RUNTIME_E2E") == "1"
+        scenario(importlib.import_module(package) if copied else import_generated(package), lines)
     finally:
         del sys.path[: len(paths)]
         forget_generated(package)

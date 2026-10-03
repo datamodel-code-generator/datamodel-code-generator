@@ -23,6 +23,7 @@ class _Connection:
     def __init__(self, harness: _Harness, *, frames: tuple[object, ...] = (), **failures: object) -> None:
         self.harness = harness
         self.lines = harness.lines
+        self.abort_lines = self.lines
         self.frames = list(frames)
         self.failures = failures
         self.handshake_headers: Any = harness.responses.HeadersView((("x-socket", "1"),))
@@ -70,7 +71,7 @@ class _Connection:
         self._fail("close")
 
     def abort(self) -> None:
-        self.lines.append("    connection abort")
+        self.abort_lines.append("    connection abort")
         self.closed.set()
 
 
@@ -548,10 +549,14 @@ async def _async_connectors(harness: _Harness) -> None:
         connection.blocked = threading.Event()
         connector.queue.append(connection)
         session = await api.protocols.feed.text.connect(ws_options=harness.protocols.WSOptions(send_timeout=0.05))
+        connection.abort_lines = []
         blocked = asyncio.create_task(session.send("first"))
         await asyncio.sleep(0)
         await arecord(lines, "async send that waits too long", lambda: session.send("second"))
-        await arecord(lines, "async send stopped at its timeout", lambda: blocked)
+        stopped: list[str] = []
+        await arecord(stopped, "async send stopped at its timeout", lambda: blocked)
+        lines.extend(connection.abort_lines)
+        lines.extend(stopped)
         for label, frames in (
             ("async receive at the connection's deadline", (TimeoutError(),)),
             ("async server closed", (errors.WebSocketClosedError(code=1000, reason="", clean=True),)),
