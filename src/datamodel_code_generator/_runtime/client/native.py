@@ -27,7 +27,6 @@ from .transports import PreparedRequest, TransportCapabilities, attempt_trace
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Iterator
-    from ssl import SSLContext
 
     from .bodies import AsyncBodyAttempt, BodyAttempt
     from .hooks import RetryReason
@@ -447,40 +446,12 @@ class AsyncHttpx2Response:
         await self._response.aclose()
 
 
-def _native_tls(
-    transport: ResolvedTransportOptions,
-) -> tuple[bool | SSLContext, str | httpx2.Proxy | None]:
-    """Resolve native TLS defaults without CA environment on explicit opt-out."""
-    verify = transport.verify if transport.ssl_context is None else transport.ssl_context
-    proxy: str | httpx2.Proxy | None = transport.proxy
-    if transport.trust_env:
-        return verify, proxy
-    https_proxy = (
-        transport.proxy if transport.proxy is not None and httpx2.URL(transport.proxy).scheme == "https" else None
-    )
-    if (transport.ssl_context is not None or not transport.verify) and https_proxy is None:
-        return verify, proxy
-
-    import ssl  # noqa: PLC0415
-
-    import certifi  # noqa: PLC0415
-
-    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-    context.load_verify_locations(cafile=certifi.where())
-    if transport.ssl_context is None and transport.verify:
-        verify = context
-    if https_proxy is not None:
-        proxy = httpx2.Proxy(https_proxy, ssl_context=context)
-    return verify, proxy
-
-
 def native_client(transport: ResolvedTransportOptions) -> httpx2.Client:
     """Create an SDK-owned HTTPX2 client from resolved construction settings, refusing HTTP/2 without its extra."""
-    verify, proxy = _native_tls(transport)
     try:
         return httpx2.Client(
-            verify=verify,
-            proxy=proxy,
+            verify=transport.verify if transport.ssl_context is None else transport.ssl_context,
+            proxy=transport.proxy,
             trust_env=transport.trust_env,
             http2=transport.http2,
             limits=httpx2.Limits(
@@ -495,11 +466,10 @@ def native_client(transport: ResolvedTransportOptions) -> httpx2.Client:
 
 def native_async_client(transport: ResolvedTransportOptions) -> httpx2.AsyncClient:
     """Create an SDK-owned asyncio HTTPX2 client from resolved construction settings."""
-    verify, proxy = _native_tls(transport)
     try:
         return httpx2.AsyncClient(
-            verify=verify,
-            proxy=proxy,
+            verify=transport.verify if transport.ssl_context is None else transport.ssl_context,
+            proxy=transport.proxy,
             trust_env=transport.trust_env,
             http2=transport.http2,
             limits=httpx2.Limits(
