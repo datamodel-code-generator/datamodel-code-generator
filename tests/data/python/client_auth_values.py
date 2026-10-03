@@ -169,36 +169,6 @@ def _values(auth: ModuleType, options: ModuleType, responses: ModuleType, lines:
             f"context invalid {name}",
             lambda name=name, value=value: auth.CredentialContext(**{**parameters, name: value}),
         )
-    persistence = {
-        "provider_id": "provider",
-        "cache_key": "oauth-refresh-v1:key",
-        "session_id": "session",
-        "deadline": deadline,
-        "purpose": "store",
-    }
-    stored = auth.TokenPersistenceContext(**persistence)
-    lines.append(
-        f"  persistence context fields={(stored.provider_id, stored.cache_key, stored.session_id, stored.purpose)}"
-        f" deadline identity={stored.deadline is deadline}"
-    )
-    record(lines, "persistence context frozen", lambda: setattr(stored, "purpose", "reload"))
-    record(
-        lines,
-        "persistence context requires keywords",
-        lambda: auth.TokenPersistenceContext("provider", "key", "session", deadline, "store"),
-    )
-    for name, value in (
-        ("provider_id", None),
-        ("cache_key", 1),
-        ("session_id", b"session"),
-        ("deadline", 30),
-        ("purpose", "load"),
-    ):
-        record(
-            lines,
-            f"persistence context invalid {name}",
-            lambda name=name, value=value: auth.TokenPersistenceContext(**{**persistence, name: value}),
-        )
     for name in ("allowed_origins", "managed_headers", "managed_query"):
         for value in ("name", [1]):
             record(
@@ -293,18 +263,13 @@ def _configuration(auth: ModuleType, options: ModuleType, lines: list[str]) -> N
                 f"auth invalid {name} {label}",
                 lambda name=name, value=value: auth.AuthConfig({}, **{name: value}),
             )
-    for name in ("selection", "max_token_exchanges"):
-        for value in (None, True, -1, 0.5, "1"):
-            record(
-                lines,
-                f"auth invalid {name} {value!r}",
-                lambda name=name, value=value: auth.AuthConfig({}, **{name: value}),
-            )
+    for value in (None, True, -1, 0.5, "1"):
+        record(lines, f"auth invalid selection {value!r}", lambda value=value: auth.AuthConfig({}, selection=value))
     record(lines, "auth invalid anonymous bool", lambda: auth.AuthConfig({}, send_on_anonymous=1))
     record(lines, "auth controls keyword only", lambda: auth.AuthConfig({}, 0))
-    explicit = auth.AuthConfig({}, selection=0, max_token_exchanges=0, send_on_anonymous=True)
+    explicit = auth.AuthConfig({}, selection=0, send_on_anonymous=True)
     lines.append(
-        f"  auth default selection={config.selection is options.UNSET} budget={config.max_token_exchanges} explicit={(explicit.selection, explicit.max_token_exchanges, explicit.send_on_anonymous)}"
+        f"  auth default selection={config.selection is options.UNSET} explicit={(explicit.selection, explicit.send_on_anonymous)}"
     )
     for owner in (options.ClientOptions, options.RequestOptions):
         lines.append(
@@ -435,7 +400,7 @@ blocked = {"httpx2", "httpcore2", "anyio", "asyncio", "pydantic", "msgspec", "da
 blocked.add(sys.argv[2] + "_models")
 execution = {
     sys.argv[2] + "._runtime.client." + name
-    for name in ("auth_policy", "auth_challenges", "client", "logical", "native", "bodies", "oauth", "refresh", "rotation")
+    for name in ("auth_policy", "auth_challenges", "client", "logical", "native", "bodies", "oauth", "refresh")
 }
 
 class Blocked(importlib.abc.MetaPathFinder):
