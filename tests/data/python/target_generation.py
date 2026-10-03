@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 import shutil
-from contextlib import ExitStack
 from dataclasses import dataclass, field, fields
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -14,8 +12,7 @@ from urllib.parse import urlparse
 
 import yaml
 
-from datamodel_code_generator import DataModelType, Error, GenerateConfig, _api_publication
-from datamodel_code_generator._api_publication import lock_path, resource_locks
+from datamodel_code_generator import DataModelType, Error, GenerateConfig
 from datamodel_code_generator.fastapi import (
     APIGenerationError,
     BuiltinCodecCompatibility,
@@ -275,7 +272,6 @@ class _Scenario:
     project: GeneratedProject | None = None
     published: dict[str, bytes] = field(default_factory=dict)
     remembered: dict[str, bytes] = field(default_factory=dict)
-    held: ExitStack = field(default_factory=ExitStack)
 
     @property
     def current(self) -> GeneratedProject:
@@ -305,22 +301,14 @@ class _Scenario:
             case project:
                 raise AssertionError(project)
 
-    def hold(self, value: str) -> None:
-        kind, _, name = value.partition(":")
-        resource = (self.root / (name or "server")).resolve()
-        match kind:
-            case "thread":
-                self.held.enter_context(resource_locks([resource]))
-            case _:
-                descriptor = _api_publication._open_lockfile(lock_path(resource))
-                self.held.callback(os.close, descriptor)
-                _api_publication._acquire(descriptor, resource)
-                self.held.callback(_api_publication._release, descriptor)
-        self.lines.append(f"hold {kind} lock on {name or 'server'}")
+    def chmod(self, value: list[Any]) -> None:
+        path, mode = value
+        (self.root / path).chmod(int(mode, 8))
+        self.lines.append(f"chmod {path} {mode}")
 
-    def release(self, _: None) -> None:
-        self.held.close()
-        self.lines.append("release")
+    def file_modes(self, paths: list[str]) -> None:
+        for path in paths:
+            self.lines.append(f"mode {path}: {(self.root / path).stat().st_mode & 0o777:04o}")
 
     def dependencies(self, _: None) -> None:
         self.lines.append(f"dependencies {list(self.current.dependencies)}")
@@ -405,10 +393,9 @@ def target_render_report(case_name: str, root: Path, monkeypatch: pytest.MonkeyP
     shutil.copytree(SOURCE / "templates", root / "templates")
     monkeypatch.chdir(root)
     scenario = _Scenario(case, root, monkeypatch, server, [f"# {case_name}"])
-    with scenario.held:
-        for step in case["steps"]:
-            ((name, value),) = step.items()
-            getattr(scenario, name)(value)
+    for step in case["steps"]:
+        ((name, value),) = step.items()
+        getattr(scenario, name)(value)
     return _HASH.sub('"<sha256>"', "\n".join(scenario.lines)) + "\n"
 
 

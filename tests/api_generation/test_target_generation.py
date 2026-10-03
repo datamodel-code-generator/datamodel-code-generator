@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import errno
 import json
 import os
 import shutil
 import sys
-from contextlib import contextmanager
 from itertools import count
 from pathlib import Path
 from types import SimpleNamespace
@@ -21,10 +19,10 @@ from datamodel_code_generator.remote_lock import RemoteReferenceLock
 from tests.conftest import assert_output, freeze_time
 from tests.data.python.target_generation import SOURCE, target_config_report, target_render_report
 from tests.main.conftest import run_main_and_assert
-from tests.test_http import _SchemaHandler, local_http_server  # noqa: F401 - Register the existing fixture.
+from tests.test_http import _SchemaHandler, local_http_server  # ruff: ignore[unused-import] - Register the existing fixture.
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator, Iterable
+    from collections.abc import Callable
 
 EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/targets"
 
@@ -52,8 +50,6 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/t
         "publish",
         "publish-verify",
         "publish-lock",
-        "busy",
-        "busy-metadata",
         "collision",
         "interference",
         "directory",
@@ -69,7 +65,7 @@ EXPECTED = Path(__file__).parents[1] / "data/expected/main/generation_platform/t
     ],
 )
 def test_target_render(case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Generate models once, select operations, plan target files, and publish them under the resource locks."""
+    """Generate models once, select operations, plan target files, and publish them through a reversible journal."""
     assert_output(target_render_report(case, tmp_path, monkeypatch), EXPECTED / f"{case}.txt")
 
 
@@ -93,7 +89,7 @@ def test_target_render_timestamp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 
 
 def test_target_render_http(
-    local_http_server: str,  # noqa: F811 - Request the imported fixture.
+    local_http_server: str,  # ruff: ignore[redefined-while-unused] - Request the imported fixture.
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -134,12 +130,20 @@ def test_target_render_relative_failure(tmp_path: Path, monkeypatch: pytest.Monk
 
 
 def _failing(
-    original: Callable[..., None], failures: dict[int, BaseException], *, existing: bool = False
+    original: Callable[..., None],
+    failures: dict[int, BaseException],
+    *,
+    existing: bool = False,
+    destination: str | None = None,
 ) -> Callable[..., None]:
     calls = count()
 
     def call(file: _publication.StagedFile, *args: object) -> None:
-        if (not existing or file.target.exists()) and (failure := failures.get(next(calls))) is not None:
+        if (
+            (not existing or file.target.exists())
+            and (destination is None or file.target.name == destination)
+            and (failure := failures.get(next(calls))) is not None
+        ):
             raise failure
         original(file, *args)
 
@@ -185,10 +189,11 @@ def test_target_generate_rollback_failure(
     assert_output(target_render_report(case, tmp_path, monkeypatch), EXPECTED / f"{case}.txt")
 
 
+@pytest.mark.abnormal_path("a later staged file fails after the remote lock update has been staged")
 def test_target_generate_lock_discard(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Discard the staged remote lock update when a file after it fails to stage."""
     discarded: list[bool] = []
-    discard, stage = RemoteReferenceLock.discard_stage, _publication.stage_content
+    discard, stage = RemoteReferenceLock.discard_stage, _api_publication.stage_content
 
     def recorded(lock: RemoteReferenceLock) -> None:
         discarded.append(lock._staged_source is not None)
@@ -203,13 +208,16 @@ def test_target_generate_lock_discard(tmp_path: Path, monkeypatch: pytest.Monkey
         return stage(staging, content, file)
 
     monkeypatch.setattr(RemoteReferenceLock, "discard_stage", recorded)
-    monkeypatch.setattr(_publication, "stage_content", fail)
+    monkeypatch.setattr(_api_publication, "stage_content", fail)
     report = target_render_report("publish-lock", tmp_path, monkeypatch)
     assert_output(f"{report}staged lock updates discarded: {discarded.count(True)}\n", EXPECTED / "lock-discard.txt")
 
 
 @pytest.mark.skipif(os.name == "nt", reason="Windows checks destinations through the lexical fallback")
-@pytest.mark.parametrize("failure", ["anchor", "staging"])
+@pytest.mark.parametrize("failure", ["anchor", "staging", "stage-collision", "stage-exhausted", "stage-closed"])
+@pytest.mark.abnormal_path(
+    "staging I/O, occupied private names, closed staging and replaced directory anchors require failure injection"
+)
 def test_target_generate_publication_checks(failure: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Stop when staging fails, and undo the journal when a destination directory is replaced while publishing."""
 
@@ -224,36 +232,82 @@ def test_target_generate_publication_checks(failure: str, tmp_path: Path, monkey
             monkeypatch.setattr(
                 _publication, "_directory_fd_matches_path", lambda *args: next(checks) != 2 and matches(*args)
             )
+        case "staging":
+            monkeypatch.setattr(_api_publication, "os", SimpleNamespace(**{**vars(_api_publication.os), "fsync": fail}))
         case _:
-            monkeypatch.setattr(_publication, "os", SimpleNamespace(**{**vars(_publication.os), "fsync": fail}))
+            create = _api_publication._create_staged_file
+            private_name = _publication._private_name
+
+            def staged(staging: _publication.StagingDirectory, *, prefix: str, mode: int) -> tuple[int, str]:
+                if failure == "stage-closed":
+                    staging.cleanup()
+                    return create(staging, prefix=prefix, mode=mode)
+                name = f"{prefix}occupied"
+                (staging.path / name).write_bytes(b"occupied staged name")
+                staging._files.add(name)
+                names = count()
+                with monkeypatch.context() as patch:
+                    patch.setattr(
+                        _publication,
+                        "_private_name",
+                        lambda value: name if failure == "stage-exhausted" or next(names) == 0 else private_name(value),
+                    )
+                    return create(staging, prefix=prefix, mode=mode)
+
+            monkeypatch.setattr(_api_publication, "_create_staged_file", staged)
+            if failure == "stage-exhausted":
+                monkeypatch.setattr(_publication, "_private_name", lambda prefix: f"{prefix}reserved")
     assert_output(
         target_render_report("publication-check", tmp_path, monkeypatch), EXPECTED / f"publication-{failure}.txt"
     )
 
 
-def test_target_generate_lock_unsupported(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Refuse to publish without an advisory lock instead of writing unlocked."""
-    fcntl = pytest.importorskip("fcntl")
-
-    def fail(*_args: object) -> None:
-        raise OSError(errno.ENOLCK, "No locks available")
-
-    monkeypatch.setattr(fcntl, "flock", fail)
-    assert_output(target_render_report("lock-unsupported", tmp_path, monkeypatch), EXPECTED / "lock-unsupported.txt")
-
-
+@pytest.mark.abnormal_path("a foreign writer changes a planned file after the final artifact has been staged")
 def test_target_generate_state_changed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Recheck every planned file inside the locks and refuse files another writer changed."""
-    locks = _api_publication.resource_locks
+    """Recheck all artifacts after staging and preserve bytes another writer changed."""
+    stage = _api_publication.stage_content
 
-    @contextmanager
-    def interfere(resources: Iterable[Path]) -> Generator[None, None, None]:
-        with locks(resources):
+    def interfere(
+        staging: _publication.StagingDirectory, content: bytes, file: _publication.StagedFile
+    ) -> _publication.StagedFile:
+        staged = stage(staging, content, file)
+        if file.target.name == ".dcg-target-manifest.json":
             (tmp_path / "models.py").write_bytes(b"# Written by another generator.\n")
-            yield
+        return staged
 
-    monkeypatch.setattr(_api_publication, "resource_locks", interfere)
+    monkeypatch.setattr(_api_publication, "stage_content", interfere)
     assert_output(target_render_report("state-changed", tmp_path, monkeypatch), EXPECTED / "state-changed.txt")
+
+
+@pytest.mark.parametrize(
+    "failure", [OSError("No space left on device"), KeyboardInterrupt()], ids=["error", "interrupt"]
+)
+@pytest.mark.abnormal_path("the final manifest fails after writes and stale deletions in the same transaction")
+def test_target_generate_transaction_rollback(
+    failure: BaseException, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Restore models, targets, metadata, remote lock, inventory and manifest after deletion and write failures."""
+    monkeypatch.setattr(
+        _publication,
+        "_replace_source",
+        _failing(_publication._replace_source, {1: failure}, destination=".dcg-target-manifest.json"),
+    )
+    assert_output(
+        target_render_report("rollback-transaction", tmp_path, monkeypatch),
+        EXPECTED / f"rollback-transaction-{type(failure).__name__}.txt",
+    )
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX directory modes and umask do not apply on Windows")
+def test_target_generate_modes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Use directory bits and umask for new files while preserving replacement permissions."""
+    mask = os.umask(0o027)
+    try:
+        assert_output(
+            target_render_report("publication-modes", tmp_path, monkeypatch), EXPECTED / "publication-modes.txt"
+        )
+    finally:
+        os.umask(mask)
 
 
 @pytest.mark.parametrize(
