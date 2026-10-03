@@ -27,9 +27,6 @@ def test_collapsed_tree_reuse_partial(output_dir: Path, entrypoint: str, *, incl
     """Generate and validate the existing partial-schema package with inherited roots."""
     expected_directory = EXPECTED_OPENAPI_PATH / "collapsed_tree_reuse_partial"
     if entrypoint == "cli":
-        (output_dir.parent / "pyproject.toml").write_text(
-            "[tool.datamodel-codegen]\nformatters = []\n", encoding="utf-8"
-        )
         with chdir(output_dir.parent):
             run_main_and_assert(
                 input_path=OPEN_API_DATA_PATH / "allof_partial_unconstrained_schemas.yaml",
@@ -56,7 +53,6 @@ def test_collapsed_tree_reuse_partial(output_dir: Path, entrypoint: str, *, incl
             reuse_scope="tree",
             collapse_root_models=True,
             disable_timestamp=True,
-            formatters=[],
             **({"openapi_scopes": [OpenAPIScope.Schemas, OpenAPIScope.Api]} if include_api else {}),
         )
     valid_payload = {
@@ -70,7 +66,7 @@ def test_collapsed_tree_reuse_partial(output_dir: Path, entrypoint: str, *, incl
         "allTrueValue": {"code": "ok"},
         "nullableValue": {"code": "ok"},
         "nullableObjectValue": {"code": "ok"},
-        "directScalarValue": "a",
+        "directScalarValue": "ab",
         "directScalarInferred": "a",
         "inlineScalarInferred": "a",
         "scalarArrayInferred": ["a"],
