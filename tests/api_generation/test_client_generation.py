@@ -29,6 +29,9 @@ def test_client_input(case: str, tmp_path: Path) -> None:
 @pytest.mark.parametrize(
     "case",
     [
+        "allowreserved-path-30",
+        "allowreserved-path-31",
+        "allowreserved-path-32",
         "pets",
         "auth",
         "auth-no-root",

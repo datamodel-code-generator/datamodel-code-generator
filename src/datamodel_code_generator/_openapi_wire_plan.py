@@ -883,7 +883,7 @@ def parameter_view(
     The names others own are the operation's other declared names, its apiKey names, and the members the effective
     `plans` of its other parameters expand to, so an adapted neighbor reserves its own name only.
     """
-    plan = _declared(declaration)
+    plan = _declared(version, declaration)
     location, name = plan.location, plan.name
     names = [
         *((_fact(item, "in"), item.name or "") for item in operation.parameters),
@@ -904,7 +904,14 @@ def parameter_view(
     )
 
 
-def _declared(declaration: WireDeclaration) -> AdaptedParameterPlan:
+def _allow_reserved(version: str, location: ParameterLocation, declaration: WireDeclaration) -> bool:
+    """Return the effective allowReserved flag for the root OpenAPI version and parameter location."""
+    return _fact(declaration, "allowReserved") is True and not (
+        location == "path" and version.startswith(("3.0.", "3.1."))
+    )
+
+
+def _declared(version: str, declaration: WireDeclaration) -> AdaptedParameterPlan:
     """Return a parameter's plan as declared: its style or content media, explode, requiredness, and allowReserved."""
     location = _LOCATIONS[_fact(declaration, "in")]
     content = normalize_media_type(declaration.children[0].name or "") if declaration.children else None
@@ -916,7 +923,7 @@ def _declared(declaration: WireDeclaration) -> AdaptedParameterPlan:
         style=style,
         explode=style is not None and (explode if isinstance(explode, bool) else style in {"form", "cookie"}),
         required=_fact(declaration, "required") is True,
-        allow_reserved=_fact(declaration, "allowReserved") is True,
+        allow_reserved=_allow_reserved(version, location, declaration),
         content_media_type=content,
     )
 
@@ -937,7 +944,7 @@ def parameter_plans(
     for operation in operations:
         for declaration in operation.parameters:
             if not adapted.isdisjoint(_uses(declaration)):
-                plan = _declared(declaration)
+                plan = _declared(wire.version, declaration)
                 plans.setdefault(operation.id, {})[plan.location, plan.name] = plan
     return plans
 
@@ -1101,7 +1108,7 @@ def _parameter(planner: _WirePlanner, declaration: WireDeclaration, names: list[
             style=style,
             explode=explode if isinstance(explode, bool) else style in {"form", "cookie"},
             required=required,
-            allow_reserved=_fact(declaration, "allowReserved") is True,
+            allow_reserved=_allow_reserved(planner.version, location, declaration),
             shape=shape,
             kind=kind,
             fields=fields,
