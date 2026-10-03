@@ -96,8 +96,8 @@ render pydantic_v2.BaseModel
   }
   /selection/selected_operations/0 notes.list_notes(query:cursor=cursor)
     exports client.types.notes.ListNotesResponse client.types.notes.ListNotesErrorData client.types.notes.ListNotesHTTPError
-    exports client.types.notes.ListNotesRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.notes.ListNotesRequestCodecs None
   /selection/selected_operations/1 notes.watch_notes()
     exports client.types.notes.WatchNotesResponse client.types.notes.WatchNotesErrorData client.types.notes.WatchNotesHTTPError
-    exports client.types.notes.WatchNotesRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.notes.WatchNotesRequestCodecs None
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

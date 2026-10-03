@@ -216,7 +216,7 @@
   retry explicit defaults = RetryOptions(max_retries=2, initial_delay=0.5, max_delay=8.0, jitter='full', statuses=UNSET, max_retry_after=60.0, respect_retry_after=True, retry_after_ms_header=UNSET, should_retry_header=UNSET, retry_on_pool_timeout=False)
   retry explicit switches = RetryOptions(max_retries=UNSET, initial_delay=UNSET, max_delay=UNSET, jitter=UNSET, statuses=UNSET, max_retry_after=UNSET, respect_retry_after=False, retry_after_ms_header=None, should_retry_header=None, retry_on_pool_timeout=True)
   redirect explicit values = RedirectOptions(enabled=False, max_redirects=0, allow_303_to_get=True, allowed_origins=(), allow_https_downgrade=True)
-  transport fixed defaults = TransportOptions(verify=UNSET, ssl_context=None, proxy=None, trust_env=False, http2=False, max_connections=100, max_keepalive_connections=20, keepalive_expiry=5.0, retry_owner='sdk')
+  transport fixed defaults = TransportOptions(verify=UNSET, ssl_context=None, proxy=None, trust_env=True, http2=False, max_connections=100, max_keepalive_connections=20, keepalive_expiry=5.0, retry_owner='sdk')
   transport explicit values = TransportOptions(verify=False, ssl_context=None, proxy='http://proxy.example.com:8080', trust_env=True, http2=True, max_connections=0, max_keepalive_connections=0, keepalive_expiry=0.0, retry_owner='transport')
   transport SSLContext identity=True verify omitted=True
   transport context verify=True ! ConfigurationError: ConfigurationError(field_path='transport.verify', condition='conflicts_with_ssl_context') [field_path=('transport', 'verify'), condition='conflicts_with_ssl_context'] configuration_error

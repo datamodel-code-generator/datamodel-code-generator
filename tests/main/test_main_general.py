@@ -5106,13 +5106,29 @@ def test_future_import_insertion_point_handles_runtime_tokenizer_syntax_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Treat runtime-specific tokenizer SyntaxError as malformed external input."""
+    original_generate_tokens = tokenize.generate_tokens
+    runtime_readline_name = f"{_find_future_import_insertion_point.__qualname__}.<locals>.readline"
+    syntax_error_injected = False
 
     def raise_syntax_error(_readline: Any) -> Any:
-        raise SyntaxError
+        nonlocal syntax_error_injected
+        if (
+            getattr(_readline, "__module__", None) == _find_future_import_insertion_point.__module__
+            and getattr(_readline, "__qualname__", None) == runtime_readline_name
+        ):
+            syntax_error_injected = True
+            raise SyntaxError
+        return original_generate_tokens(_readline)
 
     monkeypatch.setattr(tokenize, "generate_tokens", raise_syntax_error)
 
     assert _find_future_import_insertion_point("(") == 0
+    assert syntax_error_injected
+
+    tokens = tokenize.generate_tokens(StringIO("(").readline)
+    assert next(tokens)[:2] == (tokenize.OP, "(")
+    with pytest.raises(tokenize.TokenError, match="EOF in multi-line statement"):
+        list(tokens)
 
 
 def test_custom_file_header_prepend_preserves_future_import_text(output_file: Path) -> None:

@@ -32,27 +32,27 @@ render pydantic_v2.BaseModel
   refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
   /selection/selected_operations/0 default.create_pet(query:tag=tag)
     exports client.types.default.CreatePetResponse client.types.default.CreatePetErrorData client.types.default.CreatePetHTTPError
-    exports client.types.default.CreatePetRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.default.CreatePetRequestCodecs None
   /selection/selected_operations/1 default.update_pet(path:petId=pet_id)
     exports client.types.default.UpdatePetResponse client.types.default.UpdatePetErrorData client.types.default.UpdatePetHTTPError
-    exports client.types.default.UpdatePetRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.default.UpdatePetRequestCodecs None
   /selection/selected_operations/2 default.log_visit(path:petId=pet_id)
     exports client.types.default.LogVisitResponse client.types.default.LogVisitErrorData client.types.default.LogVisitHTTPError
-    exports client.types.default.LogVisitRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.default.LogVisitRequestCodecs None
   /selection/selected_operations/3 default.set_owner(path:petId=pet_id)
     exports client.types.default.SetOwnerResponse client.types.default.SetOwnerErrorData client.types.default.SetOwnerHTTPError
-    exports client.types.default.SetOwnerRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.default.SetOwnerRequestCodecs None
   /selection/selected_operations/4 default.create_owner()
     exports client.types.default.CreateOwnerResponse client.types.default.CreateOwnerErrorData client.types.default.CreateOwnerHTTPError
-    exports client.types.default.CreateOwnerRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.default.CreateOwnerRequestCodecs None
   /selection/selected_operations/5 default.put_labels(path:petId=pet_id)
     exports client.types.default.PutLabelsResponse client.types.default.PutLabelsErrorData client.types.default.PutLabelsHTTPError
-    exports client.types.default.PutLabelsRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.default.PutLabelsRequestCodecs None
   /selection/selected_operations/6 default.put_photo(path:petId=pet_id)
     exports client.types.default.PutPhotoResponse client.types.default.PutPhotoErrorData client.types.default.PutPhotoHTTPError
-    exports client.types.default.PutPhotoRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.default.PutPhotoRequestCodecs None
   /selection/selected_operations/7 default.replace_pet(path:petId=pet_id)
     exports client.types.default.ReplacePetResponse client.types.default.ReplacePetErrorData client.types.default.ReplacePetHTTPError
-    exports client.types.default.ReplacePetRequestCodecs None digests ['request', 'response', 'security', 'signature'] True
+    exports client.types.default.ReplacePetRequestCodecs None
   dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']
   S_OPERATION_EXCLUDED selection /paths/~1search/post: POST /search is excluded by exclude_operations: The fields-structural and fields-arguments cases cover the union body.

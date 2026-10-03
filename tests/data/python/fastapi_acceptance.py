@@ -24,7 +24,6 @@ if TYPE_CHECKING:
     import pytest
 
 _SCOPE = Path(__file__).with_name("fastapi_scope.py")
-_LOCKS = ".dcg-api-state"
 
 
 def fastapi_scope_report(root: Path) -> str:
@@ -38,11 +37,7 @@ def fastapi_scope_report(root: Path) -> str:
 
 
 def _files(root: Path) -> dict[str, bytes]:
-    return {
-        path.relative_to(root).as_posix(): path.read_bytes()
-        for path in sorted(root.rglob("*"))
-        if path.is_file() and _LOCKS not in path.relative_to(root).parts
-    }
+    return {path.relative_to(root).as_posix(): path.read_bytes() for path in sorted(root.rglob("*")) if path.is_file()}
 
 
 def _compare(label: str, first: Path, second: Path) -> str:

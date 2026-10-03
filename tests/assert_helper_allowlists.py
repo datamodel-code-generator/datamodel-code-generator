@@ -70,13 +70,9 @@ FROZEN_VIOLATIONS: dict[str, tuple[str, ...]] = {
     ),
     "abnormal-e2e": (
         "normal-path-mock:tests/api_generation/test_fastapi_cli.py::test_fastapi_cli_report_replaced",
-        "normal-path-mock:tests/api_generation/test_target_generation.py::test_target_generate_lock_discard",
-        "normal-path-mock:tests/api_generation/test_target_generation.py::test_target_generate_publication_checks",
-        "normal-path-mock:tests/api_generation/test_target_generation.py::test_target_generate_state_changed",
         "private-import:tests/api_generation/test_target_generation.py::datamodel_code_generator._api_manifest",
         "private-import:tests/api_generation/test_target_generation.py::datamodel_code_generator._api_publication",
         "private-import:tests/api_generation/test_target_generation.py::datamodel_code_generator._publication",
-        "private-import:tests/data/python/target_generation.py::datamodel_code_generator._api_publication",
     ),
     "disguised-asserts": (
         "disguised-assert:tests/data/python/target_generation.py::_Scenario.current",

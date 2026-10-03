@@ -235,8 +235,8 @@ booleans. Durations are finite numbers of seconds, excluding booleans; integers 
 
 | Type | Field | Effective default | Valid values |
 |---|---|---|---|
-| `PaginationOptions` | `max_pages` | `1000` | Positive integer or `None` |
-| | `max_items` | `100000` | Nonnegative integer or `None`; `0` ends without sending |
+| `PaginationOptions` | `max_pages` | `None` (no limit) | Positive integer or `None` |
+| | `max_items` | `None` (no limit) | Nonnegative integer or `None`; `0` ends without sending |
 | | `max_page_bytes` | `8388608` | Positive integer |
 | | `max_cursor_bytes` | `65536` | Positive integer |
 | `PollOptions` | `max_polls` | `1000` | Positive integer or `None` |
@@ -799,13 +799,13 @@ call's options, then the helper's `ProtocolDefaults` in `ProtocolClientOptions.d
 
 | Limit | Default | None |
 |---|---|---|
-| `PaginationOptions.max_pages` | 1000 pages | Removes the limit |
-| `PaginationOptions.max_items` | 100000 items; 0 ends a pager at once without sending | Removes the limit |
+| `PaginationOptions.max_pages` | No limit | Removes the limit |
+| `PaginationOptions.max_items` | No limit; 0 ends a pager at once without sending | Removes the limit |
 | `PaginationOptions.max_page_bytes` | 8 MiB of decoded body per page | Not allowed |
 | `PaginationOptions.max_cursor_bytes` | 64 KiB, UTF-8 for a string and canonical JSON otherwise; also a next URL's bytes, within 8 KiB, and a page's Link values | Not allowed |
-| `SessionOptions.total_timeout` | 300 seconds from the first fetch | Removes the limit |
+| `SessionOptions.total_timeout` | No limit | Removes the limit |
 | `SessionOptions.deadline` | None | No deadline |
-| `SessionOptions.max_network_sends` | 3000 sends | Removes the limit |
+| `SessionOptions.max_network_sends` | No limit | Removes the limit |
 
 A limit reached while pages remain raises `SessionLimitError` with the progress so far; the last page ends normally
 even exactly at a limit. An item limit is exact for items, while `iter_pages` checks it before each fetch, so a page
@@ -1492,13 +1492,15 @@ bounds all of them. Each limit comes from the call's options, then the helper's 
 | `UploadOptions.max_parts` | 10000 chunks | Removes the limit |
 | `UploadOptions.parallelism` | 4, unused by the offset profile | Not allowed |
 | `UploadOptions.max_uncertain_probes` | 3 probes; 0 probes none | Not allowed |
-| `SessionOptions.total_timeout` | 600 seconds | Removes the limit |
+| `SessionOptions.total_timeout` | No limit | Removes the limit |
 | `SessionOptions.deadline` | None | No deadline |
 | `SessionOptions.max_network_sends` | 10000 sends | Removes the limit |
 
-The session's `total_timeout` runs from `start` or `resume` for the whole life of the handle, reading the source
-included, so a long upload stepped slowly needs `SessionOptions(total_timeout=None)`, a larger value, or a `resume` from
-a checkpoint, which starts a new session. The deadline also bounds reading the source. A call past a limit raises
+By default, an upload session has no total lifetime limit. If a finite `total_timeout` is configured, it runs from
+`start` or `resume` for the whole life of the handle, including reading the source. A long upload stepped slowly may
+then need a larger timeout, `SessionOptions(total_timeout=None)`, or a `resume` from a checkpoint, which starts a new
+session. Both modes check a finite deadline before each source read. A synchronous `opened.read()` cannot be
+interrupted once it blocks; an asynchronous read is bounded by the remaining deadline. A call past a limit raises
 `SessionLimitError` with the kind `network_sends`, the progress so far, and `resume_state`, before sending; a create
 request the session has no slot for raises it without `resume_state`, since nothing was created. The options must not
 fix an idempotency key, from the client, a view, or the call, and must not patch a header or a query parameter the
@@ -2788,8 +2790,6 @@ def forward(client: Client, arguments: ListArguments) -> ListPetsResponse:
 - **Type checkers.** Both styles give the same keywords the same types. Checkers treat a TypedDict with extra keys
   differently: forwarding one to an `explicit` method is an error for mypy, Pyright, and ty, while for an `unpack`
   method only mypy reports it. The method still refuses the extra key at runtime.
-- **Contract records.** The style is part of the package's public signature: switching it changes each operation's
-  signature digest in the target manifest, and nothing else.
 
 The binding differences, as the tests of this repository record them for the same `get_pet` and `list_pets` calls:
 
@@ -2992,19 +2992,19 @@ fields, a missing required field, a field of another media type, or fields for a
 
 ```text
 a body and fields ! TypeError: create_pet() takes a body or its field arguments, not both: 'name' []
-  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 3, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 3, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
   hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None counts=0/0 request_id=None timed=True context={}
 fields missing a required one ! TypeError: create_pet() missing required field arguments for application/json: 'kind' []
-  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 3, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 3, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
   hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None counts=0/0 request_id=None timed=True context={}
 a field of another media ! TypeError: create_pet() takes no such field arguments for application/x-www-form-urlencoded: 'kind' []
-  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 3, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 3, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
   hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None counts=0/0 request_id=None timed=True context={}
 fields without a media type ! ConfigurationError: ConfigurationError(operation_id='createPet', call_id='<call>', field_path='media_type', condition='missing') [operation_id='createPet', field_path=('media_type',), condition='missing'] configuration_error
-  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 3, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 3, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
   hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets origin=None counts=0/0 request_id=None timed=True context={}
 fields for text ! TypeError: log_visit() takes no field arguments for text/plain: 'note' []
-  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId}/visits origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': 16777216, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 3, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
+  hook: call_start attempt=None sent=False status=None outcome=None phase=None path=/pets/{petId}/visits origin=None counts=0/0 request_id=None timed=False context={} options={'max_response_bytes': None, 'max_error_body_bytes': 65536, 'max_stream_bytes': None, 'cleanup_timeout': 5.0, 'total_timeout': 60.0, 'max_network_sends': 3, 'stream_idle_timeout': 60.0, 'stream_total_timeout': None}
   hook: call_end attempt=None sent=False status=None outcome=error phase=None path=/pets/{petId}/visits origin=None counts=0/0 request_id=None timed=True context={}
 update naming only a media type ! ConfigurationError: ConfigurationError(operation_id='updatePet', call_id='<call>', field_path='media_type', condition='without_body') [operation_id='updatePet', field_path=('media_type',), condition='without_body'] configuration_error
 ```
@@ -3763,8 +3763,8 @@ ref = "/paths/~1status/get"
 circuit_group = "backend"
 ```
 
-An invalid group receives `E_CONFIG_VALUE`. The group is part of the operation's request digest, and the generated
-README lists each group's operations. Only a package that declares a group gets `Client.reset_circuit` and
+An invalid group receives `E_CONFIG_VALUE`. The generated README lists each group's operations. Only a package that
+declares a group gets `Client.reset_circuit` and
 `AsyncClient.reset_circuit`, whose `group` parameter is a `Literal` of its groups.
 
 ### Enable the breaker
@@ -3884,8 +3884,7 @@ ref = "/paths/~1items/post"
 accepted_content_encodings = ["gzip"]
 ```
 
-The declaration is part of the operation's request digest, and the generated README lists the operations that accept
-a coding.
+The generated README lists the operations that accept a coding.
 
 ### Select a coding
 
@@ -4014,10 +4013,16 @@ bodyless: ordinary and `with_response` calls return `None` data for an empty fin
 `with_streaming_response` to access that final GET body without typed decoding.
 
 `TransportOptions` belongs only to `ClientOptions`; it cannot be set on a view or request. Its effective defaults are
-`verify=True`, `ssl_context=None`, `proxy=None`, `trust_env=False`, `http2=False`, `max_connections=100`,
+`verify=True`, `ssl_context=None`, `proxy=None`, `trust_env=True`, `http2=False`, `max_connections=100`,
 `max_keepalive_connections=20`, `keepalive_expiry=5`, and `retry_owner="sdk"`. Supplying an SSLContext uses its CA,
 verification, and client certificate settings and rejects any explicit `verify` override. Proxy/environment/TLS
-choices are explicit. HTTP/2 is opt-in and requires its optional dependency.
+settings follow HTTPX2 environment handling by default, preserving native system trust. With `trust_env=False`,
+HTTPX2 environment configuration is disabled while native TLS trust behavior is preserved. Caller `ssl_context` or
+`verify=False` controls origin TLS; injected native clients retain their settings and ownership.
+Typed error handling and exception body prefixes use `max_error_body_bytes`, which defaults to 64 KiB.
+Buffered raw responses of every status use `max_response_bytes`, which defaults to `None` (no cap). Set it on client,
+view, or request options to bound them; `None` removes an inherited cap. For buffered raw responses, only
+`raise_for_status()` applies the error-prefix cap. HTTP/2 is opt-in and requires its optional dependency.
 
 ```python
 from ssl import create_default_context
@@ -4033,7 +4038,8 @@ def configured_client(ca_file: str) -> Client:
 ```
 
 Use the returned client in a `with` block. The supplied CA bundle controls TLS verification; this example leaves
-verification enabled and does not inherit proxy configuration from the environment.
+verification enabled. Omitting `trust_env` keeps its default of `True`, so native environment proxy settings remain
+effective. Set `trust_env=False` on `TransportOptions` to opt out explicitly.
 
 An injected native client's pool/proxy/TLS settings remain its own, and incompatible SDK construction settings are
 rejected. Borrowed clients and adapters are not closed; `OwnedTransportAdapter` transfers adapter ownership.
@@ -4071,11 +4077,10 @@ def authenticated_get(client: Client, token: str) -> bytes:
         return view.auth.bearer()
 ```
 
-`AccessToken.scopes=None` means that grants are unknown. It skips local containment checking and leaves the decision
-to the server; it does not claim unrestricted permission. `scopes=()` is known empty and rejects a nonempty requirement.
-Known grants and required scopes are deduplicated and ASCII-sorted. An insufficient known grant raises
-`InsufficientScopeError` with readonly required, granted, and missing tuples before sending. The SDK never broadens
-scopes automatically after a 403. Expired material raises `TokenExpiredError` and cannot justify an endless refresh.
+`AccessToken.scopes` records token metadata: `None` means unknown grants and `()` means known empty grants.
+Known grants and requested scopes are deduplicated and ASCII-sorted. The client sends empty, narrow, hierarchical,
+and unknown grants to the permitted resource origin and leaves authorization to the server. A 403 is terminal: the
+SDK never broadens scopes or refreshes a token to recover from it. Expired material raises `TokenExpiredError` and cannot justify an endless refresh.
 `BearerCredential` pairs a token with an opaque `TokenVersion()` whose identity belongs to that provider's publication.
 
 Async clients require async providers. Matching static and environment variants are available; a custom provider's
@@ -4162,8 +4167,9 @@ replayability, retry count, send slots, and the original deadline. `max_retries=
 credential acquisition is still allowed. These callbacks add no implicit token HTTP traffic.
 
 Use the existing internal generation API to declare an API-specific challenge-less 401 contract. It is false unless
-explicitly set, is recorded under `operations[].runtime.auth_challenge_less_401` in generated documentation, and affects
-only the security contract digest. It is not a client option or an inferred response behavior.
+explicitly set and is recorded under `operations[].runtime.auth_challenge_less_401` in generated documentation.
+It allows token-expired recovery after a 401 without a challenge, subject to the retry rules above.
+It is not a client option or an inferred response behavior.
 
 ```python
 from datamodel_code_generator._client.config import ClientOperationConfig, RuntimeOperationMetadata
@@ -4462,8 +4468,8 @@ set needs the Bearer type, and a timezone-aware `expires_at` when its access tok
 
 Each refresh replaces the token set with one of the next revision. The response's refresh token rotates the family, and
 a response without one keeps the refresh token sent; a response without `scope` keeps the grants of the access token it
-replaces, known or unknown. A caller requiring a scope that known grants lack fails with `InsufficientScopeError` before
-any request, since a refresh never widens them, and a caller whose refresh narrowed them fails the same way. A refresh
+replaces, known or unknown. Narrower refreshed grants remain token metadata: subsequent resource calls reach the
+server, and its 403 remains terminal. Acquisition and refresh retain the configured requested scopes. A refresh
 token the family rotated away from, or sent in a request that may have been delivered without a usable answer, is spent:
 the family never sends it again, and a response returning a spent one is unusable.
 
@@ -4517,8 +4523,10 @@ stops for reauthorization when the newer token set can never serve. It returns t
 family stopped, and its own failures are raised to its caller alone, leaving the family as it was.
 
 A provider with a `store` needs a `load` too. A refresh that receives a token set stores it once before it becomes
-current, expecting the stored revision the last load or store confirmed, or None while none did, so callers are served,
-and their scopes checked, only once it is stored. A store that fails, conflicts, outlives the refresh's session, or is
+current, expecting the stored revision the last load or store confirmed, or None while none did, so callers are served
+only once storage succeeds. Credentials are still selected for the request's origin, audience, and partition; requested
+OAuth scopes and token grant metadata do not authorize a request. Scope authorization is the resource server's
+responsibility. A store that fails, conflicts, outlives the refresh's session, or is
 interrupted keeps the token set pending in the `PERSIST_PENDING` state: the refresh raises `AuthTokenStoreError`, or
 `AuthTokenStoreConflictError` with the revision the store observed, and later calls raise a new instance of the latest
 store failure without a request, while callers arriving during a store wait for it. `retry_store()` stores the same

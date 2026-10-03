@@ -23,7 +23,6 @@ from .errors import (
     AuthTokenStoreConflictError,
     AuthTokenStoreError,
     DeliveryState,
-    InsufficientScopeError,
     TokenExpiredError,
 )
 from .oauth import (
@@ -276,9 +275,8 @@ class RotationFamily(SharedRefresh):
     def usable(self, context: CredentialContext, *, force: bool) -> Published | None:
         """Return usable material, refuse a caller the family cannot serve, or return None to acquire or join.
 
-        A token claiming another audience than the fixed one, or known grants missing a required scope, refuse the
-        caller without a refresh, which neither changes nor widens them; a family without a refresh token stops once its
-        access token expired or a refresh is forced.
+        A token claiming another audience than the fixed one refuses the caller without a refresh; a family without a
+        refresh token stops once its access token expired or a refresh is forced.
         """
         if self._active is None:
             if (stopped := self._stopped) is not None:
@@ -802,19 +800,10 @@ class RotationFamily(SharedRefresh):
             "REAUTH_REQUIRED",
         )
 
-    def _refuse(self, token: AccessToken, context: CredentialContext) -> None:
-        """Refuse a token claiming another audience than the fixed one, or whose known grants lack a required scope."""
+    def _refuse(self, token: AccessToken, _context: CredentialContext) -> None:
+        """Refuse a token claiming another audience than the fixed one."""
         if (audience := token.audience) is not None and audience != self._audience:
             raise AuthConfigurationError(field_path=("audience",), condition="audience_mismatch")
-        if (granted := token.scopes) is not None and not set(context.required_scopes).issubset(granted):
-            raise InsufficientScopeError(
-                required_scopes=context.required_scopes,
-                granted_scopes=granted,
-                state=self.state,
-                delivery_state=DeliveryState.NOT_SENT,
-                phase="admission",
-                provider_id=self.provider_id,
-            )
 
     def _uncertain(self, job: Job, failure_kind: AuthFailureKind, cause: BaseException | None = None) -> Failed:
         return Failed(
