@@ -67,7 +67,6 @@ _RUNTIME_NAMES: Final = (
     "SchemaResource",
     "SchemaResourceLimits",
     "SchemaSource",
-    "ServerMediaCodecCapabilities",
     "StructuralModelCodec",
     "TupleNode",
     "UnionNode",
@@ -154,7 +153,7 @@ _SURFACE_PUBLIC: Final[dict[Surface, tuple[tuple[str, str], ...]]] = {
         ("selectors", "RequestMedia"),
         ("selectors", "ResponseMedia"),
     ),
-    "server": (("adapters", "ServerMediaCodecAdapterV1"), ("capabilities", "ServerMediaCodecCapabilities")),
+    "server": (),
 }
 
 

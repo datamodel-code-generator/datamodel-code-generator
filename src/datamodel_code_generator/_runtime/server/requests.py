@@ -11,7 +11,6 @@ from fastapi.exceptions import RequestValidationError
 from starlette.requests import Request  # noqa: TC002 - FastAPI resolves the dependencies' annotations.
 from typing_extensions import TypeIs
 
-from ..model_codecs.errors import ParameterEncodingError
 from ..model_codecs.media import charset, decode_form, decode_json, decode_text, normalize_media_type
 from ..model_codecs.parameters import RawParameters, decode_parameter, raw_parameter
 from ..model_codecs.unset import UNSET, Unset
@@ -29,7 +28,6 @@ from .errors import (
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
 
-    from ..model_codecs.adapters import AdapterParameterCodec
     from ..model_codecs.context import CodecContext
     from ..model_codecs.media import FieldPlan
     from ..model_codecs.parameters import ParameterPlan, RawParameter
@@ -72,17 +70,13 @@ def _projected(codec: tuple[Callable[[], WireDecoder], CodecContext], wire: Wire
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class ParameterArgument:
-    """One adapter parameter: the handler keyword, its HTTP plan, its codec unless schema-free, and its default.
-
-    A parameter a registered parameter adapter carries decodes its raw occurrences through that adapter.
-    """
+    """One adapter parameter: the handler keyword, its HTTP plan, its codec unless schema-free, and its default."""
 
     name: str
     plan: ParameterPlan
     codec: tuple[Callable[[], WireDecoder], CodecContext] | None = None
     envelope: bool = False
     default: WireValue | Unset = UNSET
-    adapter: tuple[Callable[[], AdapterParameterCodec], CodecContext] | None = None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -157,11 +151,7 @@ class ParameterAdapter:
                     views[plan.location] = view
             location = (plan.location, plan.name)
             try:
-                if (adapter := argument.adapter) is None:
-                    wire = decode_parameter(plan, view)
-                else:
-                    get, context = adapter
-                    wire = get().decode(view, context)
+                wire = decode_parameter(plan, view)
                 if isinstance(wire, Unset):
                     if plan.required:
                         records.append(missing(location))
@@ -176,8 +166,6 @@ class ParameterAdapter:
                 if (found := validation_records(error, location, self.names)) is None:
                     raise malformed_request() from error
                 records.extend(found)
-            except ParameterEncodingError as error:
-                raise malformed_request() from error
         if records:
             raise RequestValidationError(records)
         return self.record(**values)

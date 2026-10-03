@@ -922,7 +922,7 @@ def _declared(declaration: WireDeclaration) -> AdaptedParameterPlan:
 
 
 def parameter_plans(
-    wire: WirePlan, operations: Iterable[OperationContract], adapted: frozenset[TypeUseId]
+    wire: WirePlan, operations: Iterable[OperationContract] = (), adapted: frozenset[TypeUseId] = frozenset()
 ) -> dict[OperationId, dict[tuple[ParameterLocation, str], ParameterPlan]]:
     """Index each operation's parameter plans by location and name.
 

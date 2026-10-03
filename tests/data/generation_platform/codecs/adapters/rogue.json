@@ -1,4 +1,5 @@
 {
+ "surface": "client",
  "declarations": {
   "adapters": [
    {
@@ -253,42 +254,42 @@
   {
    "name": "scripted-valid",
    "use": "/paths/~1scripted/post request_body",
-   "op": "decode",
+   "op": "outbound",
    "value": "ab"
   },
   {
    "name": "scripted-raise",
    "use": "/paths/~1scripted/post request_body",
-   "op": "decode",
+   "op": "outbound",
    "value": "raise"
   },
   {
    "name": "scripted-limit",
    "use": "/paths/~1scripted/post request_body",
-   "op": "decode",
+   "op": "outbound",
    "value": "limit"
   },
   {
    "name": "scripted-list",
    "use": "/paths/~1scripted/post request_body",
-   "op": "decode",
+   "op": "outbound",
    "value": "list"
   },
   {
    "name": "small-fits",
    "use": "/paths/~1limits/post request_body",
-   "op": "decode",
+   "op": "outbound",
    "value": "ab"
   },
   {
    "name": "small-exceeds",
    "use": "/paths/~1limits/post request_body",
-   "op": "decode",
+   "op": "outbound",
    "value": "abc"
   },
   {
    "name": "box-decode",
-   "use": "/paths/~1boxes/post request_body",
+   "use": "/paths/~1boxes/post response_body 200",
    "op": "decode",
    "value": {
     "code": "ab",
@@ -302,7 +303,7 @@
   },
   {
    "name": "box-decode-invalid",
-   "use": "/paths/~1boxes/post request_body",
+   "use": "/paths/~1boxes/post response_body 200",
    "op": "decode",
    "value": {
     "code": "ab",
@@ -315,7 +316,7 @@
   },
   {
    "name": "box-decode-read-only",
-   "use": "/paths/~1boxes/post request_body",
+   "use": "/paths/~1boxes/post response_body 200",
    "op": "decode",
    "value": {
     "id": 1,
@@ -324,7 +325,7 @@
   },
   {
    "name": "box-send",
-   "use": "/paths/~1boxes/post response_body 200",
+   "use": "/paths/~1boxes/post request_body",
    "op": "outbound",
    "value": {
     "id": 1,
@@ -334,7 +335,7 @@
   },
   {
    "name": "box-send-invalid",
-   "use": "/paths/~1boxes/post response_body 200",
+   "use": "/paths/~1boxes/post request_body",
    "op": "outbound",
    "value": {
     "id": 1,
@@ -343,7 +344,7 @@
   },
   {
    "name": "box-snapshot-float",
-   "use": "/paths/~1boxes/post response_body 200",
+   "use": "/paths/~1boxes/post request_body",
    "op": "snapshot",
    "value": {
     "model": "Box",
@@ -359,7 +360,7 @@
   },
   {
    "name": "box-decode-decimal",
-   "use": "/paths/~1boxes/post request_body",
+   "use": "/paths/~1boxes/post response_body 200",
    "op": "decode",
    "value": {
     "code": "ab",
@@ -368,12 +369,18 @@
   },
   {
    "name": "box-decode-decimal-invalid",
-   "use": "/paths/~1boxes/post request_body",
+   "use": "/paths/~1boxes/post response_body 200",
    "op": "decode",
    "value": {
     "code": "ab",
     "weight": 2.25
    }
   }
- ]
+ ],
+ "config": {
+  "validation": {
+   "request": "schema",
+   "response": "schema"
+  }
+ }
 }

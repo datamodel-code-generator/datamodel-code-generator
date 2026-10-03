@@ -1,12 +1,13 @@
-use /paths/~1items~1{item}/get parameter path item: codec_0 None parameter_0 pydantic_type_adapter native
+use /paths/~1items~1{item}/get parameter path item: codec_0 outbound_0 parameter_0 pydantic_type_adapter native
 adapter scripted-path /paths/~1items~1{item}/get parameter path item: parameter
-use /paths/~1items~1{item}/get parameter query q: codec_1 None parameter_1 pydantic_type_adapter native
+use /paths/~1items~1{item}/get parameter query q: codec_1 outbound_1 parameter_1 pydantic_type_adapter native
 adapter scripted-query /paths/~1items~1{item}/get parameter query q: parameter
-use /paths/~1items~1{item}/get parameter header X-Echo: codec_2 None parameter_2 pydantic_type_adapter native
+use /paths/~1items~1{item}/get parameter query other: codec_2 outbound_2 None pydantic_type_adapter native
+use /paths/~1items~1{item}/get parameter header X-Echo: codec_3 outbound_3 parameter_3 pydantic_type_adapter native
 adapter scripted-header /paths/~1items~1{item}/get parameter header X-Echo: parameter
-use /paths/~1items~1{item}/get parameter cookie echo: codec_3 None parameter_3 pydantic_type_adapter native
+use /paths/~1items~1{item}/get parameter cookie echo: codec_4 outbound_4 parameter_4 pydantic_type_adapter native
 adapter scripted-cookie /paths/~1items~1{item}/get parameter cookie echo: parameter
-use /paths/~1search/get parameter querystring qs: codec_4 None parameter_4 pydantic_type_adapter native
+use /paths/~1search/get parameter querystring qs: codec_5 outbound_5 parameter_5 pydantic_type_adapter native
 adapter scripted-querystring /paths/~1search/get parameter querystring qs: parameter
 path: fragments path [None=b'a%2Fb']
 path-named: CodecAdapterError A parameter adapter returned anything but one unnamed path fragment

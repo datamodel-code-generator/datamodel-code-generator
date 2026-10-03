@@ -40,7 +40,6 @@ from datamodel_code_generator._runtime.model_codecs.capabilities import (
     CodecCapabilities,
     ParameterCodecCapabilities,
     SchemaCodecCapabilities,
-    ServerMediaCodecCapabilities,
 )
 from datamodel_code_generator._runtime.model_codecs.registry import SchemaSource
 from datamodel_code_generator._runtime.model_codecs.schema import (
@@ -69,7 +68,7 @@ if TYPE_CHECKING:
         ProjectionMode,
         UseBinding,
     )
-    from datamodel_code_generator._runtime.model_codecs.context import Direction, Surface
+    from datamodel_code_generator._runtime.model_codecs.context import Direction
     from datamodel_code_generator._source import YamlValue
     from datamodel_code_generator._target_contract import (
         FieldUseBinding,
@@ -175,7 +174,7 @@ class AdapterPlan:
 
 @dataclass(frozen=True, slots=True)
 class AdapterSelection:
-    """The adapter each (kind, use) selects for one surface, and the diagnostics of selecting them."""
+    """The adapter each (kind, use) selects for the client surface, and the diagnostics of selecting them."""
 
     chosen: Mapping[tuple[str, TypeUseId], CodecAdapterRegistration]
     diagnostics: tuple[CodecDiagnostic, ...]
@@ -442,9 +441,9 @@ class _Selector:
 
 
 def select_adapters(
-    batch: GeneratedTypeContractBatch, wire: WirePlan, declarations: CodecDeclarations, surface: Surface
+    batch: GeneratedTypeContractBatch, wire: WirePlan, declarations: CodecDeclarations
 ) -> AdapterSelection:
-    """Choose one adapter per (kind, use) for one surface, exact uses before schema defaults.
+    """Choose one adapter per (kind, use) for the client surface, exact uses before schema defaults.
 
     A schema default applies to every use whose schema is, or wholly references, the selected schema.
     """
@@ -457,7 +456,7 @@ def select_adapters(
             )
             continue
         names.add(registration.name)
-        if surface in registration.capabilities.surfaces:
+        if "client" in registration.capabilities.surfaces:
             for use_selector in registration.uses:
                 selector.register(registration, use_selector)
     return AdapterSelection(
@@ -674,7 +673,7 @@ class _AdapterPlanner:
                     and binding.native_kind in capabilities.native_kinds
                     and use.direction in capabilities.directions
                 )
-            case ClientMediaCodecCapabilities() | ServerMediaCodecCapabilities():
+            case ClientMediaCodecCapabilities():
                 return use.media in capabilities.media_types and use.direction in capabilities.directions
             case _:
                 return True

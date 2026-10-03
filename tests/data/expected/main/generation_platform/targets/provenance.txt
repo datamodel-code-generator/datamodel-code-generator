@@ -355,7 +355,6 @@ render
       "public_options": {
         "body_mode": "typed",
         "body_modes": {},
-        "codec_adapters": [],
         "custom_formatter_kwargs": {
           "width": 100
         },

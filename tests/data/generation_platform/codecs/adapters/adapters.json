@@ -1,4 +1,5 @@
 {
+ "surface": "client",
  "source": true,
  "declarations": {
   "adapters": [
@@ -199,7 +200,7 @@
   {
    "name": "cookie-model",
    "use": "/paths/~1tags/get parameter cookie tags",
-   "op": "decode",
+   "op": "outbound",
    "value": [
     "a,b",
     "c"
@@ -208,7 +209,7 @@
   {
    "name": "cookie-model-invalid",
    "use": "/paths/~1tags/get parameter cookie tags",
-   "op": "decode",
+   "op": "outbound",
    "value": [
     "a",
     1
@@ -216,43 +217,43 @@
   },
   {
    "name": "code-ab",
-   "use": "/paths/~1codes/post request_body",
+   "use": "/paths/~1codes/post response_body 200",
    "op": "decode",
    "value": "ab"
   },
   {
    "name": "code-ac",
-   "use": "/paths/~1codes/post request_body",
+   "use": "/paths/~1codes/post response_body 200",
    "op": "decode",
    "value": "ac"
   },
   {
    "name": "code-empty",
-   "use": "/paths/~1codes/post request_body",
+   "use": "/paths/~1codes/post response_body 200",
    "op": "decode",
    "value": ""
   },
   {
    "name": "code-integer",
-   "use": "/paths/~1codes/post request_body",
+   "use": "/paths/~1codes/post response_body 200",
    "op": "decode",
    "value": 1
   },
   {
    "name": "code-send",
-   "use": "/paths/~1codes/post response_body 200",
+   "use": "/paths/~1codes/post request_body",
    "op": "outbound",
    "value": "ab"
   },
   {
    "name": "code-send-invalid",
-   "use": "/paths/~1codes/post response_body 200",
+   "use": "/paths/~1codes/post request_body",
    "op": "outbound",
    "value": "abb"
   },
   {
    "name": "pet-decode",
-   "use": "/paths/~1pets/post request_body",
+   "use": "/paths/~1pets/post response_body 201",
    "op": "decode",
    "value": {
     "name": "Rex"
@@ -260,7 +261,7 @@
   },
   {
    "name": "pet-decode-tag",
-   "use": "/paths/~1pets/post request_body",
+   "use": "/paths/~1pets/post response_body 201",
    "op": "decode",
    "value": {
     "name": "Rex",
@@ -269,7 +270,7 @@
   },
   {
    "name": "pet-from-wire",
-   "use": "/paths/~1pets/post request_body",
+   "use": "/paths/~1pets/post response_body 201",
    "op": "from_wire",
    "value": {
     "name": "Rex"
@@ -277,7 +278,7 @@
   },
   {
    "name": "keeper-decode",
-   "use": "/paths/~1keepers/post request_body",
+   "use": "/paths/~1keepers/post response_body 201",
    "op": "decode",
    "value": {
     "badge": "k"
@@ -285,13 +286,13 @@
   },
   {
    "name": "keeper-decode-invalid",
-   "use": "/paths/~1keepers/post request_body",
+   "use": "/paths/~1keepers/post response_body 201",
    "op": "decode",
    "value": {}
   },
   {
    "name": "keeper-decode-failure",
-   "use": "/paths/~1keepers/post request_body",
+   "use": "/paths/~1keepers/post response_body 201",
    "op": "decode",
    "value": {
     "badge": "raise"
@@ -299,7 +300,7 @@
   },
   {
    "name": "keeper-decode-limit",
-   "use": "/paths/~1keepers/post request_body",
+   "use": "/paths/~1keepers/post response_body 201",
    "op": "decode",
    "value": {
     "badge": "limit"
@@ -307,7 +308,7 @@
   },
   {
    "name": "keeper-send",
-   "use": "/paths/~1keepers/post response_body 201",
+   "use": "/paths/~1keepers/post request_body",
    "op": "snapshot",
    "value": {
     "model": "Keeper",
@@ -318,7 +319,7 @@
   },
   {
    "name": "pet-decode-read-only",
-   "use": "/paths/~1pets/post request_body",
+   "use": "/paths/~1pets/post response_body 201",
    "op": "decode",
    "value": {
     "id": 1,
@@ -327,7 +328,7 @@
   },
   {
    "name": "pet-decode-invalid",
-   "use": "/paths/~1pets/post request_body",
+   "use": "/paths/~1pets/post response_body 201",
    "op": "decode",
    "value": {
     "name": 1
@@ -335,7 +336,7 @@
   },
   {
    "name": "pet-decode-native",
-   "use": "/paths/~1pets/post request_body",
+   "use": "/paths/~1pets/post response_body 201",
    "op": "decode",
    "value": {
     "name": "raise"
@@ -343,7 +344,7 @@
   },
   {
    "name": "pet-send",
-   "use": "/paths/~1pets/post response_body 201",
+   "use": "/paths/~1pets/post request_body",
    "op": "outbound",
    "value": {
     "id": 1,
@@ -352,7 +353,7 @@
   },
   {
    "name": "pet-send-secret",
-   "use": "/paths/~1pets/post response_body 201",
+   "use": "/paths/~1pets/post request_body",
    "op": "outbound",
    "value": {
     "id": 1,
@@ -362,7 +363,7 @@
   },
   {
    "name": "pet-snapshot",
-   "use": "/paths/~1pets/post response_body 201",
+   "use": "/paths/~1pets/post request_body",
    "op": "snapshot",
    "value": {
     "model": "Pet",
@@ -374,7 +375,7 @@
   },
   {
    "name": "pet-snapshot-presence",
-   "use": "/paths/~1pets/post response_body 201",
+   "use": "/paths/~1pets/post request_body",
    "op": "snapshot",
    "value": {
     "model": "Pet",
@@ -391,7 +392,7 @@
   },
   {
    "name": "pet-snapshot-tags",
-   "use": "/paths/~1pets/post response_body 201",
+   "use": "/paths/~1pets/post request_body",
    "op": "snapshot",
    "value": {
     "model": "Pet",
@@ -415,7 +416,7 @@
   },
   {
    "name": "pet-snapshot-stale",
-   "use": "/paths/~1pets/post response_body 201",
+   "use": "/paths/~1pets/post request_body",
    "op": "snapshot",
    "value": {
     "model": "Pet",
@@ -433,15 +434,19 @@
   },
   {
    "name": "pet-encode",
-   "use": "/paths/~1pets/post response_body 201",
+   "use": "/paths/~1pets/post request_body",
    "op": "encode",
    "value": {
-    "result": "pet-send"
+    "model": "Pet",
+    "args": {
+     "id": 1,
+     "name": "Rex"
+    }
    }
   },
   {
    "name": "pet-encode-snapshot",
-   "use": "/paths/~1pets/post response_body 201",
+   "use": "/paths/~1pets/post request_body",
    "op": "encode",
    "value": {
     "snapshot": "pet-snapshot"
@@ -449,15 +454,15 @@
   },
   {
    "name": "pet-encode-other",
-   "use": "/paths/~1pets/post response_body 201",
+   "use": "/paths/~1pets/post request_body",
    "op": "encode",
    "value": {
-    "snapshot": "cookie-model"
+    "snapshot": "keeper-send"
    }
   },
   {
    "name": "pet-encode-failure",
-   "use": "/paths/~1pets/post response_body 201",
+   "use": "/paths/~1pets/post request_body",
    "op": "encode",
    "value": {
     "model": "Pet",
@@ -469,7 +474,7 @@
   },
   {
    "name": "pet-encode-limit",
-   "use": "/paths/~1pets/post response_body 201",
+   "use": "/paths/~1pets/post request_body",
    "op": "encode",
    "value": {
     "model": "Pet",
@@ -481,7 +486,7 @@
   },
   {
    "name": "pet-encode-dict",
-   "use": "/paths/~1pets/post response_body 201",
+   "use": "/paths/~1pets/post request_body",
    "op": "encode",
    "value": {
     "name": "rex"
@@ -489,7 +494,7 @@
   },
   {
    "name": "pet-serialize",
-   "use": "/paths/~1pets/post response_body 201",
+   "use": "/paths/~1pets/post request_body",
    "op": "serialize",
    "value": {
     "model": "Pet",
@@ -517,7 +522,7 @@
   },
   {
    "name": "pet-encode-object",
-   "use": "/paths/~1pets/post response_body 201",
+   "use": "/paths/~1pets/post request_body",
    "op": "encode",
    "value": {
     "model": "Pet",
@@ -529,7 +534,7 @@
   },
   {
    "name": "pet-encode-presence",
-   "use": "/paths/~1pets/post response_body 201",
+   "use": "/paths/~1pets/post request_body",
    "op": "encode",
    "value": {
     "model": "Pet",
@@ -541,33 +546,12 @@
   },
   {
    "name": "pet-encode-invalid",
-   "use": "/paths/~1pets/post response_body 201",
+   "use": "/paths/~1pets/post request_body",
    "op": "encode",
    "value": {
     "construct": "Pet",
     "args": {
      "name": "Rex"
-    }
-   }
-  },
-  {
-   "name": "secret-send",
-   "use": "/paths/~1secrets/get response_body 200",
-   "op": "outbound",
-   "value": {
-    "name": "s",
-    "password": "p"
-   }
-  },
-  {
-   "name": "secret-snapshot",
-   "use": "/paths/~1secrets/get response_body 200",
-   "op": "snapshot",
-   "value": {
-    "model": "Secretive",
-    "args": {
-     "name": "s",
-     "password": "p"
     }
    }
   }
@@ -1052,31 +1036,6 @@
    }
   ],
   [
-   "adapters",
-   {
-    "kind": "media",
-    "name": "pets",
-    "import_ref": "app.codecs:pet_model",
-    "capabilities": {
-     "record": "ServerMediaCodecCapabilities",
-     "media_types": [
-      "application/xml"
-     ],
-     "surfaces": [
-      "client"
-     ]
-    },
-    "uses": [
-     {
-      "schema": {
-       "pointer": "/components/schemas/Pet"
-      },
-      "direction": "request"
-     }
-    ]
-   }
-  ],
-  [
    "uses",
    {
     "operation": "/paths/~1pets/post",
@@ -1103,5 +1062,11 @@
     "media_type": "application/json"
    }
   ]
- ]
+ ],
+ "config": {
+  "validation": {
+   "request": "schema",
+   "response": "schema"
+  }
+ }
 }

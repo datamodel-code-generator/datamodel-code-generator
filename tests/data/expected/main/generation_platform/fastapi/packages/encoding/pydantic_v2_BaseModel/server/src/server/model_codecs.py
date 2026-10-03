@@ -9,14 +9,12 @@ from ._runtime.model_codecs.adapters import (
     ModelCodecAdapterV1,
     ParameterCodecAdapterV1,
     SchemaCodecAdapterV1,
-    ServerMediaCodecAdapterV1,
 )
 from ._runtime.model_codecs.bindings import BackendId, ConverterStrategy, NativeKind
 from ._runtime.model_codecs.capabilities import (
     CodecCapabilities,
     ParameterCodecCapabilities,
     SchemaCodecCapabilities,
-    ServerMediaCodecCapabilities,
     WireKind,
 )
 from ._runtime.model_codecs.context import CodecContext
@@ -128,8 +126,6 @@ __all__ = [
     'SchemaPlanView',
     'SchemaResourceLimits',
     'SchemaView',
-    'ServerMediaCodecAdapterV1',
-    'ServerMediaCodecCapabilities',
     'UNSET',
     'Unset',
     'WireIssue',

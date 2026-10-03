@@ -29,7 +29,6 @@ from datamodel_code_generator.api_types import (
     SchemaCodecCapabilities,
     SchemaDirectionalUse,
     SchemaRef,
-    ServerMediaCodecCapabilities,
     TypeUseRef,
 )
 from datamodel_code_generator.config import GenerateConfig  # noqa: TC001 - Public annotations support get_type_hints().
@@ -76,7 +75,6 @@ __all__ = [
     "SchemaCodecCapabilities",
     "SchemaDirectionalUse",
     "SchemaRef",
-    "ServerMediaCodecCapabilities",
     "TypeUseRef",
     "generate_fastapi",
     "render_fastapi",

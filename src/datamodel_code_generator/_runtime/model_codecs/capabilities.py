@@ -171,26 +171,8 @@ class ClientMediaCodecCapabilities:
             raise ValueError(msg)
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
-class ServerMediaCodecCapabilities:
-    """Declare the media and directions a buffered server media adapter supports."""
-
-    media_types: tuple[str, ...]
-    directions: tuple[Direction, ...] = _BOTH_DIRECTIONS
-    surfaces: tuple[Literal["server"]] = ("server",)
-
-    def __post_init__(self) -> None:
-        """Require one server surface."""
-        _members("media_types", self.media_types, None, nonempty=True)
-        _members("directions", self.directions, _DIRECTIONS, nonempty=True)
-        if self.surfaces != ("server",):
-            msg = "a server media adapter registers the server surface"
-            raise ValueError(msg)
-
-
-MediaCodecCapabilities: TypeAlias = ClientMediaCodecCapabilities | ServerMediaCodecCapabilities
 AnyCapabilities: TypeAlias = (
-    CodecCapabilities | ParameterCodecCapabilities | SchemaCodecCapabilities | MediaCodecCapabilities
+    CodecCapabilities | ParameterCodecCapabilities | SchemaCodecCapabilities | ClientMediaCodecCapabilities
 )
 CapabilitiesT_co = TypeVar("CapabilitiesT_co", bound=AnyCapabilities, covariant=True)
 

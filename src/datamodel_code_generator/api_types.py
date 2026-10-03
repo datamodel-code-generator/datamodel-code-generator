@@ -27,7 +27,6 @@ from datamodel_code_generator._runtime.model_codecs.capabilities import (
     CodecCapabilities,
     ParameterCodecCapabilities,
     SchemaCodecCapabilities,
-    ServerMediaCodecCapabilities,
 )
 
 __all__ = [
@@ -47,6 +46,5 @@ __all__ = [
     "SchemaCodecCapabilities",
     "SchemaDirectionalUse",
     "SchemaRef",
-    "ServerMediaCodecCapabilities",
     "TypeUseRef",
 ]

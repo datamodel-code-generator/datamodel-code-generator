@@ -45,7 +45,6 @@ if TYPE_CHECKING:
 
 Reason: TypeAlias = Literal[
     "explicit_raw",
-    "explicit_adapter",
     "unsupported_wire_shape",
     "envelope_required",
     "opaque_native_semantics",

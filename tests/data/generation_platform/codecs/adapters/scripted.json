@@ -1,4 +1,5 @@
 {
+ "surface": "client",
  "declarations": {
   "adapters": [
    {
@@ -636,5 +637,11 @@
    "location": "querystring",
    "query": "{\"a\":\"1\"}"
   }
- ]
+ ],
+ "config": {
+  "validation": {
+   "request": "schema",
+   "response": "schema"
+  }
+ }
 }

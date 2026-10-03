@@ -65,7 +65,6 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     from datamodel_code_generator._openapi_generation import SourceLease
-    from datamodel_code_generator._runtime.model_codecs.context import Surface
 
 PydanticBackend: TypeAlias = Literal["pydantic_v2.BaseModel", "pydantic_v2.dataclass"]
 CodecBackend: TypeAlias = Literal[
@@ -773,7 +772,6 @@ def plan_model_codecs(  # noqa: PLR0913
     backend: CodecBackend,
     *,
     declarations: CodecDeclarations = _NO_DECLARATIONS,
-    surface: Surface = "server",
     lease: SourceLease | None = None,
     selection: AdapterSelection | None = None,
 ) -> CodecPlan:
@@ -782,7 +780,7 @@ def plan_model_codecs(  # noqa: PLR0913
     A target that already selected the adapters of the same batch passes its `selection`.
     """
     if selection is None:
-        selection = select_adapters(batch, wire, declarations, surface)
+        selection = select_adapters(batch, wire, declarations)
     planner = _CodecPlanner(batch, wire, backend, selection.uses("model"))
     bindings = tuple((use.id, binding) for use in batch.type_uses if (binding := planner.use(use)) is not None)
     adapters, adapter_diagnostics = plan_adapters(selection, batch, wire, dict(bindings), lease)

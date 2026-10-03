@@ -14,7 +14,6 @@ from datamodel_code_generator._runtime.model_codecs.capabilities import (
     CodecCapabilities,
     ParameterCodecCapabilities,
     SchemaCodecCapabilities,
-    ServerMediaCodecCapabilities,
 )
 from datamodel_code_generator._runtime.model_codecs.context import (  # noqa: TC001 - Public annotations support get_type_hints().
     Direction,
@@ -33,17 +32,13 @@ TypeUseRefRole: TypeAlias = Literal[
     "response_encoding_header",
 ]
 RegistrationCapabilities: TypeAlias = (
-    CodecCapabilities
-    | ParameterCodecCapabilities
-    | ClientMediaCodecCapabilities
-    | ServerMediaCodecCapabilities
-    | SchemaCodecCapabilities
+    CodecCapabilities | ParameterCodecCapabilities | ClientMediaCodecCapabilities | SchemaCodecCapabilities
 )
 
 _KIND_CAPABILITIES: Final[dict[AdapterKind, tuple[type, ...]]] = {
     "model": (CodecCapabilities,),
     "parameter": (ParameterCodecCapabilities,),
-    "media": (ClientMediaCodecCapabilities, ServerMediaCodecCapabilities),
+    "media": (ClientMediaCodecCapabilities,),
     "schema": (SchemaCodecCapabilities,),
 }
 _REQUIRED_FIELDS: Final[dict[TypeUseRefRole, frozenset[str]]] = {

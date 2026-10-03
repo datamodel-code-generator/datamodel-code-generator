@@ -1,4 +1,5 @@
 {
+ "surface": "client",
  "scopes": [
   "schemas",
   "paths"
@@ -168,25 +169,6 @@
        "role": "response_body",
        "status": "201",
        "media_type": "application/json"
-      }
-     ]
-    },
-    {
-     "kind": "media",
-     "name": "xml-media",
-     "import_ref": "app.codecs:json_cookie",
-     "capabilities": {
-      "record": "ServerMediaCodecCapabilities",
-      "media_types": [
-       "application/xml"
-      ]
-     },
-     "uses": [
-      {
-       "schema": {
-        "pointer": "/components/schemas/Pet"
-       },
-       "direction": "request"
       }
      ]
     },
@@ -624,25 +606,6 @@
     ]
    },
    {
-    "kind": "media",
-    "name": "json-media",
-    "import_ref": "app.codecs:json_cookie",
-    "capabilities": {
-     "record": "ServerMediaCodecCapabilities",
-     "media_types": [
-      "application/json"
-     ]
-    },
-    "uses": [
-     {
-      "schema": {
-       "pointer": "/components/schemas/Owner"
-      },
-      "direction": "response"
-     }
-    ]
-   },
-   {
     "kind": "parameter",
     "name": "loose-query",
     "import_ref": "app.codecs:json_cookie",
@@ -786,5 +749,11 @@
     ]
    }
   ]
+ },
+ "config": {
+  "validation": {
+   "request": "schema",
+   "response": "schema"
+  }
  }
 }
