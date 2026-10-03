@@ -463,7 +463,7 @@ refused checkpoints and sources
   resume with a path value of another shape ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   resume with an expiry of another form ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   resume with a naive expiry ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
-  resume with an expiry spelled otherwise ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
+  resume with an expiry with a Z suffix instead of an offset ! ResumeStateError: ResumeStateError(condition='malformed') [condition='malformed'] resume_state_error
   resume with a path value of dots and an iterator for a source ! ProtocolDataError: ProtocolDataError(condition='value') [condition='value', location=BodySelector(pointer='/id')] protocol_data_error
 a checkpoint resumed under another security partition, with that client's own credentials
   > HEAD https://api.example.com/files/u37

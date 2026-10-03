@@ -760,7 +760,7 @@ def _resumes(harness: _Uploads, api: Any, server: _Server, exchange: Exchange, l
         ("a path value of another shape", {"bound": [[{"id": upload}, "1.0.0"], [upload, "1.0.0"], []]}),
         ("an expiry of another form", {"expires_at": "tomorrow"}),
         ("a naive expiry", {"expires_at": "2999-01-01T00:00:00"}),
-        ("an expiry spelled otherwise", {"expires_at": "2999-01-01T00:00:00Z"}),
+        ("an expiry with a Z suffix instead of an offset", {"expires_at": "2999-01-01T00:00:00Z"}),
     ):
         broken = protocols.ResumeState(**fingerprints, state={**saved, **change})
         record(lines, f"resume with {label}", lambda broken=broken: helper.resume(harness.source(), broken))
