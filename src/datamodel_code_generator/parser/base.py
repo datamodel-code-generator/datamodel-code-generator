@@ -3151,10 +3151,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
                 for canonical, duplicate in duplicates:
                     self.generation_store.redirect_model_reference_users(duplicate, models, canonical.reference)
-                    for child in duplicate.reference.iter_data_model_children():  # pragma: no cover
+                    for child in duplicate.reference.iter_data_model_children():
                         self.generation_store.set_base_classes(
                             child,
-                            {c.reference: c for c in child.base_classes}.values(),
+                            {id(c.reference): c for c in child.base_classes}.values(),
                         )
                     models_to_remove.add(duplicate)
 
