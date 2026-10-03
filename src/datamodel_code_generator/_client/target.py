@@ -50,7 +50,7 @@ from datamodel_code_generator._client.webhooks import (
 from datamodel_code_generator._codec_declarations import CodecDeclarations
 from datamodel_code_generator._codec_type_source import Namespace, TypeSource
 from datamodel_code_generator._openapi_codec_adapters import select_adapters
-from datamodel_code_generator._openapi_codec_plan import artifact_module, plan_model_codecs
+from datamodel_code_generator._openapi_codec_plan import plan_model_codecs
 from datamodel_code_generator._openapi_wire_plan import operation_uses, plan_wire
 from datamodel_code_generator._runtime.model_codecs.wire import checked_scalar
 from datamodel_code_generator._target_render import PATTERNS, model_dependencies, patterned
@@ -111,11 +111,7 @@ class ClientTarget:
         backend = _BACKENDS[request.model_config.output_model_type]
         protocols = plan_protocols(request, config.protocols)
         wire = _wire(request, request.batch)
-        declarations = CodecDeclarations(
-            compatibility=config.builtin_codec_compatibility,
-            exports=config.export_bindings,
-            adapters=config.codec_adapters,
-        )
+        declarations = CodecDeclarations(adapters=config.codec_adapters)
         selection = select_adapters(request.batch, wire, declarations, "client") if config.codec_adapters else None
         adapted = frozenset() if selection is None else selection.uses("parameter")
         try:
@@ -142,7 +138,6 @@ class ClientTarget:
             declarations=declarations,
             surface="client",
             lease=request.lease,
-            sources=_sources(request),
             selection=selection,
         )
         selected = {spec.contract.id for spec in plan.operations}
@@ -257,15 +252,6 @@ def _wire(
         forms=dict(form_uses(request)),
         styles=dict(style_uses(request)),
     )
-
-
-def _sources(request: TargetRequest) -> dict[str, str]:
-    contents = {artifact.path: artifact.content.decode(artifact.encoding) for artifact in request.models}
-    return {
-        artifact_module(address): contents[address.relative_path]
-        for address in request.batch.artifacts
-        if address.relative_path in contents
-    }
 
 
 def _diagnostic(item: CodecDiagnostic, request: TargetRequest) -> Diagnostic:

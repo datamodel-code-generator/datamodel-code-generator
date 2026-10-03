@@ -165,7 +165,6 @@ the command line or in `pyproject.toml`. Relative paths are resolved against the
 | `package_version`, `distribution_name`, `model_dependency` | none | Distribution metadata of standalone mode |
 | `formatters`, `formatter_settings`, `custom_formatters`, `custom_formatter_kwargs` | builtin | Formatting of the generated package |
 | `encoding`, `header`, `include_timestamp` | `"utf-8"` | Encoding and header of the generated files |
-| `builtin_codec_compatibility`, `export_bindings` | none | `[[builtin_codec_compatibility]]` and `[[export_bindings]]` codec registrations |
 
 Operations are selected by their key, the JSON pointer of the path item method, such as `/paths/~1pets/get`,
 or a table with `pointer` and `document`:

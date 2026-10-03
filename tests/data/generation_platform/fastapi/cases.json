@@ -262,22 +262,6 @@
             }
           ]
         }
-      ],
-      "builtin_codec_compatibility": [
-        {
-          "name": "msgspec-models",
-          "backend": "msgspec.Struct"
-        }
-      ],
-      "export_bindings": [
-        {
-          "schema": {
-            "pointer": "/components/schemas/Pet"
-          },
-          "module": "models",
-          "symbol": "Pet",
-          "direction": "neutral"
-        }
       ]
     }
   },
@@ -420,14 +404,6 @@
     "input": "custom-models.yaml",
     "model": {
       "base_class": "app.bases.Base"
-    },
-    "config": {
-      "builtin_codec_compatibility": [
-        {
-          "name": "app-bases",
-          "backend": "pydantic_v2.BaseModel"
-        }
-      ]
     }
   },
   "native-generator": {

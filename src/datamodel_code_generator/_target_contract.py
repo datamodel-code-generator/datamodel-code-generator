@@ -558,10 +558,7 @@ class BackendSetting:
 
 @dataclass(frozen=True, slots=True)
 class BackendModelFacts:
-    """Keep finite adopted model declarations independently of runtime defaults.
-
-    Declarations of a model with a custom base describe builtin semantics only under a compatibility declaration.
-    """
+    """Keep finite adopted model declarations independently of runtime defaults."""
 
     backend: BackendName
     parameters: tuple[BackendSetting, ...]

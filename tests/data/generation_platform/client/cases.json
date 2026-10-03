@@ -2312,32 +2312,6 @@
       }
     }
   },
-  "compatibility": {
-    "input": "compatibility.yaml",
-    "references": [
-      "compatibility-external.yaml"
-    ],
-    "model": {
-      "base_class": "app.bases.Base"
-    },
-    "config": {
-      "builtin_codec_compatibility": [
-        {
-          "name": "scoped",
-          "backend": "pydantic_v2.BaseModel",
-          "schemas": [
-            {
-              "pointer": "/components/schemas/Local"
-            },
-            {
-              "pointer": "/components/schemas/Remote",
-              "document": "compatibility-external.yaml"
-            }
-          ]
-        }
-      ]
-    }
-  },
   "unions-legacy": {
     "input": "unions-legacy.yaml",
     "config": {

@@ -244,16 +244,6 @@
       "formatter_settings": "pyproject.toml",
       "custom_formatters": ["tests.data.python.custom_formatters.add_comment"],
       "custom_formatter_kwargs": {"width": 100},
-      "export_bindings": [
-        {"schema": {"pointer": "/components/schemas/Pet"}, "module": "example.models", "symbol": "FixturePet"}
-      ],
-      "builtin_codec_compatibility": [
-        {
-          "name": "orders",
-          "backend": "pydantic_v2.BaseModel",
-          "schemas": [{"pointer": "/Order", "document": "spec/common.yaml"}]
-        }
-      ],
       "hooks": ["record"],
       "primary_responses": [[{"pointer": "/paths/~1pets/get", "document": "spec/api.yaml"}, {"status_code": 200}]]
     },
@@ -272,19 +262,6 @@
           "config": {
             "primary_responses": [
               [{"pointer": "/paths/~1pets/get", "document": "spec/other.yaml"}, {"status_code": 200}]
-            ]
-          }
-        }
-      },
-      {
-        "render": {
-          "config": {
-            "builtin_codec_compatibility": [
-              {
-                "name": "orders",
-                "backend": "pydantic_v2.BaseModel",
-                "schemas": [{"pointer": "/Order", "document": "spec/missing.yaml"}]
-              }
             ]
           }
         }

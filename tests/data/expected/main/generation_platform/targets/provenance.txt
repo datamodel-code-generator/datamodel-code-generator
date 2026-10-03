@@ -355,21 +355,6 @@ render
       "public_options": {
         "body_mode": "typed",
         "body_modes": {},
-        "builtin_codec_compatibility": [
-          {
-            "backend": "pydantic_v2.BaseModel",
-            "contract": "builtin-v1",
-            "dependencies": [],
-            "name": "orders",
-            "python_requires": ">=3.11",
-            "schemas": [
-              {
-                "document": "/inputs/documents/0",
-                "pointer": "/Order"
-              }
-            ]
-          }
-        ],
         "codec_adapters": [],
         "custom_formatter_kwargs": {
           "width": 100
@@ -379,17 +364,6 @@ render
         ],
         "distribution_name": null,
         "encoding": "utf-8",
-        "export_bindings": [
-          {
-            "direction": "neutral",
-            "module": "example.models",
-            "schema": {
-              "document": "/inputs/root",
-              "pointer": "/components/schemas/Pet"
-            },
-            "symbol": "FixturePet"
-          }
-        ],
         "formatter_settings": "../pyproject.toml",
         "formatters": [
           "builtin"

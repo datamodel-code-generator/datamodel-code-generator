@@ -1,1 +1,0 @@
-BND_MODEL_SCOPE_REQUIRED error binding /components/schemas/Pet: The export binding selects no single generated model variant

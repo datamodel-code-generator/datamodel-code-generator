@@ -1,3 +1,26 @@
+invalid adapters: An adapter registration needs a name and an 'absolute.module:Symbol' factory reference
+invalid adapters: An adapter registration needs a name and an 'absolute.module:Symbol' factory reference
+invalid adapters: An adapter registration needs a name and an 'absolute.module:Symbol' factory reference
+invalid adapters: A schema adapter registration needs schema capabilities and API version 1
+invalid adapters: A model adapter registration needs model capabilities and API version 1
+invalid adapters: An adapter registration needs distinct applicable uses
+invalid adapters: An adapter registration needs distinct applicable uses
+invalid adapters: accepted
+invalid adapters: backends must not be empty
+invalid adapters: backends contains an unknown value
+invalid adapters: native_kinds must not repeat a value
+invalid adapters: presence must be 'native' or 'unavailable'
+invalid adapters: styles and explode_values must both be declared or both be empty
+invalid adapters: media_types must not be empty
+invalid adapters: schema adapter byte limits must be positive and within the common limits
+invalid adapters: a client media adapter registers the client surface and supports sync and async calls
+invalid adapters: a client media adapter registers the client surface and supports sync and async calls
+invalid adapters: incremental media processing has no adapter contract yet
+invalid adapters: accepted
+invalid adapters: a server media adapter registers the server surface
+invalid uses: A parameter use requires exactly location, name
+invalid uses: A request_body use requires exactly media_type
+invalid uses: accepted
 use /paths/~1tags/get parameter cookie tags: codec_0 None parameter_0 pydantic_type_adapter native
 adapter json-cookie /paths/~1tags/get parameter cookie tags: parameter
 use /paths/~1tags/get parameter cookie session: codec_1 None None pydantic_type_adapter native

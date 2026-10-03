@@ -1,2 +1,0 @@
-APIGenerationError
-diagnostic MC_ADAPTER_REQUIRED /paths/~1visits/post/requestBody: The FieldVisitsPostRequest model has no captured field facts, so its builtin compatibility cannot bind it
