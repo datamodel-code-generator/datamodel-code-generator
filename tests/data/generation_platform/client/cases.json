@@ -534,7 +534,12 @@
           "pydantic"
         ]
       }
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "validation-arguments-lax": {
     "input": "validation.yaml",
@@ -1034,7 +1039,12 @@
           }
         }
       ]
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "retry-headers": {
     "input": "retry-headers.json",
@@ -1099,7 +1109,12 @@
           }
         }
       ]
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "retry-header-conflicts": {
     "input": "retry-headers.json",
@@ -1884,7 +1899,12 @@
           "schema"
         ]
       }
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "protocols-pagination-checks": {
     "input": "pagination-checks.yaml",
@@ -1953,7 +1973,12 @@
     ],
     "config": {
       "protocols": "protocols/pagination-querystring.yaml"
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "pagination-targets": {
     "input": "pagination-targets.yaml",
@@ -2406,7 +2431,12 @@
           ]
         }
       ]
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "unions-legacy": {
     "input": "unions-legacy.yaml",

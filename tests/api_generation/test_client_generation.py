@@ -115,6 +115,7 @@ def test_client_render(case: str, tmp_path: Path) -> None:
     if case in {
         "auth",
         "auth-context",
+        "compatibility",
         "empty",
         "evolution",
         "fields",
@@ -125,9 +126,14 @@ def test_client_render(case: str, tmp_path: Path) -> None:
         "helpers",
         "media",
         "names",
+        "pagination",
+        "pagination-querystring",
         "pets",
         "pets-unpack",
         "querystring",
+        "retries",
+        "retry-headers",
+        "validation-arguments",
     }:
         assert_output(
             client_model_parity_report(
