@@ -959,8 +959,9 @@ def test_watch_cli_regenerates_when_a_symlinked_input_is_repointed(tmp_path: Pat
 
     try:
         time.sleep(WATCH_CLI_CHANGE_RETRY_SECONDS)
-        input_link.unlink()
-        input_link.symlink_to(second_input.relative_to(tmp_path))
+        replacement_link = tmp_path / "input-replacement.json"
+        replacement_link.symlink_to(second_input.relative_to(tmp_path))
+        replacement_link.replace(input_link)
         _wait_for_watch_cli(
             process,
             stdout_lines,
