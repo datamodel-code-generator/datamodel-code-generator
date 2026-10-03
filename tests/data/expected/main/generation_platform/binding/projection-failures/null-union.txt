@@ -1,4 +1,0 @@
-{
-  "rejection": "Accepted field annotation does not match its projected type",
-  "retained_graph": 0
-}

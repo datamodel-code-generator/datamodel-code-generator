@@ -34,7 +34,9 @@ render pydantic_v2.BaseModel paths
   #   filename:  session-serialize-imports-collision.json
   
   from __future__ import annotations
+  from pydantic.functional_serializers import SerializeAsAny
   from pydantic import BaseModel
+  from pydantic.functional_serializers import SerializeAsAny
   
   
   class Base(BaseModel):
@@ -43,6 +45,10 @@ render pydantic_v2.BaseModel paths
   
   class Child(Base):
       extra: int
+  
+  
+  class Container(BaseModel):
+      native: SerializeAsAny
   model_bindings.py
   _model_0 symbol='models:Base', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Base'
     FieldBinding(field_id='models:Base.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
@@ -121,7 +127,9 @@ render pydantic_v2.dataclass paths
   #   filename:  session-serialize-imports-collision.json
   
   from __future__ import annotations
+  from pydantic.functional_serializers import SerializeAsAny
   from pydantic.dataclasses import dataclass
+  from pydantic.functional_serializers import SerializeAsAny
   
   
   
@@ -134,6 +142,12 @@ render pydantic_v2.dataclass paths
   @dataclass
   class Child(Base):
       extra: int
+  
+  
+  
+  @dataclass
+  class Container:
+      native: SerializeAsAny
   model_bindings.py
   _model_0 symbol='models:Base', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Base'
     FieldBinding(field_id='models:Base.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
@@ -218,7 +232,9 @@ render dataclasses.dataclass paths
   #   filename:  session-serialize-imports-collision.json
   
   from __future__ import annotations
+  from pydantic.functional_serializers import SerializeAsAny
   from dataclasses import dataclass
+  from pydantic.functional_serializers import SerializeAsAny
   
   
   
@@ -231,6 +247,12 @@ render dataclasses.dataclass paths
   @dataclass
   class Child(Base):
       extra: int
+  
+  
+  
+  @dataclass
+  class Container:
+      native: SerializeAsAny
   model_bindings.py
   _model_0 symbol='models:Base', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Base'
     FieldBinding(field_id='models:Base.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
@@ -312,7 +334,9 @@ render typing.TypedDict paths
   #   filename:  session-serialize-imports-collision.json
   
   from __future__ import annotations
+  from pydantic.functional_serializers import SerializeAsAny
   from typing import TypedDict
+  from pydantic.functional_serializers import SerializeAsAny
   
   
   
@@ -323,6 +347,11 @@ render typing.TypedDict paths
   
   class Child(Base):
       extra: int
+  
+  
+  
+  class Container(TypedDict):
+      native: SerializeAsAny
   model_bindings.py
   _model_0 symbol='models:Base', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Base'
     FieldBinding(field_id='models:Base.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
@@ -401,7 +430,9 @@ render msgspec.Struct paths
   #   filename:  session-serialize-imports-collision.json
   
   from __future__ import annotations
+  from pydantic.functional_serializers import SerializeAsAny
   from msgspec import Struct
+  from pydantic.functional_serializers import SerializeAsAny
   
   
   
@@ -412,6 +443,11 @@ render msgspec.Struct paths
   
   class Child(Base):
       extra: int
+  
+  
+  
+  class Container(Struct):
+      native: SerializeAsAny
   model_bindings.py
   _model_0 symbol='models:Base', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Base'
     FieldBinding(field_id='models:Base.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())

@@ -1,4 +1,0 @@
-{
-  "rejection": "BND_TYPE_EXPRESSION_UNSUPPORTED",
-  "retained_graph": 0
-}
