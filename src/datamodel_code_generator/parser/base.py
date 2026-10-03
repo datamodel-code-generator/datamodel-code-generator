@@ -3063,6 +3063,9 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         )
 
     def __delete_duplicate_models(self, models: list[DataModel]) -> None:  # noqa: PLR0912
+        if not models:
+            return
+
         model_class_names: dict[str, DataModel] = {}
         shapes: dict[DataModel, _ModelShape] = {}
         model_to_duplicate_models: defaultdict[DataModel, list[DataModel]] = defaultdict(list)
@@ -3151,10 +3154,10 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
                 for canonical, duplicate in duplicates:
                     self.generation_store.redirect_model_reference_users(duplicate, models, canonical.reference)
-                    for child in duplicate.reference.iter_data_model_children():  # pragma: no cover
+                    for child in duplicate.reference.iter_data_model_children():
                         self.generation_store.set_base_classes(
                             child,
-                            {c.reference: c for c in child.base_classes}.values(),
+                            {id(c.reference): c for c in child.base_classes}.values(),
                         )
                     models_to_remove.add(duplicate)
 
@@ -3958,6 +3961,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
 
                     # Use root-type as model_field type
                     root_type_model = reference.source
+                    if not root_type_model.fields:
+                        continue
                     root_type_field = root_type_model.fields[0]
 
                     if root_type_model.path in circular_root_model_paths:
