@@ -9,20 +9,7 @@ from math import isfinite
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias
 from urllib.parse import quote, unquote, urldefrag, urljoin
 
-from datamodel_code_generator._generation_contract import (
-    BindingCaptureError,
-    BindingReason,
-    GeneratedTypeContractBatch,
-    LiteralMapping,
-    LiteralScalar,
-    LiteralSequence,
-    OperationContract,
-    OperationId,
-    SourceDocumentId,
-    SourceLocation,
-    TypeUseId,
-    WireDeclaration,
-)
+from datamodel_code_generator._generation_contract import BindingCaptureError
 from datamodel_code_generator._runtime.model_codecs.media import (
     FieldPlan,
     LexicalKind,
@@ -50,14 +37,27 @@ from datamodel_code_generator._runtime.model_codecs.schema import (
     SchemaResource,
 )
 from datamodel_code_generator._runtime.model_codecs.wire import JSONValue, WireValue, escape_pointer_token, freeze_wire
+from datamodel_code_generator._target_contract import (
+    BindingReason,
+    GeneratedTypeContractBatch,
+    LiteralMapping,
+    LiteralScalar,
+    LiteralSequence,
+    OperationContract,
+    OperationId,
+    SourceDocumentId,
+    SourceLocation,
+    TypeUseId,
+    WireDeclaration,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterable, Iterator, Sequence
 
-    from datamodel_code_generator._generation_contract import FieldUseBinding, FrozenLiteral, TypeUseBinding
     from datamodel_code_generator._openapi_generation import SourceLease
     from datamodel_code_generator._runtime.model_codecs.context import Direction
     from datamodel_code_generator._source import YamlValue
+    from datamodel_code_generator._target_contract import FieldUseBinding, FrozenLiteral, TypeUseBinding
 
 CodecReason: TypeAlias = (
     BindingReason
@@ -1116,10 +1116,6 @@ def _content_parameter(
     planner: _WirePlanner, declaration: WireDeclaration, location: ParameterLocation, name: str, *, required: bool
 ) -> ParameterPlan:
     source = declaration.use_site
-    if len(declaration.children) != 1 or declaration.schemas:
-        raise _PlanError(
-            code="MC_PARAMETER_ENCODING", source=source, message="Parameter content must declare exactly one media type"
-        )
     if location == "querystring" and not planner.version.startswith("3.2"):
         raise _PlanError(
             code="MC_PARAMETER_ENCODING", source=source, message="Querystring parameters require OpenAPI 3.2"

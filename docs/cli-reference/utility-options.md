@@ -103,7 +103,7 @@ default, prints a `uv add` command, and `requirements` prints the lines of a req
 
     ```bash
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --openapi-scopes schemas api --target-python-version 3.12 --output models.py \
+      --target-python-version 3.12 --output models.py \
       --generate-server fastapi --target-config fastapi.toml \
       --dependency-format requirements > requirements.txt
     ```
@@ -137,7 +137,7 @@ Write the selected target's diagnostics as JSON to a file, or to stdout with `-`
 
     ```bash
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --openapi-scopes schemas api --target-python-version 3.12 --output models.py \
+      --target-python-version 3.12 --output models.py \
       --generate-server fastapi --target-config fastapi.toml \
       --diagnostics-json diagnostics.json
     ```
@@ -266,10 +266,10 @@ The only choice is `fastapi`.
 
     ```bash
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --openapi-scopes schemas api --target-python-version 3.12 --output models.py \
+      --target-python-version 3.12 --output models.py \
       --generate-server fastapi --target-config fastapi.toml # (1)!
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --openapi-scopes schemas api --target-python-version 3.12 --output models.py \
+      --target-python-version 3.12 --output models.py \
       --generate-server fastapi --target-config fastapi.toml --check # (2)!
     ```
 
@@ -668,7 +668,7 @@ Read the selected target's settings from a flat TOML file (experimental). `--gen
 
     ```bash
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --openapi-scopes schemas api --target-python-version 3.12 --output models.py \
+      --target-python-version 3.12 --output models.py \
       --generate-server fastapi --target-config fastapi.toml
     ```
 
@@ -698,7 +698,7 @@ Write the selected target to a directory instead of the `output` its target conf
 
     ```bash
     datamodel-codegen --input openapi.yaml --input-file-type openapi \
-      --openapi-scopes schemas api --target-python-version 3.12 --output src/example/models.py \
+      --target-python-version 3.12 --output src/example/models.py \
       --generate-server fastapi --target-config fastapi.toml \
       --target-output src/example/server
     ```

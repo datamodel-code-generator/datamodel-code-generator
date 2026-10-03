@@ -32,7 +32,7 @@ render pydantic_v2.BaseModel paths
   #   filename:  session-serialize-imports-True.json
   
   from __future__ import annotations
-  from pydantic import BaseModel
+  from pydantic import BaseModel, SerializeAsAny
   
   
   class Base(BaseModel):
@@ -41,6 +41,10 @@ render pydantic_v2.BaseModel paths
   
   class Child(Base):
       extra: int
+  
+  
+  class Container(BaseModel):
+      base: SerializeAsAny[Base]
   model_bindings.py
   _model_0 symbol='models:Base', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Base'
     FieldBinding(field_id='models:Base.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
@@ -117,6 +121,7 @@ render pydantic_v2.dataclass paths
   
   from __future__ import annotations
   from pydantic.dataclasses import dataclass
+  from pydantic import SerializeAsAny
   
   
   
@@ -129,6 +134,12 @@ render pydantic_v2.dataclass paths
   @dataclass
   class Child(Base):
       extra: int
+  
+  
+  
+  @dataclass
+  class Container:
+      base: SerializeAsAny[Base]
   model_bindings.py
   _model_0 symbol='models:Base', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Base'
     FieldBinding(field_id='models:Base.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
@@ -223,6 +234,12 @@ render dataclasses.dataclass paths
   @dataclass
   class Child(Base):
       extra: int
+  
+  
+  
+  @dataclass
+  class Container:
+      base: Base
   model_bindings.py
   _model_0 symbol='models:Base', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Base'
     FieldBinding(field_id='models:Base.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
@@ -311,6 +328,11 @@ render typing.TypedDict paths
   
   class Child(Base):
       extra: int
+  
+  
+  
+  class Container(TypedDict):
+      base: Base
   model_bindings.py
   _model_0 symbol='models:Base', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Base'
     FieldBinding(field_id='models:Base.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
@@ -396,6 +418,11 @@ render msgspec.Struct paths
   
   class Child(Base):
       extra: int
+  
+  
+  
+  class Container(Struct):
+      base: Base
   model_bindings.py
   _model_0 symbol='models:Base', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Base'
     FieldBinding(field_id='models:Base.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())

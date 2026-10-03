@@ -136,13 +136,9 @@ change msgspec.Struct default bound
 change msgspec.Struct default import-shadow
   @@ -10,0 +11 @@
   +argparse = object()
-  @@ -39 +39,0 @@
-  -  FieldBinding(field_id='models:Child.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change msgspec.Struct default qualified-call-shadow
   @@ -10,0 +11 @@
   +parser = argparse.ArgumentParser()
-  @@ -39 +39,0 @@
-  -  FieldBinding(field_id='models:Child.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change msgspec.Struct default container
   @@ -25 +25 @@
   -    items: Union[List[int], UnsetType] = UNSET

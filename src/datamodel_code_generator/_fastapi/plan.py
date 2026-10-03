@@ -41,7 +41,11 @@ from datamodel_code_generator._fastapi.routes import (
     route_path,
     stem_conflicts,
 )
-from datamodel_code_generator._generation_contract import (
+from datamodel_code_generator._openapi_wire_plan import parameter_plans
+from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, media_kind, normalize_media_type
+from datamodel_code_generator._runtime.model_codecs.unset import UNSET, Unset
+from datamodel_code_generator._runtime.model_codecs.wire import checked_wire
+from datamodel_code_generator._target_contract import (
     GeneratedSymbolType,
     GenericType,
     LiteralMapping,
@@ -49,10 +53,6 @@ from datamodel_code_generator._generation_contract import (
     LiteralSequence,
     SourceLocation,
 )
-from datamodel_code_generator._openapi_wire_plan import parameter_plans
-from datamodel_code_generator._runtime.model_codecs.media import FieldPlan, media_kind, normalize_media_type
-from datamodel_code_generator._runtime.model_codecs.unset import UNSET, Unset
-from datamodel_code_generator._runtime.model_codecs.wire import checked_wire
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
@@ -62,7 +62,12 @@ if TYPE_CHECKING:
     from datamodel_code_generator._fastapi.config import FastAPIConfig, HandlerMode, ResponseChoice
     from datamodel_code_generator._fastapi.context import ArgumentLocation
     from datamodel_code_generator._fastapi.native import Reason, Schema
-    from datamodel_code_generator._generation_contract import (
+    from datamodel_code_generator._openapi_codec_adapters import AdapterSelection
+    from datamodel_code_generator._openapi_wire_plan import WirePlan
+    from datamodel_code_generator._runtime.model_codecs.media import LexicalKind, MediaKind
+    from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
+    from datamodel_code_generator._runtime.model_codecs.wire import WireValue
+    from datamodel_code_generator._target_contract import (
         FieldUseBinding,
         FinalPythonType,
         FrozenLiteral,
@@ -72,11 +77,6 @@ if TYPE_CHECKING:
         TypeUseId,
         WireDeclaration,
     )
-    from datamodel_code_generator._openapi_codec_adapters import AdapterSelection
-    from datamodel_code_generator._openapi_wire_plan import WirePlan
-    from datamodel_code_generator._runtime.model_codecs.media import LexicalKind, MediaKind
-    from datamodel_code_generator._runtime.model_codecs.parameters import ParameterLocation, ParameterPlan
-    from datamodel_code_generator._runtime.model_codecs.wire import WireValue
 
 Site: TypeAlias = Literal["parameter", "body", "primary_response"]
 Transport: TypeAlias = Literal["fastapi_native", "codec_adapter", "raw_request"]
@@ -770,8 +770,8 @@ class Planner:  # noqa: PLR0904
         )
         return field, "native_supported", None
 
-    def bound(self, value: FinalPythonType | None) -> str | Literal[False] | None:
-        """Return the builtin leaf a parameter's final type projects to, False for opaque types, None if unknown."""
+    def bound(self, value: FinalPythonType | None) -> str | Literal[False]:
+        """Return the builtin leaf a parameter's final type projects to, or False for opaque or unbound types."""
         seen: set[int] = set()
         while isinstance(value, GeneratedSymbolType) and value.symbol not in seen:
             seen.add(value.symbol)
@@ -782,8 +782,6 @@ class Planner:  # noqa: PLR0904
             if symbol.kind not in {"root", "alias"} or facts is None:
                 return False
             value = facts.type
-        if value is None:
-            return None
         if isinstance(value, GenericType) and len(value.arguments) == 1:
             return self.bound(value.arguments[0])
         kind, _ = leaf_kind(value)
