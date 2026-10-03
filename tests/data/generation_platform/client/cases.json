@@ -182,7 +182,12 @@
           "namespace": "store"
         }
       ]
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "name-errors": {
     "input": "name-errors.yaml"
@@ -271,7 +276,12 @@
         ],
         "reason": "No operation is needed yet."
       }
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "evolution": {
     "input": "evolution.yaml",
@@ -1354,7 +1364,12 @@
         ],
         "reason": "Administration stays internal"
       }
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "protocols-disabled": {
     "input": "helpers.yaml",

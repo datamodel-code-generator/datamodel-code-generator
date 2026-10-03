@@ -107,20 +107,24 @@ def test_client_render(case: str, tmp_path: Path) -> None:
     for backend, modules in rendered.items():
         assert_generated_modules_output(
             {parts: content for parts, content in modules.items() if parts[0] != "client"}
-            if case == "pets" and backend != "pydantic_v2_BaseModel"
+            if case in {"auth-no-root", "default-server", "implicit-server", "servers"}
+            or (case == "pets" and backend != "pydantic_v2_BaseModel")
             else modules,
             EXPECTED / "packages" / case / backend,
         )
     if case in {
         "auth",
         "auth-context",
+        "empty",
         "evolution",
         "fields",
         "fields-arguments",
         "fields-optional-models",
         "fields-structural",
         "fields-unpack",
+        "helpers",
         "media",
+        "names",
         "pets",
         "pets-unpack",
         "querystring",
@@ -199,7 +203,10 @@ def test_client_protocols(case: str, tmp_path: Path) -> None:
     report, rendered = client_render(case, tmp_path)
     assert_output(report, EXPECTED / "protocols" / f"{report.splitlines()[0].removeprefix('# ')}.txt")
     for backend, modules in rendered.items():
-        assert_generated_modules_output(modules, EXPECTED / "packages" / "helpers" / backend)
+        assert_generated_modules_output(
+            {parts: content for parts, content in modules.items() if parts[0] != "client"},
+            EXPECTED / "packages" / "helpers" / backend,
+        )
 
 
 @pytest.mark.parametrize(
