@@ -4,33 +4,23 @@ rewrite pydantic_v2.BaseModel plain PydanticV2BaseModel-quote
   -    mapping: Optional[Dict[str, bool]] = {'enabled': True}
   +    mapping: Optional[Dict[str, bool]] = {"enabled": True}
 rewrite pydantic_v2.BaseModel plain PydanticV2BaseModel-literal
-  @@ -0,0 +1 @@
-  +diagnostic binding BND_TYPE_EXPRESSION_UNSUPPORTED symbol=0 artifact=models.py
-  @@ -14 +15 @@
+  @@ -14 +14 @@
   -    literal: Optional[int] = 4
   +    literal: Optional[int] = 5
 rewrite pydantic_v2.BaseModel plain PydanticV2BaseModel-factory
-  @@ -0,0 +1 @@
-  +diagnostic binding BND_TYPE_EXPRESSION_UNSUPPORTED symbol=0 artifact=models.py
-  @@ -17 +18 @@
+  @@ -17 +17 @@
   -    factory: List[str] = Field(default_factory=list)
   +    factory: List[str] = Field(default_factory=set)
 rewrite pydantic_v2.BaseModel plain PydanticV2BaseModel-explicit_null
-  @@ -0,0 +1 @@
-  +diagnostic binding BND_TYPE_EXPRESSION_UNSUPPORTED symbol=0 artifact=models.py
-  @@ -13 +14 @@
+  @@ -13 +13 @@
   -    explicit_null: Optional[str] = None
   +    explicit_null: Optional[str] = "value"
 rewrite pydantic_v2.BaseModel plain PydanticV2BaseModel-model
-  @@ -0,0 +1 @@
-  +diagnostic binding BND_TYPE_EXPRESSION_UNSUPPORTED symbol=0 artifact=models.py
-  @@ -11 +12 @@
+  @@ -11 +11 @@
   -class Defaults(BaseModel):
   +class Defaults(Other):
 rewrite pydantic_v2.BaseModel plain PydanticV2BaseModel-lost-assignment
-  @@ -0,0 +1 @@
-  +diagnostic binding BND_TYPE_EXPRESSION_UNSUPPORTED symbol=0 artifact=models.py
-  @@ -13 +14 @@
+  @@ -13 +13 @@
   -    explicit_null: Optional[str] = None
   +    explicit_null: Optional[str]
 rewrite pydantic_v2.dataclass plain PydanticV2Dataclass-quote
@@ -38,27 +28,19 @@ rewrite pydantic_v2.dataclass plain PydanticV2Dataclass-quote
   -    mapping: Optional[Dict[str, bool]] = Field(default_factory=lambda: {'enabled': True})
   +    mapping: Optional[Dict[str, bool]] = Field(default_factory=lambda: {"enabled": True})
 rewrite pydantic_v2.dataclass plain PydanticV2Dataclass-literal
-  @@ -0,0 +1 @@
-  +diagnostic binding BND_TYPE_EXPRESSION_UNSUPPORTED symbol=0 artifact=models.py
-  @@ -17 +18 @@
+  @@ -17 +17 @@
   -    literal: Optional[int] = 4
   +    literal: Optional[int] = 5
 rewrite pydantic_v2.dataclass plain PydanticV2Dataclass-factory
-  @@ -0,0 +1 @@
-  +diagnostic binding BND_TYPE_EXPRESSION_UNSUPPORTED symbol=0 artifact=models.py
-  @@ -20 +21 @@
+  @@ -20 +20 @@
   -    factory: List[str] = Field(default_factory=list)
   +    factory: List[str] = Field(default_factory=set)
 rewrite pydantic_v2.dataclass plain PydanticV2Dataclass-explicit_null
-  @@ -0,0 +1 @@
-  +diagnostic binding BND_TYPE_EXPRESSION_UNSUPPORTED symbol=0 artifact=models.py
-  @@ -16 +17 @@
+  @@ -16 +16 @@
   -    explicit_null: Optional[str] = None
   +    explicit_null: Optional[str] = "value"
 rewrite pydantic_v2.dataclass plain PydanticV2Dataclass-model
-  @@ -0,0 +1 @@
-  +diagnostic binding BND_TYPE_EXPRESSION_UNSUPPORTED symbol=0 artifact=models.py
-  @@ -12 +13 @@
+  @@ -12 +12 @@
   -@dataclass
   +@dataclass(frozen=True)
 rewrite dataclasses.dataclass plain DataclassesDataclass-quote
@@ -66,35 +48,25 @@ rewrite dataclasses.dataclass plain DataclassesDataclass-quote
   -    mapping: Optional[Dict[str, bool]] = field(default_factory=lambda: {'enabled': True})
   +    mapping: Optional[Dict[str, bool]] = field(default_factory=lambda: {"enabled": True})
 rewrite dataclasses.dataclass plain DataclassesDataclass-literal
-  @@ -0,0 +1 @@
-  +diagnostic binding BND_TYPE_EXPRESSION_UNSUPPORTED symbol=0 artifact=models.py
-  @@ -16 +17 @@
+  @@ -16 +16 @@
   -    literal: Optional[int] = 4
   +    literal: Optional[int] = 5
 rewrite dataclasses.dataclass plain DataclassesDataclass-factory
-  @@ -0,0 +1 @@
-  +diagnostic binding BND_TYPE_EXPRESSION_UNSUPPORTED symbol=0 artifact=models.py
-  @@ -19 +20 @@
+  @@ -19 +19 @@
   -    factory: List[str] = field(default_factory=list)
   +    factory: List[str] = field(default_factory=set)
 rewrite dataclasses.dataclass plain DataclassesDataclass-explicit_null
-  @@ -0,0 +1 @@
-  +diagnostic binding BND_TYPE_EXPRESSION_UNSUPPORTED symbol=0 artifact=models.py
-  @@ -15 +16 @@
+  @@ -15 +15 @@
   -    explicit_null: Optional[str] = None
   +    explicit_null: Optional[str] = "value"
 rewrite dataclasses.dataclass plain DataclassesDataclass-model
-  @@ -0,0 +1 @@
-  +diagnostic binding BND_TYPE_EXPRESSION_UNSUPPORTED symbol=0 artifact=models.py
-  @@ -11 +12 @@
+  @@ -11 +11 @@
   -@dataclass
   +@dataclass(frozen=True)
 rewrite typing.TypedDict plain TypingTypedDict-quote
   unchanged
 rewrite typing.TypedDict plain TypingTypedDict-model
-  @@ -0,0 +1 @@
-  +diagnostic binding BND_TYPE_EXPRESSION_UNSUPPORTED symbol=0 artifact=models.py
-  @@ -10 +11 @@
+  @@ -10 +10 @@
   -class Defaults(TypedDict):
   +class Defaults(TypedDict, total=False):
 rewrite msgspec.Struct plain MsgspecStruct-quote
@@ -102,26 +74,18 @@ rewrite msgspec.Struct plain MsgspecStruct-quote
   -    mapping: Union[Dict[str, bool], UnsetType] = field(default_factory=lambda: {'enabled': True})
   +    mapping: Union[Dict[str, bool], UnsetType] = field(default_factory=lambda: {"enabled": True})
 rewrite msgspec.Struct plain MsgspecStruct-literal
-  @@ -0,0 +1 @@
-  +diagnostic binding BND_TYPE_EXPRESSION_UNSUPPORTED symbol=0 artifact=models.py
-  @@ -15 +16 @@
+  @@ -15 +15 @@
   -    literal: Union[int, UnsetType] = 4
   +    literal: Union[int, UnsetType] = 5
 rewrite msgspec.Struct plain MsgspecStruct-factory
-  @@ -0,0 +1 @@
-  +diagnostic binding BND_TYPE_EXPRESSION_UNSUPPORTED symbol=0 artifact=models.py
-  @@ -18 +19 @@
+  @@ -18 +18 @@
   -    factory: Union[List[str], UnsetType] = field(default_factory=list)
   +    factory: Union[List[str], UnsetType] = field(default_factory=set)
 rewrite msgspec.Struct plain MsgspecStruct-explicit_null
-  @@ -0,0 +1 @@
-  +diagnostic binding BND_TYPE_EXPRESSION_UNSUPPORTED symbol=0 artifact=models.py
-  @@ -14 +15 @@
+  @@ -14 +14 @@
   -    explicit_null: Union[str, UnsetType] = UNSET
   +    explicit_null: Union[str, UnsetType] = "value"
 rewrite msgspec.Struct plain MsgspecStruct-model
-  @@ -0,0 +1 @@
-  +diagnostic binding BND_TYPE_EXPRESSION_UNSUPPORTED symbol=0 artifact=models.py
-  @@ -11 +12 @@
+  @@ -11 +11 @@
   -class Defaults(Struct):
   +class Defaults(Struct, kw_only=True):

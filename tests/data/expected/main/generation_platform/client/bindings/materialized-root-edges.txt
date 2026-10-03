@@ -31,10 +31,10 @@ render pydantic_v2.BaseModel default
   _model_0 symbol='models:Obj', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Obj'
     FieldBinding(field_id='models:Obj.k', native_name='k', wire_name='k', validation_key='k', validation_keys=('k',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   _model_1 symbol='models:Base', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Base', root=ArrayNode(item=ModelNode(symbol='models:BaseItem'))
-  _model_2 symbol='models:BaseItem', native_kind='model', schema_id=None
+  _model_2 symbol='models:BaseItem', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Base/items'
     FieldBinding(field_id='models:BaseItem.k', native_name='k', wire_name='k', validation_key='k', validation_keys=('k',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   _model_3 symbol='models:Value', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Value', root=ArrayNode(item=ModelNode(symbol='models:ValueItem'))
-  _model_4 symbol='models:ValueItem', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Value/allOf/0/items'
+  _model_4 symbol='models:ValueItem', native_kind='model', schema_id=None
     FieldBinding(field_id='models:ValueItem.k', native_name='k', wire_name='k', validation_key='k', validation_keys=('k',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   codec_0 -> PydanticModelCodec[models.Obj]
   codec_1 -> PydanticModelCodec[models.Obj]

@@ -6,18 +6,38 @@ render pydantic_v2.BaseModel paths
   
   from __future__ import annotations
   from typing import Optional
-  from pydantic import BaseModel
+  from pydantic import BaseModel, RootModel
   
   
   class Item(BaseModel):
       x: Optional[int] = None
+  
+  
+  class LimitParameter(RootModel[int]):
+      root: int
+  
+  
+  class FieldXGetQueryQParameter(RootModel[int]):
+      root: int
+  
+  
+  class FieldXGetQueryOptionalParameter(RootModel[str]):
+      root: str
+  
+  
+  class FieldXGetQueryFilterParameter(RootModel[str]):
+      root: str
   model_bindings.py
-  _model_0 symbol='models:Item', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Item'
+  _model_0 symbol='models:FieldXGetQueryQParameter', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/paths/~1x/get/parameters/0/schema', root=LeafNode()
+  _model_1 symbol='models:FieldXGetQueryOptionalParameter', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/paths/~1x/get/parameters/1/schema', root=LeafNode()
+  _model_2 symbol='models:FieldXGetQueryFilterParameter', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/paths/~1x/get/parameters/2/content/application~1json/schema', root=LeafNode()
+  _model_3 symbol='models:LimitParameter', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/parameters/Limit/schema', root=LeafNode()
+  _model_4 symbol='models:Item', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Item'
     FieldBinding(field_id='models:Item.x', native_name='x', wire_name='x', validation_key='x', validation_keys=('x',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  codec_0 -> PydanticModelCodec[int]
-  codec_1 -> PydanticModelCodec[str]
-  codec_2 -> PydanticModelCodec[str]
-  codec_3 -> PydanticModelCodec[int]
+  codec_0 -> PydanticModelCodec[models.FieldXGetQueryQParameter]
+  codec_1 -> PydanticModelCodec[models.FieldXGetQueryOptionalParameter]
+  codec_2 -> PydanticModelCodec[models.FieldXGetQueryFilterParameter]
+  codec_3 -> PydanticModelCodec[models.LimitParameter]
   codec_4 -> PydanticModelCodec[models.Item]
 render pydantic_v2.BaseModel parameters
   models.py
@@ -26,25 +46,38 @@ render pydantic_v2.BaseModel parameters
   
   from __future__ import annotations
   from typing import Optional
-  from pydantic import BaseModel
-  
-  
-  class XGetParametersQuery(BaseModel):
-      q: int
-      optional: Optional[str] = None
-      filter: Optional[str] = None
-      limit: int
+  from pydantic import BaseModel, RootModel
   
   
   class Item(BaseModel):
       x: Optional[int] = None
+  
+  
+  class LimitParameter(RootModel[int]):
+      root: int
+  
+  
+  class FieldXGetQueryQParameter(RootModel[int]):
+      root: int
+  
+  
+  class FieldXGetQueryOptionalParameter(RootModel[str]):
+      root: str
+  
+  
+  class FieldXGetQueryFilterParameter(RootModel[str]):
+      root: str
   model_bindings.py
-  _model_0 symbol='models:Item', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Item'
+  _model_0 symbol='models:FieldXGetQueryQParameter', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/paths/~1x/get/parameters/0/schema', root=LeafNode()
+  _model_1 symbol='models:FieldXGetQueryOptionalParameter', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/paths/~1x/get/parameters/1/schema', root=LeafNode()
+  _model_2 symbol='models:FieldXGetQueryFilterParameter', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/paths/~1x/get/parameters/2/content/application~1json/schema', root=LeafNode()
+  _model_3 symbol='models:LimitParameter', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/parameters/Limit/schema', root=LeafNode()
+  _model_4 symbol='models:Item', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Item'
     FieldBinding(field_id='models:Item.x', native_name='x', wire_name='x', validation_key='x', validation_keys=('x',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  codec_0 -> PydanticModelCodec[int]
-  codec_1 -> PydanticModelCodec[str]
-  codec_2 -> PydanticModelCodec[str]
-  codec_3 -> PydanticModelCodec[int]
+  codec_0 -> PydanticModelCodec[models.FieldXGetQueryQParameter]
+  codec_1 -> PydanticModelCodec[models.FieldXGetQueryOptionalParameter]
+  codec_2 -> PydanticModelCodec[models.FieldXGetQueryFilterParameter]
+  codec_3 -> PydanticModelCodec[models.LimitParameter]
   codec_4 -> PydanticModelCodec[models.Item]
 render pydantic_v2.BaseModel api
   models.py
@@ -94,19 +127,36 @@ render pydantic_v2.dataclass paths
   from __future__ import annotations
   from typing import Optional
   from pydantic.dataclasses import dataclass
+  from typing_extensions import TypeAliasType
   
   
   
   @dataclass
   class Item:
       x: Optional[int] = None
+  
+  
+  
+  LimitParameter = TypeAliasType("LimitParameter", int)
+  
+  
+  
+  FieldXGetQueryQParameter = TypeAliasType("FieldXGetQueryQParameter", int)
+  
+  
+  
+  FieldXGetQueryOptionalParameter = TypeAliasType("FieldXGetQueryOptionalParameter", str)
+  
+  
+  
+  FieldXGetQueryFilterParameter = TypeAliasType("FieldXGetQueryFilterParameter", str)
   model_bindings.py
   _model_0 symbol='models:Item', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Item'
     FieldBinding(field_id='models:Item.x', native_name='x', wire_name='x', validation_key='x', validation_keys=('x',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  codec_0 -> PydanticModelCodec[int]
-  codec_1 -> PydanticModelCodec[str]
-  codec_2 -> PydanticModelCodec[str]
-  codec_3 -> PydanticModelCodec[int]
+  codec_0 -> PydanticModelCodec[models.FieldXGetQueryQParameter]
+  codec_1 -> PydanticModelCodec[models.FieldXGetQueryOptionalParameter]
+  codec_2 -> PydanticModelCodec[models.FieldXGetQueryFilterParameter]
+  codec_3 -> PydanticModelCodec[models.LimitParameter]
   codec_4 -> PydanticModelCodec[models.Item]
 render pydantic_v2.dataclass parameters
   models.py
@@ -116,28 +166,36 @@ render pydantic_v2.dataclass parameters
   from __future__ import annotations
   from typing import Optional
   from pydantic.dataclasses import dataclass
-  
-  
-  
-  @dataclass
-  class XGetParametersQuery:
-      q: int
-      limit: int
-      optional: Optional[str] = None
-      filter: Optional[str] = None
+  from typing_extensions import TypeAliasType
   
   
   
   @dataclass
   class Item:
       x: Optional[int] = None
+  
+  
+  
+  LimitParameter = TypeAliasType("LimitParameter", int)
+  
+  
+  
+  FieldXGetQueryQParameter = TypeAliasType("FieldXGetQueryQParameter", int)
+  
+  
+  
+  FieldXGetQueryOptionalParameter = TypeAliasType("FieldXGetQueryOptionalParameter", str)
+  
+  
+  
+  FieldXGetQueryFilterParameter = TypeAliasType("FieldXGetQueryFilterParameter", str)
   model_bindings.py
   _model_0 symbol='models:Item', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Item'
     FieldBinding(field_id='models:Item.x', native_name='x', wire_name='x', validation_key='x', validation_keys=('x',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  codec_0 -> PydanticModelCodec[int]
-  codec_1 -> PydanticModelCodec[str]
-  codec_2 -> PydanticModelCodec[str]
-  codec_3 -> PydanticModelCodec[int]
+  codec_0 -> PydanticModelCodec[models.FieldXGetQueryQParameter]
+  codec_1 -> PydanticModelCodec[models.FieldXGetQueryOptionalParameter]
+  codec_2 -> PydanticModelCodec[models.FieldXGetQueryFilterParameter]
+  codec_3 -> PydanticModelCodec[models.LimitParameter]
   codec_4 -> PydanticModelCodec[models.Item]
 render pydantic_v2.dataclass api
   models.py
@@ -184,7 +242,7 @@ render dataclasses.dataclass paths
   #   filename:  session-legacy-parameters.json
   
   from __future__ import annotations
-  from typing import Optional
+  from typing import Optional, TypeAlias
   from dataclasses import dataclass
   
   
@@ -192,13 +250,29 @@ render dataclasses.dataclass paths
   @dataclass
   class Item:
       x: Optional[int] = None
+  
+  
+  
+  LimitParameter: TypeAlias = int
+  
+  
+  
+  FieldXGetQueryQParameter: TypeAlias = int
+  
+  
+  
+  FieldXGetQueryOptionalParameter: TypeAlias = str
+  
+  
+  
+  FieldXGetQueryFilterParameter: TypeAlias = str
   model_bindings.py
   _model_0 symbol='models:Item', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Item'
     FieldBinding(field_id='models:Item.x', native_name='x', wire_name='x', validation_key='x', validation_keys=('x',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  codec_0 -> StructuralModelCodec[int]
-  codec_1 -> StructuralModelCodec[str]
-  codec_2 -> StructuralModelCodec[str]
-  codec_3 -> StructuralModelCodec[int]
+  codec_0 -> StructuralModelCodec[models.FieldXGetQueryQParameter]
+  codec_1 -> StructuralModelCodec[models.FieldXGetQueryOptionalParameter]
+  codec_2 -> StructuralModelCodec[models.FieldXGetQueryFilterParameter]
+  codec_3 -> StructuralModelCodec[models.LimitParameter]
   codec_4 -> StructuralModelCodec[models.Item]
 render dataclasses.dataclass parameters
   models.py
@@ -206,30 +280,37 @@ render dataclasses.dataclass parameters
   #   filename:  session-legacy-parameters.json
   
   from __future__ import annotations
-  from typing import Optional
+  from typing import Optional, TypeAlias
   from dataclasses import dataclass
-  
-  
-  
-  @dataclass
-  class XGetParametersQuery:
-      q: int
-      limit: int
-      optional: Optional[str] = None
-      filter: Optional[str] = None
   
   
   
   @dataclass
   class Item:
       x: Optional[int] = None
+  
+  
+  
+  LimitParameter: TypeAlias = int
+  
+  
+  
+  FieldXGetQueryQParameter: TypeAlias = int
+  
+  
+  
+  FieldXGetQueryOptionalParameter: TypeAlias = str
+  
+  
+  
+  FieldXGetQueryFilterParameter: TypeAlias = str
   model_bindings.py
   _model_0 symbol='models:Item', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Item'
     FieldBinding(field_id='models:Item.x', native_name='x', wire_name='x', validation_key='x', validation_keys=('x',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  codec_0 -> StructuralModelCodec[int]
-  codec_1 -> StructuralModelCodec[str]
-  codec_2 -> StructuralModelCodec[str]
-  codec_3 -> StructuralModelCodec[int]
+  codec_0 -> StructuralModelCodec[models.FieldXGetQueryQParameter]
+  codec_1 -> StructuralModelCodec[models.FieldXGetQueryOptionalParameter]
+  codec_2 -> StructuralModelCodec[models.FieldXGetQueryFilterParameter]
+  codec_3 -> StructuralModelCodec[models.LimitParameter]
   codec_4 -> StructuralModelCodec[models.Item]
 render dataclasses.dataclass api
   models.py
@@ -275,19 +356,35 @@ render typing.TypedDict paths
   #   filename:  session-legacy-parameters.json
   
   from __future__ import annotations
-  from typing import NotRequired, TypedDict
+  from typing import NotRequired, TypeAlias, TypedDict
   
   
   
   class Item(TypedDict):
       x: NotRequired[int]
+  
+  
+  
+  LimitParameter: TypeAlias = int
+  
+  
+  
+  FieldXGetQueryQParameter: TypeAlias = int
+  
+  
+  
+  FieldXGetQueryOptionalParameter: TypeAlias = str
+  
+  
+  
+  FieldXGetQueryFilterParameter: TypeAlias = str
   model_bindings.py
   _model_0 symbol='models:Item', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Item'
     FieldBinding(field_id='models:Item.x', native_name='x', wire_name='x', validation_key='x', validation_keys=('x',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  codec_0 -> StructuralModelCodec[int]
-  codec_1 -> StructuralModelCodec[str]
-  codec_2 -> StructuralModelCodec[str]
-  codec_3 -> StructuralModelCodec[int]
+  codec_0 -> StructuralModelCodec[models.FieldXGetQueryQParameter]
+  codec_1 -> StructuralModelCodec[models.FieldXGetQueryOptionalParameter]
+  codec_2 -> StructuralModelCodec[models.FieldXGetQueryFilterParameter]
+  codec_3 -> StructuralModelCodec[models.LimitParameter]
   codec_4 -> StructuralModelCodec[models.Item]
 render typing.TypedDict parameters
   models.py
@@ -295,27 +392,35 @@ render typing.TypedDict parameters
   #   filename:  session-legacy-parameters.json
   
   from __future__ import annotations
-  from typing import NotRequired, TypedDict
-  
-  
-  
-  class XGetParametersQuery(TypedDict):
-      q: int
-      optional: NotRequired[str]
-      filter: NotRequired[str]
-      limit: int
+  from typing import NotRequired, TypeAlias, TypedDict
   
   
   
   class Item(TypedDict):
       x: NotRequired[int]
+  
+  
+  
+  LimitParameter: TypeAlias = int
+  
+  
+  
+  FieldXGetQueryQParameter: TypeAlias = int
+  
+  
+  
+  FieldXGetQueryOptionalParameter: TypeAlias = str
+  
+  
+  
+  FieldXGetQueryFilterParameter: TypeAlias = str
   model_bindings.py
   _model_0 symbol='models:Item', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Item'
     FieldBinding(field_id='models:Item.x', native_name='x', wire_name='x', validation_key='x', validation_keys=('x',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  codec_0 -> StructuralModelCodec[int]
-  codec_1 -> StructuralModelCodec[str]
-  codec_2 -> StructuralModelCodec[str]
-  codec_3 -> StructuralModelCodec[int]
+  codec_0 -> StructuralModelCodec[models.FieldXGetQueryQParameter]
+  codec_1 -> StructuralModelCodec[models.FieldXGetQueryOptionalParameter]
+  codec_2 -> StructuralModelCodec[models.FieldXGetQueryFilterParameter]
+  codec_3 -> StructuralModelCodec[models.LimitParameter]
   codec_4 -> StructuralModelCodec[models.Item]
 render typing.TypedDict api
   models.py
@@ -360,19 +465,35 @@ render msgspec.Struct paths
   
   from __future__ import annotations
   from msgspec import Struct, UNSET, UnsetType
-  from typing import Union
+  from typing import TypeAlias, Union
   
   
   
   class Item(Struct):
       x: Union[int, UnsetType] = UNSET
+  
+  
+  
+  LimitParameter: TypeAlias = int
+  
+  
+  
+  FieldXGetQueryQParameter: TypeAlias = int
+  
+  
+  
+  FieldXGetQueryOptionalParameter: TypeAlias = str
+  
+  
+  
+  FieldXGetQueryFilterParameter: TypeAlias = str
   model_bindings.py
   _model_0 symbol='models:Item', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Item'
     FieldBinding(field_id='models:Item.x', native_name='x', wire_name='x', validation_key='x', validation_keys=('x',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  codec_0 -> StructuralModelCodec[int]
-  codec_1 -> StructuralModelCodec[str]
-  codec_2 -> StructuralModelCodec[str]
-  codec_3 -> StructuralModelCodec[int]
+  codec_0 -> StructuralModelCodec[models.FieldXGetQueryQParameter]
+  codec_1 -> StructuralModelCodec[models.FieldXGetQueryOptionalParameter]
+  codec_2 -> StructuralModelCodec[models.FieldXGetQueryFilterParameter]
+  codec_3 -> StructuralModelCodec[models.LimitParameter]
   codec_4 -> StructuralModelCodec[models.Item]
 render msgspec.Struct parameters
   models.py
@@ -381,27 +502,35 @@ render msgspec.Struct parameters
   
   from __future__ import annotations
   from msgspec import Struct, UNSET, UnsetType
-  from typing import Union
-  
-  
-  
-  class XGetParametersQuery(Struct):
-      q: int
-      limit: int
-      optional: Union[str, UnsetType] = UNSET
-      filter: Union[str, UnsetType] = UNSET
+  from typing import TypeAlias, Union
   
   
   
   class Item(Struct):
       x: Union[int, UnsetType] = UNSET
+  
+  
+  
+  LimitParameter: TypeAlias = int
+  
+  
+  
+  FieldXGetQueryQParameter: TypeAlias = int
+  
+  
+  
+  FieldXGetQueryOptionalParameter: TypeAlias = str
+  
+  
+  
+  FieldXGetQueryFilterParameter: TypeAlias = str
   model_bindings.py
   _model_0 symbol='models:Item', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Item'
     FieldBinding(field_id='models:Item.x', native_name='x', wire_name='x', validation_key='x', validation_keys=('x',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  codec_0 -> StructuralModelCodec[int]
-  codec_1 -> StructuralModelCodec[str]
-  codec_2 -> StructuralModelCodec[str]
-  codec_3 -> StructuralModelCodec[int]
+  codec_0 -> StructuralModelCodec[models.FieldXGetQueryQParameter]
+  codec_1 -> StructuralModelCodec[models.FieldXGetQueryOptionalParameter]
+  codec_2 -> StructuralModelCodec[models.FieldXGetQueryFilterParameter]
+  codec_3 -> StructuralModelCodec[models.LimitParameter]
   codec_4 -> StructuralModelCodec[models.Item]
 render msgspec.Struct api
   models.py

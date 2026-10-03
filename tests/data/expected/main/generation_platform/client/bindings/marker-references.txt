@@ -1,5 +1,3 @@
 # marker-references
 render pydantic_v2.BaseModel default
-  diagnostic APIGenerationError
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1p/get/parameters/2/schema: A parameter value needs one unambiguous scalar kind
-  diagnostic MC_PARAMETER_ENCODING binding /paths/~1p/get/parameters/3/schema: A parameter value needs one unambiguous scalar kind
+  diagnostic Error: Invalid external $ref: #/components/schemas/Holder/properties/o#-datamodel-code-generator-#-a

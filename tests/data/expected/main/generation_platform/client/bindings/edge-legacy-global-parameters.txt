@@ -5,18 +5,19 @@ render pydantic_v2.BaseModel default
   #   filename:  legacy-global-parameters.yaml
   
   from __future__ import annotations
+  from pydantic import BaseModel, RootModel
   from typing import Optional
-  from pydantic import BaseModel
   
   
-  class PetsGetParametersQuery(BaseModel):
-      tenant: Optional[str] = None
+  class FieldPetsGetQueryTenantParameter(RootModel[str]):
+      root: str
   
   
-  class PetsGetResponse(BaseModel):
+  class FieldPetsGetResponse(BaseModel):
       name: Optional[str] = None
   model_bindings.py
-  _model_0 symbol='models:PetsGetResponse', native_kind='model', schema_id=None
-    FieldBinding(field_id='models:PetsGetResponse.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  codec_0 -> PydanticModelCodec[str]
-  codec_1 -> PydanticModelCodec[models.PetsGetResponse]
+  _model_0 symbol='models:FieldPetsGetQueryTenantParameter', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/paths/parameters/0/schema', root=LeafNode()
+  _model_1 symbol='models:FieldPetsGetResponse', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/paths/~1pets/get/responses/200/content/application~1json/schema'
+    FieldBinding(field_id='models:FieldPetsGetResponse.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
+  codec_0 -> PydanticModelCodec[models.FieldPetsGetQueryTenantParameter]
+  codec_1 -> PydanticModelCodec[models.FieldPetsGetResponse]

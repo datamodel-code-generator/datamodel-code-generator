@@ -3,8 +3,24 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import AwareDatetime, BaseModel, RootModel, conint
 
 
 class Value(BaseModel):
     id: int
+
+
+class FieldValuesIdGetPathIdParameter(RootModel[conint(ge=1)]):
+    root: conint(ge=1)
+
+
+class FieldValuesIdGetQueryAtParameter(RootModel[AwareDatetime]):
+    root: AwareDatetime
+
+
+class FieldValuesIdGetQueryTagsParameter(RootModel[list[str]]):
+    root: list[str]
+
+
+class FieldValuesIdGetHeaderXLabelParameter(BaseModel):
+    pass

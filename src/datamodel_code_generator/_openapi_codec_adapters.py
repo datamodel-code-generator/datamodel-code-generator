@@ -17,12 +17,6 @@ from datamodel_code_generator._codec_declarations import (
     SchemaRef,
     TypeUseRef,
 )
-from datamodel_code_generator._generation_contract import (
-    GeneratedSymbolType,
-    OperationId,
-    SourceDocumentId,
-    SourceLocation,
-)
 from datamodel_code_generator._openapi_wire_plan import (
     LOGICAL_ROOT,
     CodecDiagnostic,
@@ -61,19 +55,11 @@ from datamodel_code_generator._runtime.model_codecs.views import (
     ModelExportView,
 )
 from datamodel_code_generator._runtime.model_codecs.wire import JSONValue, WireValue, escape_pointer_token, freeze_wire
+from datamodel_code_generator._target_contract import GeneratedSymbolType, OperationId, SourceDocumentId, SourceLocation
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
 
-    from datamodel_code_generator._generation_contract import (
-        FieldUseBinding,
-        FinalPythonType,
-        GeneratedTypeContractBatch,
-        OperationContract,
-        TypeUseBinding,
-        TypeUseId,
-        WireDeclaration,
-    )
     from datamodel_code_generator._openapi_generation import SourceLease
     from datamodel_code_generator._openapi_wire_plan import WirePlan
     from datamodel_code_generator._runtime.model_codecs.bindings import (
@@ -85,6 +71,15 @@ if TYPE_CHECKING:
     )
     from datamodel_code_generator._runtime.model_codecs.context import Direction, Surface
     from datamodel_code_generator._source import YamlValue
+    from datamodel_code_generator._target_contract import (
+        FieldUseBinding,
+        FinalPythonType,
+        GeneratedTypeContractBatch,
+        OperationContract,
+        TypeUseBinding,
+        TypeUseId,
+        WireDeclaration,
+    )
 
 Priority: TypeAlias = Literal[0, 1]
 

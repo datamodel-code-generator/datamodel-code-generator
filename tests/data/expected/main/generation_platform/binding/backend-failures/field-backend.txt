@@ -1,3 +1,0 @@
-{
-  "error": "A builtin field projection requires its established backend"
-}

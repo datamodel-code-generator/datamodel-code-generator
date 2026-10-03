@@ -35,7 +35,7 @@ render pydantic_v2.BaseModel plain
   model_bindings.py
   _model_0 symbol='models:Payload', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload'
     FieldBinding(field_id='models:Payload.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=UnionNode(members=(MapNode(value=ModelNode(symbol='models:ValueObject')), LeafNode())))
-  _model_1 symbol='models:ValueObject', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/properties/value/additionalProperties', root=UnionNode(members=(LeafNode(), ArrayNode(item=LeafNode())))
+  _model_1 symbol='models:ValueObject', native_kind='root', schema_id=None, root=UnionNode(members=(LeafNode(), ArrayNode(item=LeafNode())))
   codec_0 -> PydanticModelCodec[models.Payload]
   codec_1 -> PydanticModelCodec[models.Payload]
 render pydantic_v2.BaseModel annotated

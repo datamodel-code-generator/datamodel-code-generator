@@ -1,8 +1,81 @@
 # protocols-stream-scope
 render pydantic_v2.BaseModel
-  APIGenerationError
-  BND_MODEL_SCOPE_REQUIRED binding /paths/~1events/get/parameters/0: The use has no generated native type
-  BND_MODEL_SCOPE_REQUIRED binding /paths/~1events/get/parameters/1: The use has no generated native type
-  BND_MODEL_SCOPE_REQUIRED binding /paths/~1events/get/responses/200: The use has no generated native type
-  BND_MODEL_SCOPE_REQUIRED binding /paths/~1feed/post/responses/200: The use has no generated native type
-  BND_MODEL_SCOPE_REQUIRED binding /paths/~1events/get/responses/200/content/text~1event-stream/schema: The use has no generated native type
+  write models.py
+  write client/__init__.py
+  write client/_client.py
+  write client/_async_client.py
+  write client/options.py
+  write client/hooks.py
+  write client/errors.py
+  write client/responses.py
+  write client/auth.py
+  write client/bodies.py
+  write client/model_codecs.py
+  write client/transports.py
+  write client/protocols/__init__.py
+  write client/resources/__init__.py
+  write client/resources/events/__init__.py
+  write client/resources/events/_sync.py
+  write client/resources/events/_async.py
+  write client/resources/feed/__init__.py
+  write client/resources/feed/_sync.py
+  write client/resources/feed/_async.py
+  write client/resources/status/__init__.py
+  write client/resources/status/_sync.py
+  write client/resources/status/_async.py
+  write client/types/__init__.py
+  write client/types/events/__init__.py
+  write client/types/events/_operations.py
+  write client/types/feed/__init__.py
+  write client/types/feed/_operations.py
+  write client/types/status/__init__.py
+  write client/types/status/_operations.py
+  write client/_generated/__init__.py
+  write client/_generated/model_bindings.py
+  write client/_operations.py
+  write client/protocols/_plans.py
+  write client/protocols/_helpers.py
+  write client/protocols/_async_helpers.py
+  write client/_generated_docs/README.md
+  write client/_generated_docs/runtime.md
+  write client/py.typed
+  write client/.dcg-state/model-artifacts.json
+  namespace client helpers ['scope.member'] bindings 8
+  refs /inputs/target_config/runtime_defaults /selection ['/extensions/formatters/0']
+  helper scope.member sse enabled True /inputs/target_config/protocol_metadata/helpers/scope.member 6b8fa8ce42856bb2be51c180b41141f1e01fdf8bea446f64178a5177386af6c1
+  {
+    "helpers": {
+      "scope.member": {
+        "completion": {
+          "kind": "eof"
+        },
+        "enabled": true,
+        "error_events": {},
+        "event_schema": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1events/get/responses/200/content/text~1event-stream/schema"
+        },
+        "kind": "sse",
+        "media": "text/event-stream",
+        "operation": {
+          "document": "/inputs/root",
+          "pointer": "/paths/~1events/get"
+        },
+        "resume": {
+          "enabled": false
+        },
+        "unknown": "error"
+      }
+    },
+    "schema_version": 1
+  }
+  /selection/selected_operations/0 events.stream_events(query:topic=topic, header:Last-Event-ID=last_event_id)
+    exports client.types.events.StreamEventsResponse client.types.events.StreamEventsErrorData client.types.events.StreamEventsHTTPError
+    exports client.types.events.StreamEventsRequestCodecs None
+  /selection/selected_operations/1 feed.stream_feed()
+    exports client.types.feed.StreamFeedResponse client.types.feed.StreamFeedErrorData client.types.feed.StreamFeedHTTPError
+    exports client.types.feed.StreamFeedRequestCodecs None
+  /selection/selected_operations/2 status.get_status()
+    exports client.types.status.GetStatusResponse client.types.status.GetStatusErrorData client.types.status.GetStatusHTTPError
+    exports client.types.status.GetStatusRequestCodecs None
+  dependencies ['httpx2>=2.13.0', 'typing-extensions>=4.16', 'jsonschema[format-nongpl]>=4.26', 'referencing>=0.37', 'pydantic>=2.13.5']

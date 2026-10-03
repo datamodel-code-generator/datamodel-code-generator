@@ -19,11 +19,7 @@ change pydantic_v2.BaseModel default shadow-0
   @@ -8,0 +9,2 @@
   +str = int
   +
-  @@ -13 +14,0 @@
-  -  FieldBinding(field_id='models:Record.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change pydantic_v2.BaseModel default shadow-1
   @@ -8,0 +9,2 @@
   +from builtins import int as str
   +
-  @@ -13 +14,0 @@
-  -  FieldBinding(field_id='models:Record.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
