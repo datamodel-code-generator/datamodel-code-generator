@@ -553,12 +553,7 @@ async def _async_sessions(harness: Harness, lines: list[str]) -> None:  # noqa: 
         await adrained(lines, "async after the cancellation", cancelled)
 
 
-_REJECTED: Final = {"WWW-Authenticate": 'Bearer error="invalid_token"'}
-_AUTH_ROWS: Final = (
-    ("tokens counted", None, (users("1", cursor="a"), users("2"))),
-    ("no room for a token", 1, ()),
-    ("no room to recover from a rejected token", 3, (json_response(401, {"message": "expired"}, **_REJECTED),)),
-)
+_AUTH_ROWS: Final = (("pages share one token", None, (users("1", cursor="a"), users("2"))),)
 
 
 def _auth_line(pager: Any, adapter: Adapter) -> str:
@@ -566,11 +561,7 @@ def _auth_line(pager: Any, adapter: Adapter) -> str:
 
 
 def pagination_auth(package: ModuleType, lines: list[str]) -> None:
-    """Count a page's token requests in its session, and refuse an acquisition or recovery the session cannot pay for.
-
-    A rejected token's recovery needs a slot for the new token request and one for the resend, so the page ends with
-    its own 401 instead.
-    """
+    """Authenticate every page with one OAuth token, whose request takes no send slot of the session."""
     harness = Harness(package)
     auth, transports, responses = (
         importlib.import_module(f"{package.__name__}.{name}") for name in ("auth", "transports", "responses")
