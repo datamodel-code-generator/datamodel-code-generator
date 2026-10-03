@@ -5141,5 +5141,13 @@
       ]
     },
     "verbatim": true
+  },
+  "target-edges": {
+    "source": "generation_platform/binding/target-edges.yaml",
+    "verbatim": true
+  },
+  "target-unsupported": {
+    "source": "generation_platform/binding/target-unsupported.yaml",
+    "verbatim": true
   }
 }

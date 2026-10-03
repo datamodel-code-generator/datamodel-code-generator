@@ -87,10 +87,6 @@ change pydantic_v2.BaseModel default with-target
   +
   +with resource() as Model:
   +    pass
-  @@ -17 +22,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -19 +23,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change pydantic_v2.BaseModel default with-body
   @@ -14,0 +15,6 @@
   +
@@ -99,10 +95,6 @@ change pydantic_v2.BaseModel default with-body
   +
   +with resource():
   +    Model = int
-  @@ -17 +22,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -19 +23,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change pydantic_v2.BaseModel default except-target
   @@ -14,0 +15,8 @@
   +
@@ -266,10 +258,6 @@ change pydantic_v2.BaseModel default exec
   +
   +
   +exec('Model = int')
-  @@ -17 +21,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -19 +22,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change pydantic_v2.BaseModel default globals
   @@ -14,0 +15,5 @@
   +
@@ -277,10 +265,6 @@ change pydantic_v2.BaseModel default globals
   +
   +
   +globals()['Model'] = int
-  @@ -17 +21,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -19 +22,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change pydantic_v2.BaseModel default conditional-exec
   @@ -14,0 +15,6 @@
   +
@@ -289,10 +273,6 @@ change pydantic_v2.BaseModel default conditional-exec
   +
   +if True:
   +    exec('Model = int')
-  @@ -17 +22,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -19 +23,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change pydantic_v2.BaseModel default class-globals
   @@ -14,0 +15,6 @@
   +
@@ -301,10 +281,6 @@ change pydantic_v2.BaseModel default class-globals
   +
   +class Helper:
   +    globals()['Model'] = int
-  @@ -17 +22,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -19 +23,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change pydantic_v2.BaseModel default eval
   @@ -14,0 +15,5 @@
   +
@@ -312,10 +288,6 @@ change pydantic_v2.BaseModel default eval
   +
   +
   +eval("globals().__setitem__('Model', int)")
-  @@ -17 +21,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -19 +22,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change pydantic_v2.BaseModel default locals
   @@ -14,0 +15,5 @@
   +
@@ -323,10 +295,6 @@ change pydantic_v2.BaseModel default locals
   +
   +
   +locals()['Model'] = int
-  @@ -17 +21,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -19 +22,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change pydantic_v2.BaseModel default vars
   @@ -14,0 +15,5 @@
   +
@@ -334,10 +302,6 @@ change pydantic_v2.BaseModel default vars
   +
   +
   +vars()['Model'] = int
-  @@ -17 +21,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -19 +22,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change pydantic_v2.BaseModel default setattr
   @@ -14,0 +15,5 @@
   +
@@ -345,10 +309,6 @@ change pydantic_v2.BaseModel default setattr
   +
   +
   +setattr(Model, '__annotations__', {'value': int})
-  @@ -17 +21,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -19 +22,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change pydantic_v2.BaseModel default builtins
   @@ -14,0 +15,5 @@
   +
@@ -356,10 +316,6 @@ change pydantic_v2.BaseModel default builtins
   +
   +
   +__builtins__['exec']('Model = int')
-  @@ -17 +21,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -19 +22,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change pydantic_v2.BaseModel default aliased-exec
   @@ -14,0 +15,6 @@
   +
@@ -368,10 +324,6 @@ change pydantic_v2.BaseModel default aliased-exec
   +
   +run = exec
   +run('Model = int')
-  @@ -17 +22,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -19 +23,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change pydantic_v2.BaseModel default import
   @@ -14,0 +15,5 @@
   +
@@ -379,10 +331,6 @@ change pydantic_v2.BaseModel default import
   +
   +
   +__import__('builtins').exec('Model = int')
-  @@ -17 +21,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -19 +22,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change pydantic_v2.BaseModel default function-dynamic
   @@ -14,0 +15,6 @@
   +
@@ -426,10 +374,6 @@ change pydantic_v2.BaseModel default imported-exec
   +
   +from builtins import exec as run
   +run('Model = int')
-  @@ -17 +22,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -19 +23,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change pydantic_v2.BaseModel default parenthesized-exec
   @@ -14,0 +15,6 @@
   +
@@ -438,10 +382,6 @@ change pydantic_v2.BaseModel default parenthesized-exec
   +
   +run = (exec)
   +run('Model = int')
-  @@ -17 +22,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -19 +23,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change pydantic_v2.BaseModel default function-inline-dynamic
   @@ -14,0 +15,5 @@
   +
@@ -474,10 +414,6 @@ change pydantic_v2.BaseModel default called-function
   +    global Model
   +    Model = int
   +helper()
-  @@ -17 +24,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -19 +25,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change pydantic_v2.BaseModel default conditional-call
   @@ -14,0 +15,6 @@
   +
@@ -486,10 +422,6 @@ change pydantic_v2.BaseModel default conditional-call
   +
   +if True:
   +    arbitrary_mutator()
-  @@ -17 +22,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -19 +23,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change pydantic_v2.BaseModel default call-attribute
   @@ -14,0 +15,5 @@
   +
@@ -497,10 +429,6 @@ change pydantic_v2.BaseModel default call-attribute
   +
   +
   +external.mutate()
-  @@ -17 +21,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -19 +22,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change pydantic_v2.BaseModel default assigned-call
   @@ -14,0 +15,8 @@
   +
@@ -511,10 +439,6 @@ change pydantic_v2.BaseModel default assigned-call
   +    global Model
   +    Model = int
   +marker = alter()
-  @@ -17 +24,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -19 +25,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change pydantic_v2.BaseModel default assigned-parenthesized-call
   @@ -14,0 +15,5 @@
   +
@@ -522,10 +446,6 @@ change pydantic_v2.BaseModel default assigned-parenthesized-call
   +
   +
   +marker = (alter)()
-  @@ -17 +21,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -19 +22,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change pydantic_v2.BaseModel default assigned-indexed-call
   @@ -14,0 +15,5 @@
   +
@@ -533,10 +453,6 @@ change pydantic_v2.BaseModel default assigned-indexed-call
   +
   +
   +marker = handlers[0]()
-  @@ -17 +21,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -19 +22,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change pydantic_v2.BaseModel default assigned-tuple-call
   @@ -14,0 +15,5 @@
   +
@@ -544,10 +460,6 @@ change pydantic_v2.BaseModel default assigned-tuple-call
   +
   +
   +marker = (alter(), 1)[1]
-  @@ -17 +21,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -19 +22,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change pydantic_v2.BaseModel default conditional-test-call
   @@ -14,0 +15,6 @@
   +
@@ -556,10 +468,6 @@ change pydantic_v2.BaseModel default conditional-test-call
   +
   +if alter():
   +    pass
-  @@ -17 +22,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -19 +23,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change pydantic_v2.BaseModel default conditional-assigned-call
   @@ -14,0 +15,6 @@
   +
@@ -568,10 +476,6 @@ change pydantic_v2.BaseModel default conditional-assigned-call
   +
   +if True:
   +    marker = alter()
-  @@ -17 +22,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -19 +23,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 render pydantic_v2.dataclass default
   models.py
   # generated by datamodel-codegen:
@@ -720,19 +624,11 @@ change msgspec.Struct default with-target
   +
   +with resource() as Model:
   +    pass
-  @@ -19 +21,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -21 +22,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change msgspec.Struct default with-body
   @@ -16,0 +17,3 @@
   +
   +with resource():
   +    Model = int
-  @@ -19 +21,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -21 +22,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change msgspec.Struct default except-target
   @@ -16,0 +17,5 @@
   +
@@ -839,93 +735,49 @@ change msgspec.Struct default exec
   @@ -16,0 +17,2 @@
   +
   +exec('Model = int')
-  @@ -19 +20,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -21 +21,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change msgspec.Struct default globals
   @@ -16,0 +17,2 @@
   +
   +globals()['Model'] = int
-  @@ -19 +20,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -21 +21,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change msgspec.Struct default conditional-exec
   @@ -16,0 +17,3 @@
   +
   +if True:
   +    exec('Model = int')
-  @@ -19 +21,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -21 +22,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change msgspec.Struct default class-globals
   @@ -16,0 +17,3 @@
   +
   +class Helper:
   +    globals()['Model'] = int
-  @@ -19 +21,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -21 +22,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change msgspec.Struct default eval
   @@ -16,0 +17,2 @@
   +
   +eval("globals().__setitem__('Model', int)")
-  @@ -19 +20,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -21 +21,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change msgspec.Struct default locals
   @@ -16,0 +17,2 @@
   +
   +locals()['Model'] = int
-  @@ -19 +20,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -21 +21,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change msgspec.Struct default vars
   @@ -16,0 +17,2 @@
   +
   +vars()['Model'] = int
-  @@ -19 +20,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -21 +21,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change msgspec.Struct default setattr
   @@ -16,0 +17,2 @@
   +
   +setattr(Model, '__annotations__', {'value': int})
-  @@ -19 +20,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -21 +21,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change msgspec.Struct default builtins
   @@ -16,0 +17,2 @@
   +
   +__builtins__['exec']('Model = int')
-  @@ -19 +20,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -21 +21,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change msgspec.Struct default aliased-exec
   @@ -16,0 +17,3 @@
   +
   +run = exec
   +run('Model = int')
-  @@ -19 +21,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -21 +22,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change msgspec.Struct default import
   @@ -16,0 +17,2 @@
   +
   +__import__('builtins').exec('Model = int')
-  @@ -19 +20,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -21 +21,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change msgspec.Struct default function-dynamic
   @@ -16,0 +17,3 @@
   +
@@ -954,19 +806,11 @@ change msgspec.Struct default imported-exec
   +
   +from builtins import exec as run
   +run('Model = int')
-  @@ -19 +21,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -21 +22,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change msgspec.Struct default parenthesized-exec
   @@ -16,0 +17,3 @@
   +
   +run = (exec)
   +run('Model = int')
-  @@ -19 +21,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -21 +22,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change msgspec.Struct default function-inline-dynamic
   @@ -16,0 +17,2 @@
   +
@@ -987,27 +831,15 @@ change msgspec.Struct default called-function
   +    global Model
   +    Model = int
   +helper()
-  @@ -19 +23,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -21 +24,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change msgspec.Struct default conditional-call
   @@ -16,0 +17,3 @@
   +
   +if True:
   +    arbitrary_mutator()
-  @@ -19 +21,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -21 +22,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change msgspec.Struct default call-attribute
   @@ -16,0 +17,2 @@
   +
   +external.mutate()
-  @@ -19 +20,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -21 +21,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change msgspec.Struct default assigned-call
   @@ -16,0 +17,5 @@
   +
@@ -1015,49 +847,25 @@ change msgspec.Struct default assigned-call
   +    global Model
   +    Model = int
   +marker = alter()
-  @@ -19 +23,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -21 +24,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change msgspec.Struct default assigned-parenthesized-call
   @@ -16,0 +17,2 @@
   +
   +marker = (alter)()
-  @@ -19 +20,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -21 +21,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change msgspec.Struct default assigned-indexed-call
   @@ -16,0 +17,2 @@
   +
   +marker = handlers[0]()
-  @@ -19 +20,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -21 +21,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change msgspec.Struct default assigned-tuple-call
   @@ -16,0 +17,2 @@
   +
   +marker = (alter(), 1)[1]
-  @@ -19 +20,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -21 +21,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change msgspec.Struct default conditional-test-call
   @@ -16,0 +17,3 @@
   +
   +if alter():
   +    pass
-  @@ -19 +21,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -21 +22,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
 change msgspec.Struct default conditional-assigned-call
   @@ -16,0 +17,3 @@
   +
   +if True:
   +    marker = alter()
-  @@ -19 +21,0 @@
-  -  FieldBinding(field_id='models:Model.value', native_name='value', wire_name='value', validation_key='value', validation_keys=('value',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  @@ -21 +22,0 @@
-  -  FieldBinding(field_id='models:Other.flag', native_name='flag', wire_name='flag', validation_key='flag', validation_keys=('flag',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())

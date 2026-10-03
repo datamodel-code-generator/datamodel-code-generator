@@ -18,10 +18,10 @@ render pydantic_v2.BaseModel default
       id: Optional[int] = None
       name: str
   model_bindings.py
-  _model_0 symbol='models:UserRequest', native_kind='model', schema_id=None
+  _model_0 symbol='models:UserRequest', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/User'
     FieldBinding(field_id='models:UserRequest.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:UserRequest.password', native_name='password', wire_name='password', validation_key='password', validation_keys=('password',), required=False, read_only=False, write_only=True, omit_none=True, type=LeafNode())
-  _model_1 symbol='models:UserResponse', native_kind='model', schema_id=None
+  _model_1 symbol='models:UserResponse', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/User'
     FieldBinding(field_id='models:UserResponse.id', native_name='id', wire_name='id', validation_key='id', validation_keys=('id',), required=False, read_only=True, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:UserResponse.name', native_name='name', wire_name='name', validation_key='name', validation_keys=('name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   codec_0 -> PydanticModelCodec[models.UserRequest]

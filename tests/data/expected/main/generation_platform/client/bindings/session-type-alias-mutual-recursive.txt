@@ -1,7 +1,7 @@
 # session-type-alias-mutual-recursive
 render pydantic_v2.BaseModel default
   diagnostic APIGenerationError
-  diagnostic BND_SYMBOL_NOT_EMITTED binding /paths/~1bindings~10/post/requestBody: The use has no generated native type
-  diagnostic BND_SYMBOL_NOT_EMITTED binding /paths/~1bindings~10/post/responses/200: The use has no generated native type
-  diagnostic BND_SYMBOL_NOT_EMITTED binding /paths/~1bindings~11/post/requestBody: The use has no generated native type
-  diagnostic BND_SYMBOL_NOT_EMITTED binding /paths/~1bindings~11/post/responses/200: The use has no generated native type
+  diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~10/post/requestBody: The use has no generated native type
+  diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~10/post/responses/200: The use has no generated native type
+  diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~11/post/requestBody: The use has no generated native type
+  diagnostic BND_TYPE_EXPRESSION_UNSUPPORTED binding /paths/~1bindings~11/post/responses/200: The use has no generated native type

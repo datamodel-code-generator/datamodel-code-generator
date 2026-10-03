@@ -153,9 +153,9 @@ def _model_0() -> ModelBinding:
 @cache
 def _model_1() -> ModelBinding:
     return ModelBinding(
-        symbol='adapted_models:PairsPostRequest',
+        symbol='adapted_models:FieldPairsPostRequest',
         native_kind='root',
-        schema_id=None,
+        schema_id='https://dcg.invalid/inputs/root#/paths/~1pairs/post/requestBody/content/application~1json/schema',
         root=TupleNode(items=(LeafNode(), LeafNode())),
     )
 
@@ -245,25 +245,25 @@ CONTEXT_1: Final = CodecContext(
 
 
 @cache
-def codec_1() -> PydanticModelCodec[adapted_models.PairsPostRequest]:
+def codec_1() -> PydanticModelCodec[adapted_models.FieldPairsPostRequest]:
     """Codec of /paths/~1pairs/post request_body (request application/json)."""
     return PydanticModelCodec(
         UseBinding(
-            binding_id="https://dcg.invalid/inputs/root#/paths/~1pairs/post/requestBody/content/application~1json/schema|ModelNode(symbol='adapted_models:PairsPostRequest')",
+            binding_id="https://dcg.invalid/inputs/root#/paths/~1pairs/post/requestBody/content/application~1json/schema|ModelNode(symbol='adapted_models:FieldPairsPostRequest')",
             direction='request',
             schema_id='https://dcg.invalid/inputs/root#/paths/~1pairs/post/requestBody/content/application~1json/schema',
             operation_id='/paths/~1pairs/post',
             media_type='application/json',
             backend='pydantic_v2.BaseModel',
             native_kind='root',
-            native_export='adapted_models:PairsPostRequest',
+            native_export='adapted_models:FieldPairsPostRequest',
             projection_mode='native',
             converter_strategy='pydantic_type_adapter',
-            type=ModelNode(symbol='adapted_models:PairsPostRequest'),
+            type=ModelNode(symbol='adapted_models:FieldPairsPostRequest'),
             models=(_model_1(),),
         ),
-        adapted_models.PairsPostRequest,
-        {'adapted_models:PairsPostRequest': adapted_models.PairsPostRequest},
+        adapted_models.FieldPairsPostRequest,
+        {'adapted_models:FieldPairsPostRequest': adapted_models.FieldPairsPostRequest},
         request_bundle,
     )
 --- model_codecs.py
@@ -410,5 +410,5 @@ __all__ = [
 ]
 cat: model Cat {'kind': <Kind.cat: 'cat'>} wire={"kind":"cat"} presence=['', '/kind']
 cat-as-dog: NativeValidationError native.adapter@
-pair: model PairsPostRequest ('a', 'b') wire=["a","b"] presence=['', '/0', '/1']
+pair: model FieldPairsPostRequest ('a', 'b') wire=["a","b"] presence=['', '/0', '/1']
 pair-short: WireValidationError schema.minItems@

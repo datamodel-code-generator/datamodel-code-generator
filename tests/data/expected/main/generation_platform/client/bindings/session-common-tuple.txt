@@ -50,7 +50,7 @@ render pydantic_v2.BaseModel default
     FieldBinding(field_id='models:Nested.same', native_name='same', wire_name='same', validation_key='same', validation_keys=('same',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Nested.common', native_name='common', wire_name='common', validation_key='common', validation_keys=('common',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Nested.specific', native_name='specific', wire_name='specific', validation_key='specific', validation_keys=('specific',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_1 symbol='models:Nested1', native_kind='model', schema_id=None
+  _model_1 symbol='models:Nested1', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/properties/nested'
     FieldBinding(field_id='models:Nested1.same', native_name='same', wire_name='same', validation_key='same', validation_keys=('same',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Nested1.common', native_name='common', wire_name='common', validation_key='common', validation_keys=('common',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   _model_2 symbol='models:Payload', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload', root=UnionNode(members=(ModelNode(symbol='models:Payload1'), ModelNode(symbol='models:Payload2')))
@@ -63,9 +63,9 @@ render pydantic_v2.BaseModel default
     FieldBinding(field_id='models:Payload2.tail', native_name='tail', wire_name='tail', validation_key='tail', validation_keys=('tail',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   _model_5 symbol='models:Value', native_kind='model', schema_id=None
     FieldBinding(field_id='models:Value.left', native_name='left', wire_name='left', validation_key='left', validation_keys=('left',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_6 symbol='models:Value1', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/anyOf/0/properties/values/prefixItems/0'
+  _model_6 symbol='models:Value1', native_kind='model', schema_id=None
     FieldBinding(field_id='models:Value1.right', native_name='right', wire_name='right', validation_key='right', validation_keys=('right',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_7 symbol='models:Value2', native_kind='model', schema_id=None
+  _model_7 symbol='models:Value2', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/properties/values/prefixItems/0'
     FieldBinding(field_id='models:Value2.left', native_name='left', wire_name='left', validation_key='left', validation_keys=('left',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   codec_0 -> PydanticModelCodec[models.Payload]
   codec_1 -> PydanticModelCodec[models.Payload]
@@ -136,7 +136,7 @@ render pydantic_v2.dataclass default
     FieldBinding(field_id='models:Nested.same', native_name='same', wire_name='same', validation_key='same', validation_keys=('same',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Nested.common', native_name='common', wire_name='common', validation_key='common', validation_keys=('common',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Nested.specific', native_name='specific', wire_name='specific', validation_key='specific', validation_keys=('specific',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_1 symbol='models:Nested1', native_kind='dataclass', schema_id=None
+  _model_1 symbol='models:Nested1', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/properties/nested'
     FieldBinding(field_id='models:Nested1.same', native_name='same', wire_name='same', validation_key='same', validation_keys=('same',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Nested1.common', native_name='common', wire_name='common', validation_key='common', validation_keys=('common',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   _model_2 symbol='models:Payload1', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/anyOf/0'
@@ -148,9 +148,9 @@ render pydantic_v2.dataclass default
     FieldBinding(field_id='models:Payload2.tail', native_name='tail', wire_name='tail', validation_key='tail', validation_keys=('tail',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   _model_4 symbol='models:Value', native_kind='dataclass', schema_id=None
     FieldBinding(field_id='models:Value.left', native_name='left', wire_name='left', validation_key='left', validation_keys=('left',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_5 symbol='models:Value1', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/anyOf/0/properties/values/prefixItems/0'
+  _model_5 symbol='models:Value1', native_kind='dataclass', schema_id=None
     FieldBinding(field_id='models:Value1.right', native_name='right', wire_name='right', validation_key='right', validation_keys=('right',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_6 symbol='models:Value2', native_kind='dataclass', schema_id=None
+  _model_6 symbol='models:Value2', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/properties/values/prefixItems/0'
     FieldBinding(field_id='models:Value2.left', native_name='left', wire_name='left', validation_key='left', validation_keys=('left',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   codec_0 -> PydanticModelCodec[models.Payload]
   codec_1 -> PydanticModelCodec[models.Payload]
@@ -219,7 +219,7 @@ render dataclasses.dataclass default
     FieldBinding(field_id='models:Nested.same', native_name='same', wire_name='same', validation_key='same', validation_keys=('same',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Nested.common', native_name='common', wire_name='common', validation_key='common', validation_keys=('common',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Nested.specific', native_name='specific', wire_name='specific', validation_key='specific', validation_keys=('specific',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_1 symbol='models:Nested1', native_kind='dataclass', schema_id=None
+  _model_1 symbol='models:Nested1', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/properties/nested'
     FieldBinding(field_id='models:Nested1.same', native_name='same', wire_name='same', validation_key='same', validation_keys=('same',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
     FieldBinding(field_id='models:Nested1.common', native_name='common', wire_name='common', validation_key='common', validation_keys=('common',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   _model_2 symbol='models:Payload1', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/anyOf/0'
@@ -231,9 +231,9 @@ render dataclasses.dataclass default
     FieldBinding(field_id='models:Payload2.tail', native_name='tail', wire_name='tail', validation_key='tail', validation_keys=('tail',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   _model_4 symbol='models:Value', native_kind='dataclass', schema_id=None
     FieldBinding(field_id='models:Value.left', native_name='left', wire_name='left', validation_key='left', validation_keys=('left',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_5 symbol='models:Value1', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/anyOf/0/properties/values/prefixItems/0'
+  _model_5 symbol='models:Value1', native_kind='dataclass', schema_id=None
     FieldBinding(field_id='models:Value1.right', native_name='right', wire_name='right', validation_key='right', validation_keys=('right',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
-  _model_6 symbol='models:Value2', native_kind='dataclass', schema_id=None
+  _model_6 symbol='models:Value2', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/properties/values/prefixItems/0'
     FieldBinding(field_id='models:Value2.left', native_name='left', wire_name='left', validation_key='left', validation_keys=('left',), required=False, read_only=False, write_only=False, omit_none=True, type=LeafNode())
   codec_0 -> StructuralModelCodec[models.Payload]
   codec_1 -> StructuralModelCodec[models.Payload]
@@ -294,7 +294,7 @@ render typing.TypedDict default
     FieldBinding(field_id='models:Nested.same', native_name='same', wire_name='same', validation_key='same', validation_keys=('same',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:Nested.common', native_name='common', wire_name='common', validation_key='common', validation_keys=('common',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:Nested.specific', native_name='specific', wire_name='specific', validation_key='specific', validation_keys=('specific',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_1 symbol='models:Nested1', native_kind='typed_dict', schema_id=None
+  _model_1 symbol='models:Nested1', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/properties/nested'
     FieldBinding(field_id='models:Nested1.same', native_name='same', wire_name='same', validation_key='same', validation_keys=('same',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:Nested1.common', native_name='common', wire_name='common', validation_key='common', validation_keys=('common',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   _model_2 symbol='models:Payload1', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/anyOf/0'
@@ -306,9 +306,9 @@ render typing.TypedDict default
     FieldBinding(field_id='models:Payload2.tail', native_name='tail', wire_name='tail', validation_key='tail', validation_keys=('tail',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   _model_4 symbol='models:Value', native_kind='typed_dict', schema_id=None
     FieldBinding(field_id='models:Value.left', native_name='left', wire_name='left', validation_key='left', validation_keys=('left',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_5 symbol='models:Value1', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/anyOf/0/properties/values/prefixItems/0'
+  _model_5 symbol='models:Value1', native_kind='typed_dict', schema_id=None
     FieldBinding(field_id='models:Value1.right', native_name='right', wire_name='right', validation_key='right', validation_keys=('right',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_6 symbol='models:Value2', native_kind='typed_dict', schema_id=None
+  _model_6 symbol='models:Value2', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/properties/values/prefixItems/0'
     FieldBinding(field_id='models:Value2.left', native_name='left', wire_name='left', validation_key='left', validation_keys=('left',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   codec_0 -> StructuralModelCodec[models.Payload]
   codec_1 -> StructuralModelCodec[models.Payload]
@@ -370,7 +370,7 @@ render msgspec.Struct default
     FieldBinding(field_id='models:Nested.same', native_name='same', wire_name='same', validation_key='same', validation_keys=('same',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:Nested.common', native_name='common', wire_name='common', validation_key='common', validation_keys=('common',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:Nested.specific', native_name='specific', wire_name='specific', validation_key='specific', validation_keys=('specific',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_1 symbol='models:Nested1', native_kind='struct', schema_id=None
+  _model_1 symbol='models:Nested1', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/properties/nested'
     FieldBinding(field_id='models:Nested1.same', native_name='same', wire_name='same', validation_key='same', validation_keys=('same',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
     FieldBinding(field_id='models:Nested1.common', native_name='common', wire_name='common', validation_key='common', validation_keys=('common',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   _model_2 symbol='models:Payload1', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/anyOf/0'
@@ -382,9 +382,9 @@ render msgspec.Struct default
     FieldBinding(field_id='models:Payload2.tail', native_name='tail', wire_name='tail', validation_key='tail', validation_keys=('tail',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   _model_4 symbol='models:Value', native_kind='struct', schema_id=None
     FieldBinding(field_id='models:Value.left', native_name='left', wire_name='left', validation_key='left', validation_keys=('left',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_5 symbol='models:Value1', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/anyOf/0/properties/values/prefixItems/0'
+  _model_5 symbol='models:Value1', native_kind='struct', schema_id=None
     FieldBinding(field_id='models:Value1.right', native_name='right', wire_name='right', validation_key='right', validation_keys=('right',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_6 symbol='models:Value2', native_kind='struct', schema_id=None
+  _model_6 symbol='models:Value2', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/schemas/Payload/properties/values/prefixItems/0'
     FieldBinding(field_id='models:Value2.left', native_name='left', wire_name='left', validation_key='left', validation_keys=('left',), required=False, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   codec_0 -> StructuralModelCodec[models.Payload]
   codec_1 -> StructuralModelCodec[models.Payload]

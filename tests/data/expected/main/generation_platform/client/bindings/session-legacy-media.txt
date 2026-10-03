@@ -5,230 +5,318 @@ render pydantic_v2.BaseModel plain
   #   filename:  session-legacy-media.json
   
   from __future__ import annotations
-  from typing import Any, List, Union
   from pydantic import BaseModel, Field, RootModel
+  from typing import Any, List, Union
   from enum import StrEnum
   
   
-  class ScalarPostRequest(RootModel[List[int]]):
-      root: List[int]
+  class ScalarRequestItem(RootModel[int]):
+      root: int
   
   
-  class ScalarPostResponse(RootModel[List[int]]):
-      root: List[int]
+  class ScalarRequest(RootModel[List[ScalarRequestItem]]):
+      root: List[ScalarRequestItem]
   
   
-  class ObjectPostRequestItem(BaseModel):
+  class ScalarRequest1(RootModel[int]):
+      root: int
+  
+  
+  class ObjectRequestItem(BaseModel):
       wire_name: str = Field(..., alias='wire-name')
   
   
-  class ObjectPostRequest(RootModel[List[ObjectPostRequestItem]]):
-      root: List[ObjectPostRequestItem]
+  class ObjectRequest(RootModel[List[ObjectRequestItem]]):
+      root: List[ObjectRequestItem]
   
   
-  class ObjectPostRequest1(BaseModel):
+  class ObjectRequest1(BaseModel):
       wire_name: str = Field(..., alias='wire-name')
   
   
-  class ObjectPostResponseItem(BaseModel):
-      wire_name: str = Field(..., alias='wire-name')
-  
-  
-  class ObjectPostResponse(RootModel[List[ObjectPostResponseItem]]):
-      root: List[ObjectPostResponseItem]
-  
-  
-  class ObjectPostResponse1(BaseModel):
-      wire_name: str = Field(..., alias='wire-name')
-  
-  
-  class EnumPostRequestEnum(StrEnum):
+  class EnumRequestItem(StrEnum):
       one = 'one'
       two = 'two'
   
   
-  class EnumPostRequest(RootModel[List[EnumPostRequestEnum]]):
-      root: List[EnumPostRequestEnum]
+  class EnumRequest(RootModel[List[EnumRequestItem]]):
+      root: List[EnumRequestItem]
   
   
-  class EnumPostRequest1(StrEnum):
+  class EnumRequest1(StrEnum):
       one = 'one'
       two = 'two'
   
   
-  class EnumPostResponseEnum(StrEnum):
-      one = 'one'
-      two = 'two'
-  
-  
-  class EnumPostResponse(RootModel[List[EnumPostResponseEnum]]):
-      root: List[EnumPostResponseEnum]
-  
-  
-  class EnumPostResponse1(StrEnum):
-      one = 'one'
-      two = 'two'
-  
-  
-  class UnionPostRequest(RootModel[List[Union[int, str]]]):
-      root: List[Union[int, str]]
-  
-  
-  class UnionPostRequest1(RootModel[Union[int, str]]):
+  class UnionRequestItem(RootModel[Union[int, str]]):
       root: Union[int, str]
   
   
-  class UnionPostResponse(RootModel[List[Union[int, str]]]):
-      root: List[Union[int, str]]
+  class UnionRequest(RootModel[List[UnionRequestItem]]):
+      root: List[UnionRequestItem]
   
   
-  class UnionPostResponse1(RootModel[Union[int, str]]):
+  class UnionRequest1(RootModel[Union[int, str]]):
       root: Union[int, str]
   
   
-  class AnyPostRequest(RootModel[List[Any]]):
-      root: List[Any]
+  class AnyRequestItem(RootModel[Any]):
+      root: Any
   
   
-  class AnyPostResponse(RootModel[List[Any]]):
-      root: List[Any]
+  class AnyRequest(RootModel[List[AnyRequestItem]]):
+      root: List[AnyRequestItem]
   
   
-  class EmptyPostRequest(RootModel[List[Any]]):
-      root: List[Any] = Field(..., max_length=0)
+  class AnyRequest1(RootModel[Any]):
+      root: Any
   
   
-  class EmptyPostResponse(RootModel[List[Any]]):
-      root: List[Any] = Field(..., max_length=0)
+  class EmptyRequestItem(RootModel[Any]):
+      root: Any
+  
+  
+  class EmptyRequest(RootModel[List[EmptyRequestItem]]):
+      root: List[EmptyRequestItem]
+  
+  
+  class EmptyRequest1(RootModel[Any]):
+      root: Any
+  
+  
+  class ScalarResponseItem(RootModel[int]):
+      root: int
+  
+  
+  class ScalarResponse(RootModel[List[ScalarResponseItem]]):
+      root: List[ScalarResponseItem]
+  
+  
+  class ScalarResponse1(RootModel[int]):
+      root: int
+  
+  
+  class ObjectResponseItem(BaseModel):
+      wire_name: str = Field(..., alias='wire-name')
+  
+  
+  class ObjectResponse(RootModel[List[ObjectResponseItem]]):
+      root: List[ObjectResponseItem]
+  
+  
+  class ObjectResponse1(BaseModel):
+      wire_name: str = Field(..., alias='wire-name')
+  
+  
+  class EnumResponseItem(StrEnum):
+      one = 'one'
+      two = 'two'
+  
+  
+  class EnumResponse(RootModel[List[EnumResponseItem]]):
+      root: List[EnumResponseItem]
+  
+  
+  class EnumResponse1(StrEnum):
+      one = 'one'
+      two = 'two'
+  
+  
+  class UnionResponseItem(RootModel[Union[int, str]]):
+      root: Union[int, str]
+  
+  
+  class UnionResponse(RootModel[List[UnionResponseItem]]):
+      root: List[UnionResponseItem]
+  
+  
+  class UnionResponse1(RootModel[Union[int, str]]):
+      root: Union[int, str]
+  
+  
+  class AnyResponseItem(RootModel[Any]):
+      root: Any
+  
+  
+  class AnyResponse(RootModel[List[AnyResponseItem]]):
+      root: List[AnyResponseItem]
+  
+  
+  class AnyResponse1(RootModel[Any]):
+      root: Any
+  
+  
+  class EmptyResponseItem(RootModel[Any]):
+      root: Any
+  
+  
+  class EmptyResponse(RootModel[List[EmptyResponseItem]]):
+      root: List[EmptyResponseItem]
+  
+  
+  class EmptyResponse1(RootModel[Any]):
+      root: Any
   model_bindings.py
-  _model_0 symbol='models:ObjectPostRequestItem', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/requestBodies/object/content/application~1json/itemSchema'
-    FieldBinding(field_id='models:ObjectPostRequestItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire-name', validation_keys=('wire-name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_1 symbol='models:ObjectPostResponseItem', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/responses/object/content/application~1json/itemSchema'
-    FieldBinding(field_id='models:ObjectPostResponseItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire-name', validation_keys=('wire-name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  codec_0 -> PydanticModelCodec[int]
-  codec_1 -> PydanticModelCodec[int]
-  codec_2 -> PydanticModelCodec[models.ObjectPostRequestItem]
-  codec_3 -> PydanticModelCodec[models.ObjectPostResponseItem]
-  codec_4 -> PydanticModelCodec[models.EnumPostRequestEnum]
-  codec_5 -> PydanticModelCodec[models.EnumPostResponseEnum]
-  codec_6 -> PydanticModelCodec[int | str]
-  codec_7 -> PydanticModelCodec[int | str]
-  codec_8 -> PydanticModelCodec[typing.Any]
-  codec_9 -> PydanticModelCodec[typing.Any]
-  codec_10 -> PydanticModelCodec[typing.Any]
-  codec_11 -> PydanticModelCodec[typing.Any]
+  _model_0 symbol='models:ScalarRequestItem', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/requestBodies/scalar/content/application~1json/itemSchema', root=LeafNode()
+  _model_1 symbol='models:ScalarResponseItem', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/responses/scalar/content/application~1json/itemSchema', root=LeafNode()
+  _model_2 symbol='models:ObjectRequestItem', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/requestBodies/object/content/application~1json/itemSchema'
+    FieldBinding(field_id='models:ObjectRequestItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire-name', validation_keys=('wire-name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+  _model_3 symbol='models:ObjectResponseItem', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/responses/object/content/application~1json/itemSchema'
+    FieldBinding(field_id='models:ObjectResponseItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire-name', validation_keys=('wire-name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+  _model_4 symbol='models:UnionRequestItem', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/requestBodies/union/content/application~1json/itemSchema', root=UnionNode(members=(LeafNode(), LeafNode()))
+  _model_5 symbol='models:UnionResponseItem', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/responses/union/content/application~1json/itemSchema', root=UnionNode(members=(LeafNode(), LeafNode()))
+  _model_6 symbol='models:AnyRequestItem', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/requestBodies/any/content/application~1json/itemSchema', root=LeafNode()
+  _model_7 symbol='models:AnyResponseItem', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/responses/any/content/application~1json/itemSchema', root=LeafNode()
+  _model_8 symbol='models:EmptyRequestItem', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/requestBodies/empty/content/application~1json/itemSchema', root=LeafNode()
+  _model_9 symbol='models:EmptyResponseItem', native_kind='root', schema_id='https://dcg.invalid/inputs/root#/components/responses/empty/content/application~1json/itemSchema', root=LeafNode()
+  codec_0 -> PydanticModelCodec[models.ScalarRequestItem]
+  codec_1 -> PydanticModelCodec[models.ScalarResponseItem]
+  codec_2 -> PydanticModelCodec[models.ObjectRequestItem]
+  codec_3 -> PydanticModelCodec[models.ObjectResponseItem]
+  codec_4 -> PydanticModelCodec[models.EnumRequestItem]
+  codec_5 -> PydanticModelCodec[models.EnumResponseItem]
+  codec_6 -> PydanticModelCodec[models.UnionRequestItem]
+  codec_7 -> PydanticModelCodec[models.UnionResponseItem]
+  codec_8 -> PydanticModelCodec[models.AnyRequestItem]
+  codec_9 -> PydanticModelCodec[models.AnyResponseItem]
+  codec_10 -> PydanticModelCodec[models.EmptyRequestItem]
+  codec_11 -> PydanticModelCodec[models.EmptyResponseItem]
 render pydantic_v2.BaseModel collapsed
   models.py
   # generated by datamodel-codegen:
   #   filename:  session-legacy-media.json
   
   from __future__ import annotations
-  from typing import Any, List, Union
   from pydantic import BaseModel, Field, RootModel
+  from typing import Any, List, Union
   from enum import StrEnum
   
   
-  class ScalarPostRequest(RootModel[List[int]]):
+  class ScalarRequest(RootModel[List[int]]):
       root: List[int]
   
   
-  class ScalarPostResponse(RootModel[List[int]]):
+  class ScalarRequest1(RootModel[int]):
+      root: int
+  
+  
+  class ObjectRequestItem(BaseModel):
+      wire_name: str = Field(..., alias='wire-name')
+  
+  
+  class ObjectRequest(RootModel[List[ObjectRequestItem]]):
+      root: List[ObjectRequestItem]
+  
+  
+  class ObjectRequest1(BaseModel):
+      wire_name: str = Field(..., alias='wire-name')
+  
+  
+  class EnumRequestItem(StrEnum):
+      one = 'one'
+      two = 'two'
+  
+  
+  class EnumRequest(RootModel[List[EnumRequestItem]]):
+      root: List[EnumRequestItem]
+  
+  
+  class EnumRequest1(StrEnum):
+      one = 'one'
+      two = 'two'
+  
+  
+  class UnionRequest(RootModel[List[Union[int, str]]]):
+      root: List[Union[int, str]]
+  
+  
+  class UnionRequest1(RootModel[Union[int, str]]):
+      root: Union[int, str]
+  
+  
+  class AnyRequest(RootModel[List[Any]]):
+      root: List[Any]
+  
+  
+  class AnyRequest1(RootModel[Any]):
+      root: Any
+  
+  
+  class EmptyRequest(RootModel[List[Any]]):
+      root: List[Any]
+  
+  
+  class EmptyRequest1(RootModel[Any]):
+      root: Any
+  
+  
+  class ScalarResponse(RootModel[List[int]]):
       root: List[int]
   
   
-  class ObjectPostRequestItem(BaseModel):
+  class ScalarResponse1(RootModel[int]):
+      root: int
+  
+  
+  class ObjectResponseItem(BaseModel):
       wire_name: str = Field(..., alias='wire-name')
   
   
-  class ObjectPostRequest(RootModel[List[ObjectPostRequestItem]]):
-      root: List[ObjectPostRequestItem]
+  class ObjectResponse(RootModel[List[ObjectResponseItem]]):
+      root: List[ObjectResponseItem]
   
   
-  class ObjectPostRequest1(BaseModel):
+  class ObjectResponse1(BaseModel):
       wire_name: str = Field(..., alias='wire-name')
   
   
-  class ObjectPostResponseItem(BaseModel):
-      wire_name: str = Field(..., alias='wire-name')
-  
-  
-  class ObjectPostResponse(RootModel[List[ObjectPostResponseItem]]):
-      root: List[ObjectPostResponseItem]
-  
-  
-  class ObjectPostResponse1(BaseModel):
-      wire_name: str = Field(..., alias='wire-name')
-  
-  
-  class EnumPostRequestEnum(StrEnum):
+  class EnumResponseItem(StrEnum):
       one = 'one'
       two = 'two'
   
   
-  class EnumPostRequest(RootModel[List[EnumPostRequestEnum]]):
-      root: List[EnumPostRequestEnum]
+  class EnumResponse(RootModel[List[EnumResponseItem]]):
+      root: List[EnumResponseItem]
   
   
-  class EnumPostRequest1(StrEnum):
+  class EnumResponse1(StrEnum):
       one = 'one'
       two = 'two'
   
   
-  class EnumPostResponseEnum(StrEnum):
-      one = 'one'
-      two = 'two'
-  
-  
-  class EnumPostResponse(RootModel[List[EnumPostResponseEnum]]):
-      root: List[EnumPostResponseEnum]
-  
-  
-  class EnumPostResponse1(StrEnum):
-      one = 'one'
-      two = 'two'
-  
-  
-  class UnionPostRequest(RootModel[List[Union[int, str]]]):
+  class UnionResponse(RootModel[List[Union[int, str]]]):
       root: List[Union[int, str]]
   
   
-  class UnionPostRequest1(RootModel[Union[int, str]]):
+  class UnionResponse1(RootModel[Union[int, str]]):
       root: Union[int, str]
   
   
-  class UnionPostResponse(RootModel[List[Union[int, str]]]):
-      root: List[Union[int, str]]
-  
-  
-  class UnionPostResponse1(RootModel[Union[int, str]]):
-      root: Union[int, str]
-  
-  
-  class AnyPostRequest(RootModel[List[Any]]):
+  class AnyResponse(RootModel[List[Any]]):
       root: List[Any]
   
   
-  class AnyPostResponse(RootModel[List[Any]]):
+  class AnyResponse1(RootModel[Any]):
+      root: Any
+  
+  
+  class EmptyResponse(RootModel[List[Any]]):
       root: List[Any]
   
   
-  class EmptyPostRequest(RootModel[List[Any]]):
-      root: List[Any] = Field(..., max_length=0)
-  
-  
-  class EmptyPostResponse(RootModel[List[Any]]):
-      root: List[Any] = Field(..., max_length=0)
+  class EmptyResponse1(RootModel[Any]):
+      root: Any
   model_bindings.py
-  _model_0 symbol='models:ObjectPostRequestItem', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/requestBodies/object/content/application~1json/itemSchema'
-    FieldBinding(field_id='models:ObjectPostRequestItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire-name', validation_keys=('wire-name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_1 symbol='models:ObjectPostResponseItem', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/responses/object/content/application~1json/itemSchema'
-    FieldBinding(field_id='models:ObjectPostResponseItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire-name', validation_keys=('wire-name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+  _model_0 symbol='models:ObjectRequestItem', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/requestBodies/object/content/application~1json/itemSchema'
+    FieldBinding(field_id='models:ObjectRequestItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire-name', validation_keys=('wire-name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+  _model_1 symbol='models:ObjectResponseItem', native_kind='model', schema_id='https://dcg.invalid/inputs/root#/components/responses/object/content/application~1json/itemSchema'
+    FieldBinding(field_id='models:ObjectResponseItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire-name', validation_keys=('wire-name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   codec_0 -> PydanticModelCodec[int]
   codec_1 -> PydanticModelCodec[int]
-  codec_2 -> PydanticModelCodec[models.ObjectPostRequestItem]
-  codec_3 -> PydanticModelCodec[models.ObjectPostResponseItem]
-  codec_4 -> PydanticModelCodec[models.EnumPostRequestEnum]
-  codec_5 -> PydanticModelCodec[models.EnumPostResponseEnum]
+  codec_2 -> PydanticModelCodec[models.ObjectRequestItem]
+  codec_3 -> PydanticModelCodec[models.ObjectResponseItem]
+  codec_4 -> PydanticModelCodec[models.EnumRequestItem]
+  codec_5 -> PydanticModelCodec[models.EnumResponseItem]
   codec_6 -> PydanticModelCodec[int | str]
   codec_7 -> PydanticModelCodec[int | str]
   codec_8 -> PydanticModelCodec[typing.Any]
@@ -241,250 +329,330 @@ render pydantic_v2.dataclass plain
   #   filename:  session-legacy-media.json
   
   from __future__ import annotations
-  from typing import Annotated, Any, List, Union
   from typing_extensions import TypeAliasType
+  from typing import Any, List, Union
   from pydantic import Field
   from pydantic.dataclasses import dataclass
   from enum import StrEnum
   
   
   
-  ScalarPostRequest = TypeAliasType("ScalarPostRequest", List[int])
+  ScalarRequestItem = TypeAliasType("ScalarRequestItem", int)
   
   
   
-  ScalarPostResponse = TypeAliasType("ScalarPostResponse", List[int])
+  ScalarRequest = TypeAliasType("ScalarRequest", List[ScalarRequestItem])
   
   
   
-  @dataclass
-  class ObjectPostRequestItem:
-      wire_name: str = Field(..., alias='wire-name')
-  
-  
-  
-  ObjectPostRequest = TypeAliasType("ObjectPostRequest", List[ObjectPostRequestItem])
+  ScalarRequest1 = TypeAliasType("ScalarRequest1", int)
   
   
   
   @dataclass
-  class ObjectPostRequest1:
+  class ObjectRequestItem:
       wire_name: str = Field(..., alias='wire-name')
+  
+  
+  
+  ObjectRequest = TypeAliasType("ObjectRequest", List[ObjectRequestItem])
   
   
   
   @dataclass
-  class ObjectPostResponseItem:
+  class ObjectRequest1:
       wire_name: str = Field(..., alias='wire-name')
   
   
-  
-  ObjectPostResponse = TypeAliasType("ObjectPostResponse", List[ObjectPostResponseItem])
-  
-  
-  
-  @dataclass
-  class ObjectPostResponse1:
-      wire_name: str = Field(..., alias='wire-name')
-  
-  
-  class EnumPostRequestEnum(StrEnum):
+  class EnumRequestItem(StrEnum):
       one = 'one'
       two = 'two'
   
   
   
-  EnumPostRequest = TypeAliasType("EnumPostRequest", List[EnumPostRequestEnum])
+  EnumRequest = TypeAliasType("EnumRequest", List[EnumRequestItem])
   
   
-  class EnumPostRequest1(StrEnum):
-      one = 'one'
-      two = 'two'
-  
-  
-  class EnumPostResponseEnum(StrEnum):
+  class EnumRequest1(StrEnum):
       one = 'one'
       two = 'two'
   
   
   
-  EnumPostResponse = TypeAliasType("EnumPostResponse", List[EnumPostResponseEnum])
+  UnionRequestItem = TypeAliasType("UnionRequestItem", Union[int, str])
   
   
-  class EnumPostResponse1(StrEnum):
+  
+  UnionRequest = TypeAliasType("UnionRequest", List[UnionRequestItem])
+  
+  
+  
+  UnionRequest1 = TypeAliasType("UnionRequest1", Union[int, str])
+  
+  
+  
+  AnyRequestItem = TypeAliasType("AnyRequestItem", Any)
+  
+  
+  
+  AnyRequest = TypeAliasType("AnyRequest", List[AnyRequestItem])
+  
+  
+  
+  AnyRequest1 = TypeAliasType("AnyRequest1", Any)
+  
+  
+  
+  EmptyRequestItem = TypeAliasType("EmptyRequestItem", Any)
+  
+  
+  
+  EmptyRequest = TypeAliasType("EmptyRequest", List[EmptyRequestItem])
+  
+  
+  
+  EmptyRequest1 = TypeAliasType("EmptyRequest1", Any)
+  
+  
+  
+  ScalarResponseItem = TypeAliasType("ScalarResponseItem", int)
+  
+  
+  
+  ScalarResponse = TypeAliasType("ScalarResponse", List[ScalarResponseItem])
+  
+  
+  
+  ScalarResponse1 = TypeAliasType("ScalarResponse1", int)
+  
+  
+  
+  @dataclass
+  class ObjectResponseItem:
+      wire_name: str = Field(..., alias='wire-name')
+  
+  
+  
+  ObjectResponse = TypeAliasType("ObjectResponse", List[ObjectResponseItem])
+  
+  
+  
+  @dataclass
+  class ObjectResponse1:
+      wire_name: str = Field(..., alias='wire-name')
+  
+  
+  class EnumResponseItem(StrEnum):
       one = 'one'
       two = 'two'
   
   
   
-  UnionPostRequest = TypeAliasType("UnionPostRequest", List[Union[int, str]])
+  EnumResponse = TypeAliasType("EnumResponse", List[EnumResponseItem])
+  
+  
+  class EnumResponse1(StrEnum):
+      one = 'one'
+      two = 'two'
   
   
   
-  UnionPostRequest1 = TypeAliasType("UnionPostRequest1", Union[int, str])
+  UnionResponseItem = TypeAliasType("UnionResponseItem", Union[int, str])
   
   
   
-  UnionPostResponse = TypeAliasType("UnionPostResponse", List[Union[int, str]])
+  UnionResponse = TypeAliasType("UnionResponse", List[UnionResponseItem])
   
   
   
-  UnionPostResponse1 = TypeAliasType("UnionPostResponse1", Union[int, str])
+  UnionResponse1 = TypeAliasType("UnionResponse1", Union[int, str])
   
   
   
-  AnyPostRequest = TypeAliasType("AnyPostRequest", List[Any])
+  AnyResponseItem = TypeAliasType("AnyResponseItem", Any)
   
   
   
-  AnyPostResponse = TypeAliasType("AnyPostResponse", List[Any])
+  AnyResponse = TypeAliasType("AnyResponse", List[AnyResponseItem])
   
   
   
-  EmptyPostRequest = TypeAliasType("EmptyPostRequest", Annotated[List[Any], Field(..., max_length=0)])
+  AnyResponse1 = TypeAliasType("AnyResponse1", Any)
   
   
   
-  EmptyPostResponse = TypeAliasType("EmptyPostResponse", Annotated[List[Any], Field(..., max_length=0)])
+  EmptyResponseItem = TypeAliasType("EmptyResponseItem", Any)
+  
+  
+  
+  EmptyResponse = TypeAliasType("EmptyResponse", List[EmptyResponseItem])
+  
+  
+  
+  EmptyResponse1 = TypeAliasType("EmptyResponse1", Any)
   model_bindings.py
-  _model_0 symbol='models:ObjectPostRequestItem', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/requestBodies/object/content/application~1json/itemSchema'
-    FieldBinding(field_id='models:ObjectPostRequestItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire-name', validation_keys=('wire-name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_1 symbol='models:ObjectPostResponseItem', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/responses/object/content/application~1json/itemSchema'
-    FieldBinding(field_id='models:ObjectPostResponseItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire-name', validation_keys=('wire-name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  codec_0 -> PydanticModelCodec[int]
-  codec_1 -> PydanticModelCodec[int]
-  codec_2 -> PydanticModelCodec[models.ObjectPostRequestItem]
-  codec_3 -> PydanticModelCodec[models.ObjectPostResponseItem]
-  codec_4 -> PydanticModelCodec[models.EnumPostRequestEnum]
-  codec_5 -> PydanticModelCodec[models.EnumPostResponseEnum]
-  codec_6 -> PydanticModelCodec[int | str]
-  codec_7 -> PydanticModelCodec[int | str]
-  codec_8 -> PydanticModelCodec[typing.Any]
-  codec_9 -> PydanticModelCodec[typing.Any]
-  codec_10 -> PydanticModelCodec[typing.Any]
-  codec_11 -> PydanticModelCodec[typing.Any]
+  _model_0 symbol='models:ObjectRequestItem', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/requestBodies/object/content/application~1json/itemSchema'
+    FieldBinding(field_id='models:ObjectRequestItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire-name', validation_keys=('wire-name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+  _model_1 symbol='models:ObjectResponseItem', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/responses/object/content/application~1json/itemSchema'
+    FieldBinding(field_id='models:ObjectResponseItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire-name', validation_keys=('wire-name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+  codec_0 -> PydanticModelCodec[models.ScalarRequestItem]
+  codec_1 -> PydanticModelCodec[models.ScalarResponseItem]
+  codec_2 -> PydanticModelCodec[models.ObjectRequestItem]
+  codec_3 -> PydanticModelCodec[models.ObjectResponseItem]
+  codec_4 -> PydanticModelCodec[models.EnumRequestItem]
+  codec_5 -> PydanticModelCodec[models.EnumResponseItem]
+  codec_6 -> PydanticModelCodec[models.UnionRequestItem]
+  codec_7 -> PydanticModelCodec[models.UnionResponseItem]
+  codec_8 -> PydanticModelCodec[models.AnyRequestItem]
+  codec_9 -> PydanticModelCodec[models.AnyResponseItem]
+  codec_10 -> PydanticModelCodec[models.EmptyRequestItem]
+  codec_11 -> PydanticModelCodec[models.EmptyResponseItem]
 render pydantic_v2.dataclass collapsed
   models.py
   # generated by datamodel-codegen:
   #   filename:  session-legacy-media.json
   
   from __future__ import annotations
-  from typing import Annotated, Any, List, Union
   from typing_extensions import TypeAliasType
+  from typing import Any, List, Union
   from pydantic import Field
   from pydantic.dataclasses import dataclass
   from enum import StrEnum
   
   
   
-  ScalarPostRequest = TypeAliasType("ScalarPostRequest", List[int])
+  ScalarRequest = TypeAliasType("ScalarRequest", List[int])
   
   
   
-  ScalarPostResponse = TypeAliasType("ScalarPostResponse", List[int])
-  
-  
-  
-  @dataclass
-  class ObjectPostRequestItem:
-      wire_name: str = Field(..., alias='wire-name')
-  
-  
-  
-  ObjectPostRequest = TypeAliasType("ObjectPostRequest", List[ObjectPostRequestItem])
+  ScalarRequest1 = TypeAliasType("ScalarRequest1", int)
   
   
   
   @dataclass
-  class ObjectPostRequest1:
+  class ObjectRequestItem:
       wire_name: str = Field(..., alias='wire-name')
+  
+  
+  
+  ObjectRequest = TypeAliasType("ObjectRequest", List[ObjectRequestItem])
   
   
   
   @dataclass
-  class ObjectPostResponseItem:
+  class ObjectRequest1:
       wire_name: str = Field(..., alias='wire-name')
   
   
-  
-  ObjectPostResponse = TypeAliasType("ObjectPostResponse", List[ObjectPostResponseItem])
-  
-  
-  
-  @dataclass
-  class ObjectPostResponse1:
-      wire_name: str = Field(..., alias='wire-name')
-  
-  
-  class EnumPostRequestEnum(StrEnum):
+  class EnumRequestItem(StrEnum):
       one = 'one'
       two = 'two'
   
   
   
-  EnumPostRequest = TypeAliasType("EnumPostRequest", List[EnumPostRequestEnum])
+  EnumRequest = TypeAliasType("EnumRequest", List[EnumRequestItem])
   
   
-  class EnumPostRequest1(StrEnum):
-      one = 'one'
-      two = 'two'
-  
-  
-  class EnumPostResponseEnum(StrEnum):
+  class EnumRequest1(StrEnum):
       one = 'one'
       two = 'two'
   
   
   
-  EnumPostResponse = TypeAliasType("EnumPostResponse", List[EnumPostResponseEnum])
+  UnionRequest = TypeAliasType("UnionRequest", List[Union[int, str]])
   
   
-  class EnumPostResponse1(StrEnum):
+  
+  UnionRequest1 = TypeAliasType("UnionRequest1", Union[int, str])
+  
+  
+  
+  AnyRequest = TypeAliasType("AnyRequest", List[Any])
+  
+  
+  
+  AnyRequest1 = TypeAliasType("AnyRequest1", Any)
+  
+  
+  
+  EmptyRequest = TypeAliasType("EmptyRequest", List[Any])
+  
+  
+  
+  EmptyRequest1 = TypeAliasType("EmptyRequest1", Any)
+  
+  
+  
+  ScalarResponse = TypeAliasType("ScalarResponse", List[int])
+  
+  
+  
+  ScalarResponse1 = TypeAliasType("ScalarResponse1", int)
+  
+  
+  
+  @dataclass
+  class ObjectResponseItem:
+      wire_name: str = Field(..., alias='wire-name')
+  
+  
+  
+  ObjectResponse = TypeAliasType("ObjectResponse", List[ObjectResponseItem])
+  
+  
+  
+  @dataclass
+  class ObjectResponse1:
+      wire_name: str = Field(..., alias='wire-name')
+  
+  
+  class EnumResponseItem(StrEnum):
       one = 'one'
       two = 'two'
   
   
   
-  UnionPostRequest = TypeAliasType("UnionPostRequest", List[Union[int, str]])
+  EnumResponse = TypeAliasType("EnumResponse", List[EnumResponseItem])
+  
+  
+  class EnumResponse1(StrEnum):
+      one = 'one'
+      two = 'two'
   
   
   
-  UnionPostRequest1 = TypeAliasType("UnionPostRequest1", Union[int, str])
+  UnionResponse = TypeAliasType("UnionResponse", List[Union[int, str]])
   
   
   
-  UnionPostResponse = TypeAliasType("UnionPostResponse", List[Union[int, str]])
+  UnionResponse1 = TypeAliasType("UnionResponse1", Union[int, str])
   
   
   
-  UnionPostResponse1 = TypeAliasType("UnionPostResponse1", Union[int, str])
+  AnyResponse = TypeAliasType("AnyResponse", List[Any])
   
   
   
-  AnyPostRequest = TypeAliasType("AnyPostRequest", List[Any])
+  AnyResponse1 = TypeAliasType("AnyResponse1", Any)
   
   
   
-  AnyPostResponse = TypeAliasType("AnyPostResponse", List[Any])
+  EmptyResponse = TypeAliasType("EmptyResponse", List[Any])
   
   
   
-  EmptyPostRequest = TypeAliasType("EmptyPostRequest", Annotated[List[Any], Field(..., max_length=0)])
-  
-  
-  
-  EmptyPostResponse = TypeAliasType("EmptyPostResponse", Annotated[List[Any], Field(..., max_length=0)])
+  EmptyResponse1 = TypeAliasType("EmptyResponse1", Any)
   model_bindings.py
-  _model_0 symbol='models:ObjectPostRequestItem', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/requestBodies/object/content/application~1json/itemSchema'
-    FieldBinding(field_id='models:ObjectPostRequestItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire-name', validation_keys=('wire-name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_1 symbol='models:ObjectPostResponseItem', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/responses/object/content/application~1json/itemSchema'
-    FieldBinding(field_id='models:ObjectPostResponseItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire-name', validation_keys=('wire-name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+  _model_0 symbol='models:ObjectRequestItem', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/requestBodies/object/content/application~1json/itemSchema'
+    FieldBinding(field_id='models:ObjectRequestItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire-name', validation_keys=('wire-name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+  _model_1 symbol='models:ObjectResponseItem', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/responses/object/content/application~1json/itemSchema'
+    FieldBinding(field_id='models:ObjectResponseItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire-name', validation_keys=('wire-name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   codec_0 -> PydanticModelCodec[int]
   codec_1 -> PydanticModelCodec[int]
-  codec_2 -> PydanticModelCodec[models.ObjectPostRequestItem]
-  codec_3 -> PydanticModelCodec[models.ObjectPostResponseItem]
-  codec_4 -> PydanticModelCodec[models.EnumPostRequestEnum]
-  codec_5 -> PydanticModelCodec[models.EnumPostResponseEnum]
+  codec_2 -> PydanticModelCodec[models.ObjectRequestItem]
+  codec_3 -> PydanticModelCodec[models.ObjectResponseItem]
+  codec_4 -> PydanticModelCodec[models.EnumRequestItem]
+  codec_5 -> PydanticModelCodec[models.EnumResponseItem]
   codec_6 -> PydanticModelCodec[int | str]
   codec_7 -> PydanticModelCodec[int | str]
   codec_8 -> PydanticModelCodec[typing.Any]
@@ -503,120 +671,176 @@ render dataclasses.dataclass plain
   
   
   
-  ScalarPostRequest: TypeAlias = List[int]
+  ScalarRequestItem: TypeAlias = int
   
   
   
-  ScalarPostResponse: TypeAlias = List[int]
+  ScalarRequest: TypeAlias = List[ScalarRequestItem]
   
   
   
-  @dataclass
-  class ObjectPostRequestItem:
-      wire_name: str
-  
-  
-  
-  ObjectPostRequest: TypeAlias = List[ObjectPostRequestItem]
+  ScalarRequest1: TypeAlias = int
   
   
   
   @dataclass
-  class ObjectPostRequest1:
+  class ObjectRequestItem:
       wire_name: str
+  
+  
+  
+  ObjectRequest: TypeAlias = List[ObjectRequestItem]
   
   
   
   @dataclass
-  class ObjectPostResponseItem:
+  class ObjectRequest1:
       wire_name: str
   
   
-  
-  ObjectPostResponse: TypeAlias = List[ObjectPostResponseItem]
-  
-  
-  
-  @dataclass
-  class ObjectPostResponse1:
-      wire_name: str
-  
-  
-  class EnumPostRequestEnum(StrEnum):
+  class EnumRequestItem(StrEnum):
       one = 'one'
       two = 'two'
   
   
   
-  EnumPostRequest: TypeAlias = List[EnumPostRequestEnum]
+  EnumRequest: TypeAlias = List[EnumRequestItem]
   
   
-  class EnumPostRequest1(StrEnum):
-      one = 'one'
-      two = 'two'
-  
-  
-  class EnumPostResponseEnum(StrEnum):
+  class EnumRequest1(StrEnum):
       one = 'one'
       two = 'two'
   
   
   
-  EnumPostResponse: TypeAlias = List[EnumPostResponseEnum]
+  UnionRequestItem: TypeAlias = Union[int, str]
   
   
-  class EnumPostResponse1(StrEnum):
+  
+  UnionRequest: TypeAlias = List[UnionRequestItem]
+  
+  
+  
+  UnionRequest1: TypeAlias = Union[int, str]
+  
+  
+  
+  AnyRequestItem: TypeAlias = Any
+  
+  
+  
+  AnyRequest: TypeAlias = List[AnyRequestItem]
+  
+  
+  
+  AnyRequest1: TypeAlias = Any
+  
+  
+  
+  EmptyRequestItem: TypeAlias = Any
+  
+  
+  
+  EmptyRequest: TypeAlias = List[EmptyRequestItem]
+  
+  
+  
+  EmptyRequest1: TypeAlias = Any
+  
+  
+  
+  ScalarResponseItem: TypeAlias = int
+  
+  
+  
+  ScalarResponse: TypeAlias = List[ScalarResponseItem]
+  
+  
+  
+  ScalarResponse1: TypeAlias = int
+  
+  
+  
+  @dataclass
+  class ObjectResponseItem:
+      wire_name: str
+  
+  
+  
+  ObjectResponse: TypeAlias = List[ObjectResponseItem]
+  
+  
+  
+  @dataclass
+  class ObjectResponse1:
+      wire_name: str
+  
+  
+  class EnumResponseItem(StrEnum):
       one = 'one'
       two = 'two'
   
   
   
-  UnionPostRequest: TypeAlias = List[Union[int, str]]
+  EnumResponse: TypeAlias = List[EnumResponseItem]
+  
+  
+  class EnumResponse1(StrEnum):
+      one = 'one'
+      two = 'two'
   
   
   
-  UnionPostRequest1: TypeAlias = Union[int, str]
+  UnionResponseItem: TypeAlias = Union[int, str]
   
   
   
-  UnionPostResponse: TypeAlias = List[Union[int, str]]
+  UnionResponse: TypeAlias = List[UnionResponseItem]
   
   
   
-  UnionPostResponse1: TypeAlias = Union[int, str]
+  UnionResponse1: TypeAlias = Union[int, str]
   
   
   
-  AnyPostRequest: TypeAlias = List[Any]
+  AnyResponseItem: TypeAlias = Any
   
   
   
-  AnyPostResponse: TypeAlias = List[Any]
+  AnyResponse: TypeAlias = List[AnyResponseItem]
   
   
   
-  EmptyPostRequest: TypeAlias = List[Any]
+  AnyResponse1: TypeAlias = Any
   
   
   
-  EmptyPostResponse: TypeAlias = List[Any]
+  EmptyResponseItem: TypeAlias = Any
+  
+  
+  
+  EmptyResponse: TypeAlias = List[EmptyResponseItem]
+  
+  
+  
+  EmptyResponse1: TypeAlias = Any
   model_bindings.py
-  _model_0 symbol='models:ObjectPostRequestItem', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/requestBodies/object/content/application~1json/itemSchema'
-    FieldBinding(field_id='models:ObjectPostRequestItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire_name', validation_keys=('wire_name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_1 symbol='models:ObjectPostResponseItem', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/responses/object/content/application~1json/itemSchema'
-    FieldBinding(field_id='models:ObjectPostResponseItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire_name', validation_keys=('wire_name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  codec_0 -> StructuralModelCodec[int]
-  codec_1 -> StructuralModelCodec[int]
-  codec_2 -> StructuralModelCodec[models.ObjectPostRequestItem]
-  codec_3 -> StructuralModelCodec[models.ObjectPostResponseItem]
-  codec_4 -> StructuralModelCodec[models.EnumPostRequestEnum]
-  codec_5 -> StructuralModelCodec[models.EnumPostResponseEnum]
-  codec_6 -> StructuralModelCodec[int | str]
-  codec_7 -> StructuralModelCodec[int | str]
-  codec_8 -> StructuralModelCodec[typing.Any]
-  codec_9 -> StructuralModelCodec[typing.Any]
-  codec_10 -> StructuralModelCodec[typing.Any]
-  codec_11 -> StructuralModelCodec[typing.Any]
+  _model_0 symbol='models:ObjectRequestItem', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/requestBodies/object/content/application~1json/itemSchema'
+    FieldBinding(field_id='models:ObjectRequestItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire_name', validation_keys=('wire_name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+  _model_1 symbol='models:ObjectResponseItem', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/responses/object/content/application~1json/itemSchema'
+    FieldBinding(field_id='models:ObjectResponseItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire_name', validation_keys=('wire_name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+  codec_0 -> StructuralModelCodec[models.ScalarRequestItem]
+  codec_1 -> StructuralModelCodec[models.ScalarResponseItem]
+  codec_2 -> StructuralModelCodec[models.ObjectRequestItem]
+  codec_3 -> StructuralModelCodec[models.ObjectResponseItem]
+  codec_4 -> StructuralModelCodec[models.EnumRequestItem]
+  codec_5 -> StructuralModelCodec[models.EnumResponseItem]
+  codec_6 -> StructuralModelCodec[models.UnionRequestItem]
+  codec_7 -> StructuralModelCodec[models.UnionResponseItem]
+  codec_8 -> StructuralModelCodec[models.AnyRequestItem]
+  codec_9 -> StructuralModelCodec[models.AnyResponseItem]
+  codec_10 -> StructuralModelCodec[models.EmptyRequestItem]
+  codec_11 -> StructuralModelCodec[models.EmptyResponseItem]
 render dataclasses.dataclass collapsed
   models.py
   # generated by datamodel-codegen:
@@ -629,114 +853,138 @@ render dataclasses.dataclass collapsed
   
   
   
-  ScalarPostRequest: TypeAlias = List[int]
+  ScalarRequest: TypeAlias = List[int]
   
   
   
-  ScalarPostResponse: TypeAlias = List[int]
-  
-  
-  
-  @dataclass
-  class ObjectPostRequestItem:
-      wire_name: str
-  
-  
-  
-  ObjectPostRequest: TypeAlias = List[ObjectPostRequestItem]
+  ScalarRequest1: TypeAlias = int
   
   
   
   @dataclass
-  class ObjectPostRequest1:
+  class ObjectRequestItem:
       wire_name: str
+  
+  
+  
+  ObjectRequest: TypeAlias = List[ObjectRequestItem]
   
   
   
   @dataclass
-  class ObjectPostResponseItem:
+  class ObjectRequest1:
       wire_name: str
   
   
-  
-  ObjectPostResponse: TypeAlias = List[ObjectPostResponseItem]
-  
-  
-  
-  @dataclass
-  class ObjectPostResponse1:
-      wire_name: str
-  
-  
-  class EnumPostRequestEnum(StrEnum):
+  class EnumRequestItem(StrEnum):
       one = 'one'
       two = 'two'
   
   
   
-  EnumPostRequest: TypeAlias = List[EnumPostRequestEnum]
+  EnumRequest: TypeAlias = List[EnumRequestItem]
   
   
-  class EnumPostRequest1(StrEnum):
-      one = 'one'
-      two = 'two'
-  
-  
-  class EnumPostResponseEnum(StrEnum):
+  class EnumRequest1(StrEnum):
       one = 'one'
       two = 'two'
   
   
   
-  EnumPostResponse: TypeAlias = List[EnumPostResponseEnum]
+  UnionRequest: TypeAlias = List[Union[int, str]]
   
   
-  class EnumPostResponse1(StrEnum):
+  
+  UnionRequest1: TypeAlias = Union[int, str]
+  
+  
+  
+  AnyRequest: TypeAlias = List[Any]
+  
+  
+  
+  AnyRequest1: TypeAlias = Any
+  
+  
+  
+  EmptyRequest: TypeAlias = List[Any]
+  
+  
+  
+  EmptyRequest1: TypeAlias = Any
+  
+  
+  
+  ScalarResponse: TypeAlias = List[int]
+  
+  
+  
+  ScalarResponse1: TypeAlias = int
+  
+  
+  
+  @dataclass
+  class ObjectResponseItem:
+      wire_name: str
+  
+  
+  
+  ObjectResponse: TypeAlias = List[ObjectResponseItem]
+  
+  
+  
+  @dataclass
+  class ObjectResponse1:
+      wire_name: str
+  
+  
+  class EnumResponseItem(StrEnum):
       one = 'one'
       two = 'two'
   
   
   
-  UnionPostRequest: TypeAlias = List[Union[int, str]]
+  EnumResponse: TypeAlias = List[EnumResponseItem]
+  
+  
+  class EnumResponse1(StrEnum):
+      one = 'one'
+      two = 'two'
   
   
   
-  UnionPostRequest1: TypeAlias = Union[int, str]
+  UnionResponse: TypeAlias = List[Union[int, str]]
   
   
   
-  UnionPostResponse: TypeAlias = List[Union[int, str]]
+  UnionResponse1: TypeAlias = Union[int, str]
   
   
   
-  UnionPostResponse1: TypeAlias = Union[int, str]
+  AnyResponse: TypeAlias = List[Any]
   
   
   
-  AnyPostRequest: TypeAlias = List[Any]
+  AnyResponse1: TypeAlias = Any
   
   
   
-  AnyPostResponse: TypeAlias = List[Any]
+  EmptyResponse: TypeAlias = List[Any]
   
   
   
-  EmptyPostRequest: TypeAlias = List[Any]
-  
-  
-  
-  EmptyPostResponse: TypeAlias = List[Any]
+  EmptyResponse1: TypeAlias = Any
   model_bindings.py
-  _model_0 symbol='models:ObjectPostRequestItem', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/requestBodies/object/content/application~1json/itemSchema'
-    FieldBinding(field_id='models:ObjectPostRequestItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire_name', validation_keys=('wire_name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_1 symbol='models:ObjectPostResponseItem', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/responses/object/content/application~1json/itemSchema'
-    FieldBinding(field_id='models:ObjectPostResponseItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire_name', validation_keys=('wire_name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+  _model_0 symbol='models:ObjectRequestItem', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/requestBodies/object/content/application~1json/itemSchema'
+    FieldBinding(field_id='models:ObjectRequestItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire_name', validation_keys=('wire_name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+  _model_1 symbol='models:ObjectResponseItem', native_kind='dataclass', schema_id='https://dcg.invalid/inputs/root#/components/responses/object/content/application~1json/itemSchema'
+    FieldBinding(field_id='models:ObjectResponseItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire_name', validation_keys=('wire_name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   codec_0 -> StructuralModelCodec[int]
   codec_1 -> StructuralModelCodec[int]
-  codec_2 -> StructuralModelCodec[models.ObjectPostRequestItem]
-  codec_3 -> StructuralModelCodec[models.ObjectPostResponseItem]
-  codec_4 -> StructuralModelCodec[models.EnumPostRequestEnum]
-  codec_5 -> StructuralModelCodec[models.EnumPostResponseEnum]
+  codec_2 -> StructuralModelCodec[models.ObjectRequestItem]
+  codec_3 -> StructuralModelCodec[models.ObjectResponseItem]
+  codec_4 -> StructuralModelCodec[models.EnumRequestItem]
+  codec_5 -> StructuralModelCodec[models.EnumResponseItem]
   codec_6 -> StructuralModelCodec[int | str]
   codec_7 -> StructuralModelCodec[int | str]
   codec_8 -> StructuralModelCodec[typing.Any]
@@ -750,118 +998,179 @@ render typing.TypedDict plain
   
   from __future__ import annotations
   from typing import Any, List, Literal, TypeAlias, TypedDict, Union
-  from enum import StrEnum
   
   
   
-  ScalarPostRequest: TypeAlias = List[int]
+  ScalarRequestItem: TypeAlias = int
   
   
   
-  ScalarPostResponse: TypeAlias = List[int]
+  ScalarRequest: TypeAlias = List[ScalarRequestItem]
+  
+  
+  
+  ScalarRequest1: TypeAlias = int
   
   
   
   
-  ObjectPostRequestItem = TypedDict('ObjectPostRequestItem', {
+  ObjectRequestItem = TypedDict('ObjectRequestItem', {
       'wire-name': str,})
   
   
   
   
-  ObjectPostRequest: TypeAlias = List[ObjectPostRequestItem]
+  ObjectRequest: TypeAlias = List[ObjectRequestItem]
   
   
   
   
-  ObjectPostRequest1 = TypedDict('ObjectPostRequest1', {
+  ObjectRequest1 = TypedDict('ObjectRequest1', {
       'wire-name': str,})
   
   
   
   
+  EnumRequestItem: TypeAlias = Literal['one', 'two']
   
-  ObjectPostResponseItem = TypedDict('ObjectPostResponseItem', {
+  
+  
+  EnumRequest: TypeAlias = List[EnumRequestItem]
+  
+  
+  
+  EnumRequest1: TypeAlias = Literal['one', 'two']
+  
+  
+  
+  UnionRequestItem: TypeAlias = Union[int, str]
+  
+  
+  
+  UnionRequest: TypeAlias = List[UnionRequestItem]
+  
+  
+  
+  UnionRequest1: TypeAlias = Union[int, str]
+  
+  
+  
+  AnyRequestItem: TypeAlias = Any
+  
+  
+  
+  AnyRequest: TypeAlias = List[AnyRequestItem]
+  
+  
+  
+  AnyRequest1: TypeAlias = Any
+  
+  
+  
+  EmptyRequestItem: TypeAlias = Any
+  
+  
+  
+  EmptyRequest: TypeAlias = List[EmptyRequestItem]
+  
+  
+  
+  EmptyRequest1: TypeAlias = Any
+  
+  
+  
+  ScalarResponseItem: TypeAlias = int
+  
+  
+  
+  ScalarResponse: TypeAlias = List[ScalarResponseItem]
+  
+  
+  
+  ScalarResponse1: TypeAlias = int
+  
+  
+  
+  
+  ObjectResponseItem = TypedDict('ObjectResponseItem', {
       'wire-name': str,})
   
   
   
   
-  ObjectPostResponse: TypeAlias = List[ObjectPostResponseItem]
+  ObjectResponse: TypeAlias = List[ObjectResponseItem]
   
   
   
   
-  ObjectPostResponse1 = TypedDict('ObjectPostResponse1', {
+  ObjectResponse1 = TypedDict('ObjectResponse1', {
       'wire-name': str,})
   
   
   
   
-  EnumPostRequest: TypeAlias = List[Literal['one', 'two']]
-  
-  
-  class EnumPostRequest1(StrEnum):
-      one = 'one'
-      two = 'two'
+  EnumResponseItem: TypeAlias = Literal['one', 'two']
   
   
   
-  EnumPostResponse: TypeAlias = List[Literal['one', 'two']]
-  
-  
-  class EnumPostResponse1(StrEnum):
-      one = 'one'
-      two = 'two'
+  EnumResponse: TypeAlias = List[EnumResponseItem]
   
   
   
-  UnionPostRequest: TypeAlias = List[Union[int, str]]
+  EnumResponse1: TypeAlias = Literal['one', 'two']
   
   
   
-  UnionPostRequest1: TypeAlias = Union[int, str]
+  UnionResponseItem: TypeAlias = Union[int, str]
   
   
   
-  UnionPostResponse: TypeAlias = List[Union[int, str]]
+  UnionResponse: TypeAlias = List[UnionResponseItem]
   
   
   
-  UnionPostResponse1: TypeAlias = Union[int, str]
+  UnionResponse1: TypeAlias = Union[int, str]
   
   
   
-  AnyPostRequest: TypeAlias = List[Any]
+  AnyResponseItem: TypeAlias = Any
   
   
   
-  AnyPostResponse: TypeAlias = List[Any]
+  AnyResponse: TypeAlias = List[AnyResponseItem]
   
   
   
-  EmptyPostRequest: TypeAlias = List[Any]
+  AnyResponse1: TypeAlias = Any
   
   
   
-  EmptyPostResponse: TypeAlias = List[Any]
+  EmptyResponseItem: TypeAlias = Any
+  
+  
+  
+  EmptyResponse: TypeAlias = List[EmptyResponseItem]
+  
+  
+  
+  EmptyResponse1: TypeAlias = Any
   model_bindings.py
-  _model_0 symbol='models:ObjectPostRequestItem', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/requestBodies/object/content/application~1json/itemSchema'
-    FieldBinding(field_id='models:ObjectPostRequestItem.wire_name', native_name='wire-name', wire_name='wire-name', validation_key='wire-name', validation_keys=('wire-name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_1 symbol='models:ObjectPostResponseItem', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/responses/object/content/application~1json/itemSchema'
-    FieldBinding(field_id='models:ObjectPostResponseItem.wire_name', native_name='wire-name', wire_name='wire-name', validation_key='wire-name', validation_keys=('wire-name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  codec_0 -> StructuralModelCodec[int]
-  codec_1 -> StructuralModelCodec[int]
-  codec_2 -> StructuralModelCodec[models.ObjectPostRequestItem]
-  codec_3 -> StructuralModelCodec[models.ObjectPostResponseItem]
-  codec_4 -> StructuralModelCodec[typing.Literal['one', 'two']]
-  codec_5 -> StructuralModelCodec[typing.Literal['one', 'two']]
-  codec_6 -> StructuralModelCodec[int | str]
-  codec_7 -> StructuralModelCodec[int | str]
-  codec_8 -> StructuralModelCodec[typing.Any]
-  codec_9 -> StructuralModelCodec[typing.Any]
-  codec_10 -> StructuralModelCodec[typing.Any]
-  codec_11 -> StructuralModelCodec[typing.Any]
+  _model_0 symbol='models:ObjectRequestItem', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/requestBodies/object/content/application~1json/itemSchema'
+    FieldBinding(field_id='models:ObjectRequestItem.wire_name', native_name='wire-name', wire_name='wire-name', validation_key='wire-name', validation_keys=('wire-name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+  _model_1 symbol='models:ObjectResponseItem', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/responses/object/content/application~1json/itemSchema'
+    FieldBinding(field_id='models:ObjectResponseItem.wire_name', native_name='wire-name', wire_name='wire-name', validation_key='wire-name', validation_keys=('wire-name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+  codec_0 -> StructuralModelCodec[models.ScalarRequestItem]
+  codec_1 -> StructuralModelCodec[models.ScalarResponseItem]
+  codec_2 -> StructuralModelCodec[models.ObjectRequestItem]
+  codec_3 -> StructuralModelCodec[models.ObjectResponseItem]
+  codec_4 -> StructuralModelCodec[models.EnumRequestItem]
+  codec_5 -> StructuralModelCodec[models.EnumResponseItem]
+  codec_6 -> StructuralModelCodec[models.UnionRequestItem]
+  codec_7 -> StructuralModelCodec[models.UnionResponseItem]
+  codec_8 -> StructuralModelCodec[models.AnyRequestItem]
+  codec_9 -> StructuralModelCodec[models.AnyResponseItem]
+  codec_10 -> StructuralModelCodec[models.EmptyRequestItem]
+  codec_11 -> StructuralModelCodec[models.EmptyResponseItem]
 render typing.TypedDict collapsed
   models.py
   # generated by datamodel-codegen:
@@ -869,110 +1178,131 @@ render typing.TypedDict collapsed
   
   from __future__ import annotations
   from typing import Any, List, Literal, TypeAlias, TypedDict, Union
-  from enum import StrEnum
   
   
   
-  ScalarPostRequest: TypeAlias = List[int]
+  ScalarRequest: TypeAlias = List[int]
   
   
   
-  ScalarPostResponse: TypeAlias = List[int]
+  ScalarRequest1: TypeAlias = int
   
   
   
   
-  ObjectPostRequestItem = TypedDict('ObjectPostRequestItem', {
+  ObjectRequestItem = TypedDict('ObjectRequestItem', {
       'wire-name': str,})
   
   
   
   
-  ObjectPostRequest: TypeAlias = List[ObjectPostRequestItem]
+  ObjectRequest: TypeAlias = List[ObjectRequestItem]
   
   
   
   
-  ObjectPostRequest1 = TypedDict('ObjectPostRequest1', {
+  ObjectRequest1 = TypedDict('ObjectRequest1', {
       'wire-name': str,})
   
   
   
   
+  EnumRequest: TypeAlias = List[Literal['one', 'two']]
   
-  ObjectPostResponseItem = TypedDict('ObjectPostResponseItem', {
+  
+  
+  EnumRequest1: TypeAlias = Literal['one', 'two']
+  
+  
+  
+  UnionRequest: TypeAlias = List[Union[int, str]]
+  
+  
+  
+  UnionRequest1: TypeAlias = Union[int, str]
+  
+  
+  
+  AnyRequest: TypeAlias = List[Any]
+  
+  
+  
+  AnyRequest1: TypeAlias = Any
+  
+  
+  
+  EmptyRequest: TypeAlias = List[Any]
+  
+  
+  
+  EmptyRequest1: TypeAlias = Any
+  
+  
+  
+  ScalarResponse: TypeAlias = List[int]
+  
+  
+  
+  ScalarResponse1: TypeAlias = int
+  
+  
+  
+  
+  ObjectResponseItem = TypedDict('ObjectResponseItem', {
       'wire-name': str,})
   
   
   
   
-  ObjectPostResponse: TypeAlias = List[ObjectPostResponseItem]
+  ObjectResponse: TypeAlias = List[ObjectResponseItem]
   
   
   
   
-  ObjectPostResponse1 = TypedDict('ObjectPostResponse1', {
+  ObjectResponse1 = TypedDict('ObjectResponse1', {
       'wire-name': str,})
   
   
   
   
-  EnumPostRequest: TypeAlias = List[Literal['one', 'two']]
-  
-  
-  class EnumPostRequest1(StrEnum):
-      one = 'one'
-      two = 'two'
+  EnumResponse: TypeAlias = List[Literal['one', 'two']]
   
   
   
-  EnumPostResponse: TypeAlias = List[Literal['one', 'two']]
-  
-  
-  class EnumPostResponse1(StrEnum):
-      one = 'one'
-      two = 'two'
+  EnumResponse1: TypeAlias = Literal['one', 'two']
   
   
   
-  UnionPostRequest: TypeAlias = List[Union[int, str]]
+  UnionResponse: TypeAlias = List[Union[int, str]]
   
   
   
-  UnionPostRequest1: TypeAlias = Union[int, str]
+  UnionResponse1: TypeAlias = Union[int, str]
   
   
   
-  UnionPostResponse: TypeAlias = List[Union[int, str]]
+  AnyResponse: TypeAlias = List[Any]
   
   
   
-  UnionPostResponse1: TypeAlias = Union[int, str]
+  AnyResponse1: TypeAlias = Any
   
   
   
-  AnyPostRequest: TypeAlias = List[Any]
+  EmptyResponse: TypeAlias = List[Any]
   
   
   
-  AnyPostResponse: TypeAlias = List[Any]
-  
-  
-  
-  EmptyPostRequest: TypeAlias = List[Any]
-  
-  
-  
-  EmptyPostResponse: TypeAlias = List[Any]
+  EmptyResponse1: TypeAlias = Any
   model_bindings.py
-  _model_0 symbol='models:ObjectPostRequestItem', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/requestBodies/object/content/application~1json/itemSchema'
-    FieldBinding(field_id='models:ObjectPostRequestItem.wire_name', native_name='wire-name', wire_name='wire-name', validation_key='wire-name', validation_keys=('wire-name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_1 symbol='models:ObjectPostResponseItem', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/responses/object/content/application~1json/itemSchema'
-    FieldBinding(field_id='models:ObjectPostResponseItem.wire_name', native_name='wire-name', wire_name='wire-name', validation_key='wire-name', validation_keys=('wire-name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+  _model_0 symbol='models:ObjectRequestItem', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/requestBodies/object/content/application~1json/itemSchema'
+    FieldBinding(field_id='models:ObjectRequestItem.wire_name', native_name='wire-name', wire_name='wire-name', validation_key='wire-name', validation_keys=('wire-name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+  _model_1 symbol='models:ObjectResponseItem', native_kind='typed_dict', schema_id='https://dcg.invalid/inputs/root#/components/responses/object/content/application~1json/itemSchema'
+    FieldBinding(field_id='models:ObjectResponseItem.wire_name', native_name='wire-name', wire_name='wire-name', validation_key='wire-name', validation_keys=('wire-name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   codec_0 -> StructuralModelCodec[int]
   codec_1 -> StructuralModelCodec[int]
-  codec_2 -> StructuralModelCodec[models.ObjectPostRequestItem]
-  codec_3 -> StructuralModelCodec[models.ObjectPostResponseItem]
+  codec_2 -> StructuralModelCodec[models.ObjectRequestItem]
+  codec_3 -> StructuralModelCodec[models.ObjectResponseItem]
   codec_4 -> StructuralModelCodec[typing.Literal['one', 'two']]
   codec_5 -> StructuralModelCodec[typing.Literal['one', 'two']]
   codec_6 -> StructuralModelCodec[int | str]
@@ -993,116 +1323,172 @@ render msgspec.Struct plain
   
   
   
-  ScalarPostRequest: TypeAlias = List[int]
+  ScalarRequestItem: TypeAlias = int
   
   
   
-  ScalarPostResponse: TypeAlias = List[int]
+  ScalarRequest: TypeAlias = List[ScalarRequestItem]
   
   
   
-  class ObjectPostRequestItem(Struct):
+  ScalarRequest1: TypeAlias = int
+  
+  
+  
+  class ObjectRequestItem(Struct):
       wire_name: str = field(name='wire-name')
   
   
   
-  ObjectPostRequest: TypeAlias = List[ObjectPostRequestItem]
+  ObjectRequest: TypeAlias = List[ObjectRequestItem]
   
   
   
-  class ObjectPostRequest1(Struct):
+  class ObjectRequest1(Struct):
       wire_name: str = field(name='wire-name')
   
   
-  
-  class ObjectPostResponseItem(Struct):
-      wire_name: str = field(name='wire-name')
-  
-  
-  
-  ObjectPostResponse: TypeAlias = List[ObjectPostResponseItem]
-  
-  
-  
-  class ObjectPostResponse1(Struct):
-      wire_name: str = field(name='wire-name')
-  
-  
-  class EnumPostRequestEnum(StrEnum):
+  class EnumRequestItem(StrEnum):
       one = 'one'
       two = 'two'
   
   
   
-  EnumPostRequest: TypeAlias = List[EnumPostRequestEnum]
+  EnumRequest: TypeAlias = List[EnumRequestItem]
   
   
-  class EnumPostRequest1(StrEnum):
-      one = 'one'
-      two = 'two'
-  
-  
-  class EnumPostResponseEnum(StrEnum):
+  class EnumRequest1(StrEnum):
       one = 'one'
       two = 'two'
   
   
   
-  EnumPostResponse: TypeAlias = List[EnumPostResponseEnum]
+  UnionRequestItem: TypeAlias = Union[int, str]
   
   
-  class EnumPostResponse1(StrEnum):
+  
+  UnionRequest: TypeAlias = List[UnionRequestItem]
+  
+  
+  
+  UnionRequest1: TypeAlias = Union[int, str]
+  
+  
+  
+  AnyRequestItem: TypeAlias = Any
+  
+  
+  
+  AnyRequest: TypeAlias = List[AnyRequestItem]
+  
+  
+  
+  AnyRequest1: TypeAlias = Any
+  
+  
+  
+  EmptyRequestItem: TypeAlias = Any
+  
+  
+  
+  EmptyRequest: TypeAlias = List[EmptyRequestItem]
+  
+  
+  
+  EmptyRequest1: TypeAlias = Any
+  
+  
+  
+  ScalarResponseItem: TypeAlias = int
+  
+  
+  
+  ScalarResponse: TypeAlias = List[ScalarResponseItem]
+  
+  
+  
+  ScalarResponse1: TypeAlias = int
+  
+  
+  
+  class ObjectResponseItem(Struct):
+      wire_name: str = field(name='wire-name')
+  
+  
+  
+  ObjectResponse: TypeAlias = List[ObjectResponseItem]
+  
+  
+  
+  class ObjectResponse1(Struct):
+      wire_name: str = field(name='wire-name')
+  
+  
+  class EnumResponseItem(StrEnum):
       one = 'one'
       two = 'two'
   
   
   
-  UnionPostRequest: TypeAlias = List[Union[int, str]]
+  EnumResponse: TypeAlias = List[EnumResponseItem]
+  
+  
+  class EnumResponse1(StrEnum):
+      one = 'one'
+      two = 'two'
   
   
   
-  UnionPostRequest1: TypeAlias = Union[int, str]
+  UnionResponseItem: TypeAlias = Union[int, str]
   
   
   
-  UnionPostResponse: TypeAlias = List[Union[int, str]]
+  UnionResponse: TypeAlias = List[UnionResponseItem]
   
   
   
-  UnionPostResponse1: TypeAlias = Union[int, str]
+  UnionResponse1: TypeAlias = Union[int, str]
   
   
   
-  AnyPostRequest: TypeAlias = List[Any]
+  AnyResponseItem: TypeAlias = Any
   
   
   
-  AnyPostResponse: TypeAlias = List[Any]
+  AnyResponse: TypeAlias = List[AnyResponseItem]
   
   
   
-  EmptyPostRequest: TypeAlias = List[Any]
+  AnyResponse1: TypeAlias = Any
   
   
   
-  EmptyPostResponse: TypeAlias = List[Any]
+  EmptyResponseItem: TypeAlias = Any
+  
+  
+  
+  EmptyResponse: TypeAlias = List[EmptyResponseItem]
+  
+  
+  
+  EmptyResponse1: TypeAlias = Any
   model_bindings.py
-  _model_0 symbol='models:ObjectPostRequestItem', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/requestBodies/object/content/application~1json/itemSchema'
-    FieldBinding(field_id='models:ObjectPostRequestItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire_name', validation_keys=('wire_name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_1 symbol='models:ObjectPostResponseItem', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/responses/object/content/application~1json/itemSchema'
-    FieldBinding(field_id='models:ObjectPostResponseItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire_name', validation_keys=('wire_name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  codec_0 -> StructuralModelCodec[int]
-  codec_1 -> StructuralModelCodec[int]
-  codec_2 -> StructuralModelCodec[models.ObjectPostRequestItem]
-  codec_3 -> StructuralModelCodec[models.ObjectPostResponseItem]
-  codec_4 -> StructuralModelCodec[models.EnumPostRequestEnum]
-  codec_5 -> StructuralModelCodec[models.EnumPostResponseEnum]
-  codec_6 -> StructuralModelCodec[int | str]
-  codec_7 -> StructuralModelCodec[int | str]
-  codec_8 -> StructuralModelCodec[typing.Any]
-  codec_9 -> StructuralModelCodec[typing.Any]
-  codec_10 -> StructuralModelCodec[typing.Any]
-  codec_11 -> StructuralModelCodec[typing.Any]
+  _model_0 symbol='models:ObjectRequestItem', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/requestBodies/object/content/application~1json/itemSchema'
+    FieldBinding(field_id='models:ObjectRequestItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire_name', validation_keys=('wire_name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+  _model_1 symbol='models:ObjectResponseItem', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/responses/object/content/application~1json/itemSchema'
+    FieldBinding(field_id='models:ObjectResponseItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire_name', validation_keys=('wire_name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+  codec_0 -> StructuralModelCodec[models.ScalarRequestItem]
+  codec_1 -> StructuralModelCodec[models.ScalarResponseItem]
+  codec_2 -> StructuralModelCodec[models.ObjectRequestItem]
+  codec_3 -> StructuralModelCodec[models.ObjectResponseItem]
+  codec_4 -> StructuralModelCodec[models.EnumRequestItem]
+  codec_5 -> StructuralModelCodec[models.EnumResponseItem]
+  codec_6 -> StructuralModelCodec[models.UnionRequestItem]
+  codec_7 -> StructuralModelCodec[models.UnionResponseItem]
+  codec_8 -> StructuralModelCodec[models.AnyRequestItem]
+  codec_9 -> StructuralModelCodec[models.AnyResponseItem]
+  codec_10 -> StructuralModelCodec[models.EmptyRequestItem]
+  codec_11 -> StructuralModelCodec[models.EmptyResponseItem]
 render msgspec.Struct collapsed
   models.py
   # generated by datamodel-codegen:
@@ -1115,110 +1501,134 @@ render msgspec.Struct collapsed
   
   
   
-  ScalarPostRequest: TypeAlias = List[int]
+  ScalarRequest: TypeAlias = List[int]
   
   
   
-  ScalarPostResponse: TypeAlias = List[int]
+  ScalarRequest1: TypeAlias = int
   
   
   
-  class ObjectPostRequestItem(Struct):
+  class ObjectRequestItem(Struct):
       wire_name: str = field(name='wire-name')
   
   
   
-  ObjectPostRequest: TypeAlias = List[ObjectPostRequestItem]
+  ObjectRequest: TypeAlias = List[ObjectRequestItem]
   
   
   
-  class ObjectPostRequest1(Struct):
+  class ObjectRequest1(Struct):
       wire_name: str = field(name='wire-name')
   
   
-  
-  class ObjectPostResponseItem(Struct):
-      wire_name: str = field(name='wire-name')
-  
-  
-  
-  ObjectPostResponse: TypeAlias = List[ObjectPostResponseItem]
-  
-  
-  
-  class ObjectPostResponse1(Struct):
-      wire_name: str = field(name='wire-name')
-  
-  
-  class EnumPostRequestEnum(StrEnum):
+  class EnumRequestItem(StrEnum):
       one = 'one'
       two = 'two'
   
   
   
-  EnumPostRequest: TypeAlias = List[EnumPostRequestEnum]
+  EnumRequest: TypeAlias = List[EnumRequestItem]
   
   
-  class EnumPostRequest1(StrEnum):
-      one = 'one'
-      two = 'two'
-  
-  
-  class EnumPostResponseEnum(StrEnum):
+  class EnumRequest1(StrEnum):
       one = 'one'
       two = 'two'
   
   
   
-  EnumPostResponse: TypeAlias = List[EnumPostResponseEnum]
+  UnionRequest: TypeAlias = List[Union[int, str]]
   
   
-  class EnumPostResponse1(StrEnum):
+  
+  UnionRequest1: TypeAlias = Union[int, str]
+  
+  
+  
+  AnyRequest: TypeAlias = List[Any]
+  
+  
+  
+  AnyRequest1: TypeAlias = Any
+  
+  
+  
+  EmptyRequest: TypeAlias = List[Any]
+  
+  
+  
+  EmptyRequest1: TypeAlias = Any
+  
+  
+  
+  ScalarResponse: TypeAlias = List[int]
+  
+  
+  
+  ScalarResponse1: TypeAlias = int
+  
+  
+  
+  class ObjectResponseItem(Struct):
+      wire_name: str = field(name='wire-name')
+  
+  
+  
+  ObjectResponse: TypeAlias = List[ObjectResponseItem]
+  
+  
+  
+  class ObjectResponse1(Struct):
+      wire_name: str = field(name='wire-name')
+  
+  
+  class EnumResponseItem(StrEnum):
       one = 'one'
       two = 'two'
   
   
   
-  UnionPostRequest: TypeAlias = List[Union[int, str]]
+  EnumResponse: TypeAlias = List[EnumResponseItem]
+  
+  
+  class EnumResponse1(StrEnum):
+      one = 'one'
+      two = 'two'
   
   
   
-  UnionPostRequest1: TypeAlias = Union[int, str]
+  UnionResponse: TypeAlias = List[Union[int, str]]
   
   
   
-  UnionPostResponse: TypeAlias = List[Union[int, str]]
+  UnionResponse1: TypeAlias = Union[int, str]
   
   
   
-  UnionPostResponse1: TypeAlias = Union[int, str]
+  AnyResponse: TypeAlias = List[Any]
   
   
   
-  AnyPostRequest: TypeAlias = List[Any]
+  AnyResponse1: TypeAlias = Any
   
   
   
-  AnyPostResponse: TypeAlias = List[Any]
+  EmptyResponse: TypeAlias = List[Any]
   
   
   
-  EmptyPostRequest: TypeAlias = List[Any]
-  
-  
-  
-  EmptyPostResponse: TypeAlias = List[Any]
+  EmptyResponse1: TypeAlias = Any
   model_bindings.py
-  _model_0 symbol='models:ObjectPostRequestItem', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/requestBodies/object/content/application~1json/itemSchema'
-    FieldBinding(field_id='models:ObjectPostRequestItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire_name', validation_keys=('wire_name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
-  _model_1 symbol='models:ObjectPostResponseItem', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/responses/object/content/application~1json/itemSchema'
-    FieldBinding(field_id='models:ObjectPostResponseItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire_name', validation_keys=('wire_name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+  _model_0 symbol='models:ObjectRequestItem', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/requestBodies/object/content/application~1json/itemSchema'
+    FieldBinding(field_id='models:ObjectRequestItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire_name', validation_keys=('wire_name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
+  _model_1 symbol='models:ObjectResponseItem', native_kind='struct', schema_id='https://dcg.invalid/inputs/root#/components/responses/object/content/application~1json/itemSchema'
+    FieldBinding(field_id='models:ObjectResponseItem.wire_name', native_name='wire_name', wire_name='wire-name', validation_key='wire_name', validation_keys=('wire_name',), required=True, read_only=False, write_only=False, omit_none=False, type=LeafNode())
   codec_0 -> StructuralModelCodec[int]
   codec_1 -> StructuralModelCodec[int]
-  codec_2 -> StructuralModelCodec[models.ObjectPostRequestItem]
-  codec_3 -> StructuralModelCodec[models.ObjectPostResponseItem]
-  codec_4 -> StructuralModelCodec[models.EnumPostRequestEnum]
-  codec_5 -> StructuralModelCodec[models.EnumPostResponseEnum]
+  codec_2 -> StructuralModelCodec[models.ObjectRequestItem]
+  codec_3 -> StructuralModelCodec[models.ObjectResponseItem]
+  codec_4 -> StructuralModelCodec[models.EnumRequestItem]
+  codec_5 -> StructuralModelCodec[models.EnumResponseItem]
   codec_6 -> StructuralModelCodec[int | str]
   codec_7 -> StructuralModelCodec[int | str]
   codec_8 -> StructuralModelCodec[typing.Any]
