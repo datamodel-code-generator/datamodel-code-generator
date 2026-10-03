@@ -324,7 +324,8 @@ async def _async(harness: _Harness, lines: list[str]) -> None:
         exchange.respond(*_results((["a"], "c2"), (["b"], None)))
         await adrained(lines, "async cursor pages", api.protocols.items.search_all.iterate(body=harness.query()))
         exchange.respond(*_results((["a"], None)))
-        await arecord(lines, "async bodyless pages", lambda: api.protocols.items.listing.page().items)
+        page = await api.protocols.items.listing.page()
+        record(lines, "async bodyless pages", lambda: page.items)
         exchange.respond(
             json_response(202, {"id": "c1", "status": "running"}),
             json_response(200, {"id": "c1", "status": "done", "result": {"value": "ok"}}),
