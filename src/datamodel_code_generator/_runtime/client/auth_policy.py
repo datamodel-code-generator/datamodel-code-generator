@@ -13,7 +13,6 @@ from urllib.parse import quote, urlsplit, urlunsplit
 from typing_extensions import TypeIs
 
 from ..model_codecs.unset import Unset
-from .admission import AsyncTokenAcquirer, TokenAcquirer
 from .auth import (
     ApiKeyCredential,
     BasicCredential,
@@ -27,15 +26,10 @@ from .errors import (
     AuthConfigurationError,
     AuthProviderExecutionError,
     AuthRefreshError,
-    ClientClosedError,
-    DeadlineExceededError,
     DeliveryState,
-    HookExecutionError,
-    RequestCancelledError,
     SigningConfigurationError,
     SigningExecutionError,
     TokenExpiredError,
-    UnsupportedAsyncBackendError,
 )
 from .responses import HeadersView
 from .security import SecurityRequirement, SecurityScheme, UnavailableSecurityScheme
@@ -45,15 +39,12 @@ from .urls import URLValidationError, canonical_origin, strip_query
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
-    from .admission import CallAdmission
     from .auth import (
         AccessToken,
         AsyncCloseableCredentialProvider,
         AsyncCredentialProvider,
         AsyncRefreshableTokenProvider,
         AsyncRequestSigner,
-        AsyncTokenLoad,
-        AsyncTokenStore,
         AuthConfig,
         CloseableCredentialProvider,
         CredentialContext,
@@ -63,8 +54,6 @@ if TYPE_CHECKING:
         RefreshableTokenProvider,
         RequestSigner,
         SigningInput,
-        TokenLoad,
-        TokenStore,
         TokenVersion,
     )
     from .bodies import AsyncBodyAttempt, BodyAttempt
@@ -92,7 +81,6 @@ class BoundCredential:
     required_scopes: tuple[str, ...]
     provider: CredentialProvider
     refreshable: RefreshableTokenProvider | None
-    acquirer: TokenAcquirer | None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True, repr=False)
@@ -103,7 +91,6 @@ class AsyncBoundCredential:
     required_scopes: tuple[str, ...]
     provider: AsyncCredentialProvider
     refreshable: AsyncRefreshableTokenProvider | None
-    acquirer: AsyncTokenAcquirer | None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True, repr=False)
@@ -186,26 +173,6 @@ def sync_provider(value: object) -> TypeIs[CredentialProvider]:
 def async_provider(value: object) -> TypeIs[AsyncCredentialProvider]:
     """Recognize a credential provider whose get method is a coroutine function."""
     return _method(value, "get", asynchronous=True)
-
-
-def sync_load(value: object) -> TypeIs[TokenLoad]:
-    """Recognize a token load whose load method is synchronous."""
-    return _method(value, "load", asynchronous=False)
-
-
-def async_load(value: object) -> TypeIs[AsyncTokenLoad]:
-    """Recognize a token load whose load method is a coroutine function."""
-    return _method(value, "load", asynchronous=True)
-
-
-def sync_store(value: object) -> TypeIs[TokenStore]:
-    """Recognize a token store whose store method is synchronous."""
-    return _method(value, "store", asynchronous=False)
-
-
-def async_store(value: object) -> TypeIs[AsyncTokenStore]:
-    """Recognize a token store whose store method is a coroutine function."""
-    return _method(value, "store", asynchronous=True)
 
 
 def is_sync_closeable(value: object) -> TypeIs[CloseableCredentialProvider]:
@@ -389,7 +356,6 @@ def bind_auth(
                 required_scopes=requirement.required_scopes,
                 provider=provider,
                 refreshable=provider if _sync_refreshable(provider) else None,
-                acquirer=provider if isinstance(provider, TokenAcquirer) else None,
             )
         )
     return BoundAuth(
@@ -433,7 +399,6 @@ def bind_async_auth(
                 required_scopes=requirement.required_scopes,
                 provider=provider,
                 refreshable=provider if _async_refreshable(provider) else None,
-                acquirer=provider if isinstance(provider, AsyncTokenAcquirer) else None,
             )
         )
     return AsyncBoundAuth(
@@ -556,43 +521,18 @@ def _provider_calls(
 
 _PROVIDER_KEPT: Final = (AuthConfigurationError, AuthRefreshError)
 _GET: Final = _provider_calls("get", _PROVIDER_KEPT)
-_ACQUIRE: Final = _provider_calls(
-    "get",
-    (
-        *_PROVIDER_KEPT,
-        ClientClosedError,
-        DeadlineExceededError,
-        HookExecutionError,
-        RequestCancelledError,
-        UnsupportedAsyncBackendError,
-    ),
-)
 _INVALIDATE: Final = _Wrapped(_PROVIDER_KEPT, partial(_provider_failure, "invalidate", DeliveryState.RESPONSE_STARTED))
 _REFRESH: Final = _provider_calls("refresh", _PROVIDER_KEPT)
 
 
-def get_credential(
-    binding: BoundCredential, context: CredentialContext, delivery: DeliveryState, admission: CallAdmission
-) -> object:
-    """Ask a synchronous provider for material, retaining classified auth failures; the caller validates it.
-
-    A provider of the SDK acquires on the call's account, and the call's own stop and hook failures stay the call's: a
-    waiting call observes its client, deadline, and cancel token itself, never through the provider's own checks.
-    """
-    if (acquirer := binding.acquirer) is not None:
-        with _ACQUIRE[delivery]:
-            return acquirer.acquire_for(context, admission)
+def get_credential(binding: BoundCredential, context: CredentialContext, delivery: DeliveryState) -> object:
+    """Ask a synchronous provider for material, retaining classified auth failures; the caller validates it."""
     with _GET[delivery]:
         return binding.provider.get(context)
 
 
-async def aget_credential(
-    binding: AsyncBoundCredential, context: CredentialContext, delivery: DeliveryState, admission: CallAdmission
-) -> object:
+async def aget_credential(binding: AsyncBoundCredential, context: CredentialContext, delivery: DeliveryState) -> object:
     """Ask an asynchronous provider for material in the existing caller-owned operation; the caller validates it."""
-    if (acquirer := binding.acquirer) is not None:
-        with _ACQUIRE[delivery]:
-            return await acquirer.acquire_for(context, admission)
     with _GET[delivery]:
         return await binding.provider.get(context)
 
