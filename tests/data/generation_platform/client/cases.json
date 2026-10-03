@@ -628,7 +628,12 @@
         ],
         "reason": "msgspec validates its union only against the schema."
       }
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "fields-structural": {
     "input": "fields.yaml",
@@ -674,7 +679,12 @@
           "schema"
         ]
       }
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "fields-unpack": {
     "input": "fields.yaml",
@@ -718,7 +728,12 @@
         ],
         "reason": "The fields-structural and fields-arguments cases cover the union body."
       }
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "fields-arguments": {
     "input": "fields.yaml",
@@ -764,7 +779,12 @@
           "pydantic"
         ]
       }
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "fields-errors": {
     "input": "fields.yaml",
@@ -914,7 +934,12 @@
         ],
         "reason": "The fields-structural and fields-arguments cases cover the union body."
       }
-    }
+    },
+    "modules": [
+      [
+        "models.py"
+      ]
+    ]
   },
   "retries": {
     "input": "retries.yaml",
