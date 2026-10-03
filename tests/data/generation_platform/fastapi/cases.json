@@ -7,10 +7,14 @@
     ],
     "runtime": [
       "pydantic_v2.BaseModel"
+    ],
+    "package_snapshots": [
+      "pydantic_v2.BaseModel"
     ]
   },
   "parameters": {
-    "input": "parameters.yaml"
+    "input": "parameters.yaml",
+    "package_snapshots": []
   },
   "bodies": {
     "input": "bodies.yaml",
@@ -42,7 +46,8 @@
         ],
         "reason": "Two request modes."
       }
-    }
+    },
+    "package_snapshots": []
   },
   "responses": {
     "input": "responses.yaml",
@@ -60,7 +65,8 @@
           }
         ]
       ]
-    }
+    },
+    "package_snapshots": []
   },
   "names": {
     "input": "names.yaml",
@@ -89,7 +95,8 @@
     "input": "pets.yaml",
     "config": {
       "layout": "single"
-    }
+    },
+    "package_snapshots": []
   },
   "standalone": {
     "input": "pets.yaml",
@@ -98,7 +105,8 @@
       "package_version": "1.0.0",
       "distribution_name": "pets-server",
       "model_dependency": "pets-models>=1.0"
-    }
+    },
+    "package_snapshots": []
   },
   "encoding": {
     "input": "server-parameters.yaml",
@@ -290,7 +298,8 @@
       "use_annotated": true,
       "field_constraints": true,
       "output_datetime_class": "datetime"
-    }
+    },
+    "package_snapshots": []
   },
   "unbound": {
     "input": "unbound.yaml",
@@ -406,7 +415,8 @@
       },
       "use_missing_sentinel": true,
       "field_include_all_keys": true
-    }
+    },
+    "package_snapshots": []
   },
   "native-readonly": {
     "input": "bodies.yaml",
@@ -420,7 +430,8 @@
         ],
         "reason": "Split models."
       }
-    }
+    },
+    "package_snapshots": []
   },
   "native-custom": {
     "input": "custom-models.yaml",
@@ -482,7 +493,8 @@
           "async"
         ]
       ]
-    }
+    },
+    "package_snapshots": []
   },
   "security-errors": {
     "input": "security-errors.yaml"
@@ -515,7 +527,8 @@
           "async"
         ]
       ]
-    }
+    },
+    "package_snapshots": []
   },
   "empty": {
     "input": "services.yaml",
@@ -736,7 +749,8 @@
         ]
       ],
       "templates": "templates/custom"
-    }
+    },
+    "package_snapshots": []
   },
   "template-roles": {
     "input": "hooks.yaml",
@@ -752,7 +766,8 @@
         ]
       ],
       "templates": "templates/roles"
-    }
+    },
+    "package_snapshots": []
   },
   "template-invalid": {
     "input": "hooks.yaml",
