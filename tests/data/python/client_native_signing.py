@@ -280,6 +280,7 @@ def _isolation(package: ModuleType, auth: ModuleType, options: ModuleType, lines
         mode = "async" if asynchronous else "sync"
         for ownership in ("borrowed", "owned"):
             server = NativeFixture(http2=True)
+            authority = server.url.partition("://")[2]
             server.content_type = b"application/octet-stream"
             events: list[str] = []
             signers = tuple((_AsyncSigner if asynchronous else _Signer)(auth, server.url, events, index) for index in (1, 2))
@@ -288,7 +289,7 @@ def _isolation(package: ModuleType, auth: ModuleType, options: ModuleType, lines
             def native_request(request: httpx2.Request) -> None:
                 seen.append((
                     str(request.url).replace(server.url, "<origin>"),
-                    tuple((name.lower(), value.replace(f"localhost:{server.port}", "<authority>")) for name, value in request.headers.multi_items()),
+                    tuple((name.lower(), value.replace(authority, "<authority>")) for name, value in request.headers.multi_items()),
                 ))
 
             settings = options.ClientOptions(
@@ -349,7 +350,7 @@ def _isolation(package: ModuleType, auth: ModuleType, options: ModuleType, lines
                 lines.append(f"    signer1={signers[0].inputs} signer2={signers[1].inputs}")
                 lines.append(f"    native requests={seen}")
                 lines.append(
-                    f"    wire={server.requests} headers={tuple(tuple((name, value.replace(f'localhost:{server.port}'.encode(), b'<authority>')) for name, value in fields) for fields in server.request_headers)} alpn={server.protocols}"
+                    f"    wire={server.requests} headers={tuple(tuple((name, value.replace(authority.encode(), b'<authority>')) for name, value in fields) for fields in server.request_headers)} alpn={server.protocols}"
                 )
             finally:
                 server.stop()
@@ -395,6 +396,7 @@ def _adapters(package: ModuleType, auth: ModuleType, options: ModuleType, bodies
     for asynchronous in (False, True):
         mode = "async" if asynchronous else "sync"
         server = NativeFixture()
+        authority = server.url.partition("://")[2]
         server.content_type = b"application/octet-stream"
         events: list[str] = []
         signer = (_AsyncSigner if asynchronous else _Signer)(auth, server.url, events)
@@ -433,7 +435,7 @@ def _adapters(package: ModuleType, auth: ModuleType, options: ModuleType, bodies
                         record(lines, f"{mode} adapter {label}", call)
                         _observed(lines, server, signer, events)
             lines.append(
-                f"    adapter requests={tuple((getattr(request, 'method'), getattr(request, 'url').replace(server.url, '<origin>'), tuple((name.lower(), value.replace(f'localhost:{server.port}', '<authority>')) for name, value in getattr(request, 'headers'))) for request in adapter.requests)} closed={adapter.client.is_closed}"
+                f"    adapter requests={tuple((getattr(request, 'method'), getattr(request, 'url').replace(server.url, '<origin>'), tuple((name.lower(), value.replace(authority, '<authority>')) for name, value in getattr(request, 'headers'))) for request in adapter.requests)} closed={adapter.client.is_closed}"
             )
         finally:
             server.stop()
