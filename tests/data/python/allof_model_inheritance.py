@@ -8,6 +8,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import os
 import sys
 import typing
 from contextlib import redirect_stderr, redirect_stdout
@@ -19,11 +20,13 @@ from datamodel_code_generator.__main__ import Exit
 from datamodel_code_generator.format import Formatter
 
 
-def inventory(path: Path) -> dict[str, str]:
-    """Record every output byte digest, including a preexisting destination."""
+def inventory(path: Path, *, logical_text: bool = False) -> dict[str, str]:
+    """Hash raw bytes for transaction equality; serialize text inventories with LF."""
     files = sorted(path.rglob("*")) if path.is_dir() else [path] if path.exists() else []
     return {
-        str(file.relative_to(path)) if path.is_dir() else file.name: hashlib.sha256(file.read_bytes()).hexdigest()
+        str(file.relative_to(path)) if path.is_dir() else file.name: hashlib.sha256(
+            file.read_text(encoding="utf-8").encode("utf-8") if logical_text else file.read_bytes()
+        ).hexdigest()
         for file in files
         if file.is_file()
     }
@@ -132,6 +135,13 @@ def native_value(row: dict[str, Any], module: Any, cls: Any) -> tuple[Any, Any]:
     return instance, value
 
 
+def annotation_fact(value: Any) -> str:
+    """Record forward expressions/modules; resolved hints separately retain owner semantics."""
+    if isinstance(value, typing.ForwardRef):
+        return f"ForwardRef({value.__forward_arg__!r}, module={value.__forward_module__!r})"
+    return str(value)
+
+
 def native_row(row: dict[str, Any], output: Path, target: str) -> dict[str, Any]:
     """Observe hints, field order, construction and serialization without another validator."""
     module = module_from_output(output)
@@ -146,7 +156,7 @@ def native_row(row: dict[str, Any], output: Path, target: str) -> dict[str, Any]
         else list(cls.__annotations__)
     )
     facts = {
-        "annotations": {key: str(value) for key, value in cls.__annotations__.items()},
+        "annotations": {key: annotation_fact(value) for key, value in cls.__annotations__.items()},
         "resolved_type_hints": {key: str(value) for key, value in typing.get_type_hints(cls).items()},
         "bases": [base.__module__ + "." + base.__qualname__ for base in cls.__bases__],
         "fields": fields,
@@ -171,16 +181,19 @@ def native_row(row: dict[str, Any], output: Path, target: str) -> dict[str, Any]
 
 def output_observation(record: dict[str, Any], row: dict[str, Any], output: Path) -> None:
     """Record final declarations, import behavior and byte equality to the preserved witness."""
-    digest = hashlib.sha256(output.read_bytes()).hexdigest()
-    tree = ast.parse(output.read_text(encoding="utf-8"))
+    raw_digest = hashlib.sha256(output.read_bytes()).hexdigest()
+    source = output.read_text(encoding="utf-8")
+    digest = hashlib.sha256(source.encode("utf-8")).hexdigest()
+    baseline_digest = row["baseline_output_sha256_crlf" if os.linesep == "\r\n" else "baseline_output_sha256"]
+    tree = ast.parse(source)
     declarations = [
         {"kind": "class", "name": node.name, "bases": [ast.unparse(base) for base in node.bases]}
         for node in tree.body
         if isinstance(node, ast.ClassDef)
     ]
     record.update(
-        output_sha256=digest,
-        baseline_bytes_equal=digest == row["baseline_output_sha256"],
+        output_text_sha256=digest,
+        baseline_bytes_equal=raw_digest == baseline_digest,
         declarations=declarations,
         baseline_declarations_equal=declarations == row["baseline_declarations"],
     )
@@ -226,6 +239,7 @@ def inheritance_report(tmp_path: Path, run_cli: Any) -> str:
                     output.mkdir()
                 (output / "models.py" if split else output).write_bytes(preexisting.read_bytes())
             before = inventory(output)
+            before_text = inventory(output, logical_text=True)
             row = {
                 "entry": entry,
                 "input": "openapi",
@@ -238,8 +252,8 @@ def inheritance_report(tmp_path: Path, run_cli: Any) -> str:
                 split=split,
                 preexisting=exists,
                 entry=entry,
-                before=before,
-                after=inventory(output),
+                before=before_text,
+                after=inventory(output, logical_text=True),
                 preexisting_bytes_equal=before == inventory(output),
             )
             report["transactions"].append(record)
