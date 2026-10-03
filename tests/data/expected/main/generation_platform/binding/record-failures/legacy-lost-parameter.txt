@@ -1,6 +1,0 @@
-{
-  "diagnostics": [],
-  "demands": [
-    "BND_MODEL_SCOPE_REQUIRED"
-  ]
-}
