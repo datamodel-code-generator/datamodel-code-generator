@@ -620,8 +620,9 @@ class _TargetData:
             return contract
         return (*contract, adapter)
 
-    def contract(self, use: TypeUseBinding) -> tuple[object, ...]:
+    def contract(self, use: TypeUseBinding | None) -> tuple[object, ...]:
         """Return a schema-bearing helper use's codec binding and normalized schema."""
+        use = cast("TypeUseBinding", use)
         return (self.bindings.get(use.id), self.wire.schema(cast("SourceLocation", use.schema))[1])
 
 
