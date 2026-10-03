@@ -94,7 +94,7 @@ def _matches(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
     raise configuration_error(("keys", str(index)), "wrong_capability", helper_id)
 
 
-def _authenticate(  # ruff: ignore[too-many-arguments, too-many-locals]
+def _authenticate(  # ruff: ignore[too-many-arguments, too-many-locals, too-many-branches, too-many-statements]
     plan: WebhookPlan[T, K],
     raw_body: bytes,
     headers: Sequence[tuple[str, str]],
@@ -108,20 +108,24 @@ def _authenticate(  # ruff: ignore[too-many-arguments, too-many-locals]
     now_us, limits = local_arguments(helper_id, raw_body, headers, keys, now=now, options=options)
     candidates = _checked_keys(keys, algorithm, helper_id)
     sizes(limits, raw_body, headers, len(candidates), helper_id)
-    header = _header(headers, plan.header, helper_id)
-    stamp = delivery = None
-    parts = (raw_body,)
+    values = [value for name, value in headers if _named(name, plan.header)]
+    if not values:
+        reject("malformed_signature", helper_id)
+    stamp: str | None = None
+    delivery: str | None = None
+    parts: tuple[bytes, ...] = (raw_body,)
     encoding, prefix = plan.encoding, plan.prefix
-    elements = [header]
+    elements = values
     if plan.kind == "standard_webhooks":
         stamp = _header(headers, "webhook-timestamp", helper_id)
         delivery = _header(headers, "webhook-id", helper_id)
         if not _VISIBLE.fullmatch(delivery):
             reject("malformed_signature", helper_id)
-        elements = header.split(" ")
+        elements = [element for value in values for element in value.split(" ")]
         parts = (delivery.encode("ascii"), b".", stamp.encode("ascii") if stamp.isascii() else b"", b".", raw_body)
         encoding, prefix = "base64", "v1,"
     elif plan.kind == "stripe_style":
+        header = _header(headers, plan.header, helper_id)
         fields = [field.strip(" \t").partition("=") for field in header.split(",")]
         if any(not separator or not name or not value for name, separator, value in fields):
             reject("malformed_signature", helper_id)
@@ -135,6 +139,9 @@ def _authenticate(  # ruff: ignore[too-many-arguments, too-many-locals]
     if not elements:
         reject("malformed_signature", helper_id)
     size("signatures", limits.max_signatures, len(elements), helper_id)
+    signatures = tuple(signature_bytes(encoding, prefix, algorithm.size, element) for element in elements)
+    if None in signatures:
+        reject("malformed_signature", helper_id)
     moment = None
     if stamp is not None:
         if not _TIMESTAMP.fullmatch(stamp):
@@ -142,9 +149,6 @@ def _authenticate(  # ruff: ignore[too-many-arguments, too-many-locals]
         signed = int(stamp) * 1_000_000
         if not within(now_us, signed, limits) or (moment := instant(signed)) is None:
             reject("timestamp_window", helper_id)
-    signatures = tuple(signature_bytes(encoding, prefix, algorithm.size, element) for element in elements)
-    if None in signatures:
-        reject("malformed_signature", helper_id)
     if not candidates:
         reject("missing_key", helper_id)
     verified = tuple(signature for signature in signatures if signature is not None)

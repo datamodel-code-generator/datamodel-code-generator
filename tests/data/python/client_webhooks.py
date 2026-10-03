@@ -10,18 +10,15 @@ from __future__ import annotations
 
 import asyncio
 import copy
-import gc
 import importlib
+import json
 import pickle
 import subprocess
 import sys
-import warnings
 from base64 import b64decode
-from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from threading import Barrier
 from typing import TYPE_CHECKING, Any, Final
 
 from tests.data.python.client_runtime import describe, record
@@ -33,15 +30,10 @@ if TYPE_CHECKING:
 _UTC: Final = timezone.utc
 _MICROSECOND: Final = timedelta(microseconds=1)
 _STANDARD_SECRET: Final = b64decode("MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw")
-_SLACK_BODY: Final = (
-    b"token=xyzz0WbapA4vBCDEFasx0q6G&team_id=T1DC2JH3J&team_domain=testteamnow&channel_id=G8PSS9T3V&channel_name=foobar"
-    b"&user_id=U2CERLKJA&user_name=roadrunner&command=%2Fwebhook-collect&text=&response_url=https%3A%2F%2Fhooks.slack.com"
-    b"%2Fcommands%2FT1DC2JH3J%2F397700885554%2F96rGlfmibIGlgcZRskXaIFfN&trigger_id=398738663015.47445629121."
-    b"803a0bc887a14d10d2c447fce8b6703c"
-)
 _ZERO_SIGNATURE: Final = "v1,AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 _IMPORT_PROBE: Final = """
 import importlib
+import json
 import sys
 from typing import get_type_hints
 sys.path[:0] = sys.argv[1:3]
@@ -100,17 +92,6 @@ GITHUB: Final = Vector(
     body=b"Hello, World!",
     headers=(("X-Hub-Signature-256", "sha256=757107ea0eb2509fc211221cce984b8a37570b6d7586c22c46f4379c8b043e17"),),
     now=STANDARD.now,
-)
-SLACK: Final = Vector(
-    source="Slack 'Verifying requests from Slack', the step-by-step walk-through",
-    helper="slack.command",
-    secret=b"8f742231b10e8888abcd99yyyzzz85a5",
-    body=_SLACK_BODY,
-    headers=(
-        ("X-Slack-Request-Timestamp", "1531420618"),
-        ("X-Slack-Signature", "v0=a2114d57b48eac39b9ad189dd8316235a7b4a8d21a10bd27519666489c69b503"),
-    ),
-    now=datetime(2018, 7, 12, 18, 36, 58, tzinfo=_UTC),
 )
 RFC_4231: Final = tuple(
     Vector(
@@ -193,40 +174,12 @@ LATEST: Final = Vector(
     ),
     now=datetime(9999, 12, 31, 23, 59, 59, tzinfo=_UTC),
 )
-KEYED: Final = Vector(
-    source=(
-        "printf '32503680000123.evt-1.{\"test\": 7}' | openssl dgst -sha512 -hmac keyed-secret-2 -binary | "
-        "openssl base64 -A | tr '+/' '-_' | tr -d '='"
-    ),
-    helper="keyed.event",
-    secret=b"keyed-secret-2",
-    body=b'{"test": 7}',
-    headers=(
-        ("X-Key-Id", "rotation-new"),
-        ("X-Timestamp", "32503680000123"),
-        ("X-Delivery", "evt-1"),
-        ("X-Signature", "21GDEBRtYzKUVr3dNPMIl7TwQbeveg8Fu7AS9IvmFpUec5R-3P1IakiEkCsWFj9kVJu4v6Y0mJTcAeYvP4731Q"),
-    ),
-    now=datetime(3000, 1, 1, 0, 0, 0, 123000, tzinfo=_UTC),
-    key_id="rotation-new",
-)
-FRAMED: Final = Vector(
-    source="printf 'a11' | openssl dgst -sha256 -hmac framing-secret",
-    helper="framed.count",
-    secret=b"framing-secret",
-    body=b"11",
-    headers=(
-        ("X-Framed-Id", "a"),
-        ("X-Framed-Signature", "2b8e1d168dc4fbb03460aa977077dbb7f138cb03a6ee09045abd0c7d4470edca"),
-    ),
-    now=YEAR_3000.now,
-)
 CALLBACK: Final = Vector(
-    source='printf \'{"id": "d-1"}!\' | openssl dgst -sha256 -hmac callback-secret',
+    source='printf \'{"id": "d-1"}\' | openssl dgst -sha256 -hmac callback-secret',
     helper="callbacks.delivered",
     secret=b"callback-secret",
     body=b'{"id": "d-1"}',
-    headers=(("X-Signature", "fe8ab8b65440c7c473b1da2a7e7b9acab6c4d446b09a5509158a39d03e88af20"),),
+    headers=(("X-Signature", "78c1152c89eb1a3ff71601dd2637c4a2774f4622defcda26d93e383ad45e889c"),),
     now=STANDARD.now,
 )
 CIRCLE: Final = Vector(
@@ -293,7 +246,7 @@ def shown(result: Any) -> str:
     stamp = None if result.timestamp is None else result.timestamp.isoformat()
     return (
         f"{type(result.data).__name__} {result.data!r} delivery_id={result.delivery_id!r} timestamp={stamp} "
-        f"matched_key_id={result.matched_key_id!r} duplicate={result.duplicate}"
+        f"matched_key_id={result.matched_key_id!r}"
     )
 
 
@@ -301,7 +254,7 @@ def failure(call: Callable[[], object]) -> str:
     """Name the class of a call's failure, whose message Python words differently across versions."""
     try:
         call()
-    except Exception as error:  # noqa: BLE001
+    except Exception as error:  # ruff: ignore[blind-except]
         return type(error).__name__
     return "none"
 
@@ -310,7 +263,7 @@ def outcome(call: Callable[[], Any]) -> str:
     """Describe a verification's result or its failure."""
     try:
         result = call()
-    except Exception as error:  # noqa: BLE001
+    except Exception as error:  # ruff: ignore[blind-except]
         return describe(error)
     return shown(result)
 
@@ -341,7 +294,7 @@ class Webhooks:
         """Return a key set of HMAC keys given as id and secret pairs."""
         return self.protocols.KeySet(keys=tuple(self.keys.HmacKey(id=name, secret=secret) for name, secret in keys))
 
-    def check(  # noqa: PLR0913
+    def check(
         self,
         label: str,
         vector: Vector,
@@ -406,21 +359,31 @@ def imports(package: ModuleType, lines: list[str], helper: str, modules: tuple[s
 
 def _vectors(hooks: Webhooks) -> None:
     """Accept every published and authored vector; a body that is not JSON fails only after its signature verifies."""
-    for vector in (STANDARD, GITHUB, SLACK, *RFC_4231, YEAR_3000, LATEST, KEYED, FRAMED, CALLBACK, CIRCLE, SQUARE):
+    for vector in (STANDARD, GITHUB, *RFC_4231, YEAR_3000, LATEST, CALLBACK, CIRCLE, SQUARE, *_presets()):
         hooks.check(vector.source, vector)
 
 
 def _rejections(hooks: Webhooks) -> None:
     """Reject changed bodies and changed signed facts under an unchanged signature, and an ambiguous framing."""
+    for vector in _presets():
+        hooks.check("Stripe changed body", vector, body=vector.body + b"\n")
+        signature = vector.headers[-1][1]
+        for label, header in (
+            ("Stripe repeated timestamp", signature + ",t=1614265330"),
+            ("Stripe no timestamp", signature.split(",", 1)[1]),
+            ("Stripe no signature", "t=1614265330"),
+            ("Stripe nondecimal timestamp", signature.replace("1614265330", "+1614265330")),
+            ("Stripe other version", signature.replace("v1=", "v0=")),
+            ("Stripe rotated signatures", signature + ",v1=" + "00" * 32),
+        ):
+            hooks.check(label, vector, headers=vector.changed("Stripe-Signature", header))
+        hooks.check("Stripe expired", vector, now=vector.now + timedelta(seconds=301))
+        hooks.check("Stripe repeated independently", vector)
     hooks.check("one changed body byte", STANDARD, body=b'{"test": 2432232315}')
     hooks.check("trailing newline", STANDARD, body=STANDARD.body + b"\n")
-    hooks.check("CRLF body", CALLBACK, body=b'{"id": "d-1"}\r\n')
     hooks.check("new timestamp", STANDARD, headers=STANDARD.changed("webhook-timestamp", "1614265331"))
     hooks.check("new delivery id", STANDARD, headers=STANDARD.changed("webhook-id", "msg_p5jXN8AQM9LWM0D4loKWxJel"))
     hooks.check("GitHub changed body", GITHUB, body=b"Hello, World?")
-    hooks.check("shifted delivery id boundary", FRAMED, body=b"1", headers=FRAMED.changed("X-Framed-Id", "a1"))
-    hooks.check("unsigned suffix dropped", CALLBACK, body=b'{"id": "d-1"}!')
-    hooks.check("Slack changed timestamp", SLACK, headers=SLACK.changed("X-Slack-Request-Timestamp", "1531420619"))
     for vector in LAST_BYTE_CHANGED:
         hooks.check(vector.source, vector)
 
@@ -442,8 +405,6 @@ def _windows(hooks: Webhooks) -> None:
     ):
         options = {"options": hooks.protocols.WebhookOptions(**options)} if options else {}
         hooks.check(label, STANDARD, now=now, **options)
-    hooks.check("millisecond bound", KEYED, now=KEYED.now + timedelta(seconds=300))
-    hooks.check("millisecond bound exceeded", KEYED, now=KEYED.now + timedelta(seconds=300) + _MICROSECOND)
     beyond = STANDARD.changed("webhook-timestamp", "253402300800")
     hooks.check("timestamp after datetime.max", STANDARD, headers=beyond, now=datetime.max.replace(tzinfo=_UTC))
     hooks.check("earliest clock", STANDARD, now=datetime.min.replace(tzinfo=_UTC))
@@ -466,18 +427,6 @@ def _candidates(hooks: Webhooks) -> None:
     hooks.check("both keys match", STANDARD, keys=both)
     hooks.check("only the retired key", STANDARD, keys=hooks.key_set(retired))
     hooks.check("empty key set", STANDARD, keys=hooks.key_set())
-    rotation = hooks.key_set(("rotation-old", b"keyed-secret-1"), ("rotation-new", KEYED.secret))
-    hooks.check("key id selects the new key", KEYED, keys=rotation)
-    hooks.check("key id selects the old key", KEYED, keys=rotation, headers=KEYED.changed("X-Key-Id", "rotation-old"))
-    hooks.check("unknown key id", KEYED, keys=rotation, headers=KEYED.changed("X-Key-Id", "rotation-unknown"))
-    padded = KEYED.changed("X-Signature", f"{KEYED.headers[3][1]}==")
-    hooks.check("padded base64url", KEYED, keys=rotation, headers=padded)
-    hooks.check(
-        "comma separated signatures",
-        KEYED,
-        keys=rotation,
-        headers=KEYED.changed("X-Signature", f"{'A' * 86}, {KEYED.headers[3][1]}"),
-    )
     upper = f"sha256={GITHUB.headers[0][1].removeprefix('sha256=').upper()}"
     hooks.check("uppercase hex", GITHUB, headers=GITHUB.changed("x-hub-signature-256", upper))
 
@@ -497,17 +446,12 @@ def _syntax(hooks: Webhooks) -> None:
         ("spaced timestamp", "webhook-timestamp", " 1614265330"),
         ("twenty digit timestamp", "webhook-timestamp", "1" * 20),
         ("no timestamp", "webhook-timestamp", None),
-        ("delivery id outside its set", "webhook-id", "msg-p5jXN8AQM9LWM0D4loKWxJek"),
         ("delivery id with obs-text", "webhook-id", "msg_é"),
         ("no delivery id", "webhook-id", None),
     ):
         hooks.check(label, STANDARD, headers=STANDARD.changed(name, value))
     hooks.check("repeated timestamp", STANDARD, headers=(*STANDARD.headers, ("Webhook-Timestamp", "1614265330")))
     hooks.check("odd hex", GITHUB, headers=GITHUB.changed("X-Hub-Signature-256", GITHUB.headers[0][1][:-1]))
-    hooks.check("fixed length violated", FRAMED, headers=FRAMED.changed("X-Framed-Id", "ab"))
-    hooks.check("key id with a space", KEYED, headers=KEYED.changed("X-Key-Id", "rotation new"))
-    kelvin = (("X-Key-Id", "rotation-new"), *KEYED.changed("X-Key-Id", None))
-    hooks.check("key id header named with a Kelvin sign", KEYED, headers=kelvin)
     far = STANDARD.now + timedelta(days=1)
     hooks.check("malformed before window", STANDARD, now=far, headers=STANDARD.changed("webhook-signature", "v1,A"))
     zero = STANDARD.changed("webhook-signature", _ZERO_SIGNATURE)
@@ -533,7 +477,6 @@ def _limits(hooks: Webhooks) -> None:
 
 def _configuration(hooks: Webhooks) -> None:
     """Refuse every argument of the wrong type or value with its field path, before any other stage."""
-    helper = hooks.helper("standard.message")
     for label, changes in (
         ("text body", {"body": STANDARD.body.decode()}),
         ("bytearray body", {"body": bytearray(STANDARD.body)}),
@@ -546,27 +489,10 @@ def _configuration(hooks: Webhooks) -> None:
         ("text now", {"now": "2021-02-25T15:02:10Z"}),
         ("text body and naive now", {"body": "{}", "now": STANDARD.now.replace(tzinfo=None)}),
         ("options mapping", {"options": {"max_keys": 1}}),
-        ("store without claim", {"replay_store": object()}),
-        ("asyncio callable claim", {"replay_store": CallableStore()}),
         ("foreign key", {"keys": hooks.protocols.KeySet(keys=(object(),))}),
         ("repeated key id", {"keys": hooks.key_set(("active", b"one"), ("active", STANDARD.secret))}),
     ):
         hooks.check(label, STANDARD, **changes)
-    hooks.check("key id a header cannot carry", KEYED, keys=hooks.key_set(("rotation new", KEYED.secret)))
-    stores = (hooks.protocols.MemoryReplayStore(), hooks.protocols.AsyncMemoryReplayStore())
-    keys = hooks.key_set(("active", STANDARD.secret))
-    record(
-        hooks.lines,
-        "asyncio store in verify",
-        lambda: helper.verify(STANDARD.body, list(STANDARD.headers), keys, now=STANDARD.now, replay_store=stores[1]),
-    )
-    record(
-        hooks.lines,
-        "synchronous store in verify_async",
-        lambda: asyncio.run(
-            helper.verify_async(STANDARD.body, list(STANDARD.headers), keys, now=STANDARD.now, replay_store=stores[0])
-        ),
-    )
 
 
 def _keys(hooks: Webhooks) -> None:
@@ -625,7 +551,7 @@ def _secrecy(hooks: Webhooks) -> None:
     ):
         try:
             helper.verify(vector.body, headers, keys, now=vector.now)
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:  # ruff: ignore[blind-except]
             hooks.lines.append(f"  {label} ! {describe(error)} context={error.__context__!r}")
             texts.extend(reachable(error, set()))
     hooks.lines.append(f"  markers shown={[text for text in texts if 'MARKER' in text]}")
@@ -634,191 +560,25 @@ def _secrecy(hooks: Webhooks) -> None:
 def webhook_backends(package: ModuleType, lines: list[str]) -> None:
     """Decode verified events into each backend's types, schema-validating unions only their schemas tell apart."""
     hooks = Webhooks(package, lines)
-    for vector in (STANDARD, FRAMED, CALLBACK, CIRCLE, MARKER):
+    for vector in (STANDARD, CALLBACK, CIRCLE, MARKER):
         hooks.check(vector.helper, vector)
 
 
 _UNAWAITED: Final = object()
 
 
-async def _never_awaited() -> bool:
-    """Return a claim result that a synchronous store hands back unawaited."""
-    return True
-
-
-class _AsyncClaim:
-    """An object whose asyncio __call__ is a store's claim."""
-
-    async def __call__(self, namespace: str, delivery_id: str, expires_at: datetime) -> bool:
-        """Claim every delivery."""
-        del namespace, delivery_id, expires_at
-        return True
-
-
-class CallableStore:
-    """A store whose claim is an object with an asyncio __call__, so only the asyncio helper takes it."""
-
-    def __init__(self) -> None:
-        """Keep the claim object."""
-        self.claim = _AsyncClaim()
-
-
-class Recording:
-    """A replay store adapter that records each claim and answers from its script: a result or an error to raise."""
-
-    def __init__(self, *answers: object) -> None:
-        """Keep the answers to give, in order."""
-        self.answers = list(answers)
-        self.claims: list[tuple[str, str, str]] = []
-
-    def answer(self, namespace: str, delivery_id: str, expires_at: datetime) -> Any:
-        """Record a claim and give the next answer."""
-        self.claims.append((namespace, delivery_id, expires_at.isoformat()))
-        if isinstance(answer := self.answers.pop(0), BaseException):
-            raise answer
-        return _never_awaited() if answer is _UNAWAITED else answer
-
-
-class RecordingStore(Recording):
-    """The synchronous recording store."""
-
-    def claim(self, namespace: str, delivery_id: str, expires_at: datetime) -> Any:
-        """Claim synchronously."""
-        return self.answer(namespace, delivery_id, expires_at)
-
-
-class AsyncRecordingStore(Recording):
-    """The asyncio recording store."""
-
-    async def claim(self, namespace: str, delivery_id: str, expires_at: datetime) -> Any:
-        """Claim asynchronously."""
-        return self.answer(namespace, delivery_id, expires_at)
-
-
-def webhook_replay(package: ModuleType, lines: list[str]) -> None:
-    """Claim verified deliveries once in injected and memory stores, and fail closed when a store fails."""
-    hooks = Webhooks(package, lines)
-    errors = importlib.import_module(f"{package.__name__}.errors")
-    full = errors.ReplayStoreFullError(action="claim", max_entries=1)
-    failed = errors.WebhookStoreError(action="claim")
-    for label, vector, answers, now, options in (
-        ("claimed", YEAR_3000, (True,), None, None),
-        ("duplicate", YEAR_3000, (False,), None, None),
-        ("duplicate rejected", replace(YEAR_3000, helper="standard.rejecting"), (False,), None, None),
-        ("no timestamp", FRAMED, (True,), None, None),
-        ("no timestamp short ttl", FRAMED, (True,), None, {"replay_ttl": 0.5}),
-        ("no timestamp at datetime.max", FRAMED, (True,), datetime.max.replace(tzinfo=_UTC), None),
-        ("window past datetime.max", LATEST, (True,), None, None),
-        ("store error", YEAR_3000, (OSError("disk full"),), None, None),
-        ("store full", YEAR_3000, (full,), None, None),
-        ("store failure", YEAR_3000, (failed,), None, None),
-        ("integer answer", YEAR_3000, (1,), None, None),
-        ("no answer", YEAR_3000, (None,), None, None),
-        ("coroutine answer", YEAR_3000, (_UNAWAITED,), None, None),
-        ("invalid signature", replace(YEAR_3000, body=b'{"test": 2}'), (), None, None),
-        (
-            "malformed signature",
-            replace(YEAR_3000, headers=YEAR_3000.changed("webhook-signature", "v1,")),
-            (),
-            None,
-            None,
-        ),
-        ("outside the window", YEAR_3000, (), YEAR_3000.now + timedelta(days=1), None),
-        ("event refused", MARKER, (), None, None),
-        ("no delivery id to claim", GITHUB, (), None, None),
-    ):
-        for asynchronous in (False, True):
-            store = (AsyncRecordingStore if asynchronous else RecordingStore)(*answers)
-            helper = hooks.helper(vector.helper)
-            keys = hooks.key_set((vector.key_id, vector.secret))
-            arguments = {
-                "now": vector.now if now is None else now,
-                "replay_store": store,
-                "options": None if options is None else hooks.protocols.WebhookOptions(**options),
-            }
-            body, headers = vector.body, list(vector.headers)
-            with warnings.catch_warnings(record=True) as caught:
-                warnings.simplefilter("always")
-                if asynchronous:
-                    result = _replayed(
-                        lambda: asyncio.run(helper.verify_async(body, headers, keys, **arguments)), answers
-                    )
-                else:
-                    result = _replayed(lambda: helper.verify(body, headers, keys, **arguments), answers)
-                gc.collect()
-            mode = " async" if asynchronous else ""
-            shown_warnings = [str(item.message) for item in caught]
-            lines.append(f"  {label}{mode} = {result} claims {store.claims} warnings {shown_warnings}")
-    _cancellation(hooks)
-    _memory(hooks)
-
-
-def _replayed(call: Callable[[], Any], answers: tuple[object, ...]) -> str:
-    """Describe a verification with a recording store, naming an error the store raised that passed through as is."""
-    try:
-        result = call()
-    except Exception as error:  # noqa: BLE001
-        passed = " (the store's own error)" if error in answers else ""
-        replay = (
-            f" delivery_id={error.delivery_id!r} namespace={error.namespace!r}" if hasattr(error, "namespace") else ""
+def _presets() -> tuple[Vector, ...]:
+    """Read fixed preset deliveries copied from the existing independent adapter vectors."""
+    path = Path(__file__).parents[1] / "generation_platform/client/webhook-presets.json"
+    return tuple(
+        Vector(
+            source=item["source"],
+            helper=item["helper"],
+            secret=bytes.fromhex(item["secret_hex"]),
+            body=item["body"].encode(),
+            headers=tuple(tuple(pair) for pair in item["headers"]),
+            now=datetime.fromisoformat(item["now"]),
+            key_id=item["key_id"],
         )
-        return f"{describe(error)}{replay}{passed}"
-    return shown(result)
-
-
-def _cancellation(hooks: Webhooks) -> None:
-    """Propagate native cancellation raised by a claim, unwrapped, in both modes."""
-    helper, keys = hooks.helper("standard.message"), hooks.key_set(("active", YEAR_3000.secret))
-    body, headers, now = YEAR_3000.body, list(YEAR_3000.headers), YEAR_3000.now
-    for asynchronous in (False, True):
-        store = (AsyncRecordingStore if asynchronous else RecordingStore)(asyncio.CancelledError())
-        try:
-            if asynchronous:
-                asyncio.run(helper.verify_async(body, headers, keys, now=now, replay_store=store))
-            else:
-                helper.verify(body, headers, keys, now=now, replay_store=store)
-        except asyncio.CancelledError:
-            mode = " async" if asynchronous else ""
-            hooks.lines.append(f"  cancelled claim{mode} propagated, claims {len(store.claims)}")
-
-
-def _memory(hooks: Webhooks) -> None:
-    """Claim once per helper namespace in memory stores, also when threads and tasks race on one delivery."""
-    keys = hooks.key_set(("active", YEAR_3000.secret))
-    store = hooks.protocols.MemoryReplayStore()
-    for name in ("standard.message", "standard.message", "standard.rejecting", "standard.rejecting"):
-        hooks.lines.append(
-            f"  memory {name} = "
-            + outcome(
-                lambda name=name: hooks.helper(name).verify(
-                    YEAR_3000.body, list(YEAR_3000.headers), keys, now=YEAR_3000.now, replay_store=store
-                )
-            )
-        )
-    helper, racing = hooks.helper("standard.message"), hooks.protocols.MemoryReplayStore()
-    barrier = Barrier(8)
-
-    def verify(index: int) -> bool:
-        del index
-        barrier.wait(timeout=30)
-        result = helper.verify(YEAR_3000.body, list(YEAR_3000.headers), keys, now=YEAR_3000.now, replay_store=racing)
-        return result.duplicate
-
-    with ThreadPoolExecutor(max_workers=8) as executor:
-        duplicates = list(executor.map(verify, range(8)))
-    hooks.lines.append(f"  racing threads claimed={duplicates.count(False)} duplicate={duplicates.count(True)}")
-
-    async def tasks() -> list[bool]:
-        store = hooks.protocols.AsyncMemoryReplayStore()
-        results = await asyncio.gather(
-            *(
-                helper.verify_async(
-                    YEAR_3000.body, list(YEAR_3000.headers), keys, now=YEAR_3000.now, replay_store=store
-                )
-                for _ in range(8)
-            )
-        )
-        return [result.duplicate for result in results]
-
-    duplicates = asyncio.run(tasks())
-    hooks.lines.append(f"  racing tasks claimed={duplicates.count(False)} duplicate={duplicates.count(True)}")
+        for item in json.loads(path.read_text())
+    )

@@ -356,7 +356,7 @@ class _Webhooks:
             key = module.local(algorithm.key_module, algorithm.key)
             plan = module.local("_runtime.protocols.verification", "WebhookPlan")
             arguments = f"{event}, {key}"
-            header = {"standard_webhooks": "webhook-signature", "stripe_style": "Stripe-Signature"}.get(kind)
+            header = "webhook-signature" if kind == "standard_webhooks" else signature.get("header", "Stripe-Signature")
             entries = [
                 ("kind=", repr(kind)),
                 ("algorithm=", module.local(algorithm.module, algorithm.name)),

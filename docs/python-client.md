@@ -16,7 +16,7 @@ parameters, bodies, and responses of the operations. Custom templates and custom
 field names of the models: the client binds each operation to the names in the generated model graph and does not read
 the rendered model source.
 
-## Webhook contracts and replay stores
+## Webhook contracts
 
 Generated packages expose webhook contracts from `pkg.protocols` and their exceptions from `pkg.errors`, where `pkg` is
 the generated package name. These imports need no HTTP or cryptography library. The
@@ -33,7 +33,7 @@ from its representation.
 | `OperationRef` | `pointer: str`, `document: str \| None = None` |
 | `KeySet[K]` | `keys: tuple[K, ...]`; an empty tuple is valid; a list or another iterable raises `TypeError` |
 | `VerifiedSignature` | `delivery_id: str \| None`, `timestamp: datetime \| None`, `matched_key_id: str`; all fields are required |
-| `VerifiedWebhook[T]` | `data: T`, `delivery_id: str \| None`, `timestamp: datetime \| None`, `matched_key_id: str`, `duplicate: bool`; all fields are required |
+| `VerifiedWebhook[T]` | `data: T`, `delivery_id: str \| None`, `timestamp: datetime \| None`, `matched_key_id: str`; all fields are required |
 
 `Verifier[K]` is a borrowed, synchronous protocol with this method:
 
@@ -66,49 +66,19 @@ validate `WebhookOptions` before constructing this record and passing it to an a
 | `max_signatures` | `int \| Unset` | `8` | Positive integer |
 | `past_tolerance` | `float \| Unset` | `300` seconds | Finite, nonnegative number |
 | `future_tolerance` | `float \| Unset` | `30` seconds | Finite, nonnegative number |
-| `replay_ttl` | `float \| Unset` | `300` seconds | Finite, positive number |
 
-Options reject `None`, booleans, negative values, nonfinite durations, zero count limits, and zero `replay_ttl`
-with `ProtocolConfigurationError`. For example, `WebhookOptions(past_tolerance=0)` is valid, while
-`WebhookOptions(max_keys=0)` and `WebhookOptions(replay_ttl=None)` are invalid.
-
-`ReplayStore.claim(namespace: str, delivery_id: str, expires_at: datetime) -> bool` atomically returns `True`
-for a new claim and `False` for an unexpired duplicate. `AsyncReplayStore` declares the same method as `async def`.
-The store retains the claim until its aware datetime expires. Namespaces separate applications that share a store.
-
-```python
-from datetime import datetime, timedelta, timezone
-
-from pkg.protocols import AsyncMemoryReplayStore, MemoryReplayStore
-
-store = MemoryReplayStore(max_entries=10000)
-expiry = datetime.now(timezone.utc) + timedelta(minutes=5)
-first = store.claim("application", "delivery-42", expiry)
-duplicate = store.claim("application", "delivery-42", expiry)
-
-
-async def claim_delivery() -> bool:
-    async_store = AsyncMemoryReplayStore(max_entries=10000)
-    return await async_store.claim("application", "delivery-42", expiry)
-```
-
-The memory stores are loaded when their public classes are requested and allocated only by explicit construction.
-Each instance is independent. Both constructors accept `max_entries: int = 10000`, which must be a positive
-integer, excluding booleans. They retain live entries at capacity and raise `ReplayStoreFullError` for another
-new live claim. Expired entries release capacity. Claims whose expiry has already passed are not retained.
-These stores coordinate callers in one process; a shared external adapter supplies multiprocess atomicity.
-They create no HTTP clients, workers, or background tasks and require no close method.
+Options reject `None`, booleans, negative values, nonfinite durations, and zero count limits with
+`ProtocolConfigurationError`. For example, `WebhookOptions(past_tolerance=0)` is valid, while
+`WebhookOptions(max_keys=0)` is invalid. Verification retains no delivery state. Applications can deduplicate
+using the authenticated `delivery_id` when a signature scheme supplies one.
 
 Webhook exceptions have keyword-only constructors and the following additional fields:
 
 | Exception | Direct base | Fields |
 |---|---|---|
 | `ProtocolConfigurationError` | `ConfigurationError` | `field_path: tuple[str, ...]`, `condition: Literal['unknown_field', 'invalid_value', 'missing_metadata', 'missing_adapter', 'wrong_capability', 'security_partition', 'binding_mismatch']` |
-| `WebhookVerificationError` | `ProtocolError` | `condition: Literal['malformed_signature', 'invalid_signature', 'missing_key', 'timestamp_window', 'missing_delivery_id']` |
-| `WebhookReplayError` | `ProtocolError` | `delivery_id: str`, `namespace: str` |
-| `ProtocolStoreError` | `ProtocolError` | `action: Literal['lookup', 'fingerprint_vary', 'compare_exchange', 'delete', 'invalidate', 'claim', 'put', 'get', 'open', 'read', 'close', 'purge_terminal', 'admit', 'record', 'reset', 'snapshot']`, `entry_id: str \| None = None` |
-| `WebhookStoreError` | `ProtocolStoreError` | No additional fields |
-| `ReplayStoreFullError` | `WebhookStoreError` | `max_entries: int` |
+| `WebhookVerificationError` | `ProtocolError` | `condition: Literal['malformed_signature', 'invalid_signature', 'missing_key', 'timestamp_window']` |
+| `ProtocolStoreError` | `ProtocolError` | `action: Literal['lookup', 'fingerprint_vary', 'compare_exchange', 'delete', 'invalidate', 'put', 'get', 'open', 'read', 'close', 'purge_terminal', 'admit', 'record', 'reset', 'snapshot']`, `entry_id: str \| None = None` |
 
 All fields without a displayed default are required. They also accept the shared context fields
 `helper_id: str | None = None`, `operation: OperationRef | None = None`, `info: ResponseInfo | None = None`,
@@ -504,7 +474,7 @@ querystring, or its request body. An operation that owns a querystring takes no 
 | `polling` | `create`, `accepted_statuses`, `poll`, `bindings` (create to poll), `state`, `pending`, `succeeded`, `result` | `failed` and `cancelled` (`[]`), `interval` (`{seconds: 1, retry_after_header: null}`), `remote_cancel` (`{operation, bindings?}`), `immediate_result` (`{statuses, selector, schema}`), `expires_at` |
 | `sse`, `ndjson` | `operation`, `media`, `event_schema`, `completion`, and for `ndjson` `final_line` (`require_newline` or `allow_eof`) | `unknown` (`error`, the default, or `raw`), `error_events` (`{}`), `resume` (`{enabled: false}`) |
 | `websocket` | `operation` (a GET without a body), `send`, `receive` (each `{codec: json\|utf8\|bytes, frame?, schema?}`) | `subprotocols` (`[]`), `compression` (`false`) |
-| `webhook` | `event_schema`, `signature` (see [webhook verification helpers](#webhook-verification-helpers)) | `duplicates` (`report`, the default, or `reject`, which needs a signature) |
+| `webhook` | `event_schema`, `signature` (see [webhook verification helpers](#webhook-verification-helpers)) | None |
 | `cache` | `operation`, `validator` (`etag`, `last_modified`, or `both`), `authenticated` (a boolean) | `statuses` (`[200]`), `vary_allowlist` (`[]`), `tags` (`[]`), `mutations` (`{}`); see [cache helpers](#cache-helpers) |
 | `resumable_upload` | `profile` (`offset`), `create` (`{operation, size?, expires_at?}`), `probe` (`{operation, remote_offset, bindings?}`), `append` (`{operation, offset, length?, checksum?, bindings?}`, a `checksum` being `{target, algorithm, encoding?, algorithm_prefix?}`), `max_chunk_bytes` (a positive integer), `partial_commit` (`allowed` or `forbidden`), `completion` | `abort` (`{operation, bindings?}`) and `create.session_url`, both refused as not supported yet |
 | `queue` | `operations`, a nonempty mapping of aliases to `{operation, side_effects}` (see [queue helpers](#queue-helpers)) | Per operation, `key_binding` and `dedupe_ttl`, given together and required with side effects |
@@ -559,10 +529,10 @@ E_SELECTOR_DEPENDENCY selection protocols.helpers['audit.all'].operation /paths/
 `WebSocketHelper`, whose `send` and `receive` are `WebSocketMessage` records, `WebhookHelper`, `CacheHelper`, and
 `ResumableUploadHelper` records, which mirror the file: their fields have the file's names, with `from_` for `from`,
 and they take the client's `Selector` and `RequestTarget` records, `OperationRef` or a pointer string, and `SchemaRef`.
-A webhook's `HmacSignature` (`hmac-sha256` or `hmac-sha512`) or `PublicKeySignature` (`ed25519` or `rsa-pss-sha256`)
-has the same fields and takes `HeaderName`, `TimestampHeader`, `SignedLiteral`, `FixedBytes`, and `AsciiBytes` records,
-or `"none"`, and `signed_parts` entries `"raw-body"`, `"timestamp"`, and `"delivery-id"`;
-`AdapterSignature(timestamp=..., delivery_id=...)` takes `"required"` or `"none"` for each fact, and `NoSignature()`
+A webhook uses `StandardWebhooksSignature()`, `StripeStyleSignature(header="Stripe-Signature")`, or
+`BodyHmacSignature(header="X-Signature", algorithm="hmac-sha256", encoding="hex", prefix="")`.
+`PublicKeySignature(kind="ed25519", header="X-Signature")` verifies raw-body public-key signatures.
+`AdapterSignature(timestamp="required", delivery_id="none")` declares application verification, and `NoSignature()`
 declares an unsigned webhook. An event mapping is an `EventMapping` with an `EventDiscriminator(from_="body",
 pointer=...)`, a cache mutation a `CacheMutation(operation=..., invalidate_tags=(...))`, and an upload takes
 `UploadCreate`, `UploadProbe`, `UploadAppend` with an optional `UploadChecksum`, `LengthCompletion()` or
@@ -4209,7 +4179,7 @@ applications construct providers explicitly.
 ## Webhook verification helpers
 
 An enabled `webhook` helper generates the module `pkg.webhooks.<name>`, where each dotted part of the helper's name is a
-package or the module. It verifies one received delivery, with a builtin `hmac-sha256`, `hmac-sha512`, `ed25519`, or
+package or the module. It verifies one received delivery, with a builtin `standard_webhooks`, `stripe_style`, `body_hmac`, `ed25519`, or
 `rsa-pss-sha256` signature or through your verifier for an [`adapter` signature](#adapter-signatures), and decodes its
 JSON event; a helper whose signature is [`none`](#unsigned-webhooks) only decodes. It creates no client, server, or
 route. The key types of builtin signatures are in `pkg.webhooks.keys`, which exists only when a helper has a builtin
@@ -4220,10 +4190,10 @@ With the package `pets` and the `standard.message` helper below:
 <!-- fmt: off -->
 
 ```python
-def receive(raw_body: bytes, headers: list[tuple[str, str]], secret: bytes, store: MemoryReplayStore) -> Message:
-    """Verify one delivery with the active key, claim its delivery id once, and return its event."""
+def receive(raw_body: bytes, headers: list[tuple[str, str]], secret: bytes) -> Message:
+    """Verify one delivery with the active key, return its event."""
     keys = KeySet(keys=(HmacKey(id="2026-09", secret=secret),))
-    verified = message.verify(raw_body, headers, keys, now=datetime.now(timezone.utc), replay_store=store)
+    verified = message.verify(raw_body, headers, keys, now=datetime.now(timezone.utc))
     return verified.data
 ```
 
@@ -4242,40 +4212,25 @@ def verify(
     keys: KeySet[HmacKey],
     *,
     now: datetime,
-    replay_store: ReplayStore | None = None,
     options: WebhookOptions | None = None,
 ) -> VerifiedWebhook[_dcg_type_0]:
-    """Verify a delivery and decode its event, claiming it in a store.
+    """Verify a delivery and decode its event.
 
-    Deliveries outside the timestamp window are rejected. The window closes at the
-    timestamp plus past_tolerance, while a replay store keeps a claim until the
-    timestamp plus past_tolerance and future_tolerance. Duplicates are detected only
-    until the claim expires. The claim is made after decoding, before your code
-    processes the event: if processing then fails, a retried delivery is a duplicate, or
-    rejected under duplicates: reject, until the claim expires, so make processing
-    durable or idempotent before acknowledging, or use a store whose claims you can
-    release. Without a replay store, duplicate=False does not mean the delivery is new.
+    Deliveries outside the timestamp window are rejected. Verification retains no
+    delivery state; deduplicate in your application using delivery_id when present.
     """
-    return verify_webhook(
-        _PLAN,
-        raw_body,
-        headers,
-        keys,
-        now=now,
-        replay_store=replay_store,
-        options=options,
-    )
+    return verify_webhook(_PLAN, raw_body, headers, keys, now=now, options=options)
 ```
 
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.helper -->
 
-`verify(raw_body, headers, keys, *, now, replay_store=None, options=None)` returns `VerifiedWebhook[Event]`, where
-`Event` is the event schema's model type; `async def verify_async(...)` takes an `AsyncReplayStore` instead and returns
-the same facts. `raw_body` is the exact received `bytes`, `headers` a list or tuple of `(name, value)` string pairs in
-received order, and `now` an aware datetime. `HmacKey(*, id: str, secret: bytes)` passes the secret to HMAC unchanged;
-the id is a nonempty string without NUL, CR, or LF, the secret must be `bytes`, and its representation names the id
-only. Keys cannot be changed, copied into new objects, or pickled.
+`verify(raw_body, headers, keys, *, now, options=None)` returns `VerifiedWebhook[Event]`, where `Event` is the
+event schema's model type. `async def verify_async(...)` takes the same arguments and returns the same facts.
+`raw_body` is the exact received `bytes`, `headers` a list or tuple of `(name, value)` string pairs in received order,
+and `now` an aware datetime. `HmacKey(*, id: str, secret: bytes)` passes the secret to HMAC unchanged; the id is a
+nonempty string without NUL, CR, or LF, the secret must be `bytes`, and its representation names the id only. Keys
+cannot be changed, copied into new objects, or pickled.
 
 ### Public-key signatures
 
@@ -4318,38 +4273,24 @@ same as for HMAC:
 ```yaml
 schema_version: 1
 helpers:
-  standard.ed25519:
+  rfc8032.ed25519:
     kind: webhook
-    event_schema: {pointer: /components/schemas/Message}
+    event_schema:
+      pointer: /components/schemas/Push
     signature:
       kind: ed25519
-      header: webhook-signature
-      encoding: base64
-      prefix: "v1a,"
-      separator: " "
-      key_id: none
-      timestamp: {header: webhook-timestamp, unit: seconds}
-      delivery_id: {header: webhook-id}
-      signed_parts: [delivery-id, {literal: "."}, timestamp, {literal: "."}, raw-body]
-      field_constraints:
-        delivery-id: {ascii_bytes: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"}
-        timestamp: {ascii_bytes: "0123456789"}
-  keyed.rsa:
+      header: X-Signature
+      encoding: hex
+      prefix: ''
+  wycheproof.rsa:
     kind: webhook
-    event_schema: {pointer: /components/schemas/Message}
+    event_schema:
+      pointer: /components/schemas/Count
     signature:
       kind: rsa-pss-sha256
       header: X-Signature
-      encoding: base64url
-      prefix: "v1="
-      separator: ","
-      key_id: {header: X-Key-Id}
-      timestamp: {header: X-Timestamp, unit: milliseconds}
-      delivery_id: {header: X-Delivery}
-      signed_parts: [timestamp, {literal: "."}, delivery-id, {literal: "."}, raw-body]
-      field_constraints:
-        timestamp: {ascii_bytes: "0123456789"}
-        delivery-id: {ascii_bytes: "abcdefghijklmnopqrstuvwxyz0123456789-"}
+      encoding: hex
+      prefix: ''
 ```
 
 <!-- fmt: on -->
@@ -4365,63 +4306,45 @@ schema_version: 1
 helpers:
   standard.message:
     kind: webhook
-    event_schema: {pointer: /components/schemas/Message}
+    event_schema:
+      pointer: /components/schemas/Message
     signature:
-      kind: hmac-sha256
-      header: webhook-signature
-      encoding: base64
-      prefix: "v1,"
-      separator: " "
-      key_id: none
-      timestamp: {header: webhook-timestamp, unit: seconds}
-      delivery_id: {header: webhook-id}
-      signed_parts: [delivery-id, {literal: "."}, timestamp, {literal: "."}, raw-body]
-      field_constraints:
-        delivery-id: {ascii_bytes: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"}
-        timestamp: {ascii_bytes: "0123456789"}
+      kind: standard_webhooks
 ```
 
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.yaml -->
 
-| Setting | Values |
+| Signature kind | Authenticated bytes and configuration |
 |---|---|
-| `event_schema` | A schema reference to the JSON request body schema of a webhook or callback operation of the input, directly or through `$ref`, whose request-body model decodes the event; or an [event mapping](#event-mappings) |
-| `header` | The signature header; every occurrence is read, in order |
-| `encoding` | `hex` (either case), `base64` (padded), or `base64url` (padding optional) |
-| `prefix` | Visible ASCII text each signature starts with, possibly empty |
-| `separator` | `none`, or one printable ASCII character that splits each header value into signatures |
-| `key_id` | `none`, or `{header}` whose value selects the keys with exactly that id |
-| `timestamp` | `none`, or `{header, unit}` with `unit` `seconds` or `milliseconds`; the value is 1 to 19 digits |
-| `delivery_id` | `none`, or `{header}`; the value is visible ASCII |
-| `signed_parts` | The signed bytes in order: `raw-body`, the original bytes of `timestamp` and `delivery-id`, and `{literal}` visible ASCII text |
-| `field_constraints` | For each signed `timestamp` and `delivery-id`, `{fixed_bytes: <positive integer>}` or `{ascii_bytes: <its printable ASCII characters>}`; default `{}` |
+| `standard_webhooks` | `webhook-id.webhook-timestamp.body`; fixed HMAC-SHA256, `webhook-signature` with space-separated `v1,<base64>` signatures |
+| `stripe_style` | `timestamp.body`; one decimal `t` and hex `v1` candidates in a comma-separated header, default `Stripe-Signature` |
+| `body_hmac` | Raw body; required `header`, `algorithm` (`hmac-sha256` or `hmac-sha512`, default SHA256), `encoding` (`hex` or `base64`, default hex), and optional `prefix` (default empty) |
+| `ed25519`, `rsa-pss-sha256` | Raw body; required `header`, optional `encoding` (`hex`, `base64`, or `base64url`, default hex) and `prefix` (default empty) |
 
-Every setting is required except `field_constraints`, `enabled`, and `duplicates`; a missing timestamp, delivery id, or
-key id is declared with `none`. The signed parts must determine each part from the bytes alone: `raw-body` appears once
-and only literals follow it, each signed fact has exactly one constraint, and a fact with `ascii_bytes` is followed by a
-literal whose first character is outside its set. A declared timestamp or delivery id must be signed, a signed one
-declared, the four header names distinct, and the separator outside the encoding's alphabet and the prefix; otherwise
-generation fails with `E_CONFIG_CONFLICT`:
+Standard Webhooks returns an authenticated delivery id and timestamp. Stripe-style signatures return the timestamp
+and no delivery id. Body HMAC and public-key signatures return neither fact. Other signature formats use an adapter.
+Each helper's `event_schema` selects a webhook or callback JSON request-body model, or an [event mapping](#event-mappings).
+Header names are case insensitive; prefixes match exactly. Hex accepts either case, base64 requires padding, and
+public-key base64url allows optional padding. Fixed presets need no signed-parts or framing declarations.
+
+Invalid configuration is rejected during generation:
 
 <!-- BEGIN AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.diagnostics -->
 <!-- fmt: off -->
 
 ```text
-E_CONFIG_CONFLICT config protocols.helpers['conflict.headers'].signature.delivery_id: protocols.helpers['conflict.headers'].signature.delivery_id names the same header as protocols.helpers['conflict.headers'].signature.header
-E_CONFIG_CONFLICT config protocols.helpers['conflict.facts'].signature.timestamp: protocols.helpers['conflict.facts'].signature.timestamp names the same header as protocols.helpers['conflict.facts'].signature.key_id
-E_CONFIG_CONFLICT config protocols.helpers['conflict.alphabet'].signature.separator: protocols.helpers['conflict.alphabet'].signature.separator '+' can occur in a signature
-E_CONFIG_CONFLICT config protocols.helpers['conflict.prefix'].signature.separator: protocols.helpers['conflict.prefix'].signature.separator ',' can occur in a signature
-E_CONFIG_CONFLICT config protocols.helpers['conflict.no_body'].signature.signed_parts: protocols.helpers['conflict.no_body'].signature.signed_parts must name 'raw-body' exactly once
-E_CONFIG_CONFLICT config protocols.helpers['conflict.two_bodies'].signature.signed_parts: protocols.helpers['conflict.two_bodies'].signature.signed_parts must name 'raw-body' exactly once
-E_CONFIG_CONFLICT config protocols.helpers['conflict.after_body'].signature.signed_parts[2]: protocols.helpers['conflict.after_body'].signature.signed_parts[2] follows 'raw-body', after which only literals may come
-E_CONFIG_CONFLICT config protocols.helpers['conflict.unsigned'].signature.timestamp: protocols.helpers['conflict.unsigned'].signature.timestamp names a header that protocols.helpers['conflict.unsigned'].signature.signed_parts does not sign
-E_CONFIG_CONFLICT config protocols.helpers['conflict.undeclared'].signature.signed_parts: protocols.helpers['conflict.undeclared'].signature.signed_parts signs 'delivery-id' without a header in protocols.helpers['conflict.undeclared'].signature.delivery_id
-E_CONFIG_CONFLICT config protocols.helpers['conflict.unused'].signature.field_constraints['timestamp']: protocols.helpers['conflict.unused'].signature.field_constraints constrains 'timestamp', which protocols.helpers['conflict.unused'].signature.signed_parts does not sign
-E_CONFIG_CONFLICT config protocols.helpers['conflict.unconstrained'].signature.field_constraints: protocols.helpers['conflict.unconstrained'].signature.field_constraints needs one constraint of 'delivery-id', which protocols.helpers['conflict.unconstrained'].signature.signed_parts signs before 'raw-body'
-E_CONFIG_CONFLICT config protocols.helpers['conflict.adjacent'].signature.signed_parts[0]: protocols.helpers['conflict.adjacent'].signature.signed_parts[0] must be followed by a literal starting outside its ascii_bytes
-E_CONFIG_CONFLICT config protocols.helpers['conflict.delimiter'].signature.signed_parts[0]: protocols.helpers['conflict.delimiter'].signature.signed_parts[0] must be followed by a literal starting outside its ascii_bytes
-E_CONFIG_CONFLICT config protocols.helpers['conflict.facts_adjacent'].signature.signed_parts[0]: protocols.helpers['conflict.facts_adjacent'].signature.signed_parts[0] must be followed by a literal starting outside its ascii_bytes
+E_CONFIG_VALUE config protocols.helpers['shape.missing'].signature: protocols.helpers['shape.missing'] needs 'signature'
+E_CONFIG_VALUE config protocols.helpers['shape.values'].signature: protocols.helpers['shape.values'].signature must be a signature
+E_CONFIG_VALUE config protocols.helpers['shape.kind'].signature.kind: protocols.helpers['shape.kind'].signature.kind must be 'standard_webhooks', 'stripe_style', 'body_hmac', 'ed25519', 'rsa-pss-sha256', 'adapter' or 'none'
+E_CONFIG_VALUE config protocols.helpers['shape.ed25519'].signature.header: protocols.helpers['shape.ed25519'].signature needs 'header'
+E_CONFIG_VALUE config protocols.helpers['shape.adapter'].signature.timestamp: protocols.helpers['shape.adapter'].signature needs 'timestamp'
+E_CONFIG_VALUE config protocols.helpers['shape.adapter'].signature.delivery_id: protocols.helpers['shape.adapter'].signature needs 'delivery_id'
+E_CONFIG_VALUE config protocols.helpers['shape.adapter_facts'].signature.timestamp: protocols.helpers['shape.adapter_facts'].signature.timestamp must be 'required' or 'none'
+E_CONFIG_VALUE config protocols.helpers['shape.adapter_facts'].signature.delivery_id: protocols.helpers['shape.adapter_facts'].signature.delivery_id must be 'required' or 'none'
+E_CONFIG_VALUE config protocols.helpers['shape.settings'].signature.header: protocols.helpers['shape.settings'].signature.header must be a header name
+E_CONFIG_VALUE config protocols.helpers['shape.settings'].signature.encoding: protocols.helpers['shape.settings'].signature.encoding must be 'hex' or 'base64'
+E_CONFIG_VALUE config protocols.helpers['shape.settings'].signature.prefix: protocols.helpers['shape.settings'].signature.prefix must be visible ASCII text
 ```
 
 <!-- fmt: on -->
@@ -4450,20 +4373,33 @@ helpers:
   stripe.event:
     kind: webhook
     event_schema:
-      discriminator: {from: body, pointer: /type}
+      discriminator:
+        from: body
+        pointer: /type
       mapping:
-        invoice.paid: {pointer: /components/schemas/Invoice}
-        invoice.updated: {pointer: /components/schemas/Invoice}
-        customer.created: {pointer: /components/schemas/Customer}
-    signature: {kind: adapter, timestamp: required, delivery_id: none}
+        invoice.paid:
+          pointer: /components/schemas/Invoice
+        invoice.updated:
+          pointer: /components/schemas/Invoice
+        customer.created:
+          pointer: /components/schemas/Customer
+    signature:
+      kind: adapter
+      timestamp: required
+      delivery_id: none
   unsigned.event:
     kind: webhook
     event_schema:
-      discriminator: {from: body, pointer: /meta/type}
+      discriminator:
+        from: body
+        pointer: /meta/type
       mapping:
-        invoice.paid: {pointer: /components/schemas/Invoice}
-        customer.created: {pointer: /components/schemas/Customer}
-    signature: {kind: none}
+        invoice.paid:
+          pointer: /components/schemas/Invoice
+        customer.created:
+          pointer: /components/schemas/Customer
+    signature:
+      kind: none
 ```
 
 <!-- fmt: on -->
@@ -4534,17 +4470,16 @@ def receive_stripe(raw_body: bytes, headers: list[tuple[str, str]], secret: byte
 <!-- fmt: on -->
 <!-- END AUTO-GENERATED DOC EXAMPLE: python-client.webhooks.adapter -->
 
-`verify_async` calls the same synchronous verifier, once, and awaits only the replay store. After the helper checks its
+`verify_async` calls the same synchronous verifier, once. After the helper checks its
 arguments, including that `verifier` has a callable `verify` (or `ProtocolConfigurationError` with
 `field_path=("verifier",)`), and the body, header, and key-count limits, it passes the exact body, the headers as a
 tuple of pairs in received order, the key set, `now`, and the resolved limits; it never reads the keys. The verifier
 must authenticate the whole body and every fact it returns, honor `max_signatures`, and raise `WebhookVerificationError`
 when verification fails; every error it raises, including cancellation, propagates unchanged. Before decoding, the helper
-raises `AdapterContractError` with `delivery_state=NOT_SENT`, without decoding or claiming, when the result is not a
+raises `AdapterContractError` with `delivery_state=NOT_SENT`, without decoding, when the result is not a
 `VerifiedSignature` (an awaitable result is closed unawaited), its `matched_key_id` is not a nonempty string, a
 `required` fact is missing, not a nonempty string delivery id, or not an aware datetime, or a `none` fact is not
-`None`. A returned timestamp is then checked against the timestamp window, and the delivery id is claimed, as for
-builtin signatures.
+`None`. A returned timestamp is then checked against the timestamp window, as for builtin signatures.
 
 ### Unsigned webhooks
 
@@ -4553,18 +4488,16 @@ refused, so omitting it never means unsigned. The module has only
 `decode_unverified(raw_body, *, options=None) -> Event`, which refuses a body that is not `bytes`
 (`ProtocolConfigurationError`) or is over `max_body_bytes` (`ProtocolSizeError`), the only option it reads, and decodes
 the event. Nothing authenticates who sent the delivery or whether it was changed or replayed, and the result is the
-event alone, with no facts or duplicate information: treat it as untrusted input. `duplicates: reject` fails with
-`E_CONFIG_CONFLICT`.
+event alone, with no facts: treat it as untrusted input.
 
 ### Verification order and limits
 
-A call first checks its arguments, raising `ProtocolConfigurationError` with the field path of the first wrong one
-(`raw_body`, `headers`, `keys`, `now`, `options`, `replay_store`, then each key: `("keys", "<index>")` for another key
-type, `("keys", "<index>", "id")` for a repeated id or one a key-id header cannot carry). It then checks sizes, raising
-`ProtocolSizeError`, header syntax, the timestamp window, and the signatures, raising `WebhookVerificationError`, before
-it decodes the event, raising `ProtocolDataError`, and finally claims the delivery. An adapter helper checks
-`verifier` after `replay_store`, and the body, header, and key-count limits before calling the verifier, then the
-returned facts and the window. Errors keep no key, signature, header value, or body.
+A call checks `raw_body`, `headers`, `keys`, `now`, and `options`, then each builtin key's type and unique id.
+Invalid arguments raise `ProtocolConfigurationError` with their field path. Body, header, key, and signature counts
+are bounded by `ProtocolSizeError`. The helper checks signature syntax, timestamp tolerance when present, and
+cryptographic authenticity before decoding the model. Decoding errors raise `ProtocolDataError`. An adapter checks
+that `verifier.verify` is callable, then sizes, its returned facts, and the timestamp tolerance before decoding.
+Errors keep no key, signature, header value, or body.
 
 | Limit (`WebhookOptions`) | Default |
 |---|---|
@@ -4572,29 +4505,17 @@ returned facts and the window. Errors keep no key, signature, header value, or b
 | `max_header_bytes`, counting each name and value | 16 KiB |
 | `max_keys`, `max_signatures` | 8 |
 | `past_tolerance`, `future_tolerance` | 300 and 30 seconds; 0 is allowed |
-| `replay_ttl` | 300 seconds |
 
-- `malformed_signature`: no signature, a signature without the exact prefix, an empty, misencoded, or wrong-size one, or
-  a timestamp, delivery-id, or key-id header that is missing, repeated, outside its syntax, or breaks its constraint.
-  One malformed signature fails the call even when another would verify.
+- `malformed_signature`: a missing, empty, misencoded, or wrong-size signature, an incorrect prefix, or a missing,
+  repeated, or invalid required timestamp or delivery id. A malformed candidate fails even if another would verify.
 - `timestamp_window`: the timestamp lies outside `now - past_tolerance` to `now + future_tolerance`, both inclusive,
   compared in exact microseconds.
-- `missing_key`: no key is eligible, such as an empty key set or a key id no key has.
-- `invalid_signature`: keys are tried in key-set order and signatures in header order, and none verifies; HMAC digests
-  are compared in constant time, and public keys verify with cryptography. The first key that verifies gives `matched_key_id`.
-- `missing_delivery_id`: a replay store was given to a helper without a delivery id.
+- `missing_key`: the active key set is empty.
+- `invalid_signature`: no active key verifies. Keys and signatures are tried in order; HMAC digests are compared in
+  constant time, and public keys verify with cryptography. The first matching key supplies `matched_key_id`.
 
-### Replay detection
+### Application deduplication
 
-With a replay store, a verified and decoded delivery is claimed with the helper's contract fingerprint as namespace,
-until `timestamp + past_tolerance + future_tolerance`, or `now + replay_ttl` without a timestamp, which the helper's
-documentation states. A duplicate returns `duplicate=True`, or raises `WebhookReplayError` with `duplicates: reject`.
-A store failure raises `WebhookStoreError`, with the store's own `WebhookStoreError` raised as it is, and native
-cancellation propagates unchanged; no failure is treated as a success. Regenerating a helper with another contract
-changes its namespace. `MemoryReplayStore` expires claims by the wall clock, not by `now`. Without a replay store,
-`duplicate=False` guarantees nothing: the delivery may have been received before.
-
-Duplicate detection is guaranteed only until a claim expires, and a claim is at most once: it is made after the event
-decodes and before your code processes it. If processing fails afterwards, a retried delivery of the same id is reported
-as a duplicate, or rejected under `duplicates: reject`, until the claim expires. Make processing durable or idempotent
-before acknowledging the delivery, or use a store whose claims you can release.
+Verification retains no delivery state and returns every authenticated event independently. Use an authenticated
+`delivery_id` to deduplicate in application storage when the scheme supplies one. Keep processing and deduplication
+consistent with your application's transaction and acknowledgment rules.
