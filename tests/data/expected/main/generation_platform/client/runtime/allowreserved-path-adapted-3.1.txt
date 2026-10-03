@@ -1,0 +1,170 @@
+# adapted paths OpenAPI 3.1
+  render diagnostics []
+  rendered adapted plan {'location': 'path', 'name': 'wire-name', 'oas_version': '3.1', 'allow_reserved': False}
+  rendered adapted plan {'location': 'path', 'name': 'wire-name', 'oas_version': '3.1', 'allow_reserved': False}
+  rendered adapted plan {'location': 'path', 'name': 'wire-name', 'oas_version': '3.1', 'allow_reserved': False}
+  rendered and generated models equal True
+  generated model origin True
+  generated client origin True
+  current worktree runtime origin True
+  configured origin https://api.example.com
+  > GET https://api.example.com/simple-scalar-false/a%3Ab%40c%21
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/simple-scalar-false/a%3Ab%40c%21 host api.example.com target b'/simple-scalar-false/a%3Ab%40c%21' status 204
+  sync readSimpleScalarFalse 0 = None
+  requests 1
+  > GET https://api.example.com/simple-scalar-false/a%2Cb%3Bc%3Dd%2Fe%3Ff%23g
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/simple-scalar-false/a%2Cb%3Bc%3Dd%2Fe%3Ff%23g host api.example.com target b'/simple-scalar-false/a%2Cb%3Bc%3Dd%2Fe%3Ff%23g' status 204
+  sync readSimpleScalarFalse 1 = None
+  requests 1
+  > GET https://api.example.com/simple-scalar-false/a%252Cb%253Bc%253Dd%252Fe%253Ff%2523g
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/simple-scalar-false/a%252Cb%253Bc%253Dd%252Fe%253Ff%2523g host api.example.com target b'/simple-scalar-false/a%252Cb%253Bc%253Dd%252Fe%253Ff%2523g' status 204
+  sync readSimpleScalarFalse 2 = None
+  requests 1
+  > GET https://api.example.com/simple-scalar-false/na%C3%AFve%25ZZ%25252F
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/simple-scalar-false/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false/na%C3%AFve%25ZZ%25252F' status 204
+  sync readSimpleScalarFalse 3 = None
+  requests 1
+  > GET https://api.example.com/simple-scalar-false-false/a%3Ab%40c%21
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/simple-scalar-false-false/a%3Ab%40c%21 host api.example.com target b'/simple-scalar-false-false/a%3Ab%40c%21' status 204
+  sync readSimpleScalarFalseFalse 0 = None
+  requests 1
+  > GET https://api.example.com/simple-scalar-false-false/a%2Cb%3Bc%3Dd%2Fe%3Ff%23g
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/simple-scalar-false-false/a%2Cb%3Bc%3Dd%2Fe%3Ff%23g host api.example.com target b'/simple-scalar-false-false/a%2Cb%3Bc%3Dd%2Fe%3Ff%23g' status 204
+  sync readSimpleScalarFalseFalse 1 = None
+  requests 1
+  > GET https://api.example.com/simple-scalar-false-false/a%252Cb%253Bc%253Dd%252Fe%253Ff%2523g
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/simple-scalar-false-false/a%252Cb%253Bc%253Dd%252Fe%253Ff%2523g host api.example.com target b'/simple-scalar-false-false/a%252Cb%253Bc%253Dd%252Fe%253Ff%2523g' status 204
+  sync readSimpleScalarFalseFalse 2 = None
+  requests 1
+  > GET https://api.example.com/simple-scalar-false-false/na%C3%AFve%25ZZ%25252F
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/simple-scalar-false-false/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false-false/na%C3%AFve%25ZZ%25252F' status 204
+  sync readSimpleScalarFalseFalse 3 = None
+  requests 1
+  > GET https://api.example.com/simple-scalar-false-absent/a%3Ab%40c%21
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/simple-scalar-false-absent/a%3Ab%40c%21 host api.example.com target b'/simple-scalar-false-absent/a%3Ab%40c%21' status 204
+  sync readSimpleScalarFalseAbsent 0 = None
+  requests 1
+  > GET https://api.example.com/simple-scalar-false-absent/a%2Cb%3Bc%3Dd%2Fe%3Ff%23g
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/simple-scalar-false-absent/a%2Cb%3Bc%3Dd%2Fe%3Ff%23g host api.example.com target b'/simple-scalar-false-absent/a%2Cb%3Bc%3Dd%2Fe%3Ff%23g' status 204
+  sync readSimpleScalarFalseAbsent 1 = None
+  requests 1
+  > GET https://api.example.com/simple-scalar-false-absent/a%252Cb%253Bc%253Dd%252Fe%253Ff%2523g
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/simple-scalar-false-absent/a%252Cb%253Bc%253Dd%252Fe%253Ff%2523g host api.example.com target b'/simple-scalar-false-absent/a%252Cb%253Bc%253Dd%252Fe%253Ff%2523g' status 204
+  sync readSimpleScalarFalseAbsent 2 = None
+  requests 1
+  > GET https://api.example.com/simple-scalar-false-absent/na%C3%AFve%25ZZ%25252F
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/simple-scalar-false-absent/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false-absent/na%C3%AFve%25ZZ%25252F' status 204
+  sync readSimpleScalarFalseAbsent 3 = None
+  requests 1
+  > GET https://api.example.com/label-scalar-false/.a%3Ab%40c%21
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/label-scalar-false/.a%3Ab%40c%21 host api.example.com target b'/label-scalar-false/.a%3Ab%40c%21' status 204
+  sync readLabelScalarFalse 0 = None
+  requests 1
+  > GET https://api.example.com/read-query-scalar-false-true?q=a/b:c%2C;%3D
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/read-query-scalar-false-true?q=a/b:c%2C;%3D host api.example.com target b'/read-query-scalar-false-true?q=a/b:c%2C;%3D' status 204
+  sync readQueryScalarFalseTrue reserved = None
+  requests 1
+  > GET https://api.example.com/text/a%3Ab
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/text/a%3Ab host api.example.com target b'/text/a%3Ab' status 204
+  sync readText reserved = None
+  requests 1
+  > GET https://api.example.com/json/%22a%3Ab%22
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/json/%22a%3Ab%22 host api.example.com target b'/json/%22a%3Ab%22' status 204
+  sync readJSON reserved = None
+  requests 1
+  > GET https://api.example.com/simple-scalar-false/a%3Ab%40c%21
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/simple-scalar-false/a%3Ab%40c%21 host api.example.com target b'/simple-scalar-false/a%3Ab%40c%21' status 204
+  async readSimpleScalarFalse 0 = None
+  requests 1
+  > GET https://api.example.com/simple-scalar-false/a%2Cb%3Bc%3Dd%2Fe%3Ff%23g
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/simple-scalar-false/a%2Cb%3Bc%3Dd%2Fe%3Ff%23g host api.example.com target b'/simple-scalar-false/a%2Cb%3Bc%3Dd%2Fe%3Ff%23g' status 204
+  async readSimpleScalarFalse 1 = None
+  requests 1
+  > GET https://api.example.com/simple-scalar-false/a%252Cb%253Bc%253Dd%252Fe%253Ff%2523g
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/simple-scalar-false/a%252Cb%253Bc%253Dd%252Fe%253Ff%2523g host api.example.com target b'/simple-scalar-false/a%252Cb%253Bc%253Dd%252Fe%253Ff%2523g' status 204
+  async readSimpleScalarFalse 2 = None
+  requests 1
+  > GET https://api.example.com/simple-scalar-false/na%C3%AFve%25ZZ%25252F
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/simple-scalar-false/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false/na%C3%AFve%25ZZ%25252F' status 204
+  async readSimpleScalarFalse 3 = None
+  requests 1
+  > GET https://api.example.com/simple-scalar-false-false/a%3Ab%40c%21
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/simple-scalar-false-false/a%3Ab%40c%21 host api.example.com target b'/simple-scalar-false-false/a%3Ab%40c%21' status 204
+  async readSimpleScalarFalseFalse 0 = None
+  requests 1
+  > GET https://api.example.com/simple-scalar-false-false/a%2Cb%3Bc%3Dd%2Fe%3Ff%23g
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/simple-scalar-false-false/a%2Cb%3Bc%3Dd%2Fe%3Ff%23g host api.example.com target b'/simple-scalar-false-false/a%2Cb%3Bc%3Dd%2Fe%3Ff%23g' status 204
+  async readSimpleScalarFalseFalse 1 = None
+  requests 1
+  > GET https://api.example.com/simple-scalar-false-false/a%252Cb%253Bc%253Dd%252Fe%253Ff%2523g
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/simple-scalar-false-false/a%252Cb%253Bc%253Dd%252Fe%253Ff%2523g host api.example.com target b'/simple-scalar-false-false/a%252Cb%253Bc%253Dd%252Fe%253Ff%2523g' status 204
+  async readSimpleScalarFalseFalse 2 = None
+  requests 1
+  > GET https://api.example.com/simple-scalar-false-false/na%C3%AFve%25ZZ%25252F
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/simple-scalar-false-false/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false-false/na%C3%AFve%25ZZ%25252F' status 204
+  async readSimpleScalarFalseFalse 3 = None
+  requests 1
+  > GET https://api.example.com/simple-scalar-false-absent/a%3Ab%40c%21
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/simple-scalar-false-absent/a%3Ab%40c%21 host api.example.com target b'/simple-scalar-false-absent/a%3Ab%40c%21' status 204
+  async readSimpleScalarFalseAbsent 0 = None
+  requests 1
+  > GET https://api.example.com/simple-scalar-false-absent/a%2Cb%3Bc%3Dd%2Fe%3Ff%23g
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/simple-scalar-false-absent/a%2Cb%3Bc%3Dd%2Fe%3Ff%23g host api.example.com target b'/simple-scalar-false-absent/a%2Cb%3Bc%3Dd%2Fe%3Ff%23g' status 204
+  async readSimpleScalarFalseAbsent 1 = None
+  requests 1
+  > GET https://api.example.com/simple-scalar-false-absent/a%252Cb%253Bc%253Dd%252Fe%253Ff%2523g
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/simple-scalar-false-absent/a%252Cb%253Bc%253Dd%252Fe%253Ff%2523g host api.example.com target b'/simple-scalar-false-absent/a%252Cb%253Bc%253Dd%252Fe%253Ff%2523g' status 204
+  async readSimpleScalarFalseAbsent 2 = None
+  requests 1
+  > GET https://api.example.com/simple-scalar-false-absent/na%C3%AFve%25ZZ%25252F
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/simple-scalar-false-absent/na%C3%AFve%25ZZ%25252F host api.example.com target b'/simple-scalar-false-absent/na%C3%AFve%25ZZ%25252F' status 204
+  async readSimpleScalarFalseAbsent 3 = None
+  requests 1
+  > GET https://api.example.com/label-scalar-false/.a%3Ab%40c%21
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/label-scalar-false/.a%3Ab%40c%21 host api.example.com target b'/label-scalar-false/.a%3Ab%40c%21' status 204
+  async readLabelScalarFalse 0 = None
+  requests 1
+  > GET https://api.example.com/read-query-scalar-false-true?q=a/b:c%2C;%3D
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/read-query-scalar-false-true?q=a/b:c%2C;%3D host api.example.com target b'/read-query-scalar-false-true?q=a/b:c%2C;%3D' status 204
+  async readQueryScalarFalseTrue reserved = None
+  requests 1
+  > GET https://api.example.com/text/a%3Ab
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/text/a%3Ab host api.example.com target b'/text/a%3Ab' status 204
+  async readText reserved = None
+  requests 1
+  > GET https://api.example.com/json/%22a%3Ab%22
+    [host: api.example.com, accept-encoding: gzip, deflate] b''
+  received url https://api.example.com/json/%22a%3Ab%22 host api.example.com target b'/json/%22a%3Ab%22' status 204
+  async readJSON reserved = None
+  requests 1
