@@ -6412,7 +6412,7 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
         return
 
     def _check_model_inheritance(self, contexts: Sequence[ModuleContext]) -> None:  # noqa: PLR0912, PLR0914, PLR0915
-        """Reject invalid builtin class dependencies before rendering any module."""
+        """Reject invalid builtin inheritance; an existing topological order needs no DFS."""
         if (
             self.custom_template_dir is not None
             or not self._configured_generation_types_are_builtin
@@ -6448,19 +6448,16 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             return
 
         models = [model for ctx in contexts for model in ctx.models]
-        positions = {
-            id(model): (ctx_index, index)
-            for ctx_index, ctx in enumerate(contexts)
-            for index, model in enumerate(ctx.models)
-        }
+        positions = [(ctx_index, index) for ctx_index, ctx in enumerate(contexts) for index in range(len(ctx.models))]
         identities = {id(model): index for index, model in enumerate(models)}
         paths: dict[str, list[DataModel]] = defaultdict(list)
         for model in models:
             paths[model.path].append(model)
         parents: list[list[int]] = [[] for _ in models]
         closed = [type(model) is self.data_model_type and backend in ordinary_backends for model in models]
+        ordered = True
         for index, model in enumerate(models):
-            ctx_index, _ = positions[id(model)]
+            ctx_index, _ = positions[index]
             ctx = contexts[ctx_index]
             for base in emitted_bases(model):
                 reference = base.reference
@@ -6479,7 +6476,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                     closed[index] = False
                     continue
                 parent = candidates[0]
-                parent_ctx_index, _ = positions[id(parent)]
+                parent_index = identities[id(parent)]
+                parent_ctx_index, _ = positions[parent_index]
                 imported = ctx.imports.reference_paths.get(reference.path)
                 binding = (
                     parent.class_name
@@ -6491,7 +6489,8 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
                 if base.type_hint != binding:
                     closed[index] = False
                     continue
-                parents[index].append(identities[id(parent)])
+                parents[index].append(parent_index)
+                ordered = ordered and parent_index < index
 
         if struct:
             for ctx in contexts:
@@ -6501,36 +6500,39 @@ class Parser(ABC, Generic[ParserConfigT, SchemaFeaturesT]):
             model = models[index]
             return f"{model.class_name} ({model.path})"
 
-        completed: set[int] = set()
-        postorder: list[int] = []
-        for start in range(len(models)):
-            if start in completed:
-                continue
-            active = {start: 0}
-            stack = [(start, iter(parents[start]))]
-            while stack:
-                index, remaining = stack[-1]
-                if (parent := next(remaining, None)) is None:
-                    stack.pop()
-                    active.pop(index)
-                    completed.add(index)
-                    postorder.append(index)
-                elif parent in active:
-                    cycle = [item for item, _ in stack[active[parent] :]]
-                    cycle.append(parent)
-                    msg = "Generated model inheritance cycle: " + " -> ".join(map(label, cycle))
-                    raise Error(msg)
-                elif parent not in completed:
-                    active[parent] = len(stack)
-                    stack.append((parent, iter(parents[parent])))
+        postorder = list(range(len(models))) if ordered else []
+        if not ordered:
+            completed: set[int] = set()
+            for start in range(len(models)):
+                if start in completed:
+                    continue
+                active = {start: 0}
+                stack = [(start, iter(parents[start]))]
+                while stack:
+                    index, remaining = stack[-1]
+                    if (parent := next(remaining, None)) is None:
+                        stack.pop()
+                        active.pop(index)
+                        completed.add(index)
+                        postorder.append(index)
+                    elif parent in active:
+                        cycle = [item for item, _ in stack[active[parent] :]]
+                        cycle.append(parent)
+                        msg = "Generated model inheritance cycle: " + " -> ".join(map(label, cycle))
+                        raise Error(msg)
+                    elif parent not in completed:
+                        active[parent] = len(stack)
+                        stack.append((parent, iter(parents[parent])))
 
-        for index, direct in enumerate(parents):
-            ctx_index, position = positions[id(models[index])]
-            for parent in direct:
-                parent_ctx_index, parent_position = positions[id(models[parent])]
-                if ctx_index == parent_ctx_index and parent_position >= position:
-                    msg = f"Generated model {label(index)} requires local base {label(parent)} before its definition."
-                    raise Error(msg)
+            for index, direct in enumerate(parents):
+                ctx_index, position = positions[index]
+                for parent in direct:
+                    parent_ctx_index, parent_position = positions[parent]
+                    if ctx_index == parent_ctx_index and parent_position >= position:
+                        msg = (
+                            f"Generated model {label(index)} requires local base {label(parent)} before its definition."
+                        )
+                        raise Error(msg)
 
         for index in postorder:
             closed[index] = closed[index] and all(closed[parent] for parent in parents[index])
