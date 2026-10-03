@@ -1,6 +1,2 @@
 # legacy
-APIGenerationError
-diagnostic MC_PARAMETER_ENCODING /paths/~1legacy/get/parameters/0: Parameter content must declare exactly one media type
-diagnostic MC_PARAMETER_ENCODING /paths/~1legacy/get/parameters/1: Parameter content must declare exactly one media type
-diagnostic MC_PARAMETER_ENCODING /paths/~1legacy/get/parameters/2: A style-based parameter requires a schema
-diagnostic MC_PARAMETER_ENCODING /paths/~1legacy/get/parameters/3: Querystring parameters require OpenAPI 3.2
+SchemaParseError Error at schema path 'legacy.yaml/#/paths//legacy/get/parameters/0': API_INVALID_OBJECT: parameter/header content must have one medium

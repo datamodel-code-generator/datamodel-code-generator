@@ -1,6 +1,0 @@
-{
-  "codes": [
-    "BND_CUSTOM_BINDING_REQUIRED",
-    "BND_FIELD_UNRESOLVED"
-  ]
-}

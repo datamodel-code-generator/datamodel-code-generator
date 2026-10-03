@@ -306,7 +306,7 @@ def test_fastapi_cli_usage(
 def test_fastapi_cli_schemas_scope(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Refuse a server whose models leave out the operation types of the API scope, writing nothing."""
+    """Add the API scope to a server's schema-only models, writing what the schema and API scopes write."""
     monkeypatch.chdir(tmp_path)
     run_main_and_assert(
         input_path=Path("pets.yaml"),
@@ -314,10 +314,12 @@ def test_fastapi_cli_schemas_scope(
         input_file_type="openapi",
         extra_args=_server("--openapi-scopes", "schemas"),
         copy_files=_inputs(tmp_path),
-        expected_exit=Exit.ERROR,
-        output_should_not_exist=True,
+        capsys=capsys,
+        expected_stdout_path=EXPECTED / "cli" / "dependencies.txt",
+        assert_func=assert_file_content,
+        expected_file=PACKAGE / "models.py",
     )
-    assert_output(capsys.readouterr().err, EXPECTED / "cli" / "schemas-scope.txt")
+    assert_directory_content(tmp_path / "server", PACKAGE / "server")
 
 
 def test_fastapi_cli_target_python(
