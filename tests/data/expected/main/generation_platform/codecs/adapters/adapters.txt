@@ -21,6 +21,7 @@ invalid adapters: a server media adapter registers the server surface
 invalid uses: A parameter use requires exactly location, name
 invalid uses: A request_body use requires exactly media_type
 invalid uses: accepted
+invalid adapters: dependencies must be distinct nonempty requirements and python_requires a nonempty specifier
 use /paths/~1tags/get parameter cookie tags: codec_0 None parameter_0 pydantic_type_adapter native
 adapter json-cookie /paths/~1tags/get parameter cookie tags: parameter
 use /paths/~1tags/get parameter cookie session: codec_1 None None pydantic_type_adapter native

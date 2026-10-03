@@ -355,6 +355,7 @@ def _toml_arguments(*extra: str) -> list[str]:
         "toml-formatters",
         "toml-selection-unknown",
         "toml-kwargs-date",
+        "toml-records",
     ],
 )
 def test_target_toml_errors(
