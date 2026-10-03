@@ -361,7 +361,7 @@ helper the [NDJSON stream helper](#ndjson-stream-helpers), an enabled WebSocket 
 [WebSocket helper](#websocket-helpers), an enabled cache helper the [cache helper](#cache-helpers), and an enabled webhook helper the
 [webhook verification helper](#webhook-verification-helpers). A disabled helper generates nothing, so the package is the
 same as without it. The `parts` profile of `resumable_upload`
-fails with `E_CLIENT_UNSUPPORTED` whether they are enabled or not, and their settings are not read yet; an enabled
+fails with `E_CLIENT_UNSUPPORTED` whether the helper is enabled or not, and its settings are not read yet; an enabled
 upload helper declaring `abort` or `create.session_url` fails with `E_CLIENT_UNSUPPORTED` too.
 
 | Setting | Values | Default | Where |
