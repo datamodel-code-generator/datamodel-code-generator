@@ -4,16 +4,46 @@ from __future__ import annotations
 
 import importlib
 import json
+import sys
 from functools import partial
 from typing import TYPE_CHECKING, Any
 
-from tests.data.python.client_generation import SOURCE
-from tests.data.python.client_runtime import Exchange, arecord, raw_response, record, run
+from tests.data.python.client_generation import SOURCE, Modules, generate_client, render_client
+from tests.data.python.client_runtime import _CALL_ID, Exchange, arecord, raw_response, record, run
+from tests.data.python.generated_packages import forget_generated, import_generated
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from pathlib import Path
     from types import ModuleType
 
     import httpx2
+
+
+def reserved_version_report(case: str, version: str, backends: Sequence[str], root: Path) -> tuple[Modules, str]:
+    """Render and execute the existing path fixture with a shorthand numeric YAML root version."""
+    source = root / f"{case}.yaml"
+    document = (SOURCE / source.name).read_text(encoding="utf-8")
+    document = document.replace(document.partition("\n")[0], f"openapi: {version}", 1)
+    source.write_text(document, encoding="utf-8")
+    _, modules = render_client(source, root / "render", backends[0], {}, {})
+    plans = {("client", "_operations.py"): modules["client", "_operations.py"]}
+    reports: list[str] = []
+    for backend in backends:
+        package = f"{case.replace('-', '_')}_shorthand_{backend.replace('.', '_').lower()}"
+        destination = root / backend.replace(".", "_")
+        destination.mkdir()
+        generate_client(source, destination, package, backend)
+        paths = [str(destination), str(destination / package / "src")]
+        sys.path[:0] = paths
+        lines = [f"# {case} {backend}"]
+        try:
+            reserved_paths(import_generated(package), lines)
+        finally:
+            del sys.path[: len(paths)]
+            forget_generated(package)
+        reports.append(_CALL_ID.sub("<call>", "\n".join(lines)) + "\n")
+    return plans, "".join(reports)
 
 
 def _arguments(package: ModuleType, vector: dict[str, Any]) -> dict[str, object]:
